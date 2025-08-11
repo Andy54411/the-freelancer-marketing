@@ -9,10 +9,12 @@ import { WorkspaceBoard } from './WorkspaceBoard';
 import { WorkspaceList } from './WorkspaceList';
 import { WorkspaceCalendar } from './WorkspaceCalendar';
 import { WorkspaceFilters } from './WorkspaceFilters';
+import { WorkspaceDetailSlider } from './WorkspaceDetailSlider';
 import { WorkspaceService } from '@/services/WorkspaceService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { QuickNoteDialog } from './QuickNoteDialog';
 
 interface Workspace {
   id: string;
@@ -69,27 +71,41 @@ export default function WorkspaceManager() {
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedPriority, setSelectedPriority] = useState<string[]>([]);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
+  const [isDetailSliderOpen, setIsDetailSliderOpen] = useState(false);
 
   // Company ID aus URL-Parametern oder User UID verwenden
   const companyId = user?.uid;
 
   useEffect(() => {
-    loadWorkspaces();
+    let unsubscribe: (() => void) | null = null;
+
+    const setupRealtimeSync = async () => {
+      if (!companyId) return;
+
+      try {
+        setLoading(true);
+
+        // Setup real-time listener for workspaces
+        unsubscribe = WorkspaceService.subscribeToWorkspaces(companyId, workspaceData => {
+          setWorkspaces(workspaceData);
+          setLoading(false);
+        });
+      } catch (error) {
+        console.error('Error setting up workspace subscription:', error);
+        setLoading(false);
+      }
+    };
+
+    setupRealtimeSync();
+
+    // Cleanup function
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [companyId]);
-
-  const loadWorkspaces = async () => {
-    if (!companyId) return;
-
-    try {
-      setLoading(true);
-      const workspaceData = await WorkspaceService.getWorkspaces(companyId);
-      setWorkspaces(workspaceData);
-    } catch (error) {
-      console.error('Error loading workspaces:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateWorkspace = async (workspaceData: Partial<Workspace>) => {
     if (!companyId || !user?.uid) return;
@@ -113,7 +129,7 @@ export default function WorkspaceManager() {
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<Workspace>) => {
     try {
-      await WorkspaceService.updateWorkspace(workspaceId, updates);
+      // Optimistic update - update local state immediately
       setWorkspaces(prev =>
         prev.map(workspace =>
           workspace.id === workspaceId
@@ -121,8 +137,13 @@ export default function WorkspaceManager() {
             : workspace
         )
       );
+
+      // Update in Firestore - real-time listener will sync automatically
+      await WorkspaceService.updateWorkspace(workspaceId, updates);
     } catch (error) {
       console.error('Error updating workspace:', error);
+      // Revert optimistic update on error by re-triggering realtime sync
+      // The subscription will automatically refresh the data
     }
   };
 
@@ -133,6 +154,21 @@ export default function WorkspaceManager() {
     } catch (error) {
       console.error('Error deleting workspace:', error);
     }
+  };
+
+  const handleWorkspaceClick = (workspace: Workspace) => {
+    setSelectedWorkspace(workspace);
+    setIsDetailSliderOpen(true);
+  };
+
+  const handleCloseDetailSlider = () => {
+    setIsDetailSliderOpen(false);
+    setSelectedWorkspace(null);
+  };
+
+  const handleEditWorkspace = (workspace: Workspace) => {
+    // Navigate to edit page
+    router.push(`/dashboard/company/${companyId}/workspace/${workspace.id}/edit`);
   };
 
   const filteredWorkspaces = workspaces.filter(workspace => {
@@ -232,12 +268,26 @@ export default function WorkspaceManager() {
               </Button>
             </div>
 
-            <Link href={`/dashboard/company/${companyId}/workspace/create`}>
-              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                Neuer Workspace
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              {/* Quick Note Dialog */}
+              {companyId && user?.uid && (
+                <QuickNoteDialog
+                  workspaces={filteredWorkspaces}
+                  companyId={companyId}
+                  userId={user.uid}
+                  onNoteAdded={() => {
+                    // Realtime sync will automatically update the UI
+                  }}
+                />
+              )}
+
+              <Link href={`/dashboard/company/${companyId}/workspace/create`}>
+                <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neuer Workspace
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -339,6 +389,7 @@ export default function WorkspaceManager() {
             workspaces={filteredWorkspaces}
             onUpdateWorkspace={handleUpdateWorkspace}
             onDeleteWorkspace={handleDeleteWorkspace}
+            onWorkspaceClick={handleWorkspaceClick}
           />
         )}
         {viewMode === 'list' && (
@@ -346,6 +397,7 @@ export default function WorkspaceManager() {
             workspaces={filteredWorkspaces}
             onUpdateWorkspace={handleUpdateWorkspace}
             onDeleteWorkspace={handleDeleteWorkspace}
+            onWorkspaceClick={handleWorkspaceClick}
           />
         )}
         {viewMode === 'calendar' && (
@@ -353,9 +405,19 @@ export default function WorkspaceManager() {
             workspaces={filteredWorkspaces}
             onUpdateWorkspace={handleUpdateWorkspace}
             onDeleteWorkspace={handleDeleteWorkspace}
+            onWorkspaceClick={handleWorkspaceClick}
           />
         )}
       </div>
+
+      {/* Workspace Detail Slider */}
+      <WorkspaceDetailSlider
+        workspace={selectedWorkspace}
+        isOpen={isDetailSliderOpen}
+        onClose={handleCloseDetailSlider}
+        onEdit={handleEditWorkspace}
+        onUpdateWorkspace={handleUpdateWorkspace}
+      />
     </div>
   );
 }

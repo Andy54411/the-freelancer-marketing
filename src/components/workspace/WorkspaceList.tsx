@@ -42,6 +42,7 @@ interface WorkspaceListProps {
   workspaces: Workspace[];
   onUpdateWorkspace: (workspaceId: string, updates: Partial<Workspace>) => void;
   onDeleteWorkspace: (workspaceId: string) => void;
+  onWorkspaceClick?: (workspace: Workspace) => void;
 }
 
 type SortField = 'title' | 'status' | 'priority' | 'dueDate' | 'createdAt' | 'progress';
@@ -51,6 +52,7 @@ export function WorkspaceList({
   workspaces,
   onUpdateWorkspace,
   onDeleteWorkspace,
+  onWorkspaceClick,
 }: WorkspaceListProps) {
   const [selectedWorkspaces, setSelectedWorkspaces] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -304,11 +306,12 @@ export function WorkspaceList({
             {sortedWorkspaces.map(workspace => (
               <TableRow
                 key={workspace.id}
-                className={`hover:bg-gray-50 ${
+                className={`hover:bg-gray-50 cursor-pointer ${
                   selectedWorkspaces.includes(workspace.id) ? 'bg-blue-50' : ''
                 }`}
+                onClick={() => onWorkspaceClick?.(workspace)}
               >
-                <TableCell>
+                <TableCell onClick={e => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedWorkspaces.includes(workspace.id)}
                     onCheckedChange={checked =>
@@ -400,7 +403,7 @@ export function WorkspaceList({
                 <TableCell>
                   <div className="text-sm text-gray-500">{formatDate(workspace.createdAt)}</div>
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={e => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">

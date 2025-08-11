@@ -27,6 +27,7 @@ interface WorkspaceCalendarProps {
   workspaces: Workspace[];
   onUpdateWorkspace: (workspaceId: string, updates: Partial<Workspace>) => void;
   onDeleteWorkspace: (workspaceId: string) => void;
+  onWorkspaceClick?: (workspace: Workspace) => void;
 }
 
 type CalendarView = 'month' | 'week' | 'day';
@@ -35,6 +36,7 @@ export function WorkspaceCalendar({
   workspaces,
   onUpdateWorkspace,
   onDeleteWorkspace,
+  onWorkspaceClick,
 }: WorkspaceCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('month');
@@ -289,6 +291,7 @@ export function WorkspaceCalendar({
                   <Card
                     key={workspace.id}
                     className={`cursor-pointer hover:shadow-md ${getStatusColor(workspace.status)}`}
+                    onClick={() => onWorkspaceClick?.(workspace)}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-center gap-2 mb-1">
@@ -349,6 +352,7 @@ export function WorkspaceCalendar({
               <Card
                 key={workspace.id}
                 className={`cursor-pointer hover:shadow-md ${getStatusColor(workspace.status)}`}
+                onClick={() => onWorkspaceClick?.(workspace)}
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">

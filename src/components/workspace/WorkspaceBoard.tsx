@@ -60,9 +60,14 @@ interface WorkspaceBoardProps {
   workspaces: Workspace[];
   onUpdateWorkspace: (workspaceId: string, updates: Partial<Workspace>) => void;
   onDeleteWorkspace: (workspaceId: string) => void;
+  onWorkspaceClick?: (workspace: Workspace) => void;
 }
 
-export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoardProps) {
+export function WorkspaceBoard({
+  workspaces,
+  onUpdateWorkspace,
+  onWorkspaceClick,
+}: WorkspaceBoardProps) {
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(
     workspaces.length > 0 ? workspaces[0] : null
   );
@@ -124,9 +129,6 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
             (column.id === 'review' && taskStatus === 'review') ||
             (column.id === 'done' && (taskStatus === 'done' || taskStatus === 'completed'));
 
-          console.log(
-            `Task ${task.title} (status: ${taskStatus}) -> Column ${column.id}: ${isMatch}`
-          );
           return isMatch;
         })
         .sort((a, b) => a.position - b.position),
@@ -135,30 +137,24 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
 
   const columns = getColumnsWithTasks();
 
-  // Ensure the workspace state is updated immediately in the local state
+  // Optimistic update for better UX - update local state immediately
   const updateLocalWorkspace = (updates: Partial<Workspace>) => {
     if (!selectedWorkspace) return;
 
     const updatedWorkspace = { ...selectedWorkspace, ...updates };
     setSelectedWorkspace(updatedWorkspace);
 
-    // Also call the parent update function
+    // Call parent update function for Firestore sync
+    // Real-time listener will handle sync across users
     onUpdateWorkspace(selectedWorkspace.id, updates);
   };
 
   const handleDragEnd = (result: DropResult) => {
-    console.log('Drag ended:', result);
-
     if (!result.destination || !selectedWorkspace) {
-      console.log('No destination or workspace');
       return;
     }
 
     const { source, destination } = result;
-
-    console.log('Source:', source);
-    console.log('Destination:', destination);
-    console.log('Current columns:', columns);
 
     // Handle column reordering
     if (result.type === 'column') {
@@ -203,13 +199,9 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
       });
     } else {
       // Moving between columns
-      console.log('Moving between columns');
       const sourceTasks = Array.from(sourceColumn.tasks);
       const destTasks = Array.from(destColumn.tasks);
       const [movedTask] = sourceTasks.splice(source.index, 1);
-
-      console.log('Moved task:', movedTask);
-      console.log('From column:', sourceColumn.id, 'to:', destination.droppableId);
 
       // Update both status and columnId for consistency
       const newStatus = destination.droppableId;
@@ -238,8 +230,6 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
         }
         return col;
       });
-
-      console.log('Updated columns:', updatedColumns);
 
       updateLocalWorkspace({
         boardColumns: updatedColumns,
@@ -341,16 +331,31 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
           </select>
 
           {selectedWorkspace && (
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className={`${getPriorityColor(selectedWorkspace.priority)}`}
-              >
-                {selectedWorkspace.priority}
-              </Badge>
-              <Badge variant="outline">{selectedWorkspace.status}</Badge>
-              <span className="text-sm text-gray-500">Progress: {selectedWorkspace.progress}%</span>
-            </div>
+            <>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={`${getPriorityColor(selectedWorkspace.priority)}`}
+                >
+                  {selectedWorkspace.priority}
+                </Badge>
+                <Badge variant="outline">{selectedWorkspace.status}</Badge>
+                <span className="text-sm text-gray-500">
+                  Progress: {selectedWorkspace.progress}%
+                </span>
+              </div>
+
+              {onWorkspaceClick && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onWorkspaceClick(selectedWorkspace)}
+                  className="ml-auto"
+                >
+                  Details anzeigen
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

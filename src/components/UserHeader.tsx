@@ -21,8 +21,10 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { categories, Category } from '@/lib/categoriesData'; // Categories for search
+import { WorkspaceService } from '@/services/WorkspaceService'; // For Quick Note functionality
 import { Logo } from '@/components/logo'; // Logo component
 import AppHeaderNavigation from './AppHeaderNavigation'; // Category navigation below header
+import { QuickNoteDialog } from '@/components/workspace/QuickNoteDialog'; // Quick Note Dialog
 import {
   Search as FiSearch,
   Bell as FiBell,
@@ -75,6 +77,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0); // NEU
   const [notifications, setNotifications] = useState<NotificationPreview[]>([]); // NEU
+  const [workspaces, setWorkspaces] = useState<any[]>([]); // For Quick Note functionality
   const [searchTerm, setSearchTerm] = useState('');
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const searchDropdownContainerRef = useRef<HTMLDivElement>(null);
@@ -268,6 +271,24 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     }
   }, [currentUser?.uid, currentUid, subscribeToNotifications]);
 
+  // Load workspaces for Quick Note functionality
+  useEffect(() => {
+    if (currentUser?.uid && firestoreUserData?.user_type === 'firma') {
+      const loadWorkspaces = async () => {
+        try {
+          const workspaceData = await WorkspaceService.getWorkspaces(currentUser.uid);
+          setWorkspaces(workspaceData);
+        } catch (error) {
+          console.error('Error loading workspaces for quick note:', error);
+          setWorkspaces([]);
+        }
+      };
+      loadWorkspaces();
+    } else {
+      setWorkspaces([]);
+    }
+  }, [currentUser?.uid, firestoreUserData?.user_type]);
+
   useEffect(() => {
     const handleProfileUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<{ profilePictureURL?: string }>;
@@ -444,6 +465,20 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
             {/* Icons und Benutzerprofil */}
             <div className="flex items-center space-x-4">
+              {/* Quick Note Dialog - nur für Company-Benutzer */}
+              {currentUser?.uid &&
+                firestoreUserData?.user_type === 'firma' &&
+                workspaces.length > 0 && (
+                  <QuickNoteDialog
+                    workspaces={workspaces}
+                    companyId={currentUser.uid}
+                    userId={currentUser.uid}
+                    onNoteAdded={() => {
+                      // Optional: Refresh workspaces after note is added
+                    }}
+                  />
+                )}
+
               {/* NEU: Glocken-Icon mit Hover-Dropdown und Badge */}
               <div
                 className="relative"
