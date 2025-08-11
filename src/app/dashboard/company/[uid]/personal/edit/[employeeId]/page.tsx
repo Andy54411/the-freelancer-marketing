@@ -17,6 +17,7 @@ import QualificationsTab from '@/components/personal/QualificationsTab';
 import ComplianceTab from '@/components/personal/ComplianceTab';
 import DisciplinaryTab from '@/components/personal/DisciplinaryTab';
 import ContractsTab from '@/components/personal/ContractsTab';
+import VacationContainer from '@/components/personal/tabs/VacationContainer';
 
 interface EditEmployeePageProps {
   params: Promise<{ uid: string; employeeId: string }>;
@@ -61,13 +62,24 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
   const loadEmployee = async () => {
     try {
       setLoading(true);
-      const employeeData = await PersonalService.getEmployee(
-        resolvedParams.uid,
-        resolvedParams.employeeId
+      console.log(
+        '🔄 Loading employee:',
+        resolvedParams.employeeId,
+        'for company:',
+        resolvedParams.uid
       );
+
+      // Verwende getEmployees und filtere dann nach der spezifischen ID
+      const employees = await PersonalService.getEmployees(resolvedParams.uid);
+      const employeeData = employees.find(emp => emp.id === resolvedParams.employeeId);
+
       if (employeeData) {
+        console.log('✅ Employee found:', employeeData.firstName, employeeData.lastName);
         setEmployee(employeeData);
         setFormData(employeeData);
+      } else {
+        console.error('❌ Employee not found with ID:', resolvedParams.employeeId);
+        toast.error('Mitarbeiter nicht gefunden');
       }
     } catch (error) {
       console.error('Error loading employee:', error);
@@ -201,12 +213,15 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
       <Card>
         <CardContent className="p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-1">
+            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-9 gap-1">
               <TabsTrigger value="basic" className="text-xs">
                 Grunddaten
               </TabsTrigger>
               <TabsTrigger value="documents" className="text-xs">
                 Dokumente
+              </TabsTrigger>
+              <TabsTrigger value="vacation" className="text-xs">
+                Urlaub
               </TabsTrigger>
               <TabsTrigger value="qualifications" className="text-xs">
                 Qualifikationen
@@ -241,6 +256,18 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
 
             <TabsContent value="documents" className="mt-6">
               <DocumentsTab employeeId={resolvedParams.employeeId} companyId={resolvedParams.uid} />
+            </TabsContent>
+
+            <TabsContent value="vacation" className="mt-6">
+              <VacationContainer
+                employee={employee}
+                companyId={resolvedParams.uid}
+                isEditing={isEditing}
+                onUpdate={handleUpdate}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                onEdit={() => setIsEditing(true)}
+              />
             </TabsContent>
 
             <TabsContent value="qualifications" className="mt-6">

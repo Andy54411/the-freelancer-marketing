@@ -41,6 +41,7 @@ export interface Employee {
 
   // Identifikationsdokumente
   personalId?: string;
+  employeeNumber?: string;
   socialSecurityNumber?: string;
   taxId?: string;
   pensionInsuranceNumber?: string;
@@ -296,12 +297,70 @@ export interface Employee {
     totalDays: number;
     usedDays: number;
     remainingDays: number;
+    yearStart: string; // YYYY-MM-DD format for vacation year start
+    settings: {
+      annualVacationDays: number;
+      carryOverDays: number;
+      maxCarryOverDays: number;
+      carryOverExpiry: string; // YYYY-MM-DD when carry-over expires
+      allowNegativeBalance: boolean;
+      requireManagerApproval: boolean;
+      minimumAdvanceDays: number;
+      maximumConsecutiveDays: number;
+      allowWeekends: boolean;
+      allowHolidays: boolean;
+      autoApproveAfterDays: number;
+    };
+    requests: VacationRequest[];
+    history: {
+      year: number;
+      totalDaysGranted: number;
+      carryOverFromPreviousYear: number;
+      usedDays: number;
+      plannedDays: number;
+      lostDays: number;
+      adjustments: {
+        date: string;
+        amount: number;
+        reason: string;
+        adjustedBy: string;
+      }[];
+    }[];
   };
   notes?: string;
   isActive: boolean;
   avatar?: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+// Vacation-related interfaces
+export interface VacationRequest {
+  id: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  requestedDays: number;
+  type: 'annual' | 'sick' | 'personal' | 'unpaid' | 'other';
+  reason?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string;
+  reviewComment?: string;
+}
+
+export interface VacationSettings {
+  annualVacationDays: number;
+  carryOverDays: number;
+  maxCarryOverDays: number;
+  carryOverExpiry: string; // YYYY-MM-DD when carry-over expires
+  allowNegativeBalance: boolean;
+  requireManagerApproval: boolean;
+  minimumAdvanceDays: number;
+  maximumConsecutiveDays: number;
+  allowWeekends: boolean;
+  allowHolidays: boolean;
+  autoApproveAfterDays: number;
 }
 
 export interface EmployeeFeedback {
@@ -777,6 +836,173 @@ export class PersonalService {
       console.error('❌ PersonalService: Fehler beim Deaktivieren des Mitarbeiters:', error);
       throw error;
     }
+  }
+
+  /**
+   * Aktualisiert die Urlaubseinstellungen eines Mitarbeiters
+   */
+  static async updateVacationSettings(
+    companyId: string,
+    employeeId: string,
+    vacationSettings: VacationSettings
+  ): Promise<void> {
+    try {
+      console.log(
+        '🔄 PersonalService: Aktualisiere Urlaubseinstellungen für Mitarbeiter:',
+        employeeId
+      );
+
+      const updateData = {
+        'vacation.settings': {
+          ...vacationSettings,
+          updatedAt: new Date(),
+        },
+        updatedAt: new Date(),
+      };
+
+      await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
+
+      console.log('✅ PersonalService: Urlaubseinstellungen aktualisiert');
+    } catch (error) {
+      console.error(
+        '❌ PersonalService: Fehler beim Aktualisieren der Urlaubseinstellungen:',
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Speichert einen neuen Urlaubsantrag
+   */
+  static async saveVacationRequest(
+    companyId: string,
+    employeeId: string,
+    vacationRequest: Omit<VacationRequest, 'id'>
+  ): Promise<string> {
+    try {
+      console.log('🔄 PersonalService: Speichere Urlaubsantrag für Mitarbeiter:', employeeId);
+
+      const requestId = Date.now().toString();
+      const newRequest: VacationRequest = {
+        ...vacationRequest,
+        id: requestId,
+        submittedAt: new Date(),
+      };
+
+      // Aktueller Mitarbeiter
+      const employee = await this.getEmployee(companyId, employeeId);
+      const currentRequests = employee.vacation?.requests || [];
+
+      const updateData = {
+        'vacation.requests': [...currentRequests, newRequest],
+        updatedAt: new Date(),
+      };
+
+      await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
+
+      console.log('✅ PersonalService: Urlaubsantrag gespeichert mit ID:', requestId);
+      return requestId;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Speichern des Urlaubsantrags:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Aktualisiert den Status eines Urlaubsantrags
+   */
+  static async updateVacationRequestStatus(
+    companyId: string,
+    employeeId: string,
+    requestId: string,
+    status: 'approved' | 'rejected',
+    reviewedBy: string,
+    reviewComment?: string
+  ): Promise<void> {
+    try {
+      console.log(
+        '🔄 PersonalService: Aktualisiere Urlaubsantrag Status:',
+        requestId,
+        'zu',
+        status
+      );
+
+      const employee = await this.getEmployee(companyId, employeeId);
+      const requests = employee.vacation?.requests || [];
+
+      const updatedRequests = requests.map(req => {
+        if (req.id === requestId) {
+          return {
+            ...req,
+            status,
+            reviewedBy,
+            reviewedAt: new Date(),
+            reviewComment,
+          };
+        }
+        return req;
+      });
+
+      const updateData = {
+        'vacation.requests': updatedRequests,
+        updatedAt: new Date(),
+      };
+
+      await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
+
+      console.log('✅ PersonalService: Urlaubsantrag Status aktualisiert');
+    } catch (error) {
+      console.error(
+        '❌ PersonalService: Fehler beim Aktualisieren des Urlaubsantrag Status:',
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Berechnet die verfügbaren Urlaubstage für einen Mitarbeiter
+   */
+  static calculateAvailableVacationDays(employee: Employee): number {
+    if (!employee.vacation?.settings) return 0;
+
+    const settings = employee.vacation.settings;
+    const currentYear = new Date().getFullYear();
+
+    // Basis Urlaubstage
+    let availableDays = settings.annualVacationDays;
+
+    // Übertragung vom Vorjahr
+    if (settings.carryOverDays && settings.carryOverDays > 0) {
+      const maxCarryOver = settings.maxCarryOverDays || 0;
+      const carryOverAmount = Math.min(settings.carryOverDays, maxCarryOver);
+
+      // Prüfe ob Übertragung noch gültig ist
+      if (settings.carryOverExpiry) {
+        const expiryDate = new Date(settings.carryOverExpiry);
+        if (expiryDate > new Date()) {
+          availableDays += carryOverAmount;
+        }
+      } else {
+        availableDays += carryOverAmount;
+      }
+    }
+
+    // Abzug der bereits genehmigten Urlaubstage
+    const approvedRequests =
+      employee.vacation?.requests?.filter(
+        req => req.status === 'approved' && req.startDate.startsWith(currentYear.toString())
+      ) || [];
+
+    const usedDays = approvedRequests.reduce((total, req) => {
+      const start = new Date(req.startDate);
+      const end = new Date(req.endDate);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      return total + days;
+    }, 0);
+
+    return Math.max(0, availableDays - usedDays);
   }
 
   /**

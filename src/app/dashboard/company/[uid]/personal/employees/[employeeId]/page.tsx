@@ -299,13 +299,14 @@ export default function EmployeeDetailPage({
               </Button>
             </>
           ) : (
-            <Button
-              onClick={() => setIsEditing(true)}
-              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            <Link
+              href={`/dashboard/company/${resolvedParams.uid}/personal/edit/${resolvedParams.employeeId}`}
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Bearbeiten
-            </Button>
+              <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                <Edit className="h-4 w-4 mr-2" />
+                Bearbeiten
+              </Button>
+            </Link>
           )}
         </div>
       </div>

@@ -14,29 +14,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Users,
-  Search,
-  Filter,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  Euro,
-  Clock,
-  UserCheck,
-  UserX,
-  Plus,
-  Download,
-  Upload,
-  Eye,
-} from 'lucide-react';
+import { Users, Search, Filter, Plus, Download, Upload, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 
@@ -70,83 +49,78 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
 
   const loadEmployees = async () => {
     try {
-      setLoading(true);
       console.log(
-        `🔄 Lade Mitarbeiter für Company: ${resolvedParams.uid} (Versuch ${retryCount + 1}/${maxRetries})`
+        '🔄 Lade Mitarbeiter für Company:',
+        resolvedParams.uid,
+        `(Versuch ${retryCount + 1}/${maxRetries})`
       );
-      const data = await PersonalService.getEmployees(resolvedParams.uid);
-      setEmployees(data);
-      // Reset retry count on success
-      setRetryCount(0);
+      setLoading(true);
+
+      const employeeData = await PersonalService.getEmployees(resolvedParams.uid);
+      setEmployees(employeeData || []);
+      setRetryCount(0); // Reset auf Erfolg
     } catch (error) {
       console.error('❌ Fehler beim Laden der Mitarbeiter:', error);
-
-      // Increment retry count and retry after delay if under limit
-      if (retryCount < maxRetries - 1) {
-        setTimeout(() => {
-          setRetryCount(prev => prev + 1);
-        }, 5000); // 5 Sekunden Wartezeit
-      } else {
-        console.warn('❌ Max Retries erreicht - verwende Fallback-Daten');
-        toast.error('Mitarbeiter konnten nicht geladen werden');
-      }
+      setRetryCount(prev => prev + 1);
+      toast.error('Fehler beim Laden der Mitarbeiter');
     } finally {
       setLoading(false);
     }
   };
 
   const filterEmployees = () => {
-    let filtered = [...employees];
+    let filtered = employees;
 
-    // Suchfilter
     if (searchTerm) {
       filtered = filtered.filter(
-        emp =>
-          emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          emp.position.toLowerCase().includes(searchTerm.toLowerCase())
+        employee =>
+          employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          employee.department.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Abteilungsfilter
     if (departmentFilter !== 'all') {
-      filtered = filtered.filter(emp => emp.department === departmentFilter);
+      filtered = filtered.filter(employee => employee.department === departmentFilter);
     }
 
-    // Statusfilter
     if (statusFilter !== 'all') {
-      if (statusFilter === 'active') {
-        filtered = filtered.filter(emp => emp.isActive);
-      } else {
-        filtered = filtered.filter(emp => !emp.isActive);
-      }
+      filtered = filtered.filter(employee =>
+        statusFilter === 'active' ? employee.isActive : !employee.isActive
+      );
     }
 
     setFilteredEmployees(filtered);
   };
 
-  const handleDeactivateEmployee = async (employee: Employee) => {
-    try {
-      await PersonalService.deactivateEmployee(resolvedParams.uid, employee.id!);
-      toast.success(`${employee.firstName} ${employee.lastName} wurde deaktiviert`);
-      loadEmployees();
-      setShowDeleteDialog(false);
-    } catch (error) {
-      console.error('❌ Fehler beim Deaktivieren:', error);
-      toast.error('Fehler beim Deaktivieren des Mitarbeiters');
-    }
-  };
-
   const exportEmployees = async () => {
     try {
-      const csvData = await PersonalService.exportEmployeesCSV(resolvedParams.uid);
-      const blob = new Blob([csvData], { type: 'text/csv' });
+      const csvData = employees.map(emp => ({
+        Name: `${emp.firstName} ${emp.lastName}`,
+        Email: emp.email,
+        Telefon: emp.phone || '',
+        Abteilung: emp.department,
+        Position: emp.position,
+        Gehalt: emp.grossSalary,
+        Status: emp.isActive ? 'Aktiv' : 'Inaktiv',
+        Startdatum: emp.startDate,
+      }));
+
+      const csv = [
+        Object.keys(csvData[0]).join(','),
+        ...csvData.map(row => Object.values(row).join(',')),
+      ].join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `mitarbeiter_${new Date().toISOString().split('T')[0]}.csv`;
+      a.setAttribute('hidden', '');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `mitarbeiter-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       toast.success('Mitarbeiterdaten exportiert');
     } catch (error) {
@@ -185,6 +159,26 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
     }
   };
 
+  const handleDeactivateEmployee = async (employee: Employee) => {
+    try {
+      await PersonalService.updateEmployee(resolvedParams.uid, employee.id, {
+        ...employee,
+        isActive: false,
+      });
+
+      setEmployees(prev =>
+        prev.map(emp => (emp.id === employee.id ? { ...emp, isActive: false } : emp))
+      );
+
+      setShowDeleteDialog(false);
+      setSelectedEmployee(null);
+      toast.success('Mitarbeiter wurde deaktiviert');
+    } catch (error) {
+      console.error('❌ Fehler beim Deaktivieren:', error);
+      toast.error('Fehler beim Deaktivieren des Mitarbeiters');
+    }
+  };
+
   const departments = [...new Set(employees.map(emp => emp.department))];
 
   if (loading) {
@@ -199,7 +193,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
               <CardContent className="p-6">
                 <div className="h-4 bg-gray-200 rounded mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
               </CardContent>
             </Card>
           ))}
@@ -214,56 +208,120 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Mitarbeiter</h1>
-          <p className="text-gray-600 mt-1">Verwalten Sie Ihre {employees.length} Mitarbeiter</p>
+          <p className="text-gray-600 mt-1">
+            Verwalten Sie Ihre Mitarbeiter und deren Informationen
+          </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={exportEmployees} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Export
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={exportEmployees}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportieren
           </Button>
           <Link href={`/dashboard/company/${resolvedParams.uid}/personal/add`}>
-            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
-              <Plus className="h-4 w-4" />
+            <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+              <Plus className="h-4 w-4 mr-2" />
               Mitarbeiter hinzufügen
             </Button>
           </Link>
         </div>
       </div>
 
-      {/* Filter & Search */}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-[#14ad9f]" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Gesamt</p>
+                <p className="text-2xl font-bold text-gray-900">{employees.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Aktiv</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {employees.filter(emp => emp.isActive).length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Abteilungen</p>
+                <p className="text-2xl font-bold text-gray-900">{departments.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <Users className="h-8 w-8 text-purple-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Kosten/Monat</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {employees
+                    .reduce(
+                      (sum, emp) => sum + (emp.calculatedData?.totalMonthlyCost || emp.grossSalary),
+                      0
+                    )
+                    .toLocaleString()}
+                  €
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Nach Namen, E-Mail oder Position suchen..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Mitarbeiter suchen..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-            <select
-              value={departmentFilter}
-              onChange={e => setDepartmentFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-            >
-              <option value="all">Alle Abteilungen</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-            >
-              <option value="all">Alle Status</option>
-              <option value="active">Aktiv</option>
-              <option value="inactive">Inaktiv</option>
-            </select>
+            <div className="flex gap-3">
+              <select
+                value={departmentFilter}
+                onChange={e => setDepartmentFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+              >
+                <option value="all">Alle Abteilungen</option>
+                {departments.map(dept => (
+                  <option key={dept} value={dept}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
+              >
+                <option value="all">Alle Status</option>
+                <option value="active">Aktiv</option>
+                <option value="inactive">Inaktiv</option>
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -295,7 +353,8 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+
+              <div className="flex items-center gap-2 mb-4">
                 <Link
                   href={`/dashboard/company/${resolvedParams.uid}/personal/employees/${employee.id}`}
                 >
@@ -303,190 +362,13 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
                     <Eye className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl">
-                    <DialogHeader>
-                      <DialogTitle>
-                        {employee.firstName} {employee.lastName}
-                      </DialogTitle>
-                      <DialogDescription>Mitarbeiterdetails und Informationen</DialogDescription>
-                    </DialogHeader>
-
-                    <Tabs defaultValue="overview" className="w-full">
-                      <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="overview">Übersicht</TabsTrigger>
-                        <TabsTrigger value="employment">Beschäftigung</TabsTrigger>
-                        <TabsTrigger value="costs">Kosten</TabsTrigger>
-                        <TabsTrigger value="documents">Dokumente</TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="overview" className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Kontaktdaten</h4>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <Mail className="h-4 w-4 text-gray-400" />
-                                <span>{employee.email}</span>
-                              </div>
-                              {employee.phone && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Phone className="h-4 w-4 text-gray-400" />
-                                  <span>{employee.phone}</span>
-                                </div>
-                              )}
-                              {employee.address && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <MapPin className="h-4 w-4 text-gray-400" />
-                                  <span>
-                                    {employee.address.street}, {employee.address.city}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Status</h4>
-                            <div className="space-y-2">
-                              <Badge
-                                className={
-                                  employee.isActive
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                                }
-                              >
-                                {employee.isActive ? 'Aktiv' : 'Inaktiv'}
-                              </Badge>
-                              <Badge className={getEmploymentTypeColor(employee.employmentType)}>
-                                {getEmploymentTypeLabel(employee.employmentType)}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="employment" className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">
-                              Beschäftigungsdetails
-                            </h4>
-                            <div className="space-y-2 text-sm">
-                              <p>
-                                <span className="font-medium">Abteilung:</span>{' '}
-                                {employee.department}
-                              </p>
-                              <p>
-                                <span className="font-medium">Vertragsart:</span>{' '}
-                                {employee.contractType}
-                              </p>
-                              <p>
-                                <span className="font-medium">Startdatum:</span>{' '}
-                                {employee.startDate}
-                              </p>
-                              {employee.endDate && (
-                                <p>
-                                  <span className="font-medium">Enddatum:</span> {employee.endDate}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Arbeitszeit</h4>
-                            <div className="space-y-2 text-sm">
-                              <p>
-                                <span className="font-medium">Wochenstunden:</span>{' '}
-                                {employee.workingHours.weekly}h
-                              </p>
-                              <p>
-                                <span className="font-medium">Tagesstunden:</span>{' '}
-                                {employee.workingHours.daily}h
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="costs" className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Gehaltskosten</h4>
-                            <div className="space-y-2 text-sm">
-                              <p>
-                                <span className="font-medium">Bruttogehalt:</span>{' '}
-                                {employee.grossSalary.toLocaleString()}€
-                              </p>
-                              <p>
-                                <span className="font-medium">AG-Anteil SV:</span>{' '}
-                                {employee.socialSecurity.employerContribution.toLocaleString()}€
-                              </p>
-                              <p>
-                                <span className="font-medium">Gesamtkosten:</span>{' '}
-                                {employee.calculatedData?.totalMonthlyCost.toLocaleString()}€
-                              </p>
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900 mb-2">Zusatzkosten</h4>
-                            <div className="space-y-2 text-sm">
-                              <p>
-                                <span className="font-medium">Krankenversicherung:</span>{' '}
-                                {employee.additionalCosts.healthInsurance.toLocaleString()}€
-                              </p>
-                              <p>
-                                <span className="font-medium">Benefits:</span>{' '}
-                                {employee.additionalCosts.benefits.toLocaleString()}€
-                              </p>
-                              <p>
-                                <span className="font-medium">Fortbildung:</span>{' '}
-                                {employee.additionalCosts.training.toLocaleString()}€
-                              </p>
-                              <p>
-                                <span className="font-medium">Ausstattung:</span>{' '}
-                                {employee.additionalCosts.equipment.toLocaleString()}€
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </TabsContent>
-
-                      <TabsContent value="documents" className="space-y-4">
-                        <div className="text-center py-8">
-                          <p className="text-gray-500">
-                            Dokumentenverwaltung wird bald verfügbar sein.
-                          </p>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-
-                    <div className="flex justify-between pt-4">
-                      <Button
-                        variant="destructive"
-                        onClick={() => {
-                          setSelectedEmployee(employee);
-                          setShowDeleteDialog(true);
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        <UserX className="h-4 w-4" />
-                        Deaktivieren
-                      </Button>
-                      <Link
-                        href={`/dashboard/company/${resolvedParams.uid}/personal/edit/${employee.id}`}
-                      >
-                        <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
-                          <Edit className="h-4 w-4" />
-                          Bearbeiten
-                        </Button>
-                      </Link>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Link
+                  href={`/dashboard/company/${resolvedParams.uid}/personal/edit/${employee.id}`}
+                >
+                  <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                    Bearbeiten
+                  </Button>
+                </Link>
               </div>
 
               <div className="space-y-3">
