@@ -77,6 +77,38 @@ export default function WorkspaceManager() {
   // Company ID aus URL-Parametern oder User UID verwenden
   const companyId = user?.uid;
 
+  // Normalisiert Firestore Timestamps zu JavaScript Dates
+  const normalizeWorkspaceData = (workspace: any): Workspace => {
+    const convertDate = (date: any): Date => {
+      if (!date) return new Date();
+      if (typeof date.toDate === 'function') return date.toDate();
+      if (typeof date.seconds === 'number') return new Date(date.seconds * 1000);
+      if (date instanceof Date) return date;
+      return new Date(date);
+    };
+
+    const normalizeTask = (task: any): WorkspaceTask => ({
+      ...task,
+      createdAt: convertDate(task.createdAt),
+      updatedAt: convertDate(task.updatedAt),
+      dueDate: task.dueDate ? convertDate(task.dueDate) : undefined,
+    });
+
+    const normalizeColumn = (column: any): WorkspaceBoardColumn => ({
+      ...column,
+      tasks: column.tasks ? column.tasks.map(normalizeTask) : [],
+    });
+
+    return {
+      ...workspace,
+      createdAt: convertDate(workspace.createdAt),
+      updatedAt: convertDate(workspace.updatedAt),
+      dueDate: workspace.dueDate ? convertDate(workspace.dueDate) : undefined,
+      boardColumns: workspace.boardColumns ? workspace.boardColumns.map(normalizeColumn) : [],
+      tasks: workspace.tasks ? workspace.tasks.map(normalizeTask) : [],
+    };
+  };
+
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
 
@@ -88,7 +120,8 @@ export default function WorkspaceManager() {
 
         // Setup real-time listener for workspaces
         unsubscribe = WorkspaceService.subscribeToWorkspaces(companyId, workspaceData => {
-          setWorkspaces(workspaceData);
+          const normalizedWorkspaces = workspaceData.map(normalizeWorkspaceData);
+          setWorkspaces(normalizedWorkspaces);
           setLoading(false);
         });
       } catch (error) {
@@ -169,6 +202,11 @@ export default function WorkspaceManager() {
   const handleEditWorkspace = (workspace: Workspace) => {
     // Navigate to edit page
     router.push(`/dashboard/company/${companyId}/workspace/${workspace.id}/edit`);
+  };
+
+  const handleViewWorkspace = (workspace: Workspace) => {
+    // Navigate to workspace detail view
+    router.push(`/dashboard/company/${companyId}/workspace/${workspace.id}`);
   };
 
   const filteredWorkspaces = workspaces.filter(workspace => {
@@ -390,6 +428,7 @@ export default function WorkspaceManager() {
             onUpdateWorkspace={handleUpdateWorkspace}
             onDeleteWorkspace={handleDeleteWorkspace}
             onWorkspaceClick={handleWorkspaceClick}
+            companyId={companyId}
           />
         )}
         {viewMode === 'list' && (
@@ -416,6 +455,7 @@ export default function WorkspaceManager() {
         isOpen={isDetailSliderOpen}
         onClose={handleCloseDetailSlider}
         onEdit={handleEditWorkspace}
+        onView={handleViewWorkspace}
         onUpdateWorkspace={handleUpdateWorkspace}
       />
     </div>

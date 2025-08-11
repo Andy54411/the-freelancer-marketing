@@ -12,7 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import TaskDetailSlider from './TaskDetailSlider';
 import { AddTaskSlideOver } from './AddTaskSlideOver';
+
+// Firebase imports
+import { doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 interface WorkspaceTask {
   id: string;
@@ -27,6 +32,9 @@ interface WorkspaceTask {
   tags: string[];
   position: number;
   columnId?: string;
+  archived?: boolean;
+  archivedAt?: Date;
+  archivedBy?: string;
 }
 
 interface WorkspaceBoardColumn {
@@ -54,6 +62,7 @@ interface Workspace {
   progress: number;
   boardColumns?: WorkspaceBoardColumn[];
   tasks?: WorkspaceTask[];
+  archivedTasks?: WorkspaceTask[];
 }
 
 interface WorkspaceBoardProps {
@@ -61,12 +70,16 @@ interface WorkspaceBoardProps {
   onUpdateWorkspace: (workspaceId: string, updates: Partial<Workspace>) => void;
   onDeleteWorkspace: (workspaceId: string) => void;
   onWorkspaceClick?: (workspace: Workspace) => void;
+  companyId?: string;
+  currentUserId?: string;
 }
 
 export function WorkspaceBoard({
   workspaces,
   onUpdateWorkspace,
   onWorkspaceClick,
+  companyId,
+  currentUserId = 'current-user'
 }: WorkspaceBoardProps) {
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(
     workspaces.length > 0 ? workspaces[0] : null
@@ -74,6 +87,29 @@ export function WorkspaceBoard({
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [selectedColumnId, setSelectedColumnId] = useState('');
   const [selectedColumnTitle, setSelectedColumnTitle] = useState('');
+  const [showArchive, setShowArchive] = useState(false);
+  
+  // Task detail slider states
+  const [selectedTask, setSelectedTask] = useState<WorkspaceTask | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+
+  // Konvertiert Firestore Timestamps zu JavaScript Dates
+  const normalizeTaskDates = (task: WorkspaceTask): WorkspaceTask => {
+    const convertDate = (date: any): Date => {
+      if (!date) return new Date();
+      if (typeof date.toDate === 'function') return date.toDate();
+      if (typeof date.seconds === 'number') return new Date(date.seconds * 1000);
+      if (date instanceof Date) return date;
+      return new Date(date);
+    };
+
+    return {
+      ...task,
+      createdAt: convertDate(task.createdAt),
+      updatedAt: convertDate(task.updatedAt),
+      dueDate: task.dueDate ? convertDate(task.dueDate) : undefined,
+    };
+  };
 
   const defaultColumns: WorkspaceBoardColumn[] = [
     {
@@ -109,11 +145,14 @@ export function WorkspaceBoard({
   // Initialize columns with tasks properly distributed
   const getColumnsWithTasks = () => {
     if (selectedWorkspace?.boardColumns && selectedWorkspace.boardColumns.length > 0) {
-      return selectedWorkspace.boardColumns;
+      return selectedWorkspace.boardColumns.map(column => ({
+        ...column,
+        tasks: column.tasks.filter(task => !task.archived) // Filtere archivierte Aufgaben aus
+      }));
     }
 
     // If using default columns, distribute workspace tasks into columns
-    const workspaceTasks = selectedWorkspace?.tasks || [];
+    const workspaceTasks = (selectedWorkspace?.tasks || []).filter(task => !task.archived); // Filtere archivierte Aufgaben aus
 
     return defaultColumns.map(column => ({
       ...column,
@@ -291,6 +330,287 @@ export function WorkspaceBoard({
     });
   };
 
+  const handleEditTask = (task: WorkspaceTask) => {
+    if (!selectedWorkspace) return;
+    
+    // Normalize dates before setting task
+    const normalizedTask = normalizeTaskDates(task);
+    
+    // Open task detail slider
+    setSelectedTask(normalizedTask);
+    setIsTaskDetailOpen(true);
+  };
+
+  const handleTaskUpdated = (taskId: string, updates: Partial<WorkspaceTask>) => {
+    if (!selectedWorkspace) return;
+
+    const updatedColumns = columns.map(col => ({
+      id: col.id,
+      title: col.title,
+      color: col.color,
+      position: col.position,
+      tasks: col.tasks.map(task => {
+        if (task.id === taskId) {
+          // Clean the updates to ensure no undefined values
+          const cleanUpdates: any = {};
+          Object.keys(updates).forEach(key => {
+            const value = (updates as any)[key];
+            if (value !== undefined) {
+              cleanUpdates[key] = value;
+            }
+          });
+          
+          return {
+            id: task.id,
+            title: cleanUpdates.title !== undefined ? cleanUpdates.title : task.title,
+            description: cleanUpdates.description !== undefined ? cleanUpdates.description : (task.description || ''),
+            status: cleanUpdates.status !== undefined ? cleanUpdates.status : task.status,
+            priority: cleanUpdates.priority !== undefined ? cleanUpdates.priority : task.priority,
+            assignedTo: cleanUpdates.assignedTo !== undefined ? cleanUpdates.assignedTo : (task.assignedTo || []),
+            dueDate: cleanUpdates.dueDate !== undefined ? cleanUpdates.dueDate : task.dueDate,
+            createdAt: task.createdAt,
+            updatedAt: cleanUpdates.updatedAt !== undefined ? cleanUpdates.updatedAt : new Date(),
+            tags: cleanUpdates.tags !== undefined ? cleanUpdates.tags : (task.tags || []),
+            position: cleanUpdates.position !== undefined ? cleanUpdates.position : task.position,
+            columnId: cleanUpdates.columnId !== undefined ? cleanUpdates.columnId : task.columnId,
+          };
+        }
+        return task;
+      })
+    }));
+
+    updateLocalWorkspace({
+      boardColumns: updatedColumns,
+    });
+
+    // Update selected task if it's the one being edited - normalize dates
+    if (selectedTask?.id === taskId) {
+      const updatedTask = { ...selectedTask, ...updates };
+      setSelectedTask(normalizeTaskDates(updatedTask));
+    }
+  };
+
+  const handleCloseTaskSliders = () => {
+    setIsTaskDetailOpen(false);
+    setSelectedTask(null);
+  };
+
+  const handleArchiveTask = async (taskId: string) => {
+    if (!selectedWorkspace) return;
+
+    if (!confirm('Möchtest du diese Aufgabe ins Archiv verschieben? Sie wird vom Board entfernt, aber bleibt gespeichert.')) return;
+
+    try {
+      // Finde die Aufgabe in den Spalten
+      let taskToArchive: WorkspaceTask | null = null;
+      let sourceColumnId: string | null = null;
+
+      for (const column of columns) {
+        const task = column.tasks.find(t => t.id === taskId);
+        if (task) {
+          taskToArchive = task;
+          sourceColumnId = column.id;
+          break;
+        }
+      }
+
+      if (!taskToArchive || !sourceColumnId) return;
+
+      // Bereinige Task von undefined-Werten und markiere als archiviert
+      const cleanTask = (task: WorkspaceTask, isArchived: boolean = false): WorkspaceTask => {
+        const cleaned: any = {};
+        Object.keys(task).forEach(key => {
+          const value = (task as any)[key];
+          if (value !== undefined) {
+            cleaned[key] = value;
+          }
+        });
+        
+        if (isArchived) {
+          cleaned.archived = true;
+          cleaned.archivedAt = new Date();
+          cleaned.archivedBy = currentUserId;
+        }
+        
+        cleaned.updatedAt = new Date();
+        return cleaned as WorkspaceTask;
+      };
+
+      const archivedTask = cleanTask(taskToArchive, true);
+
+      // Entferne Aufgabe aus den Board-Spalten und bereinige alle Tasks
+      const updatedColumns = columns.map(col => ({
+        id: col.id,
+        title: col.title,
+        color: col.color,
+        position: col.position,
+        tasks: col.tasks
+          .filter(task => task.id !== taskId)
+          .map(task => cleanTask(task))
+      }));
+
+      // Aktuelles Archiv aus dem Workspace oder leeres Array
+      const currentArchivedTasks = (selectedWorkspace.archivedTasks || []).map(task => cleanTask(task));
+
+      // Update Workspace in Firebase
+      const workspaceRef = doc(db, 'workspaces', selectedWorkspace.id);
+      await updateDoc(workspaceRef, {
+        boardColumns: updatedColumns,
+        archivedTasks: [...currentArchivedTasks, archivedTask],
+        updatedAt: serverTimestamp()
+      });
+
+      // Lokales State Update
+      updateLocalWorkspace({
+        boardColumns: updatedColumns,
+        archivedTasks: [...currentArchivedTasks, archivedTask]
+      });
+
+      // Schließe Task Detail Slider falls die archivierte Aufgabe geöffnet war
+      if (selectedTask?.id === taskId) {
+        setIsTaskDetailOpen(false);
+        setSelectedTask(null);
+      }
+
+    } catch (error) {
+      console.error('Fehler beim Archivieren der Aufgabe:', error);
+      alert('Fehler beim Archivieren der Aufgabe. Bitte versuche es erneut.');
+    }
+  };
+
+  const handleRestoreTask = async (taskId: string) => {
+    if (!selectedWorkspace) return;
+
+    try {
+      // Finde archivierte Aufgabe
+      const archivedTasks = selectedWorkspace.archivedTasks || [];
+      const taskToRestore = archivedTasks.find(task => task.id === taskId);
+      
+      if (!taskToRestore) return;
+
+      // Bereinige Task von undefined-Werten und entferne Archivierungs-Markierungen
+      const cleanTask = (task: WorkspaceTask): WorkspaceTask => {
+        const cleaned: any = {};
+        Object.keys(task).forEach(key => {
+          const value = (task as any)[key];
+          if (value !== undefined && key !== 'archived' && key !== 'archivedAt' && key !== 'archivedBy') {
+            cleaned[key] = value;
+          }
+        });
+        return {
+          ...cleaned,
+          archived: false,
+          updatedAt: new Date()
+        } as WorkspaceTask;
+      };
+
+      const restoredTask = cleanTask(taskToRestore);
+
+      // Finde Ziel-Spalte (ursprüngliche Spalte oder 'todo' als Fallback)
+      const targetColumnId = taskToRestore.columnId || taskToRestore.status || 'todo';
+      
+      // Bereinige die Spalten von undefined-Werten
+      const cleanColumns = (columns: WorkspaceBoardColumn[]): WorkspaceBoardColumn[] => {
+        return columns.map(col => {
+          if (col.id === targetColumnId) {
+            return {
+              id: col.id,
+              title: col.title,
+              color: col.color,
+              position: col.position,
+              tasks: [...col.tasks.map(cleanTask), restoredTask]
+            };
+          }
+          return {
+            id: col.id,
+            title: col.title,
+            color: col.color,
+            position: col.position,
+            tasks: col.tasks.map(cleanTask)
+          };
+        });
+      };
+
+      const updatedColumns = cleanColumns(columns);
+
+      // Entferne Aufgabe aus dem Archiv und bereinige
+      const updatedArchivedTasks = archivedTasks
+        .filter(task => task.id !== taskId)
+        .map(cleanTask);
+
+      // Update Firebase
+      const workspaceRef = doc(db, 'workspaces', selectedWorkspace.id);
+      await updateDoc(workspaceRef, {
+        boardColumns: updatedColumns,
+        archivedTasks: updatedArchivedTasks,
+        updatedAt: serverTimestamp()
+      });
+
+      // Lokales State Update
+      updateLocalWorkspace({
+        boardColumns: updatedColumns,
+        archivedTasks: updatedArchivedTasks
+      });
+
+    } catch (error) {
+      console.error('Fehler beim Wiederherstellen der Aufgabe:', error);
+      alert('Fehler beim Wiederherstellen der Aufgabe. Bitte versuche es erneut.');
+    }
+  };
+
+  const handlePermanentDeleteTask = async (taskId: string) => {
+    if (!selectedWorkspace) return;
+
+    if (!confirm('ACHTUNG: Diese Aufgabe wird endgültig gelöscht und kann nicht wiederhergestellt werden. Fortfahren?')) return;
+
+    try {
+      // Finde archivierte Aufgabe
+      const archivedTasks = selectedWorkspace.archivedTasks || [];
+      const taskToDelete = archivedTasks.find(task => task.id === taskId);
+      
+      if (!taskToDelete) return;
+
+      // Bereinige verbleibende archivierte Aufgaben von undefined-Werten
+      const cleanTask = (task: WorkspaceTask): WorkspaceTask => {
+        const cleaned: any = {};
+        Object.keys(task).forEach(key => {
+          const value = (task as any)[key];
+          if (value !== undefined) {
+            cleaned[key] = value;
+          }
+        });
+        return cleaned as WorkspaceTask;
+      };
+
+      // Entferne Aufgabe permanent aus dem Archiv
+      const updatedArchivedTasks = archivedTasks
+        .filter(task => task.id !== taskId)
+        .map(cleanTask);
+
+      // Update Firebase
+      const workspaceRef = doc(db, 'workspaces', selectedWorkspace.id);
+      await updateDoc(workspaceRef, {
+        archivedTasks: updatedArchivedTasks,
+        updatedAt: serverTimestamp()
+      });
+
+      // Lokales State Update
+      updateLocalWorkspace({
+        archivedTasks: updatedArchivedTasks
+      });
+
+      // Schließe Task Detail Slider falls die gelöschte Aufgabe geöffnet war
+      if (selectedTask?.id === taskId) {
+        setIsTaskDetailOpen(false);
+        setSelectedTask(null);
+      }
+
+    } catch (error) {
+      console.error('Fehler beim endgültigen Löschen der Aufgabe:', error);
+      alert('Fehler beim Löschen der Aufgabe. Bitte versuche es erneut.');
+    }
+  };
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('de-DE', {
       day: '2-digit',
@@ -343,26 +663,149 @@ export function WorkspaceBoard({
                 <span className="text-sm text-gray-500">
                   Progress: {selectedWorkspace.progress}%
                 </span>
+                {selectedWorkspace.archivedTasks && selectedWorkspace.archivedTasks.length > 0 && (
+                  <Badge variant="outline" className="bg-orange-50 text-orange-600">
+                    {selectedWorkspace.archivedTasks.length} archiviert
+                  </Badge>
+                )}
               </div>
 
-              {onWorkspaceClick && (
+              <div className="flex gap-2 ml-auto">
                 <Button
-                  variant="outline"
+                  variant={showArchive ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => onWorkspaceClick(selectedWorkspace)}
-                  className="ml-auto"
+                  onClick={() => setShowArchive(!showArchive)}
+                  className={showArchive ? 'bg-orange-500 hover:bg-orange-600' : 'border-orange-500 text-orange-600 hover:bg-orange-50'}
                 >
-                  Details anzeigen
+                  {showArchive ? 'Board anzeigen' : 'Archiv anzeigen'}
+                  {selectedWorkspace.archivedTasks && selectedWorkspace.archivedTasks.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {selectedWorkspace.archivedTasks.length}
+                    </Badge>
+                  )}
                 </Button>
-              )}
+
+                {onWorkspaceClick && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onWorkspaceClick(selectedWorkspace)}
+                  >
+                    Details anzeigen
+                  </Button>
+                )}
+              </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Board */}
+      {/* Board oder Archiv */}
       <div className="flex-1 overflow-x-auto p-6">
-        <DragDropContext onDragEnd={handleDragEnd}>
+        {showArchive ? (
+          // Archiv-Ansicht
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Archivierte Aufgaben</h2>
+              <p className="text-gray-600">
+                Hier findest du alle archivierten Aufgaben. Du kannst sie wiederherstellen oder endgültig löschen.
+              </p>
+            </div>
+
+            {selectedWorkspace?.archivedTasks && selectedWorkspace.archivedTasks.length > 0 ? (
+              <div className="space-y-4">
+                {selectedWorkspace.archivedTasks.map(task => (
+                  <Card key={task.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`} />
+                            <h3 className="font-medium text-gray-900">{task.title}</h3>
+                            <Badge variant="outline">{task.priority}</Badge>
+                            <Badge variant="outline" className="bg-orange-50 text-orange-600">
+                              Archiviert
+                            </Badge>
+                          </div>
+                          
+                          {task.description && (
+                            <p className="text-gray-600 text-sm mb-2">{task.description}</p>
+                          )}
+                          
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>Erstellt: {formatDate(task.createdAt)}</span>
+                            {task.archivedAt && (
+                              <span>Archiviert: {formatDate(task.archivedAt)}</span>
+                            )}
+                            {task.dueDate && (
+                              <span>Fällig: {formatDate(task.dueDate)}</span>
+                            )}
+                          </div>
+
+                          {task.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {task.tags.map(tag => (
+                                <Badge key={tag} variant="outline" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTask(task)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            Anzeigen
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRestoreTask(task.id)}
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                          >
+                            Wiederherstellen
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem
+                                onClick={() => handlePermanentDeleteTask(task.id)}
+                                className="text-red-600"
+                              >
+                                Endgültig löschen
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-gray-500">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    📁
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Kein Archiv vorhanden</h3>
+                  <p className="text-sm">Archivierte Aufgaben werden hier angezeigt.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Board-Ansicht
+          <DragDropContext onDragEnd={handleDragEnd}>
           <Droppable droppableId="board" direction="horizontal" type="column">
             {provided => (
               <div
@@ -421,33 +864,50 @@ export function WorkspaceBoard({
                                     <Card
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      className={`cursor-grab ${
+                                      className={`${
                                         snapshot.isDragging
                                           ? 'shadow-lg rotate-1'
                                           : 'hover:shadow-md'
                                       } transition-all duration-200`}
                                     >
                                       <CardContent className="p-2">
-                                        <div className="space-y-1.5">
-                                          {/* Priority Indicator */}
-                                          <div className="flex items-center justify-between">
-                                            <div
-                                              className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`}
-                                            />
-                                            <DropdownMenu>
-                                              <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="sm">
-                                                  <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                              </DropdownMenuTrigger>
-                                              <DropdownMenuContent>
-                                                <DropdownMenuItem>Bearbeiten</DropdownMenuItem>
-                                                <DropdownMenuItem>Löschen</DropdownMenuItem>
-                                              </DropdownMenuContent>
-                                            </DropdownMenu>
-                                          </div>
+                                        {/* Drag Handle - separate from clickable content */}
+                                        <div 
+                                          {...provided.dragHandleProps}
+                                          className="cursor-grab mb-2 flex items-center justify-between"
+                                        >
+                                          <div
+                                            className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`}
+                                          />
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <MoreHorizontal className="h-4 w-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                              <DropdownMenuItem onClick={() => handleEditTask(task)}>
+                                                Bearbeiten
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem 
+                                                onClick={() => handleArchiveTask(task.id)}
+                                                className="text-orange-600"
+                                              >
+                                                Archivieren
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
+                                        </div>
 
+                                        {/* Clickable Task Content */}
+                                        <div 
+                                          className="cursor-pointer space-y-1.5"
+                                          onClick={() => handleEditTask(task)}
+                                        >
                                           {/* Task Title */}
                                           <h4 className="font-medium text-gray-900 text-xs leading-tight">
                                             {task.title}
@@ -541,6 +1001,7 @@ export function WorkspaceBoard({
             )}
           </Droppable>
         </DragDropContext>
+        )}
       </div>
 
       {/* Add Task Slide Over */}
@@ -550,6 +1011,17 @@ export function WorkspaceBoard({
         onTaskCreated={handleTaskCreated}
         columnId={selectedColumnId}
         columnTitle={selectedColumnTitle}
+      />
+
+      {/* Task Detail Slider */}
+      <TaskDetailSlider
+        task={selectedTask}
+        workspace={selectedWorkspace}
+        isOpen={isTaskDetailOpen}
+        onClose={handleCloseTaskSliders}
+        onTaskUpdated={handleTaskUpdated}
+        onTaskDeleted={handleArchiveTask}
+        currentUserId={currentUserId}
       />
     </div>
   );

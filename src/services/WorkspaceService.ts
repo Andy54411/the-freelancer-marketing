@@ -122,11 +122,23 @@ class WorkspaceServiceClass {
     try {
       const workspaceRef = doc(db, this.collectionName, workspaceId);
 
-      const updateData = {
-        ...updates,
+      // Filter out undefined values
+      const updateData: any = {
         updatedAt: serverTimestamp(),
-        dueDate: updates.dueDate || null,
       };
+
+      // Only add fields that are not undefined
+      Object.keys(updates).forEach(key => {
+        const value = (updates as any)[key];
+        if (value !== undefined) {
+          updateData[key] = value;
+        }
+      });
+
+      // Special handling for dueDate
+      if (updates.dueDate !== undefined) {
+        updateData.dueDate = updates.dueDate;
+      }
 
       await updateDoc(workspaceRef, updateData);
     } catch (error) {

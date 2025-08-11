@@ -72,6 +72,7 @@ interface WorkspaceDetailSliderProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit?: (workspace: Workspace) => void;
+  onView?: (workspace: Workspace) => void;
   onUpdateWorkspace?: (workspaceId: string, updates: Partial<Workspace>) => void;
 }
 
@@ -80,6 +81,7 @@ export function WorkspaceDetailSlider({
   isOpen,
   onClose,
   onEdit,
+  onView,
   onUpdateWorkspace,
 }: WorkspaceDetailSliderProps) {
   const [selectedTab, setSelectedTab] = useState('overview');
@@ -220,7 +222,10 @@ export function WorkspaceDetailSlider({
     <>
       {/* Backdrop */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={onClose} />
+        <div 
+          className="fixed inset-0 bg-black/10 backdrop-blur-[2px] z-40 transition-opacity duration-300"
+          onClick={onClose}
+        />
       )}
 
       {/* Slider */}
@@ -491,10 +496,28 @@ export function WorkspaceDetailSlider({
                   <CardTitle className="text-sm">Aktionen</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Projekt bearbeiten
-                  </Button>
+                  {onView && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full justify-start bg-[#14ad9f] text-white hover:bg-[#129488]"
+                      onClick={() => onView(workspace)}
+                    >
+                      <ChevronRight className="h-4 w-4 mr-2" />
+                      Vollständig anzeigen
+                    </Button>
+                  )}
+                  {onEdit && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full justify-start"
+                      onClick={() => onEdit(workspace)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Projekt bearbeiten
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     <Settings className="h-4 w-4 mr-2" />
                     Einstellungen
