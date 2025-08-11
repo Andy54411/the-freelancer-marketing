@@ -310,14 +310,14 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        className={`flex flex-col w-80 bg-white rounded-lg shadow-sm border border-gray-200 ${
+                        className={`flex flex-col w-64 bg-white rounded-lg shadow-sm border border-gray-200 ${
                           snapshot.isDragging ? 'rotate-2 shadow-lg' : ''
                         }`}
                       >
                         {/* Column Header */}
                         <div
                           {...provided.dragHandleProps}
-                          className="flex items-center justify-between p-4 border-b border-gray-200 cursor-grab"
+                          className="flex items-center justify-between p-3 border-b border-gray-200 cursor-grab"
                           style={{ backgroundColor: column.color }}
                         >
                           <div className="flex items-center gap-2">
@@ -345,7 +345,7 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                             <div
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className={`flex-1 p-4 space-y-3 min-h-32 ${
+                              className={`flex-1 p-3 space-y-2 min-h-24 ${
                                 snapshot.isDraggingOver ? 'bg-gray-50' : ''
                               }`}
                             >
@@ -362,8 +362,8 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                                           : 'hover:shadow-md'
                                       } transition-all duration-200`}
                                     >
-                                      <CardContent className="p-4">
-                                        <div className="space-y-3">
+                                      <CardContent className="p-2">
+                                        <div className="space-y-1.5">
                                           {/* Priority Indicator */}
                                           <div className="flex items-center justify-between">
                                             <div
@@ -383,7 +383,7 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                                           </div>
 
                                           {/* Task Title */}
-                                          <h4 className="font-medium text-gray-900 text-sm leading-tight">
+                                          <h4 className="font-medium text-gray-900 text-xs leading-tight">
                                             {task.title}
                                           </h4>
 
@@ -401,7 +401,7 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                                                 <Badge
                                                   key={tag}
                                                   variant="outline"
-                                                  className="text-xs px-2 py-1"
+                                                  className="text-[10px] px-1.5 py-0.5"
                                                 >
                                                   {tag}
                                                 </Badge>
@@ -409,7 +409,7 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                                               {task.tags.length > 3 && (
                                                 <Badge
                                                   variant="outline"
-                                                  className="text-xs px-2 py-1"
+                                                  className="text-[10px] px-1.5 py-0.5"
                                                 >
                                                   +{task.tags.length - 3}
                                                 </Badge>
@@ -418,11 +418,11 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                                           )}
 
                                           {/* Task Footer */}
-                                          <div className="flex items-center justify-between text-xs text-gray-500">
+                                          <div className="flex items-center justify-between text-[10px] text-gray-500">
                                             {/* Due Date */}
                                             {task.dueDate && (
                                               <div className="flex items-center gap-1">
-                                                <Calendar className="h-3 w-3" />
+                                                <Calendar className="h-2.5 w-2.5" />
                                                 <span>{formatDate(task.dueDate)}</span>
                                               </div>
                                             )}
@@ -430,7 +430,7 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                                             {/* Assigned Users */}
                                             {task.assignedTo.length > 0 && (
                                               <div className="flex items-center gap-1">
-                                                <User className="h-3 w-3" />
+                                                <User className="h-2.5 w-2.5" />
                                                 <span>{task.assignedTo.length}</span>
                                               </div>
                                             )}
@@ -462,7 +462,7 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
                 {provided.placeholder}
 
                 {/* Add Column Button */}
-                <div className="flex flex-col w-80">
+                <div className="flex flex-col w-64">
                   <Button
                     variant="ghost"
                     className="h-full justify-start text-gray-500 hover:text-gray-700 border-2 border-dashed border-gray-300 hover:border-gray-400"
