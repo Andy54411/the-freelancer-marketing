@@ -408,6 +408,8 @@ export interface EmployeeDocument {
   lastModifiedBy?: string;
   retentionPeriod?: number; // Jahre
   legalBasis?: string; // DSGVO Rechtsgrundlage
+  downloadURL?: string; // Firebase Storage Download URL
+  storagePath?: string; // Firebase Storage Path für Verwaltungszwecke
   createdAt?: Date;
   updatedAt?: Date;
 }

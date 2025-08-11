@@ -74,9 +74,10 @@ export default function VacationSettingsTab({
 
     setIsLoading(true);
     try {
+      // Direkt Firebase-Speicherung für Urlaubseinstellungen
       await PersonalService.updateVacationSettings(companyId, employee.id, settings);
 
-      // Update das Employee-Objekt
+      // Update das Employee-Objekt lokal für sofortige UI-Reaktion
       const updatedVacation = {
         ...employee.vacation,
         settings,
@@ -90,10 +91,19 @@ export default function VacationSettingsTab({
         }),
       };
 
+      // Update sowohl lokalen State als auch Parent-Component
       onUpdate({ vacation: updatedVacation });
-      onSave(); // Speichere auch andere Änderungen
+
+      // Rufe auch die Hauptspeicher-Funktion auf für andere mögliche Änderungen
+      onSave();
+
       setHasChanges(false);
-      toast.success('Urlaubseinstellungen erfolgreich gespeichert');
+      toast.success('Urlaubseinstellungen erfolgreich in der Datenbank gespeichert');
+
+      console.log(
+        '✅ Urlaubseinstellungen gespeichert in Firebase unter:',
+        `companies/${companyId}/employees/${employee.id}`
+      );
     } catch (error) {
       console.error('Fehler beim Speichern der Urlaubseinstellungen:', error);
       toast.error('Fehler beim Speichern der Urlaubseinstellungen');

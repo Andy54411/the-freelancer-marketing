@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,16 +15,15 @@ import {
 } from '@/components/ui/select';
 import { Upload, File, Eye, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Document {
-  id: string;
-  name: string;
-  type: string;
-  category: string;
-  uploadDate: string;
-  size: number;
-  url: string;
-}
+import { PersonalService, EmployeeDocument } from '@/services/personalService';
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage';
+import { app } from '@/firebase/clients';
 
 interface DocumentsTabProps {
   employeeId: string;
@@ -32,8 +31,9 @@ interface DocumentsTabProps {
 }
 
 const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,6 +49,74 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
     { value: 'termination', label: 'Beendigung' },
     { value: 'other', label: 'Sonstiges' },
   ];
+
+  // Mapping für Firestore EmployeeDocument categories
+  const categoryToFirestoreCategory = (category: string): EmployeeDocument['category'] => {
+    switch (category) {
+      case 'contracts':
+        return 'CONTRACT';
+      case 'certificates':
+        return 'CERTIFICATE';
+      case 'health':
+        return 'MEDICAL';
+      case 'training':
+        return 'TRAINING';
+      case 'performance':
+        return 'PERFORMANCE';
+      case 'disciplinary':
+        return 'DISCIPLINARY';
+      case 'personal':
+        return 'IDENTITY';
+      default:
+        return 'OTHER';
+    }
+  };
+
+  // Lade Dokumente beim Component Mount
+  useEffect(() => {
+    loadDocuments();
+  }, [employeeId, companyId]);
+
+  const loadDocuments = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 DocumentsTab: Lade Dokumente für Mitarbeiter:', employeeId);
+
+      const docs = await PersonalService.getEmployeeDocuments(companyId, employeeId);
+      setDocuments(docs);
+
+      console.log('✅ DocumentsTab: Dokumente geladen:', docs.length);
+    } catch (error) {
+      console.error('❌ DocumentsTab: Fehler beim Laden der Dokumente:', error);
+      toast.error('Fehler beim Laden der Dokumente');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uploadFileToFirebaseStorage = async (
+    file: File,
+    employeeId: string,
+    category: string,
+    fileName: string
+  ): Promise<string> => {
+    try {
+      const storage = getStorage(app);
+      const filePath = `employee_documents/${companyId}/${employeeId}/${category}/${fileName}`;
+      const fileRef = storageRef(storage, filePath);
+
+      console.log('🔄 DocumentsTab: Uploading file to:', filePath);
+
+      await uploadBytes(fileRef, file);
+      const downloadURL = await getDownloadURL(fileRef);
+
+      console.log('✅ DocumentsTab: File uploaded successfully:', downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error('❌ DocumentsTab: Fehler beim Upload zu Firebase Storage:', error);
+      throw error;
+    }
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -84,23 +152,53 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
           continue;
         }
 
-        // TODO: Hier würde die tatsächliche Upload-Logik implementiert
-        // Für jetzt simulieren wir den Upload
-        const mockDocument: Document = {
-          id: Date.now().toString() + Math.random(),
-          name: file.name,
-          type: file.type,
-          category: selectedCategory,
+        // Firebase Storage Upload
+        const fileName = `${Date.now()}_${file.name}`;
+        const downloadURL = await uploadFileToFirebaseStorage(
+          file,
+          employeeId,
+          selectedCategory,
+          fileName
+        );
+
+        // Dokument in Firestore speichern
+        const documentData: Omit<EmployeeDocument, 'id' | 'createdAt' | 'updatedAt'> = {
+          companyId,
+          employeeId,
+          category: categoryToFirestoreCategory(selectedCategory),
+          title: file.name,
+          fileName: fileName,
+          fileSize: file.size,
+          mimeType: file.type,
           uploadDate: new Date().toISOString(),
-          size: file.size,
-          url: URL.createObjectURL(file), // Mock URL
+          isConfidential: false,
+          accessLevel: 'HR_ONLY',
+          version: 1,
+          uploadedBy: 'current_user', // TODO: Get from auth context
+          downloadURL: downloadURL,
+          storagePath: `employee_documents/${companyId}/${employeeId}/${selectedCategory}/${fileName}`,
         };
 
-        setDocuments(prev => [...prev, mockDocument]);
-        toast.success(`${file.name} erfolgreich hochgeladen`);
+        const documentId = await PersonalService.addEmployeeDocument(companyId, documentData);
+
+        // Local state aktualisieren
+        const newDocument: EmployeeDocument = {
+          id: documentId,
+          ...documentData,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        setDocuments(prev => [...prev, newDocument]);
+        toast.success(`${file.name} erfolgreich hochgeladen und in Datenbank gespeichert`);
+
+        console.log(
+          '✅ DocumentsTab: Dokument gespeichert in Firebase unter:',
+          `companies/${companyId}/employee_documents/${documentId}`
+        );
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('❌ DocumentsTab: Upload error:', error);
       toast.error('Fehler beim Hochladen der Dateien');
     } finally {
       setUploading(false);
@@ -110,28 +208,56 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
     }
   };
 
-  const handleDeleteDocument = async (documentId: string) => {
+  const handleDeleteDocument = async (document: EmployeeDocument) => {
+    if (!document.id) return;
+
     try {
-      // TODO: Implement actual delete logic
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId));
+      console.log('🗑️ DocumentsTab: Lösche Dokument:', document.id);
+
+      // Dokument aus Firestore löschen
+      await PersonalService.deleteEmployeeDocument(companyId, document.id);
+
+      // Datei aus Firebase Storage löschen (falls storagePath verfügbar)
+      if (document.storagePath) {
+        try {
+          const storage = getStorage(app);
+          const fileRef = storageRef(storage, document.storagePath);
+          await deleteObject(fileRef);
+          console.log('✅ DocumentsTab: Datei aus Storage gelöscht');
+        } catch (storageError) {
+          console.warn('⚠️ DocumentsTab: Warnung beim Löschen aus Storage:', storageError);
+          // Wir machen weiter, auch wenn Storage-Löschung fehlschlägt
+        }
+      }
+
+      // Local state aktualisieren
+      setDocuments(prev => prev.filter(doc => doc.id !== document.id));
       toast.success('Dokument erfolgreich gelöscht');
+
+      console.log('✅ DocumentsTab: Dokument komplett gelöscht');
     } catch (error) {
-      console.error('Delete error:', error);
+      console.error('❌ DocumentsTab: Delete error:', error);
       toast.error('Fehler beim Löschen des Dokuments');
     }
   };
 
-  const handleViewDocument = (document: Document) => {
-    // TODO: Implement document viewer
-    window.open(document.url, '_blank');
+  const handleViewDocument = (document: EmployeeDocument) => {
+    if (document.downloadURL) {
+      window.open(document.downloadURL, '_blank');
+    } else {
+      toast.error('Dokument-URL nicht verfügbar');
+    }
   };
 
-  const handleDownloadDocument = (doc: Document) => {
-    // TODO: Implement download logic
-    const link = window.document.createElement('a');
-    link.href = doc.url;
-    link.download = doc.name;
-    link.click();
+  const handleDownloadDocument = (doc: EmployeeDocument) => {
+    if (doc.downloadURL) {
+      const link = window.document.createElement('a');
+      link.href = doc.downloadURL;
+      link.download = doc.fileName || doc.title;
+      link.click();
+    } else {
+      toast.error('Download-URL nicht verfügbar');
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -143,9 +269,20 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
   };
 
   const getCategoryLabel = (category: string) => {
-    return documentCategories.find(cat => cat.value === category)?.label || category;
+    const categoryMapping: { [key: string]: string } = {
+      CONTRACT: 'Arbeitsvertrag',
+      CERTIFICATE: 'Zeugnis/Zertifikat',
+      IDENTITY: 'Persönliches Dokument',
+      MEDICAL: 'Gesundheitszeugnis',
+      TRAINING: 'Schulung/Weiterbildung',
+      PERFORMANCE: 'Leistungsbeurteilung',
+      DISCIPLINARY: 'Disziplinarmaßnahme',
+      OTHER: 'Sonstiges',
+    };
+    return categoryMapping[category] || category;
   };
 
+  // Gruppiere Dokumente nach Kategorie
   const groupedDocuments = documents.reduce(
     (acc, doc) => {
       if (!acc[doc.category]) {
@@ -154,15 +291,33 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       acc[doc.category].push(doc);
       return acc;
     },
-    {} as Record<string, Document[]>
+    {} as { [key: string]: EmployeeDocument[] }
   );
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Dokumente</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-4"></div>
+              <p className="text-sm text-gray-500">Dokumente werden geladen...</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Upload-Bereich */}
       <Card>
         <CardHeader>
-          <CardTitle>Dokument hochladen</CardTitle>
+          <CardTitle>Neues Dokument hochladen</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -182,102 +337,102 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
               </Select>
             </div>
             <div>
-              <Label htmlFor="fileUpload">Datei auswählen</Label>
-              <div className="flex gap-2">
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
-                  onChange={handleFileUpload}
-                  disabled={uploading || !selectedCategory}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  disabled={uploading || !selectedCategory}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {uploading ? 'Uploading...' : 'Upload'}
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Unterstützte Formate: PDF, DOC, DOCX, JPG, PNG, GIF (max. 10MB)
-              </p>
+              <Label htmlFor="file">Datei auswählen</Label>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
+                onChange={handleFileUpload}
+                disabled={uploading || !selectedCategory}
+                className="cursor-pointer"
+              />
             </div>
+          </div>
+          {uploading && (
+            <div className="flex items-center space-x-2 text-[#14ad9f]">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f]"></div>
+              <span className="text-sm">Dateien werden hochgeladen...</span>
+            </div>
+          )}
+          <div className="text-sm text-gray-500">
+            Unterstützte Formate: PDF, DOC, DOCX, JPG, PNG, GIF (max. 10MB pro Datei)
           </div>
         </CardContent>
       </Card>
 
-      {/* Dokumentenliste */}
-      <div className="space-y-4">
-        {Object.keys(groupedDocuments).length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center justify-center h-32">
-              <p className="text-muted-foreground">Noch keine Dokumente hochgeladen</p>
-            </CardContent>
-          </Card>
-        ) : (
-          Object.entries(groupedDocuments).map(([category, docs]) => (
-            <Card key={category}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <File className="h-5 w-5" />
-                  {getCategoryLabel(category)}
-                  <Badge variant="secondary">{docs.length}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {docs.map(document => (
-                    <div
-                      key={document.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <File className="h-8 w-8 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{document.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatFileSize(document.size)} •{' '}
-                            {new Date(document.uploadDate).toLocaleDateString('de-DE')}
-                          </p>
+      {/* Dokumente-Liste */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Hochgeladene Dokumente ({documents.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {documents.length === 0 ? (
+            <div className="text-center py-8">
+              <File className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Noch keine Dokumente hochgeladen</p>
+              <p className="text-sm text-gray-400">
+                Laden Sie Dokumente über das Formular oben hoch
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(groupedDocuments).map(([category, categoryDocuments]) => (
+                <div key={category} className="space-y-3">
+                  <h3 className="font-medium text-gray-900 border-b pb-2">
+                    {getCategoryLabel(category)} ({categoryDocuments.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {categoryDocuments.map(document => (
+                      <div
+                        key={document.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <File className="h-5 w-5 text-gray-500" />
+                          <div>
+                            <p className="font-medium">{document.title}</p>
+                            <p className="text-sm text-gray-500">
+                              {formatFileSize(document.fileSize)} •{' '}
+                              {new Date(document.uploadDate).toLocaleDateString('de-DE')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewDocument(document)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadDocument(document)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteDocument(document)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDocument(document)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownloadDocument(document)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteDocument(document.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
