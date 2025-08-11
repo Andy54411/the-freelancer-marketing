@@ -80,10 +80,10 @@ export function CreateWorkspaceModal({
   };
 
   const handleAddTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
+    if (newTag.trim() && !(formData.tags || []).includes(newTag.trim())) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()],
+        tags: [...(prev.tags || []), newTag.trim()],
       }));
       setNewTag('');
     }
@@ -92,15 +92,15 @@ export function CreateWorkspaceModal({
   const handleRemoveTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove),
+      tags: (prev.tags || []).filter(tag => tag !== tagToRemove),
     }));
   };
 
   const handleSelectExistingTag = (tag: string) => {
-    if (!formData.tags.includes(tag)) {
+    if (!(formData.tags || []).includes(tag)) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, tag],
+        tags: [...(prev.tags || []), tag],
       }));
     }
   };
@@ -322,7 +322,7 @@ export function CreateWorkspaceModal({
                       variant="outline"
                       size="sm"
                       onClick={() => handleSelectExistingTag(tag)}
-                      disabled={formData.tags.includes(tag)}
+                      disabled={(formData.tags || []).includes(tag)}
                       className="text-xs"
                     >
                       {tag}
@@ -333,9 +333,9 @@ export function CreateWorkspaceModal({
             )}
 
             {/* Selected tags */}
-            {formData.tags.length > 0 && (
+            {(formData.tags || []).length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {formData.tags.map(tag => (
+                {(formData.tags || []).map(tag => (
                   <Badge
                     key={tag}
                     variant="outline"

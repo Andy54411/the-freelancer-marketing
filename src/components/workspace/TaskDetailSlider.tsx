@@ -390,8 +390,8 @@ export default function TaskDetailSlider({
   };
 
   const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      handleInputChange('tags', [...formData.tags, newTag.trim()]);
+    if (newTag.trim() && !(formData.tags || []).includes(newTag.trim())) {
+      handleInputChange('tags', [...(formData.tags || []), newTag.trim()]);
       setNewTag('');
     }
   };
@@ -399,7 +399,7 @@ export default function TaskDetailSlider({
   const removeTag = (tagToRemove: string) => {
     handleInputChange(
       'tags',
-      formData.tags.filter(tag => tag !== tagToRemove)
+      (formData.tags || []).filter(tag => tag !== tagToRemove)
     );
   };
 
@@ -980,8 +980,11 @@ export default function TaskDetailSlider({
                             <Select
                               value=""
                               onValueChange={value => {
-                                if (value && !formData.assignedTo.includes(value)) {
-                                  handleInputChange('assignedTo', [...formData.assignedTo, value]);
+                                if (value && !(formData.assignedTo || []).includes(value)) {
+                                  handleInputChange('assignedTo', [
+                                    ...(formData.assignedTo || []),
+                                    value,
+                                  ]);
                                 }
                               }}
                             >
@@ -1003,9 +1006,9 @@ export default function TaskDetailSlider({
                               </SelectContent>
                             </Select>
 
-                            {formData.assignedTo.length > 0 && (
+                            {(formData.assignedTo || []).length > 0 && (
                               <div className="mt-3 flex flex-wrap gap-2">
-                                {formData.assignedTo.map(userId => {
+                                {(formData.assignedTo || []).map(userId => {
                                   const member = workspaceMembers.find(m => m.id === userId);
                                   return member ? (
                                     <Badge
@@ -1023,7 +1026,7 @@ export default function TaskDetailSlider({
                                         onClick={() =>
                                           handleInputChange(
                                             'assignedTo',
-                                            formData.assignedTo.filter(id => id !== userId)
+                                            (formData.assignedTo || []).filter(id => id !== userId)
                                           )
                                         }
                                         className="ml-1 text-red-500 hover:text-red-700"
@@ -1044,9 +1047,9 @@ export default function TaskDetailSlider({
                           <CardTitle>Tags</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          {formData.tags.length > 0 && (
+                          {(formData.tags || []).length > 0 && (
                             <div className="flex flex-wrap gap-1">
-                              {formData.tags.map(tag => (
+                              {(formData.tags || []).map(tag => (
                                 <Badge
                                   key={tag}
                                   variant="outline"

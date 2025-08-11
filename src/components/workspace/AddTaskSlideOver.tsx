@@ -53,8 +53,8 @@ export function AddTaskSlideOver({
   };
 
   const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      handleInputChange('tags', [...formData.tags, newTag.trim()]);
+    if (newTag.trim() && !(formData.tags || []).includes(newTag.trim())) {
+      handleInputChange('tags', [...(formData.tags || []), newTag.trim()]);
       setNewTag('');
     }
   };
@@ -62,7 +62,7 @@ export function AddTaskSlideOver({
   const removeTag = (tag: string) => {
     handleInputChange(
       'tags',
-      formData.tags.filter(t => t !== tag)
+      (formData.tags || []).filter(t => t !== tag)
     );
   };
 
@@ -229,9 +229,9 @@ export function AddTaskSlideOver({
                     <Tag className="h-4 w-4" />
                   </Button>
                 </div>
-                {formData.tags.length > 0 && (
+                {(formData.tags || []).length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">
-                    {formData.tags.map((tag, index) => (
+                    {(formData.tags || []).map((tag, index) => (
                       <Badge key={index} variant="secondary" className="text-sm">
                         {tag}
                         <button

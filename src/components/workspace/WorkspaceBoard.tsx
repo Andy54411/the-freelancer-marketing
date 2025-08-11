@@ -711,9 +711,9 @@ export function WorkspaceBoard({
                             {task.dueDate && <span>Fällig: {formatDate(task.dueDate)}</span>}
                           </div>
 
-                          {task.tags.length > 0 && (
+                          {(task.tags || []).length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {task.tags.map(tag => (
+                              {(task.tags || []).map(tag => (
                                 <Badge key={tag} variant="outline" className="text-xs">
                                   {tag}
                                 </Badge>
@@ -892,9 +892,9 @@ export function WorkspaceBoard({
                                             )}
 
                                             {/* Tags */}
-                                            {task.tags.length > 0 && (
+                                            {(task.tags || []).length > 0 && (
                                               <div className="flex flex-wrap gap-1">
-                                                {task.tags.slice(0, 3).map(tag => (
+                                                {(task.tags || []).slice(0, 3).map(tag => (
                                                   <Badge
                                                     key={tag}
                                                     variant="outline"
@@ -903,12 +903,12 @@ export function WorkspaceBoard({
                                                     {tag}
                                                   </Badge>
                                                 ))}
-                                                {task.tags.length > 3 && (
+                                                {(task.tags || []).length > 3 && (
                                                   <Badge
                                                     variant="outline"
                                                     className="text-[10px] px-1.5 py-0.5"
                                                   >
-                                                    +{task.tags.length - 3}
+                                                    +{(task.tags || []).length - 3}
                                                   </Badge>
                                                 )}
                                               </div>
@@ -925,10 +925,10 @@ export function WorkspaceBoard({
                                               )}
 
                                               {/* Assigned Users */}
-                                              {task.assignedTo.length > 0 && (
+                                              {(task.assignedTo || []).length > 0 && (
                                                 <div className="flex items-center gap-1">
                                                   <User className="h-2.5 w-2.5" />
-                                                  <span>{task.assignedTo.length}</span>
+                                                  <span>{(task.assignedTo || []).length}</span>
                                                 </div>
                                               )}
                                             </div>
