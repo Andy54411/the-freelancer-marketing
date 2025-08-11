@@ -6,6 +6,14 @@
         ".write": "auth != null && auth.uid == $userId"
       }
     },
+    "workspaces": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$workspaceId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
     ".read": false,
     ".write": false
   }

@@ -113,30 +113,59 @@ class WorkspaceServiceClass {
     }
   }
 
+  // Helper function to clean data for Firebase
+  private cleanDataForFirebase(data: any): any {
+    const cleaned: any = {};
+    Object.keys(data).forEach(key => {
+      const value = data[key];
+      if (value !== undefined && value !== null) {
+        if (value instanceof Date) {
+          cleaned[key] = value.getTime();
+        } else if (Array.isArray(value)) {
+          cleaned[key] = value.map(item =>
+            typeof item === 'object' && item !== null ? this.cleanDataForFirebase(item) : item
+          );
+        } else if (typeof value === 'object' && value !== null) {
+          cleaned[key] = this.cleanDataForFirebase(value);
+        } else {
+          cleaned[key] = value;
+        }
+      }
+    });
+    return cleaned;
+  }
+
   // Create a new workspace
   async createWorkspace(workspace: Omit<Workspace, 'id'>): Promise<Workspace> {
     try {
       const workspacesRef = ref(database, this.collectionName);
 
-      const workspaceData = {
+      // Clean the workspace data and prepare for Firebase
+      const workspaceData = this.cleanDataForFirebase({
         ...workspace,
         createdAt: Date.now(),
         updatedAt: Date.now(),
         dueDate: workspace.dueDate?.getTime() || null,
         boardColumns: workspace.boardColumns || this.getDefaultBoardColumns(),
         tasks: workspace.tasks || [],
-      };
+        archivedTasks: workspace.archivedTasks || [],
+        members: workspace.members || [],
+      });
 
-      const newWorkspaceRef = push(workspacesRef);
-      await set(newWorkspaceRef, workspaceData);
+      // Use push to auto-generate ID and set data in one operation
+      const newWorkspaceRef = push(workspacesRef, workspaceData);
+      const workspaceId = newWorkspaceRef.key!;
 
+      // Return the new workspace with proper date objects
       return {
-        id: newWorkspaceRef.key!,
+        id: workspaceId,
         ...workspace,
         createdAt: new Date(),
         updatedAt: new Date(),
         boardColumns: workspace.boardColumns || this.getDefaultBoardColumns(),
         tasks: workspace.tasks || [],
+        archivedTasks: workspace.archivedTasks || [],
+        members: workspace.members || [],
       };
     } catch (error) {
       console.error('Error creating workspace:', error);
@@ -149,23 +178,10 @@ class WorkspaceServiceClass {
     try {
       const workspaceRef = ref(database, `${this.collectionName}/${workspaceId}`);
 
-      // Filter out undefined values
-      const updateData: any = {
+      // Prepare update data with cleaned values
+      const updateData = this.cleanDataForFirebase({
+        ...updates,
         updatedAt: Date.now(),
-      };
-
-      // Only add fields that are not undefined
-      Object.keys(updates).forEach(key => {
-        const value = (updates as any)[key];
-        if (value !== undefined) {
-          if (key === 'dueDate' && value instanceof Date) {
-            updateData[key] = value.getTime();
-          } else if (key === 'createdAt' && value instanceof Date) {
-            updateData[key] = value.getTime();
-          } else {
-            updateData[key] = value;
-          }
-        }
       });
 
       await update(workspaceRef, updateData);
