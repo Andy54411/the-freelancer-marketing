@@ -1,11 +1,30 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  X, Tag, Flag, Save, AlertTriangle, Plus, Calendar, User, Clock, 
-  Paperclip, MessageSquare, Trash2, Upload, Send, FileText, Edit3,
-  CheckCircle2, Circle, Activity, MoreHorizontal, Download, Users,
-  Target, BarChart3, Eye, Archive, Copy, Share2
+import {
+  X,
+  Save,
+  AlertTriangle,
+  Plus,
+  Calendar,
+  User,
+  Clock,
+  Paperclip,
+  MessageSquare,
+  Trash2,
+  Upload,
+  Send,
+  FileText,
+  Edit3,
+  CheckCircle2,
+  Activity,
+  MoreHorizontal,
+  Download,
+  BarChart3,
+  Eye,
+  Archive,
+  Copy,
+  Share2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,13 +32,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 // Firebase imports
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
@@ -96,7 +125,14 @@ interface TaskAttachment {
 
 interface TaskActivity {
   id: string;
-  type: 'created' | 'updated' | 'comment' | 'attachment' | 'status_change' | 'assigned' | 'due_date_changed';
+  type:
+    | 'created'
+    | 'updated'
+    | 'comment'
+    | 'attachment'
+    | 'status_change'
+    | 'assigned'
+    | 'due_date_changed';
   authorId: string;
   authorName: string;
   description: string;
@@ -116,13 +152,14 @@ interface TaskDetailSliderProps {
 }
 
 // Hilfsfunktion zum Formatieren von Dateigrößen
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 };
 
@@ -133,7 +170,7 @@ export default function TaskDetailSlider({
   workspace,
   onTaskUpdated,
   onTaskDeleted,
-  currentUserId = 'current-user'
+  currentUserId = 'current-user',
 }: TaskDetailSliderProps) {
   // Form state
   const [formData, setFormData] = useState({
@@ -145,7 +182,7 @@ export default function TaskDetailSlider({
     dueDate: '',
     tags: [] as string[],
     estimatedHours: '',
-    progress: 0
+    progress: 0,
   });
 
   // UI state
@@ -169,7 +206,7 @@ export default function TaskDetailSlider({
     { value: 'low', label: 'Niedrig', color: 'bg-green-100 text-green-800', icon: '↓' },
     { value: 'medium', label: 'Mittel', color: 'bg-yellow-100 text-yellow-800', icon: '→' },
     { value: 'high', label: 'Hoch', color: 'bg-orange-100 text-orange-800', icon: '↑' },
-    { value: 'urgent', label: 'Dringend', color: 'bg-red-100 text-red-800', icon: '⚡' }
+    { value: 'urgent', label: 'Dringend', color: 'bg-red-100 text-red-800', icon: '⚡' },
   ];
 
   // Initialize form data when task changes
@@ -184,7 +221,7 @@ export default function TaskDetailSlider({
         dueDate: task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : '',
         tags: task.tags || [],
         estimatedHours: (task as any).estimatedHours?.toString() || '',
-        progress: (task as any).progress || 0
+        progress: (task as any).progress || 0,
       });
       setErrors({});
       setIsEditing(false);
@@ -229,7 +266,7 @@ export default function TaskDetailSlider({
         tags: formData.tags,
         updatedAt: new Date(),
         ...(formData.estimatedHours && { estimatedHours: parseInt(formData.estimatedHours) }),
-        ...(formData.progress && { progress: formData.progress })
+        ...(formData.progress && { progress: formData.progress }),
       };
 
       await onTaskUpdated(task.id, updates);
@@ -250,7 +287,7 @@ export default function TaskDetailSlider({
       authorId: currentUserId,
       authorName: 'Aktueller Benutzer',
       content: newComment.trim(),
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     setComments(prev => [...prev, comment]);
@@ -263,7 +300,7 @@ export default function TaskDetailSlider({
       authorId: currentUserId,
       authorName: 'Aktueller Benutzer',
       description: 'hat einen Kommentar hinzugefügt',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
     setActivities(prev => [activity, ...prev]);
   };
@@ -276,13 +313,13 @@ export default function TaskDetailSlider({
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const fileId = Date.now().toString() + i;
-      
+
       try {
         // Prüfe Dateigröße
         if (file.size > MAX_FILE_SIZE) {
-          setErrors(prev => ({ 
-            ...prev, 
-            upload: `Datei "${file.name}" ist zu groß. Maximum: 50MB (Aktuelle Größe: ${formatFileSize(file.size)})` 
+          setErrors(prev => ({
+            ...prev,
+            upload: `Datei &quot;${file.name}&quot; ist zu groß. Maximum: 50MB (Aktuelle Größe: ${formatFileSize(file.size)})`,
           }));
           continue;
         }
@@ -297,7 +334,7 @@ export default function TaskDetailSlider({
         // Upload Datei zu Firebase Storage
         setUploadProgress(prev => ({ ...prev, [fileId]: 50 }));
         const snapshot = await uploadBytes(storageRef, file);
-        
+
         // Hole Download URL
         setUploadProgress(prev => ({ ...prev, [fileId]: 75 }));
         const downloadURL = await getDownloadURL(snapshot.ref);
@@ -312,7 +349,7 @@ export default function TaskDetailSlider({
           type: file.type,
           uploadedAt: new Date(),
           uploadedBy: currentUserId,
-          uploadedByName: 'Aktueller Benutzer'
+          uploadedByName: 'Aktueller Benutzer',
         };
 
         // Füge Attachment zur Liste hinzu
@@ -322,12 +359,12 @@ export default function TaskDetailSlider({
         const taskRef = doc(db, 'workspaces', workspace.id, 'tasks', task.id);
         await updateDoc(taskRef, {
           attachments: arrayUnion(attachment),
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
         });
 
         // Upload erfolgreich
         setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
-        
+
         // Entferne Progress nach kurzer Zeit
         setTimeout(() => {
           setUploadProgress(prev => {
@@ -343,11 +380,10 @@ export default function TaskDetailSlider({
           type: 'attachment',
           authorId: currentUserId,
           authorName: 'Aktueller Benutzer',
-          description: `hat Datei "${file.name}" hinzugefügt`,
-          timestamp: new Date()
+          description: `hat Datei &quot;${file.name}&quot; hinzugefügt`,
+          timestamp: new Date(),
         };
         setActivities(prev => [activity, ...prev]);
-
       } catch (error) {
         console.error('Fehler beim Upload der Datei:', error);
         setUploadProgress(prev => {
@@ -377,7 +413,7 @@ export default function TaskDetailSlider({
       const taskRef = doc(db, 'workspaces', workspace.id, 'tasks', task.id);
       await updateDoc(taskRef, {
         attachments: attachments.filter(a => a.id !== attachment.id),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
 
       // Add activity
@@ -386,11 +422,10 @@ export default function TaskDetailSlider({
         type: 'attachment',
         authorId: currentUserId,
         authorName: 'Aktueller Benutzer',
-        description: `hat Datei "${attachment.name}" entfernt`,
-        timestamp: new Date()
+        description: `hat Datei &quot;${attachment.name}&quot; entfernt`,
+        timestamp: new Date(),
       };
       setActivities(prev => [activity, ...prev]);
-
     } catch (error) {
       console.error('Fehler beim Löschen der Datei:', error);
       setErrors(prev => ({ ...prev, delete: `Fehler beim Löschen von ${attachment.name}` }));
@@ -405,7 +440,10 @@ export default function TaskDetailSlider({
   };
 
   const removeTag = (tagToRemove: string) => {
-    handleInputChange('tags', formData.tags.filter(tag => tag !== tagToRemove));
+    handleInputChange(
+      'tags',
+      formData.tags.filter(tag => tag !== tagToRemove)
+    );
   };
 
   const formatFileSize = (bytes: number) => {
@@ -431,18 +469,18 @@ export default function TaskDetailSlider({
 
   const availableStatuses = workspace?.boardColumns?.map(col => ({
     value: col.id,
-    label: col.title
+    label: col.title,
   })) || [
     { value: 'todo', label: 'Zu erledigen' },
     { value: 'in-progress', label: 'In Bearbeitung' },
     { value: 'review', label: 'Review' },
-    { value: 'done', label: 'Erledigt' }
+    { value: 'done', label: 'Erledigt' },
   ];
 
   const workspaceMembers = workspace?.members || [
     { id: 'user1', name: 'Max Mustermann', avatar: '/avatars/max.jpg', email: 'max@example.com' },
     { id: 'user2', name: 'Anna Schmidt', avatar: '/avatars/anna.jpg', email: 'anna@example.com' },
-    { id: 'user3', name: 'Tom Weber', avatar: '/avatars/tom.jpg', email: 'tom@example.com' }
+    { id: 'user3', name: 'Tom Weber', avatar: '/avatars/tom.jpg', email: 'tom@example.com' },
   ];
 
   if (!isOpen || !task || !workspace) return null;
@@ -460,7 +498,11 @@ export default function TaskDetailSlider({
           <div className="flex items-center justify-between p-4 border-b bg-gray-50">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                {isEditing ? <Edit3 className="h-5 w-5 text-[#14ad9f]" /> : <Eye className="h-5 w-5 text-gray-600" />}
+                {isEditing ? (
+                  <Edit3 className="h-5 w-5 text-[#14ad9f]" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-600" />
+                )}
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
                     {isEditing ? 'Aufgabe bearbeiten' : task.title}
@@ -468,10 +510,15 @@ export default function TaskDetailSlider({
                   <p className="text-sm text-gray-500">{workspace.title}</p>
                 </div>
               </div>
-              <Badge variant="outline" className={`ml-2 ${
-                priorities.find(p => p.value === task.priority)?.color || 'bg-gray-100 text-gray-800'
-              }`}>
-                {priorities.find(p => p.value === task.priority)?.icon} {priorities.find(p => p.value === task.priority)?.label}
+              <Badge
+                variant="outline"
+                className={`ml-2 ${
+                  priorities.find(p => p.value === task.priority)?.color ||
+                  'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {priorities.find(p => p.value === task.priority)?.icon}{' '}
+                {priorities.find(p => p.value === task.priority)?.label}
               </Badge>
             </div>
 
@@ -500,7 +547,7 @@ export default function TaskDetailSlider({
                     Archivieren
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="text-red-600"
                     onClick={() => onTaskDeleted?.(task.id)}
                   >
@@ -509,7 +556,7 @@ export default function TaskDetailSlider({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              
+
               <Button variant="ghost" size="sm" onClick={onClose}>
                 <X className="h-4 w-4" />
               </Button>
@@ -541,7 +588,10 @@ export default function TaskDetailSlider({
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <Label>Status</Label>
-                                <Select value={formData.status} onValueChange={value => handleInputChange('status', value)}>
+                                <Select
+                                  value={formData.status}
+                                  onValueChange={value => handleInputChange('status', value)}
+                                >
                                   <SelectTrigger className="mt-1">
                                     <SelectValue />
                                   </SelectTrigger>
@@ -556,7 +606,10 @@ export default function TaskDetailSlider({
                               </div>
                               <div>
                                 <Label>Priorität</Label>
-                                <Select value={formData.priority} onValueChange={value => handleInputChange('priority', value)}>
+                                <Select
+                                  value={formData.priority}
+                                  onValueChange={value => handleInputChange('priority', value)}
+                                >
                                   <SelectTrigger className="mt-1">
                                     <SelectValue />
                                   </SelectTrigger>
@@ -574,7 +627,7 @@ export default function TaskDetailSlider({
                               </div>
                             </div>
                             <div className="flex gap-2">
-                              <Button 
+                              <Button
                                 onClick={handleSubmit}
                                 disabled={loading}
                                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
@@ -636,7 +689,9 @@ export default function TaskDetailSlider({
                               <div>
                                 <p className="text-sm font-medium">Erstellt</p>
                                 <p className="text-sm text-gray-600">
-                                  {task.createdAt ? new Date(task.createdAt).toLocaleDateString('de-DE') : 'Unbekannt'}
+                                  {task.createdAt
+                                    ? new Date(task.createdAt).toLocaleDateString('de-DE')
+                                    : 'Unbekannt'}
                                 </p>
                               </div>
                             </div>
@@ -645,7 +700,9 @@ export default function TaskDetailSlider({
                               <div>
                                 <p className="text-sm font-medium">Aktualisiert</p>
                                 <p className="text-sm text-gray-600">
-                                  {task.updatedAt ? formatRelativeTime(new Date(task.updatedAt)) : 'Nie'}
+                                  {task.updatedAt
+                                    ? formatRelativeTime(new Date(task.updatedAt))
+                                    : 'Nie'}
                                 </p>
                               </div>
                             </div>
@@ -717,11 +774,18 @@ export default function TaskDetailSlider({
 
                             <div className="space-y-2">
                               {attachments.slice(0, 3).map(attachment => (
-                                <div key={attachment.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded group">
+                                <div
+                                  key={attachment.id}
+                                  className="flex items-center gap-3 p-2 bg-gray-50 rounded group"
+                                >
                                   <FileText className="h-4 w-4 text-gray-500" />
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">{attachment.name}</p>
-                                    <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
+                                    <p className="text-sm font-medium truncate">
+                                      {attachment.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {formatFileSize(attachment.size)}
+                                    </p>
                                   </div>
                                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Button
@@ -751,7 +815,9 @@ export default function TaskDetailSlider({
                                 <div className="text-center py-4 text-gray-500">
                                   <Paperclip className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                                   <p className="text-sm">Keine Anhänge</p>
-                                  <p className="text-xs">Klicke auf "Hochladen" um Dateien hinzuzufügen</p>
+                                  <p className="text-xs">
+                                    Klicke auf &quot;Hochladen&quot; um Dateien hinzuzufügen
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -778,7 +844,9 @@ export default function TaskDetailSlider({
                                   </Avatar>
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-sm font-medium">{comment.authorName}</span>
+                                      <span className="text-sm font-medium">
+                                        {comment.authorName}
+                                      </span>
                                       <span className="text-xs text-gray-500">
                                         {formatRelativeTime(comment.createdAt)}
                                       </span>
@@ -819,7 +887,9 @@ export default function TaskDetailSlider({
                               onChange={e => handleInputChange('title', e.target.value)}
                               className={`mt-1 ${errors.title ? 'border-red-500' : ''}`}
                             />
-                            {errors.title && <p className="text-sm text-red-600 mt-1">{errors.title}</p>}
+                            {errors.title && (
+                              <p className="text-sm text-red-600 mt-1">{errors.title}</p>
+                            )}
                           </div>
 
                           <div>
@@ -843,8 +913,13 @@ export default function TaskDetailSlider({
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <Label>Status *</Label>
-                              <Select value={formData.status} onValueChange={value => handleInputChange('status', value)}>
-                                <SelectTrigger className={`mt-1 ${errors.status ? 'border-red-500' : ''}`}>
+                              <Select
+                                value={formData.status}
+                                onValueChange={value => handleInputChange('status', value)}
+                              >
+                                <SelectTrigger
+                                  className={`mt-1 ${errors.status ? 'border-red-500' : ''}`}
+                                >
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -855,12 +930,17 @@ export default function TaskDetailSlider({
                                   ))}
                                 </SelectContent>
                               </Select>
-                              {errors.status && <p className="text-sm text-red-600 mt-1">{errors.status}</p>}
+                              {errors.status && (
+                                <p className="text-sm text-red-600 mt-1">{errors.status}</p>
+                              )}
                             </div>
 
                             <div>
                               <Label>Priorität</Label>
-                              <Select value={formData.priority} onValueChange={value => handleInputChange('priority', value)}>
+                              <Select
+                                value={formData.priority}
+                                onValueChange={value => handleInputChange('priority', value)}
+                              >
                                 <SelectTrigger className="mt-1">
                                   <SelectValue />
                                 </SelectTrigger>
@@ -887,7 +967,9 @@ export default function TaskDetailSlider({
                                 max="100"
                                 step="5"
                                 value={formData.progress}
-                                onChange={e => handleInputChange('progress', parseInt(e.target.value))}
+                                onChange={e =>
+                                  handleInputChange('progress', parseInt(e.target.value))
+                                }
                                 className="w-full"
                               />
                               <div className="flex justify-between text-sm text-gray-500">
@@ -938,11 +1020,14 @@ export default function TaskDetailSlider({
                         <CardContent>
                           <div>
                             <Label>Zugewiesen an</Label>
-                            <Select value="" onValueChange={value => {
-                              if (value && !formData.assignedTo.includes(value)) {
-                                handleInputChange('assignedTo', [...formData.assignedTo, value]);
-                              }
-                            }}>
+                            <Select
+                              value=""
+                              onValueChange={value => {
+                                if (value && !formData.assignedTo.includes(value)) {
+                                  handleInputChange('assignedTo', [...formData.assignedTo, value]);
+                                }
+                              }}
+                            >
                               <SelectTrigger className="mt-1">
                                 <SelectValue placeholder="Mitglied hinzufügen..." />
                               </SelectTrigger>
@@ -966,7 +1051,11 @@ export default function TaskDetailSlider({
                                 {formData.assignedTo.map(userId => {
                                   const member = workspaceMembers.find(m => m.id === userId);
                                   return member ? (
-                                    <Badge key={userId} variant="outline" className="flex items-center gap-1">
+                                    <Badge
+                                      key={userId}
+                                      variant="outline"
+                                      className="flex items-center gap-1"
+                                    >
                                       <Avatar className="h-4 w-4">
                                         <AvatarImage src={member.avatar} />
                                         <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
@@ -974,7 +1063,12 @@ export default function TaskDetailSlider({
                                       {member.name}
                                       <button
                                         type="button"
-                                        onClick={() => handleInputChange('assignedTo', formData.assignedTo.filter(id => id !== userId))}
+                                        onClick={() =>
+                                          handleInputChange(
+                                            'assignedTo',
+                                            formData.assignedTo.filter(id => id !== userId)
+                                          )
+                                        }
                                         className="ml-1 text-red-500 hover:text-red-700"
                                       >
                                         <X className="h-3 w-3" />
@@ -996,7 +1090,11 @@ export default function TaskDetailSlider({
                           {formData.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {formData.tags.map(tag => (
-                                <Badge key={tag} variant="outline" className="flex items-center gap-1">
+                                <Badge
+                                  key={tag}
+                                  variant="outline"
+                                  className="flex items-center gap-1"
+                                >
                                   {tag}
                                   <button
                                     type="button"
@@ -1009,7 +1107,7 @@ export default function TaskDetailSlider({
                               ))}
                             </div>
                           )}
-                          
+
                           <div className="flex gap-2">
                             <Input
                               value={newTag}
@@ -1048,7 +1146,8 @@ export default function TaskDetailSlider({
                               Dateien hochladen
                             </Button>
                             <p className="text-xs text-gray-500">
-                              Max. Dateigröße: 50MB • Unterstützte Formate: Bilder, PDF, Office-Dokumente
+                              Max. Dateigröße: 50MB • Unterstützte Formate: Bilder, PDF,
+                              Office-Dokumente
                             </p>
                           </div>
                         </CardHeader>
@@ -1077,12 +1176,16 @@ export default function TaskDetailSlider({
 
                           <div className="space-y-2">
                             {attachments.map(attachment => (
-                              <div key={attachment.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group">
+                              <div
+                                key={attachment.id}
+                                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group"
+                              >
                                 <FileText className="h-5 w-5 text-gray-500" />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium truncate">{attachment.name}</p>
                                   <p className="text-xs text-gray-500">
-                                    {formatFileSize(attachment.size)} • {new Date(attachment.uploadedAt).toLocaleDateString('de-DE')}
+                                    {formatFileSize(attachment.size)} •{' '}
+                                    {new Date(attachment.uploadedAt).toLocaleDateString('de-DE')}
                                   </p>
                                 </div>
                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1111,7 +1214,9 @@ export default function TaskDetailSlider({
                               <div className="text-center py-6 text-gray-500">
                                 <Paperclip className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                                 <p className="text-sm">Keine Anhänge vorhanden</p>
-                                <p className="text-xs">Klicke auf "Dateien hochladen" um Anhänge hinzuzufügen</p>
+                                <p className="text-xs">
+                                  Klicke auf &quot;Dateien hochladen&quot; um Anhänge hinzuzufügen
+                                </p>
                               </div>
                             )}
                           </div>
@@ -1141,7 +1246,7 @@ export default function TaskDetailSlider({
                     <div className="p-4 border-b">
                       <h3 className="font-medium">Kommentare ({comments.length})</h3>
                     </div>
-                    
+
                     <div className="flex-1 p-4 overflow-y-auto">
                       <div className="space-y-4">
                         {comments.map(comment => (
@@ -1213,20 +1318,34 @@ export default function TaskDetailSlider({
                     <div className="p-4 border-b">
                       <h3 className="font-medium">Aktivitätsverlauf</h3>
                     </div>
-                    
+
                     <div className="flex-1 p-4 overflow-y-auto">
                       <div className="space-y-4">
                         {activities.map((activity, index) => (
                           <div key={activity.id} className="flex gap-3">
                             <div className="flex flex-col items-center">
                               <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                {activity.type === 'created' && <Plus className="h-4 w-4 text-green-600" />}
-                                {activity.type === 'updated' && <Edit3 className="h-4 w-4 text-blue-600" />}
-                                {activity.type === 'comment' && <MessageSquare className="h-4 w-4 text-blue-600" />}
-                                {activity.type === 'attachment' && <Paperclip className="h-4 w-4 text-purple-600" />}
-                                {activity.type === 'status_change' && <CheckCircle2 className="h-4 w-4 text-orange-600" />}
-                                {activity.type === 'assigned' && <User className="h-4 w-4 text-indigo-600" />}
-                                {activity.type === 'due_date_changed' && <Calendar className="h-4 w-4 text-red-600" />}
+                                {activity.type === 'created' && (
+                                  <Plus className="h-4 w-4 text-green-600" />
+                                )}
+                                {activity.type === 'updated' && (
+                                  <Edit3 className="h-4 w-4 text-blue-600" />
+                                )}
+                                {activity.type === 'comment' && (
+                                  <MessageSquare className="h-4 w-4 text-blue-600" />
+                                )}
+                                {activity.type === 'attachment' && (
+                                  <Paperclip className="h-4 w-4 text-purple-600" />
+                                )}
+                                {activity.type === 'status_change' && (
+                                  <CheckCircle2 className="h-4 w-4 text-orange-600" />
+                                )}
+                                {activity.type === 'assigned' && (
+                                  <User className="h-4 w-4 text-indigo-600" />
+                                )}
+                                {activity.type === 'due_date_changed' && (
+                                  <Calendar className="h-4 w-4 text-red-600" />
+                                )}
                               </div>
                               {index < activities.length - 1 && (
                                 <div className="w-0.5 h-6 bg-gray-200 mt-2" />
@@ -1235,14 +1354,18 @@ export default function TaskDetailSlider({
                             <div className="flex-1 pb-4">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">{activity.authorName}</span>
-                                <span className="text-sm text-gray-600">{activity.description}</span>
+                                <span className="text-sm text-gray-600">
+                                  {activity.description}
+                                </span>
                               </div>
                               <p className="text-xs text-gray-500 mt-1">
                                 {formatRelativeTime(activity.timestamp)}
                               </p>
                               {activity.oldValue && activity.newValue && (
                                 <div className="mt-2 text-xs bg-gray-50 p-2 rounded">
-                                  <span className="text-red-600 line-through">{activity.oldValue}</span>
+                                  <span className="text-red-600 line-through">
+                                    {activity.oldValue}
+                                  </span>
                                   {' → '}
                                   <span className="text-green-600">{activity.newValue}</span>
                                 </div>
