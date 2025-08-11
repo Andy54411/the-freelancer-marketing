@@ -2,11 +2,10 @@
 
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Plus, MoreHorizontal, Calendar, User, Tag, Clock } from 'lucide-react';
+import { Plus, MoreHorizontal, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,11 +62,7 @@ interface WorkspaceBoardProps {
   onDeleteWorkspace: (workspaceId: string) => void;
 }
 
-export function WorkspaceBoard({
-  workspaces,
-  onUpdateWorkspace,
-  onDeleteWorkspace,
-}: WorkspaceBoardProps) {
+export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoardProps) {
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(
     workspaces.length > 0 ? workspaces[0] : null
   );
@@ -234,7 +229,7 @@ export function WorkspaceBoard({
       if (col.id === selectedColumnId) {
         return {
           ...col,
-          tasks: [...col.tasks, newTask]
+          tasks: [...col.tasks, newTask],
         };
       }
       return col;
