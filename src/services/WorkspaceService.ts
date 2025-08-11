@@ -62,12 +62,17 @@ export interface WorkspaceTask {
   dueDate?: Date;
   createdAt: Date;
   updatedAt: Date;
+  createdBy?: string;
   tags: string[];
   position: number;
   columnId?: string;
   archived?: boolean;
   archivedAt?: Date;
   archivedBy?: string;
+  content?: string;
+  coverImage?: string;
+  contentTitle?: string;
+  contentTitleLevel?: 1 | 2 | 3 | 4;
 }
 
 class WorkspaceServiceClass {

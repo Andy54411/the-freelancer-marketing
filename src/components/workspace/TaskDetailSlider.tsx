@@ -55,6 +55,12 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { storage } from '@/firebase/clients';
 import { WorkspaceService } from '@/services/WorkspaceService';
 import type { Workspace, WorkspaceTask, WorkspaceMember } from '@/services/WorkspaceService';
+import dynamic from 'next/dynamic';
+
+const RichTextEditor = dynamic(() => import('@/components/workspace/RichTextEditor').then(mod => ({ default: mod.RichTextEditor })), {
+  ssr: false,
+  loading: () => <div className="h-[300px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center text-gray-500">Laden...</div>
+});
 
 interface TaskComment {
   id: string;
@@ -138,6 +144,10 @@ export default function TaskDetailSlider({
     tags: [] as string[],
     estimatedHours: '',
     progress: 0,
+    content: '',
+    coverImage: '',
+    contentTitle: '',
+    contentTitleLevel: 1 as 1 | 2 | 3 | 4,
   });
 
   // UI state
@@ -148,6 +158,7 @@ export default function TaskDetailSlider({
   const [newTag, setNewTag] = useState('');
   const [newComment, setNewComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [contentValue, setContentValue] = useState('');
 
   // Mock data (in real app, fetch from Firebase)
   const [comments, setComments] = useState<TaskComment[]>([]);
@@ -177,7 +188,12 @@ export default function TaskDetailSlider({
         tags: task.tags || [],
         estimatedHours: (task as any).estimatedHours?.toString() || '',
         progress: (task as any).progress || 0,
+        content: (task as any).content || '',
+        coverImage: (task as any).coverImage || '',
+        contentTitle: (task as any).contentTitle || '',
+        contentTitleLevel: (task as any).contentTitleLevel || 1,
       });
+      setContentValue((task as any).content || '');
       setErrors({});
       setIsEditing(false);
     }
@@ -188,6 +204,23 @@ export default function TaskDetailSlider({
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleContentChange = (content: string) => {
+    setContentValue(content);
+    setFormData(prev => ({ ...prev, content }));
+  };
+
+  const handleCoverChange = (url: string) => {
+    setFormData(prev => ({ ...prev, coverImage: url }));
+  };
+
+  const handleTitleChange = (title: string) => {
+    setFormData(prev => ({ ...prev, contentTitle: title }));
+  };
+
+  const handleTitleLevelChange = (level: 1 | 2 | 3 | 4) => {
+    setFormData(prev => ({ ...prev, contentTitleLevel: level }));
   };
 
   const validateForm = () => {
@@ -222,6 +255,10 @@ export default function TaskDetailSlider({
         updatedAt: new Date(),
         ...(formData.estimatedHours && { estimatedHours: parseInt(formData.estimatedHours) }),
         ...(formData.progress && { progress: formData.progress }),
+        ...(formData.content && { content: formData.content }),
+        ...(formData.coverImage && { coverImage: formData.coverImage }),
+        ...(formData.contentTitle && { contentTitle: formData.contentTitle }),
+        ...(formData.contentTitleLevel && { contentTitleLevel: formData.contentTitleLevel }),
       };
 
       await onTaskUpdated(task.id, updates);
@@ -446,7 +483,7 @@ export default function TaskDetailSlider({
     <>
       {/* Slide Over Panel */}
       <div
-        className={`fixed right-0 top-0 h-full w-[700px] bg-white/95 backdrop-blur-sm shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 h-full w-[900px] bg-white/95 backdrop-blur-sm shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -523,8 +560,9 @@ export default function TaskDetailSlider({
           {/* Content */}
           <div className="flex-1 overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-4 mx-4 mt-4">
+              <TabsList className="grid w-full grid-cols-5 mx-4 mt-4">
                 <TabsTrigger value="overview">Übersicht</TabsTrigger>
+                <TabsTrigger value="content">Content</TabsTrigger>
                 <TabsTrigger value="details">Details</TabsTrigger>
                 <TabsTrigger value="comments">Kommentare</TabsTrigger>
                 <TabsTrigger value="activity">Aktivität</TabsTrigger>
@@ -815,6 +853,219 @@ export default function TaskDetailSlider({
                             </div>
                           </CardContent>
                         </Card>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Content Tab - Rich Text Editor */}
+                <TabsContent value="content" className="h-full mt-0">
+                  <div className="h-full p-4 overflow-y-auto">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          Content Creator
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            Blog Post
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Social Media
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Marketing
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="text-sm text-gray-600 mb-4">
+                        Erstelle professionellen Content mit unserem Rich-Text-Editor. 
+                        Perfekt für Blog-Posts, Social Media Content, Dokumentation und mehr.
+                      </div>
+
+                      <div className="border-2 border-dashed border-gray-200 rounded-lg p-1">
+                        <RichTextEditor
+                          content={contentValue || ''}
+                          onChange={handleContentChange}
+                          placeholder="Beginne mit dem Erstellen deines Contents... Nutze die Toolbar für Formatierungen, Überschriften, Listen und mehr."
+                          className="border-0"
+                          coverImage={formData.coverImage}
+                          onCoverChange={handleCoverChange}
+                          title={formData.contentTitle}
+                          onTitleChange={handleTitleChange}
+                          titleLevel={formData.contentTitleLevel}
+                          onTitleLevelChange={handleTitleLevelChange}
+                          author={task?.createdBy || 'Unbekannt'}
+                          createdAt={task?.createdAt}
+                          updatedAt={task?.updatedAt}
+                        />
+                      </div>
+
+                      {/* Content Templates */}
+                      <div className="mt-6">
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">
+                          Content-Vorlagen
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const blogTemplate = `<h1>Blog Post Titel</h1>
+<p>Einleitung und Hook für deine Leser...</p>
+
+<h2>Hauptteil</h2>
+<p>Dein Hauptinhalt hier...</p>
+
+<ul>
+<li>Wichtiger Punkt 1</li>
+<li>Wichtiger Punkt 2</li>
+<li>Wichtiger Punkt 3</li>
+</ul>
+
+<h2>Fazit</h2>
+<p>Zusammenfassung und Call-to-Action...</p>`;
+                              handleContentChange(blogTemplate);
+                            }}
+                            className="text-left justify-start h-auto p-3"
+                          >
+                            <div>
+                              <div className="font-medium">Blog Post</div>
+                              <div className="text-xs text-gray-500">Strukturierter Artikel</div>
+                            </div>
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const socialTemplate = `<h1>Social Media Post</h1>
+<p><strong>📱 Hook:</strong> Aufmerksamkeit erregende Überschrift</p>
+
+<p><strong>🎯 Hauptmessage:</strong><br>
+Deine Kernbotschaft in 1-2 Sätzen...</p>
+
+<p><strong>💡 Value:</strong><br>
+Was lernt deine Audience?</p>
+
+<p><strong>📞 Call-to-Action:</strong><br>
+Was sollen deine Follower tun?</p>
+
+<p><strong>Hashtags:</strong> #taskilo #productivity #socialmedia</p>`;
+                              handleContentChange(socialTemplate);
+                            }}
+                            className="text-left justify-start h-auto p-3"
+                          >
+                            <div>
+                              <div className="font-medium">Social Media</div>
+                              <div className="text-xs text-gray-500">Post-Vorlage</div>
+                            </div>
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const marketingTemplate = `<h1>Marketing Campaign</h1>
+<blockquote>
+<p><strong>Kampagnen-Ziel:</strong> Was möchtest du erreichen?</p>
+</blockquote>
+
+<h2>Zielgruppe</h2>
+<ul>
+<li>Demografische Daten</li>
+<li>Interessen & Bedürfnisse</li>
+<li>Pain Points</li>
+</ul>
+
+<h2>Key Messages</h2>
+<ol>
+<li>Hauptbotschaft 1</li>
+<li>Hauptbotschaft 2</li>
+<li>Hauptbotschaft 3</li>
+</ol>
+
+<h2>Call-to-Action</h2>
+<p><strong>Primär:</strong> Hauptaktion<br>
+<strong>Sekundär:</strong> Alternative Aktion</p>`;
+                              handleContentChange(marketingTemplate);
+                            }}
+                            className="text-left justify-start h-auto p-3"
+                          >
+                            <div>
+                              <div className="font-medium">Marketing</div>
+                              <div className="text-xs text-gray-500">Kampagnen-Plan</div>
+                            </div>
+                          </Button>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const docsTemplate = `<h1>Dokumentation</h1>
+<p><em>Beschreibung des Themas oder Prozesses...</em></p>
+
+<h2>Übersicht</h2>
+<p>Kurze Einführung und Zielsetzung...</p>
+
+<h2>Schritt-für-Schritt Anleitung</h2>
+<ol>
+<li><strong>Schritt 1:</strong> Beschreibung...</li>
+<li><strong>Schritt 2:</strong> Beschreibung...</li>
+<li><strong>Schritt 3:</strong> Beschreibung...</li>
+</ol>
+
+<h2>Wichtige Hinweise</h2>
+<blockquote>
+<p>⚠️ Warnung oder wichtiger Hinweis</p>
+</blockquote>
+
+<h2>Zusätzliche Ressourcen</h2>
+<ul>
+<li>Link 1</li>
+<li>Link 2</li>
+<li>Link 3</li>
+</ul>`;
+                              handleContentChange(docsTemplate);
+                            }}
+                            className="text-left justify-start h-auto p-3"
+                          >
+                            <div>
+                              <div className="font-medium">Dokumentation</div>
+                              <div className="text-xs text-gray-500">Technische Docs</div>
+                            </div>
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Content Stats */}
+                      {contentValue && (
+                        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                            Content-Statistiken
+                          </h4>
+                          <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-500">Zeichen:</span>
+                              <span className="ml-1 font-medium">
+                                {contentValue.replace(/<[^>]*>/g, '').length}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Wörter:</span>
+                              <span className="ml-1 font-medium">
+                                {contentValue.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Lesezeit:</span>
+                              <span className="ml-1 font-medium">
+                                {Math.ceil(contentValue.replace(/<[^>]*>/g, '').split(/\s+/).filter(word => word.length > 0).length / 200)} Min
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
