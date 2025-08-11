@@ -99,7 +99,7 @@ export function WorkspaceBoard({
     if (selectedWorkspace?.boardColumns && selectedWorkspace.boardColumns.length > 0) {
       return selectedWorkspace.boardColumns.map(column => ({
         ...column,
-        tasks: column.tasks.filter(task => !task.archived), // Filtere archivierte Aufgaben aus
+        tasks: (column.tasks || []).filter(task => !task.archived), // Filtere archivierte Aufgaben aus
       }));
     }
 
@@ -172,7 +172,7 @@ export function WorkspaceBoard({
 
     if (source.droppableId === destination.droppableId) {
       // Moving within the same column
-      const newTasks = Array.from(sourceColumn.tasks);
+      const newTasks = Array.from(sourceColumn.tasks || []);
       const [reorderedTask] = newTasks.splice(source.index, 1);
       newTasks.splice(destination.index, 0, reorderedTask);
 
@@ -190,8 +190,8 @@ export function WorkspaceBoard({
       });
     } else {
       // Moving between columns
-      const sourceTasks = Array.from(sourceColumn.tasks);
-      const destTasks = Array.from(destColumn.tasks);
+      const sourceTasks = Array.from(sourceColumn.tasks || []);
+      const destTasks = Array.from(destColumn.tasks || []);
       const [movedTask] = sourceTasks.splice(source.index, 1);
 
       // Update both status and columnId for consistency
@@ -271,7 +271,7 @@ export function WorkspaceBoard({
       if (col.id === selectedColumnId) {
         return {
           ...col,
-          tasks: [...col.tasks, newTask],
+          tasks: [...(col.tasks || []), newTask],
         };
       }
       return col;
@@ -301,7 +301,7 @@ export function WorkspaceBoard({
       title: col.title,
       color: col.color,
       position: col.position,
-      tasks: col.tasks.map(task => {
+      tasks: (col.tasks || []).map(task => {
         if (task.id === taskId) {
           // Clean the updates to ensure no undefined values
           const cleanUpdates: any = {};
@@ -369,7 +369,7 @@ export function WorkspaceBoard({
       let sourceColumnId: string | null = null;
 
       for (const column of columns) {
-        const task = column.tasks.find(t => t.id === taskId);
+        const task = (column.tasks || []).find(t => t.id === taskId);
         if (task) {
           taskToArchive = task;
           sourceColumnId = column.id;
@@ -407,7 +407,7 @@ export function WorkspaceBoard({
         title: col.title,
         color: col.color,
         position: col.position,
-        tasks: col.tasks.filter(task => task.id !== taskId).map(task => cleanTask(task)),
+        tasks: (col.tasks || []).filter(task => task.id !== taskId).map(task => cleanTask(task)),
       }));
 
       // Aktuelles Archiv aus dem Workspace oder leeres Array
@@ -484,7 +484,7 @@ export function WorkspaceBoard({
               title: col.title,
               color: col.color,
               position: col.position,
-              tasks: [...col.tasks.map(cleanTask), restoredTask],
+              tasks: [...(col.tasks || []).map(cleanTask), restoredTask],
             };
           }
           return {
@@ -492,7 +492,7 @@ export function WorkspaceBoard({
             title: col.title,
             color: col.color,
             position: col.position,
-            tasks: col.tasks.map(cleanTask),
+            tasks: (col.tasks || []).map(cleanTask),
           };
         });
       };
@@ -801,7 +801,7 @@ export function WorkspaceBoard({
                             <div className="flex items-center gap-2">
                               <h3 className="font-medium text-gray-900">{column.title}</h3>
                               <Badge variant="secondary" className="text-xs">
-                                {column.tasks.length}
+                                {(column.tasks || []).length}
                               </Badge>
                             </div>
                             <DropdownMenu>
@@ -827,7 +827,7 @@ export function WorkspaceBoard({
                                   snapshot.isDraggingOver ? 'bg-gray-50' : ''
                                 }`}
                               >
-                                {column.tasks.map((task, taskIndex) => (
+                                {(column.tasks || []).map((task, taskIndex) => (
                                   <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
                                     {(provided, snapshot) => (
                                       <Card
