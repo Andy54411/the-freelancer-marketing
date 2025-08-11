@@ -1293,5 +1293,27 @@ service cloud.firestore {
                        ((request.auth.uid == companyId && isCompany()) ||
                         isSupportStaff());
     }
+
+    // --- WORKSPACES COLLECTION (Notion/Monday.com-style Workspace Tool) ---
+    match /workspaces/{workspaceId} {
+      // Lesen: Nur für Mitglieder der Firma oder Support Staff
+      allow read: if request.auth != null &&
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur für authentifizierte Benutzer
+      allow create: if request.auth != null &&
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Aktualisieren: Nur für die eigene Firma
+      allow update: if request.auth != null &&
+                       resource.data.companyId == request.auth.uid;
+      
+      // Löschen: Nur für die eigene Firma oder Support Staff
+      allow delete: if request.auth != null &&
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+    }
   }
 }

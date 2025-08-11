@@ -23,6 +23,7 @@ import {
   Calculator as FiCalculator,
   BarChart3 as FiBarChart3,
   CalendarDays as FiCalendarDays,
+  Folder as FiFolder,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -128,6 +129,21 @@ const navigationItems: NavigationItem[] = [
       { label: 'Personal-Analytics', value: 'personal-analytics', href: 'personal/analytics' },
       { label: 'Urlaub & Abwesenheit', value: 'personal-absence', href: 'personal/absence' },
       { label: 'Dokumente', value: 'personal-documents', href: 'personal/documents' },
+    ],
+  },
+  {
+    label: 'Workspace',
+    icon: FiFolder,
+    value: 'workspace',
+    subItems: [
+      { label: 'Übersicht', value: 'workspace-overview', href: 'workspace' },
+      { label: 'Projekte', value: 'workspace-projects', href: 'workspace?type=project' },
+      { label: 'Aufgaben', value: 'workspace-tasks', href: 'workspace?type=task' },
+      { label: 'Dokumente', value: 'workspace-documents', href: 'workspace?type=document' },
+      { label: 'Prozesse', value: 'workspace-processes', href: 'workspace?type=process' },
+      { label: 'Board-Ansicht', value: 'workspace-board', href: 'workspace?view=board' },
+      { label: 'Listen-Ansicht', value: 'workspace-list', href: 'workspace?view=list' },
+      { label: 'Kalender-Ansicht', value: 'workspace-calendar', href: 'workspace?view=calendar' },
     ],
   },
   {
