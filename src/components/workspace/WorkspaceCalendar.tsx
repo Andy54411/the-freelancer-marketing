@@ -5,23 +5,7 @@ import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, User } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-
-interface Workspace {
-  id: string;
-  title: string;
-  description: string;
-  type: 'project' | 'task' | 'document' | 'process';
-  status: 'active' | 'completed' | 'paused' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  companyId: string;
-  createdBy: string;
-  progress: number;
-}
+import type { Workspace } from '@/services/WorkspaceService';
 
 interface WorkspaceCalendarProps {
   workspaces: Workspace[];

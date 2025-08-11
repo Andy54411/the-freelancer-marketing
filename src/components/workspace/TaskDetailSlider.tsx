@@ -52,54 +52,9 @@ import {
 
 // Firebase imports
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
-import { storage, db } from '@/firebase/clients';
-
-// Local interface definitions
-interface WorkspaceTask {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  position: number;
-  columnId?: string;
-}
-
-interface Workspace {
-  id: string;
-  title: string;
-  description: string;
-  type: 'project' | 'task' | 'document' | 'process';
-  status: 'active' | 'completed' | 'paused' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  columns?: string[];
-  members?: WorkspaceMember[];
-  boardColumns?: Array<{
-    id: string;
-    title: string;
-    color: string;
-    position: number;
-  }>;
-}
-
-interface WorkspaceMember {
-  id: string;
-  name: string;
-  avatar?: string;
-  email?: string;
-  role?: string;
-}
+import { storage } from '@/firebase/clients';
+import { WorkspaceService } from '@/services/WorkspaceService';
+import type { Workspace, WorkspaceTask, WorkspaceMember } from '@/services/WorkspaceService';
 
 interface TaskComment {
   id: string;
@@ -355,12 +310,13 @@ export default function TaskDetailSlider({
         // Füge Attachment zur Liste hinzu
         setAttachments(prev => [...prev, attachment]);
 
-        // Update Task in Firestore mit neuem Attachment
-        const taskRef = doc(db, 'workspaces', workspace.id, 'tasks', task.id);
-        await updateDoc(taskRef, {
-          attachments: arrayUnion(attachment),
-          updatedAt: serverTimestamp(),
-        });
+        // Update Task in Workspace via WorkspaceService
+        if (onTaskUpdated && task) {
+          onTaskUpdated(task.id, {
+            // Attachments werden über task properties verwaltet
+            updatedAt: new Date(),
+          });
+        }
 
         // Upload erfolgreich
         setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
@@ -409,12 +365,13 @@ export default function TaskDetailSlider({
       // Entferne Attachment aus lokaler Liste
       setAttachments(prev => prev.filter(a => a.id !== attachment.id));
 
-      // Update Task in Firestore
-      const taskRef = doc(db, 'workspaces', workspace.id, 'tasks', task.id);
-      await updateDoc(taskRef, {
-        attachments: attachments.filter(a => a.id !== attachment.id),
-        updatedAt: serverTimestamp(),
-      });
+      // Update Task in Workspace via WorkspaceService
+      if (onTaskUpdated && task) {
+        onTaskUpdated(task.id, {
+          // Attachments werden über task properties verwaltet
+          updatedAt: new Date(),
+        });
+      }
 
       // Add activity
       const activity: TaskActivity = {

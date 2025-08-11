@@ -1,21 +1,28 @@
 import {
-  collection,
-  doc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
+  ref,
+  push,
+  set,
+  update,
+  remove,
+  onValue,
+  off,
   query,
-  where,
-  orderBy,
+  orderByChild,
+  equalTo,
   serverTimestamp,
-  onSnapshot,
-  QuerySnapshot,
-  DocumentData,
-} from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+  DatabaseReference,
+} from 'firebase/database';
+import { realtimeDb as database } from '@/firebase/clients';
 
-interface Workspace {
+export interface WorkspaceMember {
+  id: string;
+  name: string;
+  avatar?: string;
+  email?: string;
+  role?: string;
+}
+
+export interface Workspace {
   id: string;
   title: string;
   description: string;
@@ -32,9 +39,12 @@ interface Workspace {
   progress: number;
   boardColumns?: WorkspaceBoardColumn[];
   tasks?: WorkspaceTask[];
+  archivedTasks?: WorkspaceTask[];
+  members?: WorkspaceMember[];
+  columns?: string[];
 }
 
-interface WorkspaceBoardColumn {
+export interface WorkspaceBoardColumn {
   id: string;
   title: string;
   color: string;
@@ -42,7 +52,7 @@ interface WorkspaceBoardColumn {
   tasks: WorkspaceTask[];
 }
 
-interface WorkspaceTask {
+export interface WorkspaceTask {
   id: string;
   title: string;
   description?: string;
@@ -55,6 +65,9 @@ interface WorkspaceTask {
   tags: string[];
   position: number;
   columnId?: string;
+  archived?: boolean;
+  archivedAt?: Date;
+  archivedBy?: string;
 }
 
 class WorkspaceServiceClass {
@@ -63,23 +76,36 @@ class WorkspaceServiceClass {
   // Get all workspaces for a company
   async getWorkspaces(companyId: string): Promise<Workspace[]> {
     try {
-      const workspacesRef = collection(db, this.collectionName);
-      const q = query(
-        workspacesRef,
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
-      );
+      const workspacesRef = ref(database, this.collectionName);
 
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          dueDate: data.dueDate?.toDate(),
-        } as Workspace;
+      return new Promise((resolve, reject) => {
+        onValue(
+          workspacesRef,
+          snapshot => {
+            const data = snapshot.val();
+            if (!data) {
+              resolve([]);
+              return;
+            }
+
+            const workspaces: Workspace[] = Object.entries(data)
+              .map(([id, workspace]: [string, any]) => ({
+                id,
+                ...workspace,
+                createdAt: workspace.createdAt ? new Date(workspace.createdAt) : new Date(),
+                updatedAt: workspace.updatedAt ? new Date(workspace.updatedAt) : new Date(),
+                dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
+              }))
+              .filter(workspace => workspace.companyId === companyId)
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+            resolve(workspaces);
+          },
+          error => {
+            console.error('Error getting workspaces:', error);
+            reject(new Error('Failed to get workspaces'));
+          }
+        );
       });
     } catch (error) {
       console.error('Error getting workspaces:', error);
@@ -90,21 +116,22 @@ class WorkspaceServiceClass {
   // Create a new workspace
   async createWorkspace(workspace: Omit<Workspace, 'id'>): Promise<Workspace> {
     try {
-      const workspacesRef = collection(db, this.collectionName);
+      const workspacesRef = ref(database, this.collectionName);
 
       const workspaceData = {
         ...workspace,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        dueDate: workspace.dueDate || null,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        dueDate: workspace.dueDate?.getTime() || null,
         boardColumns: workspace.boardColumns || this.getDefaultBoardColumns(),
         tasks: workspace.tasks || [],
       };
 
-      const docRef = await addDoc(workspacesRef, workspaceData);
+      const newWorkspaceRef = push(workspacesRef);
+      await set(newWorkspaceRef, workspaceData);
 
       return {
-        id: docRef.id,
+        id: newWorkspaceRef.key!,
         ...workspace,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -120,27 +147,28 @@ class WorkspaceServiceClass {
   // Update a workspace
   async updateWorkspace(workspaceId: string, updates: Partial<Workspace>): Promise<void> {
     try {
-      const workspaceRef = doc(db, this.collectionName, workspaceId);
+      const workspaceRef = ref(database, `${this.collectionName}/${workspaceId}`);
 
       // Filter out undefined values
       const updateData: any = {
-        updatedAt: serverTimestamp(),
+        updatedAt: Date.now(),
       };
 
       // Only add fields that are not undefined
       Object.keys(updates).forEach(key => {
         const value = (updates as any)[key];
         if (value !== undefined) {
-          updateData[key] = value;
+          if (key === 'dueDate' && value instanceof Date) {
+            updateData[key] = value.getTime();
+          } else if (key === 'createdAt' && value instanceof Date) {
+            updateData[key] = value.getTime();
+          } else {
+            updateData[key] = value;
+          }
         }
       });
 
-      // Special handling for dueDate
-      if (updates.dueDate !== undefined) {
-        updateData.dueDate = updates.dueDate;
-      }
-
-      await updateDoc(workspaceRef, updateData);
+      await update(workspaceRef, updateData);
     } catch (error) {
       console.error('Error updating workspace:', error);
       throw new Error('Failed to update workspace');
@@ -150,8 +178,8 @@ class WorkspaceServiceClass {
   // Delete a workspace
   async deleteWorkspace(workspaceId: string): Promise<void> {
     try {
-      const workspaceRef = doc(db, this.collectionName, workspaceId);
-      await deleteDoc(workspaceRef);
+      const workspaceRef = ref(database, `${this.collectionName}/${workspaceId}`);
+      await remove(workspaceRef);
     } catch (error) {
       console.error('Error deleting workspace:', error);
       throw new Error('Failed to delete workspace');
@@ -161,23 +189,34 @@ class WorkspaceServiceClass {
   // Get workspace by ID
   async getWorkspaceById(workspaceId: string): Promise<Workspace | null> {
     try {
-      const workspaceRef = doc(db, this.collectionName, workspaceId);
-      const docSnap = await getDocs(
-        query(collection(db, this.collectionName), where('__name__', '==', workspaceId))
-      );
+      const workspaceRef = ref(database, `${this.collectionName}/${workspaceId}`);
 
-      if (docSnap.empty) {
-        return null;
-      }
+      return new Promise((resolve, reject) => {
+        onValue(
+          workspaceRef,
+          snapshot => {
+            const data = snapshot.val();
+            if (!data) {
+              resolve(null);
+              return;
+            }
 
-      const data = docSnap.docs[0].data();
-      return {
-        id: docSnap.docs[0].id,
-        ...data,
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date(),
-        dueDate: data.dueDate?.toDate(),
-      } as Workspace;
+            const workspace: Workspace = {
+              id: workspaceId,
+              ...data,
+              createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+              updatedAt: data.updatedAt ? new Date(data.updatedAt) : new Date(),
+              dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+            };
+
+            resolve(workspace);
+          },
+          error => {
+            console.error('Error getting workspace by ID:', error);
+            reject(new Error('Failed to get workspace'));
+          }
+        );
+      });
     } catch (error) {
       console.error('Error getting workspace by ID:', error);
       throw new Error('Failed to get workspace');
@@ -189,49 +228,66 @@ class WorkspaceServiceClass {
     companyId: string,
     callback: (workspaces: Workspace[]) => void
   ): () => void {
-    const workspacesRef = collection(db, this.collectionName);
-    const q = query(
-      workspacesRef,
-      where('companyId', '==', companyId),
-      orderBy('createdAt', 'desc')
-    );
+    const workspacesRef = ref(database, this.collectionName);
 
-    return onSnapshot(q, (querySnapshot: QuerySnapshot<DocumentData>) => {
-      const workspaces = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          dueDate: data.dueDate?.toDate(),
-        } as Workspace;
-      });
+    const unsubscribe = onValue(workspacesRef, snapshot => {
+      const data = snapshot.val();
+      if (!data) {
+        callback([]);
+        return;
+      }
+
+      const workspaces: Workspace[] = Object.entries(data)
+        .map(([id, workspace]: [string, any]) => ({
+          id,
+          ...workspace,
+          createdAt: workspace.createdAt ? new Date(workspace.createdAt) : new Date(),
+          updatedAt: workspace.updatedAt ? new Date(workspace.updatedAt) : new Date(),
+          dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
+        }))
+        .filter(workspace => workspace.companyId === companyId)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
       callback(workspaces);
     });
+
+    // Return unsubscribe function
+    return () => off(workspacesRef, 'value', unsubscribe);
   }
 
   // Get workspaces by status
   async getWorkspacesByStatus(companyId: string, status: string): Promise<Workspace[]> {
     try {
-      const workspacesRef = collection(db, this.collectionName);
-      const q = query(
-        workspacesRef,
-        where('companyId', '==', companyId),
-        where('status', '==', status),
-        orderBy('createdAt', 'desc')
-      );
+      const workspacesRef = ref(database, this.collectionName);
 
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          dueDate: data.dueDate?.toDate(),
-        } as Workspace;
+      return new Promise((resolve, reject) => {
+        onValue(
+          workspacesRef,
+          snapshot => {
+            const data = snapshot.val();
+            if (!data) {
+              resolve([]);
+              return;
+            }
+
+            const workspaces: Workspace[] = Object.entries(data)
+              .map(([id, workspace]: [string, any]) => ({
+                id,
+                ...workspace,
+                createdAt: workspace.createdAt ? new Date(workspace.createdAt) : new Date(),
+                updatedAt: workspace.updatedAt ? new Date(workspace.updatedAt) : new Date(),
+                dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
+              }))
+              .filter(workspace => workspace.companyId === companyId && workspace.status === status)
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+            resolve(workspaces);
+          },
+          error => {
+            console.error('Error getting workspaces by status:', error);
+            reject(new Error('Failed to get workspaces by status'));
+          }
+        );
       });
     } catch (error) {
       console.error('Error getting workspaces by status:', error);
@@ -242,24 +298,38 @@ class WorkspaceServiceClass {
   // Get workspaces by priority
   async getWorkspacesByPriority(companyId: string, priority: string): Promise<Workspace[]> {
     try {
-      const workspacesRef = collection(db, this.collectionName);
-      const q = query(
-        workspacesRef,
-        where('companyId', '==', companyId),
-        where('priority', '==', priority),
-        orderBy('createdAt', 'desc')
-      );
+      const workspacesRef = ref(database, this.collectionName);
 
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          dueDate: data.dueDate?.toDate(),
-        } as Workspace;
+      return new Promise((resolve, reject) => {
+        onValue(
+          workspacesRef,
+          snapshot => {
+            const data = snapshot.val();
+            if (!data) {
+              resolve([]);
+              return;
+            }
+
+            const workspaces: Workspace[] = Object.entries(data)
+              .map(([id, workspace]: [string, any]) => ({
+                id,
+                ...workspace,
+                createdAt: workspace.createdAt ? new Date(workspace.createdAt) : new Date(),
+                updatedAt: workspace.updatedAt ? new Date(workspace.updatedAt) : new Date(),
+                dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
+              }))
+              .filter(
+                workspace => workspace.companyId === companyId && workspace.priority === priority
+              )
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+            resolve(workspaces);
+          },
+          error => {
+            console.error('Error getting workspaces by priority:', error);
+            reject(new Error('Failed to get workspaces by priority'));
+          }
+        );
       });
     } catch (error) {
       console.error('Error getting workspaces by priority:', error);
@@ -270,24 +340,41 @@ class WorkspaceServiceClass {
   // Get workspaces assigned to user
   async getWorkspacesAssignedToUser(companyId: string, userId: string): Promise<Workspace[]> {
     try {
-      const workspacesRef = collection(db, this.collectionName);
-      const q = query(
-        workspacesRef,
-        where('companyId', '==', companyId),
-        where('assignedTo', 'array-contains', userId),
-        orderBy('createdAt', 'desc')
-      );
+      const workspacesRef = ref(database, this.collectionName);
 
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          dueDate: data.dueDate?.toDate(),
-        } as Workspace;
+      return new Promise((resolve, reject) => {
+        onValue(
+          workspacesRef,
+          snapshot => {
+            const data = snapshot.val();
+            if (!data) {
+              resolve([]);
+              return;
+            }
+
+            const workspaces: Workspace[] = Object.entries(data)
+              .map(([id, workspace]: [string, any]) => ({
+                id,
+                ...workspace,
+                createdAt: workspace.createdAt ? new Date(workspace.createdAt) : new Date(),
+                updatedAt: workspace.updatedAt ? new Date(workspace.updatedAt) : new Date(),
+                dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
+              }))
+              .filter(
+                workspace =>
+                  workspace.companyId === companyId &&
+                  workspace.assignedTo &&
+                  workspace.assignedTo.includes(userId)
+              )
+              .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+            resolve(workspaces);
+          },
+          error => {
+            console.error('Error getting workspaces assigned to user:', error);
+            reject(new Error('Failed to get workspaces assigned to user'));
+          }
+        );
       });
     } catch (error) {
       console.error('Error getting workspaces assigned to user:', error);
@@ -298,27 +385,43 @@ class WorkspaceServiceClass {
   // Get overdue workspaces
   async getOverdueWorkspaces(companyId: string): Promise<Workspace[]> {
     try {
-      const workspacesRef = collection(db, this.collectionName);
-      const now = new Date();
+      const workspacesRef = ref(database, this.collectionName);
+      const now = Date.now();
 
-      const q = query(
-        workspacesRef,
-        where('companyId', '==', companyId),
-        where('dueDate', '<', now),
-        where('status', '!=', 'completed'),
-        orderBy('dueDate', 'asc')
-      );
+      return new Promise((resolve, reject) => {
+        onValue(
+          workspacesRef,
+          snapshot => {
+            const data = snapshot.val();
+            if (!data) {
+              resolve([]);
+              return;
+            }
 
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          dueDate: data.dueDate?.toDate(),
-        } as Workspace;
+            const workspaces: Workspace[] = Object.entries(data)
+              .map(([id, workspace]: [string, any]) => ({
+                id,
+                ...workspace,
+                createdAt: workspace.createdAt ? new Date(workspace.createdAt) : new Date(),
+                updatedAt: workspace.updatedAt ? new Date(workspace.updatedAt) : new Date(),
+                dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
+              }))
+              .filter(
+                workspace =>
+                  workspace.companyId === companyId &&
+                  workspace.dueDate &&
+                  workspace.dueDate.getTime() < now &&
+                  workspace.status !== 'completed'
+              )
+              .sort((a, b) => (a.dueDate?.getTime() || 0) - (b.dueDate?.getTime() || 0));
+
+            resolve(workspaces);
+          },
+          error => {
+            console.error('Error getting overdue workspaces:', error);
+            reject(new Error('Failed to get overdue workspaces'));
+          }
+        );
       });
     } catch (error) {
       console.error('Error getting overdue workspaces:', error);
@@ -329,12 +432,17 @@ class WorkspaceServiceClass {
   // Update workspace progress
   async updateWorkspaceProgress(workspaceId: string, progress: number): Promise<void> {
     try {
-      const workspaceRef = doc(db, this.collectionName, workspaceId);
-      await updateDoc(workspaceRef, {
+      const workspaceRef = ref(database, `${this.collectionName}/${workspaceId}`);
+      const updateData: any = {
         progress: Math.max(0, Math.min(100, progress)),
-        updatedAt: serverTimestamp(),
-        ...(progress >= 100 && { status: 'completed' }),
-      });
+        updatedAt: Date.now(),
+      };
+
+      if (progress >= 100) {
+        updateData.status = 'completed';
+      }
+
+      await update(workspaceRef, updateData);
     } catch (error) {
       console.error('Error updating workspace progress:', error);
       throw new Error('Failed to update workspace progress');
@@ -344,15 +452,23 @@ class WorkspaceServiceClass {
   // Bulk update workspaces
   async bulkUpdateWorkspaces(updates: { id: string; data: Partial<Workspace> }[]): Promise<void> {
     try {
-      const promises = updates.map(({ id, data }) => {
-        const workspaceRef = doc(db, this.collectionName, id);
-        return updateDoc(workspaceRef, {
+      const updatePromises = updates.map(({ id, data }) => {
+        const workspaceRef = ref(database, `${this.collectionName}/${id}`);
+
+        const updateData: any = {
           ...data,
-          updatedAt: serverTimestamp(),
-        });
+          updatedAt: Date.now(),
+        };
+
+        // Convert Date objects to timestamps
+        if (data.dueDate instanceof Date) {
+          updateData.dueDate = data.dueDate.getTime();
+        }
+
+        return update(workspaceRef, updateData);
       });
 
-      await Promise.all(promises);
+      await Promise.all(updatePromises);
     } catch (error) {
       console.error('Error bulk updating workspaces:', error);
       throw new Error('Failed to bulk update workspaces');

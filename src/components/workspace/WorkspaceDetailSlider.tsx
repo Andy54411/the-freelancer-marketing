@@ -24,48 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-interface WorkspaceTask {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  position: number;
-  columnId?: string;
-}
-
-interface WorkspaceBoardColumn {
-  id: string;
-  title: string;
-  color: string;
-  position: number;
-  tasks: WorkspaceTask[];
-}
-
-interface Workspace {
-  id: string;
-  title: string;
-  description: string;
-  type: 'project' | 'task' | 'document' | 'process';
-  status: 'active' | 'completed' | 'paused' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  companyId: string;
-  createdBy: string;
-  progress: number;
-  boardColumns?: WorkspaceBoardColumn[];
-  tasks?: WorkspaceTask[];
-}
+import type { Workspace, WorkspaceBoardColumn, WorkspaceTask } from '@/services/WorkspaceService';
 
 interface WorkspaceDetailSliderProps {
   workspace: Workspace | null;
@@ -222,7 +181,7 @@ export function WorkspaceDetailSlider({
     <>
       {/* Backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/10 backdrop-blur-[2px] z-40 transition-opacity duration-300"
           onClick={onClose}
         />
@@ -497,9 +456,9 @@ export function WorkspaceDetailSlider({
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {onView && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="w-full justify-start bg-[#14ad9f] text-white hover:bg-[#129488]"
                       onClick={() => onView(workspace)}
                     >
@@ -508,9 +467,9 @@ export function WorkspaceDetailSlider({
                     </Button>
                   )}
                   {onEdit && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="w-full justify-start"
                       onClick={() => onEdit(workspace)}
                     >

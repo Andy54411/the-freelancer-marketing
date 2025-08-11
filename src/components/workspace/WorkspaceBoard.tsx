@@ -14,56 +14,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import TaskDetailSlider from './TaskDetailSlider';
 import { AddTaskSlideOver } from './AddTaskSlideOver';
-
-// Firebase imports
-import { doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
-
-interface WorkspaceTask {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  position: number;
-  columnId?: string;
-  archived?: boolean;
-  archivedAt?: Date;
-  archivedBy?: string;
-}
-
-interface WorkspaceBoardColumn {
-  id: string;
-  title: string;
-  color: string;
-  position: number;
-  tasks: WorkspaceTask[];
-}
-
-interface Workspace {
-  id: string;
-  title: string;
-  description: string;
-  type: 'project' | 'task' | 'document' | 'process';
-  status: 'active' | 'completed' | 'paused' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  companyId: string;
-  createdBy: string;
-  progress: number;
-  boardColumns?: WorkspaceBoardColumn[];
-  tasks?: WorkspaceTask[];
-  archivedTasks?: WorkspaceTask[];
-}
+import { WorkspaceService } from '@/services/WorkspaceService';
+import type { Workspace, WorkspaceBoardColumn, WorkspaceTask } from '@/services/WorkspaceService';
 
 interface WorkspaceBoardProps {
   workspaces: Workspace[];
@@ -79,7 +31,7 @@ export function WorkspaceBoard({
   onUpdateWorkspace,
   onWorkspaceClick,
   companyId,
-  currentUserId = 'current-user'
+  currentUserId = 'current-user',
 }: WorkspaceBoardProps) {
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(
     workspaces.length > 0 ? workspaces[0] : null
@@ -88,12 +40,12 @@ export function WorkspaceBoard({
   const [selectedColumnId, setSelectedColumnId] = useState('');
   const [selectedColumnTitle, setSelectedColumnTitle] = useState('');
   const [showArchive, setShowArchive] = useState(false);
-  
+
   // Task detail slider states
   const [selectedTask, setSelectedTask] = useState<WorkspaceTask | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 
-  // Konvertiert Firestore Timestamps zu JavaScript Dates
+  // Konvertiert Dates zu JavaScript Dates für Kompatibilität
   const normalizeTaskDates = (task: WorkspaceTask): WorkspaceTask => {
     const convertDate = (date: any): Date => {
       if (!date) return new Date();
@@ -147,7 +99,7 @@ export function WorkspaceBoard({
     if (selectedWorkspace?.boardColumns && selectedWorkspace.boardColumns.length > 0) {
       return selectedWorkspace.boardColumns.map(column => ({
         ...column,
-        tasks: column.tasks.filter(task => !task.archived) // Filtere archivierte Aufgaben aus
+        tasks: column.tasks.filter(task => !task.archived), // Filtere archivierte Aufgaben aus
       }));
     }
 
@@ -183,7 +135,7 @@ export function WorkspaceBoard({
     const updatedWorkspace = { ...selectedWorkspace, ...updates };
     setSelectedWorkspace(updatedWorkspace);
 
-    // Call parent update function for Firestore sync
+    // Call parent update function for Realtime Database sync
     // Real-time listener will handle sync across users
     onUpdateWorkspace(selectedWorkspace.id, updates);
   };
@@ -332,10 +284,10 @@ export function WorkspaceBoard({
 
   const handleEditTask = (task: WorkspaceTask) => {
     if (!selectedWorkspace) return;
-    
+
     // Normalize dates before setting task
     const normalizedTask = normalizeTaskDates(task);
-    
+
     // Open task detail slider
     setSelectedTask(normalizedTask);
     setIsTaskDetailOpen(true);
@@ -359,24 +311,30 @@ export function WorkspaceBoard({
               cleanUpdates[key] = value;
             }
           });
-          
+
           return {
             id: task.id,
             title: cleanUpdates.title !== undefined ? cleanUpdates.title : task.title,
-            description: cleanUpdates.description !== undefined ? cleanUpdates.description : (task.description || ''),
+            description:
+              cleanUpdates.description !== undefined
+                ? cleanUpdates.description
+                : task.description || '',
             status: cleanUpdates.status !== undefined ? cleanUpdates.status : task.status,
             priority: cleanUpdates.priority !== undefined ? cleanUpdates.priority : task.priority,
-            assignedTo: cleanUpdates.assignedTo !== undefined ? cleanUpdates.assignedTo : (task.assignedTo || []),
+            assignedTo:
+              cleanUpdates.assignedTo !== undefined
+                ? cleanUpdates.assignedTo
+                : task.assignedTo || [],
             dueDate: cleanUpdates.dueDate !== undefined ? cleanUpdates.dueDate : task.dueDate,
             createdAt: task.createdAt,
             updatedAt: cleanUpdates.updatedAt !== undefined ? cleanUpdates.updatedAt : new Date(),
-            tags: cleanUpdates.tags !== undefined ? cleanUpdates.tags : (task.tags || []),
+            tags: cleanUpdates.tags !== undefined ? cleanUpdates.tags : task.tags || [],
             position: cleanUpdates.position !== undefined ? cleanUpdates.position : task.position,
             columnId: cleanUpdates.columnId !== undefined ? cleanUpdates.columnId : task.columnId,
           };
         }
         return task;
-      })
+      }),
     }));
 
     updateLocalWorkspace({
@@ -398,7 +356,12 @@ export function WorkspaceBoard({
   const handleArchiveTask = async (taskId: string) => {
     if (!selectedWorkspace) return;
 
-    if (!confirm('Möchtest du diese Aufgabe ins Archiv verschieben? Sie wird vom Board entfernt, aber bleibt gespeichert.')) return;
+    if (
+      !confirm(
+        'Möchtest du diese Aufgabe ins Archiv verschieben? Sie wird vom Board entfernt, aber bleibt gespeichert.'
+      )
+    )
+      return;
 
     try {
       // Finde die Aufgabe in den Spalten
@@ -425,13 +388,13 @@ export function WorkspaceBoard({
             cleaned[key] = value;
           }
         });
-        
+
         if (isArchived) {
           cleaned.archived = true;
           cleaned.archivedAt = new Date();
           cleaned.archivedBy = currentUserId;
         }
-        
+
         cleaned.updatedAt = new Date();
         return cleaned as WorkspaceTask;
       };
@@ -444,26 +407,25 @@ export function WorkspaceBoard({
         title: col.title,
         color: col.color,
         position: col.position,
-        tasks: col.tasks
-          .filter(task => task.id !== taskId)
-          .map(task => cleanTask(task))
+        tasks: col.tasks.filter(task => task.id !== taskId).map(task => cleanTask(task)),
       }));
 
       // Aktuelles Archiv aus dem Workspace oder leeres Array
-      const currentArchivedTasks = (selectedWorkspace.archivedTasks || []).map(task => cleanTask(task));
+      const currentArchivedTasks = (selectedWorkspace.archivedTasks || []).map(task =>
+        cleanTask(task)
+      );
 
-      // Update Workspace in Firebase
-      const workspaceRef = doc(db, 'workspaces', selectedWorkspace.id);
-      await updateDoc(workspaceRef, {
+      // Update Workspace using WorkspaceService
+      await WorkspaceService.updateWorkspace(selectedWorkspace.id, {
         boardColumns: updatedColumns,
         archivedTasks: [...currentArchivedTasks, archivedTask],
-        updatedAt: serverTimestamp()
+        updatedAt: new Date(),
       });
 
       // Lokales State Update
       updateLocalWorkspace({
         boardColumns: updatedColumns,
-        archivedTasks: [...currentArchivedTasks, archivedTask]
+        archivedTasks: [...currentArchivedTasks, archivedTask],
       });
 
       // Schließe Task Detail Slider falls die archivierte Aufgabe geöffnet war
@@ -471,7 +433,6 @@ export function WorkspaceBoard({
         setIsTaskDetailOpen(false);
         setSelectedTask(null);
       }
-
     } catch (error) {
       console.error('Fehler beim Archivieren der Aufgabe:', error);
       alert('Fehler beim Archivieren der Aufgabe. Bitte versuche es erneut.');
@@ -485,7 +446,7 @@ export function WorkspaceBoard({
       // Finde archivierte Aufgabe
       const archivedTasks = selectedWorkspace.archivedTasks || [];
       const taskToRestore = archivedTasks.find(task => task.id === taskId);
-      
+
       if (!taskToRestore) return;
 
       // Bereinige Task von undefined-Werten und entferne Archivierungs-Markierungen
@@ -493,14 +454,19 @@ export function WorkspaceBoard({
         const cleaned: any = {};
         Object.keys(task).forEach(key => {
           const value = (task as any)[key];
-          if (value !== undefined && key !== 'archived' && key !== 'archivedAt' && key !== 'archivedBy') {
+          if (
+            value !== undefined &&
+            key !== 'archived' &&
+            key !== 'archivedAt' &&
+            key !== 'archivedBy'
+          ) {
             cleaned[key] = value;
           }
         });
         return {
           ...cleaned,
           archived: false,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         } as WorkspaceTask;
       };
 
@@ -508,7 +474,7 @@ export function WorkspaceBoard({
 
       // Finde Ziel-Spalte (ursprüngliche Spalte oder 'todo' als Fallback)
       const targetColumnId = taskToRestore.columnId || taskToRestore.status || 'todo';
-      
+
       // Bereinige die Spalten von undefined-Werten
       const cleanColumns = (columns: WorkspaceBoardColumn[]): WorkspaceBoardColumn[] => {
         return columns.map(col => {
@@ -518,7 +484,7 @@ export function WorkspaceBoard({
               title: col.title,
               color: col.color,
               position: col.position,
-              tasks: [...col.tasks.map(cleanTask), restoredTask]
+              tasks: [...col.tasks.map(cleanTask), restoredTask],
             };
           }
           return {
@@ -526,7 +492,7 @@ export function WorkspaceBoard({
             title: col.title,
             color: col.color,
             position: col.position,
-            tasks: col.tasks.map(cleanTask)
+            tasks: col.tasks.map(cleanTask),
           };
         });
       };
@@ -534,24 +500,20 @@ export function WorkspaceBoard({
       const updatedColumns = cleanColumns(columns);
 
       // Entferne Aufgabe aus dem Archiv und bereinige
-      const updatedArchivedTasks = archivedTasks
-        .filter(task => task.id !== taskId)
-        .map(cleanTask);
+      const updatedArchivedTasks = archivedTasks.filter(task => task.id !== taskId).map(cleanTask);
 
-      // Update Firebase
-      const workspaceRef = doc(db, 'workspaces', selectedWorkspace.id);
-      await updateDoc(workspaceRef, {
+      // Update using WorkspaceService
+      await WorkspaceService.updateWorkspace(selectedWorkspace.id, {
         boardColumns: updatedColumns,
         archivedTasks: updatedArchivedTasks,
-        updatedAt: serverTimestamp()
+        updatedAt: new Date(),
       });
 
       // Lokales State Update
       updateLocalWorkspace({
         boardColumns: updatedColumns,
-        archivedTasks: updatedArchivedTasks
+        archivedTasks: updatedArchivedTasks,
       });
-
     } catch (error) {
       console.error('Fehler beim Wiederherstellen der Aufgabe:', error);
       alert('Fehler beim Wiederherstellen der Aufgabe. Bitte versuche es erneut.');
@@ -561,13 +523,18 @@ export function WorkspaceBoard({
   const handlePermanentDeleteTask = async (taskId: string) => {
     if (!selectedWorkspace) return;
 
-    if (!confirm('ACHTUNG: Diese Aufgabe wird endgültig gelöscht und kann nicht wiederhergestellt werden. Fortfahren?')) return;
+    if (
+      !confirm(
+        'ACHTUNG: Diese Aufgabe wird endgültig gelöscht und kann nicht wiederhergestellt werden. Fortfahren?'
+      )
+    )
+      return;
 
     try {
       // Finde archivierte Aufgabe
       const archivedTasks = selectedWorkspace.archivedTasks || [];
       const taskToDelete = archivedTasks.find(task => task.id === taskId);
-      
+
       if (!taskToDelete) return;
 
       // Bereinige verbleibende archivierte Aufgaben von undefined-Werten
@@ -583,20 +550,17 @@ export function WorkspaceBoard({
       };
 
       // Entferne Aufgabe permanent aus dem Archiv
-      const updatedArchivedTasks = archivedTasks
-        .filter(task => task.id !== taskId)
-        .map(cleanTask);
+      const updatedArchivedTasks = archivedTasks.filter(task => task.id !== taskId).map(cleanTask);
 
-      // Update Firebase
-      const workspaceRef = doc(db, 'workspaces', selectedWorkspace.id);
-      await updateDoc(workspaceRef, {
+      // Update using WorkspaceService
+      await WorkspaceService.updateWorkspace(selectedWorkspace.id, {
         archivedTasks: updatedArchivedTasks,
-        updatedAt: serverTimestamp()
+        updatedAt: new Date(),
       });
 
       // Lokales State Update
       updateLocalWorkspace({
-        archivedTasks: updatedArchivedTasks
+        archivedTasks: updatedArchivedTasks,
       });
 
       // Schließe Task Detail Slider falls die gelöschte Aufgabe geöffnet war
@@ -604,7 +568,6 @@ export function WorkspaceBoard({
         setIsTaskDetailOpen(false);
         setSelectedTask(null);
       }
-
     } catch (error) {
       console.error('Fehler beim endgültigen Löschen der Aufgabe:', error);
       alert('Fehler beim Löschen der Aufgabe. Bitte versuche es erneut.');
@@ -675,14 +638,19 @@ export function WorkspaceBoard({
                   variant={showArchive ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setShowArchive(!showArchive)}
-                  className={showArchive ? 'bg-orange-500 hover:bg-orange-600' : 'border-orange-500 text-orange-600 hover:bg-orange-50'}
+                  className={
+                    showArchive
+                      ? 'bg-orange-500 hover:bg-orange-600'
+                      : 'border-orange-500 text-orange-600 hover:bg-orange-50'
+                  }
                 >
                   {showArchive ? 'Board anzeigen' : 'Archiv anzeigen'}
-                  {selectedWorkspace.archivedTasks && selectedWorkspace.archivedTasks.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {selectedWorkspace.archivedTasks.length}
-                    </Badge>
-                  )}
+                  {selectedWorkspace.archivedTasks &&
+                    selectedWorkspace.archivedTasks.length > 0 && (
+                      <Badge variant="secondary" className="ml-2">
+                        {selectedWorkspace.archivedTasks.length}
+                      </Badge>
+                    )}
                 </Button>
 
                 {onWorkspaceClick && (
@@ -708,7 +676,8 @@ export function WorkspaceBoard({
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Archivierte Aufgaben</h2>
               <p className="text-gray-600">
-                Hier findest du alle archivierten Aufgaben. Du kannst sie wiederherstellen oder endgültig löschen.
+                Hier findest du alle archivierten Aufgaben. Du kannst sie wiederherstellen oder
+                endgültig löschen.
               </p>
             </div>
 
@@ -720,26 +689,26 @@ export function WorkspaceBoard({
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`} />
+                            <div
+                              className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`}
+                            />
                             <h3 className="font-medium text-gray-900">{task.title}</h3>
                             <Badge variant="outline">{task.priority}</Badge>
                             <Badge variant="outline" className="bg-orange-50 text-orange-600">
                               Archiviert
                             </Badge>
                           </div>
-                          
+
                           {task.description && (
                             <p className="text-gray-600 text-sm mb-2">{task.description}</p>
                           )}
-                          
+
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <span>Erstellt: {formatDate(task.createdAt)}</span>
                             {task.archivedAt && (
                               <span>Archiviert: {formatDate(task.archivedAt)}</span>
                             )}
-                            {task.dueDate && (
-                              <span>Fällig: {formatDate(task.dueDate)}</span>
-                            )}
+                            {task.dueDate && <span>Fällig: {formatDate(task.dueDate)}</span>}
                           </div>
 
                           {task.tags.length > 0 && (
@@ -806,201 +775,203 @@ export function WorkspaceBoard({
         ) : (
           // Board-Ansicht
           <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="board" direction="horizontal" type="column">
-            {provided => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className="flex gap-6 h-full min-w-max"
-              >
-                {columns.map((column, index) => (
-                  <Draggable key={column.id} draggableId={column.id} index={index}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className={`flex flex-col w-64 bg-white rounded-lg shadow-sm border border-gray-200 ${
-                          snapshot.isDragging ? 'rotate-2 shadow-lg' : ''
-                        }`}
-                      >
-                        {/* Column Header */}
+            <Droppable droppableId="board" direction="horizontal" type="column">
+              {provided => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="flex gap-6 h-full min-w-max"
+                >
+                  {columns.map((column, index) => (
+                    <Draggable key={column.id} draggableId={column.id} index={index}>
+                      {(provided, snapshot) => (
                         <div
-                          {...provided.dragHandleProps}
-                          className="flex items-center justify-between p-3 border-b border-gray-200 cursor-grab"
-                          style={{ backgroundColor: column.color }}
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`flex flex-col w-64 bg-white rounded-lg shadow-sm border border-gray-200 ${
+                            snapshot.isDragging ? 'rotate-2 shadow-lg' : ''
+                          }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium text-gray-900">{column.title}</h3>
-                            <Badge variant="secondary" className="text-xs">
-                              {column.tasks.length}
-                            </Badge>
+                          {/* Column Header */}
+                          <div
+                            {...provided.dragHandleProps}
+                            className="flex items-center justify-between p-3 border-b border-gray-200 cursor-grab"
+                            style={{ backgroundColor: column.color }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-medium text-gray-900">{column.title}</h3>
+                              <Badge variant="secondary" className="text-xs">
+                                {column.tasks.length}
+                              </Badge>
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem>Spalte bearbeiten</DropdownMenuItem>
+                                <DropdownMenuItem>Spalte löschen</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem>Spalte bearbeiten</DropdownMenuItem>
-                              <DropdownMenuItem>Spalte löschen</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
 
-                        {/* Tasks */}
-                        <Droppable droppableId={column.id} type="task">
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              className={`flex-1 p-3 space-y-2 min-h-24 ${
-                                snapshot.isDraggingOver ? 'bg-gray-50' : ''
-                              }`}
-                            >
-                              {column.tasks.map((task, taskIndex) => (
-                                <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
-                                  {(provided, snapshot) => (
-                                    <Card
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      className={`${
-                                        snapshot.isDragging
-                                          ? 'shadow-lg rotate-1'
-                                          : 'hover:shadow-md'
-                                      } transition-all duration-200`}
-                                    >
-                                      <CardContent className="p-2">
-                                        {/* Drag Handle - separate from clickable content */}
-                                        <div 
-                                          {...provided.dragHandleProps}
-                                          className="cursor-grab mb-2 flex items-center justify-between"
-                                        >
+                          {/* Tasks */}
+                          <Droppable droppableId={column.id} type="task">
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={`flex-1 p-3 space-y-2 min-h-24 ${
+                                  snapshot.isDraggingOver ? 'bg-gray-50' : ''
+                                }`}
+                              >
+                                {column.tasks.map((task, taskIndex) => (
+                                  <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
+                                    {(provided, snapshot) => (
+                                      <Card
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        className={`${
+                                          snapshot.isDragging
+                                            ? 'shadow-lg rotate-1'
+                                            : 'hover:shadow-md'
+                                        } transition-all duration-200`}
+                                      >
+                                        <CardContent className="p-2">
+                                          {/* Drag Handle - separate from clickable content */}
                                           <div
-                                            className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`}
-                                          />
-                                          <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                              <Button 
-                                                variant="ghost" 
-                                                size="sm"
-                                                onClick={(e) => e.stopPropagation()}
-                                              >
-                                                <MoreHorizontal className="h-4 w-4" />
-                                              </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                              <DropdownMenuItem onClick={() => handleEditTask(task)}>
-                                                Bearbeiten
-                                              </DropdownMenuItem>
-                                              <DropdownMenuItem 
-                                                onClick={() => handleArchiveTask(task.id)}
-                                                className="text-orange-600"
-                                              >
-                                                Archivieren
-                                              </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                          </DropdownMenu>
-                                        </div>
-
-                                        {/* Clickable Task Content */}
-                                        <div 
-                                          className="cursor-pointer space-y-1.5"
-                                          onClick={() => handleEditTask(task)}
-                                        >
-                                          {/* Task Title */}
-                                          <h4 className="font-medium text-gray-900 text-xs leading-tight">
-                                            {task.title}
-                                          </h4>
-
-                                          {/* Task Description */}
-                                          {task.description && (
-                                            <p className="text-xs text-gray-500 line-clamp-2">
-                                              {task.description}
-                                            </p>
-                                          )}
-
-                                          {/* Tags */}
-                                          {task.tags.length > 0 && (
-                                            <div className="flex flex-wrap gap-1">
-                                              {task.tags.slice(0, 3).map(tag => (
-                                                <Badge
-                                                  key={tag}
-                                                  variant="outline"
-                                                  className="text-[10px] px-1.5 py-0.5"
+                                            {...provided.dragHandleProps}
+                                            className="cursor-grab mb-2 flex items-center justify-between"
+                                          >
+                                            <div
+                                              className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`}
+                                            />
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={e => e.stopPropagation()}
                                                 >
-                                                  {tag}
-                                                </Badge>
-                                              ))}
-                                              {task.tags.length > 3 && (
-                                                <Badge
-                                                  variant="outline"
-                                                  className="text-[10px] px-1.5 py-0.5"
+                                                  <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent>
+                                                <DropdownMenuItem
+                                                  onClick={() => handleEditTask(task)}
                                                 >
-                                                  +{task.tags.length - 3}
-                                                </Badge>
+                                                  Bearbeiten
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                  onClick={() => handleArchiveTask(task.id)}
+                                                  className="text-orange-600"
+                                                >
+                                                  Archivieren
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          </div>
+
+                                          {/* Clickable Task Content */}
+                                          <div
+                                            className="cursor-pointer space-y-1.5"
+                                            onClick={() => handleEditTask(task)}
+                                          >
+                                            {/* Task Title */}
+                                            <h4 className="font-medium text-gray-900 text-xs leading-tight">
+                                              {task.title}
+                                            </h4>
+
+                                            {/* Task Description */}
+                                            {task.description && (
+                                              <p className="text-xs text-gray-500 line-clamp-2">
+                                                {task.description}
+                                              </p>
+                                            )}
+
+                                            {/* Tags */}
+                                            {task.tags.length > 0 && (
+                                              <div className="flex flex-wrap gap-1">
+                                                {task.tags.slice(0, 3).map(tag => (
+                                                  <Badge
+                                                    key={tag}
+                                                    variant="outline"
+                                                    className="text-[10px] px-1.5 py-0.5"
+                                                  >
+                                                    {tag}
+                                                  </Badge>
+                                                ))}
+                                                {task.tags.length > 3 && (
+                                                  <Badge
+                                                    variant="outline"
+                                                    className="text-[10px] px-1.5 py-0.5"
+                                                  >
+                                                    +{task.tags.length - 3}
+                                                  </Badge>
+                                                )}
+                                              </div>
+                                            )}
+
+                                            {/* Task Footer */}
+                                            <div className="flex items-center justify-between text-[10px] text-gray-500">
+                                              {/* Due Date */}
+                                              {task.dueDate && (
+                                                <div className="flex items-center gap-1">
+                                                  <Calendar className="h-2.5 w-2.5" />
+                                                  <span>{formatDate(task.dueDate)}</span>
+                                                </div>
+                                              )}
+
+                                              {/* Assigned Users */}
+                                              {task.assignedTo.length > 0 && (
+                                                <div className="flex items-center gap-1">
+                                                  <User className="h-2.5 w-2.5" />
+                                                  <span>{task.assignedTo.length}</span>
+                                                </div>
                                               )}
                                             </div>
-                                          )}
-
-                                          {/* Task Footer */}
-                                          <div className="flex items-center justify-between text-[10px] text-gray-500">
-                                            {/* Due Date */}
-                                            {task.dueDate && (
-                                              <div className="flex items-center gap-1">
-                                                <Calendar className="h-2.5 w-2.5" />
-                                                <span>{formatDate(task.dueDate)}</span>
-                                              </div>
-                                            )}
-
-                                            {/* Assigned Users */}
-                                            {task.assignedTo.length > 0 && (
-                                              <div className="flex items-center gap-1">
-                                                <User className="h-2.5 w-2.5" />
-                                                <span>{task.assignedTo.length}</span>
-                                              </div>
-                                            )}
                                           </div>
-                                        </div>
-                                      </CardContent>
-                                    </Card>
-                                  )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
+                                        </CardContent>
+                                      </Card>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
 
-                              {/* Add Task Button */}
-                              <Button
-                                variant="ghost"
-                                className="w-full justify-start text-gray-500 hover:text-gray-700 border-2 border-dashed border-gray-300 hover:border-gray-400"
-                                onClick={() => handleAddTask(column.id, column.title)}
-                              >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Aufgabe hinzufügen
-                              </Button>
-                            </div>
-                          )}
-                        </Droppable>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
+                                {/* Add Task Button */}
+                                <Button
+                                  variant="ghost"
+                                  className="w-full justify-start text-gray-500 hover:text-gray-700 border-2 border-dashed border-gray-300 hover:border-gray-400"
+                                  onClick={() => handleAddTask(column.id, column.title)}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Aufgabe hinzufügen
+                                </Button>
+                              </div>
+                            )}
+                          </Droppable>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
 
-                {/* Add Column Button */}
-                <div className="flex flex-col w-64">
-                  <Button
-                    variant="ghost"
-                    className="h-full justify-start text-gray-500 hover:text-gray-700 border-2 border-dashed border-gray-300 hover:border-gray-400"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Spalte hinzufügen
-                  </Button>
+                  {/* Add Column Button */}
+                  <div className="flex flex-col w-64">
+                    <Button
+                      variant="ghost"
+                      className="h-full justify-start text-gray-500 hover:text-gray-700 border-2 border-dashed border-gray-300 hover:border-gray-400"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Spalte hinzufügen
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+              )}
+            </Droppable>
+          </DragDropContext>
         )}
       </div>
 

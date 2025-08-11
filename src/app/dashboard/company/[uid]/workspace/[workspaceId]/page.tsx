@@ -2,19 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Edit, 
-  Calendar, 
-  Users, 
-  Tag, 
-  Clock, 
-  BarChart3, 
+import {
+  ArrowLeft,
+  Edit,
+  Calendar,
+  Users,
+  Tag,
+  Clock,
+  BarChart3,
   CheckCircle,
   AlertTriangle,
   Plus,
   MoreHorizontal,
-  Settings
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,59 +30,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { WorkspaceService } from '@/services/WorkspaceService';
+import type { Workspace, WorkspaceBoardColumn, WorkspaceTask } from '@/services/WorkspaceService';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspaceBoard } from '@/components/workspace/WorkspaceBoard';
-
-interface WorkspaceTask {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  position: number;
-  columnId?: string;
-}
-
-interface WorkspaceBoardColumn {
-  id: string;
-  title: string;
-  color: string;
-  position: number;
-  tasks: WorkspaceTask[];
-}
-
-interface Workspace {
-  id: string;
-  title: string;
-  description: string;
-  type: 'project' | 'task' | 'document' | 'process';
-  status: 'active' | 'completed' | 'paused' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  companyId: string;
-  createdBy: string;
-  progress: number;
-  boardColumns?: WorkspaceBoardColumn[];
-  tasks?: WorkspaceTask[];
-}
 
 export default function WorkspaceDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
-  
+
   const workspaceId = params.workspaceId as string;
   const companyId = params.uid as string;
-  
+
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -90,16 +49,16 @@ export default function WorkspaceDetailPage() {
   useEffect(() => {
     const loadWorkspace = async () => {
       if (!workspaceId) return;
-      
+
       try {
         setLoading(true);
         const workspaceData = await WorkspaceService.getWorkspaceById(workspaceId);
-        
+
         if (!workspaceData) {
           router.push(`/dashboard/company/${companyId}/workspace`);
           return;
         }
-        
+
         setWorkspace(workspaceData);
       } catch (error) {
         console.error('Error loading workspace:', error);
@@ -127,7 +86,7 @@ export default function WorkspaceDetailPage() {
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
     if (!confirm('Möchtest du dieses Workspace wirklich löschen?')) return;
-    
+
     try {
       await WorkspaceService.deleteWorkspace(workspaceId);
       router.push(`/dashboard/company/${companyId}/workspace`);
@@ -150,67 +109,97 @@ export default function WorkspaceDetailPage() {
     return new Intl.DateTimeFormat('de-DE', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
     }).format(date);
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'urgent':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'high':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 border-green-200';
-      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'paused': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'archived': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'active':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'paused':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'project': return '🚀';
-      case 'task': return '✅';
-      case 'document': return '📄';
-      case 'process': return '⚙️';
-      default: return '📁';
+      case 'project':
+        return '🚀';
+      case 'task':
+        return '✅';
+      case 'document':
+        return '📄';
+      case 'process':
+        return '⚙️';
+      default:
+        return '📁';
     }
   };
 
   const getPriorityLabel = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'Dringend';
-      case 'high': return 'Hoch';
-      case 'medium': return 'Normal';
-      case 'low': return 'Niedrig';
-      default: return priority;
+      case 'urgent':
+        return 'Dringend';
+      case 'high':
+        return 'Hoch';
+      case 'medium':
+        return 'Normal';
+      case 'low':
+        return 'Niedrig';
+      default:
+        return priority;
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'active': return 'Aktiv';
-      case 'completed': return 'Abgeschlossen';
-      case 'paused': return 'Pausiert';
-      case 'archived': return 'Archiviert';
-      default: return status;
+      case 'active':
+        return 'Aktiv';
+      case 'completed':
+        return 'Abgeschlossen';
+      case 'paused':
+        return 'Pausiert';
+      case 'archived':
+        return 'Archiviert';
+      default:
+        return status;
     }
   };
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'project': return 'Projekt';
-      case 'task': return 'Aufgabe';
-      case 'document': return 'Dokument';
-      case 'process': return 'Prozess';
-      default: return type;
+      case 'project':
+        return 'Projekt';
+      case 'task':
+        return 'Aufgabe';
+      case 'document':
+        return 'Dokument';
+      case 'process':
+        return 'Prozess';
+      default:
+        return type;
     }
   };
 
@@ -227,7 +216,9 @@ export default function WorkspaceDetailPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <h3 className="text-lg font-medium text-gray-900 mb-2">Workspace nicht gefunden</h3>
-          <p className="text-gray-500 mb-4">Das gewünschte Workspace konnte nicht geladen werden.</p>
+          <p className="text-gray-500 mb-4">
+            Das gewünschte Workspace konnte nicht geladen werden.
+          </p>
           <Button onClick={() => router.push(`/dashboard/company/${companyId}/workspace`)}>
             Zurück zur Übersicht
           </Button>
@@ -240,11 +231,16 @@ export default function WorkspaceDetailPage() {
   const columns = workspace.boardColumns || [];
   const allTasks = columns.flatMap(col => col.tasks);
   const totalTasks = allTasks.length;
-  const completedTasks = allTasks.filter(task => task.status === 'done' || task.status === 'completed').length;
+  const completedTasks = allTasks.filter(
+    task => task.status === 'done' || task.status === 'completed'
+  ).length;
   const urgentTasks = allTasks.filter(task => task.priority === 'urgent').length;
-  const overdueTasks = allTasks.filter(task => 
-    task.dueDate && new Date(task.dueDate) < new Date() && 
-    task.status !== 'done' && task.status !== 'completed'
+  const overdueTasks = allTasks.filter(
+    task =>
+      task.dueDate &&
+      new Date(task.dueDate) < new Date() &&
+      task.status !== 'done' &&
+      task.status !== 'completed'
   ).length;
 
   const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -283,7 +279,11 @@ export default function WorkspaceDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => router.push(`/dashboard/company/${companyId}/workspace/${workspaceId}/edit`)}>
+                <DropdownMenuItem
+                  onClick={() =>
+                    router.push(`/dashboard/company/${companyId}/workspace/${workspaceId}/edit`)
+                  }
+                >
                   <Edit className="h-4 w-4 mr-2" />
                   Bearbeiten
                 </DropdownMenuItem>
@@ -291,7 +291,7 @@ export default function WorkspaceDetailPage() {
                   <Settings className="h-4 w-4 mr-2" />
                   Einstellungen
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => handleDeleteWorkspace(workspace.id)}
                   className="text-red-600"
                 >
@@ -300,9 +300,11 @@ export default function WorkspaceDetailPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             <Button
-              onClick={() => router.push(`/dashboard/company/${companyId}/workspace/${workspaceId}/edit`)}
+              onClick={() =>
+                router.push(`/dashboard/company/${companyId}/workspace/${workspaceId}/edit`)
+              }
               className="bg-[#14ad9f] hover:bg-[#129488] text-white"
             >
               <Edit className="h-4 w-4 mr-2" />
@@ -425,7 +427,9 @@ export default function WorkspaceDetailPage() {
                     <div>
                       <p className="text-gray-600">Geschätzte Fertigstellung</p>
                       <p className="font-semibold">
-                        {workspace.dueDate ? formatDateShort(workspace.dueDate) : 'Nicht festgelegt'}
+                        {workspace.dueDate
+                          ? formatDateShort(workspace.dueDate)
+                          : 'Nicht festgelegt'}
                       </p>
                     </div>
                   </div>
@@ -482,9 +486,7 @@ export default function WorkspaceDetailPage() {
                       {workspace.assignedTo.map((userId, index) => (
                         <div key={userId} className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback>
-                              {`U${index + 1}`}
-                            </AvatarFallback>
+                            <AvatarFallback>{`U${index + 1}`}</AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="text-sm font-medium">Team Mitglied {index + 1}</p>
@@ -519,8 +521,8 @@ export default function WorkspaceDetailPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full" 
+                        <div
+                          className="w-4 h-4 rounded-full"
                           style={{ backgroundColor: column.color }}
                         />
                         {column.title}
@@ -534,13 +536,21 @@ export default function WorkspaceDetailPage() {
                     ) : (
                       <div className="space-y-3">
                         {column.tasks.map(task => (
-                          <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div className={`w-3 h-3 rounded-full mt-1 ${
-                              task.priority === 'urgent' ? 'bg-red-500' :
-                              task.priority === 'high' ? 'bg-orange-500' :
-                              task.priority === 'medium' ? 'bg-yellow-500' :
-                              'bg-green-500'
-                            }`} />
+                          <div
+                            key={task.id}
+                            className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                          >
+                            <div
+                              className={`w-3 h-3 rounded-full mt-1 ${
+                                task.priority === 'urgent'
+                                  ? 'bg-red-500'
+                                  : task.priority === 'high'
+                                    ? 'bg-orange-500'
+                                    : task.priority === 'medium'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-green-500'
+                              }`}
+                            />
                             <div className="flex-1 min-w-0">
                               <h4 className="font-medium text-gray-900">{task.title}</h4>
                               {task.description && (
@@ -586,7 +596,9 @@ export default function WorkspaceDetailPage() {
                     <div className="space-y-4">
                       <div>
                         <p className="text-sm text-gray-600">Workspace-ID</p>
-                        <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{workspace.id}</p>
+                        <p className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
+                          {workspace.id}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">Typ</p>
@@ -633,10 +645,12 @@ export default function WorkspaceDetailPage() {
                   <CardTitle>Aktionen</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full justify-start"
-                    onClick={() => router.push(`/dashboard/company/${companyId}/workspace/${workspaceId}/edit`)}
+                    onClick={() =>
+                      router.push(`/dashboard/company/${companyId}/workspace/${workspaceId}/edit`)
+                    }
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Workspace bearbeiten
@@ -650,8 +664,8 @@ export default function WorkspaceDetailPage() {
                     Berichte anzeigen
                   </Button>
                   <Separator />
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                     onClick={() => handleDeleteWorkspace(workspace.id)}
                   >

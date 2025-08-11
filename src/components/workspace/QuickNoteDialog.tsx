@@ -22,25 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { WorkspaceService } from '@/services/WorkspaceService';
-
-interface Workspace {
-  id: string;
-  title: string;
-  description: string;
-  type: 'project' | 'task' | 'document' | 'process';
-  status: 'active' | 'completed' | 'paused' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  companyId: string;
-  createdBy: string;
-  progress: number;
-  boardColumns?: any[];
-  tasks?: any[];
-}
+import type { Workspace, WorkspaceTask, WorkspaceBoardColumn } from '@/services/WorkspaceService';
 
 interface QuickNoteDialogProps {
   workspaces: Workspace[];

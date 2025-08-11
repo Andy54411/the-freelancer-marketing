@@ -16,47 +16,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { QuickNoteDialog } from './QuickNoteDialog';
 
-interface Workspace {
-  id: string;
-  title: string;
-  description: string;
-  type: 'project' | 'task' | 'document' | 'process';
-  status: 'active' | 'completed' | 'paused' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  companyId: string;
-  createdBy: string;
-  progress: number;
-  boardColumns?: WorkspaceBoardColumn[];
-  tasks?: WorkspaceTask[];
-}
-
-interface WorkspaceBoardColumn {
-  id: string;
-  title: string;
-  color: string;
-  position: number;
-  tasks: WorkspaceTask[];
-}
-
-interface WorkspaceTask {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  position: number;
-  columnId?: string;
-}
+// Import types from WorkspaceService (remove local duplicates)
+import type { Workspace, WorkspaceBoardColumn, WorkspaceTask } from '@/services/WorkspaceService';
 
 type ViewMode = 'board' | 'list' | 'calendar';
 
@@ -77,38 +38,6 @@ export default function WorkspaceManager() {
   // Company ID aus URL-Parametern oder User UID verwenden
   const companyId = user?.uid;
 
-  // Normalisiert Firestore Timestamps zu JavaScript Dates
-  const normalizeWorkspaceData = (workspace: any): Workspace => {
-    const convertDate = (date: any): Date => {
-      if (!date) return new Date();
-      if (typeof date.toDate === 'function') return date.toDate();
-      if (typeof date.seconds === 'number') return new Date(date.seconds * 1000);
-      if (date instanceof Date) return date;
-      return new Date(date);
-    };
-
-    const normalizeTask = (task: any): WorkspaceTask => ({
-      ...task,
-      createdAt: convertDate(task.createdAt),
-      updatedAt: convertDate(task.updatedAt),
-      dueDate: task.dueDate ? convertDate(task.dueDate) : undefined,
-    });
-
-    const normalizeColumn = (column: any): WorkspaceBoardColumn => ({
-      ...column,
-      tasks: column.tasks ? column.tasks.map(normalizeTask) : [],
-    });
-
-    return {
-      ...workspace,
-      createdAt: convertDate(workspace.createdAt),
-      updatedAt: convertDate(workspace.updatedAt),
-      dueDate: workspace.dueDate ? convertDate(workspace.dueDate) : undefined,
-      boardColumns: workspace.boardColumns ? workspace.boardColumns.map(normalizeColumn) : [],
-      tasks: workspace.tasks ? workspace.tasks.map(normalizeTask) : [],
-    };
-  };
-
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
 
@@ -120,8 +49,7 @@ export default function WorkspaceManager() {
 
         // Setup real-time listener for workspaces
         unsubscribe = WorkspaceService.subscribeToWorkspaces(companyId, workspaceData => {
-          const normalizedWorkspaces = workspaceData.map(normalizeWorkspaceData);
-          setWorkspaces(normalizedWorkspaces);
+          setWorkspaces(workspaceData);
           setLoading(false);
         });
       } catch (error) {
@@ -171,7 +99,7 @@ export default function WorkspaceManager() {
         )
       );
 
-      // Update in Firestore - real-time listener will sync automatically
+      // Update in Realtime Database - real-time listener will sync automatically
       await WorkspaceService.updateWorkspace(workspaceId, updates);
     } catch (error) {
       console.error('Error updating workspace:', error);

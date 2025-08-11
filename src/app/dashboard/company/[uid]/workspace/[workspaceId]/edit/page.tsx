@@ -2,14 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Save, 
-  Trash2, 
-  Calendar, 
-  Tag, 
-  FileText 
-} from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Calendar, Tag, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,35 +17,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { WorkspaceService } from '@/services/WorkspaceService';
+import type { Workspace } from '@/services/WorkspaceService';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface Workspace {
-  id: string;
-  title: string;
-  description: string;
-  type: 'project' | 'task' | 'document' | 'process';
-  status: 'active' | 'completed' | 'paused' | 'archived';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  assignedTo: string[];
-  dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  tags: string[];
-  companyId: string;
-  createdBy: string;
-  progress: number;
-  boardColumns?: any[];
-  tasks?: any[];
-}
 
 export default function EditWorkspacePage() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
-  
+
   const workspaceId = params.workspaceId as string;
   const companyId = params.uid as string;
-  
+
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -70,16 +45,16 @@ export default function EditWorkspacePage() {
   useEffect(() => {
     const loadWorkspace = async () => {
       if (!workspaceId) return;
-      
+
       try {
         setLoading(true);
         const workspaceData = await WorkspaceService.getWorkspaceById(workspaceId);
-        
+
         if (!workspaceData) {
           router.push(`/dashboard/company/${companyId}/workspace`);
           return;
         }
-        
+
         setWorkspace(workspaceData);
         setFormData({
           title: workspaceData.title,
@@ -87,8 +62,8 @@ export default function EditWorkspacePage() {
           type: workspaceData.type,
           status: workspaceData.status,
           priority: workspaceData.priority,
-          dueDate: workspaceData.dueDate 
-            ? new Date(workspaceData.dueDate).toISOString().split('T')[0] 
+          dueDate: workspaceData.dueDate
+            ? new Date(workspaceData.dueDate).toISOString().split('T')[0]
             : '',
           tags: workspaceData.tags || [],
         });
@@ -105,10 +80,10 @@ export default function EditWorkspacePage() {
 
   const handleSave = async () => {
     if (!workspace || !user?.uid) return;
-    
+
     try {
       setSaving(true);
-      
+
       // Create update data from form
       const updateData: Record<string, unknown> = {
         title: formData.title.trim(),
@@ -129,9 +104,9 @@ export default function EditWorkspacePage() {
           filteredUpdateData[key] = value;
         }
       });
-      
+
       await WorkspaceService.updateWorkspace(workspace.id, filteredUpdateData);
-      
+
       // Navigate back to workspace overview
       router.push(`/dashboard/company/${companyId}/workspace`);
     } catch (error) {
@@ -143,10 +118,15 @@ export default function EditWorkspacePage() {
   };
 
   const handleDelete = async () => {
-    if (!workspace || !confirm('Möchtest du dieses Workspace wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+    if (
+      !workspace ||
+      !confirm(
+        'Möchtest du dieses Workspace wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
+      )
+    ) {
       return;
     }
-    
+
     try {
       await WorkspaceService.deleteWorkspace(workspace.id);
       router.push(`/dashboard/company/${companyId}/workspace`);
@@ -175,41 +155,61 @@ export default function EditWorkspacePage() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'project': return '🚀';
-      case 'task': return '✅';
-      case 'document': return '📄';
-      case 'process': return '⚙️';
-      default: return '📁';
+      case 'project':
+        return '🚀';
+      case 'task':
+        return '✅';
+      case 'document':
+        return '📄';
+      case 'process':
+        return '⚙️';
+      default:
+        return '📁';
     }
   };
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case 'project': return 'Projekt';
-      case 'task': return 'Aufgabe';
-      case 'document': return 'Dokument';
-      case 'process': return 'Prozess';
-      default: return type;
+      case 'project':
+        return 'Projekt';
+      case 'task':
+        return 'Aufgabe';
+      case 'document':
+        return 'Dokument';
+      case 'process':
+        return 'Prozess';
+      default:
+        return type;
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'active': return 'Aktiv';
-      case 'completed': return 'Abgeschlossen';
-      case 'paused': return 'Pausiert';
-      case 'archived': return 'Archiviert';
-      default: return status;
+      case 'active':
+        return 'Aktiv';
+      case 'completed':
+        return 'Abgeschlossen';
+      case 'paused':
+        return 'Pausiert';
+      case 'archived':
+        return 'Archiviert';
+      default:
+        return status;
     }
   };
 
   const getPriorityLabel = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'Dringend';
-      case 'high': return 'Hoch';
-      case 'medium': return 'Normal';
-      case 'low': return 'Niedrig';
-      default: return priority;
+      case 'urgent':
+        return 'Dringend';
+      case 'high':
+        return 'Hoch';
+      case 'medium':
+        return 'Normal';
+      case 'low':
+        return 'Niedrig';
+      default:
+        return priority;
     }
   };
 
@@ -226,7 +226,9 @@ export default function EditWorkspacePage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <h3 className="text-lg font-medium text-gray-900 mb-2">Workspace nicht gefunden</h3>
-          <p className="text-gray-500 mb-4">Das gewünschte Workspace konnte nicht geladen werden.</p>
+          <p className="text-gray-500 mb-4">
+            Das gewünschte Workspace konnte nicht geladen werden.
+          </p>
           <Button onClick={() => router.push(`/dashboard/company/${companyId}/workspace`)}>
             Zurück zur Übersicht
           </Button>
@@ -256,7 +258,7 @@ export default function EditWorkspacePage() {
                 Workspace bearbeiten
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                Bearbeite die Details für "{workspace.title}"
+                Bearbeite die Details für &quot;{workspace.title}&quot;
               </p>
             </div>
           </div>
@@ -299,7 +301,7 @@ export default function EditWorkspacePage() {
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="Workspace-Titel eingeben..."
                   className="mt-1"
                 />
@@ -310,7 +312,7 @@ export default function EditWorkspacePage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Beschreibung des Workspace..."
                   rows={3}
                   className="mt-1"
@@ -396,7 +398,7 @@ export default function EditWorkspacePage() {
                   id="dueDate"
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                  onChange={e => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
                   className="mt-1"
                 />
               </div>
@@ -407,22 +409,17 @@ export default function EditWorkspacePage() {
                   <div className="flex gap-2 mb-2">
                     <Input
                       value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
+                      onChange={e => setNewTag(e.target.value)}
                       placeholder="Neues Tag hinzufügen..."
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                      onKeyPress={e => e.key === 'Enter' && handleAddTag()}
                       className="flex-1"
                     />
-                    <Button
-                      type="button"
-                      onClick={handleAddTag}
-                      variant="outline"
-                      size="sm"
-                    >
+                    <Button type="button" onClick={handleAddTag} variant="outline" size="sm">
                       <Tag className="h-4 w-4" />
                     </Button>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {formData.tags.map((tag) => (
+                    {formData.tags.map(tag => (
                       <Badge
                         key={tag}
                         variant="outline"
