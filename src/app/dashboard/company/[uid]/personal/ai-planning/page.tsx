@@ -59,8 +59,9 @@ interface PredictiveData {
   seasonalTrends: { month: string; factor: number }[];
 }
 
-export default function AISchedulePlanningPage({ params }: { params: { uid: string } }) {
+export default function AISchedulePlanningPage({ params }: { params: Promise<{ uid: string }> }) {
   const { user } = useAuth();
+  const resolvedParams = React.use(params);
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [aiMetrics, setAiMetrics] = useState<AIMetrics>({
@@ -145,15 +146,15 @@ export default function AISchedulePlanningPage({ params }: { params: { uid: stri
   };
 
   useEffect(() => {
-    if (user && params.uid) {
+    if (user && resolvedParams.uid) {
       loadAIData();
     }
-  }, [user, params.uid]);
+  }, [user, resolvedParams.uid]);
 
   const loadAIData = async () => {
     try {
       setLoading(true);
-      const employeesData = await PersonalService.getEmployees(params.uid);
+      const employeesData = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(employeesData);
 
       // Mock AI Metrics - würde in der Realität von KI-Service kommen

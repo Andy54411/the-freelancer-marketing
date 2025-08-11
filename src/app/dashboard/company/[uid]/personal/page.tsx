@@ -86,6 +86,7 @@ const convertToServiceEmployee = (employee: Employee): ServiceEmployee => {
       equipment: 0,
     },
     isActive: employee.isActive,
+    status: employee.isActive ? ('ACTIVE' as const) : ('INACTIVE' as const),
     avatar: employee.avatar,
   };
 };

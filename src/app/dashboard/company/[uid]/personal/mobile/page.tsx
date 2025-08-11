@@ -49,8 +49,9 @@ interface MobileFeature {
   usage: number;
 }
 
-export default function MobileAppPage({ params }: { params: { uid: string } }) {
+export default function MobileAppPage({ params }: { params: Promise<{ uid: string }> }) {
   const { user } = useAuth();
+  const resolvedParams = React.use(params);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [appStats, setAppStats] = useState<AppStats>({
@@ -129,15 +130,15 @@ export default function MobileAppPage({ params }: { params: { uid: string } }) {
   ];
 
   useEffect(() => {
-    if (user && params.uid) {
+    if (user && resolvedParams.uid) {
       loadData();
     }
-  }, [user, params.uid]);
+  }, [user, resolvedParams.uid]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const employeesData = await PersonalService.getEmployees(params.uid);
+      const employeesData = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(employeesData);
 
       // Mock App Stats (würde in der Realität von Firebase/Analytics kommen)
@@ -157,7 +158,7 @@ export default function MobileAppPage({ params }: { params: { uid: string } }) {
   };
 
   const generateQRCode = () => {
-    const appURL = `https://taskilo.app/download/${params.uid}`;
+    const appURL = `https://taskilo.app/download/${resolvedParams.uid}`;
     toast.success('QR-Code wurde generiert!');
     // In der Realität würde hier ein QR-Code generiert werden
   };

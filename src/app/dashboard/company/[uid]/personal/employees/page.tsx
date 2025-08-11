@@ -40,8 +40,9 @@ import {
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 
-export default function EmployeesPage({ params }: { params: { uid: string } }) {
+export default function EmployeesPage({ params }: { params: Promise<{ uid: string }> }) {
   const { user } = useAuth();
+  const resolvedParams = React.use(params);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,12 +57,12 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
   const maxRetries = 3;
 
   useEffect(() => {
-    if (user && params.uid && retryCount < maxRetries) {
+    if (user && resolvedParams.uid && retryCount < maxRetries) {
       loadEmployees();
     } else if (retryCount >= maxRetries) {
       console.warn('❌ Max Retries erreicht für Employee loading');
     }
-  }, [user, params.uid, retryCount]);
+  }, [user, resolvedParams.uid, retryCount]);
 
   useEffect(() => {
     filterEmployees();
@@ -71,9 +72,9 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
     try {
       setLoading(true);
       console.log(
-        `🔄 Lade Mitarbeiter für Company: ${params.uid} (Versuch ${retryCount + 1}/${maxRetries})`
+        `🔄 Lade Mitarbeiter für Company: ${resolvedParams.uid} (Versuch ${retryCount + 1}/${maxRetries})`
       );
-      const data = await PersonalService.getEmployees(params.uid);
+      const data = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(data);
       // Reset retry count on success
       setRetryCount(0);
@@ -127,7 +128,7 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
 
   const handleDeactivateEmployee = async (employee: Employee) => {
     try {
-      await PersonalService.deactivateEmployee(params.uid, employee.id!);
+      await PersonalService.deactivateEmployee(resolvedParams.uid, employee.id!);
       toast.success(`${employee.firstName} ${employee.lastName} wurde deaktiviert`);
       loadEmployees();
       setShowDeleteDialog(false);
@@ -139,7 +140,7 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
 
   const exportEmployees = async () => {
     try {
-      const csvData = await PersonalService.exportEmployeesCSV(params.uid);
+      const csvData = await PersonalService.exportEmployeesCSV(resolvedParams.uid);
       const blob = new Blob([csvData], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -220,7 +221,7 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
             <Download className="h-4 w-4" />
             Export
           </Button>
-          <Link href={`/dashboard/company/${params.uid}/personal/add`}>
+          <Link href={`/dashboard/company/${resolvedParams.uid}/personal/add`}>
             <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Mitarbeiter hinzufügen
@@ -283,7 +284,7 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
                   </Avatar>
                   <div>
                     <Link
-                      href={`/dashboard/company/${params.uid}/personal/employees/${employee.id}`}
+                      href={`/dashboard/company/${resolvedParams.uid}/personal/employees/${employee.id}`}
                       className="hover:text-[#14ad9f] transition-colors"
                     >
                       <h3 className="font-semibold text-gray-900">
@@ -295,7 +296,9 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Link href={`/dashboard/company/${params.uid}/personal/employees/${employee.id}`}>
+                <Link
+                  href={`/dashboard/company/${resolvedParams.uid}/personal/employees/${employee.id}`}
+                >
                   <Button variant="ghost" size="sm" className="text-[#14ad9f] hover:text-[#129488]">
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -473,7 +476,9 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
                         <UserX className="h-4 w-4" />
                         Deaktivieren
                       </Button>
-                      <Link href={`/dashboard/company/${params.uid}/personal/edit/${employee.id}`}>
+                      <Link
+                        href={`/dashboard/company/${resolvedParams.uid}/personal/edit/${employee.id}`}
+                      >
                         <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white flex items-center gap-2">
                           <Edit className="h-4 w-4" />
                           Bearbeiten
@@ -530,7 +535,7 @@ export default function EmployeesPage({ params }: { params: { uid: string } }) {
                 : 'Keine Mitarbeiter entsprechen den aktuellen Filterkriterien.'}
             </p>
             {employees.length === 0 && (
-              <Link href={`/dashboard/company/${params.uid}/personal/add`}>
+              <Link href={`/dashboard/company/${resolvedParams.uid}/personal/add`}>
                 <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
                   Ersten Mitarbeiter hinzufügen
                 </Button>

@@ -55,8 +55,9 @@ interface SyncStats {
   lastFullSync: Date;
 }
 
-export default function IntegrationsPage({ params }: { params: { uid: string } }) {
+export default function IntegrationsPage({ params }: { params: Promise<{ uid: string }> }) {
   const { user } = useAuth();
+  const resolvedParams = React.use(params);
   const [loading, setLoading] = useState(true);
   const [syncStats, setSyncStats] = useState<SyncStats>({
     totalIntegrations: 0,
@@ -129,10 +130,10 @@ export default function IntegrationsPage({ params }: { params: { uid: string } }
   ];
 
   useEffect(() => {
-    if (user && params.uid) {
+    if (user && resolvedParams.uid) {
       loadIntegrationData();
     }
-  }, [user, params.uid]);
+  }, [user, resolvedParams.uid]);
 
   const loadIntegrationData = async () => {
     try {

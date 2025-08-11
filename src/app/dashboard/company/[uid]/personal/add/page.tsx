@@ -248,6 +248,7 @@ export default function AddEmployeePage() {
         }),
         ...(employee.notes && { notes: employee.notes }),
         isActive: employee.isActive!,
+        status: employee.isActive ? ('ACTIVE' as const) : ('INACTIVE' as const),
         ...(employee.avatar && { avatar: employee.avatar }),
       };
 

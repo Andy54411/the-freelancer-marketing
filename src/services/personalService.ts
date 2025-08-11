@@ -16,18 +16,56 @@ import { db } from '@/firebase/clients';
 export interface Employee {
   id?: string;
   companyId: string;
+
+  // Grundlegende Personaldaten
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
+  dateOfBirth?: string;
+  placeOfBirth?: string;
+  address?: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  };
+  maritalStatus?: 'SINGLE' | 'MARRIED' | 'DIVORCED' | 'WIDOWED';
+  numberOfChildren?: number;
+  nationality?: string;
+  emergencyContact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+  };
+
+  // Identifikationsdokumente
+  personalId?: string;
+  socialSecurityNumber?: string;
+  taxId?: string;
+  pensionInsuranceNumber?: string;
+  healthInsurance?: {
+    provider: string;
+    memberNumber: string;
+  };
+
+  // Arbeitsplatz-bezogene Daten
   position: string;
   department: string;
   employmentType: 'FULL_TIME' | 'PART_TIME' | 'FREELANCER' | 'INTERN';
   contractType: 'PERMANENT' | 'TEMPORARY' | 'PROJECT_BASED';
   startDate: string;
   endDate?: string;
+  probationPeriodEnd?: string;
+
+  // Gehalts- und Leistungsdaten
   grossSalary: number;
   hourlyRate?: number;
+  bankAccount?: {
+    iban: string;
+    bic: string;
+    bankName: string;
+  };
   workingHours: {
     weekly: number;
     daily: number;
@@ -43,17 +81,210 @@ export interface Employee {
     training: number;
     equipment: number;
   };
+
+  // Qualifikationen und Bildung
+  education?: {
+    degree: string;
+    institution: string;
+    graduationYear: string;
+  }[];
+  certifications?: {
+    name: string;
+    issuingOrganization: string;
+    issueDate: string;
+    expirationDate?: string;
+  }[];
+  languages?: {
+    language: string;
+    level: 'BASIC' | 'INTERMEDIATE' | 'ADVANCED' | 'NATIVE';
+  }[];
+
+  // Qualifikationen für erweiterte Personalakte
+  qualifications?: {
+    education: {
+      id: string;
+      institution: string;
+      degree: string;
+      field: string;
+      startDate: string;
+      endDate: string;
+      grade?: string;
+    }[];
+    certifications: {
+      id: string;
+      name: string;
+      issuer: string;
+      issueDate: string;
+      expiryDate?: string;
+      credentialId?: string;
+    }[];
+    languages: {
+      id: string;
+      language: string;
+      level: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2' | 'Native';
+    }[];
+    skills: {
+      id: string;
+      name: string;
+      level: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+      category: 'Technical' | 'Soft Skills' | 'Industry' | 'Other';
+    }[];
+  };
+
+  // Compliance & Rechtliche Dokumente
+  compliance?: {
+    workPermit: {
+      type: 'WORK_PERMIT';
+      status: 'VALID' | 'EXPIRED' | 'PENDING' | 'NOT_REQUIRED';
+      issueDate?: string;
+      expiryDate?: string;
+      documentNumber?: string;
+      issuingAuthority?: string;
+      notes?: string;
+    };
+    healthCertificate: {
+      type: 'HEALTH_CERTIFICATE';
+      status: 'VALID' | 'EXPIRED' | 'PENDING' | 'NOT_REQUIRED';
+      issueDate?: string;
+      expiryDate?: string;
+      documentNumber?: string;
+      issuingAuthority?: string;
+      notes?: string;
+    };
+    criminalRecord: {
+      type: 'CRIMINAL_RECORD';
+      status: 'VALID' | 'EXPIRED' | 'PENDING' | 'NOT_REQUIRED';
+      issueDate?: string;
+      expiryDate?: string;
+      documentNumber?: string;
+      issuingAuthority?: string;
+      notes?: string;
+    };
+    dataProtection: {
+      type: 'DATA_PROTECTION';
+      status: 'VALID' | 'EXPIRED' | 'PENDING' | 'NOT_REQUIRED';
+      issueDate?: string;
+      expiryDate?: string;
+      documentNumber?: string;
+      issuingAuthority?: string;
+      notes?: string;
+    };
+    companyAgreements: string[];
+    safetyTrainings: {
+      name: string;
+      completedDate: string;
+      validUntil?: string;
+      trainer: string;
+    }[];
+  };
+
+  // Disziplinarverfahren & Arbeitsrechtliche Maßnahmen
+  disciplinary?: {
+    actions: {
+      id: string;
+      type: 'WARNING' | 'WRITTEN_WARNING' | 'FINAL_WARNING' | 'SUSPENSION' | 'TERMINATION';
+      date: string;
+      reason: string;
+      description: string;
+      issuedBy: string;
+      witnessedBy?: string;
+      employeeResponse?: string;
+      followUpDate?: string;
+      resolved: boolean;
+      resolutionDate?: string;
+      resolutionNotes?: string;
+    }[];
+    incidents: {
+      id: string;
+      date: string;
+      type: 'ACCIDENT' | 'MISCONDUCT' | 'POLICY_VIOLATION' | 'PERFORMANCE_ISSUE' | 'OTHER';
+      severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+      description: string;
+      location?: string;
+      witnesses?: string[];
+      actionTaken?: string;
+      preventiveMeasures?: string;
+      reportedBy: string;
+      followUpRequired: boolean;
+    }[];
+  };
+
+  // Verträge & Vereinbarungen
+  contracts?: {
+    contracts: {
+      id: string;
+      type:
+        | 'EMPLOYMENT'
+        | 'AMENDMENT'
+        | 'NON_DISCLOSURE'
+        | 'NON_COMPETE'
+        | 'BONUS'
+        | 'COMMISSION'
+        | 'OTHER';
+      title: string;
+      description?: string;
+      signedDate: string;
+      effectiveDate: string;
+      expiryDate?: string;
+      status: 'ACTIVE' | 'EXPIRED' | 'TERMINATED' | 'PENDING';
+      version: string;
+      documentUrl?: string;
+      signedBy: string[];
+      terms?: {
+        key: string;
+        value: string;
+      }[];
+      renewalTerms?: string;
+      terminationClause?: string;
+    }[];
+    amendments: {
+      id: string;
+      contractId: string;
+      date: string;
+      description: string;
+      changedFields: {
+        field: string;
+        oldValue: string;
+        newValue: string;
+      }[];
+      reason: string;
+      authorizedBy: string;
+    }[];
+  };
+
+  // Arbeitsschutz und Gesundheit
+  healthAndSafety?: {
+    lastMedicalCheckup?: string;
+    workAccidents?: {
+      date: string;
+      description: string;
+      severity: 'MINOR' | 'MODERATE' | 'SEVERE';
+    }[];
+    safetyTrainings?: {
+      title: string;
+      date: string;
+      validUntil?: string;
+    }[];
+  };
+
+  // Ausrüstung und Zugänge
+  companyAssets?: {
+    item: string;
+    serialNumber?: string;
+    assignedDate: string;
+    returnDate?: string;
+    condition: 'NEW' | 'GOOD' | 'FAIR' | 'POOR';
+  }[];
+
+  // Berechnete Daten
   calculatedData?: {
     totalMonthlyCost: number;
     effectiveHourlyRate: number;
     yearlyTotalCost: number;
   };
-  address?: {
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
-  };
+
+  // Metadaten
+  status: 'ACTIVE' | 'INACTIVE' | 'TERMINATED';
   benefits?: string[];
   skills?: string[];
   performance?: {
@@ -69,6 +300,185 @@ export interface Employee {
   notes?: string;
   isActive: boolean;
   avatar?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface EmployeeFeedback {
+  id?: string;
+  companyId: string;
+  employeeId: string;
+  date: string;
+  rating: number;
+  notes: string;
+  goals: string[];
+  achievements: string[];
+  developmentAreas: string[];
+  reviewer: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Erweiterte Dokumentenverwaltung für digitale Personalakte
+export interface EmployeeDocument {
+  id?: string;
+  companyId: string;
+  employeeId: string;
+  category:
+    | 'CONTRACT'
+    | 'CERTIFICATE'
+    | 'IDENTITY'
+    | 'MEDICAL'
+    | 'TRAINING'
+    | 'PERFORMANCE'
+    | 'DISCIPLINARY'
+    | 'OTHER';
+  title: string;
+  description?: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  uploadDate: string;
+  expirationDate?: string;
+  isConfidential: boolean;
+  accessLevel: 'PUBLIC' | 'HR_ONLY' | 'MANAGEMENT_ONLY' | 'EMPLOYEE_SELF';
+  tags?: string[];
+  version: number;
+  replacesDocumentId?: string;
+  uploadedBy: string;
+  lastModifiedBy?: string;
+  retentionPeriod?: number; // Jahre
+  legalBasis?: string; // DSGVO Rechtsgrundlage
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Urlaubs- und Abwesenheitsverwaltung
+export interface EmployeeLeave {
+  id?: string;
+  companyId: string;
+  employeeId: string;
+  type: 'VACATION' | 'SICK_LEAVE' | 'MATERNITY' | 'PATERNITY' | 'UNPAID' | 'TRAINING' | 'OTHER';
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  reason?: string;
+  approvedBy?: string;
+  approvalDate?: string;
+  notes?: string;
+  medicalCertificate?: boolean;
+  emergencyContact?: {
+    name: string;
+    phone: string;
+  };
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Arbeitszeit und Zeiterfassung
+export interface TimeTracking {
+  id?: string;
+  companyId: string;
+  employeeId: string;
+  date: string;
+  clockIn: string;
+  clockOut?: string;
+  breakDuration?: number; // Minuten
+  totalHours?: number;
+  overtimeHours?: number;
+  location?: string;
+  project?: string;
+  notes?: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'REVIEWED';
+  approvedBy?: string;
+  approvalDate?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Leistungsbeurteilungen und Entwicklung
+export interface PerformanceReview {
+  id?: string;
+  companyId: string;
+  employeeId: string;
+  reviewPeriod: {
+    start: string;
+    end: string;
+  };
+  reviewer: string;
+  reviewType: 'ANNUAL' | 'QUARTERLY' | 'PROBATION' | 'PROJECT' | 'SPECIAL';
+  overallRating: number; // 1-5
+  competencies: {
+    name: string;
+    rating: number;
+    comments?: string;
+  }[];
+  goals: {
+    description: string;
+    deadline: string;
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'OVERDUE';
+    priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  }[];
+  achievements: string[];
+  improvementAreas: string[];
+  careerDevelopment: {
+    interests: string[];
+    skillsToImprove: string[];
+    trainingNeeds: string[];
+  };
+  salaryRecommendation?: {
+    currentSalary: number;
+    recommendedSalary: number;
+    effectiveDate?: string;
+    justification: string;
+  };
+  nextReviewDate: string;
+  employeeComments?: string;
+  hrComments?: string;
+  status: 'DRAFT' | 'EMPLOYEE_REVIEW' | 'COMPLETED' | 'APPROVED';
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Disziplinarmaßnahmen
+export interface DisciplinaryAction {
+  id?: string;
+  companyId: string;
+  employeeId: string;
+  type: 'VERBAL_WARNING' | 'WRITTEN_WARNING' | 'FINAL_WARNING' | 'SUSPENSION' | 'TERMINATION';
+  date: string;
+  incident: {
+    date: string;
+    description: string;
+    witnesses?: string[];
+    location?: string;
+  };
+  violation: {
+    category: 'ATTENDANCE' | 'PERFORMANCE' | 'CONDUCT' | 'POLICY' | 'SAFETY' | 'OTHER';
+    severity: 'MINOR' | 'MODERATE' | 'SEVERE' | 'GROSS_MISCONDUCT';
+    details: string;
+  };
+  action: {
+    description: string;
+    consequences: string;
+    improvementPlan?: string;
+    followUpDate?: string;
+  };
+  employeeResponse?: string;
+  employeeSignature?: {
+    signed: boolean;
+    date: string;
+    method: 'DIGITAL' | 'PHYSICAL' | 'REFUSED';
+  };
+  issuedBy: string;
+  status: 'ACTIVE' | 'EXPIRED' | 'SUPERSEDED' | 'APPEALED';
+  expirationDate?: string;
+  appealDetails?: {
+    appealed: boolean;
+    appealDate?: string;
+    outcome?: 'UPHELD' | 'OVERTURNED' | 'MODIFIED';
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -555,6 +965,7 @@ export class PersonalService {
               training: 0,
               equipment: 0,
             },
+            status: 'ACTIVE',
             isActive: values[11] === 'Aktiv',
           };
 
@@ -1346,6 +1757,444 @@ export class PersonalService {
       return employee;
     } catch (error) {
       console.error('❌ PersonalService: Fehler beim Laden des Mitarbeiters:', error);
+      throw error;
+    }
+  }
+
+  // Feedback speichern
+  static async saveFeedback(
+    companyId: string,
+    feedback: Omit<EmployeeFeedback, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    try {
+      console.log('💾 PersonalService: Speichere Feedback für Mitarbeiter:', feedback.employeeId);
+
+      const feedbackData: EmployeeFeedback = {
+        ...feedback,
+        companyId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const docRef = await addDoc(
+        collection(db, `companies/${companyId}/employee_feedback`),
+        feedbackData
+      );
+      console.log('✅ PersonalService: Feedback gespeichert mit ID:', docRef.id);
+
+      return docRef.id;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Speichern des Feedbacks:', error);
+      throw error;
+    }
+  }
+
+  // Feedback für einen Mitarbeiter abrufen
+  static async getEmployeeFeedback(
+    companyId: string,
+    employeeId: string
+  ): Promise<EmployeeFeedback[]> {
+    try {
+      console.log('🔄 PersonalService: Lade Feedback für Mitarbeiter:', employeeId);
+
+      const feedbackRef = collection(db, `companies/${companyId}/employee_feedback`);
+      const q = query(feedbackRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
+
+      const querySnapshot = await getDocs(q);
+      const feedback: EmployeeFeedback[] = [];
+
+      querySnapshot.forEach(doc => {
+        feedback.push({
+          id: doc.id,
+          ...doc.data(),
+        } as EmployeeFeedback);
+      });
+
+      console.log(`✅ PersonalService: ${feedback.length} Feedback-Einträge geladen`);
+      return feedback;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Laden des Feedbacks:', error);
+      throw error;
+    }
+  }
+
+  // Feedback aktualisieren
+  static async updateFeedback(
+    companyId: string,
+    feedbackId: string,
+    updates: Partial<EmployeeFeedback>
+  ): Promise<void> {
+    try {
+      console.log('🔄 PersonalService: Aktualisiere Feedback:', feedbackId);
+
+      const feedbackDoc = doc(db, `companies/${companyId}/employee_feedback`, feedbackId);
+      await updateDoc(feedbackDoc, {
+        ...updates,
+        updatedAt: new Date(),
+      });
+
+      console.log('✅ PersonalService: Feedback aktualisiert');
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Aktualisieren des Feedbacks:', error);
+      throw error;
+    }
+  }
+
+  // Feedback löschen
+  static async deleteFeedback(companyId: string, feedbackId: string): Promise<void> {
+    try {
+      console.log('🗑️ PersonalService: Lösche Feedback:', feedbackId);
+
+      const feedbackDoc = doc(db, `companies/${companyId}/employee_feedback`, feedbackId);
+      await deleteDoc(feedbackDoc);
+
+      console.log('✅ PersonalService: Feedback gelöscht');
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Löschen des Feedbacks:', error);
+      throw error;
+    }
+  }
+
+  // ===== DOKUMENTENVERWALTUNG =====
+
+  // Dokument zur Personalakte hinzufügen
+  static async addEmployeeDocument(
+    companyId: string,
+    document: Omit<EmployeeDocument, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    try {
+      console.log('📄 PersonalService: Füge Dokument hinzu für Mitarbeiter:', document.employeeId);
+
+      const documentsRef = collection(db, `companies/${companyId}/employee_documents`);
+      const docRef = await addDoc(documentsRef, {
+        ...document,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log('✅ PersonalService: Dokument hinzugefügt');
+      return docRef.id;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Hinzufügen des Dokuments:', error);
+      throw error;
+    }
+  }
+
+  // Dokumente für einen Mitarbeiter abrufen
+  static async getEmployeeDocuments(
+    companyId: string,
+    employeeId: string
+  ): Promise<EmployeeDocument[]> {
+    try {
+      console.log('🔄 PersonalService: Lade Dokumente für Mitarbeiter:', employeeId);
+
+      const documentsRef = collection(db, `companies/${companyId}/employee_documents`);
+      const q = query(
+        documentsRef,
+        where('employeeId', '==', employeeId),
+        orderBy('uploadDate', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const documents: EmployeeDocument[] = [];
+
+      querySnapshot.forEach(doc => {
+        documents.push({
+          id: doc.id,
+          ...doc.data(),
+        } as EmployeeDocument);
+      });
+
+      console.log(`✅ PersonalService: ${documents.length} Dokumente geladen`);
+      return documents;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Laden der Dokumente:', error);
+      throw error;
+    }
+  }
+
+  // Dokument löschen
+  static async deleteEmployeeDocument(companyId: string, documentId: string): Promise<void> {
+    try {
+      console.log('🗑️ PersonalService: Lösche Dokument:', documentId);
+
+      const documentDoc = doc(db, `companies/${companyId}/employee_documents`, documentId);
+      await deleteDoc(documentDoc);
+
+      console.log('✅ PersonalService: Dokument gelöscht');
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Löschen des Dokuments:', error);
+      throw error;
+    }
+  }
+
+  // ===== URLAUBS- UND ABWESENHEITSVERWALTUNG =====
+
+  // Urlaub/Abwesenheit beantragen
+  static async addEmployeeLeave(
+    companyId: string,
+    leave: Omit<EmployeeLeave, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    try {
+      console.log(
+        '🏖️ PersonalService: Füge Urlaubsantrag hinzu für Mitarbeiter:',
+        leave.employeeId
+      );
+
+      const leavesRef = collection(db, `companies/${companyId}/employee_leaves`);
+      const leaveRef = await addDoc(leavesRef, {
+        ...leave,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log('✅ PersonalService: Urlaubsantrag hinzugefügt');
+      return leaveRef.id;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Hinzufügen des Urlaubsantrags:', error);
+      throw error;
+    }
+  }
+
+  // Urlaub/Abwesenheiten für einen Mitarbeiter abrufen
+  static async getEmployeeLeaves(companyId: string, employeeId: string): Promise<EmployeeLeave[]> {
+    try {
+      console.log('🔄 PersonalService: Lade Urlaube für Mitarbeiter:', employeeId);
+
+      const leavesRef = collection(db, `companies/${companyId}/employee_leaves`);
+      const q = query(
+        leavesRef,
+        where('employeeId', '==', employeeId),
+        orderBy('startDate', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const leaves: EmployeeLeave[] = [];
+
+      querySnapshot.forEach(doc => {
+        leaves.push({
+          id: doc.id,
+          ...doc.data(),
+        } as EmployeeLeave);
+      });
+
+      console.log(`✅ PersonalService: ${leaves.length} Urlaube geladen`);
+      return leaves;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Laden der Urlaube:', error);
+      throw error;
+    }
+  }
+
+  // Urlaubsstatus aktualisieren
+  static async updateLeaveStatus(
+    companyId: string,
+    leaveId: string,
+    status: EmployeeLeave['status'],
+    approvedBy?: string
+  ): Promise<void> {
+    try {
+      console.log('🔄 PersonalService: Aktualisiere Urlaubsstatus:', leaveId, status);
+
+      const leaveDoc = doc(db, `companies/${companyId}/employee_leaves`, leaveId);
+      await updateDoc(leaveDoc, {
+        status,
+        approvedBy: approvedBy || null,
+        approvalDate: status === 'APPROVED' ? new Date().toISOString() : null,
+        updatedAt: new Date(),
+      });
+
+      console.log('✅ PersonalService: Urlaubsstatus aktualisiert');
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Aktualisieren des Urlaubsstatus:', error);
+      throw error;
+    }
+  }
+
+  // ===== ZEITERFASSUNG =====
+
+  // Zeiterfassung hinzufügen
+  static async addTimeTracking(
+    companyId: string,
+    timeEntry: Omit<TimeTracking, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    try {
+      console.log(
+        '⏰ PersonalService: Füge Zeiterfassung hinzu für Mitarbeiter:',
+        timeEntry.employeeId
+      );
+
+      const timeRef = collection(db, `companies/${companyId}/time_tracking`);
+      const entryRef = await addDoc(timeRef, {
+        ...timeEntry,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log('✅ PersonalService: Zeiterfassung hinzugefügt');
+      return entryRef.id;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Hinzufügen der Zeiterfassung:', error);
+      throw error;
+    }
+  }
+
+  // Zeiterfassungen für einen Mitarbeiter abrufen
+  static async getEmployeeTimeTracking(
+    companyId: string,
+    employeeId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<TimeTracking[]> {
+    try {
+      console.log('🔄 PersonalService: Lade Zeiterfassungen für Mitarbeiter:', employeeId);
+
+      const timeRef = collection(db, `companies/${companyId}/time_tracking`);
+      const q = query(timeRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
+
+      const querySnapshot = await getDocs(q);
+      const timeEntries: TimeTracking[] = [];
+
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        // Optionale Datumsfilterung
+        if (startDate && endDate) {
+          if (data.date >= startDate && data.date <= endDate) {
+            timeEntries.push({
+              id: doc.id,
+              ...data,
+            } as TimeTracking);
+          }
+        } else {
+          timeEntries.push({
+            id: doc.id,
+            ...data,
+          } as TimeTracking);
+        }
+      });
+
+      console.log(`✅ PersonalService: ${timeEntries.length} Zeiterfassungen geladen`);
+      return timeEntries;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Laden der Zeiterfassungen:', error);
+      throw error;
+    }
+  }
+
+  // ===== LEISTUNGSBEURTEILUNGEN =====
+
+  // Leistungsbeurteilung hinzufügen
+  static async addPerformanceReview(
+    companyId: string,
+    review: Omit<PerformanceReview, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    try {
+      console.log(
+        '📊 PersonalService: Füge Leistungsbeurteilung hinzu für Mitarbeiter:',
+        review.employeeId
+      );
+
+      const reviewsRef = collection(db, `companies/${companyId}/performance_reviews`);
+      const reviewRef = await addDoc(reviewsRef, {
+        ...review,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log('✅ PersonalService: Leistungsbeurteilung hinzugefügt');
+      return reviewRef.id;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Hinzufügen der Leistungsbeurteilung:', error);
+      throw error;
+    }
+  }
+
+  // Leistungsbeurteilungen für einen Mitarbeiter abrufen
+  static async getEmployeePerformanceReviews(
+    companyId: string,
+    employeeId: string
+  ): Promise<PerformanceReview[]> {
+    try {
+      console.log('🔄 PersonalService: Lade Leistungsbeurteilungen für Mitarbeiter:', employeeId);
+
+      const reviewsRef = collection(db, `companies/${companyId}/performance_reviews`);
+      const q = query(
+        reviewsRef,
+        where('employeeId', '==', employeeId),
+        orderBy('reviewPeriod.start', 'desc')
+      );
+
+      const querySnapshot = await getDocs(q);
+      const reviews: PerformanceReview[] = [];
+
+      querySnapshot.forEach(doc => {
+        reviews.push({
+          id: doc.id,
+          ...doc.data(),
+        } as PerformanceReview);
+      });
+
+      console.log(`✅ PersonalService: ${reviews.length} Leistungsbeurteilungen geladen`);
+      return reviews;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Laden der Leistungsbeurteilungen:', error);
+      throw error;
+    }
+  }
+
+  // ===== DISZIPLINARMASNAHMEN =====
+
+  // Disziplinarmaßnahme hinzufügen
+  static async addDisciplinaryAction(
+    companyId: string,
+    action: Omit<DisciplinaryAction, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
+    try {
+      console.log(
+        '⚠️ PersonalService: Füge Disziplinarmaßnahme hinzu für Mitarbeiter:',
+        action.employeeId
+      );
+
+      const actionsRef = collection(db, `companies/${companyId}/disciplinary_actions`);
+      const actionRef = await addDoc(actionsRef, {
+        ...action,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log('✅ PersonalService: Disziplinarmaßnahme hinzugefügt');
+      return actionRef.id;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Hinzufügen der Disziplinarmaßnahme:', error);
+      throw error;
+    }
+  }
+
+  // Disziplinarmaßnahmen für einen Mitarbeiter abrufen
+  static async getEmployeeDisciplinaryActions(
+    companyId: string,
+    employeeId: string
+  ): Promise<DisciplinaryAction[]> {
+    try {
+      console.log('🔄 PersonalService: Lade Disziplinarmaßnahmen für Mitarbeiter:', employeeId);
+
+      const actionsRef = collection(db, `companies/${companyId}/disciplinary_actions`);
+      const q = query(actionsRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
+
+      const querySnapshot = await getDocs(q);
+      const actions: DisciplinaryAction[] = [];
+
+      querySnapshot.forEach(doc => {
+        actions.push({
+          id: doc.id,
+          ...doc.data(),
+        } as DisciplinaryAction);
+      });
+
+      console.log(`✅ PersonalService: ${actions.length} Disziplinarmaßnahmen geladen`);
+      return actions;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Laden der Disziplinarmaßnahmen:', error);
       throw error;
     }
   }
