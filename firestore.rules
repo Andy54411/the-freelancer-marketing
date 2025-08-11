@@ -1294,7 +1294,7 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
-    // --- WORKSPACES COLLECTION (Notion/Monday.com-style Workspace Tool) ---
+    // --- WORKSPACES COLLECTION (Taskilo Workspace Management Tool) ---
     match /workspaces/{workspaceId} {
       // Lesen: Nur für Mitglieder der Firma oder Support Staff
       allow read: if request.auth != null &&

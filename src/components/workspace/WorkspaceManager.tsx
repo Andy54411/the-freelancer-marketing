@@ -209,7 +209,7 @@ export default function WorkspaceManager() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Workspace</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Verwalte Projekte, Aufgaben und Prozesse wie in Notion oder Monday.com
+              Verwalte Projekte, Aufgaben und Prozesse in einer übersichtlichen Workspace-Umgebung
             </p>
           </div>
 

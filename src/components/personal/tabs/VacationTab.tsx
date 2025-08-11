@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Plus, CheckCircle, XCircle, AlertCircle, CalendarDays } from 'lucide-react';
 import { Employee, PersonalService, AbsenceRequest } from '@/services/personalService';
+import { CreateAbsenceRequestModal } from '@/components/personal/CreateAbsenceRequestModal';
 import { toast } from 'sonner';
 
 interface VacationTabProps {
@@ -16,6 +17,7 @@ interface VacationTabProps {
 export default function VacationTab({ employee, companyId }: VacationTabProps) {
   const [vacationRequests, setVacationRequests] = useState<AbsenceRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Urlaubssaldo berechnen
   const totalVacationDays = employee.vacation?.totalDays || 30;
@@ -99,6 +101,12 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRequestCreated = (newRequest: AbsenceRequest) => {
+    setVacationRequests(prev => [newRequest, ...prev]);
+    setIsCreateModalOpen(false);
+    toast.success('Urlaubsantrag erfolgreich erstellt');
   };
 
   const getTypeLabel = (type: AbsenceRequest['type']) => {
@@ -364,9 +372,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
               <Button
                 size="sm"
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                onClick={() => {
-                  /* Hier würde ein Modal für neuen Antrag geöffnet werden */
-                }}
+                onClick={() => setIsCreateModalOpen(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Neuer Antrag
@@ -465,6 +471,19 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Create Absence Request Modal */}
+      <CreateAbsenceRequestModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onRequestCreated={handleRequestCreated}
+        companyId={companyId}
+        employees={[{
+          id: employee.id || '',
+          firstName: employee.firstName,
+          lastName: employee.lastName
+        }]}
+      />
     </div>
   );
 }

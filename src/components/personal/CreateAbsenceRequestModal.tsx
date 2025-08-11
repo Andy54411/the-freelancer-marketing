@@ -14,23 +14,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Clock, FileText } from 'lucide-react';
+import { AbsenceRequest, PersonalService } from '@/services/personalService';
 import { toast } from 'sonner';
-
-interface AbsenceRequest {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  type: 'VACATION' | 'SICK' | 'PERSONAL' | 'TRAINING' | 'OTHER';
-  startDate: string;
-  endDate: string;
-  days: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reason?: string;
-  notes?: string;
-  requestedAt?: string;
-  approvedBy?: string;
-  approvedAt?: string;
-}
 
 interface CreateAbsenceRequestModalProps {
   isOpen: boolean;
@@ -98,6 +83,7 @@ export function CreateAbsenceRequestModal({
 
       const newRequest: AbsenceRequest = {
         id: `req_${Date.now()}`, // In production würde das von der API kommen
+        companyId: companyId,
         employeeId: formData.employeeId,
         employeeName: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
         type: formData.type,
