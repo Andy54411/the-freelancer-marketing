@@ -119,11 +119,7 @@ interface DraggableHeadingProps {
   onSelect: () => void;
 }
 
-const DraggableHeading: React.FC<DraggableHeadingProps> = ({
-  option,
-  editor,
-  onSelect,
-}) => {
+const DraggableHeading: React.FC<DraggableHeadingProps> = ({ option, editor, onSelect }) => {
   const ref = useRef<HTMLDivElement>(null);
 
   const [{ handlerId }, drop] = useDrop({
@@ -143,13 +139,13 @@ const DraggableHeading: React.FC<DraggableHeadingProps> = ({
   const [{ isDragging }, drag] = useDrag({
     type: 'heading',
     item: () => ({ option }),
-    collect: (monitor) => ({
+    collect: monitor => ({
       isDragging: monitor.isDragging(),
     }),
   });
 
   const opacity = isDragging ? 0.4 : 1;
-  
+
   // Connect drag and drop refs
   drag(drop(ref));
 
@@ -160,7 +156,10 @@ const DraggableHeading: React.FC<DraggableHeadingProps> = ({
       ref={ref}
       data-handler-id={handlerId}
       className={`flex items-center gap-2 p-3 rounded-lg border-2 border-dashed border-gray-200 bg-white cursor-grab active:cursor-grabbing hover:border-[#14ad9f] hover:bg-[#14ad9f]/5 transition-all ${
-        editor.isActive(option.level === 'paragraph' ? 'paragraph' : 'heading', option.level === 'paragraph' ? {} : { level: option.level })
+        editor.isActive(
+          option.level === 'paragraph' ? 'paragraph' : 'heading',
+          option.level === 'paragraph' ? {} : { level: option.level }
+        )
           ? 'border-[#14ad9f] bg-[#14ad9f]/10'
           : ''
       }`}
@@ -248,13 +247,13 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
     item: () => {
       return { id: section.id, index };
     },
-    collect: (monitor) => ({
+    collect: monitor => ({
       isDragging: monitor.isDragging(),
     }),
   });
 
   const opacity = isDragging ? 0.4 : 1;
-  
+
   // Connect drag and drop refs
   drag(dragRef);
   drop(ref);
@@ -267,14 +266,14 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
       className="group relative border border-gray-200 rounded-lg p-4 hover:border-[#14ad9f] hover:shadow-sm transition-all duration-200 bg-white"
     >
       {/* Drag Handle - jetzt korrekt verbunden */}
-      <div 
+      <div
         ref={dragRef}
         className="absolute left-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing hover:bg-gray-100 rounded p-1"
         title="Ziehen zum Verschieben"
       >
         <GripVertical className="h-4 w-4 text-gray-400 hover:text-[#14ad9f]" />
       </div>
-      
+
       {/* Delete Button */}
       <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
@@ -292,7 +291,8 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
       )}
 
       {/* Section Content */}
-      <div className="pr-12 pl-8">{section.type === 'heading' && (
+      <div className="pr-12 pl-8">
+        {section.type === 'heading' && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-gray-500 uppercase">
@@ -302,16 +302,19 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
             </div>
             <textarea
               value={section.content}
-              onChange={(e) => updateSection(section.id, e.target.value)}
+              onChange={e => updateSection(section.id, e.target.value)}
               className={`w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none font-bold text-gray-900 placeholder-gray-400 transition-all ${
-                section.level === 1 ? 'text-3xl' :
-                section.level === 2 ? 'text-2xl' :
-                section.level === 3 ? 'text-xl' :
-                'text-lg'
+                section.level === 1
+                  ? 'text-3xl'
+                  : section.level === 2
+                    ? 'text-2xl'
+                    : section.level === 3
+                      ? 'text-xl'
+                      : 'text-lg'
               }`}
               rows={1}
               placeholder="Überschrift eingeben..."
-              onInput={(e) => {
+              onInput={e => {
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = 'auto';
                 target.style.height = target.scrollHeight + 'px';
@@ -328,11 +331,11 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
             </div>
             <textarea
               value={section.content}
-              onChange={(e) => updateSection(section.id, e.target.value)}
+              onChange={e => updateSection(section.id, e.target.value)}
               className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-gray-900 placeholder-gray-400 leading-relaxed transition-all"
               rows={3}
               placeholder="Absatz eingeben..."
-              onInput={(e) => {
+              onInput={e => {
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = 'auto';
                 target.style.height = target.scrollHeight + 'px';
@@ -350,11 +353,11 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
             <div className="border-l-4 border-[#14ad9f] pl-4 bg-[#14ad9f]/5 py-3 rounded-r transition-all">
               <textarea
                 value={section.content}
-                onChange={(e) => updateSection(section.id, e.target.value)}
+                onChange={e => updateSection(section.id, e.target.value)}
                 className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-gray-700 italic placeholder-gray-400"
                 rows={2}
                 placeholder="Zitat eingeben..."
-                onInput={(e) => {
+                onInput={e => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
                   target.style.height = target.scrollHeight + 'px';
@@ -372,11 +375,11 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
             </div>
             <textarea
               value={section.content}
-              onChange={(e) => updateSection(section.id, e.target.value)}
+              onChange={e => updateSection(section.id, e.target.value)}
               className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-gray-900 placeholder-gray-400 transition-all"
               rows={3}
               placeholder="• Listenpunkt 1&#10;• Listenpunkt 2&#10;• Listenpunkt 3"
-              onInput={(e) => {
+              onInput={e => {
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = 'auto';
                 target.style.height = target.scrollHeight + 'px';
@@ -394,11 +397,11 @@ const DraggableSection: React.FC<DraggableSectionProps> = ({
             <div className="bg-gray-100 rounded border transition-all">
               <textarea
                 value={section.content}
-                onChange={(e) => updateSection(section.id, e.target.value)}
+                onChange={e => updateSection(section.id, e.target.value)}
                 className="w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none text-gray-900 placeholder-gray-400 font-mono text-sm p-3"
                 rows={4}
                 placeholder="// Code eingeben..."
-                onInput={(e) => {
+                onInput={e => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
                   target.style.height = target.scrollHeight + 'px';
@@ -432,19 +435,114 @@ export function RichTextEditor({
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [showHeadingDropZone, setShowHeadingDropZone] = useState(false);
   const headingDropZoneRef = useRef<HTMLDivElement>(null);
-  
+
   // Sections state für Drag & Drop
   const [sections, setSections] = useState<Section[]>([]);
-  
-    // SSR Protection
+
+  // TipTap Editor Setup (immer aufrufen, aber nur verwenden wenn mounted)
+  const editor = useEditor(
+    {
+      extensions: [
+        StarterKit,
+        Heading.configure({
+          levels: [1, 2, 3, 4],
+        }),
+        TextStyle,
+        Color,
+        Highlight.configure({ multicolor: true }),
+        BulletList,
+        OrderedList,
+        ListItem,
+        Blockquote,
+        CodeBlock,
+        Link.configure({
+          openOnClick: false,
+        }),
+        Underline,
+        Image.configure({
+          HTMLAttributes: {
+            class: 'max-w-full h-auto rounded-lg',
+          },
+        }),
+        Table.configure({
+          resizable: true,
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
+        TaskList,
+        TaskItem.configure({
+          nested: true,
+        }),
+        Typography,
+      ],
+      content: content,
+      immediatelyRender: false,
+      editorProps: {
+        attributes: {
+          class: 'prose prose-sm max-w-none focus:outline-none',
+        },
+      },
+      onUpdate: ({ editor }) => {
+        onChange(editor.getHTML());
+      },
+    },
+    [mounted]
+  );
+
+  // Drag & Drop Funktionen
+  const moveSection = useCallback((dragIndex: number, hoverIndex: number) => {
+    setSections(prevSections => {
+      const newSections = [...prevSections];
+      const draggedSection = newSections[dragIndex];
+      newSections.splice(dragIndex, 1);
+      newSections.splice(hoverIndex, 0, draggedSection);
+      return newSections;
+    });
+  }, []);
+
+  const addSection = useCallback(
+    (type: 'heading' | 'paragraph' | 'list' | 'quote' | 'code', level?: 1 | 2 | 3 | 4) => {
+      const newSection: Section = {
+        id: Date.now().toString(),
+        type,
+        level,
+        content:
+          type === 'heading'
+            ? 'Neue Überschrift'
+            : type === 'quote'
+              ? 'Neues Zitat'
+              : type === 'code'
+                ? '// Neuer Code'
+                : type === 'list'
+                  ? '• Neuer Listenpunkt'
+                  : 'Neuer Absatz',
+      };
+      setSections([...sections, newSection]);
+    },
+    [sections]
+  );
+
+  const updateSection = useCallback((id: string, content: string) => {
+    setSections(sections => sections.map(s => (s.id === id ? { ...s, content } : s)));
+  }, []);
+
+  const deleteSection = useCallback((id: string) => {
+    setSections(sections => sections.filter(s => s.id !== id));
+  }, []);
+
+  // SSR Protection
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   // Click outside handler für Heading DropZone
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (headingDropZoneRef.current && !headingDropZoneRef.current.contains(event.target as Node)) {
+      if (
+        headingDropZoneRef.current &&
+        !headingDropZoneRef.current.contains(event.target as Node)
+      ) {
         setShowHeadingDropZone(false);
       }
     };
@@ -457,6 +555,43 @@ export function RichTextEditor({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showHeadingDropZone]);
+
+  // Debug: Zeige welche Sections existieren
+  useEffect(() => {
+    if (sections.length > 0) {
+      console.log('🎯 Draggable Sections:', sections.map(s => `${s.type}(${s.id})`).join(', '));
+    }
+  }, [sections]);
+
+  useEffect(() => {
+    const sectionsContent = sections
+      .map(section => {
+        switch (section.type) {
+          case 'heading':
+            return `<h${section.level}>${section.content}</h${section.level}>`;
+          case 'paragraph':
+            return `<p>${section.content}</p>`;
+          case 'quote':
+            return `<blockquote><p>${section.content}</p></blockquote>`;
+          case 'list':
+            const listItems = section.content
+              .split('\n')
+              .filter(line => line.trim())
+              .map(line => `<li>${line.replace(/^[•\-\*]\s*/, '')}</li>`)
+              .join('');
+            return `<ul>${listItems}</ul>`;
+          case 'code':
+            return `<pre><code>${section.content}</code></pre>`;
+          default:
+            return `<p>${section.content}</p>`;
+        }
+      })
+      .join('');
+
+    if (sectionsContent !== content) {
+      onChange(sectionsContent);
+    }
+  }, [sections, content, onChange]);
 
   // Early return for SSR
   if (!mounted) {
@@ -478,152 +613,40 @@ export function RichTextEditor({
       level: 1,
       label: 'Überschrift 1',
       icon: Heading1,
-      command: (editor) => editor.chain().focus().toggleHeading({ level: 1 }).run(),
+      command: editor => editor.chain().focus().toggleHeading({ level: 1 }).run(),
     },
     {
       level: 2,
-      label: 'Überschrift 2', 
+      label: 'Überschrift 2',
       icon: Heading2,
-      command: (editor) => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+      command: editor => editor.chain().focus().toggleHeading({ level: 2 }).run(),
     },
     {
       level: 3,
       label: 'Überschrift 3',
       icon: Heading3,
-      command: (editor) => editor.chain().focus().toggleHeading({ level: 3 }).run(),
+      command: editor => editor.chain().focus().toggleHeading({ level: 3 }).run(),
     },
     {
       level: 4,
       label: 'Überschrift 4',
       icon: Heading1, // Verwende H1 Icon für H4 da kein H4 Icon verfügbar
-      command: (editor) => editor.chain().focus().toggleHeading({ level: 4 }).run(),
+      command: editor => editor.chain().focus().toggleHeading({ level: 4 }).run(),
     },
     {
       level: 'paragraph',
       label: 'Normaler Text',
       icon: Type,
-      command: (editor) => editor.chain().focus().setParagraph().run(),
+      command: editor => editor.chain().focus().setParagraph().run(),
     },
   ];
-  
-    // TipTap Editor Setup - nur client-side nach mounted check
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Heading.configure({
-        levels: [1, 2, 3, 4],
-      }),
-      TextStyle,
-      Color,
-      Highlight.configure({ multicolor: true }),
-      BulletList,
-      OrderedList,
-      ListItem,
-      Blockquote,
-      CodeBlock,
-      Link.configure({
-        openOnClick: false,
-      }),
-      Underline,
-      Image.configure({
-        HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg',
-        },
-      }),
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Typography,
-    ],
-    content: content,
-    immediatelyRender: false,
-    editorProps: {
-      attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none',
-      },
-    },
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
-    },
-  }, [mounted]);
-  
-  // Drag & Drop Funktionen
-  const moveSection = useCallback((dragIndex: number, hoverIndex: number) => {
-    setSections((prevSections) => {
-      const newSections = [...prevSections];
-      const draggedSection = newSections[dragIndex];
-      newSections.splice(dragIndex, 1);
-      newSections.splice(hoverIndex, 0, draggedSection);
-      return newSections;
-    });
-  }, []);
-
-  const addSection = (type: 'heading' | 'paragraph' | 'list' | 'quote' | 'code', level?: 1 | 2 | 3 | 4) => {
-    const newSection: Section = {
-      id: Date.now().toString(),
-      type,
-      level,
-      content: type === 'heading' ? 'Neue Überschrift' : 
-               type === 'quote' ? 'Neues Zitat' :
-               type === 'code' ? '// Neuer Code' :
-               type === 'list' ? '• Neuer Listenpunkt' :
-               'Neuer Absatz'
-    };
-    setSections([...sections, newSection]);
-  };
-
-  const updateSection = useCallback((id: string, content: string) => {
-    setSections(sections => sections.map(s => s.id === id ? { ...s, content } : s));
-  }, []);
-
-  const deleteSection = useCallback((id: string) => {
-    setSections(sections => sections.filter(s => s.id !== id));
-  }, []);
-
-  // Debug: Zeige welche Sections existieren
-  useEffect(() => {
-    if (sections.length > 0) {
-      console.log('🎯 Draggable Sections:', sections.map(s => `${s.type}(${s.id})`).join(', '));
-    }
-  }, [sections]);
-  useEffect(() => {
-    const sectionsContent = sections.map(section => {
-      switch (section.type) {
-        case 'heading':
-          return `<h${section.level}>${section.content}</h${section.level}>`;
-        case 'paragraph':
-          return `<p>${section.content}</p>`;
-        case 'quote':
-          return `<blockquote><p>${section.content}</p></blockquote>`;
-        case 'list':
-          const listItems = section.content.split('\n').filter(line => line.trim())
-            .map(line => `<li>${line.replace(/^[•\-\*]\s*/, '')}</li>`).join('');
-          return `<ul>${listItems}</ul>`;
-        case 'code':
-          return `<pre><code>${section.content}</code></pre>`;
-        default:
-          return `<p>${section.content}</p>`;
-      }
-    }).join('');
-    
-    if (sectionsContent !== content) {
-      onChange(sectionsContent);
-    }
-  }, [sections, content, onChange]);
 
   const handleCoverUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && onCoverChange) {
       // In einer echten App würdest du das Bild zu Firebase Storage oder einem anderen Service hochladen
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         const result = e.target?.result as string;
         onCoverChange(result);
       };
@@ -642,23 +665,24 @@ export function RichTextEditor({
   };
 
   const getTitleComponent = () => {
-    const baseClasses = "w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none font-bold text-gray-900 placeholder-gray-400";
+    const baseClasses =
+      'w-full border-0 bg-transparent focus:outline-none focus:ring-0 resize-none font-bold text-gray-900 placeholder-gray-400';
     const levelClasses = {
-      1: "text-4xl leading-tight",
-      2: "text-3xl leading-tight", 
-      3: "text-2xl leading-snug",
-      4: "text-xl leading-snug"
+      1: 'text-4xl leading-tight',
+      2: 'text-3xl leading-tight',
+      3: 'text-2xl leading-snug',
+      4: 'text-xl leading-snug',
     };
-    
+
     return (
       <textarea
         value={title}
-        onChange={(e) => onTitleChange?.(e.target.value)}
+        onChange={e => onTitleChange?.(e.target.value)}
         placeholder="Titel eingeben..."
         className={`${baseClasses} ${levelClasses[titleLevel]}`}
         rows={1}
         style={{ minHeight: 'auto', height: 'auto' }}
-        onInput={(e) => {
+        onInput={e => {
           const target = e.target as HTMLTextAreaElement;
           target.style.height = 'auto';
           target.style.height = target.scrollHeight + 'px';
@@ -674,11 +698,7 @@ export function RichTextEditor({
         <div className="relative">
           {coverImage ? (
             <div className="relative h-64 bg-gray-100 overflow-hidden">
-              <img 
-                src={coverImage} 
-                alt="Cover" 
-                className="w-full h-full object-cover"
-              />
+              <img src={coverImage} alt="Cover" className="w-full h-full object-cover" />
               <div className="absolute top-4 right-4 flex gap-2">
                 <Button
                   variant="secondary"
@@ -700,7 +720,7 @@ export function RichTextEditor({
               </div>
             </div>
           ) : (
-            <div 
+            <div
               className="h-32 bg-gradient-to-r from-[#14ad9f] to-[#129488] cursor-pointer flex items-center justify-center group hover:from-[#129488] hover:to-[#0f8a7e] transition-all"
               onClick={() => coverInputRef.current?.click()}
             >
@@ -726,7 +746,7 @@ export function RichTextEditor({
             <div className="flex items-center gap-2 mb-2">
               <Select
                 value={titleLevel.toString()}
-                onValueChange={(value) => onTitleLevelChange?.(parseInt(value) as 1 | 2 | 3 | 4)}
+                onValueChange={value => onTitleLevelChange?.(parseInt(value) as 1 | 2 | 3 | 4)}
               >
                 <SelectTrigger className="w-20">
                   <SelectValue />
@@ -746,7 +766,9 @@ export function RichTextEditor({
           <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 border-t pt-4">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              <span>Erstellt von: <strong>{author}</strong></span>
+              <span>
+                Erstellt von: <strong>{author}</strong>
+              </span>
             </div>
             {createdAt && (
               <div className="flex items-center gap-2">
@@ -762,33 +784,39 @@ export function RichTextEditor({
             )}
           </div>
         </div>
-        
+
         {/* TipTap Editor Toolbar */}
         {editor && (
           <div className="border-b border-gray-200 bg-white">
             <div className="flex items-center gap-1 p-3 flex-wrap">
               {/* Erweiterte Überschriften Drag & Drop */}
               <div className="relative" ref={headingDropZoneRef}>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="h-8 gap-2"
                   onClick={() => setShowHeadingDropZone(!showHeadingDropZone)}
                 >
                   <Heading1 className="h-4 w-4" />
                   <span className="text-xs">Überschrift</span>
-                  <ChevronDown className={`h-3 w-3 transition-transform ${showHeadingDropZone ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    className={`h-3 w-3 transition-transform ${showHeadingDropZone ? 'rotate-180' : ''}`}
+                  />
                 </Button>
-                
+
                 {showHeadingDropZone && (
                   <div className="absolute top-full left-0 mt-2 p-4 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[300px]">
                     <div className="mb-3">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Überschriften-Stile</h4>
-                      <p className="text-xs text-gray-500 mb-3">Klicke zum Anwenden oder ziehe ins Dokument</p>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Überschriften-Stile
+                      </h4>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Klicke zum Anwenden oder ziehe ins Dokument
+                      </p>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      {headingOptions.map((option) => (
+                      {headingOptions.map(option => (
                         <DraggableHeading
                           key={option.level}
                           option={option}
@@ -797,7 +825,7 @@ export function RichTextEditor({
                         />
                       ))}
                     </div>
-                    
+
                     <div className="mt-3 pt-3 border-t border-gray-100">
                       <p className="text-xs text-gray-400 flex items-center gap-1">
                         <GripVertical className="h-3 w-3" />
@@ -819,7 +847,7 @@ export function RichTextEditor({
               >
                 <Bold className="h-4 w-4" />
               </Button>
-              
+
               <Button
                 variant={editor.isActive('italic') ? 'default' : 'ghost'}
                 size="sm"
@@ -909,7 +937,13 @@ export function RichTextEditor({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                onClick={() =>
+                  editor
+                    .chain()
+                    .focus()
+                    .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                    .run()
+                }
                 className="h-8 w-8 p-0 hover:bg-[#14ad9f]/10"
               >
                 <TableIcon className="h-4 w-4" />
@@ -919,7 +953,7 @@ export function RichTextEditor({
               {editor.isActive('table') && (
                 <>
                   <Separator orientation="vertical" className="h-6" />
-                  
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -938,24 +972,16 @@ export function RichTextEditor({
                       >
                         Spalte rechts hinzufügen
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => editor.chain().focus().deleteColumn().run()}
-                      >
+                      <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()}>
                         Spalte löschen
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => editor.chain().focus().addRowBefore().run()}
-                      >
+                      <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()}>
                         Zeile oben hinzufügen
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => editor.chain().focus().addRowAfter().run()}
-                      >
+                      <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>
                         Zeile unten hinzufügen
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => editor.chain().focus().deleteRow().run()}
-                      >
+                      <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()}>
                         Zeile löschen
                       </DropdownMenuItem>
                       <DropdownMenuItem
@@ -975,18 +1001,20 @@ export function RichTextEditor({
         {/* TipTap Editor Content */}
         {editor && (
           <div className="border-b border-gray-200">
-            <EditorContent 
-              editor={editor} 
+            <EditorContent
+              editor={editor}
               className="prose prose-sm max-w-none p-6 focus:outline-none [&_.ProseMirror]:focus:outline-none [&_.ProseMirror]:min-h-[200px] [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h1]:text-gray-900 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:text-gray-900 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-bold [&_.ProseMirror_h3]:text-gray-900 [&_.ProseMirror_p]:text-gray-700 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-[#14ad9f] [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_pre]:bg-gray-100 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_pre]:rounded [&_.ProseMirror_code]:bg-gray-100 [&_.ProseMirror_code]:px-2 [&_.ProseMirror_code]:py-1 [&_.ProseMirror_code]:rounded [&_.ProseMirror_table]:border-collapse [&_.ProseMirror_table]:table-auto [&_.ProseMirror_table]:w-full [&_.ProseMirror_table]:border [&_.ProseMirror_table]:border-gray-300 [&_.ProseMirror_td]:border [&_.ProseMirror_td]:border-gray-300 [&_.ProseMirror_td]:p-2 [&_.ProseMirror_th]:border [&_.ProseMirror_th]:border-gray-300 [&_.ProseMirror_th]:p-2 [&_.ProseMirror_th]:bg-gray-50 [&_.ProseMirror_th]:font-bold [&_.ProseMirror_img]:max-w-full [&_.ProseMirror_img]:h-auto [&_.ProseMirror_img]:rounded-lg [&_.ProseMirror_ul[data-type=taskList]]:list-none [&_.ProseMirror_ul[data-type=taskList]_li]:flex [&_.ProseMirror_ul[data-type=taskList]_li]:items-start [&_.ProseMirror_ul[data-type=taskList]_li]:gap-2 [&_.ProseMirror_ul[data-type=taskList]_li>label]:flex [&_.ProseMirror_ul[data-type=taskList]_li>label]:items-center [&_.ProseMirror_ul[data-type=taskList]_li>label>input]:mr-2"
             />
           </div>
         )}
-        
+
         {/* Section Toolbar */}
         <div className="border-b border-gray-100 bg-gray-25">
           <div className="flex items-center gap-2 p-3 text-sm text-gray-600">
-            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Neue Section hinzufügen:</span>
-            
+            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Neue Section hinzufügen:
+            </span>
+
             <Button
               variant="ghost"
               size="sm"
@@ -996,7 +1024,7 @@ export function RichTextEditor({
               <Heading1 className="h-3 w-3" />
               H1
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -1006,7 +1034,7 @@ export function RichTextEditor({
               <Heading2 className="h-3 w-3" />
               H2
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -1016,9 +1044,9 @@ export function RichTextEditor({
               <Heading3 className="h-3 w-3" />
               H3
             </Button>
-            
+
             <Separator orientation="vertical" className="h-4" />
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -1028,7 +1056,7 @@ export function RichTextEditor({
               <Type className="h-3 w-3" />
               Absatz
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -1038,7 +1066,7 @@ export function RichTextEditor({
               <Quote className="h-3 w-3" />
               Zitat
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -1048,7 +1076,7 @@ export function RichTextEditor({
               <List className="h-3 w-3" />
               Liste
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -1067,7 +1095,9 @@ export function RichTextEditor({
             <div className="text-center py-16 text-gray-500">
               <Plus className="h-16 w-16 mx-auto mb-4 opacity-30" />
               <p className="text-xl font-medium mb-2 text-gray-400">Keine Sections vorhanden</p>
-              <p className="text-sm text-gray-400">Füge eine neue Section hinzu, um mit dem Schreiben zu beginnen</p>
+              <p className="text-sm text-gray-400">
+                Füge eine neue Section hinzu, um mit dem Schreiben zu beginnen
+              </p>
               <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-400">
                 <GripVertical className="h-3 w-3" />
                 <span>Sections sind per Drag & Drop verschiebbar</span>
@@ -1085,7 +1115,7 @@ export function RichTextEditor({
                   deleteSection={deleteSection}
                 />
               ))}
-              
+
               {/* Drag Drop Zone Indicator */}
               <div className="text-center py-4 text-gray-400 border-2 border-dashed border-gray-200 rounded-lg hover:border-[#14ad9f] hover:bg-[#14ad9f]/5 transition-colors">
                 <Plus className="h-6 w-6 mx-auto mb-2 opacity-50" />
