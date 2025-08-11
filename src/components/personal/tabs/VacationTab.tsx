@@ -1,10 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Plus, CheckCircle, XCircle, AlertCircle, CalendarDays } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  Plus,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  CalendarDays,
+} from 'lucide-react';
 import { Employee, PersonalService, AbsenceRequest } from '@/services/personalService';
 import { CreateAbsenceRequestModal } from '@/components/personal/CreateAbsenceRequestModal';
 import { toast } from 'sonner';
@@ -19,21 +27,19 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Urlaubssaldo berechnen
-  const totalVacationDays = employee.vacation?.totalDays || 30;
+  // Urlaubssaldo berechnen - verwende PersonalService für konsistente Berechnung
+  const totalVacationDays =
+    employee.vacation?.settings?.annualVacationDays || employee.vacation?.totalDays || 30;
+  const availableDays = PersonalService.calculateAvailableVacationDays(employee);
   const usedDays = vacationRequests
     .filter(req => req.status === 'APPROVED' && req.type === 'VACATION')
     .reduce((sum, req) => sum + req.days, 0);
   const pendingDays = vacationRequests
     .filter(req => req.status === 'PENDING' && req.type === 'VACATION')
     .reduce((sum, req) => sum + req.days, 0);
-  const remainingDays = totalVacationDays - usedDays;
+  const remainingDays = availableDays - usedDays;
 
-  useEffect(() => {
-    loadVacationData();
-  }, [employee.id]);
-
-  const loadVacationData = async () => {
+  const loadVacationData = useCallback(async () => {
     // Wenn kein employee.id vorhanden ist (Add-Modus), zeige leere Daten
     if (!employee.id) {
       setVacationRequests([]);
@@ -50,7 +56,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
     } catch (error) {
       console.error('Fehler beim Laden der Urlaubsdaten:', error);
       toast.error('Fehler beim Laden der Urlaubsdaten');
-      
+
       // Fallback zu Mock-Daten wenn Firebase fehlt
       const mockRequests: AbsenceRequest[] = [
         {
@@ -101,7 +107,11 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [employee.id, companyId, employee.firstName, employee.lastName]);
+
+  useEffect(() => {
+    loadVacationData();
+  }, [loadVacationData]);
 
   const handleRequestCreated = (newRequest: AbsenceRequest) => {
     setVacationRequests(prev => [newRequest, ...prev]);
@@ -202,7 +212,9 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
         )
       );
 
-      toast.success(approve ? 'Antrag genehmigt und im Dienstplan aktualisiert' : 'Antrag abgelehnt');
+      toast.success(
+        approve ? 'Antrag genehmigt und im Dienstplan aktualisiert' : 'Antrag abgelehnt'
+      );
     } catch (error) {
       console.error('Fehler beim Verarbeiten des Antrags:', error);
       toast.error('Fehler beim Verarbeiten des Antrags');
@@ -215,15 +227,14 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
       // Alle Tage zwischen Start- und Enddatum durchgehen
       const startDate = new Date(request.startDate);
       const endDate = new Date(request.endDate);
-      
+
       for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
         const dateStr = date.toISOString().split('T')[0];
-        
+
         // Prüfen ob bereits eine Schicht für diesen Tag existiert
         const existingShifts = await PersonalService.getShifts(companyId, date, date);
-        const employeeShift = existingShifts.find(shift => 
-          shift.employeeId === request.employeeId && 
-          shift.date === dateStr
+        const employeeShift = existingShifts.find(
+          shift => shift.employeeId === request.employeeId && shift.date === dateStr
         );
 
         if (employeeShift) {
@@ -247,7 +258,7 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
           });
         }
       }
-      
+
       console.log(`✅ Urlaubsantrag ${request.id} in Dienstplan synchronisiert`);
     } catch (error) {
       console.error('❌ Fehler bei Dienstplan-Synchronisation:', error);
@@ -280,7 +291,8 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
             <div>
               <h4 className="font-medium text-gray-900">Dienstplan-Integration</h4>
               <p className="text-sm text-gray-600">
-                Genehmigte Urlaubsanträge werden automatisch im Dienstplan angezeigt und der Mitarbeiter wird für die Diensteinteilung gesperrt.
+                Genehmigte Urlaubsanträge werden automatisch im Dienstplan angezeigt und der
+                Mitarbeiter wird für die Diensteinteilung gesperrt.
               </p>
             </div>
           </div>
@@ -295,17 +307,20 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
             Urlaubssaldo
           </CardTitle>
           <CardDescription>
-            {employee.id 
+            {employee.id
               ? 'Übersicht über verfügbare und genommene Urlaubstage'
-              : 'Standard-Urlaubseinstellungen für neuen Mitarbeiter'
-            }
+              : 'Standard-Urlaubseinstellungen für neuen Mitarbeiter'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">{totalVacationDays}</div>
-              <div className="text-sm text-blue-800">Gesamte Tage</div>
+              <div className="text-sm text-blue-800">Jahresurlaub</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="text-2xl font-bold text-orange-600">{availableDays}</div>
+              <div className="text-sm text-orange-800">Verfügbar (inkl. Übertrag)</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">{usedDays}</div>
@@ -315,9 +330,13 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
               <div className="text-2xl font-bold text-yellow-600">{pendingDays}</div>
               <div className="text-sm text-yellow-800">Ausstehend</div>
             </div>
-            <div className="text-center p-4 bg-[#14ad9f]/10 rounded-lg">
-              <div className="text-2xl font-bold text-[#14ad9f]">{remainingDays}</div>
-              <div className="text-sm text-[#14ad9f]">Verfügbar</div>
+          </div>
+
+          {/* Zusätzliche Restanzeige */}
+          <div className="mt-4 p-4 bg-[#14ad9f]/10 rounded-lg border border-[#14ad9f]/20">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-[#14ad9f]">{remainingDays}</div>
+              <div className="text-sm text-[#14ad9f] font-medium">Verbleibende Urlaubstage</div>
             </div>
           </div>
 
@@ -329,7 +348,8 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
                 <span className="font-medium">Dienstplan-Status</span>
               </div>
               <p className="text-sm text-green-700 mt-1">
-                Genehmigte Urlaubszeiten sind im Dienstplan als "Abwesend" markiert und der Mitarbeiter ist für neue Schichten gesperrt.
+                Genehmigte Urlaubszeiten sind im Dienstplan als &quot;Abwesend&quot; markiert und
+                der Mitarbeiter ist für neue Schichten gesperrt.
               </p>
             </div>
           )}
@@ -362,10 +382,9 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
                 {employee.id ? 'Urlaubsanträge' : 'Urlaubsanträge (verfügbar nach dem Speichern)'}
               </CardTitle>
               <CardDescription>
-                {employee.id 
+                {employee.id
                   ? 'Alle Urlaubsanträge und Abwesenheiten des Mitarbeiters'
-                  : 'Urlaubsanträge können nach dem Anlegen des Mitarbeiters erstellt werden'
-                }
+                  : 'Urlaubsanträge können nach dem Anlegen des Mitarbeiters erstellt werden'}
               </CardDescription>
             </div>
             {employee.id && (
@@ -418,50 +437,50 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
                         </div>
 
                         {request.approvedBy && (
-                        <div className="text-xs text-gray-500">
-                          {request.status === 'APPROVED' ? 'Genehmigt' : 'Abgelehnt'} von{' '}
-                          {request.approvedBy} am{' '}
-                          {request.approvedAt && formatDate(request.approvedAt)}
-                        </div>
-                      )}
-                    </div>
+                          <div className="text-xs text-gray-500">
+                            {request.status === 'APPROVED' ? 'Genehmigt' : 'Abgelehnt'} von{' '}
+                            {request.approvedBy} am{' '}
+                            {request.approvedAt && formatDate(request.approvedAt)}
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(request.status)}
-                      {request.status === 'PENDING' && (
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600 hover:bg-green-50"
-                            onClick={() => handleApproveRequest(request.id, true)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 hover:bg-red-50"
-                            onClick={() => handleApproveRequest(request.id, false)}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {request.notes && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <div className="text-sm">
-                        <span className="font-medium">Notizen:</span> {request.notes}
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(request.status)}
+                        {request.status === 'PENDING' && (
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 hover:bg-green-50"
+                              onClick={() => handleApproveRequest(request.id, true)}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => handleApproveRequest(request.id, false)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+
+                    {request.notes && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="text-sm">
+                          <span className="font-medium">Notizen:</span> {request.notes}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
               <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -478,11 +497,13 @@ export default function VacationTab({ employee, companyId }: VacationTabProps) {
         onClose={() => setIsCreateModalOpen(false)}
         onRequestCreated={handleRequestCreated}
         companyId={companyId}
-        employees={[{
-          id: employee.id || '',
-          firstName: employee.firstName,
-          lastName: employee.lastName
-        }]}
+        employees={[
+          {
+            id: employee.id || '',
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+          },
+        ]}
       />
     </div>
   );
