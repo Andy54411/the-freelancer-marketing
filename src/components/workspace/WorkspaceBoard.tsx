@@ -101,12 +101,64 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
     },
   ];
 
-  const columns = selectedWorkspace?.boardColumns || defaultColumns;
+  // Initialize columns with tasks properly distributed
+  const getColumnsWithTasks = () => {
+    if (selectedWorkspace?.boardColumns && selectedWorkspace.boardColumns.length > 0) {
+      return selectedWorkspace.boardColumns;
+    }
+
+    // If using default columns, distribute workspace tasks into columns
+    const workspaceTasks = selectedWorkspace?.tasks || [];
+
+    return defaultColumns.map(column => ({
+      ...column,
+      tasks: workspaceTasks
+        .filter(task => {
+          // Match by status or columnId, with fallback logic
+          const taskStatus = task.status || task.columnId;
+          const isMatch =
+            taskStatus === column.id ||
+            (column.id === 'todo' && (!taskStatus || taskStatus === 'pending')) ||
+            (column.id === 'in-progress' &&
+              (taskStatus === 'in-progress' || taskStatus === 'active')) ||
+            (column.id === 'review' && taskStatus === 'review') ||
+            (column.id === 'done' && (taskStatus === 'done' || taskStatus === 'completed'));
+
+          console.log(
+            `Task ${task.title} (status: ${taskStatus}) -> Column ${column.id}: ${isMatch}`
+          );
+          return isMatch;
+        })
+        .sort((a, b) => a.position - b.position),
+    }));
+  };
+
+  const columns = getColumnsWithTasks();
+
+  // Ensure the workspace state is updated immediately in the local state
+  const updateLocalWorkspace = (updates: Partial<Workspace>) => {
+    if (!selectedWorkspace) return;
+
+    const updatedWorkspace = { ...selectedWorkspace, ...updates };
+    setSelectedWorkspace(updatedWorkspace);
+
+    // Also call the parent update function
+    onUpdateWorkspace(selectedWorkspace.id, updates);
+  };
 
   const handleDragEnd = (result: DropResult) => {
-    if (!result.destination || !selectedWorkspace) return;
+    console.log('Drag ended:', result);
+
+    if (!result.destination || !selectedWorkspace) {
+      console.log('No destination or workspace');
+      return;
+    }
 
     const { source, destination } = result;
+
+    console.log('Source:', source);
+    console.log('Destination:', destination);
+    console.log('Current columns:', columns);
 
     // Handle column reordering
     if (result.type === 'column') {
@@ -146,17 +198,24 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
         col.id === source.droppableId ? { ...col, tasks: updatedTasks } : col
       );
 
-      onUpdateWorkspace(selectedWorkspace.id, {
+      updateLocalWorkspace({
         boardColumns: updatedColumns,
       });
     } else {
       // Moving between columns
+      console.log('Moving between columns');
       const sourceTasks = Array.from(sourceColumn.tasks);
       const destTasks = Array.from(destColumn.tasks);
       const [movedTask] = sourceTasks.splice(source.index, 1);
 
-      movedTask.columnId = destination.droppableId;
-      movedTask.status = destination.droppableId;
+      console.log('Moved task:', movedTask);
+      console.log('From column:', sourceColumn.id, 'to:', destination.droppableId);
+
+      // Update both status and columnId for consistency
+      const newStatus = destination.droppableId;
+      movedTask.columnId = newStatus;
+      movedTask.status = newStatus;
+      movedTask.updatedAt = new Date();
 
       destTasks.splice(destination.index, 0, movedTask);
 
@@ -180,7 +239,9 @@ export function WorkspaceBoard({ workspaces, onUpdateWorkspace }: WorkspaceBoard
         return col;
       });
 
-      onUpdateWorkspace(selectedWorkspace.id, {
+      console.log('Updated columns:', updatedColumns);
+
+      updateLocalWorkspace({
         boardColumns: updatedColumns,
       });
     }
