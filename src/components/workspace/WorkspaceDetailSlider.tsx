@@ -161,7 +161,7 @@ export function WorkspaceDetailSlider({
 
   // Calculate task statistics
   const columns = workspace.boardColumns || [];
-  const allTasks = columns.flatMap(col => col.tasks);
+  const allTasks = columns.flatMap(col => col.tasks || []);
   const totalTasks = allTasks.length;
   const completedTasks = allTasks.filter(
     task => task.status === 'done' || task.status === 'completed'
@@ -346,14 +346,14 @@ export function WorkspaceDetailSlider({
                         />
                         {column.title}
                       </CardTitle>
-                      <Badge variant="outline">{column.tasks.length}</Badge>
+                      <Badge variant="outline">{(column.tasks || []).length}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {column.tasks.length === 0 ? (
+                    {(column.tasks || []).length === 0 ? (
                       <p className="text-sm text-gray-500 italic">Keine Aufgaben</p>
                     ) : (
-                      column.tasks.slice(0, 3).map(task => (
+                      (column.tasks || []).slice(0, 3).map(task => (
                         <div
                           key={task.id}
                           className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg"
@@ -386,10 +386,10 @@ export function WorkspaceDetailSlider({
                         </div>
                       ))
                     )}
-                    {column.tasks.length > 3 && (
+                    {(column.tasks || []).length > 3 && (
                       <div className="text-center">
                         <Button variant="ghost" size="sm" className="text-xs">
-                          +{column.tasks.length - 3} weitere anzeigen
+                          +{(column.tasks || []).length - 3} weitere anzeigen
                         </Button>
                       </div>
                     )}

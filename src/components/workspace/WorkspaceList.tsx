@@ -339,19 +339,19 @@ export function WorkspaceList({
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    {workspace.assignedTo.slice(0, 3).map((userId, index) => (
+                    {(workspace.assignedTo || []).slice(0, 3).map((userId, index) => (
                       <Avatar key={userId} className="h-6 w-6">
                         <AvatarFallback className="text-xs">
                           {userId.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     ))}
-                    {workspace.assignedTo.length > 3 && (
+                    {(workspace.assignedTo || []).length > 3 && (
                       <Badge
                         variant="secondary"
                         className="h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs"
                       >
-                        +{workspace.assignedTo.length - 3}
+                        +{(workspace.assignedTo || []).length - 3}
                       </Badge>
                     )}
                   </div>
@@ -372,14 +372,14 @@ export function WorkspaceList({
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {workspace.tags.slice(0, 2).map(tag => (
+                    {(workspace.tags || []).slice(0, 2).map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
-                    {workspace.tags.length > 2 && (
+                    {(workspace.tags || []).length > 2 && (
                       <Badge variant="outline" className="text-xs">
-                        +{workspace.tags.length - 2}
+                        +{(workspace.tags || []).length - 2}
                       </Badge>
                     )}
                   </div>

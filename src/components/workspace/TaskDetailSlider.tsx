@@ -689,12 +689,12 @@ export default function TaskDetailSlider({
                       )}
 
                       {/* Attachments Preview */}
-                      {attachments.length > 0 && (
+                      {(attachments || []).length > 0 && (
                         <Card>
                           <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="flex items-center gap-2">
                               <Paperclip className="h-5 w-5" />
-                              Anhänge ({attachments.length})
+                              Anhänge ({(attachments || []).length})
                             </CardTitle>
                             <Button
                               onClick={() => fileInputRef.current?.click()}
@@ -730,7 +730,7 @@ export default function TaskDetailSlider({
                             )}
 
                             <div className="space-y-2">
-                              {attachments.slice(0, 3).map(attachment => (
+                              {(attachments || []).slice(0, 3).map(attachment => (
                                 <div
                                   key={attachment.id}
                                   className="flex items-center gap-3 p-2 bg-gray-50 rounded group"
@@ -763,12 +763,12 @@ export default function TaskDetailSlider({
                                   </div>
                                 </div>
                               ))}
-                              {attachments.length > 3 && (
+                              {(attachments || []).length > 3 && (
                                 <p className="text-sm text-gray-500 text-center py-2">
-                                  +{attachments.length - 3} weitere Dateien
+                                  +{(attachments || []).length - 3} weitere Dateien
                                 </p>
                               )}
-                              {attachments.length === 0 && (
+                              {(attachments || []).length === 0 && (
                                 <div className="text-center py-4 text-gray-500">
                                   <Paperclip className="h-8 w-8 mx-auto mb-2 text-gray-300" />
                                   <p className="text-sm">Keine Anhänge</p>
@@ -783,7 +783,7 @@ export default function TaskDetailSlider({
                       )}
 
                       {/* Recent Comments */}
-                      {comments.length > 0 && (
+                      {(comments || []).length > 0 && (
                         <Card>
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
@@ -793,7 +793,7 @@ export default function TaskDetailSlider({
                           </CardHeader>
                           <CardContent>
                             <div className="space-y-3">
-                              {comments.slice(-2).map(comment => (
+                              {(comments || []).slice(-2).map(comment => (
                                 <div key={comment.id} className="flex gap-3">
                                   <Avatar className="h-8 w-8">
                                     <AvatarImage src={comment.authorAvatar} />
@@ -1132,7 +1132,7 @@ export default function TaskDetailSlider({
                           )}
 
                           <div className="space-y-2">
-                            {attachments.map(attachment => (
+                            {(attachments || []).map(attachment => (
                               <div
                                 key={attachment.id}
                                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group"
@@ -1167,7 +1167,7 @@ export default function TaskDetailSlider({
                                 </div>
                               </div>
                             ))}
-                            {attachments.length === 0 && (
+                            {(attachments || []).length === 0 && (
                               <div className="text-center py-6 text-gray-500">
                                 <Paperclip className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                                 <p className="text-sm">Keine Anhänge vorhanden</p>
@@ -1201,12 +1201,12 @@ export default function TaskDetailSlider({
                 <TabsContent value="comments" className="h-full mt-0">
                   <div className="h-full flex flex-col">
                     <div className="p-4 border-b">
-                      <h3 className="font-medium">Kommentare ({comments.length})</h3>
+                      <h3 className="font-medium">Kommentare ({(comments || []).length})</h3>
                     </div>
 
                     <div className="flex-1 p-4 overflow-y-auto">
                       <div className="space-y-4">
-                        {comments.map(comment => (
+                        {(comments || []).map(comment => (
                           <div key={comment.id} className="flex gap-3">
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={comment.authorAvatar} />
@@ -1229,7 +1229,7 @@ export default function TaskDetailSlider({
                           </div>
                         ))}
 
-                        {comments.length === 0 && (
+                        {(comments || []).length === 0 && (
                           <div className="text-center py-8 text-gray-500">
                             <MessageSquare className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                             <p>Noch keine Kommentare</p>
@@ -1278,7 +1278,7 @@ export default function TaskDetailSlider({
 
                     <div className="flex-1 p-4 overflow-y-auto">
                       <div className="space-y-4">
-                        {activities.map((activity, index) => (
+                        {(activities || []).map((activity, index) => (
                           <div key={activity.id} className="flex gap-3">
                             <div className="flex flex-col items-center">
                               <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
@@ -1304,7 +1304,7 @@ export default function TaskDetailSlider({
                                   <Calendar className="h-4 w-4 text-red-600" />
                                 )}
                               </div>
-                              {index < activities.length - 1 && (
+                              {index < (activities || []).length - 1 && (
                                 <div className="w-0.5 h-6 bg-gray-200 mt-2" />
                               )}
                             </div>
@@ -1331,7 +1331,7 @@ export default function TaskDetailSlider({
                           </div>
                         ))}
 
-                        {activities.length === 0 && (
+                        {(activities || []).length === 0 && (
                           <div className="text-center py-8 text-gray-500">
                             <Activity className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                             <p>Keine Aktivitäten</p>

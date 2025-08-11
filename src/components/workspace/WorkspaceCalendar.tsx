@@ -293,10 +293,10 @@ export function WorkspaceCalendar({
                         <Badge variant="outline" className="text-xs">
                           {workspace.type}
                         </Badge>
-                        {workspace.assignedTo.length > 0 && (
+                        {(workspace.assignedTo || []).length > 0 && (
                           <div className="flex items-center gap-1 text-xs text-gray-500">
                             <User className="h-3 w-3" />
-                            {workspace.assignedTo.length}
+                            {(workspace.assignedTo || []).length}
                           </div>
                         )}
                       </div>
@@ -366,23 +366,23 @@ export function WorkspaceCalendar({
                         <Clock className="h-4 w-4" />
                         Progress: {workspace.progress}%
                       </div>
-                      {workspace.assignedTo.length > 0 && (
+                      {(workspace.assignedTo || []).length > 0 && (
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <User className="h-4 w-4" />
-                          {workspace.assignedTo.length} zugewiesen
+                          {(workspace.assignedTo || []).length} zugewiesen
                         </div>
                       )}
                     </div>
 
                     <div className="flex flex-wrap gap-1">
-                      {workspace.tags.slice(0, 3).map(tag => (
+                      {(workspace.tags || []).slice(0, 3).map(tag => (
                         <Badge key={tag} variant="outline" className="text-xs">
                           {tag}
                         </Badge>
                       ))}
-                      {workspace.tags.length > 3 && (
+                      {(workspace.tags || []).length > 3 && (
                         <Badge variant="outline" className="text-xs">
-                          +{workspace.tags.length - 3}
+                          +{(workspace.tags || []).length - 3}
                         </Badge>
                       )}
                     </div>
