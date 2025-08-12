@@ -58,7 +58,55 @@ import {
   Download,
   MessageSquare,
   BarChart,
+  Star,
+  Archive,
+  Reply,
+  ReplyAll,
+  Forward,
+  MoreHorizontal,
+  Filter,
+  Search,
+  Paperclip,
+  AlertTriangle,
 } from 'lucide-react';
+
+interface InboxEmail {
+  id: string;
+  messageId: string;
+  from: string;
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  replyTo?: string;
+  subject: string;
+  htmlContent: string;
+  textContent: string;
+  receivedAt: Date;
+  isRead: boolean;
+  isStarred: boolean;
+  isArchived: boolean;
+  labels: string[];
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  headers: Record<string, string>;
+  attachments: Array<{
+    filename: string;
+    size: number;
+    contentType: string;
+    url: string;
+    id: string;
+  }>;
+  rawEmail?: string;
+  threadId?: string;
+  references?: string[];
+  inReplyTo?: string;
+  spamScore: number;
+  isSpam: boolean;
+  metadata: {
+    resendId?: string;
+    webhookReceivedAt: string;
+    source: string;
+  };
+}
 
 interface EmailStats {
   totalSent: number;
@@ -83,6 +131,14 @@ export default function EmailManagementPage() {
   const [emails, setEmails] = useState<EmailMessage[]>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [inboxEmails, setInboxEmails] = useState<InboxEmail[]>([]);
+  const [selectedEmail, setSelectedEmail] = useState<InboxEmail | null>(null);
+  const [inboxStats, setInboxStats] = useState({
+    total: 0,
+    unread: 0,
+    spam: 0,
+    starred: 0,
+  });
   const [stats, setStats] = useState<EmailStats>({
     totalSent: 0,
     totalDelivered: 0,
@@ -91,8 +147,15 @@ export default function EmailManagementPage() {
     deliveryRate: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [inboxLoading, setInboxLoading] = useState(false);
   const [composeDialogOpen, setComposeDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [emailDetailDialogOpen, setEmailDetailDialogOpen] = useState(false);
+
+  // Filter states
+  const [inboxFilter, setInboxFilter] = useState('all'); // all, unread, starred, spam
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Compose Email Form
   const [composeForm, setComposeForm] = useState({
@@ -103,6 +166,221 @@ export default function EmailManagementPage() {
     htmlContent: '',
     templateId: '',
   });
+
+  // Reply Form
+  const [replyForm, setReplyForm] = useState({
+    to: '',
+    cc: '',
+    bcc: '',
+    subject: '',
+    htmlContent: '',
+  });
+
+  // Posteingangs-E-Mails laden
+  const loadInboxEmails = async () => {
+    try {
+      setInboxLoading(true);
+
+      const params = new URLSearchParams();
+      if (inboxFilter === 'unread') params.append('isRead', 'false');
+      if (inboxFilter === 'starred') params.append('label', 'starred');
+      if (inboxFilter === 'spam') params.append('label', 'spam');
+
+      const response = await fetch(`/api/admin/inbox?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setInboxEmails(
+          data.data.emails.map((email: any) => ({
+            ...email,
+            receivedAt: new Date(email.receivedAt),
+          }))
+        );
+        setInboxStats(data.data.stats);
+      } else {
+        toast.error('Fehler beim Laden der E-Mails');
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der Posteingangs-E-Mails:', error);
+      toast.error('Fehler beim Laden der E-Mails');
+    } finally {
+      setInboxLoading(false);
+    }
+  };
+
+  // E-Mail als gelesen/ungelesen markieren
+  const toggleEmailRead = async (emailId: string, isRead: boolean) => {
+    try {
+      const response = await fetch('/api/admin/inbox', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailIds: [emailId],
+          action: isRead ? 'markAsUnread' : 'markAsRead',
+        }),
+      });
+
+      if (response.ok) {
+        loadInboxEmails();
+        toast.success(isRead ? 'Als ungelesen markiert' : 'Als gelesen markiert');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Aktualisieren der E-Mail');
+    }
+  };
+
+  // E-Mail markieren/entmarkieren
+  const toggleEmailStar = async (emailId: string, isStarred: boolean) => {
+    try {
+      const response = await fetch('/api/admin/inbox', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailIds: [emailId],
+          action: isStarred ? 'unstar' : 'star',
+        }),
+      });
+
+      if (response.ok) {
+        loadInboxEmails();
+        toast.success(isStarred ? 'Markierung entfernt' : 'Als wichtig markiert');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Markieren der E-Mail');
+    }
+  };
+
+  // E-Mail archivieren
+  const archiveEmail = async (emailId: string) => {
+    try {
+      const response = await fetch('/api/admin/inbox', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailIds: [emailId],
+          action: 'archive',
+        }),
+      });
+
+      if (response.ok) {
+        loadInboxEmails();
+        toast.success('E-Mail archiviert');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Archivieren der E-Mail');
+    }
+  };
+
+  // E-Mail löschen
+  const deleteEmail = async (emailId: string) => {
+    try {
+      const response = await fetch('/api/admin/inbox', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailIds: [emailId] }),
+      });
+
+      if (response.ok) {
+        loadInboxEmails();
+        toast.success('E-Mail gelöscht');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Löschen der E-Mail');
+    }
+  };
+
+  // E-Mail-Details laden
+  const loadEmailDetails = async (emailId: string) => {
+    try {
+      const response = await fetch(`/api/admin/inbox/${emailId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        const emailData = {
+          ...data.data,
+          receivedAt: new Date(data.data.receivedAt),
+        };
+        setSelectedEmail(emailData);
+        setEmailDetailDialogOpen(true);
+      }
+    } catch (error) {
+      toast.error('Fehler beim Laden der E-Mail-Details');
+    }
+  };
+
+  // Antwort vorbereiten
+  const prepareReply = (email: InboxEmail, replyAll: boolean = false) => {
+    const recipients = replyAll
+      ? [email.from, ...email.to.filter(addr => addr !== 'noreply@taskilo.de')]
+      : [email.from];
+
+    setReplyForm({
+      to: recipients.join(', '),
+      cc: replyAll ? (email.cc || []).join(', ') : '',
+      bcc: '',
+      subject: email.subject.startsWith('Re: ') ? email.subject : `Re: ${email.subject}`,
+      htmlContent: `<br><br>---<br><p><strong>Von:</strong> ${email.from}</p><p><strong>Gesendet:</strong> ${email.receivedAt.toLocaleString('de-DE')}</p><p><strong>Betreff:</strong> ${email.subject}</p><br>${email.htmlContent}`,
+    });
+    setSelectedEmail(email);
+    setReplyDialogOpen(true);
+  };
+
+  // Antwort senden
+  const sendReply = async () => {
+    if (!selectedEmail) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/admin/inbox/${selectedEmail.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: replyForm.to.split(',').map(email => email.trim()),
+          cc: replyForm.cc ? replyForm.cc.split(',').map(email => email.trim()) : [],
+          bcc: replyForm.bcc ? replyForm.bcc.split(',').map(email => email.trim()) : [],
+          subject: replyForm.subject,
+          htmlContent: replyForm.htmlContent,
+          textContent: replyForm.htmlContent.replace(/<[^>]*>/g, ''), // Simple HTML to text
+        }),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Antwort erfolgreich gesendet');
+        setReplyDialogOpen(false);
+        setReplyForm({
+          to: '',
+          cc: '',
+          bcc: '',
+          subject: '',
+          htmlContent: '',
+        });
+      } else {
+        toast.error(result.error || 'Fehler beim Senden der Antwort');
+      }
+    } catch (error) {
+      toast.error('Fehler beim Senden der Antwort');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filtered E-Mails
+  const filteredInboxEmails = inboxEmails.filter(email => {
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        email.subject.toLowerCase().includes(searchLower) ||
+        email.from.toLowerCase().includes(searchLower) ||
+        email.textContent.toLowerCase().includes(searchLower)
+      );
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    loadInboxEmails();
+  }, [inboxFilter]);
 
   // Template Form
   const [templateForm, setTemplateForm] = useState({
