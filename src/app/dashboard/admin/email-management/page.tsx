@@ -477,6 +477,14 @@ export default function EmailManagementPage() {
   };
 
   const handleSendEmail = async () => {
+    // Debug-Ausgabe
+    console.log('Form Daten:', {
+      to: composeForm.to,
+      subject: composeForm.subject,
+      htmlContent: composeForm.htmlContent,
+      userEmail: user?.email,
+    });
+
     if (!composeForm.to || !composeForm.subject || !composeForm.htmlContent) {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
