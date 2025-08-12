@@ -81,8 +81,7 @@ export function CreateAbsenceRequestModal({
 
       const days = calculateDays(formData.startDate, formData.endDate);
 
-      const newRequest: AbsenceRequest = {
-        id: `req_${Date.now()}`, // In production würde das von der API kommen
+      const newRequest: Omit<AbsenceRequest, 'id'> = {
         companyId: companyId,
         employeeId: formData.employeeId,
         employeeName: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
@@ -96,11 +95,17 @@ export function CreateAbsenceRequestModal({
         requestedAt: new Date().toISOString(),
       };
 
-      // Hier würde der API-Call zur Erstellung der Abwesenheitsanfrage erfolgen
-      // await PersonalService.createAbsenceRequest(companyId, newRequest);
+      // API-Call zur Erstellung der Abwesenheitsanfrage
+      const requestId = await PersonalService.createAbsenceRequest(newRequest);
+
+      // Erstelle das vollständige Request-Objekt für die UI
+      const createdRequest: AbsenceRequest = {
+        ...newRequest,
+        id: requestId,
+      };
 
       toast.success('Abwesenheitsantrag erfolgreich erstellt');
-      onRequestCreated(newRequest);
+      onRequestCreated(createdRequest);
       onClose();
 
       // Reset form

@@ -574,6 +574,7 @@ export interface Shift {
   department: string;
   notes?: string;
   status: 'PLANNED' | 'CONFIRMED' | 'ABSENT' | 'SICK';
+  absenceRequestId?: string; // Verknüpfung zu Abwesenheitsantrag
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -1326,20 +1327,26 @@ export class PersonalService {
    * (nicht im Urlaub, krank oder anderweitig abwesend)
    */
   static async isEmployeeAvailable(
-    companyId: string, 
-    employeeId: string, 
+    companyId: string,
+    employeeId: string,
     date: string
   ): Promise<boolean> {
     try {
-      console.log('🔍 PersonalService: Prüfe Verfügbarkeit für Mitarbeiter:', employeeId, 'am', date);
+      console.log(
+        '🔍 PersonalService: Prüfe Verfügbarkeit für Mitarbeiter:',
+        employeeId,
+        'am',
+        date
+      );
 
       // Prüfe genehmigte Abwesenheitsanträge
       const absenceRequests = await this.getAbsenceRequests(companyId);
-      const employeeAbsences = absenceRequests.filter(req => 
-        req.employeeId === employeeId && 
-        req.status === 'APPROVED' &&
-        date >= req.startDate && 
-        date <= req.endDate
+      const employeeAbsences = absenceRequests.filter(
+        req =>
+          req.employeeId === employeeId &&
+          req.status === 'APPROVED' &&
+          date >= req.startDate &&
+          date <= req.endDate
       );
 
       if (employeeAbsences.length > 0) {
@@ -1349,14 +1356,18 @@ export class PersonalService {
 
       // Prüfe Schichten mit ABSENT oder SICK Status
       const shifts = await this.getShifts(companyId, new Date(date), new Date(date));
-      const employeeShift = shifts.find(shift => 
-        shift.employeeId === employeeId && 
-        shift.date === date &&
-        (shift.status === 'ABSENT' || shift.status === 'SICK')
+      const employeeShift = shifts.find(
+        shift =>
+          shift.employeeId === employeeId &&
+          shift.date === date &&
+          (shift.status === 'ABSENT' || shift.status === 'SICK')
       );
 
       if (employeeShift) {
-        console.log('❌ PersonalService: Mitarbeiter hat Abwesenheits-Schicht:', employeeShift.status);
+        console.log(
+          '❌ PersonalService: Mitarbeiter hat Abwesenheits-Schicht:',
+          employeeShift.status
+        );
         return false;
       }
 
@@ -1371,10 +1382,7 @@ export class PersonalService {
   /**
    * Holt alle verfügbaren Mitarbeiter für einen bestimmten Tag
    */
-  static async getAvailableEmployees(
-    companyId: string, 
-    date: string
-  ): Promise<Employee[]> {
+  static async getAvailableEmployees(companyId: string, date: string): Promise<Employee[]> {
     try {
       console.log('🔍 PersonalService: Lade verfügbare Mitarbeiter für:', date);
 
@@ -1382,12 +1390,14 @@ export class PersonalService {
       const availableEmployees: Employee[] = [];
 
       for (const employee of allEmployees) {
-        if (employee.id && await this.isEmployeeAvailable(companyId, employee.id, date)) {
+        if (employee.id && (await this.isEmployeeAvailable(companyId, employee.id, date))) {
           availableEmployees.push(employee);
         }
       }
 
-      console.log(`✅ PersonalService: ${availableEmployees.length} verfügbare Mitarbeiter gefunden`);
+      console.log(
+        `✅ PersonalService: ${availableEmployees.length} verfügbare Mitarbeiter gefunden`
+      );
       return availableEmployees;
     } catch (error) {
       console.error('❌ PersonalService: Fehler beim Laden verfügbarer Mitarbeiter:', error);
@@ -1813,10 +1823,145 @@ export class PersonalService {
         request
       );
 
-      console.log('✅ PersonalService: Abwesenheitsantrag erstellt mit ID:', docRef.id);
-      return docRef.id;
+      const requestId = docRef.id;
+
+      // Automatisch Dienstplan-Einträge für die Abwesenheit erstellen
+      await this.createAbsenceShifts(request, requestId);
+
+      console.log('✅ PersonalService: Abwesenheitsantrag erstellt mit ID:', requestId);
+      return requestId;
     } catch (error) {
       console.error('❌ PersonalService: Fehler beim Erstellen des Abwesenheitsantrags:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Erstellt Dienstplan-Einträge für einen Abwesenheitsantrag
+   */
+  static async createAbsenceShifts(
+    request: Omit<AbsenceRequest, 'id'>,
+    requestId: string
+  ): Promise<void> {
+    try {
+      console.log('🔄 PersonalService: Erstelle Dienstplan-Einträge für Abwesenheit');
+
+      const startDate = new Date(request.startDate);
+      const endDate = new Date(request.endDate);
+
+      // Iteriere über alle Tage der Abwesenheit
+      for (
+        let currentDate = new Date(startDate);
+        currentDate <= endDate;
+        currentDate.setDate(currentDate.getDate() + 1)
+      ) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+
+        // Bestimme den Status und die Bezeichnung basierend auf Antragstyp und Status
+        let position: string;
+        let status: 'PLANNED' | 'CONFIRMED' | 'ABSENT' | 'SICK';
+        let department: string;
+
+        if (request.type === 'VACATION') {
+          if (request.status === 'PENDING') {
+            position = 'Urlaubsantrag';
+            status = 'PLANNED';
+            department = 'Urlaubsantrag (ausstehend)';
+          } else if (request.status === 'APPROVED') {
+            position = 'Urlaubsgenehmigt';
+            status = 'ABSENT';
+            department = 'Urlaubsgenehmigt';
+          } else {
+            continue; // Keine Schicht für abgelehnte Anträge
+          }
+        } else if (request.type === 'SICK') {
+          position = 'Krankheit';
+          status = 'SICK';
+          department = 'Krankheit';
+        } else {
+          position = 'Abwesend';
+          status = 'ABSENT';
+          department = this.getAbsenceTypeLabel(request.type);
+        }
+
+        // Erstelle Schicht für diesen Tag
+        await this.createShift({
+          companyId: request.companyId,
+          employeeId: request.employeeId,
+          date: dateStr,
+          startTime: '00:00',
+          endTime: '23:59',
+          position,
+          department,
+          status,
+          notes: `${department}: ${request.reason || ''}`,
+          absenceRequestId: requestId,
+        });
+      }
+
+      console.log('✅ PersonalService: Dienstplan-Einträge für Abwesenheit erstellt');
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Erstellen der Dienstplan-Einträge:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Hilfsmethode für Abwesenheitstyp-Labels
+   */
+  static getAbsenceTypeLabel(type: AbsenceRequest['type']): string {
+    const labels = {
+      VACATION: 'Urlaub',
+      SICK: 'Krankheit',
+      PERSONAL: 'Persönlich',
+      TRAINING: 'Weiterbildung',
+      OTHER: 'Sonstiges',
+    };
+    return labels[type] || 'Abwesenheit';
+  }
+
+  /**
+   * Aktualisiert Dienstplan-Einträge bei Änderung eines Abwesenheitsantrags
+   */
+  static async updateAbsenceShifts(
+    companyId: string,
+    requestId: string,
+    newStatus: 'APPROVED' | 'REJECTED'
+  ): Promise<void> {
+    try {
+      console.log('🔄 PersonalService: Aktualisiere Dienstplan-Einträge für Abwesenheitsantrag');
+
+      // Lade alle Schichten, die zu diesem Abwesenheitsantrag gehören
+      const shiftsQuery = query(
+        collection(db, 'companies', companyId, 'shifts'),
+        where('absenceRequestId', '==', requestId)
+      );
+
+      const shiftsSnapshot = await getDocs(shiftsQuery);
+
+      for (const shiftDoc of shiftsSnapshot.docs) {
+        const shiftData = shiftDoc.data() as Shift;
+
+        if (newStatus === 'APPROVED') {
+          // Bei Genehmigung: Status und Bezeichnung aktualisieren
+          await updateDoc(shiftDoc.ref, {
+            position: 'Urlaubsgenehmigt',
+            department: 'Urlaubsgenehmigt',
+            status: 'ABSENT',
+            updatedAt: new Date(),
+          });
+        } else if (newStatus === 'REJECTED') {
+          // Bei Ablehnung: Schicht löschen
+          await deleteDoc(shiftDoc.ref);
+        }
+      }
+
+      console.log('✅ PersonalService: Dienstplan-Einträge aktualisiert');
+    } catch (error) {
+      console.error(
+        '❌ PersonalService: Fehler beim Aktualisieren der Dienstplan-Einträge:',
+        error
+      );
       throw error;
     }
   }
@@ -1842,6 +1987,9 @@ export class PersonalService {
       };
 
       await updateDoc(doc(db, 'companies', companyId, 'absenceRequests', requestId), updateData);
+
+      // Aktualisiere entsprechende Dienstplan-Einträge
+      await this.updateAbsenceShifts(companyId, requestId, status);
 
       console.log('✅ PersonalService: Abwesenheitsantrag bearbeitet');
     } catch (error) {
