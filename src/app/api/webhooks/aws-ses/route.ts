@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/clients';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { adminEmailsService } from '@/lib/aws-dynamodb';
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,19 +48,21 @@ export async function POST(request: NextRequest) {
         console.log('Email received:', sesMessage.mail);
 
         try {
-          await addDoc(collection(db, 'admin_emails'), {
-            type: 'received',
+          await adminEmailsService.createEmail({
+            messageId: sesMessage.mail.messageId,
             from: sesMessage.mail.commonHeaders?.from?.[0] || 'unknown',
             to: sesMessage.mail.commonHeaders?.to?.[0] || 'unknown',
             subject: sesMessage.mail.commonHeaders?.subject || 'No Subject',
-            messageId: sesMessage.mail.messageId,
-            timestamp: serverTimestamp(),
+            textContent: sesMessage.content || '',
+            htmlContent: sesMessage.content || '',
             source: 'aws-ses',
-            raw: sesMessage,
+            type: 'received',
             read: false,
+            timestamp: Date.now(),
+            raw: sesMessage,
           });
 
-          console.log('Email stored in Firestore');
+          console.log('Email stored in DynamoDB');
         } catch (error) {
           console.error('Error storing email:', error);
         }

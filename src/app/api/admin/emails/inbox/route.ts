@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/clients';
-import { collection, query, orderBy, limit, where, getDocs } from 'firebase/firestore';
+import { AdminEmailsService } from '@/lib/aws-dynamodb';
+
+const adminEmailsService = new AdminEmailsService();
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,63 +10,31 @@ export async function GET(request: NextRequest) {
     const limitCount = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';
 
-    console.log('Loading admin emails from admin_emails collection...');
+    console.log('Loading admin emails from DynamoDB...');
 
-    let q = query(collection(db, 'admin_emails'), orderBy('timestamp', 'desc'), limit(limitCount));
+    // Alle E-Mails aus DynamoDB laden
+    const allEmailsData = await adminEmailsService.getAllEmails();
+    let emails = allEmailsData || [];
 
     // Filter anwenden
     if (filter === 'unread') {
-      q = query(
-        collection(db, 'admin_emails'),
-        where('read', '==', false),
-        orderBy('timestamp', 'desc'),
-        limit(limitCount)
-      );
+      emails = emails.filter(email => !email.read);
     } else if (filter === 'starred') {
-      q = query(
-        collection(db, 'admin_emails'),
-        where('labels', 'array-contains', 'starred'),
-        orderBy('timestamp', 'desc'),
-        limit(limitCount)
-      );
+      emails = emails.filter(email => email.labels?.includes('starred'));
     } else if (filter === 'spam') {
-      q = query(
-        collection(db, 'admin_emails'),
-        where('labels', 'array-contains', 'spam'),
-        orderBy('timestamp', 'desc'),
-        limit(limitCount)
-      );
+      emails = emails.filter(email => email.labels?.includes('spam'));
     }
 
-    const querySnapshot = await getDocs(q);
-    const emails = querySnapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        messageId: data.messageId || doc.id,
-        from: data.from || 'unknown',
-        to: data.to || 'admin@taskilo.de',
-        subject: data.subject || 'No Subject',
-        htmlContent: data.htmlContent || '',
-        textContent: data.textContent || '',
-        timestamp: data.timestamp,
-        receivedAt: data.timestamp?.toDate() || new Date(),
-        isRead: data.read || false,
-        read: data.read || false,
-        isStarred: data.labels?.includes('starred') || false,
-        isArchived: data.labels?.includes('archived') || false,
-        labels: data.labels || [],
-        source: data.source || 'AWS SES',
-        type: data.type || 'received',
-        preview: data.textContent ? data.textContent.substring(0, 150) + '...' : data.subject,
-      };
-    });
+    // Nach Timestamp sortieren (neueste zuerst)
+    emails.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+    // Limit anwenden
+    emails = emails.slice(0, limitCount);
 
     // Client-seitige Suche wenn nötig
-    let filteredEmails = emails;
     if (search) {
       const searchLower = search.toLowerCase();
-      filteredEmails = emails.filter(
+      emails = emails.filter(
         (email: any) =>
           email.subject?.toLowerCase().includes(searchLower) ||
           email.from?.toLowerCase().includes(searchLower) ||
@@ -73,21 +42,39 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Statistiken berechnen
-    const allEmailsQuery = query(collection(db, 'admin_emails'));
-    const allEmails = await getDocs(allEmailsQuery);
+    // E-Mails für die Antwort formatieren
+    const formattedEmails = emails.map(email => ({
+      id: email.emailId,
+      messageId: email.messageId || email.emailId,
+      from: email.from || 'unknown',
+      to: email.to || 'admin@taskilo.de',
+      subject: email.subject || 'No Subject',
+      htmlContent: email.htmlContent || '',
+      textContent: email.textContent || '',
+      timestamp: email.timestamp,
+      receivedAt: email.timestamp ? new Date(email.timestamp) : new Date(),
+      isRead: email.read || false,
+      read: email.read || false,
+      isStarred: email.labels?.includes('starred') || false,
+      isArchived: email.labels?.includes('archived') || false,
+      labels: email.labels || [],
+      source: email.source || 'AWS SES',
+      type: email.type || 'received',
+      preview: email.textContent ? email.textContent.substring(0, 150) + '...' : email.subject,
+    }));
 
+    // Statistiken berechnen
     const stats = {
-      total: allEmails.size,
-      unread: allEmails.docs.filter(doc => !doc.data().read).length,
-      spam: allEmails.docs.filter(doc => doc.data().labels?.includes('spam')).length,
-      starred: allEmails.docs.filter(doc => doc.data().labels?.includes('starred')).length,
+      total: allEmailsData.length,
+      unread: allEmailsData.filter(email => !email.read).length,
+      spam: allEmailsData.filter(email => email.labels?.includes('spam')).length,
+      starred: allEmailsData.filter(email => email.labels?.includes('starred')).length,
     };
 
-    console.log(`Loaded ${filteredEmails.length} admin emails, stats:`, stats);
+    console.log(`Loaded ${formattedEmails.length} admin emails from DynamoDB, stats:`, stats);
 
     return NextResponse.json({
-      emails: filteredEmails,
+      emails: formattedEmails,
       stats,
       success: true,
     });

@@ -1,25 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/clients';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { AdminEmailsService } from '@/lib/aws-dynamodb';
+
+const adminEmailsService = new AdminEmailsService();
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
 
-    const emailDoc = await getDoc(doc(db, 'inbox_emails', id));
+    const email = await adminEmailsService.getEmailById(id);
 
-    if (!emailDoc.exists()) {
+    if (!email) {
       return NextResponse.json({ error: 'E-Mail nicht gefunden', success: false }, { status: 404 });
     }
 
-    const email = {
-      id: emailDoc.id,
-      ...emailDoc.data(),
-      receivedAt: emailDoc.data()?.receivedAt?.toDate?.() || new Date(),
+    const formattedEmail = {
+      id: email.emailId,
+      messageId: email.messageId,
+      from: email.from,
+      to: email.to,
+      subject: email.subject,
+      htmlContent: email.htmlContent,
+      textContent: email.textContent,
+      timestamp: email.timestamp,
+      receivedAt: email.timestamp ? new Date(email.timestamp) : new Date(),
+      read: email.read,
+      labels: email.labels || [],
+      source: email.source,
+      type: email.type,
+      raw: email.raw,
     };
 
     return NextResponse.json({
-      email,
+      email: formattedEmail,
       success: true,
     });
   } catch (error) {
@@ -36,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const { id } = params;
     const updates = await request.json();
 
-    await updateDoc(doc(db, 'inbox_emails', id), updates);
+    await adminEmailsService.updateEmail(id, updates);
 
     return NextResponse.json({
       success: true,
