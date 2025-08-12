@@ -16,10 +16,13 @@ echo "4️⃣  🔧 Resend konfigurieren (mit API-Key)"
 echo "5️⃣  🏠 Admin Dashboard öffnen"
 echo "6️⃣  📈 Vollständiger System-Check"
 echo "7️⃣  🔄 Alle Scripts ausführen"
+echo "8️⃣  ⚡ AUTO: Webhook über Terminal einrichten"
+echo "9️⃣  🚀 VOLLAUTOMATISCH: Komplettes Setup"
+echo "A️⃣  🧠 SMART: Terminal + Dashboard Integration"
 echo "0️⃣  ❌ Beenden"
 echo ""
 
-read -p "Deine Wahl (0-7): " choice
+read -p "Deine Wahl (0-9, A): " choice
 
 case $choice in
     1)
@@ -83,12 +86,24 @@ case $choice in
         echo ""
         echo "🎉 Alle Scripts abgeschlossen!"
         ;;
+    8)
+        echo "⚡ Automatische Webhook-Einrichtung..."
+        ./scripts/auto-setup-webhook.sh
+        ;;
+    9)
+        echo "🚀 Vollautomatisches Setup..."
+        ./scripts/full-auto-setup.sh
+        ;;
+    A|a)
+        echo "🧠 Smart Setup (Terminal + Dashboard)..."
+        ./scripts/smart-webhook-setup.sh
+        ;;
     0)
         echo "❌ Setup beendet."
         exit 0
         ;;
     *)
-        echo "❌ Ungültige Auswahl. Bitte wähle 0-7."
+        echo "❌ Ungültige Auswahl. Bitte wähle 0-9 oder A."
         ;;
 esac
 
