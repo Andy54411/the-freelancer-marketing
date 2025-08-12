@@ -28,8 +28,6 @@ interface EmailComposeProps {
 export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [selectedSenderEmail, setSelectedSenderEmail] = useState('andy.staudinger@taskilo.de');
-  const [contentMode, setContentMode] = useState<'rich' | 'html'>('rich');
 
   // Verfügbare Sender-E-Mail-Adressen von der verifizierten Domain taskilo.de
   const senderEmails = [
@@ -42,6 +40,9 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
     'hello@taskilo.de',
   ];
 
+  const [selectedSenderEmail, setSelectedSenderEmail] = useState(senderEmails[0]); // Initialisiere mit erstem Wert
+  const [contentMode, setContentMode] = useState<'rich' | 'html'>('rich');
+
   const [composeForm, setComposeForm] = useState({
     to: '',
     cc: '',
@@ -49,7 +50,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
     subject: '',
     htmlContent: '',
     textContent: '', // Hinzugefügt für Rich-Text-Modus
-    templateId: '',
+    templateId: '', // Leerer String als Standardwert für kontrollierten Zustand
   });
 
   const loadTemplate = (templateId: string) => {
@@ -105,23 +106,56 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
 
     if (
       !selectedSenderEmail ||
-      !composeForm.to ||
-      !composeForm.subject ||
-      !composeForm.htmlContent
+      !composeForm.to.trim() ||
+      !composeForm.subject.trim() ||
+      !composeForm.htmlContent.trim()
     ) {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
+    }
+
+    // Validiere E-Mail-Adressen
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const toEmails = composeForm.to
+      .split(',')
+      .map(email => email.trim())
+      .filter(email => email.length > 0);
+
+    if (toEmails.length === 0) {
+      toast.error('Mindestens eine gültige Empfänger-E-Mail-Adresse erforderlich');
+      return;
+    }
+
+    for (const email of toEmails) {
+      if (!emailRegex.test(email)) {
+        toast.error(`Ungültige E-Mail-Adresse: ${email}`);
+        return;
+      }
     }
 
     setLoading(true);
     try {
       const emailData = {
         from: selectedSenderEmail,
-        to: composeForm.to.split(',').map(email => email.trim()),
-        cc: composeForm.cc ? composeForm.cc.split(',').map(email => email.trim()) : undefined,
-        bcc: composeForm.bcc ? composeForm.bcc.split(',').map(email => email.trim()) : undefined,
+        to: composeForm.to
+          .split(',')
+          .map(email => email.trim())
+          .filter(email => email.length > 0),
+        cc: composeForm.cc
+          ? composeForm.cc
+              .split(',')
+              .map(email => email.trim())
+              .filter(email => email.length > 0)
+          : [],
+        bcc: composeForm.bcc
+          ? composeForm.bcc
+              .split(',')
+              .map(email => email.trim())
+              .filter(email => email.length > 0)
+          : [],
         subject: composeForm.subject,
         htmlContent: composeForm.htmlContent,
+        textContent: composeForm.textContent || undefined,
       };
 
       // Verwende AWS SES API-Route
@@ -134,8 +168,15 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'E-Mail-Versand fehlgeschlagen');
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Unbekannter Server-Fehler' }));
+        console.error('AWS SES API Fehler:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+        });
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -216,11 +257,12 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="template-select">Template wählen (optional)</Label>
-              <Select value={composeForm.templateId} onValueChange={loadTemplate}>
+              <Select value={composeForm.templateId || ''} onValueChange={loadTemplate}>
                 <SelectTrigger>
                   <SelectValue placeholder="Template auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">Kein Template</SelectItem>
                   {templates.map(template => (
                     <SelectItem key={template.templateId} value={template.templateId}>
                       {template.name}
