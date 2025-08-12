@@ -4,13 +4,31 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { Ticket, TicketStats, TicketFilters, CreateTicketForm } from '@/types/ticket';
+import type {
+  Ticket,
+  TicketStats,
+  TicketFilters,
+  CreateTicketForm,
+  TicketStatus,
+} from '@/types/ticket';
 import { Plus, Filter } from 'lucide-react';
 import { TicketTable } from './components/TicketTable';
 import { TicketFilters as TicketFiltersComponent } from './components/TicketFilters';
 import { CreateTicketDialog } from './components/CreateTicketDialog';
 import { TicketStatsCards } from './components/TicketStatsCards';
 import { TicketEmailService } from '@/lib/ticket-email-service';
+import { db } from '@/firebase/clients';
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  doc,
+  serverTimestamp,
+  where,
+} from 'firebase/firestore';
 
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -20,6 +38,52 @@ export default function TicketsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Firestore Realtime Listener für Tickets
+  useEffect(() => {
+    setIsLoading(true);
+
+    const ticketsQuery = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
+
+    const unsubscribe = onSnapshot(ticketsQuery, snapshot => {
+      const ticketsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate(),
+        dueDate: doc.data().dueDate?.toDate(),
+      })) as Ticket[];
+
+      setTickets(ticketsData);
+      setIsLoading(false);
+
+      // Statistiken berechnen
+      const stats: TicketStats = {
+        total: ticketsData.length,
+        open: ticketsData.filter(t => t.status === 'open').length,
+        inProgress: ticketsData.filter(t => t.status === 'in-progress').length,
+        resolved: ticketsData.filter(t => t.status === 'resolved').length,
+        byPriority: {
+          low: ticketsData.filter(t => t.priority === 'low').length,
+          medium: ticketsData.filter(t => t.priority === 'medium').length,
+          high: ticketsData.filter(t => t.priority === 'high').length,
+        },
+        byCategory: {
+          general: ticketsData.filter(t => t.category === 'general').length,
+          payment: ticketsData.filter(t => t.category === 'payment').length,
+          authentication: ticketsData.filter(t => t.category === 'authentication').length,
+          email: ticketsData.filter(t => t.category === 'email').length,
+          technical: ticketsData.filter(t => t.category === 'technical').length,
+          feedback: ticketsData.filter(t => t.category === 'feedback').length,
+          other: ticketsData.filter(t => t.category === 'other').length,
+        },
+        overdue: ticketsData.filter(t => t.dueDate && t.dueDate < new Date()).length,
+      };
+      setTicketStats(stats);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Mock-Daten für Entwicklung (später durch echte API ersetzen)
   useEffect(() => {
@@ -151,28 +215,26 @@ export default function TicketsPage() {
 
   const handleCreateTicket = async (ticketData: CreateTicketForm) => {
     try {
-      // Neues Ticket erstellen
-      const newTicket: Ticket = {
-        id: `ticket-${Date.now()}`,
+      // Ticket in Firestore erstellen
+      const ticketDoc = {
         title: ticketData.title,
         description: ticketData.description,
-        status: 'open',
+        status: 'open' as TicketStatus,
         priority: ticketData.priority,
         category: ticketData.category,
-        assignedTo: ticketData.assignedTo,
+        assignedTo: ticketData.assignedTo || null,
         reportedBy: 'admin@taskilo.de', // TODO: Aktuellen User verwenden
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        dueDate: ticketData.dueDate,
-        tags: ticketData.tags,
-        comments: []
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        dueDate: ticketData.dueDate || null,
+        tags: ticketData.tags || [],
+        comments: [],
       };
 
-      // Ticket zur Liste hinzufügen (später durch API-Call ersetzen)
-      setTickets(prev => [newTicket, ...prev]);
-      
-      console.log('🎫 Neues Ticket erstellt:', newTicket.id);
-      
+      const docRef = await addDoc(collection(db, 'tickets'), ticketDoc);
+
+      console.log('🎫 Neues Ticket in Firestore erstellt:', docRef.id);
+
       // E-Mail-Benachrichtigungen über API senden
       try {
         const response = await fetch('/api/tickets/test-email', {
@@ -181,9 +243,9 @@ export default function TicketsPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            ticketId: newTicket.id,
-            title: newTicket.title,
-            reportedBy: newTicket.reportedBy
+            ticketId: docRef.id,
+            title: ticketData.title,
+            reportedBy: ticketDoc.reportedBy,
           }),
         });
 
@@ -198,12 +260,13 @@ export default function TicketsPage() {
         console.error('❌ E-Mail-Fehler:', emailError);
         // Ticket wird trotzdem erstellt, auch wenn E-Mail fehlschlägt
       }
-      
+
       setShowCreateDialog(false);
     } catch (error) {
       console.error('❌ Fehler beim Erstellen des Tickets:', error);
     }
-  };  if (isLoading) {
+  };
+  if (isLoading) {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="animate-pulse space-y-6">

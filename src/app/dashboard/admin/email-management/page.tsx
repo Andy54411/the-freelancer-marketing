@@ -27,6 +27,18 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { clientEmailService, EmailMessage, EmailTemplate } from '@/lib/client-email-service';
+import { db } from '@/firebase/clients';
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  doc,
+  serverTimestamp,
+  where,
+} from 'firebase/firestore';
 import {
   Mail,
   Send,
@@ -101,81 +113,110 @@ export default function EmailManagementPage() {
 
   useEffect(() => {
     loadData();
+    setupRealtimeListeners();
   }, []);
+
+  const setupRealtimeListeners = () => {
+    // E-Mails Realtime Listener
+    const emailsQuery = query(collection(db, 'emails'), orderBy('sentAt', 'desc'));
+
+    const unsubscribeEmails = onSnapshot(emailsQuery, snapshot => {
+      const emailsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        sentAt: doc.data().sentAt?.toDate(),
+        deliveredAt: doc.data().deliveredAt?.toDate(),
+      })) as EmailMessage[];
+      setEmails(emailsData);
+    });
+
+    // Kontakte Realtime Listener
+    const contactsQuery = query(collection(db, 'email_contacts'), orderBy('createdAt', 'desc'));
+
+    const unsubscribeContacts = onSnapshot(contactsQuery, snapshot => {
+      const contactsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+        lastEmailSent: doc.data().lastEmailSent?.toDate(),
+      })) as Contact[];
+      setContacts(contactsData);
+    });
+
+    // Templates Realtime Listener
+    const templatesQuery = query(collection(db, 'email_templates'), orderBy('createdAt', 'desc'));
+
+    const unsubscribeTemplates = onSnapshot(templatesQuery, snapshot => {
+      const templatesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as EmailTemplate[];
+      setTemplates(templatesData);
+    });
+
+    // E-Mail-Statistiken berechnen
+    const updateStats = () => {
+      const totalSent = emails.length;
+      const totalDelivered = emails.filter(e => e.status === 'delivered').length;
+      const totalFailed = emails.filter(e => e.status === 'failed').length;
+      const deliveryRate = totalSent > 0 ? (totalDelivered / totalSent) * 100 : 0;
+
+      setStats({
+        totalSent,
+        totalDelivered,
+        totalBounced: totalFailed,
+        totalComplaints: 0, // Wird über Webhooks aktualisiert
+        deliveryRate: Math.round(deliveryRate * 10) / 10,
+      });
+    };
+
+    updateStats();
+
+    // Cleanup function
+    return () => {
+      unsubscribeEmails();
+      unsubscribeContacts();
+      unsubscribeTemplates();
+    };
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load templates - erstmal mit Mock-Daten
-      setTemplates([
+      // Templates aus Firestore laden oder Default-Templates erstellen
+      const templatesSnapshot = await collection(db, 'email_templates');
+
+      // Standard-Templates erstellen, falls sie nicht existieren
+      const defaultTemplates = [
         {
           id: 'welcome',
           name: 'Willkommens-E-Mail',
           subject: 'Willkommen bei Taskilo, {{name}}!',
           htmlContent: '<p>Hallo {{name}}, willkommen bei Taskilo!</p>',
-          variables: ['name']
+          variables: ['name'],
+          createdAt: serverTimestamp(),
         },
         {
           id: 'support-ticket',
           name: 'Support-Ticket',
           subject: 'Ihr Support-Ticket #{{ticketId}}',
           htmlContent: '<p>Ticket erstellt: {{subject}}</p>',
-          variables: ['ticketId', 'subject']
+          variables: ['ticketId', 'subject'],
+          createdAt: serverTimestamp(),
+        },
+      ];
+
+      // Prüfen ob Templates existieren, falls nicht -> erstellen
+      for (const template of defaultTemplates) {
+        try {
+          await addDoc(collection(db, 'email_templates'), template);
+        } catch (error) {
+          // Template existiert bereits oder anderer Fehler
+          console.log('Template bereits vorhanden oder Fehler:', error);
         }
-      ]);
-
-      // Mock data für Demo-Zwecke
-      setEmails([
-        {
-          id: '1',
-          to: ['kunde@example.com'],
-          from: 'noreply@taskilo.de',
-          subject: 'Willkommen bei Taskilo',
-          htmlContent: '<p>Willkommen!</p>',
-          status: 'delivered',
-          sentAt: new Date('2024-01-15T10:30:00'),
-          deliveredAt: new Date('2024-01-15T10:31:00'),
-        },
-        {
-          id: '2',
-          to: ['support@example.com'],
-          from: 'noreply@taskilo.de',
-          subject: 'Support-Anfrage bearbeitet',
-          htmlContent: '<p>Ihre Anfrage wurde bearbeitet.</p>',
-          status: 'sent',
-          sentAt: new Date('2024-01-15T14:20:00'),
-        },
-      ]);
-
-      setContacts([
-        {
-          id: '1',
-          email: 'kunde@example.com',
-          name: 'Max Mustermann',
-          tags: ['kunde', 'vip'],
-          status: 'active',
-          createdAt: new Date('2024-01-10'),
-          lastEmailSent: new Date('2024-01-15'),
-        },
-        {
-          id: '2',
-          email: 'support@example.com',
-          name: 'Support Team',
-          tags: ['internal'],
-          status: 'active',
-          createdAt: new Date('2024-01-05'),
-        },
-      ]);
-
-      setStats({
-        totalSent: 156,
-        totalDelivered: 148,
-        totalBounced: 3,
-        totalComplaints: 1,
-        deliveryRate: 94.9,
-      });
+      }
     } catch (error) {
-      console.error('Fehler beim Laden der Daten:', error);
+      console.error('Fehler beim Laden der E-Mail-Daten:', error);
       toast.error('Fehler beim Laden der E-Mail-Daten');
     } finally {
       setLoading(false);
@@ -190,15 +231,28 @@ export default function EmailManagementPage() {
 
     setLoading(true);
     try {
-      const result = await clientEmailService.sendEmail({
+      const emailData = {
         to: composeForm.to.split(',').map(email => email.trim()),
         cc: composeForm.cc ? composeForm.cc.split(',').map(email => email.trim()) : undefined,
         bcc: composeForm.bcc ? composeForm.bcc.split(',').map(email => email.trim()) : undefined,
         subject: composeForm.subject,
         htmlContent: composeForm.htmlContent,
-      });
+      };
+
+      const result = await clientEmailService.sendEmail(emailData);
 
       if (result.success) {
+        // E-Mail in Firestore speichern
+        await addDoc(collection(db, 'emails'), {
+          ...emailData,
+          from: 'noreply@taskilo.de',
+          messageId: result.messageId,
+          status: 'sent',
+          sentAt: serverTimestamp(),
+          templateId: composeForm.templateId || null,
+          createdAt: serverTimestamp(),
+        });
+
         toast.success('E-Mail erfolgreich gesendet');
         setComposeDialogOpen(false);
         setComposeForm({
@@ -209,7 +263,6 @@ export default function EmailManagementPage() {
           htmlContent: '',
           templateId: '',
         });
-        loadData();
       } else {
         toast.error(`Fehler beim Senden: ${result.error}`);
       }
@@ -242,7 +295,7 @@ export default function EmailManagementPage() {
       }));
 
       const result = await clientEmailService.sendBulkEmails(messages);
-      
+
       if (result.success) {
         toast.success(`${result.successCount} von ${messages.length} E-Mails erfolgreich gesendet`);
         setComposeDialogOpen(false);
@@ -280,11 +333,7 @@ export default function EmailManagementPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={loadData}
-            disabled={loading}
-          >
+          <Button variant="outline" onClick={loadData} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Aktualisieren
           </Button>
@@ -298,9 +347,7 @@ export default function EmailManagementPage() {
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Neue E-Mail verfassen</DialogTitle>
-                <DialogDescription>
-                  Senden Sie eine E-Mail über Resend
-                </DialogDescription>
+                <DialogDescription>Senden Sie eine E-Mail über Resend</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -311,7 +358,7 @@ export default function EmailManagementPage() {
                         <SelectValue placeholder="Template auswählen..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {templates.map((template) => (
+                        {templates.map(template => (
                           <SelectItem key={template.id} value={template.id}>
                             {template.name}
                           </SelectItem>
@@ -320,24 +367,24 @@ export default function EmailManagementPage() {
                     </Select>
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="to">An *</Label>
                   <Input
                     id="to"
                     value={composeForm.to}
-                    onChange={(e) => setComposeForm(prev => ({ ...prev, to: e.target.value }))}
+                    onChange={e => setComposeForm(prev => ({ ...prev, to: e.target.value }))}
                     placeholder="empfaenger@example.com, empfaenger2@example.com"
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="cc">CC</Label>
                     <Input
                       id="cc"
                       value={composeForm.cc}
-                      onChange={(e) => setComposeForm(prev => ({ ...prev, cc: e.target.value }))}
+                      onChange={e => setComposeForm(prev => ({ ...prev, cc: e.target.value }))}
                       placeholder="cc@example.com"
                     />
                   </div>
@@ -346,33 +393,35 @@ export default function EmailManagementPage() {
                     <Input
                       id="bcc"
                       value={composeForm.bcc}
-                      onChange={(e) => setComposeForm(prev => ({ ...prev, bcc: e.target.value }))}
+                      onChange={e => setComposeForm(prev => ({ ...prev, bcc: e.target.value }))}
                       placeholder="bcc@example.com"
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="subject">Betreff *</Label>
                   <Input
                     id="subject"
                     value={composeForm.subject}
-                    onChange={(e) => setComposeForm(prev => ({ ...prev, subject: e.target.value }))}
+                    onChange={e => setComposeForm(prev => ({ ...prev, subject: e.target.value }))}
                     placeholder="E-Mail Betreff"
                   />
                 </div>
-                
+
                 <div>
                   <Label htmlFor="content">HTML-Inhalt *</Label>
                   <Textarea
                     id="content"
                     value={composeForm.htmlContent}
-                    onChange={(e) => setComposeForm(prev => ({ ...prev, htmlContent: e.target.value }))}
+                    onChange={e =>
+                      setComposeForm(prev => ({ ...prev, htmlContent: e.target.value }))
+                    }
                     placeholder="<p>Ihr E-Mail-Inhalt hier...</p>"
                     className="min-h-[200px]"
                   />
                 </div>
-                
+
                 <div className="flex gap-2 pt-4">
                   <Button
                     onClick={handleSendEmail}
@@ -382,11 +431,7 @@ export default function EmailManagementPage() {
                     <Send className="h-4 w-4 mr-2" />
                     E-Mail senden
                   </Button>
-                  <Button
-                    onClick={handleSendBulkEmail}
-                    disabled={loading}
-                    variant="outline"
-                  >
+                  <Button onClick={handleSendBulkEmail} disabled={loading} variant="outline">
                     <Users className="h-4 w-4 mr-2" />
                     An alle Kontakte senden
                   </Button>
@@ -419,7 +464,7 @@ export default function EmailManagementPage() {
                 <p className="text-xs text-muted-foreground">Insgesamt versendet</p>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Zugestellt</CardTitle>
@@ -430,7 +475,7 @@ export default function EmailManagementPage() {
                 <p className="text-xs text-muted-foreground">Erfolgreich zugestellt</p>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Bounced</CardTitle>
@@ -441,7 +486,7 @@ export default function EmailManagementPage() {
                 <p className="text-xs text-muted-foreground">Nicht zustellbar</p>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Beschwerden</CardTitle>
@@ -452,7 +497,7 @@ export default function EmailManagementPage() {
                 <p className="text-xs text-muted-foreground">Als Spam markiert</p>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Zustellrate</CardTitle>
@@ -472,8 +517,11 @@ export default function EmailManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {emails.slice(0, 5).map((email) => (
-                  <div key={email.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {emails.slice(0, 5).map(email => (
+                  <div
+                    key={email.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex items-center space-x-4">
                       <Mail className="h-5 w-5 text-gray-400" />
                       <div>
@@ -482,14 +530,24 @@ export default function EmailManagementPage() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <Badge variant={
-                        email.status === 'delivered' ? 'default' :
-                        email.status === 'sent' ? 'secondary' :
-                        email.status === 'failed' ? 'destructive' : 'outline'
-                      }>
-                        {email.status === 'delivered' ? 'Zugestellt' :
-                         email.status === 'sent' ? 'Gesendet' :
-                         email.status === 'failed' ? 'Fehler' : 'Entwurf'}
+                      <Badge
+                        variant={
+                          email.status === 'delivered'
+                            ? 'default'
+                            : email.status === 'sent'
+                              ? 'secondary'
+                              : email.status === 'failed'
+                                ? 'destructive'
+                                : 'outline'
+                        }
+                      >
+                        {email.status === 'delivered'
+                          ? 'Zugestellt'
+                          : email.status === 'sent'
+                            ? 'Gesendet'
+                            : email.status === 'failed'
+                              ? 'Fehler'
+                              : 'Entwurf'}
                       </Badge>
                       <p className="text-sm text-gray-500">
                         {email.sentAt?.toLocaleDateString('de-DE')}
@@ -510,8 +568,11 @@ export default function EmailManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {emails.map((email) => (
-                  <div key={email.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                {emails.map(email => (
+                  <div
+                    key={email.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                  >
                     <div className="flex items-center space-x-4">
                       <Mail className="h-5 w-5 text-gray-400" />
                       <div>
@@ -525,14 +586,24 @@ export default function EmailManagementPage() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge variant={
-                        email.status === 'delivered' ? 'default' :
-                        email.status === 'sent' ? 'secondary' :
-                        email.status === 'failed' ? 'destructive' : 'outline'
-                      }>
-                        {email.status === 'delivered' ? 'Zugestellt' :
-                         email.status === 'sent' ? 'Gesendet' :
-                         email.status === 'failed' ? 'Fehler' : 'Entwurf'}
+                      <Badge
+                        variant={
+                          email.status === 'delivered'
+                            ? 'default'
+                            : email.status === 'sent'
+                              ? 'secondary'
+                              : email.status === 'failed'
+                                ? 'destructive'
+                                : 'outline'
+                        }
+                      >
+                        {email.status === 'delivered'
+                          ? 'Zugestellt'
+                          : email.status === 'sent'
+                            ? 'Gesendet'
+                            : email.status === 'failed'
+                              ? 'Fehler'
+                              : 'Entwurf'}
                       </Badge>
                       <Button variant="ghost" size="sm">
                         <Eye className="h-4 w-4" />
@@ -565,7 +636,7 @@ export default function EmailManagementPage() {
                     <Input
                       id="template-name"
                       value={templateForm.name}
-                      onChange={(e) => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={e => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Template Name"
                     />
                   </div>
@@ -574,7 +645,9 @@ export default function EmailManagementPage() {
                     <Input
                       id="template-subject"
                       value={templateForm.subject}
-                      onChange={(e) => setTemplateForm(prev => ({ ...prev, subject: e.target.value }))}
+                      onChange={e =>
+                        setTemplateForm(prev => ({ ...prev, subject: e.target.value }))
+                      }
                       placeholder="E-Mail Betreff"
                     />
                   </div>
@@ -583,7 +656,9 @@ export default function EmailManagementPage() {
                     <Textarea
                       id="template-content"
                       value={templateForm.htmlContent}
-                      onChange={(e) => setTemplateForm(prev => ({ ...prev, htmlContent: e.target.value }))}
+                      onChange={e =>
+                        setTemplateForm(prev => ({ ...prev, htmlContent: e.target.value }))
+                      }
                       placeholder="<p>Template-Inhalt hier...</p>"
                       className="min-h-[200px]"
                     />
@@ -604,7 +679,7 @@ export default function EmailManagementPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map((template) => (
+            {templates.map(template => (
               <Card key={template.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -666,18 +741,26 @@ export default function EmailManagementPage() {
                       </div>
                       <div className="flex items-center space-x-4">
                         <div className="flex gap-1">
-                          {contact.tags.map((tag) => (
+                          {contact.tags.map(tag => (
                             <Badge key={tag} variant="outline" className="text-xs">
                               {tag}
                             </Badge>
                           ))}
                         </div>
-                        <Badge variant={
-                          contact.status === 'active' ? 'default' :
-                          contact.status === 'bounced' ? 'destructive' : 'secondary'
-                        }>
-                          {contact.status === 'active' ? 'Aktiv' :
-                           contact.status === 'bounced' ? 'Bounced' : 'Abgemeldet'}
+                        <Badge
+                          variant={
+                            contact.status === 'active'
+                              ? 'default'
+                              : contact.status === 'bounced'
+                                ? 'destructive'
+                                : 'secondary'
+                          }
+                        >
+                          {contact.status === 'active'
+                            ? 'Aktiv'
+                            : contact.status === 'bounced'
+                              ? 'Bounced'
+                              : 'Abgemeldet'}
                         </Badge>
                         <div className="flex space-x-1">
                           <Button variant="ghost" size="sm">
@@ -709,8 +792,8 @@ export default function EmailManagementPage() {
               <Alert>
                 <MessageSquare className="h-4 w-4" />
                 <AlertDescription>
-                  Der Posteingang erfordert eine Webhook-Integration mit Resend.
-                  Eingehende E-Mails werden hier angezeigt, sobald die Webhook-Konfiguration abgeschlossen ist.
+                  Der Posteingang erfordert eine Webhook-Integration mit Resend. Eingehende E-Mails
+                  werden hier angezeigt, sobald die Webhook-Konfiguration abgeschlossen ist.
                 </AlertDescription>
               </Alert>
             </CardContent>
