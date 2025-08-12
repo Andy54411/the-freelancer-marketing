@@ -687,8 +687,13 @@ export default function EmailManagementPage() {
 
                 <div className="flex gap-2 pt-4">
                   <Button
-                    onClick={handleSendEmail}
-                    disabled={loading}
+                    onClick={() => {
+                      console.log('Button geklickt!');
+                      console.log('Loading State:', loading);
+                      console.log('User:', user);
+                      handleSendEmail();
+                    }}
+                    disabled={false}
                     className="bg-[#14ad9f] hover:bg-[#129488]"
                   >
                     <Send className="h-4 w-4 mr-2" />
