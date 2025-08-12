@@ -489,7 +489,7 @@ export default function EmailManagementPage() {
         cc: composeForm.cc ? composeForm.cc.split(',').map(email => email.trim()) : undefined,
         bcc: composeForm.bcc ? composeForm.bcc.split(',').map(email => email.trim()) : undefined,
         subject: composeForm.subject,
-        body: composeForm.htmlContent,
+        htmlContent: composeForm.htmlContent, // Korrigiert von 'body' zu 'htmlContent'
       };
 
       const emailResponse = await callEmailAPI(
