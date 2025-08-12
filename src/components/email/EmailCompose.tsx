@@ -54,6 +54,18 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
   });
 
   const loadTemplate = (templateId: string) => {
+    if (templateId === 'none') {
+      // Reset the form when "Kein Template" is selected
+      setComposeForm(prev => ({
+        ...prev,
+        subject: '',
+        htmlContent: '',
+        textContent: '',
+        templateId: '',
+      }));
+      return;
+    }
+
     const template = templates.find(t => t.templateId === templateId);
     if (template) {
       setComposeForm(prev => ({
@@ -257,12 +269,12 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="template-select">Template wählen (optional)</Label>
-              <Select value={composeForm.templateId || ''} onValueChange={loadTemplate}>
+              <Select value={composeForm.templateId || 'none'} onValueChange={loadTemplate}>
                 <SelectTrigger>
                   <SelectValue placeholder="Template auswählen..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Kein Template</SelectItem>
+                  <SelectItem value="none">Kein Template</SelectItem>
                   {templates.map(template => (
                     <SelectItem key={template.templateId} value={template.templateId}>
                       {template.name}
