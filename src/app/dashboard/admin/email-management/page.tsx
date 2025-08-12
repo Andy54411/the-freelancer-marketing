@@ -74,21 +74,25 @@ interface InboxEmail {
   id: string;
   messageId: string;
   from: string;
-  to: string[];
+  to: string[] | string;
   cc?: string[];
   bcc?: string[];
   replyTo?: string;
   subject: string;
-  htmlContent: string;
-  textContent: string;
-  receivedAt: Date;
-  isRead: boolean;
-  isStarred: boolean;
-  isArchived: boolean;
-  labels: string[];
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  headers: Record<string, string>;
-  attachments: Array<{
+  htmlContent?: string;
+  textContent?: string;
+  receivedAt?: Date;
+  timestamp?: any; // Firebase timestamp
+  isRead?: boolean;
+  read?: boolean;
+  isStarred?: boolean;
+  isArchived?: boolean;
+  labels?: string[];
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  headers?: Record<string, string>;
+  source?: string; // AWS SES, Resend, etc.
+  preview?: string;
+  attachments?: Array<{
     filename: string;
     size: number;
     contentType: string;
@@ -310,8 +314,9 @@ export default function EmailManagementPage() {
 
   // Antwort vorbereiten
   const prepareReply = (email: InboxEmail, replyAll: boolean = false) => {
+    const toArray = Array.isArray(email.to) ? email.to : [email.to];
     const recipients = replyAll
-      ? [email.from, ...email.to.filter(addr => addr !== 'noreply@taskilo.de')]
+      ? [email.from, ...toArray.filter(addr => addr !== 'noreply@taskilo.de')]
       : [email.from];
 
     setReplyForm({
@@ -1062,18 +1067,63 @@ export default function EmailManagementPage() {
           <Card>
             <CardHeader>
               <CardTitle>Posteingang</CardTitle>
-              <p className="text-sm text-gray-600">
-                Eingehende E-Mails (Webhook-Integration erforderlich)
-              </p>
+              <p className="text-sm text-gray-600">Eingehende E-Mails über AWS SES Integration</p>
             </CardHeader>
             <CardContent>
-              <Alert>
-                <MessageSquare className="h-4 w-4" />
-                <AlertDescription>
-                  Der Posteingang erfordert eine Webhook-Integration mit Resend. Eingehende E-Mails
-                  werden hier angezeigt, sobald die Webhook-Konfiguration abgeschlossen ist.
-                </AlertDescription>
-              </Alert>
+              {inboxEmails.length === 0 ? (
+                <Alert>
+                  <MessageSquare className="h-4 w-4" />
+                  <AlertDescription>
+                    Keine E-Mails im Posteingang. AWS SES ist konfiguriert und bereit für
+                    E-Mail-Empfang an admin@taskilo.de
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-4">
+                  {inboxEmails.map(email => (
+                    <Card key={email.id} className="border-l-4 border-l-[#14ad9f]">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-semibold">{email.from}</span>
+                              <Badge variant="secondary">{email.source || 'AWS SES'}</Badge>
+                              {!email.read && <Badge className="bg-[#14ad9f]">Neu</Badge>}
+                            </div>
+                            <h3 className="font-medium mb-1">{email.subject}</h3>
+                            <p className="text-sm text-gray-600 mb-2">
+                              An: {email.to} •{' '}
+                              {new Date(
+                                email.timestamp?.toDate() || email.timestamp
+                              ).toLocaleString()}
+                            </p>
+                            {email.preview && (
+                              <p className="text-sm text-gray-700 line-clamp-2">{email.preview}</p>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setComposeForm({
+                                to: email.from,
+                                cc: '',
+                                bcc: '',
+                                subject: `Re: ${email.subject}`,
+                                htmlContent: `<p></p><hr><p><strong>Original Message:</strong><br>From: ${email.from}<br>Subject: ${email.subject}</p>`,
+                                templateId: '',
+                              });
+                              setActiveTab('compose');
+                            }}
+                          >
+                            Antworten
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
