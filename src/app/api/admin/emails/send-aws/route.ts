@@ -12,11 +12,25 @@ const sesClient = new SESClient({
 
 export async function POST(request: NextRequest) {
   try {
+    // AWS Credentials prüfen
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      console.error('AWS Credentials fehlen:', {
+        hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
+        hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
+      });
+      return NextResponse.json({ error: 'AWS SES Konfiguration unvollständig' }, { status: 500 });
+    }
+
     const body = await request.json();
+    console.log('E-Mail Request Body:', body);
+
     const { to, cc, bcc, subject, htmlContent, textContent, from = 'info@taskilo.de' } = body;
 
+    // Normalisiere 'to' zu einem Array
+    const recipients = Array.isArray(to) ? to : to ? [to] : [];
+
     // Validierung
-    if (!to || !Array.isArray(to) || to.length === 0) {
+    if (!recipients || recipients.length === 0) {
       return NextResponse.json({ error: 'Mindestens ein Empfänger erforderlich' }, { status: 400 });
     }
 
@@ -28,7 +42,7 @@ export async function POST(request: NextRequest) {
     const emailParams = {
       Source: from,
       Destination: {
-        ToAddresses: to,
+        ToAddresses: recipients,
         CcAddresses: cc || [],
         BccAddresses: bcc || [],
       },
@@ -62,9 +76,13 @@ export async function POST(request: NextRequest) {
       ],
     };
 
+    console.log('AWS SES E-Mail Parameter:', JSON.stringify(emailParams, null, 2));
+
     // E-Mail über AWS SES senden
     const command = new SendEmailCommand(emailParams);
+    console.log('Sende E-Mail über AWS SES...');
     const result = await sesClient.send(command);
+    console.log('AWS SES Antwort:', result);
 
     return NextResponse.json({
       success: true,
