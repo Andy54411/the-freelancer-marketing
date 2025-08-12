@@ -171,6 +171,10 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
       };
 
       console.log('Sende E-Mail mit Daten:', emailData);
+      console.log('Request URL:', '/api/admin/emails/send-aws');
+      console.log('Request Method:', 'POST');
+      console.log('Request Headers:', { 'Content-Type': 'application/json' });
+      console.log('Request Body:', JSON.stringify(emailData, null, 2));
 
       // Verwende AWS SES API-Route
       const response = await fetch('/api/admin/emails/send-aws', {
@@ -186,10 +190,18 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
 
       if (!response.ok) {
         let errorData;
+        let errorText = '';
         try {
-          errorData = await response.json();
+          const responseText = await response.text();
+          console.log('Raw Response Text:', responseText);
+          errorText = responseText;
+          errorData = JSON.parse(responseText);
         } catch (parseError) {
-          errorData = { error: `Server-Fehler: ${response.status} ${response.statusText}` };
+          console.log('Error parsing response JSON:', parseError);
+          errorData = {
+            error: `Server-Fehler: ${response.status} ${response.statusText}`,
+            rawResponse: errorText,
+          };
         }
 
         console.error('AWS SES API Fehler:', {

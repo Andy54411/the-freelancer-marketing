@@ -12,17 +12,39 @@ const sesClient = new SESClient({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== AWS SES API Called ===');
+    console.log('Request method:', request.method);
+    console.log('Request URL:', request.url);
+
     // AWS Credentials prüfen
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+    const hasAccessKey = !!process.env.AWS_ACCESS_KEY_ID;
+    const hasSecretKey = !!process.env.AWS_SECRET_ACCESS_KEY;
+    const hasRegion = !!process.env.AWS_REGION;
+
+    console.log('AWS Environment Check:', {
+      hasAccessKey,
+      hasSecretKey,
+      hasRegion,
+      accessKeyPrefix: process.env.AWS_ACCESS_KEY_ID?.substring(0, 4) + '***',
+      region: process.env.AWS_REGION || 'eu-central-1',
+    });
+
+    if (!hasAccessKey || !hasSecretKey) {
       console.error('AWS Credentials fehlen:', {
-        hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
-        hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
+        hasAccessKey,
+        hasSecretKey,
       });
-      return NextResponse.json({ error: 'AWS SES Konfiguration unvollständig' }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'AWS SES Konfiguration unvollständig',
+          details: 'AWS_ACCESS_KEY_ID oder AWS_SECRET_ACCESS_KEY fehlen',
+        },
+        { status: 500 }
+      );
     }
 
     const body = await request.json();
-    console.log('E-Mail Request Body:', body);
+    console.log('E-Mail Request Body:', JSON.stringify(body, null, 2));
 
     const { to, cc, bcc, subject, htmlContent, textContent, from = 'info@taskilo.de' } = body;
 
@@ -91,7 +113,11 @@ export async function POST(request: NextRequest) {
       provider: 'AWS SES',
     });
   } catch (error) {
-    console.error('AWS SES E-Mail Fehler:', error);
+    console.error('=== AWS SES E-Mail Fehler ===');
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Full error object:', error);
 
     // Detaillierte Fehlerbehandlung
     if (error instanceof Error) {
