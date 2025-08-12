@@ -170,6 +170,8 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         textContent: composeForm.textContent || undefined,
       };
 
+      console.log('Sende E-Mail mit Daten:', emailData);
+
       // Verwende AWS SES API-Route
       const response = await fetch('/api/admin/emails/send-aws', {
         method: 'POST',
@@ -179,19 +181,29 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         body: JSON.stringify(emailData),
       });
 
+      console.log('API Response Status:', response.status, response.statusText);
+      console.log('API Response Headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: 'Unbekannter Server-Fehler' }));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (parseError) {
+          errorData = { error: `Server-Fehler: ${response.status} ${response.statusText}` };
+        }
+
         console.error('AWS SES API Fehler:', {
           status: response.status,
           statusText: response.statusText,
           error: errorData,
+          url: response.url,
         });
+
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('AWS SES Erfolgreiche Antwort:', result);
       toast.success('E-Mail erfolgreich gesendet');
       setComposeForm({
         to: '',
@@ -207,7 +219,21 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
       onEmailSent?.();
     } catch (error) {
       console.error('Fehler beim Senden der E-Mail:', error);
-      toast.error('Fehler beim Senden der E-Mail');
+
+      // Detaillierte Fehlerbehandlung
+      if (error instanceof Error) {
+        if (error.message.includes('AWS SES')) {
+          toast.error(`AWS SES Fehler: ${error.message}`);
+        } else if (error.message.includes('HTTP 500')) {
+          toast.error('Server-Fehler: Bitte prüfen Sie die Serverlogdateien');
+        } else if (error.message.includes('HTTP 400')) {
+          toast.error('Ungültige Eingabedaten: Bitte prüfen Sie alle Felder');
+        } else {
+          toast.error(`Fehler beim Senden: ${error.message}`);
+        }
+      } else {
+        toast.error('Unbekannter Fehler beim Senden der E-Mail');
+      }
     } finally {
       setLoading(false);
     }
