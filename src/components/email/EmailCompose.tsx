@@ -165,8 +165,13 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         return;
       }
 
+      // ERZWINGE immer eine gültige taskilo.de Sender-E-Mail
+      const validSenderEmail = allowedSenderEmails.includes(selectedSenderEmail)
+        ? selectedSenderEmail
+        : allowedSenderEmails[0]; // Fallback auf erste erlaubte E-Mail
+
       const emailData = {
-        from: selectedSenderEmail,
+        from: validSenderEmail, // Verwende immer verifizierte E-Mail
         to: composeForm.to
           .split(',')
           .map(email => email.trim())
@@ -200,7 +205,10 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
       };
 
       console.log('=== FRONTEND EMAIL DEBUG ===');
-      console.log('Selected Sender Email:', selectedSenderEmail);
+      console.log('Selected Sender Email (Original):', selectedSenderEmail);
+      console.log('Valid Sender Email (Used):', validSenderEmail);
+      console.log('Sender Email Override:', validSenderEmail !== selectedSenderEmail);
+      console.log('Allowed Sender Emails:', allowedSenderEmails);
       console.log('Compose Form:', composeForm);
       console.log('Email Data (Raw):', emailData);
       console.log('Email Data (Clean):', cleanEmailData);

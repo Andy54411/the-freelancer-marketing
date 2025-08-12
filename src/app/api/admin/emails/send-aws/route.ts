@@ -59,19 +59,19 @@ export async function POST(request: NextRequest) {
       'hello@taskilo.de',
     ];
 
+    // ULTIMATIVE SICHERHEIT: Überschreibe ungültige From-Adressen IMMER
+    let validatedFrom = from;
     if (!allowedSenderEmails.includes(from)) {
-      console.error('Ungültige Sender-E-Mail:', from);
-      return NextResponse.json(
-        {
-          error: 'Ungültige Sender-E-Mail-Adresse',
-          details: `Die E-Mail-Adresse "${from}" ist nicht verifiziert. Erlaubte Adressen: ${allowedSenderEmails.join(', ')}`,
-          allowedEmails: allowedSenderEmails,
-        },
-        { status: 400 }
-      );
+      console.warn(`⚠️ UNGÜLTIGE SENDER-EMAIL ÜBERSCHRIEBEN: "${from}" → "info@taskilo.de"`);
+      validatedFrom = 'info@taskilo.de'; // Überschreibe mit Standard
+
+      // Log für Debug-Zwecke
+      console.log('Ursprüngliche From-Email:', from);
+      console.log('Überschriebene From-Email:', validatedFrom);
+      console.log('Erlaubte Sender-Emails:', allowedSenderEmails);
     }
 
-    console.log('Validierte Sender-E-Mail:', from);
+    console.log('✅ Validierte Sender-E-Mail:', validatedFrom);
 
     // Normalisiere 'to' zu einem Array
     const recipients = Array.isArray(to) ? to : to ? [to] : [];
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     // AWS SES E-Mail Parameter vorbereiten
     const emailParams = {
-      Source: from,
+      Source: validatedFrom, // Verwende validierte E-Mail-Adresse
       Destination: {
         ToAddresses: recipients,
         CcAddresses: cc || [],
