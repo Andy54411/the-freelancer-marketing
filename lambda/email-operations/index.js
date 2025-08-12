@@ -23,6 +23,21 @@ exports.handler = async event => {
   console.log('Event received:', JSON.stringify(event, null, 2));
 
   const { httpMethod, path, pathParameters, body, queryStringParameters } = event;
+
+  // Handle CORS preflight requests
+  if (httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-requested-with',
+        'Access-Control-Max-Age': '3600',
+      },
+      body: '',
+    };
+  }
+
   const parsedBody = body ? JSON.parse(body) : null;
 
   try {
@@ -35,8 +50,8 @@ exports.handler = async event => {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-requested-with',
       },
       body: JSON.stringify(response),
     };
@@ -47,6 +62,8 @@ exports.handler = async event => {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-requested-with',
       },
       body: JSON.stringify({
         error: 'Internal server error',
@@ -58,6 +75,19 @@ exports.handler = async event => {
 
 function getRoute(path, method) {
   const routes = {
+    // Main email endpoints (was das Frontend erwartet)
+    'GET:/admin/emails': 'getInboxEmails',
+    'POST:/admin/emails': 'sendEmail',
+    'PUT:/admin/emails': 'updateMultipleEmails',
+    'DELETE:/admin/emails': 'deleteMultipleEmails',
+
+    // Specific email by ID
+    'GET:/admin/emails/{id}': 'getEmailById',
+    'PUT:/admin/emails/{id}': 'updateEmail',
+    'DELETE:/admin/emails/{id}': 'deleteEmail',
+    'POST:/admin/emails/{id}/reply': 'replyToEmail',
+
+    // Legacy inbox endpoints (backward compatibility)
     'GET:/admin/emails/inbox': 'getInboxEmails',
     'PATCH:/admin/emails/inbox': 'updateMultipleEmails',
     'DELETE:/admin/emails/inbox': 'deleteMultipleEmails',
@@ -65,17 +95,24 @@ function getRoute(path, method) {
     'PATCH:/admin/emails/inbox/{id}': 'updateEmail',
     'DELETE:/admin/emails/inbox/{id}': 'deleteEmail',
     'POST:/admin/emails/inbox/{id}/reply': 'replyToEmail',
+
+    // Templates
     'GET:/admin/emails/templates': 'getTemplates',
     'POST:/admin/emails/templates': 'createTemplate',
     'GET:/admin/emails/templates/{id}': 'getTemplateById',
     'PUT:/admin/emails/templates/{id}': 'updateTemplate',
     'DELETE:/admin/emails/templates/{id}': 'deleteTemplate',
+
+    // Contacts
     'GET:/admin/emails/contacts': 'getContacts',
     'POST:/admin/emails/contacts': 'createContact',
     'GET:/admin/emails/contacts/{id}': 'getContactById',
     'PUT:/admin/emails/contacts/{id}': 'updateContact',
     'DELETE:/admin/emails/contacts/{id}': 'deleteContact',
+
+    // Additional endpoints
     'POST:/admin/emails/send': 'sendEmail',
+    'POST:/admin/emails/bulk-send': 'sendBulkEmails',
     'GET:/admin/emails/stats': 'getEmailStats',
   };
 
@@ -120,6 +157,8 @@ async function handleRoute(route, pathParameters, body, queryParams) {
       return await deleteContact(pathParameters.id);
     case 'sendEmail':
       return await sendEmail(body);
+    case 'sendBulkEmails':
+      return await sendBulkEmails(body);
     case 'getEmailStats':
       return await getEmailStats();
     default:
@@ -453,7 +492,7 @@ async function sendEmail(emailData) {
 
   // SES Email Parameter
   const sesParams = {
-    Source: process.env.FROM_EMAIL,
+    Source: emailData.from || process.env.FROM_EMAIL,
     Destination: {
       ToAddresses: Array.isArray(emailData.to) ? emailData.to : [emailData.to],
     },
@@ -464,12 +503,12 @@ async function sendEmail(emailData) {
       },
       Body: {
         Html: {
-          Data: emailData.body,
+          Data: emailData.htmlContent || emailData.body,
           Charset: 'UTF-8',
         },
       },
     },
-    ReplyToAddresses: [process.env.FROM_EMAIL],
+    ReplyToAddresses: [emailData.from || process.env.FROM_EMAIL],
   };
 
   if (emailData.inReplyTo) {
@@ -486,9 +525,10 @@ async function sendEmail(emailData) {
     messageId: sesResult.MessageId,
     to: emailData.to,
     subject: emailData.subject,
-    body: emailData.body,
+    body: emailData.htmlContent || emailData.body,
     sentAt: new Date().toISOString(),
     status: 'sent',
+    from: emailData.from || process.env.FROM_EMAIL,
     replyToEmailId: emailData.replyToEmailId || null,
     inReplyTo: emailData.inReplyTo || null,
   };
@@ -502,6 +542,80 @@ async function sendEmail(emailData) {
   await docClient.send(dynamoCommand);
 
   return sentEmail;
+}
+
+// ===== SEND BULK EMAILS =====
+
+async function sendBulkEmails(bulkData) {
+  const { messages } = bulkData;
+  const sentEmails = [];
+  const errors = [];
+
+  for (const message of messages) {
+    try {
+      const emailId = `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // SES Email Parameter
+      const sesParams = {
+        Source: message.from || process.env.FROM_EMAIL,
+        Destination: {
+          ToAddresses: Array.isArray(message.to) ? message.to : [message.to],
+        },
+        Message: {
+          Subject: {
+            Data: message.subject,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Html: {
+              Data: message.htmlContent,
+              Charset: 'UTF-8',
+            },
+          },
+        },
+        ReplyToAddresses: [message.from || process.env.FROM_EMAIL],
+      };
+
+      // Sende Email über SES
+      const sesCommand = new SendEmailCommand(sesParams);
+      const sesResult = await sesClient.send(sesCommand);
+
+      // Speichere Sent Email in DynamoDB
+      const sentEmail = {
+        emailId,
+        messageId: sesResult.MessageId,
+        to: message.to,
+        subject: message.subject,
+        body: message.htmlContent,
+        sentAt: new Date().toISOString(),
+        status: 'sent',
+        from: message.from || process.env.FROM_EMAIL,
+      };
+
+      const dynamoParams = {
+        TableName: process.env.SENT_EMAILS_TABLE,
+        Item: sentEmail,
+      };
+
+      const dynamoCommand = new PutCommand(dynamoParams);
+      await docClient.send(dynamoCommand);
+
+      sentEmails.push(sentEmail);
+    } catch (error) {
+      console.error('Error sending bulk email:', error);
+      errors.push({
+        to: message.to,
+        error: error.message,
+      });
+    }
+  }
+
+  return {
+    sentEmails,
+    errors,
+    totalSent: sentEmails.length,
+    totalErrors: errors.length,
+  };
 }
 
 // ===== EMAIL STATISTICS =====
