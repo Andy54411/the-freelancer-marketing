@@ -261,7 +261,6 @@ export function ModernScheduleView({
       })
       .map(shift => {
         const employee = employees.find(emp => emp.id === shift.employeeId);
-        const shiftType = SHIFT_TYPES[shift.status as keyof typeof SHIFT_TYPES] || SHIFT_TYPES.PLANNED;
         
         // Kombiniere Datum mit Start-/Endzeit
         const startDateTime = new Date(`${shift.date}T${shift.startTime}:00`);
