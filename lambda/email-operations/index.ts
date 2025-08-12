@@ -82,6 +82,7 @@ interface EmailContact {
 }
 
 interface SentEmail {
+  id: string; // DynamoDB primary key
   emailId: string;
   messageId: string;
   from: string;
@@ -129,16 +130,32 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // Route handling
-    if (path.includes('/admin/emails/inbox')) {
-      return await handleInboxOperations(method, pathParams, queryParams, body);
-    } else if (path.includes('/admin/emails/templates')) {
-      return await handleTemplateOperations(method, pathParams, queryParams, body);
-    } else if (path.includes('/admin/emails/contacts')) {
-      return await handleContactOperations(method, pathParams, queryParams, body);
-    } else if (path.includes('/admin/emails/send')) {
-      return await handleEmailSending(method, body);
-    } else if (path.includes('/admin/emails/stats')) {
+    console.log(`Routing: ${method} ${path}`);
+
+    // Email Stats endpoint
+    if (path === '/admin/emails/stats' || path.endsWith('/admin/emails/stats')) {
       return await handleEmailStats(method, queryParams);
+    }
+    // Email Send endpoint
+    else if (path === '/admin/emails/send' || path.endsWith('/admin/emails/send')) {
+      return await handleEmailSending(method, body);
+    }
+    // Email Templates endpoint
+    else if (path === '/admin/emails/templates' || path.endsWith('/admin/emails/templates')) {
+      return await handleTemplateOperations(method, pathParams, queryParams, body);
+    }
+    // Email Contacts endpoint
+    else if (path === '/admin/emails/contacts' || path.endsWith('/admin/emails/contacts')) {
+      return await handleContactOperations(method, pathParams, queryParams, body);
+    }
+    // Email Inbox endpoint (includes /admin/emails and /admin/emails/inbox)
+    else if (
+      path === '/admin/emails' ||
+      path === '/admin/emails/inbox' ||
+      path.endsWith('/admin/emails') ||
+      path.endsWith('/admin/emails/inbox')
+    ) {
+      return await handleInboxOperations(method, pathParams, queryParams, body);
     }
 
     return createResponse(404, { success: false, error: 'Route not found' });
@@ -199,14 +216,13 @@ async function handleInboxOperations(method: string, pathParams: any, queryParam
 
           const params: any = {
             TableName: ADMIN_EMAILS_TABLE,
-            ScanFilter: filterExpression
-              ? {
-                  FilterExpression: filterExpression,
-                  ExpressionAttributeValues: expressionAttributeValues,
-                }
-              : undefined,
             Limit: 50, // Pagination
           };
+
+          if (filterExpression) {
+            params.FilterExpression = filterExpression;
+            params.ExpressionAttributeValues = expressionAttributeValues;
+          }
 
           const result = await docClient.send(new ScanCommand(params));
           const emails = result.Items || [];
@@ -661,6 +677,7 @@ async function handleEmailSending(method: string, body: any) {
     // Store sent email in DynamoDB
     const emailId = `sent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const sentEmail: SentEmail = {
+      id: emailId, // DynamoDB primary key
       emailId,
       messageId: result.MessageId || '',
       from: emailParams.Source,

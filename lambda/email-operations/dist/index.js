@@ -34,20 +34,22 @@ const handler = async (event) => {
         if (method === 'OPTIONS') {
             return createResponse(200, { message: 'CORS preflight' });
         }
-        if (path.includes('/admin/emails/inbox')) {
-            return await handleInboxOperations(method, pathParams, queryParams, body);
+        console.log(`Routing: ${method} ${path}`);
+        if (path === '/admin/emails/stats' || path.endsWith('/admin/emails/stats')) {
+            return await handleEmailStats(method, queryParams);
         }
-        else if (path.includes('/admin/emails/templates')) {
-            return await handleTemplateOperations(method, pathParams, queryParams, body);
-        }
-        else if (path.includes('/admin/emails/contacts')) {
-            return await handleContactOperations(method, pathParams, queryParams, body);
-        }
-        else if (path.includes('/admin/emails/send')) {
+        else if (path === '/admin/emails/send' || path.endsWith('/admin/emails/send')) {
             return await handleEmailSending(method, body);
         }
-        else if (path.includes('/admin/emails/stats')) {
-            return await handleEmailStats(method, queryParams);
+        else if (path === '/admin/emails/templates' || path.endsWith('/admin/emails/templates')) {
+            return await handleTemplateOperations(method, pathParams, queryParams, body);
+        }
+        else if (path === '/admin/emails/contacts' || path.endsWith('/admin/emails/contacts')) {
+            return await handleContactOperations(method, pathParams, queryParams, body);
+        }
+        else if (path === '/admin/emails' || path === '/admin/emails/inbox' ||
+            path.endsWith('/admin/emails') || path.endsWith('/admin/emails/inbox')) {
+            return await handleInboxOperations(method, pathParams, queryParams, body);
         }
         return createResponse(404, { success: false, error: 'Route not found' });
     }
@@ -56,7 +58,7 @@ const handler = async (event) => {
         return createResponse(500, {
             success: false,
             error: 'Internal server error',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 };
@@ -70,26 +72,26 @@ async function handleInboxOperations(method, pathParams, queryParams, body) {
                         TableName: ADMIN_EMAILS_TABLE,
                         KeyConditionExpression: 'emailId = :emailId',
                         ExpressionAttributeValues: {
-                            ':emailId': pathParams.id
-                        }
+                            ':emailId': pathParams.id,
+                        },
                     }));
                     if (result.Items && result.Items.length > 0) {
                         return createResponse(200, {
                             success: true,
-                            data: result.Items[0]
+                            data: result.Items[0],
                         });
                     }
                     else {
                         return createResponse(404, {
                             success: false,
-                            error: 'Email not found'
+                            error: 'Email not found',
                         });
                     }
                 }
                 else {
                     const filter = queryParams.filter || 'all';
                     let filterExpression = '';
-                    let expressionAttributeValues = {};
+                    const expressionAttributeValues = {};
                     if (filter === 'unread') {
                         filterExpression = 'isRead = :isRead';
                         expressionAttributeValues[':isRead'] = false;
@@ -104,26 +106,26 @@ async function handleInboxOperations(method, pathParams, queryParams, body) {
                     }
                     const params = {
                         TableName: ADMIN_EMAILS_TABLE,
-                        ScanFilter: filterExpression ? {
-                            FilterExpression: filterExpression,
-                            ExpressionAttributeValues: expressionAttributeValues
-                        } : undefined,
-                        Limit: 50
+                        Limit: 50,
                     };
+                    if (filterExpression) {
+                        params.FilterExpression = filterExpression;
+                        params.ExpressionAttributeValues = expressionAttributeValues;
+                    }
                     const result = await docClient.send(new lib_dynamodb_1.ScanCommand(params));
                     const emails = result.Items || [];
                     const stats = {
                         total: emails.length,
                         unread: emails.filter(email => !email.isRead).length,
                         starred: emails.filter(email => email.labels?.includes('starred')).length,
-                        spam: emails.filter(email => email.isSpam).length
+                        spam: emails.filter(email => email.isSpam).length,
                     };
                     return createResponse(200, {
                         success: true,
                         data: {
                             emails: emails.sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()),
-                            stats
-                        }
+                            stats,
+                        },
                     });
                 }
             case 'PATCH':
@@ -131,7 +133,7 @@ async function handleInboxOperations(method, pathParams, queryParams, body) {
                 if (!emailIds || !Array.isArray(emailIds) || !action) {
                     return createResponse(400, {
                         success: false,
-                        error: 'emailIds array and action are required'
+                        error: 'emailIds array and action are required',
                     });
                 }
                 const updates = {};
@@ -159,43 +161,45 @@ async function handleInboxOperations(method, pathParams, queryParams, body) {
                     default:
                         return createResponse(400, {
                             success: false,
-                            error: 'Invalid action'
+                            error: 'Invalid action',
                         });
                 }
                 for (const emailId of emailIds) {
                     await docClient.send(new lib_dynamodb_1.UpdateCommand({
                         TableName: ADMIN_EMAILS_TABLE,
                         Key: { emailId },
-                        UpdateExpression: Object.keys(updates).map(key => `SET ${key} = :${key}`).join(', '),
-                        ExpressionAttributeValues: Object.fromEntries(Object.entries(updates).map(([key, value]) => [`:${key}`, value]))
+                        UpdateExpression: Object.keys(updates)
+                            .map(key => `SET ${key} = :${key}`)
+                            .join(', '),
+                        ExpressionAttributeValues: Object.fromEntries(Object.entries(updates).map(([key, value]) => [`:${key}`, value])),
                     }));
                 }
                 return createResponse(200, {
                     success: true,
-                    message: `Successfully updated ${emailIds.length} email(s)`
+                    message: `Successfully updated ${emailIds.length} email(s)`,
                 });
             case 'DELETE':
                 const { emailIds: deleteIds } = body;
                 if (!deleteIds || !Array.isArray(deleteIds)) {
                     return createResponse(400, {
                         success: false,
-                        error: 'emailIds array is required'
+                        error: 'emailIds array is required',
                     });
                 }
                 for (const emailId of deleteIds) {
                     await docClient.send(new lib_dynamodb_1.DeleteCommand({
                         TableName: ADMIN_EMAILS_TABLE,
-                        Key: { emailId }
+                        Key: { emailId },
                     }));
                 }
                 return createResponse(200, {
                     success: true,
-                    message: `Successfully deleted ${deleteIds.length} email(s)`
+                    message: `Successfully deleted ${deleteIds.length} email(s)`,
                 });
             default:
                 return createResponse(405, {
                     success: false,
-                    error: 'Method not allowed'
+                    error: 'Method not allowed',
                 });
         }
     }
@@ -204,7 +208,7 @@ async function handleInboxOperations(method, pathParams, queryParams, body) {
         return createResponse(500, {
             success: false,
             error: 'Failed to process inbox operation',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 }
@@ -217,19 +221,19 @@ async function handleTemplateOperations(method, pathParams, queryParams, body) {
                         TableName: EMAIL_TEMPLATES_TABLE,
                         KeyConditionExpression: 'templateId = :templateId',
                         ExpressionAttributeValues: {
-                            ':templateId': pathParams.id
-                        }
+                            ':templateId': pathParams.id,
+                        },
                     }));
                     if (result.Items && result.Items.length > 0) {
                         return createResponse(200, {
                             success: true,
-                            data: result.Items[0]
+                            data: result.Items[0],
                         });
                     }
                     else {
                         return createResponse(404, {
                             success: false,
-                            error: 'Template not found'
+                            error: 'Template not found',
                         });
                     }
                 }
@@ -238,12 +242,12 @@ async function handleTemplateOperations(method, pathParams, queryParams, body) {
                         TableName: EMAIL_TEMPLATES_TABLE,
                         FilterExpression: 'isActive = :isActive',
                         ExpressionAttributeValues: {
-                            ':isActive': true
-                        }
+                            ':isActive': true,
+                        },
                     }));
                     return createResponse(200, {
                         success: true,
-                        data: result.Items || []
+                        data: result.Items || [],
                     });
                 }
             case 'POST':
@@ -258,42 +262,44 @@ async function handleTemplateOperations(method, pathParams, queryParams, body) {
                     category: body.category || 'general',
                     isActive: true,
                     createdAt: now,
-                    updatedAt: now
+                    updatedAt: now,
                 };
                 await docClient.send(new lib_dynamodb_1.PutCommand({
                     TableName: EMAIL_TEMPLATES_TABLE,
-                    Item: newTemplate
+                    Item: newTemplate,
                 }));
                 return createResponse(201, {
                     success: true,
-                    data: newTemplate
+                    data: newTemplate,
                 });
             case 'PUT':
                 if (!pathParams.id) {
                     return createResponse(400, {
                         success: false,
-                        error: 'Template ID is required'
+                        error: 'Template ID is required',
                     });
                 }
                 const updateData = {
                     ...body,
-                    updatedAt: new Date().toISOString()
+                    updatedAt: new Date().toISOString(),
                 };
                 await docClient.send(new lib_dynamodb_1.UpdateCommand({
                     TableName: EMAIL_TEMPLATES_TABLE,
                     Key: { templateId: pathParams.id },
-                    UpdateExpression: Object.keys(updateData).map(key => `SET ${key} = :${key}`).join(', '),
-                    ExpressionAttributeValues: Object.fromEntries(Object.entries(updateData).map(([key, value]) => [`:${key}`, value]))
+                    UpdateExpression: Object.keys(updateData)
+                        .map(key => `SET ${key} = :${key}`)
+                        .join(', '),
+                    ExpressionAttributeValues: Object.fromEntries(Object.entries(updateData).map(([key, value]) => [`:${key}`, value])),
                 }));
                 return createResponse(200, {
                     success: true,
-                    message: 'Template updated successfully'
+                    message: 'Template updated successfully',
                 });
             case 'DELETE':
                 if (!pathParams.id) {
                     return createResponse(400, {
                         success: false,
-                        error: 'Template ID is required'
+                        error: 'Template ID is required',
                     });
                 }
                 await docClient.send(new lib_dynamodb_1.UpdateCommand({
@@ -302,17 +308,17 @@ async function handleTemplateOperations(method, pathParams, queryParams, body) {
                     UpdateExpression: 'SET isActive = :isActive, updatedAt = :updatedAt',
                     ExpressionAttributeValues: {
                         ':isActive': false,
-                        ':updatedAt': new Date().toISOString()
-                    }
+                        ':updatedAt': new Date().toISOString(),
+                    },
                 }));
                 return createResponse(200, {
                     success: true,
-                    message: 'Template deleted successfully'
+                    message: 'Template deleted successfully',
                 });
             default:
                 return createResponse(405, {
                     success: false,
-                    error: 'Method not allowed'
+                    error: 'Method not allowed',
                 });
         }
     }
@@ -321,7 +327,7 @@ async function handleTemplateOperations(method, pathParams, queryParams, body) {
         return createResponse(500, {
             success: false,
             error: 'Failed to process template operation',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 }
@@ -333,15 +339,15 @@ async function handleContactOperations(method, pathParams, queryParams, body) {
                     TableName: EMAIL_CONTACTS_TABLE,
                     FilterExpression: '#status <> :unsubscribed',
                     ExpressionAttributeNames: {
-                        '#status': 'status'
+                        '#status': 'status',
                     },
                     ExpressionAttributeValues: {
-                        ':unsubscribed': 'unsubscribed'
-                    }
+                        ':unsubscribed': 'unsubscribed',
+                    },
                 }));
                 return createResponse(200, {
                     success: true,
-                    data: result.Items || []
+                    data: result.Items || [],
                 });
             case 'POST':
                 const contactId = `contact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -352,52 +358,54 @@ async function handleContactOperations(method, pathParams, queryParams, body) {
                     name: body.name,
                     tags: body.tags || [],
                     status: 'active',
-                    createdAt: now
+                    createdAt: now,
                 };
                 await docClient.send(new lib_dynamodb_1.PutCommand({
                     TableName: EMAIL_CONTACTS_TABLE,
-                    Item: newContact
+                    Item: newContact,
                 }));
                 return createResponse(201, {
                     success: true,
-                    data: newContact
+                    data: newContact,
                 });
             case 'PUT':
                 if (!pathParams.id) {
                     return createResponse(400, {
                         success: false,
-                        error: 'Contact ID is required'
+                        error: 'Contact ID is required',
                     });
                 }
                 await docClient.send(new lib_dynamodb_1.UpdateCommand({
                     TableName: EMAIL_CONTACTS_TABLE,
                     Key: { contactId: pathParams.id },
-                    UpdateExpression: Object.keys(body).map(key => `SET ${key} = :${key}`).join(', '),
-                    ExpressionAttributeValues: Object.fromEntries(Object.entries(body).map(([key, value]) => [`:${key}`, value]))
+                    UpdateExpression: Object.keys(body)
+                        .map(key => `SET ${key} = :${key}`)
+                        .join(', '),
+                    ExpressionAttributeValues: Object.fromEntries(Object.entries(body).map(([key, value]) => [`:${key}`, value])),
                 }));
                 return createResponse(200, {
                     success: true,
-                    message: 'Contact updated successfully'
+                    message: 'Contact updated successfully',
                 });
             case 'DELETE':
                 if (!pathParams.id) {
                     return createResponse(400, {
                         success: false,
-                        error: 'Contact ID is required'
+                        error: 'Contact ID is required',
                     });
                 }
                 await docClient.send(new lib_dynamodb_1.DeleteCommand({
                     TableName: EMAIL_CONTACTS_TABLE,
-                    Key: { contactId: pathParams.id }
+                    Key: { contactId: pathParams.id },
                 }));
                 return createResponse(200, {
                     success: true,
-                    message: 'Contact deleted successfully'
+                    message: 'Contact deleted successfully',
                 });
             default:
                 return createResponse(405, {
                     success: false,
-                    error: 'Method not allowed'
+                    error: 'Method not allowed',
                 });
         }
     }
@@ -406,7 +414,7 @@ async function handleContactOperations(method, pathParams, queryParams, body) {
         return createResponse(500, {
             success: false,
             error: 'Failed to process contact operation',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 }
@@ -415,14 +423,14 @@ async function handleEmailSending(method, body) {
         if (method !== 'POST') {
             return createResponse(405, {
                 success: false,
-                error: 'Method not allowed'
+                error: 'Method not allowed',
             });
         }
         const { to, cc, bcc, subject, htmlContent, textContent, templateId } = body;
         if (!to || !subject || (!htmlContent && !textContent)) {
             return createResponse(400, {
                 success: false,
-                error: 'Missing required fields: to, subject, and content'
+                error: 'Missing required fields: to, subject, and content',
             });
         }
         const emailParams = {
@@ -438,20 +446,25 @@ async function handleEmailSending(method, body) {
                     Charset: 'UTF-8',
                 },
                 Body: {
-                    Html: htmlContent ? {
-                        Data: htmlContent,
-                        Charset: 'UTF-8',
-                    } : undefined,
-                    Text: textContent ? {
-                        Data: textContent,
-                        Charset: 'UTF-8',
-                    } : undefined,
+                    Html: htmlContent
+                        ? {
+                            Data: htmlContent,
+                            Charset: 'UTF-8',
+                        }
+                        : undefined,
+                    Text: textContent
+                        ? {
+                            Data: textContent,
+                            Charset: 'UTF-8',
+                        }
+                        : undefined,
                 },
             },
         };
         const result = await sesClient.send(new client_ses_1.SendEmailCommand(emailParams));
         const emailId = `sent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const sentEmail = {
+            id: emailId,
             emailId,
             messageId: result.MessageId || '',
             from: emailParams.Source,
@@ -466,19 +479,19 @@ async function handleEmailSending(method, body) {
             sentAt: new Date().toISOString(),
             metadata: {
                 sesMessageId: result.MessageId,
-                sesRequestId: result.$metadata.requestId
-            }
+                sesRequestId: result.$metadata.requestId,
+            },
         };
         await docClient.send(new lib_dynamodb_1.PutCommand({
             TableName: SENT_EMAILS_TABLE,
-            Item: sentEmail
+            Item: sentEmail,
         }));
         return createResponse(200, {
             success: true,
             data: {
                 messageId: result.MessageId,
-                emailId: sentEmail.emailId
-            }
+                emailId: sentEmail.emailId,
+            },
         });
     }
     catch (error) {
@@ -486,7 +499,7 @@ async function handleEmailSending(method, body) {
         return createResponse(500, {
             success: false,
             error: 'Failed to send email',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 }
@@ -495,11 +508,11 @@ async function handleEmailStats(method, queryParams) {
         if (method !== 'GET') {
             return createResponse(405, {
                 success: false,
-                error: 'Method not allowed'
+                error: 'Method not allowed',
             });
         }
         const sentResult = await docClient.send(new lib_dynamodb_1.ScanCommand({
-            TableName: SENT_EMAILS_TABLE
+            TableName: SENT_EMAILS_TABLE,
         }));
         const sentEmails = sentResult.Items || [];
         const stats = {
@@ -508,12 +521,13 @@ async function handleEmailStats(method, queryParams) {
             totalBounced: sentEmails.filter(email => email.status === 'bounced').length,
             totalComplaints: 0,
             deliveryRate: sentEmails.length > 0
-                ? (sentEmails.filter(email => email.status === 'delivered').length / sentEmails.length) * 100
-                : 0
+                ? (sentEmails.filter(email => email.status === 'delivered').length / sentEmails.length) *
+                    100
+                : 0,
         };
         return createResponse(200, {
             success: true,
-            data: stats
+            data: stats,
         });
     }
     catch (error) {
@@ -521,7 +535,7 @@ async function handleEmailStats(method, queryParams) {
         return createResponse(500, {
             success: false,
             error: 'Failed to get email statistics',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 }

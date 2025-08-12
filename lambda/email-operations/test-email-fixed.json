@@ -1,0 +1,5 @@
+{
+  "to": ["test@example.com"],
+  "subject": "Test Email",
+  "htmlContent": "Dies ist eine Test-E-Mail"
+}
