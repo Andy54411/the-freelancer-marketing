@@ -28,10 +28,11 @@ interface EmailComposeProps {
 export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [selectedSenderEmail, setSelectedSenderEmail] = useState('info@taskilo.de');
+  const [selectedSenderEmail, setSelectedSenderEmail] = useState('andy.staudinger@taskilo.de');
 
   // Verfügbare Sender-E-Mail-Adressen von der verifizierten Domain taskilo.de
   const senderEmails = [
+    'andy.staudinger@taskilo.de',
     'info@taskilo.de',
     'noreply@taskilo.de',
     'admin@taskilo.de',

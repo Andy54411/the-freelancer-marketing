@@ -6,6 +6,16 @@ export async function GET() {
     const mockContacts = [
       {
         contactId: 'contact_1',
+        email: 'andy.staudinger@taskilo.de',
+        firstName: 'Andy',
+        lastName: 'Staudinger',
+        name: 'Andy Staudinger',
+        status: 'active',
+        tags: ['admin', 'founder', 'ceo'],
+        createdAt: new Date().toISOString(),
+      },
+      {
+        contactId: 'contact_2',
         email: 'info@taskilo.de',
         firstName: 'Taskilo',
         lastName: 'Support',
@@ -15,13 +25,13 @@ export async function GET() {
         createdAt: new Date().toISOString(),
       },
       {
-        contactId: 'contact_2',
+        contactId: 'contact_3',
         email: 'andy@taskilo.de',
         firstName: 'Andy',
-        lastName: 'Staudinger',
-        name: 'Andy Staudinger',
-        status: 'active',
-        tags: ['admin', 'founder'],
+        lastName: 'Legacy',
+        name: 'Andy Legacy',
+        status: 'inactive',
+        tags: ['legacy'],
         createdAt: new Date().toISOString(),
       },
     ];
