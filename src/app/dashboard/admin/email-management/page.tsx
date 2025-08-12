@@ -482,9 +482,15 @@ export default function EmailManagementPage() {
       return;
     }
 
+    if (!user?.email) {
+      toast.error('Benutzer-E-Mail-Adresse nicht verfügbar');
+      return;
+    }
+
     setLoading(true);
     try {
       const emailData = {
+        from: user.email, // Verwende die E-Mail-Adresse des eingeloggten Users
         to: composeForm.to.split(',').map(email => email.trim()),
         cc: composeForm.cc ? composeForm.cc.split(',').map(email => email.trim()) : undefined,
         bcc: composeForm.bcc ? composeForm.bcc.split(',').map(email => email.trim()) : undefined,

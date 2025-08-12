@@ -47,8 +47,10 @@ const handler = async (event) => {
         else if (path === '/admin/emails/contacts' || path.endsWith('/admin/emails/contacts')) {
             return await handleContactOperations(method, pathParams, queryParams, body);
         }
-        else if (path === '/admin/emails' || path === '/admin/emails/inbox' ||
-            path.endsWith('/admin/emails') || path.endsWith('/admin/emails/inbox')) {
+        else if (path === '/admin/emails' ||
+            path === '/admin/emails/inbox' ||
+            path.endsWith('/admin/emails') ||
+            path.endsWith('/admin/emails/inbox')) {
             return await handleInboxOperations(method, pathParams, queryParams, body);
         }
         return createResponse(404, { success: false, error: 'Route not found' });
@@ -426,15 +428,16 @@ async function handleEmailSending(method, body) {
                 error: 'Method not allowed',
             });
         }
-        const { to, cc, bcc, subject, htmlContent, textContent, templateId } = body;
+        const { to, cc, bcc, subject, htmlContent, textContent, templateId, from } = body;
         if (!to || !subject || (!htmlContent && !textContent)) {
             return createResponse(400, {
                 success: false,
                 error: 'Missing required fields: to, subject, and content',
             });
         }
+        const fromEmail = from || process.env.FROM_EMAIL || 'noreply@taskilo.de';
         const emailParams = {
-            Source: process.env.FROM_EMAIL || 'noreply@taskilo.de',
+            Source: fromEmail,
             Destination: {
                 ToAddresses: Array.isArray(to) ? to : [to],
                 CcAddresses: cc ? (Array.isArray(cc) ? cc : [cc]) : undefined,

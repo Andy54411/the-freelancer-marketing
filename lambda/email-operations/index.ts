@@ -632,7 +632,7 @@ async function handleEmailSending(method: string, body: any) {
       });
     }
 
-    const { to, cc, bcc, subject, htmlContent, textContent, templateId } = body;
+    const { to, cc, bcc, subject, htmlContent, textContent, templateId, from } = body;
 
     if (!to || !subject || (!htmlContent && !textContent)) {
       return createResponse(400, {
@@ -641,9 +641,12 @@ async function handleEmailSending(method: string, body: any) {
       });
     }
 
+    // Use provided from address or default
+    const fromEmail = from || process.env.FROM_EMAIL || 'noreply@taskilo.de';
+
     // Prepare email parameters
     const emailParams = {
-      Source: process.env.FROM_EMAIL || 'noreply@taskilo.de',
+      Source: fromEmail,
       Destination: {
         ToAddresses: Array.isArray(to) ? to : [to],
         CcAddresses: cc ? (Array.isArray(cc) ? cc : [cc]) : undefined,

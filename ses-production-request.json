@@ -1,0 +1,15 @@
+{
+  "service": "ses",
+  "type": "production-access",
+  "region": "eu-central-1",
+  "details": {
+    "domain": "taskilo.de",
+    "website": "https://taskilo.de",
+    "description": "Production email system for Taskilo platform - a B2B/B2C service marketplace. Need to send transactional emails like order confirmations, notifications, and admin communications to verified users.",
+    "mail_type": "transactional",
+    "compliance": true,
+    "bounce_handling": true,
+    "complaint_handling": true,
+    "estimated_volume": "1000 emails per month"
+  }
+}
