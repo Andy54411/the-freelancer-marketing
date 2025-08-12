@@ -139,56 +139,10 @@ export default function PersonalAbsencePage() {
 
         setVacationBalances(balances);
       } catch (error) {
-        console.warn('⚠️ Keine Abwesenheitsdaten gefunden, verwende Mock-Daten');
-        // Fallback Mock-Daten falls keine Daten vorhanden
-        const mockRequests: AbsenceRequest[] = [
-          {
-            id: '1',
-            employeeId: employeeList[0]?.id || 'emp1',
-            employeeName: employeeList[0]
-              ? `${employeeList[0].firstName} ${employeeList[0].lastName}`
-              : 'Anna Müller',
-            type: 'VACATION',
-            startDate: '2025-08-20',
-            endDate: '2025-08-27',
-            days: 6,
-            status: 'PENDING',
-            reason: 'Sommerurlaub',
-            requestedAt: '2025-08-01',
-          },
-          {
-            id: '2',
-            employeeId: employeeList[1]?.id || 'emp2',
-            employeeName: employeeList[1]
-              ? `${employeeList[1].firstName} ${employeeList[1].lastName}`
-              : 'Thomas Schmidt',
-            type: 'SICK',
-            startDate: '2025-08-10',
-            endDate: '2025-08-12',
-            days: 3,
-            status: 'APPROVED',
-            reason: 'Krankheit',
-            requestedAt: '2025-08-10',
-            approvedBy: 'HR Team',
-            approvedAt: '2025-08-10',
-          },
-        ];
-        setAbsenceRequests(mockRequests);
-
-        // Mock Urlaubssalden basierend auf echten Mitarbeitern
-        const mockBalances: VacationBalance[] = employeeList.slice(0, 4).map((emp, index) => ({
-          employeeId: emp.id!,
-          employeeName: `${emp.firstName} ${emp.lastName}`,
-          totalDays: emp.vacation?.totalDays || 30,
-          usedDays: [12, 8, 15, 20][index] || 10,
-          pendingDays: [6, 0, 2, 0][index] || 0,
-          remainingDays:
-            (emp.vacation?.totalDays || 30) -
-            ([12, 8, 15, 20][index] || 10) -
-            ([6, 0, 2, 0][index] || 0),
-          carryOverDays: 0,
-        }));
-        setVacationBalances(mockBalances);
+        console.warn('⚠️ Fehler beim Laden der Abwesenheitsdaten:', error);
+        // Keine Mock-Daten verwenden - zeige leere Listen für echte Daten
+        setAbsenceRequests([]);
+        setVacationBalances([]);
       }
     } catch (error) {
       console.error('❌ Fehler beim Laden der Abwesenheitsdaten:', error);
