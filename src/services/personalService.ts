@@ -10,6 +10,7 @@ import {
   query,
   where,
   orderBy,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
@@ -2660,6 +2661,162 @@ export class PersonalService {
     } catch (error) {
       console.error('❌ PersonalService: Fehler beim Laden der Disziplinarmaßnahmen:', error);
       throw error;
+    }
+  }
+
+  // ===== REALTIME SUBSCRIPTIONS =====
+
+  /**
+   * Realtime Subscription für Mitarbeiter
+   */
+  static subscribeToEmployees(
+    companyId: string,
+    onUpdate: (employees: Employee[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    try {
+      console.log('🔄 PersonalService: Starte Realtime-Subscription für Mitarbeiter');
+
+      const q = query(
+        collection(db, 'companies', companyId, 'employees'),
+        orderBy('lastName', 'asc')
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const employees: Employee[] = [];
+
+          querySnapshot.forEach(doc => {
+            employees.push({
+              id: doc.id,
+              ...doc.data(),
+            } as Employee);
+          });
+
+          console.log(`📊 PersonalService: Realtime-Update - ${employees.length} Mitarbeiter`);
+          onUpdate(employees);
+        },
+        error => {
+          console.error('❌ PersonalService: Realtime-Fehler bei Mitarbeitern:', error);
+          onError?.(error as Error);
+        }
+      );
+
+      return unsubscribe;
+    } catch (error) {
+      console.error(
+        '❌ PersonalService: Fehler beim Erstellen der Mitarbeiter-Subscription:',
+        error
+      );
+      onError?.(error as Error);
+      return () => {};
+    }
+  }
+
+  /**
+   * Realtime Subscription für Schichten
+   */
+  static subscribeToShifts(
+    companyId: string,
+    onUpdate: (shifts: Shift[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    try {
+      console.log('🔄 PersonalService: Starte Realtime-Subscription für Schichten');
+
+      // Lade Schichten für aktuellen und nächsten Monat
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+
+      const startDateStr = startOfMonth.toISOString().split('T')[0];
+      const endDateStr = endOfNextMonth.toISOString().split('T')[0];
+
+      const q = query(
+        collection(db, 'companies', companyId, 'shifts'),
+        where('date', '>=', startDateStr),
+        where('date', '<=', endDateStr),
+        orderBy('date', 'asc'),
+        orderBy('startTime', 'asc')
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const shifts: Shift[] = [];
+
+          querySnapshot.forEach(doc => {
+            shifts.push({
+              id: doc.id,
+              ...doc.data(),
+            } as Shift);
+          });
+
+          console.log(`📅 PersonalService: Realtime-Update - ${shifts.length} Schichten`);
+          onUpdate(shifts);
+        },
+        error => {
+          console.error('❌ PersonalService: Realtime-Fehler bei Schichten:', error);
+          onError?.(error as Error);
+        }
+      );
+
+      return unsubscribe;
+    } catch (error) {
+      console.error('❌ PersonalService: Fehler beim Erstellen der Schichten-Subscription:', error);
+      onError?.(error as Error);
+      return () => {};
+    }
+  }
+
+  /**
+   * Realtime Subscription für Abwesenheitsanträge
+   */
+  static subscribeToAbsenceRequests(
+    companyId: string,
+    onUpdate: (requests: AbsenceRequest[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    try {
+      console.log('🔄 PersonalService: Starte Realtime-Subscription für Abwesenheitsanträge');
+
+      const q = query(
+        collection(db, 'companies', companyId, 'absenceRequests'),
+        orderBy('startDate', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(
+        q,
+        querySnapshot => {
+          const requests: AbsenceRequest[] = [];
+
+          querySnapshot.forEach(doc => {
+            requests.push({
+              id: doc.id,
+              ...doc.data(),
+            } as AbsenceRequest);
+          });
+
+          console.log(
+            `🏖️ PersonalService: Realtime-Update - ${requests.length} Abwesenheitsanträge`
+          );
+          onUpdate(requests);
+        },
+        error => {
+          console.error('❌ PersonalService: Realtime-Fehler bei Abwesenheitsanträgen:', error);
+          onError?.(error as Error);
+        }
+      );
+
+      return unsubscribe;
+    } catch (error) {
+      console.error(
+        '❌ PersonalService: Fehler beim Erstellen der Abwesenheitsanträge-Subscription:',
+        error
+      );
+      onError?.(error as Error);
+      return () => {};
     }
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { PersonalService, Employee, Shift } from '@/services/personalService';
@@ -47,6 +47,14 @@ import { toast } from 'sonner';
 import { ModernScheduleView } from '@/components/schedule/ModernScheduleView';
 import { cn } from '@/lib/utils';
 
+// Erweitere Window für Realtime-Subscriptions
+declare global {
+  interface Window {
+    employeesUnsubscribe?: () => void;
+    shiftsUnsubscribe?: () => void;
+  }
+}
+
 interface ModernSchedulePageProps {
   params: {
     uid: string;
@@ -92,7 +100,7 @@ const QUICK_SHIFT_TEMPLATES = [
 export default function ModernSchedulePage({ params }: ModernSchedulePageProps) {
   const { user } = useAuth();
   const [resolvedParams, setResolvedParams] = useState<{ uid: string } | null>(null);
-  
+
   // State Management
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -100,7 +108,8 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showBulkCreateDialog, setShowBulkCreateDialog] = useState(false);
-  
+  const [quickActionDate, setQuickActionDate] = useState(new Date().toISOString().split('T')[0]);
+
   // Form State
   const [newShiftForm, setNewShiftForm] = useState({
     employeeId: '',
@@ -120,13 +129,13 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     thisWeek.setDate(thisWeek.getDate() - thisWeek.getDay());
     const weekEnd = new Date(thisWeek);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    
+
     const todayShifts = shifts.filter(shift => shift.date === today);
     const weekShifts = shifts.filter(shift => {
       const shiftDate = new Date(shift.date);
       return shiftDate >= thisWeek && shiftDate <= weekEnd;
     });
-    
+
     return {
       todayTotal: todayShifts.length,
       todayConfirmed: todayShifts.filter(s => s.status === 'CONFIRMED').length,
@@ -146,48 +155,73 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     resolveParams();
   }, [params]);
 
-  // Load data when params are resolved
+  // Load data when params are resolved - mit Realtime Subscriptions
   useEffect(() => {
     if (resolvedParams?.uid) {
-      loadData();
+      setupRealtimeSubscriptions();
     }
+
+    // Cleanup bei Komponenten-Unmount
+    return () => {
+      cleanupSubscriptions();
+    };
   }, [resolvedParams]);
 
-  const loadData = async () => {
+  // Realtime Subscriptions Setup
+  const setupRealtimeSubscriptions = useCallback(() => {
     if (!resolvedParams?.uid) return;
-    
-    try {
-      setLoading(true);
-      
-      // Lade Mitarbeiter
-      const employeeList = await PersonalService.getEmployees(resolvedParams.uid);
-      setEmployees(employeeList);
-      
-      // Lade Schichten (aktueller Monat)
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      const endOfMonth = new Date();
-      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-      endOfMonth.setDate(0);
-      
-      const shiftList = await PersonalService.getShifts(
-        resolvedParams.uid,
-        startOfMonth,
-        endOfMonth
-      );
-      setShifts(shiftList);
-      
-    } catch (error) {
-      console.error('Fehler beim Laden der Daten:', error);
-      toast.error('Fehler beim Laden der Dienstplan-Daten');
-      
-      // Fallback: Leere Arrays bei Fehlern
-      setEmployees([]);
-      setShifts([]);
-      
-    } finally {
-      setLoading(false);
+
+    setLoading(true);
+
+    // Mitarbeiter Realtime Subscription
+    const employeesUnsubscribe = PersonalService.subscribeToEmployees(
+      resolvedParams.uid,
+      employeeList => {
+        console.log('📊 Realtime: Mitarbeiter aktualisiert', employeeList.length);
+        setEmployees(employeeList);
+      },
+      error => {
+        console.error('❌ Realtime: Fehler bei Mitarbeiter-Subscription:', error);
+        toast.error('Fehler beim Laden der Mitarbeiter');
+      }
+    );
+
+    // Schichten Realtime Subscription
+    const shiftsUnsubscribe = PersonalService.subscribeToShifts(
+      resolvedParams.uid,
+      shiftList => {
+        console.log('📅 Realtime: Schichten aktualisiert', shiftList.length);
+        setShifts(shiftList);
+        setLoading(false);
+      },
+      error => {
+        console.error('❌ Realtime: Fehler bei Schichten-Subscription:', error);
+        toast.error('Fehler beim Laden der Schichten');
+        setLoading(false);
+      }
+    );
+
+    // Speichere Unsubscribe-Funktionen
+    window.employeesUnsubscribe = employeesUnsubscribe;
+    window.shiftsUnsubscribe = shiftsUnsubscribe;
+  }, [resolvedParams]);
+
+  // Cleanup Subscriptions
+  const cleanupSubscriptions = () => {
+    if (window.employeesUnsubscribe) {
+      window.employeesUnsubscribe();
+      window.employeesUnsubscribe = null;
     }
+    if (window.shiftsUnsubscribe) {
+      window.shiftsUnsubscribe();
+      window.shiftsUnsubscribe = null;
+    }
+  };
+
+  const loadData = async () => {
+    // Diese Methode wird nur noch für manuelle Refreshes verwendet
+    // Hauptdatenladung erfolgt über Realtime-Subscriptions
+    console.log('🔄 Manueller Refresh der Daten...');
   };
 
   const handleCreateShift = async () => {
@@ -211,11 +245,10 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
       await PersonalService.createShift(shiftData);
       toast.success('Schicht erfolgreich erstellt');
-      
-      // Daten neu laden
-      await loadData();
+
+      // Daten werden automatisch über Realtime-Subscription aktualisiert
       setShowCreateDialog(false);
-      
+
       // Form zurücksetzen
       setNewShiftForm({
         employeeId: '',
@@ -227,22 +260,24 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
         notes: '',
         status: 'PLANNED',
       });
-      
     } catch (error) {
       console.error('Fehler beim Erstellen der Schicht:', error);
       toast.error('Fehler beim Erstellen der Schicht');
     }
   };
 
-  const handleQuickCreateShift = async (template: typeof QUICK_SHIFT_TEMPLATES[0], employeeId: string) => {
+  const handleQuickCreateShift = async (
+    template: (typeof QUICK_SHIFT_TEMPLATES)[0],
+    employeeId: string
+  ) => {
     try {
       // Finde den Mitarbeiter um seine Abteilung und Position zu verwenden
       const employee = employees.find(emp => emp.id === employeeId);
-      
+
       const shiftData: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'> = {
         companyId: resolvedParams.uid,
         employeeId,
-        date: new Date().toISOString().split('T')[0],
+        date: quickActionDate, // Verwende das ausgewählte Datum
         startTime: template.startTime,
         endTime: template.endTime,
         position: employee?.position || template.position,
@@ -253,8 +288,8 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
       await PersonalService.createShift(shiftData);
       toast.success(`${template.name} für Mitarbeiter erstellt`);
-      await loadData();
-      
+
+      // Daten werden automatisch über Realtime-Subscription aktualisiert
     } catch (error) {
       console.error('Fehler beim Erstellen der Schicht:', error);
       toast.error('Fehler beim Erstellen der Schicht');
@@ -274,6 +309,20 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
       endTime: slotInfo.end.toTimeString().slice(0, 5),
     }));
     setShowCreateDialog(true);
+  };
+
+  const handleShiftUpdate = async (shiftId: string, updates: Partial<Shift>) => {
+    try {
+      if (!resolvedParams) return;
+
+      await PersonalService.updateShift(resolvedParams.uid, shiftId, updates);
+      toast.success('Schicht erfolgreich verschoben');
+
+      // Daten werden automatisch über Realtime-Subscription aktualisiert
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren der Schicht:', error);
+      toast.error('Fehler beim Verschieben der Schicht');
+    }
   };
 
   if (loading) {
@@ -301,7 +350,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
             Verwalten Sie Schichten und Arbeitszeiten Ihrer Mitarbeiter
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
@@ -311,7 +360,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
             <Settings className="h-4 w-4 mr-2" />
             Bulk erstellen
           </Button>
-          
+
           <Button
             onClick={() => setShowCreateDialog(true)}
             className="bg-[#14ad9f] hover:bg-[#129488] text-white"
@@ -351,9 +400,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Diese Woche</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {scheduleStats.weekTotal}
-                </p>
+                <p className="text-2xl font-bold text-blue-600">{scheduleStats.weekTotal}</p>
                 <p className="text-xs text-gray-500">Schichten geplant</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
@@ -368,9 +415,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Abwesenheiten</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {scheduleStats.absences}
-                </p>
+                <p className="text-2xl font-bold text-orange-600">{scheduleStats.absences}</p>
                 <p className="text-xs text-gray-500">Urlaub/Krank</p>
               </div>
               <div className="p-3 bg-orange-100 rounded-full">
@@ -398,7 +443,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
         </Card>
       </motion.div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - Optimiert für viele Mitarbeiter */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -410,41 +455,92 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
               <Zap className="h-5 w-5 text-[#14ad9f]" />
               Schnellaktionen
             </CardTitle>
-            <CardDescription>
-              Erstellen Sie schnell Schichten für heute
-            </CardDescription>
+            <CardDescription>Effiziente Schichterstellung für mehrere Mitarbeiter</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {employees.filter(emp => emp.isActive).map(employee => (
-                <div key={employee.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src="" />
-                      <AvatarFallback className="bg-[#14ad9f]/10 text-[#14ad9f]">
-                        {employee.firstName[0]}{employee.lastName[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-medium">{employee.firstName} {employee.lastName}</h4>
-                      <p className="text-sm text-gray-500">{employee.position}</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {QUICK_SHIFT_TEMPLATES.map(template => (
+                <Dialog key={template.id}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-20 flex flex-col gap-2 border-2 hover:border-[#14ad9f] hover:bg-[#14ad9f]/5"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                        <Clock className="h-4 w-4 text-[#14ad9f]" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium text-sm">{template.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {template.startTime}-{template.endTime}
+                        </div>
+                      </div>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>{template.name} zuweisen</DialogTitle>
+                      <DialogDescription>
+                        Wählen Sie Mitarbeiter für die {template.name} ({template.startTime}-
+                        {template.endTime}) aus
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Calendar className="h-5 w-5 text-[#14ad9f]" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <Label htmlFor="quickDate" className="text-sm font-medium">
+                                Datum
+                              </Label>
+                              <Input
+                                id="quickDate"
+                                type="date"
+                                value={quickActionDate}
+                                onChange={e => setQuickActionDate(e.target.value)}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-medium">Zeit</Label>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {template.startTime} - {template.endTime}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                        {employees
+                          .filter(emp => emp.isActive)
+                          .map(employee => (
+                            <Button
+                              key={employee.id}
+                              variant="outline"
+                              onClick={() => handleQuickCreateShift(template, employee.id!)}
+                              className="justify-start h-auto p-3 hover:bg-[#14ad9f]/10 hover:border-[#14ad9f]"
+                            >
+                              <Avatar className="h-8 w-8 mr-3">
+                                <AvatarFallback className="bg-[#14ad9f]/10 text-[#14ad9f]">
+                                  {employee.firstName?.[0]}
+                                  {employee.lastName?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="text-left">
+                                <div className="font-medium">
+                                  {employee.firstName} {employee.lastName}
+                                </div>
+                                <div className="text-xs text-gray-500">{employee.position}</div>
+                              </div>
+                            </Button>
+                          ))}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {QUICK_SHIFT_TEMPLATES.map(template => (
-                      <Button
-                        key={template.id}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuickCreateShift(template, employee.id!)}
-                        className="hover:bg-[#14ad9f]/10 hover:border-[#14ad9f]"
-                      >
-                        {template.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                  </DialogContent>
+                </Dialog>
               ))}
             </div>
           </CardContent>
@@ -462,6 +558,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
           employees={employees}
           onShiftClick={handleShiftClick}
           onSlotSelect={handleSlotSelect}
+          onShiftUpdate={handleShiftUpdate}
         />
       </motion.div>
 
@@ -477,23 +574,25 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
               Erstellen Sie eine neue Schicht für einen Mitarbeiter
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Label htmlFor="employee">Mitarbeiter *</Label>
               <Select
                 value={newShiftForm.employeeId}
-                onValueChange={(value) => setNewShiftForm(prev => ({ ...prev, employeeId: value }))}
+                onValueChange={value => setNewShiftForm(prev => ({ ...prev, employeeId: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Mitarbeiter auswählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.filter(emp => emp.isActive).map(employee => (
-                    <SelectItem key={employee.id} value={employee.id!}>
-                      {employee.firstName} {employee.lastName} - {employee.position}
-                    </SelectItem>
-                  ))}
+                  {employees
+                    .filter(emp => emp.isActive)
+                    .map(employee => (
+                      <SelectItem key={employee.id} value={employee.id!}>
+                        {employee.firstName} {employee.lastName} - {employee.position}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -505,14 +604,16 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
                   id="date"
                   type="date"
                   value={newShiftForm.date}
-                  onChange={(e) => setNewShiftForm(prev => ({ ...prev, date: e.target.value }))}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, date: e.target.value }))}
                 />
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={newShiftForm.status}
-                  onValueChange={(value: Shift['status']) => setNewShiftForm(prev => ({ ...prev, status: value }))}
+                  onValueChange={(value: Shift['status']) =>
+                    setNewShiftForm(prev => ({ ...prev, status: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -534,7 +635,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
                   id="startTime"
                   type="time"
                   value={newShiftForm.startTime}
-                  onChange={(e) => setNewShiftForm(prev => ({ ...prev, startTime: e.target.value }))}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, startTime: e.target.value }))}
                 />
               </div>
               <div>
@@ -543,7 +644,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
                   id="endTime"
                   type="time"
                   value={newShiftForm.endTime}
-                  onChange={(e) => setNewShiftForm(prev => ({ ...prev, endTime: e.target.value }))}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, endTime: e.target.value }))}
                 />
               </div>
             </div>
@@ -555,7 +656,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
                   id="position"
                   placeholder="z.B. Servicekraft"
                   value={newShiftForm.position}
-                  onChange={(e) => setNewShiftForm(prev => ({ ...prev, position: e.target.value }))}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, position: e.target.value }))}
                 />
               </div>
               <div>
@@ -564,7 +665,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
                   id="department"
                   placeholder="z.B. Service"
                   value={newShiftForm.department}
-                  onChange={(e) => setNewShiftForm(prev => ({ ...prev, department: e.target.value }))}
+                  onChange={e => setNewShiftForm(prev => ({ ...prev, department: e.target.value }))}
                 />
               </div>
             </div>
@@ -575,16 +676,13 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
                 id="notes"
                 placeholder="Optionale Notizen zur Schicht"
                 value={newShiftForm.notes}
-                onChange={(e) => setNewShiftForm(prev => ({ ...prev, notes: e.target.value }))}
+                onChange={e => setNewShiftForm(prev => ({ ...prev, notes: e.target.value }))}
                 rows={3}
               />
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateDialog(false)}
-              >
+              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
                 Abbrechen
               </Button>
               <Button
