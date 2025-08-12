@@ -48,6 +48,31 @@ export async function POST(request: NextRequest) {
 
     const { to, cc, bcc, subject, htmlContent, textContent, from = 'info@taskilo.de' } = body;
 
+    // Validiere Sender-E-Mail-Adresse (nur verifizierte taskilo.de Adressen erlaubt)
+    const allowedSenderEmails = [
+      'andy.staudinger@taskilo.de',
+      'info@taskilo.de',
+      'noreply@taskilo.de',
+      'admin@taskilo.de',
+      'marketing@taskilo.de',
+      'support@taskilo.de',
+      'hello@taskilo.de',
+    ];
+
+    if (!allowedSenderEmails.includes(from)) {
+      console.error('Ungültige Sender-E-Mail:', from);
+      return NextResponse.json(
+        {
+          error: 'Ungültige Sender-E-Mail-Adresse',
+          details: `Die E-Mail-Adresse "${from}" ist nicht verifiziert. Erlaubte Adressen: ${allowedSenderEmails.join(', ')}`,
+          allowedEmails: allowedSenderEmails,
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log('Validierte Sender-E-Mail:', from);
+
     // Normalisiere 'to' zu einem Array
     const recipients = Array.isArray(to) ? to : to ? [to] : [];
 

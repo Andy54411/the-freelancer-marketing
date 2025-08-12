@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/select';
 import { Send, Users, Eye, Code, Type } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
 import { EmailTemplate, Contact } from './types';
 
 interface EmailComposeProps {
@@ -26,7 +25,6 @@ interface EmailComposeProps {
 }
 
 export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeProps) {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Verfügbare Sender-E-Mail-Adressen von der verifizierten Domain taskilo.de
@@ -147,6 +145,26 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
 
     setLoading(true);
     try {
+      // Validiere Sender-E-Mail nochmals vor dem Versand
+      const allowedSenderEmails = [
+        'andy.staudinger@taskilo.de',
+        'info@taskilo.de',
+        'noreply@taskilo.de',
+        'admin@taskilo.de',
+        'marketing@taskilo.de',
+        'support@taskilo.de',
+        'hello@taskilo.de',
+      ];
+
+      if (!allowedSenderEmails.includes(selectedSenderEmail)) {
+        toast.error(
+          `Ungültige Sender-E-Mail: ${selectedSenderEmail}. Nur verifizierte taskilo.de Adressen sind erlaubt.`
+        );
+        setSelectedSenderEmail(allowedSenderEmails[0]); // Setze auf Standard zurück
+        setLoading(false);
+        return;
+      }
+
       const emailData = {
         from: selectedSenderEmail,
         to: composeForm.to
