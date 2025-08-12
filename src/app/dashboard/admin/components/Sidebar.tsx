@@ -43,6 +43,7 @@ export default function Sidebar() {
     { href: '/dashboard/admin/finapi-debug', label: 'finAPI & DATEV Debug', icon: Activity },
 
     // Support & Communication
+    { href: '/dashboard/admin/tickets', label: 'Ticket-System', icon: MessageSquare },
     { href: '/dashboard/admin/support', label: 'Support', icon: MessageSquare },
     { href: '/dashboard/admin/orders', label: 'Aufträge', icon: Briefcase },
     { href: '/dashboard/admin/chats', label: 'Nachrichten', icon: Bot },

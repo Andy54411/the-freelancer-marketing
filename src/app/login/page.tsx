@@ -1,13 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
   OAuthProvider,
-  User,
 } from 'firebase/auth';
 import { auth } from '@/firebase/clients';
 import { LoginForm } from '@/components/login-form';
@@ -17,8 +15,6 @@ const POPUP_LOG = 'LoginPage:';
 const POPUP_ERROR = 'LoginPage ERROR:';
 
 export default function LoginPage() {
-  const router = useRouter();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -143,8 +139,9 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-6 md:p-8 bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md space-y-6">
+    <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+      <div className="relative z-10 w-full max-w-md space-y-6">
         <div className="text-center">
           <Logo />
         </div>

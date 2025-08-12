@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,6 @@ import {
   Search,
   Loader2,
   Plus,
-  ArrowRight,
   CheckCircle,
   Clock,
   Activity,
@@ -47,7 +46,6 @@ interface Bank {
 
 export default function BankingDashboardPage() {
   const params = useParams();
-  const router = useRouter();
   const { user } = useAuth();
   const uid = params.uid as string;
 
@@ -336,18 +334,6 @@ export default function BankingDashboardPage() {
     return date.toLocaleString('de-DE');
   };
 
-  const handleViewAccounts = () => {
-    router.push(`/dashboard/company/${uid}/banking/accounts`);
-  };
-
-  const handleImportTransactions = () => {
-    router.push(`/dashboard/company/${uid}/banking/transactions`);
-  };
-
-  const handleBankingSettings = () => {
-    router.push(`/dashboard/company/${uid}/banking/import`);
-  };
-
   // Authorization check
   if (!user || user.uid !== uid) {
     return (
@@ -431,9 +417,18 @@ export default function BankingDashboardPage() {
 
       {/* Banking Statistics Overview */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        <div data-slot="card" className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm">
-          <div data-slot="card-header" className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6">
-            <div data-slot="card-title" className="leading-none font-semibold flex items-center gap-2">
+        <div
+          data-slot="card"
+          className="bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+        >
+          <div
+            data-slot="card-header"
+            className="@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6"
+          >
+            <div
+              data-slot="card-title"
+              className="leading-none font-semibold flex items-center gap-2"
+            >
               <CreditCard className="h-5 w-5 text-[#14ad9f]" />
               Bankkonten
             </div>
@@ -460,7 +455,9 @@ export default function BankingDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-900">
-                  {connections.length > 0 ? formatLastSync(connections[0]?.lastSync) : 'Noch kein Sync'}
+                  {connections.length > 0
+                    ? formatLastSync(connections[0]?.lastSync)
+                    : 'Noch kein Sync'}
                 </p>
                 <p className="text-xs text-gray-600">Automatische Synchronisation</p>
               </div>
@@ -483,7 +480,9 @@ export default function BankingDashboardPage() {
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-900">{connections.length > 0 ? 'Aktiv' : 'Inaktiv'}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {connections.length > 0 ? 'Aktiv' : 'Inaktiv'}
+                </p>
                 <p className="text-xs text-gray-600">Banking-Integration</p>
               </div>
               {connections.length > 0 ? (
@@ -499,29 +498,10 @@ export default function BankingDashboardPage() {
       {/* Connected Banks or Bank Selection */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-[#14ad9f]" />
-              {showBankSelection ? 'Bank auswählen' : 'Verbundene Banken'}
-            </CardTitle>
-            {!showBankSelection && (
-              <Button
-                onClick={() => setShowBankSelection(true)}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Bank verbinden
-              </Button>
-            )}
-            {showBankSelection && (
-              <Button
-                variant="ghost"
-                onClick={() => setShowBankSelection(false)}
-              >
-                Zurück
-              </Button>
-            )}
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-[#14ad9f]" />
+            Banking-Übersicht
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {showBankSelection ? (
@@ -535,7 +515,8 @@ export default function BankingDashboardPage() {
                     <div className="flex-1">
                       <h4 className="font-medium text-blue-900">finAPI Sandbox-Umgebung</h4>
                       <p className="text-blue-700 text-sm">
-                        Test-Umgebung mit Demo-Banken. Nur Banken mit "Demo" oder "Test" unterstützen Kontoinformationen.
+                        Test-Umgebung mit Demo-Banken. Nur Banken mit &ldquo;Demo&rdquo; oder
+                        &ldquo;Test&rdquo; unterstützen Kontoinformationen.
                       </p>
                     </div>
                   </div>
@@ -549,14 +530,14 @@ export default function BankingDashboardPage() {
                   type="text"
                   placeholder="Bank suchen..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
 
               {/* Bank List */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {filteredBanks.map((bank) => {
+                {filteredBanks.map(bank => {
                   const isConnected = connectedBanks[bank.id.toString()];
                   return (
                     <div
@@ -627,8 +608,16 @@ export default function BankingDashboardPage() {
                   <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankverbindungen</h3>
                   <p className="text-gray-600 mb-6">
-                    Verbinden Sie Ihre erste Bank, um mit dem Banking zu beginnen.
+                    Verbinden Sie Ihre erste Bank über den &ldquo;Verbinden&rdquo; Button oben im
+                    Menü.
                   </p>
+                  <Button
+                    onClick={() => setShowBankSelection(true)}
+                    className="bg-[#14ad9f] hover:bg-[#129488]"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Bank auswählen
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -671,50 +660,54 @@ export default function BankingDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
+      {/* Status Overview - Converted from Quick Actions to Status-Only Cards */}
       {connections.length > 0 && !showBankSelection && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={handleViewAccounts}>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <CreditCard className="h-8 w-8 text-[#14ad9f]" />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Konten</h3>
+                  <h3 className="font-semibold text-gray-900">Konten-Status</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {connections.reduce((total, conn) => total + conn.accountCount, 0)} Bankkonten verwalten
+                    {connections.reduce((total, conn) => total + conn.accountCount, 0)} Bankkonten
+                    aktiv
                   </p>
+                  <div className="mt-2 text-lg font-bold text-[#14ad9f]">
+                    {connections.length} Bank{connections.length !== 1 ? 'en' : ''} verbunden
+                  </div>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={handleImportTransactions}>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <RefreshCw className="h-8 w-8 text-[#14ad9f]" />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Transaktionen</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Import und Synchronisation verwalten
-                  </p>
+                  <h3 className="font-semibold text-gray-900">Sync-Status</h3>
+                  <p className="text-sm text-gray-600 mt-1">Automatische Synchronisation aktiv</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-green-600">Online</span>
+                  </div>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={handleBankingSettings}>
+          <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <Settings className="h-8 w-8 text-[#14ad9f]" />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Einstellungen</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Banking-Konfiguration anpassen
-                  </p>
+                  <h3 className="font-semibold text-gray-900">Konfiguration</h3>
+                  <p className="text-sm text-gray-600 mt-1">Import-Einstellungen verwaltet</p>
+                  <div className="mt-2 text-sm font-medium text-gray-700">
+                    Bereit für Banking-Operationen
+                  </div>
                 </div>
-                <ArrowRight className="h-5 w-5 text-gray-400" />
               </div>
             </CardContent>
           </Card>
