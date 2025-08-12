@@ -190,17 +190,12 @@ export default function EmailManagementPage() {
       if (inboxFilter === 'starred') params.append('label', 'starred');
       if (inboxFilter === 'spam') params.append('label', 'spam');
 
-      const response = await fetch(`/api/admin/inbox?${params}`);
+      const response = await fetch(`/api/admin/emails/inbox?filter=${inboxFilter}`);
       const data = await response.json();
 
       if (data.success) {
-        setInboxEmails(
-          data.data.emails.map((email: any) => ({
-            ...email,
-            receivedAt: new Date(email.receivedAt),
-          }))
-        );
-        setInboxStats(data.data.stats);
+        setInboxEmails(data.data.emails || []);
+        setInboxStats(data.data.stats || { total: 0, unread: 0, starred: 0, spam: 0 });
       } else {
         toast.error('Fehler beim Laden der E-Mails');
       }

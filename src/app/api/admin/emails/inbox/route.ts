@@ -9,28 +9,30 @@ export async function GET(request: NextRequest) {
     const limitCount = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';
 
-    let q = query(collection(db, 'inbox_emails'), orderBy('receivedAt', 'desc'), limit(limitCount));
+    console.log('Loading admin emails from admin_emails collection...');
+
+    let q = query(collection(db, 'admin_emails'), orderBy('timestamp', 'desc'), limit(limitCount));
 
     // Filter anwenden
     if (filter === 'unread') {
       q = query(
-        collection(db, 'inbox_emails'),
-        where('isRead', '==', false),
-        orderBy('receivedAt', 'desc'),
+        collection(db, 'admin_emails'),
+        where('read', '==', false),
+        orderBy('timestamp', 'desc'),
         limit(limitCount)
       );
     } else if (filter === 'starred') {
       q = query(
-        collection(db, 'inbox_emails'),
-        where('isStarred', '==', true),
-        orderBy('receivedAt', 'desc'),
+        collection(db, 'admin_emails'),
+        where('labels', 'array-contains', 'starred'),
+        orderBy('timestamp', 'desc'),
         limit(limitCount)
       );
     } else if (filter === 'spam') {
       q = query(
-        collection(db, 'inbox_emails'),
-        where('isSpam', '==', true),
-        orderBy('receivedAt', 'desc'),
+        collection(db, 'admin_emails'),
+        where('labels', 'array-contains', 'spam'),
+        orderBy('timestamp', 'desc'),
         limit(limitCount)
       );
     }
@@ -40,8 +42,22 @@ export async function GET(request: NextRequest) {
       const data = doc.data();
       return {
         id: doc.id,
-        ...data,
-        receivedAt: data.receivedAt?.toDate?.() || new Date(),
+        messageId: data.messageId || doc.id,
+        from: data.from || 'unknown',
+        to: data.to || 'admin@taskilo.de',
+        subject: data.subject || 'No Subject',
+        htmlContent: data.htmlContent || '',
+        textContent: data.textContent || '',
+        timestamp: data.timestamp,
+        receivedAt: data.timestamp?.toDate() || new Date(),
+        isRead: data.read || false,
+        read: data.read || false,
+        isStarred: data.labels?.includes('starred') || false,
+        isArchived: data.labels?.includes('archived') || false,
+        labels: data.labels || [],
+        source: data.source || 'AWS SES',
+        type: data.type || 'received',
+        preview: data.textContent ? data.textContent.substring(0, 150) + '...' : data.subject,
       };
     });
 
@@ -58,15 +74,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Statistiken berechnen
-    const allEmailsQuery = query(collection(db, 'inbox_emails'));
+    const allEmailsQuery = query(collection(db, 'admin_emails'));
     const allEmails = await getDocs(allEmailsQuery);
 
     const stats = {
       total: allEmails.size,
-      unread: allEmails.docs.filter(doc => !doc.data().isRead).length,
-      spam: allEmails.docs.filter(doc => doc.data().isSpam).length,
-      starred: allEmails.docs.filter(doc => doc.data().isStarred).length,
+      unread: allEmails.docs.filter(doc => !doc.data().read).length,
+      spam: allEmails.docs.filter(doc => doc.data().labels?.includes('spam')).length,
+      starred: allEmails.docs.filter(doc => doc.data().labels?.includes('starred')).length,
     };
+
+    console.log(`Loaded ${filteredEmails.length} admin emails, stats:`, stats);
 
     return NextResponse.json({
       emails: filteredEmails,
