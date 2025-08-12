@@ -185,14 +185,31 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
           : [],
         subject: composeForm.subject,
         htmlContent: composeForm.htmlContent,
-        textContent: composeForm.textContent || undefined,
+        textContent: composeForm.textContent || '',
       };
 
-      console.log('Sende E-Mail mit Daten:', emailData);
+      // Entferne undefined-Werte und stelle sicher, dass alle Arrays richtig sind
+      const cleanEmailData = {
+        from: emailData.from,
+        to: emailData.to,
+        cc: emailData.cc,
+        bcc: emailData.bcc,
+        subject: emailData.subject,
+        htmlContent: emailData.htmlContent,
+        textContent: emailData.textContent,
+      };
+
+      console.log('=== FRONTEND EMAIL DEBUG ===');
+      console.log('Selected Sender Email:', selectedSenderEmail);
+      console.log('Compose Form:', composeForm);
+      console.log('Email Data (Raw):', emailData);
+      console.log('Email Data (Clean):', cleanEmailData);
       console.log('Request URL:', '/api/admin/emails/send-aws');
       console.log('Request Method:', 'POST');
       console.log('Request Headers:', { 'Content-Type': 'application/json' });
-      console.log('Request Body:', JSON.stringify(emailData, null, 2));
+      console.log('Request Body (String):', JSON.stringify(cleanEmailData));
+      console.log('Request Body (Pretty):', JSON.stringify(cleanEmailData, null, 2));
+      console.log('=== END DEBUG ===');
 
       // Verwende AWS SES API-Route
       const response = await fetch('/api/admin/emails/send-aws', {
@@ -200,11 +217,14 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(emailData),
+        body: JSON.stringify(cleanEmailData),
       });
 
+      console.log('=== API RESPONSE DEBUG ===');
       console.log('API Response Status:', response.status, response.statusText);
       console.log('API Response Headers:', Object.fromEntries(response.headers.entries()));
+      console.log('Response OK?', response.ok);
+      console.log('=== END RESPONSE DEBUG ===');
 
       if (!response.ok) {
         let errorData;
