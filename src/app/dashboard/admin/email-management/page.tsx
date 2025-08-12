@@ -612,99 +612,107 @@ export default function EmailManagementPage() {
                 <DialogTitle>Neue E-Mail verfassen</DialogTitle>
                 <DialogDescription>Senden Sie eine E-Mail über Resend</DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="template-select">Template wählen (optional)</Label>
-                    <Select value={composeForm.templateId} onValueChange={loadTemplate}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Template auswählen..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {templates.map(template => (
-                          <SelectItem key={template.templateId} value={template.templateId}>
-                            {template.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              <form
+                onSubmit={e => {
+                  e.preventDefault();
+                  console.log('Form Submit ausgelöst!');
+                  handleSendEmail();
+                }}
+              >
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="template-select">Template wählen (optional)</Label>
+                      <Select value={composeForm.templateId} onValueChange={loadTemplate}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Template auswählen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templates.map(template => (
+                            <SelectItem key={template.templateId} value={template.templateId}>
+                              {template.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="to">An *</Label>
-                  <Input
-                    id="to"
-                    value={composeForm.to}
-                    onChange={e => setComposeForm(prev => ({ ...prev, to: e.target.value }))}
-                    placeholder="empfaenger@example.com, empfaenger2@example.com"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="cc">CC</Label>
+                    <Label htmlFor="to">An *</Label>
                     <Input
-                      id="cc"
-                      value={composeForm.cc}
-                      onChange={e => setComposeForm(prev => ({ ...prev, cc: e.target.value }))}
-                      placeholder="cc@example.com"
+                      id="to"
+                      value={composeForm.to}
+                      onChange={e => setComposeForm(prev => ({ ...prev, to: e.target.value }))}
+                      placeholder="empfaenger@example.com, empfaenger2@example.com"
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="cc">CC</Label>
+                      <Input
+                        id="cc"
+                        value={composeForm.cc}
+                        onChange={e => setComposeForm(prev => ({ ...prev, cc: e.target.value }))}
+                        placeholder="cc@example.com"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="bcc">BCC</Label>
+                      <Input
+                        id="bcc"
+                        value={composeForm.bcc}
+                        onChange={e => setComposeForm(prev => ({ ...prev, bcc: e.target.value }))}
+                        placeholder="bcc@example.com"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <Label htmlFor="bcc">BCC</Label>
+                    <Label htmlFor="subject">Betreff *</Label>
                     <Input
-                      id="bcc"
-                      value={composeForm.bcc}
-                      onChange={e => setComposeForm(prev => ({ ...prev, bcc: e.target.value }))}
-                      placeholder="bcc@example.com"
+                      id="subject"
+                      value={composeForm.subject}
+                      onChange={e => setComposeForm(prev => ({ ...prev, subject: e.target.value }))}
+                      placeholder="E-Mail Betreff"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="subject">Betreff *</Label>
-                  <Input
-                    id="subject"
-                    value={composeForm.subject}
-                    onChange={e => setComposeForm(prev => ({ ...prev, subject: e.target.value }))}
-                    placeholder="E-Mail Betreff"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="content">HTML-Inhalt *</Label>
+                    <Textarea
+                      id="content"
+                      value={composeForm.htmlContent}
+                      onChange={e =>
+                        setComposeForm(prev => ({ ...prev, htmlContent: e.target.value }))
+                      }
+                      placeholder="<p>Ihr E-Mail-Inhalt hier...</p>"
+                      className="min-h-[200px]"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="content">HTML-Inhalt *</Label>
-                  <Textarea
-                    id="content"
-                    value={composeForm.htmlContent}
-                    onChange={e =>
-                      setComposeForm(prev => ({ ...prev, htmlContent: e.target.value }))
-                    }
-                    placeholder="<p>Ihr E-Mail-Inhalt hier...</p>"
-                    className="min-h-[200px]"
-                  />
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      type="submit"
+                      disabled={false}
+                      className="bg-[#14ad9f] hover:bg-[#129488]"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      E-Mail senden
+                    </Button>
+                    <Button
+                      onClick={handleSendBulkEmail}
+                      disabled={loading}
+                      variant="outline"
+                      type="button"
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      An alle Kontakte senden
+                    </Button>
+                  </div>
                 </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    onClick={() => {
-                      console.log('Button geklickt!');
-                      console.log('Loading State:', loading);
-                      console.log('User:', user);
-                      handleSendEmail();
-                    }}
-                    disabled={false}
-                    className="bg-[#14ad9f] hover:bg-[#129488]"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    E-Mail senden
-                  </Button>
-                  <Button onClick={handleSendBulkEmail} disabled={loading} variant="outline">
-                    <Users className="h-4 w-4 mr-2" />
-                    An alle Kontakte senden
-                  </Button>
-                </div>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
