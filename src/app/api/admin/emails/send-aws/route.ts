@@ -12,16 +12,21 @@ const sesClient = new SESClient({
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== AWS SES API Called ===');
-    console.log('Request method:', request.method);
-    console.log('Request URL:', request.url);
+    console.log('=== 🔍 COMPREHENSIVE AWS SES API DEBUG ===');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('🌐 Request method:', request.method);
+    console.log('📍 Request URL:', request.url);
+    console.log('🔗 Request Headers:', Object.fromEntries(request.headers.entries()));
+    console.log('📱 User-Agent:', request.headers.get('user-agent'));
+    console.log('🌍 Origin:', request.headers.get('origin'));
+    console.log('🔑 Content-Type:', request.headers.get('content-type'));
 
     // AWS Credentials prüfen
     const hasAccessKey = !!process.env.AWS_ACCESS_KEY_ID;
     const hasSecretKey = !!process.env.AWS_SECRET_ACCESS_KEY;
     const hasRegion = !!process.env.AWS_REGION;
 
-    console.log('AWS Environment Check:', {
+    console.log('☁️ AWS Environment Check:', {
       hasAccessKey,
       hasSecretKey,
       hasRegion,
@@ -30,7 +35,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!hasAccessKey || !hasSecretKey) {
-      console.error('AWS Credentials fehlen:', {
+      console.error('❌ AWS Credentials fehlen:', {
         hasAccessKey,
         hasSecretKey,
       });
@@ -43,8 +48,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    console.log('E-Mail Request Body:', JSON.stringify(body, null, 2));
+    // ERWEITERTE REQUEST BODY ANALYSE
+    let body;
+    let bodyString = '';
+    try {
+      bodyString = await request.text();
+      console.log('📄 Raw Request Body (String):', bodyString);
+      body = JSON.parse(bodyString);
+      console.log('📋 Parsed Request Body:', JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error('🚨 JSON Parse Error:', parseError);
+      console.log('🔍 Body String that failed:', bodyString);
+      return NextResponse.json(
+        {
+          error: 'Invalid JSON in request body',
+          details: `JSON Parse Error: ${parseError.message}`,
+          receivedBody: bodyString,
+        },
+        { status: 400 }
+      );
+    }
 
     const { to, cc, bcc, subject, htmlContent, textContent, from = 'info@taskilo.de' } = body;
 
@@ -127,35 +150,72 @@ export async function POST(request: NextRequest) {
 
     // E-Mail über AWS SES senden
     const command = new SendEmailCommand(emailParams);
-    console.log('Sende E-Mail über AWS SES...');
+    console.log('📤 Sende E-Mail über AWS SES...');
+    console.log('📧 E-Mail Parameters:', JSON.stringify(emailParams, null, 2));
+
     const result = await sesClient.send(command);
-    console.log('AWS SES Antwort:', result);
+
+    console.log('=== ✅ AWS SES SUCCESS ===');
+    console.log('⏰ Success Timestamp:', new Date().toISOString());
+    console.log('📨 AWS SES Antwort:', JSON.stringify(result, null, 2));
+    console.log('🆔 Message ID:', result.MessageId);
+    console.log('📊 Response Metadata:', result.$metadata);
+    console.log('=== END SUCCESS ===');
 
     return NextResponse.json({
       success: true,
       messageId: result.MessageId,
       message: 'E-Mail erfolgreich über AWS SES gesendet',
       provider: 'AWS SES',
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('=== AWS SES E-Mail Fehler ===');
-    console.error('Error type:', typeof error);
-    console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('Full error object:', error);
+    console.error('=== 🚨 COMPREHENSIVE AWS SES ERROR DEBUG ===');
+    console.error('⏰ Error Timestamp:', new Date().toISOString());
+    console.error('🔍 Error type:', typeof error);
+    console.error('📝 Error name:', error instanceof Error ? error.name : 'Unknown');
+    console.error('💬 Error message:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('📊 Error code:', (error as any)?.code || 'No code');
+    console.error('🎯 Error statusCode:', (error as any)?.statusCode || 'No statusCode');
+    console.error('📚 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('🔬 Full error object:', JSON.stringify(error, null, 2));
+    console.error('🌐 AWS Region used:', 'eu-central-1');
+    console.error(
+      '🔑 AWS Access Key (prefix):',
+      process.env.AWS_ACCESS_KEY_ID?.substring(0, 4) + '***'
+    );
+    console.error('=== END ERROR DEBUG ===');
 
     // Detaillierte Fehlerbehandlung
     if (error instanceof Error) {
       if (error.message.includes('MessageRejected')) {
         return NextResponse.json(
-          { error: 'E-Mail wurde von AWS SES abgelehnt. Prüfen Sie die E-Mail-Adressen.' },
+          {
+            error: 'E-Mail wurde von AWS SES abgelehnt. Prüfen Sie die E-Mail-Adressen.',
+            details: error.message,
+            code: 'MESSAGE_REJECTED',
+          },
           { status: 400 }
         );
       }
       if (error.message.includes('SendingQuotaExceeded')) {
         return NextResponse.json(
-          { error: 'AWS SES Versandlimit erreicht. Kontaktieren Sie den Administrator.' },
+          {
+            error: 'AWS SES Versandlimit erreicht. Kontaktieren Sie den Administrator.',
+            details: error.message,
+            code: 'QUOTA_EXCEEDED',
+          },
           { status: 429 }
+        );
+      }
+      if (error.message.includes('not verified')) {
+        return NextResponse.json(
+          {
+            error: 'E-Mail-Adresse nicht verifiziert in AWS SES',
+            details: error.message,
+            code: 'EMAIL_NOT_VERIFIED',
+          },
+          { status: 400 }
         );
       }
     }
