@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -13,10 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Send, Users } from 'lucide-react';
+import { Send, Users, Eye, Code, Type } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { AWS_EMAIL_API, callEmailAPI } from '@/lib/aws-email-api';
 import { EmailTemplate, Contact } from './types';
 
 interface EmailComposeProps {
@@ -29,6 +29,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedSenderEmail, setSelectedSenderEmail] = useState('andy.staudinger@taskilo.de');
+  const [contentMode, setContentMode] = useState<'rich' | 'html'>('rich');
 
   // Verfügbare Sender-E-Mail-Adressen von der verifizierten Domain taskilo.de
   const senderEmails = [
@@ -47,6 +48,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
     bcc: '',
     subject: '',
     htmlContent: '',
+    textContent: '', // Hinzugefügt für Rich-Text-Modus
     templateId: '',
   });
 
@@ -57,9 +59,45 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         ...prev,
         subject: template.subject || '',
         htmlContent: template.htmlContent || '',
+        textContent: htmlToText(template.htmlContent || ''),
         templateId,
       }));
     }
+  };
+
+  // Konvertiert einfachen Text in HTML
+  const textToHtml = (text: string): string => {
+    return text
+      .split('\n\n')
+      .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+      .join('');
+  };
+
+  // Konvertiert HTML zu einfachem Text (vereinfacht)
+  const htmlToText = (html: string): string => {
+    return html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<[^>]*>/g, '')
+      .trim();
+  };
+
+  // Behandelt Änderungen im Text-Modus
+  const handleTextContentChange = (text: string) => {
+    setComposeForm(prev => ({
+      ...prev,
+      textContent: text,
+      htmlContent: textToHtml(text),
+    }));
+  };
+
+  // Behandelt Änderungen im HTML-Modus
+  const handleHtmlContentChange = (html: string) => {
+    setComposeForm(prev => ({
+      ...prev,
+      htmlContent: html,
+      textContent: htmlToText(html),
+    }));
   };
 
   const handleSendEmail = async (e: React.FormEvent) => {
@@ -86,8 +124,8 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         htmlContent: composeForm.htmlContent,
       };
 
-      // Verwende Vercel API-Route statt AWS Lambda
-      const response = await fetch('/api/admin/emails/send', {
+      // Verwende AWS SES API-Route
+      const response = await fetch('/api/admin/emails/send-aws', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,6 +146,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         bcc: '',
         subject: '',
         htmlContent: '',
+        textContent: '',
         templateId: '',
       });
       // selectedSenderEmail nicht zurücksetzen, da es einen Standardwert hat
@@ -142,8 +181,8 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         htmlContent: composeForm.htmlContent.replace('{{name}}', contact.name),
       }));
 
-      // Verwende Vercel API-Route für Bulk-Versand
-      const response = await fetch('/api/admin/emails/bulk-send', {
+      // Verwende AWS SES API-Route für Bulk-Versand
+      const response = await fetch('/api/admin/emails/bulk-send-aws', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -251,15 +290,67 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
           </div>
 
           <div>
-            <Label htmlFor="content">HTML-Inhalt *</Label>
-            <Textarea
-              id="content"
-              value={composeForm.htmlContent}
-              onChange={e => setComposeForm(prev => ({ ...prev, htmlContent: e.target.value }))}
-              placeholder="<p>Ihr E-Mail-Inhalt hier...</p>"
-              className="min-h-[200px]"
-              required
-            />
+            <Label htmlFor="content">E-Mail-Inhalt *</Label>
+            <Tabs defaultValue="rich" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="rich" className="flex items-center gap-2">
+                  <Type className="h-4 w-4" />
+                  Text-Editor
+                </TabsTrigger>
+                <TabsTrigger value="html" className="flex items-center gap-2">
+                  <Code className="h-4 w-4" />
+                  HTML-Code
+                </TabsTrigger>
+                <TabsTrigger value="preview" className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Vorschau
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="rich" className="mt-4">
+                <Textarea
+                  id="content-text"
+                  value={composeForm.textContent}
+                  onChange={e => handleTextContentChange(e.target.value)}
+                  placeholder="Schreiben Sie hier Ihren E-Mail-Inhalt...
+
+Verwenden Sie:
+- Leere Zeilen für neue Absätze
+- Einfache Formatierung wird automatisch in HTML konvertiert"
+                  className="min-h-[200px]"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  💡 Tipp: Schreiben Sie natürlich - der Text wird automatisch in HTML formatiert
+                </p>
+              </TabsContent>
+
+              <TabsContent value="html" className="mt-4">
+                <Textarea
+                  id="content-html"
+                  value={composeForm.htmlContent}
+                  onChange={e => handleHtmlContentChange(e.target.value)}
+                  placeholder="<p>Ihr HTML-Inhalt hier...</p>"
+                  className="min-h-[200px] font-mono text-sm"
+                  required
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  ⚠️ Für Fortgeschrittene: Direkter HTML-Code
+                </p>
+              </TabsContent>
+
+              <TabsContent value="preview" className="mt-4">
+                <div
+                  className="min-h-[200px] p-4 border rounded-md bg-white"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      composeForm.htmlContent ||
+                      '<p class="text-gray-400">Keine Vorschau verfügbar</p>',
+                  }}
+                />
+                <p className="text-sm text-gray-500 mt-2">👁️ So wird Ihre E-Mail aussehen</p>
+              </TabsContent>
+            </Tabs>
           </div>
 
           <div className="flex gap-2 pt-4">
