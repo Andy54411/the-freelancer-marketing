@@ -74,9 +74,11 @@ export async function GET(request: NextRequest) {
     console.log(`Loaded ${formattedEmails.length} admin emails from DynamoDB, stats:`, stats);
 
     return NextResponse.json({
-      emails: formattedEmails,
-      stats,
       success: true,
+      data: {
+        emails: formattedEmails,
+        stats,
+      },
     });
   } catch (error) {
     console.error('Fehler beim Laden der Posteingangs-E-Mails:', error);

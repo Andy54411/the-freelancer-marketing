@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { AWS_EMAIL_API, callEmailAPI } from '@/lib/aws-email-api';
 import {
   Select,
   SelectContent,
@@ -26,19 +27,53 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { clientEmailService, EmailMessage, EmailTemplate } from '@/lib/client-email-service';
-import { db } from '@/firebase/clients';
-import {
-  collection,
-  query,
-  orderBy,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  doc,
-  serverTimestamp,
-  where,
-} from 'firebase/firestore';
+import { useAuth } from '@/contexts/AuthContext';
+
+// AWS Lambda Email Types (ersetzt Firebase Types)
+interface AdminEmail {
+  emailId: string;
+  from: string;
+  to: string;
+  subject: string;
+  body: string;
+  receivedAt: string;
+  isRead: boolean;
+  isImportant: boolean;
+  labels: string[];
+  attachments?: any[];
+  rawHeaders?: any;
+}
+
+interface EmailMessage {
+  emailId: string;
+  to: string | string[];
+  subject: string;
+  body: string;
+  sentAt: string;
+  status: 'sent' | 'delivered' | 'failed';
+}
+
+interface EmailTemplate {
+  templateId: string;
+  name: string;
+  subject: string;
+  htmlContent: string;
+  variables?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Contact {
+  contactId: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  name: string;
+  status: 'active' | 'inactive' | 'bounced';
+  tags: string[];
+  createdAt: string;
+  updatedAt?: string;
+}
 import {
   Mail,
   Send,
@@ -120,23 +155,24 @@ interface EmailStats {
   deliveryRate: number;
 }
 
-interface Contact {
-  id: string;
-  email: string;
-  name: string;
-  tags: string[];
-  status: 'active' | 'bounced' | 'unsubscribed';
-  createdAt: Date;
-  lastEmailSent?: Date;
-}
-
 export default function EmailManagementPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [loading, setLoading] = useState(false);
   const [emails, setEmails] = useState<EmailMessage[]>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [inboxEmails, setInboxEmails] = useState<InboxEmail[]>([]);
-  const [selectedEmail, setSelectedEmail] = useState<InboxEmail | null>(null);
+  const [inboxEmails, setInboxEmails] = useState<AdminEmail[]>([]);
+  const [selectedEmail, setSelectedEmail] = useState<AdminEmail | null>(null);
+  const [composeDialogOpen, setComposeDialogOpen] = useState(false);
+  const [composeForm, setComposeForm] = useState({
+    to: '',
+    cc: '',
+    bcc: '',
+    subject: '',
+    htmlContent: '',
+    templateId: '',
+  });
   const [inboxStats, setInboxStats] = useState({
     total: 0,
     unread: 0,
@@ -150,9 +186,7 @@ export default function EmailManagementPage() {
     totalComplaints: 0,
     deliveryRate: 0,
   });
-  const [loading, setLoading] = useState(false);
   const [inboxLoading, setInboxLoading] = useState(false);
-  const [composeDialogOpen, setComposeDialogOpen] = useState(false);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [emailDetailDialogOpen, setEmailDetailDialogOpen] = useState(false);
@@ -160,16 +194,6 @@ export default function EmailManagementPage() {
   // Filter states
   const [inboxFilter, setInboxFilter] = useState('all'); // all, unread, starred, spam
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Compose Email Form
-  const [composeForm, setComposeForm] = useState({
-    to: '',
-    cc: '',
-    bcc: '',
-    subject: '',
-    htmlContent: '',
-    templateId: '',
-  });
 
   // Reply Form
   const [replyForm, setReplyForm] = useState({
@@ -190,12 +214,13 @@ export default function EmailManagementPage() {
       if (inboxFilter === 'starred') params.append('label', 'starred');
       if (inboxFilter === 'spam') params.append('label', 'spam');
 
-      const response = await fetch(`/api/admin/emails/inbox?filter=${inboxFilter}`);
-      const data = await response.json();
+      const data = await callEmailAPI(
+        `${AWS_EMAIL_API.endpoints.getEmails}/inbox?filter=${inboxFilter}`
+      );
 
       if (data.success) {
-        setInboxEmails(data.data.emails || []);
-        setInboxStats(data.data.stats || { total: 0, unread: 0, starred: 0, spam: 0 });
+        setInboxEmails(data.emails || []);
+        setInboxStats(data.stats || { total: 0, unread: 0, starred: 0, spam: 0 });
       } else {
         toast.error('Fehler beim Laden der E-Mails');
       }
@@ -308,7 +333,7 @@ export default function EmailManagementPage() {
   };
 
   // Antwort vorbereiten
-  const prepareReply = (email: InboxEmail, replyAll: boolean = false) => {
+  const prepareReply = (email: AdminEmail, replyAll: boolean = false) => {
     const toArray = Array.isArray(email.to) ? email.to : [email.to];
     const recipients = replyAll
       ? [email.from, ...toArray.filter(addr => addr !== 'noreply@taskilo.de')]
@@ -316,10 +341,10 @@ export default function EmailManagementPage() {
 
     setReplyForm({
       to: recipients.join(', '),
-      cc: replyAll ? (email.cc || []).join(', ') : '',
+      cc: '',
       bcc: '',
       subject: email.subject.startsWith('Re: ') ? email.subject : `Re: ${email.subject}`,
-      htmlContent: `<br><br>---<br><p><strong>Von:</strong> ${email.from}</p><p><strong>Gesendet:</strong> ${email.receivedAt.toLocaleString('de-DE')}</p><p><strong>Betreff:</strong> ${email.subject}</p><br>${email.htmlContent}`,
+      htmlContent: `<br><br>---<br><p><strong>Von:</strong> ${email.from}</p><p><strong>Gesendet:</strong> ${new Date(email.receivedAt).toLocaleString('de-DE')}</p><p><strong>Betreff:</strong> ${email.subject}</p><br>${email.body}`,
     });
     setSelectedEmail(email);
     setReplyDialogOpen(true);
@@ -331,7 +356,7 @@ export default function EmailManagementPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/inbox/${selectedEmail.id}/reply`, {
+      const response = await fetch(`/api/admin/inbox/${selectedEmail.emailId}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -372,7 +397,7 @@ export default function EmailManagementPage() {
       return (
         email.subject.toLowerCase().includes(searchLower) ||
         email.from.toLowerCase().includes(searchLower) ||
-        email.textContent.toLowerCase().includes(searchLower)
+        email.body.toLowerCase().includes(searchLower)
       );
     }
     return true;
@@ -390,114 +415,64 @@ export default function EmailManagementPage() {
   });
 
   useEffect(() => {
-    loadData();
-    setupRealtimeListeners();
+    loadData(); // Lädt alle Daten über AWS Lambda APIs
   }, []);
 
-  const setupRealtimeListeners = () => {
-    // E-Mails Realtime Listener
-    const emailsQuery = query(collection(db, 'emails'), orderBy('sentAt', 'desc'));
-
-    const unsubscribeEmails = onSnapshot(emailsQuery, snapshot => {
-      const emailsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        sentAt: doc.data().sentAt?.toDate(),
-        deliveredAt: doc.data().deliveredAt?.toDate(),
-      })) as EmailMessage[];
-      setEmails(emailsData);
-    });
-
-    // Kontakte Realtime Listener
-    const contactsQuery = query(collection(db, 'email_contacts'), orderBy('createdAt', 'desc'));
-
-    const unsubscribeContacts = onSnapshot(contactsQuery, snapshot => {
-      const contactsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        lastEmailSent: doc.data().lastEmailSent?.toDate(),
-      })) as Contact[];
-      setContacts(contactsData);
-    });
-
-    // Templates Realtime Listener
-    const templatesQuery = query(collection(db, 'email_templates'), orderBy('createdAt', 'desc'));
-
-    const unsubscribeTemplates = onSnapshot(templatesQuery, snapshot => {
-      const templatesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as EmailTemplate[];
-      setTemplates(templatesData);
-    });
-
-    // E-Mail-Statistiken berechnen
-    const updateStats = () => {
-      const totalSent = emails.length;
-      const totalDelivered = emails.filter(e => e.status === 'delivered').length;
-      const totalFailed = emails.filter(e => e.status === 'failed').length;
-      const deliveryRate = totalSent > 0 ? (totalDelivered / totalSent) * 100 : 0;
-
-      setStats({
-        totalSent,
-        totalDelivered,
-        totalBounced: totalFailed,
-        totalComplaints: 0, // Wird über Webhooks aktualisiert
-        deliveryRate: Math.round(deliveryRate * 10) / 10,
-      });
-    };
-
-    updateStats();
-
-    // Cleanup function
-    return () => {
-      unsubscribeEmails();
-      unsubscribeContacts();
-      unsubscribeTemplates();
-    };
+  // AWS Lambda Data Loading Functions (ersetzt Firebase Realtime Listeners)
+  const loadData = async () => {
+    try {
+      await Promise.all([loadInboxEmails(), loadTemplates(), loadContacts(), loadEmailStats()]);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Fehler beim Laden der Daten');
+    }
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadTemplates = async () => {
     try {
-      // Templates aus Firestore laden oder Default-Templates erstellen
-      const templatesSnapshot = await collection(db, 'email_templates');
-
-      // Standard-Templates erstellen, falls sie nicht existieren
-      const defaultTemplates = [
-        {
-          id: 'welcome',
-          name: 'Willkommens-E-Mail',
-          subject: 'Willkommen bei Taskilo, {{name}}!',
-          htmlContent: '<p>Hallo {{name}}, willkommen bei Taskilo!</p>',
-          variables: ['name'],
-          createdAt: serverTimestamp(),
-        },
-        {
-          id: 'support-ticket',
-          name: 'Support-Ticket',
-          subject: 'Ihr Support-Ticket #{{ticketId}}',
-          htmlContent: '<p>Ticket erstellt: {{subject}}</p>',
-          variables: ['ticketId', 'subject'],
-          createdAt: serverTimestamp(),
-        },
-      ];
-
-      // Prüfen ob Templates existieren, falls nicht -> erstellen
-      for (const template of defaultTemplates) {
-        try {
-          await addDoc(collection(db, 'email_templates'), template);
-        } catch (error) {
-          // Template existiert bereits oder anderer Fehler
-          console.log('Template bereits vorhanden oder Fehler:', error);
-        }
-      }
+      const data = await callEmailAPI(AWS_EMAIL_API.endpoints.getTemplates);
+      setTemplates(data.templates || []);
     } catch (error) {
-      console.error('Fehler beim Laden der E-Mail-Daten:', error);
-      toast.error('Fehler beim Laden der E-Mail-Daten');
-    } finally {
-      setLoading(false);
+      console.error('Error loading templates:', error);
+    }
+  };
+
+  const loadContacts = async () => {
+    try {
+      const data = await callEmailAPI(AWS_EMAIL_API.endpoints.getContacts);
+      setContacts(data.contacts || []);
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+    }
+  };
+
+  const loadEmailStats = async () => {
+    try {
+      const data = await callEmailAPI(`${AWS_EMAIL_API.endpoints.getEmails}/stats`);
+      // setEmailStats wird später definiert oder entfernt
+      console.log('Email stats loaded:', data.stats);
+    } catch (error) {
+      console.error('Error loading email stats:', error);
+    }
+  };
+
+  // AWS Lambda Functions für Templates, Contacts und Emails
+  const createTemplate = async (templateData: any) => {
+    try {
+      const template = await callEmailAPI(
+        AWS_EMAIL_API.endpoints.createTemplate,
+        'POST',
+        templateData
+      );
+
+      setTemplates(prev => [...prev, template]);
+      toast.success('Template erfolgreich erstellt');
+
+      return template;
+    } catch (error) {
+      console.error('Error creating template:', error);
+      toast.error('Fehler beim Erstellen des Templates');
+      throw error;
     }
   };
 
@@ -514,36 +489,28 @@ export default function EmailManagementPage() {
         cc: composeForm.cc ? composeForm.cc.split(',').map(email => email.trim()) : undefined,
         bcc: composeForm.bcc ? composeForm.bcc.split(',').map(email => email.trim()) : undefined,
         subject: composeForm.subject,
-        htmlContent: composeForm.htmlContent,
+        body: composeForm.htmlContent,
       };
 
-      const result = await clientEmailService.sendEmail(emailData);
+      const emailResponse = await callEmailAPI(
+        AWS_EMAIL_API.endpoints.sendEmail,
+        'POST',
+        emailData
+      );
 
-      if (result.success) {
-        // E-Mail in Firestore speichern
-        await addDoc(collection(db, 'emails'), {
-          ...emailData,
-          from: 'noreply@taskilo.de',
-          messageId: result.messageId,
-          status: 'sent',
-          sentAt: serverTimestamp(),
-          templateId: composeForm.templateId || null,
-          createdAt: serverTimestamp(),
-        });
+      // Email zu lokaler Liste hinzufügen
+      setEmails(prev => [...prev, emailResponse]);
 
-        toast.success('E-Mail erfolgreich gesendet');
-        setComposeDialogOpen(false);
-        setComposeForm({
-          to: '',
-          cc: '',
-          bcc: '',
-          subject: '',
-          htmlContent: '',
-          templateId: '',
-        });
-      } else {
-        toast.error(`Fehler beim Senden: ${result.error}`);
-      }
+      toast.success('E-Mail erfolgreich gesendet');
+      setComposeDialogOpen(false);
+      setComposeForm({
+        to: '',
+        cc: '',
+        bcc: '',
+        subject: '',
+        htmlContent: '',
+        templateId: '',
+      });
     } catch (error) {
       console.error('Fehler beim Senden der E-Mail:', error);
       toast.error('Unerwarteter Fehler beim Senden der E-Mail');
@@ -572,10 +539,14 @@ export default function EmailManagementPage() {
         htmlContent: composeForm.htmlContent.replace('{{name}}', contact.name),
       }));
 
-      const result = await clientEmailService.sendBulkEmails(messages);
+      const responseData = await callEmailAPI(AWS_EMAIL_API.endpoints.sendBulkEmails, 'POST', {
+        messages,
+      });
 
-      if (result.success) {
-        toast.success(`${result.successCount} von ${messages.length} E-Mails erfolgreich gesendet`);
+      if (responseData.success) {
+        toast.success(
+          `${responseData.successCount} von ${messages.length} E-Mails erfolgreich gesendet`
+        );
         setComposeDialogOpen(false);
         loadData();
       } else {
@@ -590,13 +561,13 @@ export default function EmailManagementPage() {
   };
 
   const loadTemplate = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
+    const template = templates.find(t => t.templateId === templateId);
     if (template) {
       setComposeForm(prev => ({
         ...prev,
         subject: template.subject,
         htmlContent: template.htmlContent,
-        templateId: template.id,
+        templateId: template.templateId,
       }));
     }
   };
@@ -637,7 +608,7 @@ export default function EmailManagementPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {templates.map(template => (
-                          <SelectItem key={template.id} value={template.id}>
+                          <SelectItem key={template.templateId} value={template.templateId}>
                             {template.name}
                           </SelectItem>
                         ))}
@@ -797,14 +768,16 @@ export default function EmailManagementPage() {
               <div className="space-y-4">
                 {emails.slice(0, 5).map(email => (
                   <div
-                    key={email.id}
+                    key={email.emailId}
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div className="flex items-center space-x-4">
                       <Mail className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="font-medium">{email.subject}</p>
-                        <p className="text-sm text-gray-600">An: {email.to.join(', ')}</p>
+                        <p className="text-sm text-gray-600">
+                          An: {Array.isArray(email.to) ? email.to.join(', ') : email.to}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -828,7 +801,9 @@ export default function EmailManagementPage() {
                               : 'Entwurf'}
                       </Badge>
                       <p className="text-sm text-gray-500">
-                        {email.sentAt?.toLocaleDateString('de-DE')}
+                        <span className="text-sm text-gray-500">
+                          {new Date(email.sentAt).toLocaleDateString('de-DE')}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -848,17 +823,19 @@ export default function EmailManagementPage() {
               <div className="space-y-4">
                 {emails.map(email => (
                   <div
-                    key={email.id}
+                    key={email.emailId}
                     className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
                   >
                     <div className="flex items-center space-x-4">
                       <Mail className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="font-medium">{email.subject}</p>
-                        <p className="text-sm text-gray-600">An: {email.to.join(', ')}</p>
+                        <p className="text-sm text-gray-600">
+                          An: {Array.isArray(email.to) ? email.to.join(', ') : email.to}
+                        </p>
                         {email.sentAt && (
                           <p className="text-xs text-gray-500">
-                            Gesendet: {email.sentAt.toLocaleString('de-DE')}
+                            Gesendet: {new Date(email.sentAt).toLocaleString('de-DE')}
                           </p>
                         )}
                       </div>
@@ -958,7 +935,7 @@ export default function EmailManagementPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {templates.map(template => (
-              <Card key={template.id}>
+              <Card key={template.templateId}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     {template.name}
@@ -981,7 +958,7 @@ export default function EmailManagementPage() {
                     variant="outline"
                     size="sm"
                     className="mt-2"
-                    onClick={() => loadTemplate(template.id)}
+                    onClick={() => loadTemplate(template.templateId)}
                   >
                     Verwenden
                   </Button>
@@ -1004,7 +981,7 @@ export default function EmailManagementPage() {
             <CardContent className="p-0">
               <div className="space-y-0">
                 {contacts.map((contact, index) => (
-                  <div key={contact.id}>
+                  <div key={contact.contactId}>
                     <div className="flex items-center justify-between p-4 hover:bg-gray-50">
                       <div className="flex items-center space-x-4">
                         <div className="h-8 w-8 bg-[#14ad9f] rounded-full flex items-center justify-center">
@@ -1076,24 +1053,23 @@ export default function EmailManagementPage() {
               ) : (
                 <div className="space-y-4">
                   {inboxEmails.map(email => (
-                    <Card key={email.id} className="border-l-4 border-l-[#14ad9f]">
+                    <Card key={email.emailId} className="border-l-4 border-l-[#14ad9f]">
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="font-semibold">{email.from}</span>
-                              <Badge variant="secondary">{email.source || 'AWS SES'}</Badge>
-                              {!email.read && <Badge className="bg-[#14ad9f]">Neu</Badge>}
+                              <Badge variant="secondary">AWS SES</Badge>
+                              {!email.isRead && <Badge className="bg-[#14ad9f]">Neu</Badge>}
                             </div>
                             <h3 className="font-medium mb-1">{email.subject}</h3>
                             <p className="text-sm text-gray-600 mb-2">
-                              An: {email.to} •{' '}
-                              {new Date(
-                                email.timestamp?.toDate() || email.timestamp
-                              ).toLocaleString()}
+                              An: {email.to} • {new Date(email.receivedAt).toLocaleString()}
                             </p>
-                            {email.preview && (
-                              <p className="text-sm text-gray-700 line-clamp-2">{email.preview}</p>
+                            {email.body && (
+                              <p className="text-sm text-gray-700 line-clamp-2">
+                                {email.body.substring(0, 100)}...
+                              </p>
                             )}
                           </div>
                           <Button

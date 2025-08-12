@@ -1,7 +1,7 @@
 ---
 applyTo: '**'
 ---
-
+- kaputte oder koruppte deiten werden repariert nicht neu erstellt oder komplett neu geschrieben 
 # STRICT AI-Workflow Instructions for Taskilo Project - COPILOT COMPLIANCE REQUIRED
 
 ## 🏢 PROJEKT KONTEXT: TASKILO PLATFORM
@@ -193,6 +193,7 @@ applyTo: '**'
 - ❌ **COPILOT SPECIFIC: Creating new files without workspace search**
 -  keine mock daten und keine test daten 
 - nutze niemals Emoji!!
+- 
 
 ## ✅ ALLOWED AND ENCOURAGED FOR COPILOT:
 - ✅ Analyzing and understanding existing files in workspace
