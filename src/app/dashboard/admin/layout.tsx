@@ -19,6 +19,7 @@ interface AdminUser {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -70,10 +71,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <StaffAuthProvider>
-      <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-        <Sidebar />
-        <div className="flex flex-col">
-          <Header />
+      <div className="flex min-h-screen w-full">
+        <Sidebar collapsed={sidebarCollapsed} onToggle={setSidebarCollapsed} />
+        <div className="flex flex-col flex-1">
+          <Header onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} />
           <Suspense
             fallback={
               <div className="flex-1 flex items-center justify-center">
@@ -81,7 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </div>
             }
           >
-            <main className="flex-1 p-4 sm:p-6">{children}</main>
+            <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
           </Suspense>
         </div>
       </div>

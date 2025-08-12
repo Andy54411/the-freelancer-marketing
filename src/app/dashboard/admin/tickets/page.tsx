@@ -10,6 +10,7 @@ import { TicketTable } from './components/TicketTable';
 import { TicketFilters as TicketFiltersComponent } from './components/TicketFilters';
 import { CreateTicketDialog } from './components/CreateTicketDialog';
 import { TicketStatsCards } from './components/TicketStatsCards';
+import { TicketEmailService } from '@/lib/ticket-email-service';
 
 export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -148,13 +149,61 @@ export default function TicketsPage() {
     setFilteredTickets(filtered);
   }, [tickets, filters]);
 
-  const handleCreateTicket = (ticketData: CreateTicketForm) => {
-    // Hier würde die API-Anfrage zum Erstellen eines Tickets stehen
-    console.log('Erstelle neues Ticket:', ticketData);
-    setShowCreateDialog(false);
-  };
+  const handleCreateTicket = async (ticketData: CreateTicketForm) => {
+    try {
+      // Neues Ticket erstellen
+      const newTicket: Ticket = {
+        id: `ticket-${Date.now()}`,
+        title: ticketData.title,
+        description: ticketData.description,
+        status: 'open',
+        priority: ticketData.priority,
+        category: ticketData.category,
+        assignedTo: ticketData.assignedTo,
+        reportedBy: 'admin@taskilo.de', // TODO: Aktuellen User verwenden
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        dueDate: ticketData.dueDate,
+        tags: ticketData.tags,
+        comments: []
+      };
 
-  if (isLoading) {
+      // Ticket zur Liste hinzufügen (später durch API-Call ersetzen)
+      setTickets(prev => [newTicket, ...prev]);
+      
+      console.log('🎫 Neues Ticket erstellt:', newTicket.id);
+      
+      // E-Mail-Benachrichtigungen über API senden
+      try {
+        const response = await fetch('/api/tickets/test-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ticketId: newTicket.id,
+            title: newTicket.title,
+            reportedBy: newTicket.reportedBy
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          console.log('✅ E-Mail-Benachrichtigungen erfolgreich gesendet:', result.emailId);
+        } else {
+          console.error('❌ Fehler beim Senden der E-Mail-Benachrichtigungen:', result.error);
+        }
+      } catch (emailError) {
+        console.error('❌ E-Mail-Fehler:', emailError);
+        // Ticket wird trotzdem erstellt, auch wenn E-Mail fehlschlägt
+      }
+      
+      setShowCreateDialog(false);
+    } catch (error) {
+      console.error('❌ Fehler beim Erstellen des Tickets:', error);
+    }
+  };  if (isLoading) {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="animate-pulse space-y-6">

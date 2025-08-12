@@ -1,0 +1,310 @@
+// Nur auf dem Server verwenden - nicht im Client!
+if (typeof window !== 'undefined') {
+  throw new Error('resend-email-service kann nur auf dem Server verwendet werden');
+}
+
+import { Resend } from 'resend';
+
+// Lazy initialization to avoid client-side errors
+let resend: Resend | null = null;
+
+const getResendInstance = (): Resend => {
+  if (!resend) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is required');
+    }
+    resend = new Resend(apiKey);
+  }
+  return resend;
+};
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  htmlContent: string;
+  variables: string[];
+}
+
+export interface EmailMessage {
+  id: string;
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  from: string;
+  subject: string;
+  htmlContent: string;
+  textContent?: string;
+  status: 'draft' | 'sent' | 'delivered' | 'failed';
+  sentAt?: Date;
+  deliveredAt?: Date;
+  templateId?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string;
+    contentType: string;
+  }>;
+  metadata?: Record<string, any>;
+}
+
+export interface InboxMessage {
+  id: string;
+  from: string;
+  to: string[];
+  subject: string;
+  htmlContent: string;
+  textContent: string;
+  receivedAt: Date;
+  isRead: boolean;
+  labels: string[];
+  attachments?: Array<{
+    filename: string;
+    size: number;
+    contentType: string;
+    url: string;
+  }>;
+}
+
+export class ResendEmailService {
+  private static instance: ResendEmailService;
+
+  private constructor() {}
+
+  public static getInstance(): ResendEmailService {
+    if (!ResendEmailService.instance) {
+      ResendEmailService.instance = new ResendEmailService();
+    }
+    return ResendEmailService.instance;
+  }
+
+  // E-Mail senden
+  async sendEmail(message: Omit<EmailMessage, 'id' | 'status' | 'sentAt'>): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      const resendInstance = getResendInstance();
+      const result = await resendInstance.emails.send({
+        from: message.from,
+        to: message.to,
+        cc: message.cc,
+        bcc: message.bcc,
+        subject: message.subject,
+        html: message.htmlContent,
+        text: message.textContent,
+        attachments: message.attachments?.map(att => ({
+          filename: att.filename,
+          content: att.content,
+        })),
+        headers: {
+          'X-Taskilo-Source': 'admin-panel',
+          'X-Taskilo-Metadata': JSON.stringify(message.metadata || {}),
+        },
+      });
+
+      if (result.error) {
+        return { success: false, error: result.error.message };
+      }
+
+      return { success: true, messageId: result.data?.id };
+    } catch (error) {
+      console.error('Fehler beim Senden der E-Mail:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unbekannter Fehler' };
+    }
+  }
+
+  // Bulk E-Mail senden
+  async sendBulkEmails(messages: Array<Omit<EmailMessage, 'id' | 'status' | 'sentAt'>>): Promise<{ 
+    success: boolean; 
+    results: Array<{ messageId?: string; error?: string; to: string[] }> 
+  }> {
+    try {
+      const results = await Promise.allSettled(
+        messages.map(async (message) => {
+          const result = await this.sendEmail(message);
+          return { ...result, to: message.to };
+        })
+      );
+
+      const mappedResults = results.map((result, index) => {
+        if (result.status === 'fulfilled') {
+          return result.value;
+        } else {
+          return { 
+            error: result.reason?.message || 'Unbekannter Fehler',
+            to: messages[index].to 
+          };
+        }
+      });
+
+      const successCount = mappedResults.filter(r => 'messageId' in r && r.messageId).length;
+      
+      return {
+        success: successCount > 0,
+        results: mappedResults
+      };
+    } catch (error) {
+      console.error('Fehler beim Bulk-Versand:', error);
+      return { 
+        success: false, 
+        results: messages.map(m => ({ error: 'Bulk-Versand fehlgeschlagen', to: m.to }))
+      };
+    }
+  }
+
+  // Template-basierte E-Mail senden
+  async sendTemplateEmail(
+    templateId: string, 
+    to: string[], 
+    variables: Record<string, string>,
+    options?: {
+      cc?: string[];
+      bcc?: string[];
+      attachments?: Array<{ filename: string; content: string; contentType: string }>;
+    }
+  ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      // Template laden (normalerweise aus Datenbank)
+      const template = await this.getTemplate(templateId);
+      if (!template) {
+        return { success: false, error: 'Template nicht gefunden' };
+      }
+
+      // Variablen ersetzen
+      let htmlContent = template.htmlContent;
+      let subject = template.subject;
+
+      Object.entries(variables).forEach(([key, value]) => {
+        const placeholder = `{{${key}}}`;
+        htmlContent = htmlContent.replace(new RegExp(placeholder, 'g'), value);
+        subject = subject.replace(new RegExp(placeholder, 'g'), value);
+      });
+
+      return await this.sendEmail({
+        from: 'noreply@taskilo.de',
+        to,
+        cc: options?.cc,
+        bcc: options?.bcc,
+        subject,
+        htmlContent,
+        attachments: options?.attachments,
+        templateId,
+        metadata: { templateId, variables }
+      });
+    } catch (error) {
+      console.error('Fehler beim Template-E-Mail-Versand:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Template-Fehler' };
+    }
+  }
+
+  // E-Mail-Status abrufen
+  async getEmailStatus(messageId: string): Promise<{ 
+    status: 'sent' | 'delivered' | 'bounced' | 'complaint' | 'delivery_delayed';
+    lastEvent?: Date;
+    error?: string;
+  }> {
+    try {
+      // Resend hat aktuell keine direkte Status-API, aber wir können Webhooks nutzen
+      // Hier würde normalerweise eine Datenbankabfrage stehen
+      return { status: 'sent' };
+    } catch (error) {
+      console.error('Fehler beim Abrufen des E-Mail-Status:', error);
+      return { status: 'sent', error: 'Status nicht verfügbar' };
+    }
+  }
+
+  // Template-Verwaltung
+  private async getTemplate(templateId: string): Promise<EmailTemplate | null> {
+    // Hier würden Templates aus der Datenbank geladen
+    const defaultTemplates: Record<string, EmailTemplate> = {
+      'welcome': {
+        id: 'welcome',
+        name: 'Willkommens-E-Mail',
+        subject: 'Willkommen bei Taskilo, {{name}}!',
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #14ad9f;">Willkommen bei Taskilo!</h1>
+            <p>Hallo {{name}},</p>
+            <p>vielen Dank für Ihre Registrierung bei Taskilo. Wir freuen uns, Sie als neuen Nutzer begrüßen zu dürfen.</p>
+            <p>Ihr Taskilo-Team</p>
+          </div>
+        `,
+        variables: ['name']
+      },
+      'support-ticket': {
+        id: 'support-ticket',
+        name: 'Support-Ticket',
+        subject: 'Ihr Support-Ticket #{{ticketId}}',
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #14ad9f;">Support-Ticket erstellt</h1>
+            <p>Hallo {{customerName}},</p>
+            <p>Ihr Support-Ticket wurde erfolgreich erstellt:</p>
+            <ul>
+              <li><strong>Ticket-ID:</strong> #{{ticketId}}</li>
+              <li><strong>Betreff:</strong> {{subject}}</li>
+              <li><strong>Priorität:</strong> {{priority}}</li>
+            </ul>
+            <p>Wir werden uns schnellstmöglich um Ihr Anliegen kümmern.</p>
+            <p>Ihr Taskilo-Support-Team</p>
+          </div>
+        `,
+        variables: ['customerName', 'ticketId', 'subject', 'priority']
+      }
+    };
+
+    return defaultTemplates[templateId] || null;
+  }
+
+  // Verfügbare Templates abrufen
+  async getAvailableTemplates(): Promise<EmailTemplate[]> {
+    return [
+      await this.getTemplate('welcome'),
+      await this.getTemplate('support-ticket')
+    ].filter(Boolean) as EmailTemplate[];
+  }
+
+  // E-Mail-Domains verwalten
+  async verifyDomain(domain: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const resendInstance = getResendInstance();
+      const result = await resendInstance.domains.create({
+        name: domain,
+        region: 'eu-west-1'
+      });
+
+      if (result.error) {
+        return { success: false, error: result.error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Fehler bei Domain-Verifizierung:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Domain-Fehler' };
+    }
+  }
+
+  // Webhook-Events verarbeiten
+  async processWebhookEvent(event: any): Promise<void> {
+    try {
+      switch (event.type) {
+        case 'email.sent':
+          console.log('E-Mail gesendet:', event.data);
+          break;
+        case 'email.delivered':
+          console.log('E-Mail zugestellt:', event.data);
+          break;
+        case 'email.bounced':
+          console.log('E-Mail bounced:', event.data);
+          break;
+        case 'email.complained':
+          console.log('E-Mail als Spam markiert:', event.data);
+          break;
+        default:
+          console.log('Unbekanntes Webhook-Event:', event.type);
+      }
+    } catch (error) {
+      console.error('Fehler bei Webhook-Verarbeitung:', error);
+    }
+  }
+}
+
+export const emailService = ResendEmailService.getInstance();

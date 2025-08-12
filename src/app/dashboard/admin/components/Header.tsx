@@ -2,12 +2,16 @@
 
 import React from 'react';
 import NotificationBell from './NotificationBell';
-import { LogOut as FiLogOut } from 'lucide-react';
+import { LogOut as FiLogOut, Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 
-export default function Header() {
+interface HeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+export default function Header({ onToggleSidebar }: HeaderProps) {
   const { logout } = useAuth();
   const router = useRouter();
 
@@ -22,6 +26,16 @@ export default function Header() {
 
   return (
     <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-gray-100/40 px-6 dark:bg-gray-800/40">
+      {/* Mobile Sidebar Toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onToggleSidebar}
+        className="lg:hidden"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+      
       <div className="w-full flex-1">{/* Platz für zukünftige Elemente wie eine Suchleiste */}</div>
       <div className="flex items-center gap-4">
         <NotificationBell />

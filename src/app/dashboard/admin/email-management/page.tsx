@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -13,574 +15,485 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { collection, query, onSnapshot, orderBy, where, updateDoc, doc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 import {
-  FiMail,
-  FiUsers,
-  FiSettings,
-  FiRefreshCw,
-  FiPlus,
-  FiEdit2,
-  FiTrash2,
-  FiEye,
-  FiArrowRight,
-  FiLogOut,
-  FiShield,
-  FiUser,
-} from 'react-icons/fi';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { clientEmailService, EmailMessage, EmailTemplate } from '@/lib/client-email-service';
+import {
+  Mail,
+  Send,
+  Inbox,
+  FileText,
+  Settings,
+  RefreshCw,
+  Plus,
+  Edit2,
+  Trash2,
+  Eye,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Upload,
+  Download,
+  MessageSquare,
+  BarChart,
+} from 'lucide-react';
 
-// Types
-interface TaskiloContact {
+interface EmailStats {
+  totalSent: number;
+  totalDelivered: number;
+  totalBounced: number;
+  totalComplaints: number;
+  deliveryRate: number;
+}
+
+interface Contact {
   id: string;
   email: string;
   name: string;
-  category: string;
-  department: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'active' | 'inactive';
-  lastContact?: string;
-  assignedStaff?: string;
+  tags: string[];
+  status: 'active' | 'bounced' | 'unsubscribed';
+  createdAt: Date;
+  lastEmailSent?: Date;
 }
 
-interface EmailTicket {
-  id: string;
-  subject: string;
-  sender: string;
-  contactId: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high';
-  assignedTo?: string;
-  createdAt: string;
-  updatedAt: string;
-  unread: boolean;
-}
+export default function EmailManagementPage() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [emails, setEmails] = useState<EmailMessage[]>([]);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [stats, setStats] = useState<EmailStats>({
+    totalSent: 0,
+    totalDelivered: 0,
+    totalBounced: 0,
+    totalComplaints: 0,
+    deliveryRate: 0,
+  });
+  const [loading, setLoading] = useState(false);
+  const [composeDialogOpen, setComposeDialogOpen] = useState(false);
+  const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
 
-interface StaffMember {
-  id: string;
-  name: string;
-  email: string;
-  role: 'master' | 'employee';
-  departments: string[];
-  permissions: string[];
-  isActive: boolean;
-  assignedTickets: number;
-}
+  // Compose Email Form
+  const [composeForm, setComposeForm] = useState({
+    to: '',
+    cc: '',
+    bcc: '',
+    subject: '',
+    htmlContent: '',
+    templateId: '',
+  });
 
-// Authentication Hook
-function useStaffAuth() {
-  const [user, setUser] = useState<StaffMember | null>(null);
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+  // Template Form
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    subject: '',
+    htmlContent: '',
+  });
 
   useEffect(() => {
-    checkAuthStatus();
+    loadData();
   }, []);
 
-  const checkAuthStatus = async () => {
+  const loadData = async () => {
+    setLoading(true);
     try {
-      const response = await fetch('/api/admin/auth');
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.employee);
-      } else {
-        router.push('/dashboard/admin/login');
-      }
+      // Load templates - erstmal mit Mock-Daten
+      setTemplates([
+        {
+          id: 'welcome',
+          name: 'Willkommens-E-Mail',
+          subject: 'Willkommen bei Taskilo, {{name}}!',
+          htmlContent: '<p>Hallo {{name}}, willkommen bei Taskilo!</p>',
+          variables: ['name']
+        },
+        {
+          id: 'support-ticket',
+          name: 'Support-Ticket',
+          subject: 'Ihr Support-Ticket #{{ticketId}}',
+          htmlContent: '<p>Ticket erstellt: {{subject}}</p>',
+          variables: ['ticketId', 'subject']
+        }
+      ]);
+
+      // Mock data für Demo-Zwecke
+      setEmails([
+        {
+          id: '1',
+          to: ['kunde@example.com'],
+          from: 'noreply@taskilo.de',
+          subject: 'Willkommen bei Taskilo',
+          htmlContent: '<p>Willkommen!</p>',
+          status: 'delivered',
+          sentAt: new Date('2024-01-15T10:30:00'),
+          deliveredAt: new Date('2024-01-15T10:31:00'),
+        },
+        {
+          id: '2',
+          to: ['support@example.com'],
+          from: 'noreply@taskilo.de',
+          subject: 'Support-Anfrage bearbeitet',
+          htmlContent: '<p>Ihre Anfrage wurde bearbeitet.</p>',
+          status: 'sent',
+          sentAt: new Date('2024-01-15T14:20:00'),
+        },
+      ]);
+
+      setContacts([
+        {
+          id: '1',
+          email: 'kunde@example.com',
+          name: 'Max Mustermann',
+          tags: ['kunde', 'vip'],
+          status: 'active',
+          createdAt: new Date('2024-01-10'),
+          lastEmailSent: new Date('2024-01-15'),
+        },
+        {
+          id: '2',
+          email: 'support@example.com',
+          name: 'Support Team',
+          tags: ['internal'],
+          status: 'active',
+          createdAt: new Date('2024-01-05'),
+        },
+      ]);
+
+      setStats({
+        totalSent: 156,
+        totalDelivered: 148,
+        totalBounced: 3,
+        totalComplaints: 1,
+        deliveryRate: 94.9,
+      });
     } catch (error) {
-      console.error('Auth check failed:', error);
-      router.push('/dashboard/admin/login');
+      console.error('Fehler beim Laden der Daten:', error);
+      toast.error('Fehler beim Laden der E-Mail-Daten');
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = async () => {
+  const handleSendEmail = async () => {
+    if (!composeForm.to || !composeForm.subject || !composeForm.htmlContent) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+
+    setLoading(true);
     try {
-      await fetch('/api/admin/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'logout' }),
+      const result = await clientEmailService.sendEmail({
+        to: composeForm.to.split(',').map(email => email.trim()),
+        cc: composeForm.cc ? composeForm.cc.split(',').map(email => email.trim()) : undefined,
+        bcc: composeForm.bcc ? composeForm.bcc.split(',').map(email => email.trim()) : undefined,
+        subject: composeForm.subject,
+        htmlContent: composeForm.htmlContent,
       });
-      router.push('/dashboard/admin/login');
+
+      if (result.success) {
+        toast.success('E-Mail erfolgreich gesendet');
+        setComposeDialogOpen(false);
+        setComposeForm({
+          to: '',
+          cc: '',
+          bcc: '',
+          subject: '',
+          htmlContent: '',
+          templateId: '',
+        });
+        loadData();
+      } else {
+        toast.error(`Fehler beim Senden: ${result.error}`);
+      }
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Fehler beim Senden der E-Mail:', error);
+      toast.error('Unerwarteter Fehler beim Senden der E-Mail');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const hasPermission = (permission: string) => {
-    return user?.permissions.includes(permission) || user?.role === 'master';
-  };
-
-  return { user, loading, logout, hasPermission };
-}
-
-export default function EmailManagementPage() {
-  const { user, logout, hasPermission, loading } = useStaffAuth();
-  const router = useRouter();
-
-  const [contacts, setContacts] = useState<TaskiloContact[]>([]);
-  const [tickets, setTickets] = useState<EmailTicket[]>([]);
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
-
-  // Load real data from Firebase
-  useEffect(() => {
-    if (user) {
-      loadRealData();
+  const handleSendBulkEmail = async () => {
+    if (!composeForm.subject || !composeForm.htmlContent) {
+      toast.error('Bitte füllen Sie Betreff und Inhalt aus');
+      return;
     }
-  }, [user]);
 
-  const loadRealData = async () => {
+    const activeContacts = contacts.filter(c => c.status === 'active');
+    if (activeContacts.length === 0) {
+      toast.error('Keine aktiven Kontakte gefunden');
+      return;
+    }
+
+    setLoading(true);
     try {
-      setIsRefreshing(true);
+      const messages = activeContacts.map(contact => ({
+        to: [contact.email],
+        subject: composeForm.subject,
+        htmlContent: composeForm.htmlContent.replace('{{name}}', contact.name),
+      }));
 
-      // Load Email Contacts from Firebase
-      const contactsRef = collection(db, 'emailContacts');
-      const contactsQuery = query(contactsRef, orderBy('createdAt', 'desc'));
-
-      const unsubscribeContacts = onSnapshot(contactsQuery, snapshot => {
-        const contactsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as TaskiloContact[];
-        setContacts(contactsData);
-      });
-
-      // Load Email Tickets from Firebase
-      const ticketsRef = collection(db, 'emailTickets');
-      const ticketsQuery = query(ticketsRef, orderBy('createdAt', 'desc'));
-
-      const unsubscribeTickets = onSnapshot(ticketsQuery, snapshot => {
-        const ticketsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as EmailTicket[];
-        setTickets(ticketsData);
-      });
-
-      // Load Staff from Firebase
-      const staffRef = collection(db, 'adminStaff');
-      const staffQuery = query(staffRef, where('isActive', '==', true));
-
-      const unsubscribeStaff = onSnapshot(staffQuery, snapshot => {
-        const staffData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as StaffMember[];
-        setStaff(staffData);
-      });
-
-      setDataLoaded(true);
-      setIsRefreshing(false);
-
-      // Return cleanup function
-      return () => {
-        unsubscribeContacts();
-        unsubscribeTickets();
-        unsubscribeStaff();
-      };
+      const result = await clientEmailService.sendBulkEmails(messages);
+      
+      if (result.success) {
+        toast.success(`${result.successCount} von ${messages.length} E-Mails erfolgreich gesendet`);
+        setComposeDialogOpen(false);
+        loadData();
+      } else {
+        toast.error('Fehler beim Bulk-Versand');
+      }
     } catch (error) {
-      console.error('Fehler beim Laden der E-Mail-Daten:', error);
-      setIsRefreshing(false);
-      // Fallback zu Demo-Daten bei Fehler
-      loadFallbackData();
+      console.error('Fehler beim Bulk-Versand:', error);
+      toast.error('Unerwarteter Fehler beim Bulk-Versand');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loadFallbackData = () => {
-    // Fallback Demo-Daten falls Firebase nicht verfügbar
-    setContacts([
-      {
-        id: 'contact_1',
-        email: 'support@taskilo.de',
-        name: 'Support Team',
-        category: 'support',
-        department: 'general',
-        priority: 'high' as const,
-        status: 'active' as const,
-        lastContact: '2024-01-20',
-        assignedStaff: 'emp_002',
-      },
-      {
-        id: 'contact_2',
-        email: 'newsletter@taskilo.de',
-        name: 'Newsletter Team',
-        category: 'business',
-        department: 'marketing',
-        priority: 'medium' as const,
-        status: 'active' as const,
-        lastContact: '2024-01-19',
-        assignedStaff: 'emp_001',
-      },
-    ]);
-
-    setTickets([
-      {
-        id: 'ticket_1',
-        subject: 'Datenschutzanfrage',
-        sender: 'kunde@example.com',
-        contactId: 'contact_2',
-        status: 'open' as const,
-        priority: 'high' as const,
-        assignedTo: 'emp_001',
-        createdAt: '2024-01-20T10:00:00Z',
-        updatedAt: '2024-01-20T10:00:00Z',
-        unread: true,
-      },
-    ]);
-
-    setStaff([
-      {
-        id: 'emp_001',
-        name: 'Demo Mitarbeiter',
-        email: 'demo@taskilo.de',
-        role: 'employee' as const,
-        departments: ['support'],
-        permissions: ['view_assigned', 'respond_emails'],
-        isActive: true,
-        assignedTickets: 1,
-      },
-    ]);
-  };
-
-  const refreshData = async () => {
-    setIsRefreshing(true);
-    // Reload real data
-    await loadRealData();
-  };
-
-  const reassignEmail = async (ticketId: string, newStaffId: string) => {
-    try {
-      // Update in Firebase
-      const ticketRef = doc(db, 'emailTickets', ticketId);
-      await updateDoc(ticketRef, {
-        assignedTo: newStaffId,
-        updatedAt: new Date().toISOString(),
-      });
-
-      // Update local state
-      setTickets(prev =>
-        prev.map(ticket =>
-          ticket.id === ticketId
-            ? { ...ticket, assignedTo: newStaffId, updatedAt: new Date().toISOString() }
-            : ticket
-        )
-      );
-    } catch (error) {
-      console.error('Fehler beim Neuzuweisen der E-Mail:', error);
-      // Fallback zu lokaler Aktualisierung
-      setTickets(prev =>
-        prev.map(ticket =>
-          ticket.id === ticketId ? { ...ticket, assignedTo: newStaffId } : ticket
-        )
-      );
+  const loadTemplate = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      setComposeForm(prev => ({
+        ...prev,
+        subject: template.subject,
+        htmlContent: template.htmlContent,
+        templateId: template.id,
+      }));
     }
   };
-
-  const getCategoryColor = (category: string) => {
-    const colors: { [key: string]: string } = {
-      legal: 'bg-red-100 text-red-800',
-      support: 'bg-blue-100 text-blue-800',
-      general: 'bg-gray-100 text-gray-800',
-      technical: 'bg-purple-100 text-purple-800',
-    };
-    return colors[category] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      open: 'bg-yellow-100 text-yellow-800',
-      in_progress: 'bg-blue-100 text-blue-800',
-      resolved: 'bg-green-100 text-green-800',
-      closed: 'bg-gray-100 text-gray-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getPriorityColor = (priority: string) => {
-    const colors: { [key: string]: string } = {
-      low: 'bg-green-100 text-green-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      high: 'bg-red-100 text-red-800',
-    };
-    return colors[priority] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getStaffName = (staffId: string) => {
-    const staffMember = staff.find(s => s.id === staffId);
-    return staffMember ? staffMember.name : 'Nicht zugewiesen';
-  };
-
-  const getContactName = (contactId: string) => {
-    const contact = contacts.find(c => c.id === contactId);
-    return contact ? contact.name : 'Unbekannter Kontakt';
-  };
-
-  if (loading || !dataLoaded) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <FiRefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Lade E-Mail-Daten...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
-
-  const totalUnreadEmails = tickets.filter(t => t.unread).length;
-  const activeStaffCount = staff.filter(s => s.isActive).length;
 
   return (
-    <div className="space-y-6 p-6">
-      {/* User Header */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-            <FiUser className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="font-semibold">{user.name}</div>
-            <div className="text-sm text-gray-600">
-              {user.departments.join(', ')} •
-              <Badge className="ml-1" variant={user.role === 'master' ? 'default' : 'secondary'}>
-                {user.role === 'master' ? 'Master' : 'Mitarbeiter'}
-              </Badge>
-            </div>
-          </div>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">E-Mail-Verwaltung</h1>
+          <p className="text-gray-600 mt-1">
+            Verwalten Sie E-Mails, Templates und Kontakte über Resend
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={refreshData} disabled={isRefreshing}>
-            <FiRefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={loadData}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Aktualisieren
           </Button>
-          {hasPermission('create_employee') && (
-            <Button
-              variant="outline"
-              onClick={() => router.push('/dashboard/admin/staff-management')}
-            >
-              <FiPlus className="h-4 w-4 mr-2" />
-              Mitarbeiter verwalten
-            </Button>
-          )}
-          <Button variant="outline" onClick={logout}>
-            <FiLogOut className="h-4 w-4 mr-2" />
-            Abmelden
-          </Button>
+          <Dialog open={composeDialogOpen} onOpenChange={setComposeDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-[#14ad9f] hover:bg-[#129488]">
+                <Plus className="h-4 w-4 mr-2" />
+                E-Mail verfassen
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Neue E-Mail verfassen</DialogTitle>
+                <DialogDescription>
+                  Senden Sie eine E-Mail über Resend
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="template-select">Template wählen (optional)</Label>
+                    <Select value={composeForm.templateId} onValueChange={loadTemplate}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Template auswählen..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="to">An *</Label>
+                  <Input
+                    id="to"
+                    value={composeForm.to}
+                    onChange={(e) => setComposeForm(prev => ({ ...prev, to: e.target.value }))}
+                    placeholder="empfaenger@example.com, empfaenger2@example.com"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="cc">CC</Label>
+                    <Input
+                      id="cc"
+                      value={composeForm.cc}
+                      onChange={(e) => setComposeForm(prev => ({ ...prev, cc: e.target.value }))}
+                      placeholder="cc@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bcc">BCC</Label>
+                    <Input
+                      id="bcc"
+                      value={composeForm.bcc}
+                      onChange={(e) => setComposeForm(prev => ({ ...prev, bcc: e.target.value }))}
+                      placeholder="bcc@example.com"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="subject">Betreff *</Label>
+                  <Input
+                    id="subject"
+                    value={composeForm.subject}
+                    onChange={(e) => setComposeForm(prev => ({ ...prev, subject: e.target.value }))}
+                    placeholder="E-Mail Betreff"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="content">HTML-Inhalt *</Label>
+                  <Textarea
+                    id="content"
+                    value={composeForm.htmlContent}
+                    onChange={(e) => setComposeForm(prev => ({ ...prev, htmlContent: e.target.value }))}
+                    placeholder="<p>Ihr E-Mail-Inhalt hier...</p>"
+                    className="min-h-[200px]"
+                  />
+                </div>
+                
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={handleSendEmail}
+                    disabled={loading}
+                    className="bg-[#14ad9f] hover:bg-[#129488]"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    E-Mail senden
+                  </Button>
+                  <Button
+                    onClick={handleSendBulkEmail}
+                    disabled={loading}
+                    variant="outline"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    An alle Kontakte senden
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ungelesene E-Mails</CardTitle>
-            <FiMail className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalUnreadEmails}</div>
-            <p className="text-xs text-muted-foreground">Benötigen Aufmerksamkeit</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aktive Kontakte</CardTitle>
-            <FiSettings className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {contacts.filter(c => c.status === 'active').length}
-            </div>
-            <p className="text-xs text-muted-foreground">Von {contacts.length} Gesamtkontakten</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Aktive Mitarbeiter</CardTitle>
-            <FiUsers className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeStaffCount}</div>
-            <p className="text-xs text-muted-foreground">Im E-Mail System</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Offene Tickets</CardTitle>
-            <FiEye className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {tickets.filter(t => t.status === 'open').length}
-            </div>
-            <p className="text-xs text-muted-foreground">Benötigen Bearbeitung</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="contacts" className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="inbox">Posteingang</TabsTrigger>
+          <TabsTrigger value="sent">Gesendet</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="contacts">Kontakte</TabsTrigger>
-          <TabsTrigger value="tickets">E-Mail Tickets</TabsTrigger>
-          {hasPermission('view_all') && <TabsTrigger value="staff">Mitarbeiter</TabsTrigger>}
-          {hasPermission('reassign') && <TabsTrigger value="assignments">Zuweisungen</TabsTrigger>}
         </TabsList>
 
-        {/* Contacts Tab */}
-        <TabsContent value="contacts">
-          <Card>
-            <CardHeader>
-              <CardTitle>Taskilo Kontakte</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {contacts.map(contact => (
-                  <div
-                    key={contact.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{contact.name}</span>
-                        <Badge className={getCategoryColor(contact.category)}>
-                          {contact.category}
-                        </Badge>
-                        <Badge variant="outline">{contact.department}</Badge>
-                        <Badge className={getPriorityColor(contact.priority)}>
-                          {contact.priority}
-                        </Badge>
-                        <Badge variant={contact.status === 'active' ? 'default' : 'secondary'}>
-                          {contact.status}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-gray-600">{contact.email}</div>
-                      {contact.assignedStaff && (
-                        <div className="text-sm text-gray-500">
-                          Zugewiesen an: {getStaffName(contact.assignedStaff)}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm">
-                        <FiEdit2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <FiEye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <TabsContent value="dashboard" className="space-y-6">
+          {/* E-Mail-Statistiken */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Gesendete E-Mails</CardTitle>
+                <Send className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalSent}</div>
+                <p className="text-xs text-muted-foreground">Insgesamt versendet</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Zugestellt</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{stats.totalDelivered}</div>
+                <p className="text-xs text-muted-foreground">Erfolgreich zugestellt</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Bounced</CardTitle>
+                <XCircle className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{stats.totalBounced}</div>
+                <p className="text-xs text-muted-foreground">Nicht zustellbar</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Beschwerden</CardTitle>
+                <XCircle className="h-4 w-4 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">{stats.totalComplaints}</div>
+                <p className="text-xs text-muted-foreground">Als Spam markiert</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Zustellrate</CardTitle>
+                <BarChart className="h-4 w-4 text-[#14ad9f]" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-[#14ad9f]">{stats.deliveryRate}%</div>
+                <p className="text-xs text-muted-foreground">Erfolgsquote</p>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Tickets Tab */}
-        <TabsContent value="tickets">
+          {/* Letzte E-Mails */}
           <Card>
             <CardHeader>
-              <CardTitle>E-Mail Tickets</CardTitle>
+              <CardTitle>Letzte E-Mails</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {tickets.map(ticket => (
-                  <div
-                    key={ticket.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{ticket.subject}</span>
-                        <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
-                        <Badge variant="outline">{getContactName(ticket.contactId)}</Badge>
-                        <Badge className={getPriorityColor(ticket.priority)}>
-                          {ticket.priority}
-                        </Badge>
-                        {ticket.unread && <Badge variant="destructive">Ungelesen</Badge>}
-                      </div>
-                      <div className="text-sm text-gray-600">Von: {ticket.sender}</div>
-                      <div className="text-sm text-gray-500">
-                        Erstellt: {new Date(ticket.createdAt).toLocaleDateString('de-DE')}
-                      </div>
-                      {ticket.assignedTo && (
-                        <div className="text-sm text-gray-500">
-                          Zugewiesen an: {getStaffName(ticket.assignedTo)}
-                        </div>
-                      )}
-                    </div>
-                    {hasPermission('reassign') && (
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={ticket.assignedTo || ''}
-                          onValueChange={value => reassignEmail(ticket.id, value)}
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Zuweisen" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {staff.map(member => (
-                              <SelectItem key={member.id} value={member.id}>
-                                {member.name}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="">Nicht zugewiesen</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button variant="outline" size="sm">
-                          <FiArrowRight className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Staff Tab */}
-        <TabsContent value="staff">
-          <Card>
-            <CardHeader>
-              <CardTitle>Mitarbeiter Übersicht</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {staff.map(member => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{member.name}</span>
-                        <Badge variant={member.role === 'master' ? 'default' : 'secondary'}>
-                          {member.role}
-                        </Badge>
-                        <Badge variant="outline">{member.assignedTickets} Tickets</Badge>
-                      </div>
-                      <div className="text-sm text-gray-600">{member.email}</div>
-                      <div className="text-sm text-gray-500">
-                        Abteilungen: {member.departments.join(', ')}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Kontakte zugewiesen:{' '}
-                        {contacts.filter(contact => contact.assignedStaff === member.id).length}
+                {emails.slice(0, 5).map((email) => (
+                  <div key={email.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <Mail className="h-5 w-5 text-gray-400" />
+                      <div>
+                        <p className="font-medium">{email.subject}</p>
+                        <p className="text-sm text-gray-600">An: {email.to.join(', ')}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={member.isActive ? 'default' : 'secondary'}>
-                        {member.isActive ? 'Aktiv' : 'Inaktiv'}
+                    <div className="flex items-center space-x-4">
+                      <Badge variant={
+                        email.status === 'delivered' ? 'default' :
+                        email.status === 'sent' ? 'secondary' :
+                        email.status === 'failed' ? 'destructive' : 'outline'
+                      }>
+                        {email.status === 'delivered' ? 'Zugestellt' :
+                         email.status === 'sent' ? 'Gesendet' :
+                         email.status === 'failed' ? 'Fehler' : 'Entwurf'}
                       </Badge>
+                      <p className="text-sm text-gray-500">
+                        {email.sentAt?.toLocaleDateString('de-DE')}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -589,96 +502,217 @@ export default function EmailManagementPage() {
           </Card>
         </TabsContent>
 
-        {/* Assignments Tab */}
-        <TabsContent value="assignments">
+        <TabsContent value="sent" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>E-Mail Zuweisungen verwalten</CardTitle>
+              <CardTitle>Gesendete E-Mails</CardTitle>
+              <p className="text-sm text-gray-600">Übersicht aller versendeten E-Mails</p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                <Alert>
-                  <AlertDescription>
-                    Hier können Sie E-Mails zwischen Mitarbeitern neu zuweisen und die
-                    Arbeitsbelastung verwalten.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Kontakt-Zuweisungen</h3>
-                  {contacts.map(contact => (
-                    <div
-                      key={contact.id}
-                      className="flex items-center justify-between p-3 border rounded"
-                    >
+              <div className="space-y-4">
+                {emails.map((email) => (
+                  <div key={email.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center space-x-4">
+                      <Mail className="h-5 w-5 text-gray-400" />
                       <div>
-                        <span className="font-medium">{contact.name}</span>
-                        <div className="text-sm text-gray-600">{contact.email}</div>
+                        <p className="font-medium">{email.subject}</p>
+                        <p className="text-sm text-gray-600">An: {email.to.join(', ')}</p>
+                        {email.sentAt && (
+                          <p className="text-xs text-gray-500">
+                            Gesendet: {email.sentAt.toLocaleString('de-DE')}
+                          </p>
+                        )}
                       </div>
-                      <Select
-                        value={contact.assignedStaff || ''}
-                        onValueChange={async value => {
-                          try {
-                            // Update in Firebase
-                            const contactRef = doc(db, 'emailContacts', contact.id);
-                            await updateDoc(contactRef, {
-                              assignedStaff: value,
-                              updatedAt: new Date().toISOString(),
-                            });
-
-                            // Update local state
-                            setContacts(prev =>
-                              prev.map(c =>
-                                c.id === contact.id ? { ...c, assignedStaff: value } : c
-                              )
-                            );
-                          } catch (error) {
-                            console.error('Fehler beim Zuweisen des Kontakts:', error);
-                            // Fallback zu lokaler Aktualisierung
-                            setContacts(prev =>
-                              prev.map(c =>
-                                c.id === contact.id ? { ...c, assignedStaff: value } : c
-                              )
-                            );
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Mitarbeiter wählen" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {staff.map(member => (
-                            <SelectItem key={member.id} value={member.id}>
-                              {member.name}
-                            </SelectItem>
-                          ))}
-                          <SelectItem value="">Nicht zugewiesen</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
-                  ))}
-                </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={
+                        email.status === 'delivered' ? 'default' :
+                        email.status === 'sent' ? 'secondary' :
+                        email.status === 'failed' ? 'destructive' : 'outline'
+                      }>
+                        {email.status === 'delivered' ? 'Zugestellt' :
+                         email.status === 'sent' ? 'Gesendet' :
+                         email.status === 'failed' ? 'Fehler' : 'Entwurf'}
+                      </Badge>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
+        <TabsContent value="templates" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">E-Mail Templates</h2>
+            <Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-[#14ad9f] hover:bg-[#129488]">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Template erstellen
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Neues E-Mail Template</DialogTitle>
+                </DialogHeader>
                 <div className="space-y-4">
-                  <h3 className="font-semibold">Mitarbeiter-Arbeitsbelastung</h3>
-                  {staff.map(member => (
-                    <div
-                      key={member.id}
-                      className="flex items-center justify-between p-3 border rounded"
-                    >
-                      <div>
-                        <span className="font-medium">{member.name}</span>
-                        <div className="text-sm text-gray-600">
-                          {member.assignedTickets} aktive Tickets
+                  <div>
+                    <Label htmlFor="template-name">Template Name</Label>
+                    <Input
+                      id="template-name"
+                      value={templateForm.name}
+                      onChange={(e) => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Template Name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="template-subject">Betreff</Label>
+                    <Input
+                      id="template-subject"
+                      value={templateForm.subject}
+                      onChange={(e) => setTemplateForm(prev => ({ ...prev, subject: e.target.value }))}
+                      placeholder="E-Mail Betreff"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="template-content">HTML-Inhalt</Label>
+                    <Textarea
+                      id="template-content"
+                      value={templateForm.htmlContent}
+                      onChange={(e) => setTemplateForm(prev => ({ ...prev, htmlContent: e.target.value }))}
+                      placeholder="<p>Template-Inhalt hier...</p>"
+                      className="min-h-[200px]"
+                    />
+                  </div>
+                  <Button
+                    onClick={() => {
+                      // Template speichern würde hier implementiert
+                      toast.success('Template erstellt');
+                      setTemplateDialogOpen(false);
+                    }}
+                    className="bg-[#14ad9f] hover:bg-[#129488]"
+                  >
+                    Template speichern
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {templates.map((template) => (
+              <Card key={template.id}>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    {template.name}
+                    <div className="flex space-x-1">
+                      <Button variant="ghost" size="sm">
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-2">Betreff: {template.subject}</p>
+                  <p className="text-xs text-gray-500">
+                    Variablen: {template.variables.join(', ')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => loadTemplate(template.id)}
+                  >
+                    Verwenden
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="contacts" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Kontakte</h2>
+            <Button className="bg-[#14ad9f] hover:bg-[#129488]">
+              <Plus className="h-4 w-4 mr-2" />
+              Kontakt hinzufügen
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="space-y-0">
+                {contacts.map((contact, index) => (
+                  <div key={contact.id}>
+                    <div className="flex items-center justify-between p-4 hover:bg-gray-50">
+                      <div className="flex items-center space-x-4">
+                        <div className="h-8 w-8 bg-[#14ad9f] rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-medium">
+                            {contact.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium">{contact.name}</p>
+                          <p className="text-sm text-gray-600">{contact.email}</p>
                         </div>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        Abteilungen: {member.departments.join(', ')}
+                      <div className="flex items-center space-x-4">
+                        <div className="flex gap-1">
+                          {contact.tags.map((tag) => (
+                            <Badge key={tag} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                        <Badge variant={
+                          contact.status === 'active' ? 'default' :
+                          contact.status === 'bounced' ? 'destructive' : 'secondary'
+                        }>
+                          {contact.status === 'active' ? 'Aktiv' :
+                           contact.status === 'bounced' ? 'Bounced' : 'Abgemeldet'}
+                        </Badge>
+                        <div className="flex space-x-1">
+                          <Button variant="ghost" size="sm">
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    {index < contacts.length - 1 && <Separator />}
+                  </div>
+                ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="inbox" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Posteingang</CardTitle>
+              <p className="text-sm text-gray-600">
+                Eingehende E-Mails (Webhook-Integration erforderlich)
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Alert>
+                <MessageSquare className="h-4 w-4" />
+                <AlertDescription>
+                  Der Posteingang erfordert eine Webhook-Integration mit Resend.
+                  Eingehende E-Mails werden hier angezeigt, sobald die Webhook-Konfiguration abgeschlossen ist.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </TabsContent>
