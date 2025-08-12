@@ -147,6 +147,30 @@ export class AdminEmailsService {
   }
 
   /**
+   * E-Mails nach Typ abrufen (sent, received, etc.)
+   */
+  async getEmailsByType(type: string): Promise<AdminEmail[]> {
+    try {
+      const command = new ScanCommand({
+        TableName: this.tableName,
+        FilterExpression: '#type = :type',
+        ExpressionAttributeNames: {
+          '#type': 'type',
+        },
+        ExpressionAttributeValues: {
+          ':type': type,
+        },
+      });
+
+      const result = await docClient.send(command);
+      return (result.Items as AdminEmail[]) || [];
+    } catch (error) {
+      console.error('Error getting emails by type:', error);
+      throw error;
+    }
+  }
+
+  /**
    * E-Mail aktualisieren
    */
   async updateEmail(emailId: string, updates: Partial<AdminEmail>): Promise<void> {
