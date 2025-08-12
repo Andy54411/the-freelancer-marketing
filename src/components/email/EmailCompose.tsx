@@ -28,6 +28,18 @@ interface EmailComposeProps {
 export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [selectedSenderEmail, setSelectedSenderEmail] = useState('');
+
+  // Verfügbare Sender-E-Mail-Adressen von der verifizierten Domain taskilo.de
+  const senderEmails = [
+    'info@taskilo.de',
+    'noreply@taskilo.de',
+    'admin@taskilo.de',
+    'marketing@taskilo.de',
+    'support@taskilo.de',
+    'hello@taskilo.de',
+  ];
+
   const [composeForm, setComposeForm] = useState({
     to: '',
     cc: '',
@@ -42,9 +54,9 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
     if (template) {
       setComposeForm(prev => ({
         ...prev,
-        subject: template.subject,
-        htmlContent: template.htmlContent,
-        templateId: template.templateId,
+        subject: template.subject || '',
+        htmlContent: template.htmlContent || '',
+        templateId,
       }));
     }
   };
@@ -52,20 +64,20 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
   const handleSendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!composeForm.to || !composeForm.subject || !composeForm.htmlContent) {
+    if (
+      !selectedSenderEmail ||
+      !composeForm.to ||
+      !composeForm.subject ||
+      !composeForm.htmlContent
+    ) {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
-      return;
-    }
-
-    if (!user?.email) {
-      toast.error('Benutzer-E-Mail-Adresse nicht verfügbar');
       return;
     }
 
     setLoading(true);
     try {
       const emailData = {
-        from: user.email,
+        from: selectedSenderEmail,
         to: composeForm.to.split(',').map(email => email.trim()),
         cc: composeForm.cc ? composeForm.cc.split(',').map(email => email.trim()) : undefined,
         bcc: composeForm.bcc ? composeForm.bcc.split(',').map(email => email.trim()) : undefined,
@@ -84,6 +96,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         htmlContent: '',
         templateId: '',
       });
+      setSelectedSenderEmail('');
 
       onEmailSent?.();
     } catch (error) {
@@ -95,8 +108,8 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
   };
 
   const handleSendBulkEmail = async () => {
-    if (!composeForm.subject || !composeForm.htmlContent) {
-      toast.error('Bitte füllen Sie Betreff und Inhalt aus');
+    if (!selectedSenderEmail || !composeForm.subject || !composeForm.htmlContent) {
+      toast.error('Bitte füllen Sie Absender, Betreff und Inhalt aus');
       return;
     }
 
@@ -109,6 +122,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
     setLoading(true);
     try {
       const messages = activeContacts.map(contact => ({
+        from: selectedSenderEmail,
         to: [contact.email],
         subject: composeForm.subject,
         htmlContent: composeForm.htmlContent.replace('{{name}}', contact.name),
@@ -144,6 +158,21 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
                   {templates.map(template => (
                     <SelectItem key={template.templateId} value={template.templateId}>
                       {template.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="from-select">Absender-E-Mail *</Label>
+              <Select value={selectedSenderEmail} onValueChange={setSelectedSenderEmail}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Absender auswählen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {senderEmails.map(email => (
+                    <SelectItem key={email} value={email}>
+                      {email}
                     </SelectItem>
                   ))}
                 </SelectContent>
