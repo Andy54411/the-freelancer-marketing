@@ -28,7 +28,7 @@ interface EmailComposeProps {
 export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [selectedSenderEmail, setSelectedSenderEmail] = useState('');
+  const [selectedSenderEmail, setSelectedSenderEmail] = useState('info@taskilo.de');
 
   // Verfügbare Sender-E-Mail-Adressen von der verifizierten Domain taskilo.de
   const senderEmails = [
@@ -85,8 +85,21 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         htmlContent: composeForm.htmlContent,
       };
 
-      await callEmailAPI(AWS_EMAIL_API.endpoints.sendEmail, 'POST', emailData);
+      // Verwende Vercel API-Route statt AWS Lambda
+      const response = await fetch('/api/admin/emails/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'E-Mail-Versand fehlgeschlagen');
+      }
+
+      const result = await response.json();
       toast.success('E-Mail erfolgreich gesendet');
       setComposeForm({
         to: '',
@@ -96,7 +109,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         htmlContent: '',
         templateId: '',
       });
-      setSelectedSenderEmail('');
+      // selectedSenderEmail nicht zurücksetzen, da es einen Standardwert hat
 
       onEmailSent?.();
     } catch (error) {
@@ -128,8 +141,21 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         htmlContent: composeForm.htmlContent.replace('{{name}}', contact.name),
       }));
 
-      await callEmailAPI(AWS_EMAIL_API.endpoints.sendBulkEmails, 'POST', { messages });
+      // Verwende Vercel API-Route für Bulk-Versand
+      const response = await fetch('/api/admin/emails/bulk-send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messages }),
+      });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Bulk-E-Mail-Versand fehlgeschlagen');
+      }
+
+      const result = await response.json();
       toast.success(`E-Mail an ${activeContacts.length} Kontakte gesendet`);
       onEmailSent?.();
     } catch (error) {
