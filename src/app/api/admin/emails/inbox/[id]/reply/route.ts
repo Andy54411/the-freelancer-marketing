@@ -15,8 +15,39 @@ async function getAuthenticatedUserEmail(): Promise<string | null> {
       // Fallback to mock authentication
       const mockSessionCookie = cookieStore.get('taskilo_admin_session');
       if (mockSessionCookie) {
-        console.log('✅ Mock session found, using default sender email');
-        return 'andy.staudinger@taskilo.de'; // Default for mock sessions
+        try {
+          const mockSessionData = JSON.parse(mockSessionCookie.value);
+          console.log('✅ Mock session found, extracting user email...');
+          console.log('Mock session data:', mockSessionData);
+
+          // Extract email from mock session data
+          const mockUserEmail = mockSessionData.user?.email || mockSessionData.email;
+
+          if (mockUserEmail) {
+            console.log(`✅ Using mock session email: ${mockUserEmail}`);
+
+            // Map problematic emails to valid SES emails
+            const emailMappings = {
+              'a.staudinger32@icloud.com': 'andy.staudinger@taskilo.de',
+              'noreply@taskilo.de': 'andy.staudinger@taskilo.de', // Default mapping
+              'admin@taskilo.de': 'andy.staudinger@taskilo.de', // Default mapping
+            };
+
+            const mappedEmail = emailMappings[mockUserEmail] || mockUserEmail;
+
+            if (mappedEmail !== mockUserEmail) {
+              console.log(`🔄 Email mapped: ${mockUserEmail} → ${mappedEmail}`);
+            }
+
+            return mappedEmail;
+          } else {
+            console.warn('⚠️ No email found in mock session, using default');
+            return 'andy.staudinger@taskilo.de';
+          }
+        } catch (parseError) {
+          console.error('❌ Error parsing mock session:', parseError);
+          return 'andy.staudinger@taskilo.de'; // Fallback
+        }
       }
 
       return null;
@@ -37,7 +68,6 @@ async function getAuthenticatedUserEmail(): Promise<string | null> {
     return null;
   }
 }
-
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
