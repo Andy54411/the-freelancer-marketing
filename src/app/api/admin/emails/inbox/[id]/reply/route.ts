@@ -1,6 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/clients';
 import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { cookies } from 'next/headers';
+
+// Helper function to get authenticated user from AWS session
+async function getAuthenticatedUserEmail(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('taskilo_admin_aws_session');
+
+    if (!sessionCookie) {
+      console.log('🔍 No AWS session cookie found, checking mock session...');
+
+      // Fallback to mock authentication
+      const mockSessionCookie = cookieStore.get('taskilo_admin_session');
+      if (mockSessionCookie) {
+        console.log('✅ Mock session found, using default sender email');
+        return 'andy.staudinger@taskilo.de'; // Default for mock sessions
+      }
+
+      return null;
+    }
+
+    const sessionData = JSON.parse(sessionCookie.value);
+
+    // Check if session is expired
+    if (Date.now() > sessionData.expiresAt) {
+      console.log('❌ AWS Session expired');
+      return null;
+    }
+
+    console.log(`✅ Found authenticated user email: ${sessionData.email}`);
+    return sessionData.email;
+  } catch (error) {
+    console.error('❌ Error getting authenticated user:', error);
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -15,34 +51,80 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       );
     }
 
-    // E-Mail über Resend senden
-    const resendResponse = await fetch('https://api.resend.com/emails', {
+    // 🔐 GET AUTHENTICATED USER EMAIL FROM SESSION
+    const authenticatedUserEmail = await getAuthenticatedUserEmail();
+
+    if (!authenticatedUserEmail) {
+      console.error('❌ No authenticated user found for email reply');
+      return NextResponse.json(
+        {
+          error: 'Authentication required',
+          details: 'No valid AWS session found. Please log in again.',
+          success: false,
+        },
+        { status: 401 }
+      );
+    }
+
+    console.log(`🔐 Using authenticated user email as sender for reply: ${authenticatedUserEmail}`);
+
+    // 🔐 Validiere, dass die authentifizierte Email in AWS SES verifiziert ist
+    const allowedSenderEmails = [
+      'andy.staudinger@taskilo.de',
+      'info@taskilo.de',
+      'noreply@taskilo.de',
+      'admin@taskilo.de',
+      'marketing@taskilo.de',
+      'support@taskilo.de',
+      'hello@taskilo.de',
+    ];
+
+    if (!allowedSenderEmails.includes(authenticatedUserEmail)) {
+      console.error(
+        `❌ Reply Email: Email-Adresse nicht verifiziert in AWS SES: ${authenticatedUserEmail}`
+      );
+
+      return NextResponse.json(
+        {
+          error: 'E-Mail-Adresse nicht verifiziert in AWS SES',
+          details: `Die E-Mail-Adresse "${authenticatedUserEmail}" ist nicht in AWS SES verifiziert.`,
+          authenticatedEmail: authenticatedUserEmail,
+          allowedEmails: allowedSenderEmails,
+          success: false,
+        },
+        { status: 400 }
+      );
+    }
+
+    // E-Mail über AWS SES senden (anstatt Resend)
+    const awsSesResponse = await fetch('/api/admin/emails/send-aws', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
+        // Forward the session cookie for authentication
+        Cookie: request.headers.get('cookie') || '',
       },
       body: JSON.stringify({
-        from: 'noreply@taskilo.de',
+        // from: wird automatisch aus AWS Session bezogen
         to: Array.isArray(to) ? to : [to],
         cc: cc ? (Array.isArray(cc) ? cc : [cc]) : undefined,
         bcc: bcc ? (Array.isArray(bcc) ? bcc : [bcc]) : undefined,
         subject,
-        html: htmlContent,
+        htmlContent,
       }),
     });
 
-    if (!resendResponse.ok) {
-      const errorData = await resendResponse.json();
-      throw new Error(`Resend API Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
+    if (!awsSesResponse.ok) {
+      const errorData = await awsSesResponse.json();
+      throw new Error(`AWS SES API Fehler: ${errorData.error || 'Unbekannter Fehler'}`);
     }
 
-    const resendData = await resendResponse.json();
+    const awsSesData = await awsSesResponse.json();
 
     // E-Mail in der Datenbank speichern
     await addDoc(collection(db, 'sent_emails'), {
-      messageId: resendData.id,
-      from: 'noreply@taskilo.de',
+      messageId: awsSesData.messageId,
+      from: authenticatedUserEmail, // ✅ Use authenticated user email
       to: Array.isArray(to) ? to : [to],
       cc: cc ? (Array.isArray(cc) ? cc : [cc]) : [],
       bcc: bcc ? (Array.isArray(bcc) ? bcc : [bcc]) : [],
@@ -54,6 +136,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       isReply: true,
       originalEmailId: id,
       type: 'reply',
+      provider: 'AWS SES', // ✅ Updated provider
     });
 
     // Original-E-Mail als beantwortet markieren
@@ -64,8 +147,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     return NextResponse.json({
       success: true,
-      messageId: resendData.id,
-      message: 'Antwort erfolgreich gesendet',
+      messageId: awsSesData.messageId,
+      message: 'Antwort erfolgreich über AWS SES gesendet',
+      provider: 'AWS SES',
+      authenticatedSender: authenticatedUserEmail,
     });
   } catch (error) {
     console.error('Fehler beim Senden der Antwort:', error);

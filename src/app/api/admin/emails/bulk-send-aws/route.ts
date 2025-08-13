@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SESClient, SendBulkTemplatedEmailCommand, SendEmailCommand } from '@aws-sdk/client-ses';
+import { cookies } from 'next/headers';
 
 // AWS SES Client konfigurieren
 const sesClient = new SESClient({
@@ -10,8 +11,88 @@ const sesClient = new SESClient({
   },
 });
 
+// Helper function to get authenticated user from AWS session
+async function getAuthenticatedUserEmail(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('taskilo_admin_aws_session');
+
+    if (!sessionCookie) {
+      console.log('🔍 No AWS session cookie found, checking mock session...');
+
+      // Fallback to mock authentication
+      const mockSessionCookie = cookieStore.get('taskilo_admin_session');
+      if (mockSessionCookie) {
+        console.log('✅ Mock session found, using default sender email');
+        return 'andy.staudinger@taskilo.de'; // Default for mock sessions
+      }
+
+      return null;
+    }
+
+    const sessionData = JSON.parse(sessionCookie.value);
+
+    // Check if session is expired
+    if (Date.now() > sessionData.expiresAt) {
+      console.log('❌ AWS Session expired');
+      return null;
+    }
+
+    console.log(`✅ Found authenticated user email: ${sessionData.email}`);
+    return sessionData.email;
+  } catch (error) {
+    console.error('❌ Error getting authenticated user:', error);
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // 🔐 GET AUTHENTICATED USER EMAIL FROM SESSION
+    const authenticatedUserEmail = await getAuthenticatedUserEmail();
+
+    if (!authenticatedUserEmail) {
+      console.error('❌ No authenticated user found for bulk email');
+      return NextResponse.json(
+        {
+          error: 'Authentication required',
+          details: 'No valid AWS session found. Please log in again.',
+        },
+        { status: 401 }
+      );
+    }
+
+    console.log(
+      `🔐 Using authenticated user email as sender for bulk emails: ${authenticatedUserEmail}`
+    );
+
+    // 🔐 Validiere, dass die authentifizierte Email in AWS SES verifiziert ist
+    const allowedSenderEmails = [
+      'andy.staudinger@taskilo.de',
+      'info@taskilo.de',
+      'noreply@taskilo.de',
+      'admin@taskilo.de',
+      'marketing@taskilo.de',
+      'support@taskilo.de',
+      'hello@taskilo.de',
+    ];
+
+    if (!allowedSenderEmails.includes(authenticatedUserEmail)) {
+      console.error(
+        `❌ Bulk Email: Email-Adresse nicht verifiziert in AWS SES: ${authenticatedUserEmail}`
+      );
+
+      return NextResponse.json(
+        {
+          error: 'E-Mail-Adresse nicht verifiziert in AWS SES',
+          details: `Die E-Mail-Adresse "${authenticatedUserEmail}" ist nicht in AWS SES verifiziert.`,
+          authenticatedEmail: authenticatedUserEmail,
+          allowedEmails: allowedSenderEmails,
+        },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { messages } = body;
 
@@ -24,11 +105,16 @@ export async function POST(request: NextRequest) {
     let successCount = 0;
     let failureCount = 0;
 
+    console.log(
+      `📧 Sending ${messages.length} bulk emails with authenticated sender: ${authenticatedUserEmail}`
+    );
+
     // Jede E-Mail einzeln senden (AWS SES Bulk ist für Templates)
     for (const message of messages) {
       try {
+        // 🛡️ SECURITY: Always use authenticated user's email as sender (ignore any 'from' in message)
         const emailParams = {
-          Source: message.from,
+          Source: authenticatedUserEmail, // ✅ Use authenticated email from session
           Destination: {
             ToAddresses: message.to,
             CcAddresses: message.cc || [],

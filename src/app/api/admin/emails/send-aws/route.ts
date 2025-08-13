@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { cookies } from 'next/headers';
 
 // AWS SES Client konfigurieren
 const sesClient = new SESClient({
@@ -9,6 +10,41 @@ const sesClient = new SESClient({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
+
+// Helper function to get authenticated user from AWS session
+async function getAuthenticatedUserEmail(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('taskilo_admin_aws_session');
+
+    if (!sessionCookie) {
+      console.log('🔍 No AWS session cookie found, checking mock session...');
+
+      // Fallback to mock authentication
+      const mockSessionCookie = cookieStore.get('taskilo_admin_session');
+      if (mockSessionCookie) {
+        console.log('✅ Mock session found, using default sender email');
+        return 'andy.staudinger@taskilo.de'; // Default for mock sessions
+      }
+
+      return null;
+    }
+
+    const sessionData = JSON.parse(sessionCookie.value);
+
+    // Check if session is expired
+    if (Date.now() > sessionData.expiresAt) {
+      console.log('❌ AWS Session expired');
+      return null;
+    }
+
+    console.log(`✅ Found authenticated user email: ${sessionData.email}`);
+    return sessionData.email;
+  } catch (error) {
+    console.error('❌ Error getting authenticated user:', error);
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,9 +105,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { to, cc, bcc, subject, htmlContent, textContent, from = 'info@taskilo.de' } = body;
+    // 🔐 GET AUTHENTICATED USER EMAIL FROM SESSION
+    const authenticatedUserEmail = await getAuthenticatedUserEmail();
 
-    // Validiere Sender-E-Mail-Adresse (nur verifizierte taskilo.de Adressen erlaubt)
+    if (!authenticatedUserEmail) {
+      console.error('❌ No authenticated user found');
+      return NextResponse.json(
+        {
+          error: 'Authentication required',
+          details: 'No valid AWS session found. Please log in again.',
+        },
+        { status: 401 }
+      );
+    }
+
+    console.log(`🔐 Using authenticated user email as sender: ${authenticatedUserEmail}`);
+
+    // Extract request body, but OVERRIDE from with authenticated user email
+    const { to, cc, bcc, subject, htmlContent, textContent } = body;
+
+    // 🛡️ SECURITY: Always use authenticated user's email as sender
+    const validatedFrom = authenticatedUserEmail;
+
+    // 🔐 Validiere Sender-E-Mail-Adresse basierend auf AWS Session
     const allowedSenderEmails = [
       'andy.staudinger@taskilo.de',
       'info@taskilo.de',
@@ -82,23 +138,23 @@ export async function POST(request: NextRequest) {
       'hello@taskilo.de',
     ];
 
-    // ULTIMATIVE SICHERHEIT: Überschreibe ungültige From-Adressen IMMER
-    let validatedFrom = from;
+    // ✅ Validiere, dass die authentifizierte Email in AWS SES verifiziert ist
+    if (!allowedSenderEmails.includes(validatedFrom)) {
+      console.error(`❌ Email-Adresse nicht verifiziert in AWS SES: ${validatedFrom}`);
+      console.error('� Verifizierte Sender-Emails:', allowedSenderEmails);
 
-    // RADIKALE LÖSUNG: Erzwinge IMMER eine @taskilo.de Adresse
-    if (!from || !allowedSenderEmails.includes(from) || from.includes('@icloud.com')) {
-      console.warn(`🚨 KRITISCHE ÜBERSCHREIBUNG: "${from}" → "info@taskilo.de"`);
-      console.warn('🔒 GRUND: Ungültige oder nicht-verifizierte Sender-E-Mail erkannt');
-      validatedFrom = 'info@taskilo.de'; // Erzwinge Standard
-
-      // Ausführliches Logging für Debug
-      console.log('❌ Ursprüngliche From-Email:', from);
-      console.log('✅ Überschriebene From-Email:', validatedFrom);
-      console.log('📋 Erlaubte Sender-Emails:', allowedSenderEmails);
-      console.log('🚫 @icloud.com E-Mails sind NIEMALS erlaubt');
+      return NextResponse.json(
+        {
+          error: 'E-Mail-Adresse nicht verifiziert in AWS SES',
+          details: `Die E-Mail-Adresse "${validatedFrom}" ist nicht in AWS SES verifiziert. Verfügbare Sender: ${allowedSenderEmails.join(', ')}`,
+          authenticatedEmail: validatedFrom,
+          allowedEmails: allowedSenderEmails,
+        },
+        { status: 400 }
+      );
     }
 
-    console.log('✅ FINAL Validierte Sender-E-Mail:', validatedFrom);
+    console.log(`✅ VALIDATED SENDER EMAIL: ${validatedFrom} (from AWS session)`);
 
     // Normalisiere 'to' zu einem Array
     const recipients = Array.isArray(to) ? to : to ? [to] : [];
@@ -113,23 +169,8 @@ export async function POST(request: NextRequest) {
     }
 
     // AWS SES E-Mail Parameter vorbereiten
-    // DOPPELTER SCHUTZ: Nochmals validieren vor AWS SES Call
-    const finalValidatedFrom = allowedSenderEmails.includes(validatedFrom)
-      ? validatedFrom
-      : 'info@taskilo.de';
-
-    if (finalValidatedFrom !== validatedFrom) {
-      console.error('🔥 KRITISCHER SCHUTZ AKTIVIERT: Letzte Validierung fehlgeschlagen!');
-      console.error(
-        '🚨 Validierte From-Email wurde nochmals überschrieben:',
-        validatedFrom,
-        '→',
-        finalValidatedFrom
-      );
-    }
-
     const emailParams = {
-      Source: finalValidatedFrom, // DOPPELT validierte E-Mail-Adresse
+      Source: validatedFrom, // ✅ Authentifizierte Benutzer-E-Mail aus AWS Session
       Destination: {
         ToAddresses: recipients,
         CcAddresses: cc || [],
@@ -175,6 +216,12 @@ export async function POST(request: NextRequest) {
       ],
     };
 
+    console.log('=== ✅ AWS SES EMAIL PREPARED ===');
+    console.log('🔐 Authenticated User Email (Sender):', validatedFrom);
+    console.log('📧 Recipients:', recipients);
+    console.log('📋 Subject:', subject);
+    console.log('📄 Has HTML Content:', !!htmlContent);
+    console.log('📄 Has Text Content:', !!textContent);
     console.log('AWS SES E-Mail Parameter:', JSON.stringify(emailParams, null, 2));
 
     // E-Mail über AWS SES senden

@@ -158,33 +158,11 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
 
     setLoading(true);
     try {
-      // Validiere Sender-E-Mail nochmals vor dem Versand
-      const allowedSenderEmails = [
-        'andy.staudinger@taskilo.de',
-        'info@taskilo.de',
-        'noreply@taskilo.de',
-        'admin@taskilo.de',
-        'marketing@taskilo.de',
-        'support@taskilo.de',
-        'hello@taskilo.de',
-      ];
-
-      if (!allowedSenderEmails.includes(selectedSenderEmail)) {
-        toast.error(
-          `Ungültige Sender-E-Mail: ${selectedSenderEmail}. Nur verifizierte taskilo.de Adressen sind erlaubt.`
-        );
-        setSelectedSenderEmail(allowedSenderEmails[0]); // Setze auf Standard zurück
-        setLoading(false);
-        return;
-      }
-
-      // ERZWINGE immer eine gültige taskilo.de Sender-E-Mail
-      const validSenderEmail = allowedSenderEmails.includes(selectedSenderEmail)
-        ? selectedSenderEmail
-        : allowedSenderEmails[0]; // Fallback auf erste erlaubte E-Mail
+      // 🔐 NEUE LOGIK: Sender-Email wird automatisch aus AWS Session bezogen
+      // Frontend braucht keine 'from' Email mehr zu senden
 
       const emailData = {
-        from: validSenderEmail, // Verwende immer verifizierte E-Mail
+        // from: Wird automatisch vom Backend aus AWS Session bezogen ✅
         to: composeForm.to
           .split(',')
           .map(email => email.trim())
@@ -206,9 +184,8 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         textContent: composeForm.textContent || '',
       };
 
-      // Entferne undefined-Werte und stelle sicher, dass alle Arrays richtig sind
+      // Clean email data - no 'from' field needed anymore
       const cleanEmailData = {
-        from: emailData.from,
         to: emailData.to,
         cc: emailData.cc,
         bcc: emailData.bcc,
@@ -217,14 +194,9 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         textContent: emailData.textContent,
       };
 
-      console.log('=== FRONTEND EMAIL DEBUG ===');
-      console.log('Selected Sender Email (Original):', selectedSenderEmail);
-      console.log('Valid Sender Email (Used):', validSenderEmail);
-      console.log('Sender Email Override:', validSenderEmail !== selectedSenderEmail);
-      console.log('Allowed Sender Emails:', allowedSenderEmails);
-      console.log('Compose Form:', composeForm);
-      console.log('Email Data (Raw):', emailData);
-      console.log('Email Data (Clean):', cleanEmailData);
+      console.log('=== FRONTEND EMAIL DEBUG (AWS SESSION SENDER) ===');
+      console.log('🔐 Sender Email: Wird automatisch aus AWS Session bezogen');
+      console.log('📧 Email Data (ohne from-Feld):', cleanEmailData);
       console.log('Request URL:', '/api/admin/emails/send-aws');
       console.log('Request Method:', 'POST');
       console.log('Request Headers:', { 'Content-Type': 'application/json' });
@@ -311,33 +283,10 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
   };
 
   const handleSendBulkEmail = async () => {
-    if (!selectedSenderEmail || !composeForm.subject || !composeForm.htmlContent) {
-      toast.error('Bitte füllen Sie Absender, Betreff und Inhalt aus');
+    if (!composeForm.subject || !composeForm.htmlContent) {
+      toast.error('Betreff und Inhalt sind erforderlich');
       return;
     }
-
-    // ERZWINGE immer eine gültige taskilo.de Sender-E-Mail (gleiche Logik wie bei Einzelemails)
-    const allowedSenderEmails = [
-      'andy.staudinger@taskilo.de',
-      'info@taskilo.de',
-      'noreply@taskilo.de',
-      'admin@taskilo.de',
-      'marketing@taskilo.de',
-      'support@taskilo.de',
-      'hello@taskilo.de',
-    ];
-
-    if (!allowedSenderEmails.includes(selectedSenderEmail)) {
-      toast.error(
-        `Ungültige Sender-E-Mail: ${selectedSenderEmail}. Nur verifizierte taskilo.de Adressen sind erlaubt.`
-      );
-      setSelectedSenderEmail(allowedSenderEmails[0]); // Setze auf Standard zurück
-      return;
-    }
-
-    const validSenderEmail = allowedSenderEmails.includes(selectedSenderEmail)
-      ? selectedSenderEmail
-      : allowedSenderEmails[0]; // Fallback auf erste erlaubte E-Mail
 
     const activeContacts = contacts.filter(c => c.status === 'active');
     if (activeContacts.length === 0) {
@@ -347,12 +296,16 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
 
     setLoading(true);
     try {
+      // 🔐 NEUE LOGIK: Sender-Email wird automatisch aus AWS Session bezogen
       const messages = activeContacts.map(contact => ({
-        from: validSenderEmail, // Verwende validierte E-Mail statt selectedSenderEmail
+        // from: Wird automatisch vom Backend aus AWS Session bezogen ✅
         to: [contact.email],
         subject: composeForm.subject,
         htmlContent: composeForm.htmlContent.replace('{{name}}', contact.name),
       }));
+
+      console.log('🔐 Bulk Email: Sender wird automatisch aus AWS Session bezogen');
+      console.log('📧 Bulk Messages (ohne from-Feld):', messages);
 
       // Verwende AWS SES API-Route für Bulk-Versand
       const response = await fetch('/api/admin/emails/bulk-send-aws', {
@@ -404,19 +357,17 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
               </Select>
             </div>
             <div>
-              <Label htmlFor="from-select">Absender-E-Mail *</Label>
-              <Select value={selectedSenderEmail} onValueChange={setSelectedSenderEmail}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Absender auswählen..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {senderEmails.map(email => (
-                    <SelectItem key={email} value={email}>
-                      {email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="sender-info">Absender-E-Mail</Label>
+              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-gray-700">
+                  Wird automatisch aus AWS Session bezogen
+                </span>
+                <span className="text-xs text-gray-500 ml-auto">🔐 Sicher</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Die Absender-Email wird automatisch aus Ihrem eingeloggten AWS-Account ermittelt
+              </p>
             </div>
           </div>
 
