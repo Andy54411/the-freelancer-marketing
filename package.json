@@ -38,6 +38,7 @@
     "dev:emulator": "firebase emulators:start --import=./firebase-export-backup"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.865.0",
     "@aws-sdk/client-dynamodb": "^3.864.0",
     "@aws-sdk/client-ses": "^3.864.0",
     "@aws-sdk/lib-dynamodb": "^3.864.0",
