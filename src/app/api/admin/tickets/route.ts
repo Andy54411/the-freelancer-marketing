@@ -38,6 +38,31 @@ export async function GET(request: NextRequest) {
     // await verifyAdminAuth();
 
     const { searchParams } = new URL(request.url);
+    const ticketId = searchParams.get('id');
+
+    // Einzelnes Ticket abrufen
+    if (ticketId) {
+      console.log(`Fetching single ticket ${ticketId} from AWS DynamoDB`);
+
+      const ticket = await AWSTicketStorage.getTicket(ticketId);
+
+      if (!ticket) {
+        return NextResponse.json(
+          { error: 'Ticket nicht gefunden', source: 'aws-dynamodb' },
+          { status: 404 }
+        );
+      }
+
+      console.log(`Found ticket ${ticketId} from DynamoDB`);
+
+      return NextResponse.json({
+        success: true,
+        ticket,
+        source: 'aws-dynamodb',
+      });
+    }
+
+    // Alle Tickets mit Filtern abrufen
     const status = searchParams.get('status') || undefined;
     const priority = searchParams.get('priority') || undefined;
     const category = searchParams.get('category') || undefined;

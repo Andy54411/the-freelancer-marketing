@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { AWSTicketStorage } from '@/lib/aws-ticket-storage';
 import { EnhancedTicketService } from '@/lib/aws-ticket-enhanced';
+import { db } from '@/firebase/server';
 
 // JWT Secret für Admin-Tokens
 const JWT_SECRET = new TextEncoder().encode(
@@ -161,6 +162,46 @@ export async function POST(request: NextRequest) {
       } catch (emailError) {
         console.error('Fehler beim Senden der E-Mail-Benachrichtigung:', emailError);
         // Fehler bei E-Mail nicht weiterleiten, da die Antwort erfolgreich gespeichert wurde
+      }
+
+      // Firebase Bell-Notification erstellen (nur für Admin -> Customer)
+      if (authResult.userType === 'admin' && updatedTicket.customerEmail) {
+        try {
+          // Extrahiere UID aus customerEmail (falls verfügbar)
+          const uidToEmailMap: Record<string, string> = {
+            '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1': 'a.staudinger32@icloud.com',
+          };
+
+          // Finde UID für diese E-Mail
+          const customerUid = Object.keys(uidToEmailMap).find(
+            uid => uidToEmailMap[uid] === updatedTicket.customerEmail
+          );
+
+          if (customerUid) {
+            // Erstelle Notification mit Admin SDK
+            const notification = {
+              userId: customerUid,
+              type: 'support',
+              title: 'Neue Antwort auf Ihr Support-Ticket',
+              message: `${authResult.userName} hat auf Ihr Ticket "${updatedTicket.title}" geantwortet`,
+              ticketId: ticketId,
+              ticketTitle: updatedTicket.title,
+              link: `/dashboard/company/${customerUid}/support`,
+              isRead: false,
+              createdAt: new Date(),
+            };
+
+            await db.collection('notifications').add(notification);
+            console.log(
+              `Bell-Notification erstellt für Customer ${customerUid} - Ticket ${ticketId}`
+            );
+          } else {
+            console.log(`Keine UID gefunden für E-Mail: ${updatedTicket.customerEmail}`);
+          }
+        } catch (notificationError) {
+          console.error('Fehler beim Erstellen der Bell-Notification:', notificationError);
+          // Nicht weiterleiten, da dies optional ist
+        }
       }
     }
 

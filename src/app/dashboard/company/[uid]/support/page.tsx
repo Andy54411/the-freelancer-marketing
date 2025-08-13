@@ -121,7 +121,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
 
     try {
       const response = await fetch(
-        `/api/admin/tickets?customerEmail=${encodeURIComponent(userEmail)}`
+        `/api/company/tickets?customerEmail=${encodeURIComponent(userEmail)}`
       );
 
       if (response.ok) {
@@ -154,7 +154,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/admin/tickets', {
+      const response = await fetch('/api/company/tickets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -230,13 +230,15 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
               </h1>
               <p className="text-gray-600 mt-1">Erstellen und verwalten Sie Support-Anfragen</p>
             </div>
-            <Button
-              onClick={() => setShowCreateForm(true)}
-              className="bg-[#14ad9f] hover:bg-[#129488]"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Neues Ticket
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowCreateForm(true)}
+                className="bg-[#14ad9f] hover:bg-[#129488]"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Neues Ticket
+              </Button>
+            </div>
           </div>
 
           {/* Neues Ticket Formular */}

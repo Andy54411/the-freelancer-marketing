@@ -300,11 +300,11 @@ const TicketManagement: React.FC<TicketManagementProps> = ({ onTicketUpdate }) =
       {/* Detail View */}
       {showDetailView && currentTicketId ? (
         <div className="space-y-4">
-          <Button variant="outline" onClick={handleBackToList} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Zurück zur Ticket-Liste
-          </Button>
-          <AdminTicketDetail ticketId={currentTicketId} onTicketUpdate={() => loadTickets()} />
+          <AdminTicketDetail
+            ticketId={currentTicketId}
+            onTicketUpdate={() => loadTickets()}
+            onBack={handleBackToList}
+          />
         </div>
       ) : (
         <>

@@ -77,12 +77,23 @@ export default function TicketDetailView({
   // Ticket-Details und Antworten laden
   const loadTicketDetails = async () => {
     try {
-      const response = await fetch(`/api/admin/tickets/reply?ticketId=${ticketId}`);
+      // Zuerst das Ticket laden
+      const ticketResponse = await fetch(`/api/company/tickets?id=${ticketId}`);
 
-      if (response.ok) {
-        const data = await response.json();
-        setTicket(data.ticket);
-        setReplies(data.replies || []);
+      if (ticketResponse.ok) {
+        const ticketData = await ticketResponse.json();
+        if (ticketData.success && ticketData.ticket) {
+          setTicket(ticketData.ticket);
+
+          // Dann die Antworten laden
+          const repliesResponse = await fetch(`/api/company/tickets/reply?ticketId=${ticketId}`);
+          if (repliesResponse.ok) {
+            const repliesData = await repliesResponse.json();
+            setReplies(repliesData.replies || []);
+          }
+        } else {
+          toast.error('Ticket nicht gefunden');
+        }
       } else {
         toast.error('Fehler beim Laden des Tickets');
       }
@@ -103,7 +114,7 @@ export default function TicketDetailView({
 
     setSending(true);
     try {
-      const response = await fetch('/api/admin/tickets/reply', {
+      const response = await fetch('/api/company/tickets/reply', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
