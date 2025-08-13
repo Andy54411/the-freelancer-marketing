@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
+import { jwtVerify } from 'jose';
+import { cookies } from 'next/headers';
 
 const dynamodb = new DynamoDBClient({
   region: process.env.AWS_REGION || 'eu-central-1',
@@ -11,23 +13,40 @@ const dynamodb = new DynamoDBClient({
   },
 });
 
+// JWT Secret für Admin-Tokens
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
+);
+
 export async function GET(request: NextRequest) {
   try {
-    // In einer echten Implementierung würden Sie hier JWT oder Session-Token validieren
-    // Für jetzt verwenden wir eine einfache Email-basierte Authentifizierung
+    // JWT Token aus Cookie lesen
+    const cookieStore = await cookies();
+    const token = cookieStore.get('taskilo-admin-token')?.value;
 
-    const email = request.headers.get('x-admin-email') || 'andy.staudinger@taskilo.de';
+    if (!token) {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    }
 
-    // Prüfe ob der Benutzer in der DynamoDB Admin-Tabelle existiert
+    // JWT Token verifizieren
+    let payload;
+    try {
+      const { payload: jwtPayload } = await jwtVerify(token, JWT_SECRET);
+      payload = jwtPayload;
+    } catch (error) {
+      return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
+    }
+
+    // Benutzer aus DynamoDB validieren
     const command = new GetItemCommand({
       TableName: 'taskilo-admin-data',
-      Key: marshall({ id: email }),
+      Key: marshall({ id: payload.email }),
     });
 
     const result = await dynamodb.send(command);
 
     if (!result.Item) {
-      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+      return NextResponse.json({ error: 'Benutzer nicht gefunden' }, { status: 401 });
     }
 
     const user = unmarshall(result.Item);
@@ -36,7 +55,7 @@ export async function GET(request: NextRequest) {
       success: true,
       user: {
         id: user.id,
-        email: user.email,
+        email: user.email || user.id,
         name: user.name || 'Admin',
         role: user.role || 'admin',
       },

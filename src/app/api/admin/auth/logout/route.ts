@@ -1,9 +1,12 @@
 // Admin Logout API
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 export async function POST(_request: NextRequest) {
   try {
-    // In einer echten Implementierung würden Sie hier Session/Token invalidieren
+    // Admin-Token Cookie löschen
+    const cookieStore = await cookies();
+    cookieStore.delete('taskilo-admin-token');
 
     return NextResponse.json({
       success: true,
