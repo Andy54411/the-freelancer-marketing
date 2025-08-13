@@ -20,6 +20,9 @@ importers:
       '@aws-sdk/lib-dynamodb':
         specifier: ^3.864.0
         version: 3.864.0(@aws-sdk/client-dynamodb@3.864.0)
+      '@aws-sdk/util-dynamodb':
+        specifier: ^3.864.0
+        version: 3.864.0(@aws-sdk/client-dynamodb@3.864.0)
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

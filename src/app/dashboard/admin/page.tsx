@@ -1,306 +1,272 @@
+// Admin Dashboard Hauptseite
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ClientTranslations } from './components/ClientTranslations';
 import {
-  FiUsers,
-  FiBriefcase,
-  FiMessageSquare,
-  FiHelpCircle,
-  FiAlertTriangle,
-  FiSettings,
-  FiMail,
-  FiUserCheck,
-  FiLoader,
-  FiCreditCard,
-  FiActivity,
-  FiBarChart,
-} from 'react-icons/fi';
+  Users,
+  Building2,
+  Mail,
+  Activity,
+  TrendingUp,
+  DollarSign,
+  AlertTriangle,
+} from 'lucide-react';
 
-// Helper-Komponente für Dashboard-Karten
-const StatCard = ({
-  href,
-  title,
-  value,
-  icon: Icon,
-  error,
-  loading = false,
-}: {
-  href: string;
-  title: string;
-  value: number;
-  icon: React.ComponentType<any>;
-  error?: string;
-  loading?: boolean;
-}) => (
-  <Link href={href}>
-    <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-gray-500" />
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="flex items-center space-x-2">
-            <FiLoader className="h-4 w-4 animate-spin text-blue-500" />
-            <span className="text-sm text-gray-500">Laden...</span>
-          </div>
-        ) : error ? (
-          <div className="text-red-500 text-sm">Fehler: {error}</div>
-        ) : (
-          <div className="text-2xl font-bold text-blue-600">{value}</div>
-        )}
-      </CardContent>
-    </Card>
-  </Link>
-);
+interface DashboardStats {
+  totalUsers: number;
+  totalCompanies: number;
+  totalEmails: number;
+  systemHealth: 'healthy' | 'warning' | 'error';
+  recentActivity: ActivityItem[];
+}
 
-export default function DashboardPage() {
-  const [stats, setStats] = useState({
-    companies: 0,
-    orders: 0,
-    chats: 0,
-    supportTickets: 0,
-  });
+interface ActivityItem {
+  id: string;
+  type: 'user' | 'company' | 'email' | 'system';
+  message: string;
+  timestamp: string;
+}
+
+export default function AdminDashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    async function loadStats() {
-      try {
-        setLoading(true);
-
-        // Parallel laden der Statistiken über API-Endpoints
-        const [companiesRes, ordersRes, chatsRes, supportRes] = await Promise.allSettled([
-          fetch('/api/admin/companies'),
-          fetch('/api/admin/orders'),
-          fetch('/api/admin/chats'),
-          fetch('/api/admin/support'),
-        ]);
-
-        const newStats = { ...stats };
-        const newErrors: Record<string, string> = {};
-
-        // Unternehmen
-        if (companiesRes.status === 'fulfilled' && companiesRes.value.ok) {
-          const companiesData = await companiesRes.value.json();
-          newStats.companies = companiesData.success
-            ? companiesData.companies?.length || companiesData.count || 0
-            : Array.isArray(companiesData)
-              ? companiesData.length
-              : 0;
-        } else {
-          newErrors.companies = 'Fehler beim Laden';
-        }
-
-        // Aufträge
-        if (ordersRes.status === 'fulfilled' && ordersRes.value.ok) {
-          const ordersData = await ordersRes.value.json();
-          newStats.orders = ordersData.success
-            ? ordersData.orders?.length || ordersData.count || 0
-            : Array.isArray(ordersData)
-              ? ordersData.length
-              : 0;
-        } else {
-          newErrors.orders = 'Fehler beim Laden';
-        }
-
-        // Chats
-        if (chatsRes.status === 'fulfilled' && chatsRes.value.ok) {
-          const chatsData = await chatsRes.value.json();
-          newStats.chats = chatsData.success
-            ? chatsData.chats?.length || chatsData.totalChats || chatsData.count || 0
-            : Array.isArray(chatsData)
-              ? chatsData.length
-              : 0;
-        } else {
-          newErrors.chats = 'Fehler beim Laden';
-        }
-
-        // Support-Tickets
-        if (supportRes.status === 'fulfilled' && supportRes.value.ok) {
-          const supportData = await supportRes.value.json();
-          newStats.supportTickets = supportData.success
-            ? supportData.supportChats?.length ||
-            supportData.summary?.totalChats ||
-            supportData.count ||
-            0
-            : Array.isArray(supportData)
-              ? supportData.length
-              : 0;
-        } else {
-          newErrors.supportTickets = 'Fehler beim Laden';
-        }
-
-        setStats(newStats);
-        setErrors(newErrors);
-      } catch (error) {
-        console.error('Fehler beim Laden der Statistiken:', error);
-        setErrors({
-          companies: 'Ladefehler',
-          orders: 'Ladefehler',
-          chats: 'Ladefehler',
-          supportTickets: 'Ladefehler',
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadStats();
+    loadDashboardData();
   }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      const response = await fetch('/api/admin/dashboard/stats');
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
+      title: 'Benutzer Gesamt',
+      value: stats?.totalUsers?.toLocaleString() || '0',
+      icon: Users,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+    },
+    {
+      title: 'Unternehmen',
+      value: stats?.totalCompanies?.toLocaleString() || '0',
+      icon: Building2,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+    },
+    {
+      title: 'E-Mails versendet',
+      value: stats?.totalEmails?.toLocaleString() || '0',
+      icon: Mail,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+    },
+    {
+      title: 'System Status',
+      value:
+        stats?.systemHealth === 'healthy'
+          ? 'Gesund'
+          : stats?.systemHealth === 'warning'
+            ? 'Warnung'
+            : 'Fehler',
+      icon: Activity,
+      color:
+        stats?.systemHealth === 'healthy'
+          ? 'text-green-600'
+          : stats?.systemHealth === 'warning'
+            ? 'text-yellow-600'
+            : 'text-red-600',
+      bgColor:
+        stats?.systemHealth === 'healthy'
+          ? 'bg-green-50'
+          : stats?.systemHealth === 'warning'
+            ? 'bg-yellow-50'
+            : 'bg-red-50',
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-4">Admin Dashboard</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600">Willkommen im Taskilo Administrationsbereich</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+            <Activity className="h-4 w-4 mr-1" />
+            AWS Verbunden
+          </div>
+        </div>
+      </div>
 
-      {/* Hauptstatistiken */}
+      {/* Statistik Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          href="/dashboard/admin/companies"
-          title="Unternehmen"
-          icon={FiUsers}
-          value={stats.companies}
-          loading={loading}
-          error={errors.companies}
-        />
-        <StatCard
-          href="/dashboard/admin/orders"
-          title="Aufträge"
-          icon={FiBriefcase}
-          value={stats.orders}
-          loading={loading}
-          error={errors.orders}
-        />
-        <StatCard
-          href="/dashboard/admin/chats"
-          title="Nachrichten"
-          icon={FiMessageSquare}
-          value={stats.chats}
-          loading={loading}
-          error={errors.chats}
-        />
-        <StatCard
-          href="/dashboard/admin/support"
-          title="Support"
-          icon={FiHelpCircle}
-          value={stats.supportTickets}
-          loading={loading}
-          error={errors.supportTickets}
-        />
+        {statCards.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={index} className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                    <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                  </div>
+                  <div className={`p-3 rounded-full ${stat.bgColor}`}>
+                    <Icon className={`h-6 w-6 ${stat.color}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Zusätzliche Admin-Funktionen */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-        {/* Monitoring & Analytics Sektion */}
-        <Link href="/dashboard/admin/payments">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer border-[#14ad9f] bg-gradient-to-r from-[#14ad9f]/5 to-transparent">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-[#14ad9f]">
-                🎯 Real-Time Payment Monitor
-              </CardTitle>
-              <FiCreditCard className="h-4 w-4 text-[#14ad9f]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-600">
-                Live Stripe Connect Monitoring mit Webhooks
+      {/* Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Activity className="h-5 w-5 mr-2 text-[#14ad9f]" />
+              Aktuelle Aktivitäten
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats?.recentActivity && stats.recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {stats.recentActivity.slice(0, 5).map(activity => (
+                  <div
+                    key={activity.id}
+                    className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex-shrink-0">
+                      {activity.type === 'user' && <Users className="h-4 w-4 text-blue-600" />}
+                      {activity.type === 'company' && (
+                        <Building2 className="h-4 w-4 text-green-600" />
+                      )}
+                      {activity.type === 'email' && <Mail className="h-4 w-4 text-purple-600" />}
+                      {activity.type === 'system' && (
+                        <AlertTriangle className="h-4 w-4 text-orange-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">{activity.message}</p>
+                      <p className="text-xs text-gray-500 mt-1">{activity.timestamp}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </Link>
+            ) : (
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Keine aktuellen Aktivitäten</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <Link href="/dashboard/admin/payment-monitoring">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                📊 Payment Analytics
-              </CardTitle>
-              <FiBarChart className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-600">Detaillierte Zahlungsanalysen</div>
-            </CardContent>
-          </Card>
-        </Link>
+        {/* Quick Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <TrendingUp className="h-5 w-5 mr-2 text-[#14ad9f]" />
+              Schnelle Aktionen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <button className="w-full flex items-center justify-between p-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors">
+                <span className="flex items-center">
+                  <Mail className="h-4 w-4 mr-2" />
+                  E-Mail senden
+                </span>
+                <span>→</span>
+              </button>
 
-        <Link href="/dashboard/admin/ai-config">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">🛡️ KI-Moderation</CardTitle>
-              <FiSettings className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-600">Chat-Moderation konfigurieren</div>
-            </CardContent>
-          </Card>
-        </Link>
+              <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <span className="flex items-center">
+                  <Users className="h-4 w-4 mr-2" />
+                  Benutzer verwalten
+                </span>
+                <span>→</span>
+              </button>
 
-        <Link href="/dashboard/admin/moderation">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                🔍 Moderation-Logs
-              </CardTitle>
-              <FiAlertTriangle className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-600">Moderation-Events überwachen</div>
-            </CardContent>
-          </Card>
-        </Link>
+              <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <span className="flex items-center">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Unternehmen hinzufügen
+                </span>
+                <span>→</span>
+              </button>
 
-        <Link href="/dashboard/admin/newsletter">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">📧 Newsletter</CardTitle>
-              <FiMail className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-600">Newsletter verwalten</div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/admin/staff-management">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">👥 Mitarbeiter</CardTitle>
-              <FiUserCheck className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-600">Team-Mitglieder verwalten</div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/admin/platform-settings">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">⚙️ Plattform</CardTitle>
-              <FiSettings className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-600">Plattform-Einstellungen</div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/admin/email-management">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                ✉️ E-Mail Management
-              </CardTitle>
-              <FiMail className="h-4 w-4 text-gray-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-gray-600">E-Mail-System verwalten</div>
-            </CardContent>
-          </Card>
-        </Link>
+              <button className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <span className="flex items-center">
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  System Monitoring
+                </span>
+                <span>→</span>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* AWS Services Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Activity className="h-5 w-5 mr-2 text-[#14ad9f]" />
+            AWS Services Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div>
+                <p className="font-medium text-gray-900">DynamoDB</p>
+                <p className="text-sm text-gray-600">Datenbank</p>
+              </div>
+              <div className="text-green-600 font-semibold">Aktiv</div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div>
+                <p className="font-medium text-gray-900">SES</p>
+                <p className="text-sm text-gray-600">E-Mail Service</p>
+              </div>
+              <div className="text-green-600 font-semibold">Aktiv</div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+              <div>
+                <p className="font-medium text-gray-900">Cognito</p>
+                <p className="text-sm text-gray-600">Authentifizierung</p>
+              </div>
+              <div className="text-green-600 font-semibold">Aktiv</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
