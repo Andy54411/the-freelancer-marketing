@@ -1,26 +1,55 @@
 // Test Notification API für AWS SES
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
 import { EnhancedTicketService } from '@/lib/aws-ticket-enhanced';
 import { Ticket } from '@/types/ticket';
 
-// Admin-Token Verifikation
+// JWT Secret für Admin-Tokens
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
+);
+
+// Admin-Token Verifikation - unterstützt Bearer Token und Cookies
 async function verifyAdminToken(request: NextRequest) {
   try {
+    // Prüfe Authorization Header (Bearer Token)
     const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return { success: false, error: 'Missing or invalid authorization header' };
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      const decoded = payload as any;
+
+      if (decoded.role === 'admin') {
+        return { success: true, userId: decoded.userId || decoded.email };
+      }
     }
 
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as any;
+    // Prüfe Admin Cookie (aus Login-System)
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').reduce(
+        (acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        },
+        {} as Record<string, string>
+      );
 
-    if (decoded.role !== 'admin') {
-      return { success: false, error: 'Insufficient permissions' };
+      const adminToken = cookies['taskilo-admin-token'];
+      if (adminToken) {
+        const { payload } = await jwtVerify(adminToken, JWT_SECRET);
+        const decoded = payload as any;
+
+        if (decoded.role === 'admin') {
+          return { success: true, userId: decoded.email || decoded.userId };
+        }
+      }
     }
 
-    return { success: true, userId: decoded.userId };
+    return { success: false, error: 'No valid authentication found' };
   } catch (error) {
+    console.error('Auth verification error:', error);
     return { success: false, error: 'Invalid token' };
   }
 }
