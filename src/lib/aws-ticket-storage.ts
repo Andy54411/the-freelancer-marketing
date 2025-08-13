@@ -14,13 +14,15 @@ import { EnhancedTicketService } from './aws-ticket-enhanced';
 
 const dynamodb = new DynamoDBClient({
   region: process.env.AWS_REGION || 'eu-central-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
+  credentials: process.env.AWS_ACCESS_KEY_ID
+    ? {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      }
+    : undefined, // Verwende Default-Credentials wenn keine expliziten angegeben
 });
 
-const TABLE_NAME = 'taskilo-tickets';
+const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'taskilo-admin-data';
 
 export interface TicketData {
   id: string;
