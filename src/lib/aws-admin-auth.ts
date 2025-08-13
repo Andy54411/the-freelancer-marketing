@@ -266,7 +266,17 @@ export class AWSAdminAuthService {
       const result = await docClient.send(queryCommand);
 
       if (result.Items && result.Items.length > 0) {
-        return result.Items[0] as AdminUser;
+        const user = result.Items[0] as AdminUser;
+
+        // Ensure arrays are properly formed (DynamoDB sometimes returns them differently)
+        if (!Array.isArray(user.departments)) {
+          user.departments = [];
+        }
+        if (!Array.isArray(user.permissions)) {
+          user.permissions = [];
+        }
+
+        return user;
       }
 
       return null;
