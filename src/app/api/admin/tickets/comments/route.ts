@@ -1,31 +1,16 @@
-// Ticket Comments API
+// Pure AWS Ticket Comments API - NO Firebase Dependencies
 import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDBClient, UpdateItemCommand, GetItemCommand } from '@aws-sdk/client-dynamodb';
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { AWSTicketStorage } from '@/lib/aws-ticket-storage';
+import { EnhancedTicketService } from '@/lib/aws-ticket-enhanced';
 
-const dynamodb = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'eu-central-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
+// JWT Secret für Admin-Tokens
 const JWT_SECRET = new TextEncoder().encode(
   process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
 );
 
-interface TicketComment {
-  id: string;
-  author: string;
-  authorType: 'admin' | 'customer' | 'system';
-  content: string;
-  timestamp: string;
-  isInternal: boolean;
-}
-
+// Admin-Authentifizierung prüfen
 async function verifyAdminAuth() {
   const cookieStore = await cookies();
   const token = cookieStore.get('taskilo-admin-token')?.value;
@@ -55,56 +40,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Aktuelles Ticket laden
-    const getCommand = new GetItemCommand({
-      TableName: 'taskilo-admin-data',
-      Key: marshall({ id: ticketId }),
-    });
+    console.log(`Adding comment to ticket ${ticketId} in AWS DynamoDB`);
 
-    const ticketResult = await dynamodb.send(getCommand);
-    if (!ticketResult.Item) {
-      return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
-    }
-
-    const ticket = unmarshall(ticketResult.Item);
-    const now = new Date().toISOString();
-
-    const newComment: TicketComment = {
-      id: `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    // Add comment using AWS DynamoDB storage
+    const updatedTicket = await AWSTicketStorage.addComment(ticketId, {
       author,
       authorType: authorType || 'admin',
       content,
-      timestamp: now,
       isInternal: isInternal || false,
-    };
-
-    // Kommentar zu bestehenden Kommentaren hinzufügen
-    const updatedComments = [...(ticket.comments || []), newComment];
-
-    const updateCommand = new UpdateItemCommand({
-      TableName: 'taskilo-admin-data',
-      Key: marshall({ id: ticketId }),
-      UpdateExpression: 'SET comments = :comments, updatedAt = :updatedAt',
-      ExpressionAttributeValues: marshall({
-        ':comments': updatedComments,
-        ':updatedAt': now,
-      }),
-      ReturnValues: 'ALL_NEW',
     });
 
-    const result = await dynamodb.send(updateCommand);
-    const updatedTicket = result.Attributes ? unmarshall(result.Attributes) : null;
+    console.log(`Comment added successfully to ticket ${ticketId}`);
+
+    // Log to CloudWatch
+    await EnhancedTicketService.logToCloudWatch(
+      'ticket-comments',
+      {
+        action: 'comment_added',
+        ticketId,
+        author,
+        authorType: authorType || 'admin',
+        isInternal: isInternal || false,
+        contentLength: content.length,
+      },
+      'INFO'
+    );
 
     return NextResponse.json({
       success: true,
-      comment: newComment,
       ticket: updatedTicket,
       message: 'Kommentar erfolgreich hinzugefügt',
+      source: 'aws-dynamodb',
     });
   } catch (error) {
-    console.error('Comment creation error:', error);
+    console.error('AWS Comment creation error:', error);
+
+    await EnhancedTicketService.logToCloudWatch(
+      'ticket-comments-errors',
+      {
+        action: 'comment_creation_failed',
+        error: error.message,
+      },
+      'ERROR'
+    );
+
     return NextResponse.json(
-      { error: 'Fehler beim Hinzufügen des Kommentars', details: error.message },
+      {
+        error: 'Fehler beim Hinzufügen des Kommentars',
+        details: error.message,
+        source: 'aws-dynamodb',
+      },
       { status: 500 }
     );
   }
@@ -122,87 +107,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Ticket-ID ist erforderlich' }, { status: 400 });
     }
 
-    const getCommand = new GetItemCommand({
-      TableName: 'taskilo-admin-data',
-      Key: marshall({ id: ticketId }),
-    });
+    console.log(`Getting comments for ticket ${ticketId} from AWS DynamoDB`);
 
-    const result = await dynamodb.send(getCommand);
-    if (!result.Item) {
+    // Get ticket with comments from AWS DynamoDB
+    const ticket = await AWSTicketStorage.getTicket(ticketId);
+
+    if (!ticket) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
 
-    const ticket = unmarshall(result.Item);
-    const comments = ticket.comments || [];
-
-    // Kommentare nach Zeitstempel sortieren
-    comments.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    console.log(`Found ${ticket.comments.length} comments for ticket ${ticketId}`);
 
     return NextResponse.json({
       success: true,
-      comments,
-      total: comments.length,
+      comments: ticket.comments,
+      ticketId,
+      source: 'aws-dynamodb',
     });
   } catch (error) {
-    console.error('Comments fetch error:', error);
+    console.error('AWS Comments fetch error:', error);
     return NextResponse.json(
-      { error: 'Fehler beim Laden der Kommentare', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE - Kommentar löschen
-export async function DELETE(request: NextRequest) {
-  try {
-    await verifyAdminAuth();
-
-    const { ticketId, commentId } = await request.json();
-
-    if (!ticketId || !commentId) {
-      return NextResponse.json(
-        { error: 'Ticket-ID und Kommentar-ID sind erforderlich' },
-        { status: 400 }
-      );
-    }
-
-    // Aktuelles Ticket laden
-    const getCommand = new GetItemCommand({
-      TableName: 'taskilo-admin-data',
-      Key: marshall({ id: ticketId }),
-    });
-
-    const ticketResult = await dynamodb.send(getCommand);
-    if (!ticketResult.Item) {
-      return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
-    }
-
-    const ticket = unmarshall(ticketResult.Item);
-    const updatedComments = (ticket.comments || []).filter(comment => comment.id !== commentId);
-
-    const updateCommand = new UpdateItemCommand({
-      TableName: 'taskilo-admin-data',
-      Key: marshall({ id: ticketId }),
-      UpdateExpression: 'SET comments = :comments, updatedAt = :updatedAt',
-      ExpressionAttributeValues: marshall({
-        ':comments': updatedComments,
-        ':updatedAt': new Date().toISOString(),
-      }),
-      ReturnValues: 'ALL_NEW',
-    });
-
-    const result = await dynamodb.send(updateCommand);
-    const updatedTicket = result.Attributes ? unmarshall(result.Attributes) : null;
-
-    return NextResponse.json({
-      success: true,
-      ticket: updatedTicket,
-      message: 'Kommentar erfolgreich gelöscht',
-    });
-  } catch (error) {
-    console.error('Comment deletion error:', error);
-    return NextResponse.json(
-      { error: 'Fehler beim Löschen des Kommentars', details: error.message },
+      {
+        error: 'Fehler beim Laden der Kommentare',
+        details: error.message,
+        source: 'aws-dynamodb',
+      },
       { status: 500 }
     );
   }

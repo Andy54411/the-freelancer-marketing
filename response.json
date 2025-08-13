@@ -1,0 +1,1 @@
+{"statusCode":200,"body":"{\"success\":true,\"analysis\":{\"priority\":\"high\",\"category\":\"other\",\"sentiment\":\"negative\",\"urgencyScore\":65,\"suggestedAssignee\":\"Support Team\",\"estimatedResolutionTime\":\"1 Tag\",\"tags\":[]},\"message\":\"Ticket erfolgreich analysiert und klassifiziert\"}"}

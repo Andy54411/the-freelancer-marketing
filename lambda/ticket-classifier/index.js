@@ -3,8 +3,10 @@ const { DynamoDBClient, GetItemCommand, UpdateItemCommand } = require('@aws-sdk/
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb');
 
 const dynamodb = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'eu-central-1',
+  region: process.env.REGION || 'eu-central-1',
 });
+
+const TABLE_NAME = process.env.TABLE_NAME || 'taskilo-admin-data';
 
 // Ticket Analysis Interface als JSDoc
 /**
@@ -342,7 +344,7 @@ function suggestAssignee(category, priority) {
 
 async function updateTicketWithAnalysis(ticketId, analysis) {
   const updateParams = {
-    TableName: 'taskilo-admin-data',
+    TableName: TABLE_NAME,
     Key: marshall({ id: ticketId }),
     UpdateExpression:
       'SET #priority = :priority, #category = :category, #sentiment = :sentiment, #urgencyScore = :urgencyScore, #suggestedAssignee = :suggestedAssignee, #estimatedResolutionTime = :estimatedResolutionTime, #tags = :tags, #analysisTimestamp = :timestamp',
@@ -374,7 +376,7 @@ async function updateTicketWithAnalysis(ticketId, analysis) {
 async function assignUrgentTicket(ticketId, analysis) {
   // Bei dringenden Tickets automatisch zuweisen
   const updateParams = {
-    TableName: 'taskilo-admin-data',
+    TableName: TABLE_NAME,
     Key: marshall({ id: ticketId }),
     UpdateExpression:
       'SET #assignedTo = :assignedTo, #status = :status, #autoAssigned = :autoAssigned',
