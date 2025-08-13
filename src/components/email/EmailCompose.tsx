@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +40,19 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
 
   const [selectedSenderEmail, setSelectedSenderEmail] = useState(senderEmails[0]); // Initialisiere mit erstem Wert
   const [contentMode, setContentMode] = useState<'rich' | 'html'>('rich');
+
+  // SICHERHEITS-CHECK: Stelle sicher, dass immer eine gültige E-Mail ausgewählt ist
+  useEffect(() => {
+    if (!senderEmails.includes(selectedSenderEmail)) {
+      console.warn(
+        'Invalid sender email detected:',
+        selectedSenderEmail,
+        'Setting to default:',
+        senderEmails[0]
+      );
+      setSelectedSenderEmail(senderEmails[0]);
+    }
+  }, [selectedSenderEmail, senderEmails]);
 
   const [composeForm, setComposeForm] = useState({
     to: '',
@@ -303,6 +316,29 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
       return;
     }
 
+    // ERZWINGE immer eine gültige taskilo.de Sender-E-Mail (gleiche Logik wie bei Einzelemails)
+    const allowedSenderEmails = [
+      'andy.staudinger@taskilo.de',
+      'info@taskilo.de',
+      'noreply@taskilo.de',
+      'admin@taskilo.de',
+      'marketing@taskilo.de',
+      'support@taskilo.de',
+      'hello@taskilo.de',
+    ];
+
+    if (!allowedSenderEmails.includes(selectedSenderEmail)) {
+      toast.error(
+        `Ungültige Sender-E-Mail: ${selectedSenderEmail}. Nur verifizierte taskilo.de Adressen sind erlaubt.`
+      );
+      setSelectedSenderEmail(allowedSenderEmails[0]); // Setze auf Standard zurück
+      return;
+    }
+
+    const validSenderEmail = allowedSenderEmails.includes(selectedSenderEmail)
+      ? selectedSenderEmail
+      : allowedSenderEmails[0]; // Fallback auf erste erlaubte E-Mail
+
     const activeContacts = contacts.filter(c => c.status === 'active');
     if (activeContacts.length === 0) {
       toast.error('Keine aktiven Kontakte gefunden');
@@ -312,7 +348,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
     setLoading(true);
     try {
       const messages = activeContacts.map(contact => ({
-        from: selectedSenderEmail,
+        from: validSenderEmail, // Verwende validierte E-Mail statt selectedSenderEmail
         to: [contact.email],
         subject: composeForm.subject,
         htmlContent: composeForm.htmlContent.replace('{{name}}', contact.name),
