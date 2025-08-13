@@ -215,22 +215,25 @@ export const HeroHeader = () => {
                   </div>
                 ) : (
                   // Unauthenticated user
-                  <div className="flex flex-col sm:flex-row sm:gap-3 gap-2 w-full md:w-fit items-center">
-                    <div className="flex items-center gap-3">
-                      <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                        <span>Anmelden</span>
-                      </Button>
-                      <Button
-                        asChild
-                        size="sm"
-                        className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300"
-                      >
-                        <Link href="/register/company">
-                          <span>Mit Taskilo starten</span>
-                        </Link>
-                      </Button>
-                    </div>
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenLoginPopup}
+                      className="min-w-[100px] h-10 px-4"
+                    >
+                      <span>Anmelden</span>
+                    </Button>
+                    <Button
+                      asChild
+                      size="sm"
+                      className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300 min-w-[140px] h-10 px-4"
+                    >
+                      <Link href="/register/company">
+                        <span>Mit Taskilo starten</span>
+                      </Link>
+                    </Button>
+                    <div className="flex items-center h-10">
                       <ModeToggle />
                     </div>
                   </div>
@@ -283,23 +286,9 @@ export const HeroHeader = () => {
                         </Button>
                       </>
                     ) : (
-                      // Unauthenticated user - mobile
-                      <>
-                        <Button variant="outline" size="sm" onClick={handleOpenLoginPopup}>
-                          Anmelden
-                        </Button>
-                        <Button
-                          asChild
-                          size="sm"
-                          className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white shadow-lg font-semibold transition-all duration-300"
-                        >
-                          <Link href="/register/company">Mit Taskilo starten</Link>
-                        </Button>
-                      </>
+                      // Unauthenticated user - mobile (keine Buttons mehr)
+                      <></>
                     ))}
-                  <div className="flex items-center gap-2 pt-3 border-t">
-                    <ModeToggle />
-                  </div>
                 </div>
               </div>
             )}

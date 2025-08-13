@@ -317,7 +317,7 @@ export default function Step1() {
       {/* Modal für Schritte */}
       {isModalOpen && (
         // Overlay für den Hintergrund des Modals
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex justify-center items-center z-50 p-4">
           <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-sm border border-gray-200">
             {' '}
             {/* Verbesserter Modal-Container */}

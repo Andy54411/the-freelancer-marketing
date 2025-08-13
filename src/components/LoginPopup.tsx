@@ -152,7 +152,7 @@ export default function LoginPopup({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 bg-transparent bg-opacity-70 flex justify-center items-center z-50 p-4 backdrop-blur-sm"
       onClick={onClose} // Schließt bei Klick auf Overlay
     >
       <div
