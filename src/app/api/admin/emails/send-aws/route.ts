@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         },
         {
           Name: 'Timestamp',
-          Value: new Date().toISOString(),
+          Value: new Date().toISOString().replace(/[^a-zA-Z0-9._-]/g, ''),
         },
       ],
     };
