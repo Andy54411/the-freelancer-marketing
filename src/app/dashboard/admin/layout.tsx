@@ -4,7 +4,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Users, Building2, Mail, Settings, BarChart3, Shield, LogOut, Menu, X } from 'lucide-react';
+import {
+  Users,
+  Building2,
+  Mail,
+  Settings,
+  BarChart3,
+  Shield,
+  LogOut,
+  Menu,
+  X,
+  Ticket,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -21,6 +32,8 @@ interface AdminLayoutProps {
 
 const navigation = [
   { name: 'Übersicht', href: '/dashboard/admin', icon: BarChart3 },
+  { name: 'Tickets', href: '/dashboard/admin/tickets', icon: Ticket },
+  { name: 'Enhanced Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
   { name: 'Unternehmen', href: '/dashboard/admin/companies', icon: Building2 },
   { name: 'Benutzer', href: '/dashboard/admin/users', icon: Users },
   { name: 'E-Mail System', href: '/dashboard/admin/email', icon: Mail },
