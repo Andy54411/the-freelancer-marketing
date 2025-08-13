@@ -117,7 +117,10 @@ export default function EnhancedTicketAnalytics() {
       });
 
       if (response.ok) {
-        const tickets = await response.json();
+        const data = await response.json();
+        console.log('API Response:', data); // Debug-Log
+        const tickets = Array.isArray(data.tickets) ? data.tickets : []; // Stelle sicher, dass es ein Array ist
+        console.log('Extracted tickets:', tickets); // Debug-Log
         const openTickets = tickets.filter((t: any) => t.status === 'open');
 
         for (const ticket of openTickets.slice(0, 5)) {

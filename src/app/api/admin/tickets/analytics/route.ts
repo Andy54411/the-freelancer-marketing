@@ -8,7 +8,13 @@ import {
   DescribeLogGroupsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
 import { SESClient, GetSendQuotaCommand, GetSendStatisticsCommand } from '@aws-sdk/client-ses';
-import jwt from 'jsonwebtoken';
+import { jwtVerify } from 'jose';
+import { cookies } from 'next/headers';
+
+// JWT Secret für Admin-Tokens
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
+);
 
 const dynamodb = new DynamoDBClient({
   region: process.env.AWS_REGION || 'eu-central-1',
@@ -127,31 +133,52 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function verifyAdminAuth(request: NextRequest) {
-  // Temporärer Bypass für Demo/Development - ENTFERNEN FÜR PRODUCTION
-  if (process.env.NODE_ENV === 'development' || process.env.BYPASS_ADMIN_AUTH === 'true') {
-    return { isValid: true, userId: 'demo-admin' };
-  }
-
+async function verifyAdminAuth(
+  request: NextRequest
+): Promise<{ isValid: boolean; userId?: string; error?: string }> {
   const authHeader = request.headers.get('authorization');
+  const cookieHeader = request.headers.get('cookie');
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return { isValid: false, error: 'Authorization header fehlt' };
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-
-    if (decoded.role !== 'admin') {
-      return { isValid: false, error: 'Admin-Berechtigung erforderlich' };
+  // Prüfe Authorization Header (Bearer Token)
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET);
+      const decoded = payload as any;
+      if (decoded.role === 'admin') {
+        return { isValid: true, userId: decoded.userId };
+      }
+    } catch (error) {
+      console.error('JWT Bearer Token invalid:', error);
     }
-
-    return { isValid: true, userId: decoded.userId };
-  } catch (error) {
-    return { isValid: false, error: 'Ungültiger Token' };
   }
+
+  // Prüfe Admin Cookie (aus Login-System)
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').reduce(
+      (acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    const adminToken = cookies['taskilo-admin-token'];
+    if (adminToken) {
+      try {
+        const { payload } = await jwtVerify(adminToken, JWT_SECRET);
+        const decoded = payload as any;
+        if (decoded.role === 'admin') {
+          return { isValid: true, userId: decoded.userId };
+        }
+      } catch (error) {
+        console.error('JWT Cookie Token invalid:', error);
+      }
+    }
+  }
+
+  return { isValid: false, error: 'Keine gültige Admin-Authentifizierung gefunden' };
 }
 
 async function getTicketsForAnalytics(timeRange: string, category?: string, priority?: string) {
