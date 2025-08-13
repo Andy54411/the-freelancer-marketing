@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
+import { jwtVerify } from 'jose';
+import { cookies } from 'next/headers';
 
 const dynamodb = new DynamoDBClient({
   region: process.env.AWS_REGION || 'eu-central-1',
@@ -11,8 +13,26 @@ const dynamodb = new DynamoDBClient({
   },
 });
 
+// JWT Secret für Admin-Tokens
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
+);
+
 export async function GET(_request: NextRequest) {
   try {
+    // Admin-Authentifizierung prüfen
+    const cookieStore = await cookies();
+    const token = cookieStore.get('taskilo-admin-token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    }
+
+    try {
+      await jwtVerify(token, JWT_SECRET);
+    } catch (error) {
+      return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
+    }
     const command = new ScanCommand({
       TableName: 'taskilo-admin-data',
       FilterExpression: '#type = :type',

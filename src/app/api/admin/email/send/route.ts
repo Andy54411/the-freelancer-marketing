@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall } from '@aws-sdk/util-dynamodb';
+import { jwtVerify } from 'jose';
+import { cookies } from 'next/headers';
 
 const sesClient = new SESClient({
   region: process.env.AWS_REGION || 'eu-central-1',
@@ -20,12 +22,44 @@ const dynamodb = new DynamoDBClient({
   },
 });
 
+// JWT Secret für Admin-Tokens
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
+);
+
 export async function POST(request: NextRequest) {
   try {
+    // Admin-Authentifizierung prüfen
+    const cookieStore = await cookies();
+    const token = cookieStore.get('taskilo-admin-token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+    }
+
+    try {
+      await jwtVerify(token, JWT_SECRET);
+    } catch (error) {
+      return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
+    }
     const { to, subject, htmlContent, textContent } = await request.json();
 
     if (!to || !subject) {
       return NextResponse.json({ error: 'To und Subject sind erforderlich' }, { status: 400 });
+    }
+
+    // Verifizierte E-Mail-Adressen für AWS SES Sandbox
+    const verifiedEmails = ['andy.staudinger@taskilo.de', 'test@taskilo.de', 'admin@taskilo.de'];
+
+    if (!verifiedEmails.includes(to)) {
+      return NextResponse.json(
+        {
+          error: 'E-Mail-Adresse nicht verifiziert',
+          message: `Die E-Mail-Adresse "${to}" ist nicht in AWS SES verifiziert. Verfügbare Adressen: ${verifiedEmails.join(', ')}`,
+          verifiedEmails: verifiedEmails,
+        },
+        { status: 400 }
+      );
     }
 
     // E-Mail über AWS SES senden

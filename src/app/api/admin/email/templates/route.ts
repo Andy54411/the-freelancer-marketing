@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DynamoDBClient, ScanCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
+import { jwtVerify } from 'jose';
+import { cookies } from 'next/headers';
 
 const dynamodb = new DynamoDBClient({
   region: process.env.AWS_REGION || 'eu-central-1',
@@ -11,7 +13,28 @@ const dynamodb = new DynamoDBClient({
   },
 });
 
+// JWT Secret für Admin-Tokens
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
+);
+
+async function verifyAdminAuth(): Promise<boolean> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('taskilo-admin-token')?.value;
+    if (!token) return false;
+    await jwtVerify(token, JWT_SECRET);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(_request: NextRequest) {
+  if (!(await verifyAdminAuth())) {
+    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+  }
+
   try {
     const command = new ScanCommand({
       TableName: 'taskilo-admin-data',
@@ -45,6 +68,10 @@ export async function GET(_request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!(await verifyAdminAuth())) {
+    return NextResponse.json({ error: 'Nicht autorisiert' }, { status: 401 });
+  }
+
   try {
     const { name, subject, htmlContent, textContent, category } = await request.json();
 
