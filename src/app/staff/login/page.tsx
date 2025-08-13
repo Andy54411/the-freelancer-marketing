@@ -43,7 +43,7 @@ export default function StaffLoginPage() {
           if (data.user.role === 'admin') {
             router.push('/dashboard/admin');
           } else {
-            router.push('/dashboard/admin/email-management');
+            router.push('/dashboard/admin/email');
           }
         }
       }
@@ -79,7 +79,7 @@ export default function StaffLoginPage() {
         if (data.user.role === 'admin') {
           router.push('/dashboard/admin');
         } else {
-          router.push('/dashboard/admin/email-management');
+          router.push('/dashboard/admin/email');
         }
       } else {
         setError(data.error || 'Anmeldung fehlgeschlagen');
@@ -137,7 +137,7 @@ export default function StaffLoginPage() {
                   if (user.role === 'admin') {
                     router.push('/dashboard/admin');
                   } else {
-                    router.push('/dashboard/admin/email-management');
+                    router.push('/dashboard/admin/email');
                   }
                 }}
               >
