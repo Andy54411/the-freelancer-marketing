@@ -126,11 +126,16 @@ export class AWSTicketStorage {
       // Store in DynamoDB
       const command = new PutItemCommand({
         TableName: TABLE_NAME,
-        Item: marshall({
-          ...ticket,
-          type: 'ticket', // For GSI filtering
-          sk: `ticket#${id}`, // Sort key for range queries
-        }),
+        Item: marshall(
+          {
+            ...ticket,
+            type: 'ticket', // For GSI filtering
+            sk: `ticket#${id}`, // Sort key for range queries
+          },
+          {
+            removeUndefinedValues: true, // Entferne undefined Werte
+          }
+        ),
       });
 
       await dynamodb.send(command);
@@ -212,11 +217,16 @@ export class AWSTicketStorage {
 
       const command = new PutItemCommand({
         TableName: TABLE_NAME,
-        Item: marshall({
-          ...updatedTicket,
-          type: 'ticket',
-          sk: `ticket#${id}`,
-        }),
+        Item: marshall(
+          {
+            ...updatedTicket,
+            type: 'ticket',
+            sk: `ticket#${id}`,
+          },
+          {
+            removeUndefinedValues: true, // Entferne undefined Werte
+          }
+        ),
       });
 
       await dynamodb.send(command);
@@ -308,6 +318,7 @@ export class AWSTicketStorage {
     priority?: string;
     category?: string;
     assignedTo?: string;
+    customerEmail?: string;
     limit?: number;
     startDate?: string;
     endDate?: string;
@@ -339,6 +350,11 @@ export class AWSTicketStorage {
         expressionAttributeValues[':assignedTo'] = filters.assignedTo;
       }
 
+      if (filters?.customerEmail) {
+        filterExpression += ' AND customerEmail = :customerEmail';
+        expressionAttributeValues[':customerEmail'] = filters.customerEmail;
+      }
+
       if (filters?.startDate) {
         filterExpression += ' AND createdAt >= :startDate';
         expressionAttributeValues[':startDate'] = filters.startDate;
@@ -353,7 +369,9 @@ export class AWSTicketStorage {
         TableName: TABLE_NAME,
         FilterExpression: filterExpression,
         ExpressionAttributeNames: expressionAttributeNames,
-        ExpressionAttributeValues: marshall(expressionAttributeValues),
+        ExpressionAttributeValues: marshall(expressionAttributeValues, {
+          removeUndefinedValues: true, // Entferne undefined Werte
+        }),
         Limit: filters?.limit || 50,
       });
 

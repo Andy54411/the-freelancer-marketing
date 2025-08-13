@@ -20,6 +20,7 @@ import {
   ClipboardList as FiClipboardList,
   Banknote as FiBanknote,
   Users as FiUsers,
+  HelpCircle as FiHelpCircle,
 } from 'lucide-react';
 
 const isNonEmptyString = (val: unknown): val is string =>
@@ -77,6 +78,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     if (pathname?.includes('/profile')) return 'profile';
     if (pathname?.includes('/calendar')) return 'calendar';
     if (pathname?.includes('/reviews')) return 'reviews';
+    if (pathname?.includes('/support')) return 'support';
     if (pathname?.includes('/taskilo-advertising')) return 'taskilo-advertising';
     return view;
   }, [pathname, view]);
@@ -149,6 +151,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return FiDollarSign;
       case 'reviews':
         return FiMessageSquare;
+      case 'support':
+        return FiHelpCircle;
       case 'profile':
         return FiUser;
       case 'settings':
@@ -175,6 +179,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return 'Finanzen';
       case 'reviews':
         return 'Bewertungen';
+      case 'support':
+        return 'Support Center';
       case 'profile':
         return 'Profil';
       case 'settings':

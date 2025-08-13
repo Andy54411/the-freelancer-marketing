@@ -42,12 +42,15 @@ export async function GET(request: NextRequest) {
     const priority = searchParams.get('priority') || undefined;
     const category = searchParams.get('category') || undefined;
     const assignedTo = searchParams.get('assignedTo') || undefined;
+    const customerEmail = searchParams.get('customerEmail') || undefined;
     const limit = parseInt(searchParams.get('limit') || '50');
 
     console.log('Fetching tickets from AWS DynamoDB with filters:', {
       status,
       priority,
       category,
+      assignedTo,
+      customerEmail,
       assignedTo,
       limit,
     });
@@ -57,6 +60,7 @@ export async function GET(request: NextRequest) {
       priority,
       category,
       assignedTo,
+      customerEmail,
       limit,
     });
 
