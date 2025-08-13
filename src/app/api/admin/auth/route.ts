@@ -116,10 +116,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, email, password } = body as LoginCredentials & { action: string };
 
-    console.log('[API /admin/auth] POST request:', { action, email });
+    // ERWEITERTE AUTH-LOGGING IMPLEMENTIERUNG
+    const timestamp = new Date().toISOString();
+    const userAgent = request.headers.get('user-agent') || 'Unknown';
+    const ip =
+      request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
+    console.log(`=== 🔐 ADMIN AUTH ACTIVITY LOG [${timestamp}] ===`);
+    console.log(`📧 Email: ${email}`);
+    console.log(`🎯 Action: ${action}`);
+    console.log(`🌐 IP: ${ip}`);
+    console.log(`💻 User-Agent: ${userAgent}`);
+    console.log(`⏰ Timestamp: ${timestamp}`);
 
     if (action === 'login') {
       if (!email || !password) {
+        console.log(
+          `❌ LOGIN FAILED: Missing credentials - Email: ${email}, Password: ${password ? '[PROVIDED]' : '[MISSING]'}`
+        );
         return NextResponse.json(
           { success: false, error: 'Email and password required' },
           { status: 400 }
@@ -132,13 +146,25 @@ export async function POST(request: NextRequest) {
       );
 
       if (!employee) {
+        console.log(`❌ LOGIN FAILED: User not found or inactive - Email: ${email}`);
+        console.log(`📊 Available emails: ${EMPLOYEES.map(e => e.email).join(', ')}`);
         return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
       }
 
       // Verify password (in production, use bcrypt.compare)
       if (employee.passwordHash !== password) {
+        console.log(`❌ LOGIN FAILED: Invalid password for user ${email}`);
+        console.log(`🔍 Expected: ${employee.passwordHash}, Received: ${password}`);
         return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
       }
+
+      // ERFOLGREICHER LOGIN - DETAILLIERTES LOGGING
+      console.log(`✅ LOGIN SUCCESSFUL:`);
+      console.log(`   👤 User: ${employee.name} (${employee.email})`);
+      console.log(`   🏷️  Role: ${employee.role}`);
+      console.log(`   🏢 Departments: ${employee.departments.join(', ')}`);
+      console.log(`   🔑 Permissions: ${employee.permissions.join(', ')}`);
+      console.log(`   📅 Previous Login: ${employee.lastLogin || 'First login'}`);
 
       // Create session token
       const sessionToken = await createSessionToken(employee);
@@ -156,11 +182,17 @@ export async function POST(request: NextRequest) {
       // Update last login (in production, update database)
       const employeeIndex = EMPLOYEES.findIndex(emp => emp.id === employee.id);
       if (employeeIndex !== -1) {
+        const previousLogin = EMPLOYEES[employeeIndex].lastLogin;
         EMPLOYEES[employeeIndex] = {
           ...EMPLOYEES[employeeIndex],
-          lastLogin: new Date().toISOString(),
+          lastLogin: timestamp,
         };
+        console.log(`🔄 Updated lastLogin: ${previousLogin} → ${timestamp}`);
       }
+
+      console.log(`🎟️  Session Token Generated: ${sessionToken.substring(0, 20)}...`);
+      console.log(`🍪 Cookie Set: taskilo_admin_session (24h expiry)`);
+      console.log(`=== END AUTH LOG ===\n`);
 
       return NextResponse.json({
         success: true,
@@ -177,9 +209,22 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'logout') {
+      console.log(`🚪 LOGOUT INITIATED for session`);
+
       // Clear session cookie
       const cookieStore = await cookies();
+      const sessionToken = cookieStore.get('taskilo_admin_session')?.value;
+
+      if (sessionToken) {
+        const payload = await validateSessionToken(sessionToken);
+        if (payload) {
+          console.log(`✅ LOGOUT SUCCESSFUL: ${payload.email} (${payload.role})`);
+        }
+      }
+
       cookieStore.delete('taskilo_admin_session');
+      console.log(`🍪 Session cookie cleared`);
+      console.log(`=== END AUTH LOG ===\n`);
 
       return NextResponse.json({
         success: true,
@@ -187,9 +232,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    console.log(`❌ INVALID ACTION: ${action}`);
+    console.log(`=== END AUTH LOG ===\n`);
     return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 });
   } catch (error) {
-    console.error('[API /admin/auth] Error in POST:', error);
+    console.error(`💥 AUTH ERROR:`, error);
+    console.error(`📊 Error Details:`, {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    console.log(`=== END AUTH LOG ===\n`);
 
     return NextResponse.json(
       {
@@ -203,54 +256,104 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/admin/auth - Verify session
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    const timestamp = new Date().toISOString();
+    const userAgent = request.headers.get('user-agent') || 'Unknown';
+    const ip =
+      request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
+    console.log(`=== 🔍 SESSION VERIFICATION LOG [${timestamp}] ===`);
+    console.log(`🌐 IP: ${ip}`);
+    console.log(`💻 User-Agent: ${userAgent}`);
+
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get('taskilo_admin_session')?.value;
 
     if (!sessionToken) {
+      console.log(`❌ SESSION CHECK FAILED: No session token found`);
+      console.log(
+        `🍪 Available cookies: ${
+          cookieStore
+            .getAll()
+            .map(c => c.name)
+            .join(', ') || 'None'
+        }`
+      );
+      console.log(`=== END SESSION LOG ===\n`);
+
       return NextResponse.json(
         {
           success: false,
           error: 'No session found',
-          // Temporärer Fallback während Produktionsproblemen
           employee: null,
         },
         { status: 401 }
       );
     }
 
+    console.log(`🎟️  Session Token Found: ${sessionToken.substring(0, 20)}...`);
+
     const payload = await validateSessionToken(sessionToken);
     if (!payload) {
+      console.log(`❌ SESSION CHECK FAILED: Invalid or expired token`);
+
       // Clear invalid cookie
-      const cookieStore = await cookies();
       cookieStore.delete('taskilo_admin_session');
+      console.log(`🧹 Invalid session cookie cleared`);
+      console.log(`=== END SESSION LOG ===\n`);
+
       return NextResponse.json(
         {
           success: false,
           error: 'Invalid or expired session',
-          // Temporärer Fallback während Produktionsproblemen
           employee: null,
         },
         { status: 401 }
       );
     }
 
+    console.log(`✅ TOKEN VALID:`);
+    console.log(`   👤 User ID: ${payload.id}`);
+    console.log(`   📧 Email: ${payload.email}`);
+    console.log(`   🏷️  Role: ${payload.role}`);
+    console.log(
+      `   ⏱️  Issued: ${payload.iat ? new Date(payload.iat * 1000).toISOString() : 'Unknown'}`
+    );
+    console.log(
+      `   ⏰ Expires: ${payload.exp ? new Date(payload.exp * 1000).toISOString() : 'Unknown'}`
+    );
+
     // Find current employee data
     const employee = EMPLOYEES.find(emp => emp.id === payload.id && emp.isActive);
     if (!employee) {
-      const cookieStore = await cookies();
+      console.log(`❌ SESSION CHECK FAILED: Employee not found or inactive (ID: ${payload.id})`);
+      console.log(
+        `📊 Available employees: ${EMPLOYEES.filter(e => e.isActive)
+          .map(e => `${e.id}:${e.email}`)
+          .join(', ')}`
+      );
+
       cookieStore.delete('taskilo_admin_session');
+      console.log(`🧹 Invalid employee session cookie cleared`);
+      console.log(`=== END SESSION LOG ===\n`);
+
       return NextResponse.json(
         {
           success: false,
           error: 'Employee not found or inactive',
-          // Temporärer Fallback während Produktionsproblemen
           employee: null,
         },
         { status: 401 }
       );
     }
+
+    console.log(`✅ SESSION VERIFICATION SUCCESSFUL:`);
+    console.log(`   👤 Employee: ${employee.name} (${employee.email})`);
+    console.log(`   🏢 Departments: ${employee.departments.join(', ')}`);
+    console.log(`   🔑 Permissions: ${employee.permissions.join(', ')}`);
+    console.log(`   📅 Last Login: ${employee.lastLogin || 'Never'}`);
+    console.log(`=== END SESSION LOG ===\n`);
 
     return NextResponse.json({
       success: true,
@@ -265,7 +368,13 @@ export async function GET(_request: NextRequest) {
       sessionValid: true,
     });
   } catch (error) {
-    console.error('[API /admin/auth] Error in GET:', error);
+    console.error(`💥 SESSION VERIFICATION ERROR:`, error);
+    console.error(`📊 Error Details:`, {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    console.log(`=== END SESSION LOG ===\n`);
 
     // Fallback-Antwort statt 500-Fehler
     return NextResponse.json(
