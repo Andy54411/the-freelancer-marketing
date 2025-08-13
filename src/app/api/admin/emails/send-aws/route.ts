@@ -84,17 +84,21 @@ export async function POST(request: NextRequest) {
 
     // ULTIMATIVE SICHERHEIT: Überschreibe ungültige From-Adressen IMMER
     let validatedFrom = from;
-    if (!allowedSenderEmails.includes(from)) {
-      console.warn(`⚠️ UNGÜLTIGE SENDER-EMAIL ÜBERSCHRIEBEN: "${from}" → "info@taskilo.de"`);
-      validatedFrom = 'info@taskilo.de'; // Überschreibe mit Standard
 
-      // Log für Debug-Zwecke
-      console.log('Ursprüngliche From-Email:', from);
-      console.log('Überschriebene From-Email:', validatedFrom);
-      console.log('Erlaubte Sender-Emails:', allowedSenderEmails);
+    // RADIKALE LÖSUNG: Erzwinge IMMER eine @taskilo.de Adresse
+    if (!from || !allowedSenderEmails.includes(from) || from.includes('@icloud.com')) {
+      console.warn(`🚨 KRITISCHE ÜBERSCHREIBUNG: "${from}" → "info@taskilo.de"`);
+      console.warn('🔒 GRUND: Ungültige oder nicht-verifizierte Sender-E-Mail erkannt');
+      validatedFrom = 'info@taskilo.de'; // Erzwinge Standard
+
+      // Ausführliches Logging für Debug
+      console.log('❌ Ursprüngliche From-Email:', from);
+      console.log('✅ Überschriebene From-Email:', validatedFrom);
+      console.log('📋 Erlaubte Sender-Emails:', allowedSenderEmails);
+      console.log('🚫 @icloud.com E-Mails sind NIEMALS erlaubt');
     }
 
-    console.log('✅ Validierte Sender-E-Mail:', validatedFrom);
+    console.log('✅ FINAL Validierte Sender-E-Mail:', validatedFrom);
 
     // Normalisiere 'to' zu einem Array
     const recipients = Array.isArray(to) ? to : to ? [to] : [];
@@ -109,8 +113,23 @@ export async function POST(request: NextRequest) {
     }
 
     // AWS SES E-Mail Parameter vorbereiten
+    // DOPPELTER SCHUTZ: Nochmals validieren vor AWS SES Call
+    const finalValidatedFrom = allowedSenderEmails.includes(validatedFrom)
+      ? validatedFrom
+      : 'info@taskilo.de';
+
+    if (finalValidatedFrom !== validatedFrom) {
+      console.error('🔥 KRITISCHER SCHUTZ AKTIVIERT: Letzte Validierung fehlgeschlagen!');
+      console.error(
+        '🚨 Validierte From-Email wurde nochmals überschrieben:',
+        validatedFrom,
+        '→',
+        finalValidatedFrom
+      );
+    }
+
     const emailParams = {
-      Source: validatedFrom, // Verwende validierte E-Mail-Adresse
+      Source: finalValidatedFrom, // DOPPELT validierte E-Mail-Adresse
       Destination: {
         ToAddresses: recipients,
         CcAddresses: cc || [],
