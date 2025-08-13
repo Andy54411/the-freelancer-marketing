@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
       category,
       assignedTo,
       customerEmail,
-      assignedTo,
       limit,
     });
 

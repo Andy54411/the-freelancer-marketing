@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import TicketDetailView from '@/components/support/TicketDetailView';
 import {
   MessageSquare,
   Plus,
@@ -27,6 +28,7 @@ import {
   Ticket,
   User,
   Calendar,
+  Eye,
 } from 'lucide-react';
 
 interface SupportTicket {
@@ -70,6 +72,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -185,6 +188,18 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
     }
   };
 
+  // Handler für Ticket-Detail-Ansicht
+  const handleTicketSelect = (ticket: SupportTicket) => {
+    setSelectedTicket(ticket);
+    setSelectedTicketId(ticket.id);
+  };
+
+  const handleBackToList = () => {
+    setSelectedTicket(null);
+    setSelectedTicketId(null);
+    loadTickets(); // Refresh to get updated ticket data
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -197,201 +212,232 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-[#14ad9f]" />
-            Support Center
-          </h1>
-          <p className="text-gray-600 mt-1">Erstellen und verwalten Sie Support-Anfragen</p>
-        </div>
-        <Button onClick={() => setShowCreateForm(true)} className="bg-[#14ad9f] hover:bg-[#129488]">
-          <Plus className="w-4 h-4 mr-2" />
-          Neues Ticket
-        </Button>
-      </div>
-
-      {/* Neues Ticket Formular */}
-      {showCreateForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Ticket className="w-5 h-5" />
-              Neues Support-Ticket erstellen
-            </CardTitle>
-            <CardDescription>
-              Beschreiben Sie Ihr Anliegen so detailliert wie möglich
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="title">Betreff *</Label>
-                <Input
-                  id="title"
-                  value={newTicket.title}
-                  onChange={e => setNewTicket({ ...newTicket, title: e.target.value })}
-                  placeholder="Kurze Beschreibung des Problems"
-                />
-              </div>
-              <div>
-                <Label htmlFor="priority">Priorität</Label>
-                <Select
-                  value={newTicket.priority}
-                  onValueChange={value => setNewTicket({ ...newTicket, priority: value as any })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Niedrig</SelectItem>
-                    <SelectItem value="medium">Normal</SelectItem>
-                    <SelectItem value="high">Hoch</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
+      {/* Conditional Rendering: Ticket Detail View or List View */}
+      {selectedTicket ? (
+        <TicketDetailView
+          ticketId={selectedTicket.id}
+          onBack={handleBackToList}
+          userType="customer"
+        />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <Label htmlFor="category">Kategorie</Label>
-              <Select
-                value={newTicket.category}
-                onValueChange={value => setNewTicket({ ...newTicket, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">Allgemein</SelectItem>
-                  <SelectItem value="technical">Technisch</SelectItem>
-                  <SelectItem value="billing">Abrechnung</SelectItem>
-                  <SelectItem value="account">Account</SelectItem>
-                  <SelectItem value="feature">Feature-Anfrage</SelectItem>
-                </SelectContent>
-              </Select>
+              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <MessageSquare className="w-6 h-6 text-[#14ad9f]" />
+                Support Center
+              </h1>
+              <p className="text-gray-600 mt-1">Erstellen und verwalten Sie Support-Anfragen</p>
             </div>
+            <Button
+              onClick={() => setShowCreateForm(true)}
+              className="bg-[#14ad9f] hover:bg-[#129488]"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Neues Ticket
+            </Button>
+          </div>
 
-            <div>
-              <Label htmlFor="description">Beschreibung *</Label>
-              <Textarea
-                id="description"
-                value={newTicket.description}
-                onChange={e => setNewTicket({ ...newTicket, description: e.target.value })}
-                placeholder="Detaillierte Beschreibung Ihres Anliegens..."
-                rows={4}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button
-                onClick={createTicket}
-                disabled={submitting}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
-              >
-                {submitting ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <Send className="w-4 h-4 mr-2" />
-                )}
-                Ticket erstellen
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowCreateForm(false)}
-                disabled={submitting}
-              >
-                Abbrechen
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tickets Liste */}
-      <div className="space-y-4">
-        {tickets.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Noch keine Support-Tickets</h3>
-              <p className="text-gray-500 mb-4">
-                Erstellen Sie Ihr erstes Support-Ticket, um Hilfe zu erhalten
-              </p>
-              <Button
-                onClick={() => setShowCreateForm(true)}
-                className="bg-[#14ad9f] hover:bg-[#129488]"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Erstes Ticket erstellen
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          tickets.map(ticket => {
-            const StatusIcon = statusConfig[ticket.status].icon;
-            return (
-              <Card key={ticket.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-medium text-gray-900">{ticket.title}</h3>
-                        <Badge className={statusConfig[ticket.status].color}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusConfig[ticket.status].label}
-                        </Badge>
-                        <Badge className={priorityConfig[ticket.priority].color}>
-                          {priorityConfig[ticket.priority].label}
-                        </Badge>
-                      </div>
-
-                      <p className="text-gray-600 mb-3 line-clamp-2">{ticket.description}</p>
-
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          Ticket #{ticket.id.slice(-8)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(ticket.createdAt).toLocaleDateString('de-DE')}
-                        </span>
-                        {ticket.comments && ticket.comments.length > 0 && (
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="w-4 h-4" />
-                            {ticket.comments.length} Antworten
-                          </span>
-                        )}
-                      </div>
-                    </div>
+          {/* Neues Ticket Formular */}
+          {showCreateForm && (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Ticket className="w-5 h-5" />
+                  Neues Support-Ticket erstellen
+                </CardTitle>
+                <CardDescription>
+                  Beschreiben Sie Ihr Anliegen so detailliert wie möglich
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="title">Betreff *</Label>
+                    <Input
+                      id="title"
+                      value={newTicket.title}
+                      onChange={e => setNewTicket({ ...newTicket, title: e.target.value })}
+                      placeholder="Kurze Beschreibung des Problems"
+                    />
                   </div>
+                  <div>
+                    <Label htmlFor="priority">Priorität</Label>
+                    <Select
+                      value={newTicket.priority}
+                      onValueChange={value =>
+                        setNewTicket({ ...newTicket, priority: value as any })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Niedrig</SelectItem>
+                        <SelectItem value="medium">Normal</SelectItem>
+                        <SelectItem value="high">Hoch</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-                  {ticket.comments && ticket.comments.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h4 className="text-sm font-medium text-gray-900 mb-2">Letzte Antwort:</h4>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-sm text-gray-700">
-                          {ticket.comments[ticket.comments.length - 1].content}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {ticket.comments[ticket.comments.length - 1].authorType === 'admin'
-                            ? 'Support Team'
-                            : 'Sie'}{' '}
-                          -{' '}
-                          {new Date(
-                            ticket.comments[ticket.comments.length - 1].timestamp
-                          ).toLocaleDateString('de-DE')}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                <div>
+                  <Label htmlFor="category">Kategorie</Label>
+                  <Select
+                    value={newTicket.category}
+                    onValueChange={value => setNewTicket({ ...newTicket, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">Allgemein</SelectItem>
+                      <SelectItem value="technical">Technisch</SelectItem>
+                      <SelectItem value="billing">Abrechnung</SelectItem>
+                      <SelectItem value="account">Account</SelectItem>
+                      <SelectItem value="feature">Feature-Anfrage</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="description">Beschreibung *</Label>
+                  <Textarea
+                    id="description"
+                    value={newTicket.description}
+                    onChange={e => setNewTicket({ ...newTicket, description: e.target.value })}
+                    placeholder="Detaillierte Beschreibung Ihres Anliegens..."
+                    rows={4}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={createTicket}
+                    disabled={submitting}
+                    className="bg-[#14ad9f] hover:bg-[#129488]"
+                  >
+                    {submitting ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    ) : (
+                      <Send className="w-4 h-4 mr-2" />
+                    )}
+                    Ticket erstellen
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCreateForm(false)}
+                    disabled={submitting}
+                  >
+                    Abbrechen
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Tickets Liste */}
+          <div className="space-y-4">
+            {tickets.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Noch keine Support-Tickets
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Erstellen Sie Ihr erstes Support-Ticket, um Hilfe zu erhalten
+                  </p>
+                  <Button
+                    onClick={() => setShowCreateForm(true)}
+                    className="bg-[#14ad9f] hover:bg-[#129488]"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Erstes Ticket erstellen
+                  </Button>
                 </CardContent>
               </Card>
-            );
-          })
-        )}
-      </div>
+            ) : (
+              tickets.map(ticket => {
+                const StatusIcon = statusConfig[ticket.status].icon;
+                return (
+                  <Card key={ticket.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-medium text-gray-900">{ticket.title}</h3>
+                            <Badge className={statusConfig[ticket.status].color}>
+                              <StatusIcon className="w-3 h-3 mr-1" />
+                              {statusConfig[ticket.status].label}
+                            </Badge>
+                            <Badge className={priorityConfig[ticket.priority].color}>
+                              {priorityConfig[ticket.priority].label}
+                            </Badge>
+                          </div>
+
+                          <p className="text-gray-600 mb-3 line-clamp-2">{ticket.description}</p>
+
+                          <div className="flex items-center justify-between gap-4 text-sm text-gray-500">
+                            <div className="flex items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                <User className="w-4 h-4" />
+                                Ticket #{ticket.id.slice(-8)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {new Date(ticket.createdAt).toLocaleDateString('de-DE')}
+                              </span>
+                              {ticket.comments && ticket.comments.length > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <MessageSquare className="w-4 h-4" />
+                                  {ticket.comments.length} Antworten
+                                </span>
+                              )}
+                            </div>
+                            <Button
+                              onClick={() => handleTicketSelect(ticket)}
+                              variant="outline"
+                              size="sm"
+                              className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Details anzeigen
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {ticket.comments && ticket.comments.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">
+                            Letzte Antwort:
+                          </h4>
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <p className="text-sm text-gray-700">
+                              {ticket.comments[ticket.comments.length - 1].content}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {ticket.comments[ticket.comments.length - 1].authorType === 'admin'
+                                ? 'Support Team'
+                                : 'Sie'}{' '}
+                              -{' '}
+                              {new Date(
+                                ticket.comments[ticket.comments.length - 1].timestamp
+                              ).toLocaleDateString('de-DE')}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
