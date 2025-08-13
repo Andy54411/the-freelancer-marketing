@@ -36,6 +36,7 @@ const navigation = [
   { name: 'Enhanced Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
   { name: 'Unternehmen', href: '/dashboard/admin/companies', icon: Building2 },
   { name: 'Benutzer', href: '/dashboard/admin/users', icon: Users },
+  { name: 'Admin-Benutzer', href: '/dashboard/admin/admin-users', icon: Shield },
   { name: 'E-Mail System', href: '/dashboard/admin/email', icon: Mail },
   { name: 'Einstellungen', href: '/dashboard/admin/settings', icon: Settings },
 ];

@@ -21,32 +21,26 @@ import {
   MessageCircle,
   Shield,
   Eye,
+  Archive,
+  UserPlus,
 } from 'lucide-react';
-
-interface TicketComment {
-  id: string;
-  author: string;
-  authorType: 'admin' | 'customer' | 'system';
-  content: string;
-  timestamp: string;
-  isInternal: boolean;
-}
-
-interface TicketData {
-  id: string;
-  title: string;
-  description: string;
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  category: string;
-  customerEmail?: string;
-  customerName?: string;
-  assignedTo?: string;
-  createdAt: string;
-  updatedAt: string;
-  tags: string[];
-  comments: TicketComment[];
-}
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { TicketData, TicketComment } from '@/lib/aws-ticket-storage';
+import { getAvailableAgents, AdminAgent } from '@/lib/admin-agents';
 
 interface AdminTicketDetailProps {
   ticketId?: string;
@@ -81,6 +75,14 @@ export default function AdminTicketDetail({
   const [isInternal, setIsInternal] = useState(false);
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [selectedAssignee, setSelectedAssignee] = useState('');
+  const [availableAgents, setAvailableAgents] = useState<AdminAgent[]>([]);
+
+  // Verfügbare Agenten laden
+  useEffect(() => {
+    setAvailableAgents(getAvailableAgents());
+  }, []);
 
   // Ticket laden wenn nur ID übergeben wurde
   const loadTicket = async (id: string) => {
@@ -179,6 +181,75 @@ export default function AdminTicketDetail({
     }
   };
 
+  // Ticket-Status aktualisieren
+  const updateTicketStatus = async (newStatus: string) => {
+    if (!ticket?.id) return;
+
+    try {
+      const response = await fetch('/api/admin/tickets', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: ticket.id,
+          status: newStatus,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedTicket = { ...ticket, status: newStatus as any };
+        setTicket(updatedTicket);
+        toast.success(
+          `Ticket als ${statusConfig[newStatus as keyof typeof statusConfig]?.label.toLowerCase()} markiert`
+        );
+        onTicketUpdate?.();
+      } else {
+        toast.error('Fehler beim Aktualisieren des Status');
+      }
+    } catch (error) {
+      console.error('Fehler beim Status-Update:', error);
+      toast.error('Fehler beim Aktualisieren des Status');
+    }
+  };
+
+  // Ticket zuweisen
+  const assignTicket = async () => {
+    if (!ticket?.id || !selectedAssignee) return;
+
+    try {
+      const assignee = availableAgents.find(agent => agent.id === selectedAssignee);
+
+      const response = await fetch('/api/admin/tickets', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: ticket.id,
+          assignedTo: assignee?.name || selectedAssignee,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedTicket = { ...ticket, assignedTo: assignee?.name || selectedAssignee };
+        setTicket(updatedTicket);
+        setShowAssignDialog(false);
+        setSelectedAssignee('');
+        toast.success(`Ticket an ${assignee?.name} zugewiesen`);
+        onTicketUpdate?.();
+      } else {
+        toast.error('Fehler beim Zuweisen des Tickets');
+      }
+    } catch (error) {
+      console.error('Fehler beim Zuweisen:', error);
+      toast.error('Fehler beim Zuweisen des Tickets');
+    } finally {
+      setShowAssignDialog(false);
+      setSelectedAssignee('');
+    }
+  };
+
   // Datum formatieren
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('de-DE', {
@@ -229,18 +300,57 @@ export default function AdminTicketDetail({
 
   return (
     <div className="space-y-6">
-      {/* Header mit Zurück-Button */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Zurück zur Übersicht
-        </Button>
+      {/* Header mit Zurück-Button und Aktionen */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Zurück zur Übersicht
+          </Button>
 
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Ticket #{ticket.id.split('_')[1]?.substring(0, 8)}
-          </h1>
-          <p className="text-gray-600">{ticket.title}</p>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Ticket #{ticket.id.split('_')[1]?.substring(0, 8)}
+            </h1>
+            <p className="text-gray-600">{ticket.title}</p>
+          </div>
+        </div>
+
+        {/* Ticket-Aktionen */}
+        <div className="flex items-center gap-2">
+          {ticket.status !== 'closed' && (
+            <>
+              {ticket.status !== 'resolved' && (
+                <Button
+                  onClick={() => updateTicketStatus('resolved')}
+                  variant="outline"
+                  size="sm"
+                  className="border-green-300 text-green-700 hover:bg-green-50"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Als gelöst markieren
+                </Button>
+              )}
+              <Button
+                onClick={() => updateTicketStatus('closed')}
+                variant="outline"
+                size="sm"
+                className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                <Archive className="w-4 h-4 mr-1" />
+                Schließen
+              </Button>
+              <Button
+                onClick={() => setShowAssignDialog(true)}
+                variant="outline"
+                size="sm"
+                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                <UserPlus className="w-4 h-4 mr-1" />
+                Zuweisen
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -422,6 +532,51 @@ export default function AdminTicketDetail({
           </div>
         </CardContent>
       </Card>
+
+      {/* Zuweisungs-Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Ticket zuweisen</DialogTitle>
+            <DialogDescription>
+              Wählen Sie einen Mitarbeiter aus, dem dieses Ticket zugewiesen werden soll.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="assignee">Mitarbeiter auswählen</Label>
+              <Select value={selectedAssignee} onValueChange={setSelectedAssignee}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Mitarbeiter auswählen..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableAgents.map(agent => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{agent.name}</span>
+                        <span className="text-sm text-gray-500">{agent.email}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={assignTicket}
+              disabled={!selectedAssignee}
+              className="bg-[#14ad9f] hover:bg-[#129488]"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Zuweisen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
