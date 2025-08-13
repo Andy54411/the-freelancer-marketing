@@ -134,6 +134,8 @@ export async function POST(request: NextRequest) {
             : undefined,
         },
       },
+      // Configuration Set für detailliertes Logging
+      ConfigurationSetName: 'taskilo-email-logging',
       Tags: [
         {
           Name: 'Source',
@@ -142,6 +144,14 @@ export async function POST(request: NextRequest) {
         {
           Name: 'EmailType',
           Value: 'SingleEmail',
+        },
+        {
+          Name: 'Environment',
+          Value: 'Production',
+        },
+        {
+          Name: 'Timestamp',
+          Value: new Date().toISOString(),
         },
       ],
     };
