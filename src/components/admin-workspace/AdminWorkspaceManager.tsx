@@ -11,7 +11,6 @@ import { AdminWorkspaceCalendar } from './AdminWorkspaceCalendar';
 import { AdminWorkspaceFilters } from './AdminWorkspaceFilters';
 import { AdminWorkspaceDetailSlider } from './AdminWorkspaceDetailSlider';
 import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
-import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminQuickNoteDialog } from './AdminQuickNoteDialog';
@@ -25,9 +24,17 @@ import type {
 
 type ViewMode = 'board' | 'list' | 'calendar';
 
+interface AdminUser {
+  email: string;
+  name: string;
+  role: string;
+  id: string;
+}
+
 export default function AdminWorkspaceManager() {
-  const { user } = useAuth();
   const router = useRouter();
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [workspaces, setWorkspaces] = useState<AdminWorkspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('board');
@@ -39,11 +46,42 @@ export default function AdminWorkspaceManager() {
   const [selectedWorkspace, setSelectedWorkspace] = useState<AdminWorkspace | null>(null);
   const [isDetailSliderOpen, setIsDetailSliderOpen] = useState(false);
 
-  // Admin ID aus User UID verwenden
-  const adminId = user?.uid;
+  // Admin Authentication Check
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/auth/verify');
+        if (response.ok) {
+          const data = await response.json();
+          setAdminUser(data.user);
+        } else {
+          router.push('/admin/login');
+          return;
+        }
+      } catch (error) {
+        console.error('Admin auth check failed:', error);
+        router.push('/admin/login');
+        return;
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // Admin ID aus Admin User verwenden
+  const adminId = adminUser?.id;
 
   useEffect(() => {
-    if (!adminId) return;
+    if (!adminId || authLoading) {
+      // User noch nicht geladen oder nicht authentifiziert
+      setLoading(authLoading);
+      if (!authLoading && !adminId) {
+        setWorkspaces([]);
+      }
+      return;
+    }
 
     setLoading(true);
 
@@ -55,16 +93,16 @@ export default function AdminWorkspaceManager() {
 
     // Cleanup subscription on unmount
     return unsubscribe;
-  }, [adminId]);
+  }, [adminId, authLoading]);
 
   const handleCreateWorkspace = async (workspaceData: Partial<AdminWorkspace>) => {
-    if (!adminId || !user?.uid) return;
+    if (!adminId || !adminUser?.id) return;
 
     try {
       const newWorkspace = await adminWorkspaceService.createWorkspace({
         ...workspaceData,
         adminId: adminId,
-        createdBy: user.uid,
+        createdBy: adminUser.id,
         createdAt: new Date(),
         updatedAt: new Date(),
         progress: 0,
@@ -169,6 +207,28 @@ export default function AdminWorkspaceManager() {
     }
   };
 
+  // Frühe Authentifizierungs-Überprüfung
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
+      </div>
+    );
+  }
+
+  if (!adminUser) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="text-gray-500 mb-4">Nicht authentifiziert</div>
+          <Link href="/admin/login" className="text-[#14ad9f] hover:underline">
+            Zum Admin-Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -220,11 +280,11 @@ export default function AdminWorkspaceManager() {
 
             <div className="flex items-center gap-2">
               {/* Quick Note Dialog */}
-              {adminId && user?.uid && (
+              {adminId && adminUser?.id && (
                 <AdminQuickNoteDialog
                   workspaces={filteredWorkspaces}
                   adminId={adminId}
-                  userId={user.uid}
+                  userId={adminUser.id}
                   onNoteAdded={() => {
                     // Realtime sync will automatically update the UI
                   }}
