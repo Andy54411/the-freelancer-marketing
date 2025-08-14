@@ -1,9 +1,9 @@
 // Lambda API Endpoint für Admin Workspace Management
-const LAMBDA_API_BASE = 'https://your-api-gateway-url.amazonaws.com/prod/admin-workspaces';
+const LAMBDA_API_BASE =
+  'https://b14ia0e93d.execute-api.eu-central-1.amazonaws.com/dev/admin/workspaces';
 
 // Development Mode - verwende lokale Mock-Daten bis AWS Lambda deployed ist
-const USE_MOCK_DATA =
-  process.env.NODE_ENV === 'development' || LAMBDA_API_BASE.includes('your-api-gateway-url');
+const USE_MOCK_DATA = false; // AWS Lambda ist jetzt verfügbar
 
 // Mock Storage für Development
 const mockWorkspaces: AdminWorkspace[] = [];
@@ -95,8 +95,7 @@ export interface AdminWorkspaceMember {
 }
 
 export class AdminWorkspaceService {
-  private apiUrl =
-    'https://b14ia0e93d.execute-api.eu-central-1.amazonaws.com/prod/admin/workspaces';
+  private apiUrl = 'https://b14ia0e93d.execute-api.eu-central-1.amazonaws.com/dev/admin/workspaces';
 
   // HTTP Helper für Lambda API Calls
   private async callLambdaAPI(endpoint: string, options: RequestInit = {}) {

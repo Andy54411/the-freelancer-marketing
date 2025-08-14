@@ -27,65 +27,86 @@ const TABLES = {
   WORKSPACE_ACTIVITY: process.env.WORKSPACE_ACTIVITY_TABLE || 'TaskiloWorkspaceActivity',
 };
 
+// CORS Headers für alle Responses
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*', // In Produktion sollte dies spezifischer sein
+  'Access-Control-Allow-Headers':
+    'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+  'Content-Type': 'application/json',
+};
+
 exports.handler = async event => {
   console.log('Admin Workspace Event:', JSON.stringify(event, null, 2));
+
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({ message: 'CORS preflight successful' }),
+    };
+  }
 
   const { httpMethod, path, pathParameters, body, queryStringParameters } = event;
   const parsedBody = body ? JSON.parse(body) : {};
 
   try {
-    // Router basierend auf HTTP Method und Path
+    // Normalisiere den Pfad - entferne /admin prefix falls vorhanden
+    const normalizedPath = path.replace(/^\/admin/, '') || '/';
+
+    // Router basierend auf HTTP Method und normalisierten Path
     if (httpMethod === 'GET') {
-      if (path === '/workspaces') {
+      if (normalizedPath === '/workspaces') {
         return await getAllWorkspaces(queryStringParameters);
-      } else if (path.includes('/workspaces/') && path.includes('/tasks')) {
-        const workspaceId = extractWorkspaceId(path);
+      } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/tasks')) {
+        const workspaceId = extractWorkspaceId(normalizedPath);
         return await getWorkspaceTasks(workspaceId, queryStringParameters);
-      } else if (path.includes('/workspaces/') && path.includes('/members')) {
-        const workspaceId = extractWorkspaceId(path);
+      } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/members')) {
+        const workspaceId = extractWorkspaceId(normalizedPath);
         return await getWorkspaceMembers(workspaceId);
-      } else if (path.includes('/workspaces/') && path.includes('/boards')) {
-        const workspaceId = extractWorkspaceId(path);
+      } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/boards')) {
+        const workspaceId = extractWorkspaceId(normalizedPath);
         return await getWorkspaceBoards(workspaceId);
-      } else if (path.includes('/workspaces/') && path.includes('/activity')) {
-        const workspaceId = extractWorkspaceId(path);
+      } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/activity')) {
+        const workspaceId = extractWorkspaceId(normalizedPath);
         return await getWorkspaceActivity(workspaceId, queryStringParameters);
-      } else if (path.includes('/workspaces/')) {
-        const workspaceId = extractWorkspaceId(path);
+      } else if (normalizedPath.includes('/workspaces/')) {
+        const workspaceId = extractWorkspaceId(normalizedPath);
         return await getWorkspace(workspaceId);
       }
     } else if (httpMethod === 'POST') {
-      if (path === '/workspaces') {
+      if (normalizedPath === '/workspaces') {
         return await createWorkspace(parsedBody);
-      } else if (path.includes('/workspaces/') && path.includes('/tasks')) {
-        const workspaceId = extractWorkspaceId(path);
+      } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/tasks')) {
+        const workspaceId = extractWorkspaceId(normalizedPath);
         return await createTask(workspaceId, parsedBody);
-      } else if (path.includes('/workspaces/') && path.includes('/members')) {
+      } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/members')) {
         const workspaceId = extractWorkspaceId(path);
         return await addWorkspaceMember(workspaceId, parsedBody);
-      } else if (path.includes('/workspaces/') && path.includes('/boards')) {
+      } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/boards')) {
         const workspaceId = extractWorkspaceId(path);
         return await createBoard(workspaceId, parsedBody);
       }
     } else if (httpMethod === 'PUT') {
-      if (path.includes('/workspaces/') && path.includes('/tasks/')) {
+      if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/tasks/')) {
         const workspaceId = extractWorkspaceId(path);
         const taskId = extractTaskId(path);
         return await updateTask(workspaceId, taskId, parsedBody);
-      } else if (path.includes('/workspaces/')) {
+      } else if (normalizedPath.includes('/workspaces/')) {
         const workspaceId = extractWorkspaceId(path);
         return await updateWorkspace(workspaceId, parsedBody);
       }
     } else if (httpMethod === 'DELETE') {
-      if (path.includes('/workspaces/') && path.includes('/tasks/')) {
+      if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/tasks/')) {
         const workspaceId = extractWorkspaceId(path);
         const taskId = extractTaskId(path);
         return await deleteTask(workspaceId, taskId);
-      } else if (path.includes('/workspaces/') && path.includes('/members/')) {
+      } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/members/')) {
         const workspaceId = extractWorkspaceId(path);
         const memberId = extractMemberId(path);
         return await removeWorkspaceMember(workspaceId, memberId);
-      } else if (path.includes('/workspaces/')) {
+      } else if (normalizedPath.includes('/workspaces/')) {
         const workspaceId = extractWorkspaceId(path);
         return await deleteWorkspace(workspaceId);
       }
@@ -93,14 +114,14 @@ exports.handler = async event => {
 
     return {
       statusCode: 404,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS_HEADERS,
       body: JSON.stringify({ error: 'Route not found' }),
     };
   } catch (error) {
     console.error('Lambda Error:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS_HEADERS,
       body: JSON.stringify({ error: error.message }),
     };
   }
@@ -143,7 +164,7 @@ async function getAllWorkspaces(queryParams) {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       workspaces: result.Items || [],
@@ -163,14 +184,14 @@ async function getWorkspace(workspaceId) {
   if (!result.Item) {
     return {
       statusCode: 404,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS_HEADERS,
       body: JSON.stringify({ error: 'Workspace not found' }),
     };
   }
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       workspace: result.Item,
@@ -180,26 +201,36 @@ async function getWorkspace(workspaceId) {
 
 async function createWorkspace(workspaceData) {
   const workspaceId = `ws_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp als Zahl für DynamoDB Index
+  const nowISO = new Date().toISOString(); // ISO String für Display
 
   const workspace = {
     workspaceId,
     name: workspaceData.name,
     description: workspaceData.description || '',
-    owner: workspaceData.owner,
-    members: workspaceData.members || [workspaceData.owner],
+    owner: workspaceData.owner || 'admin',
+    members: workspaceData.members || [workspaceData.owner || 'admin'],
     type: 'admin', // Unterscheidung von Company-Workspaces
-    status: 'active',
+    status: workspaceData.status || 'active',
     settings: {
       isPublic: workspaceData.isPublic || false,
       allowGuests: workspaceData.allowGuests || false,
       notifications: true,
       ...workspaceData.settings,
     },
-    createdAt: now,
+    createdAt: now, // Zahl für DynamoDB Index
+    createdAtISO: nowISO, // String für Display
     updatedAt: now,
-    createdBy: workspaceData.owner,
+    updatedAtISO: nowISO,
+    createdBy: workspaceData.owner || 'admin',
   };
+
+  // Entferne undefined values
+  Object.keys(workspace).forEach(key => {
+    if (workspace[key] === undefined) {
+      delete workspace[key];
+    }
+  });
 
   await docClient.send(
     new PutCommand({
@@ -211,14 +242,14 @@ async function createWorkspace(workspaceData) {
   // Activity Log erstellen
   await logActivity(workspaceId, {
     action: 'workspace_created',
-    actor: workspaceData.owner,
+    actor: workspaceData.owner || 'admin',
     details: { workspaceName: workspaceData.name },
-    timestamp: now,
+    timestamp: nowISO,
   });
 
   return {
     statusCode: 201,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       workspace,
@@ -227,14 +258,21 @@ async function createWorkspace(workspaceData) {
 }
 
 async function updateWorkspace(workspaceId, updateData) {
-  const now = new Date().toISOString();
+  const now = Date.now(); // Unix timestamp für DynamoDB Index
+  const nowISO = new Date().toISOString(); // ISO String für Display
 
-  const params = {
+  let params = {
     TableName: TABLES.ADMIN_WORKSPACES,
     Key: { workspaceId },
-    UpdateExpression: 'SET #updatedAt = :updatedAt',
-    ExpressionAttributeNames: { '#updatedAt': 'updatedAt' },
-    ExpressionAttributeValues: { ':updatedAt': now },
+    UpdateExpression: 'SET #updatedAt = :updatedAt, #updatedAtISO = :updatedAtISO',
+    ExpressionAttributeNames: {
+      '#updatedAt': 'updatedAt',
+      '#updatedAtISO': 'updatedAtISO',
+    },
+    ExpressionAttributeValues: {
+      ':updatedAt': now,
+      ':updatedAtISO': nowISO,
+    },
     ReturnValues: 'ALL_NEW',
   };
 
@@ -256,13 +294,13 @@ async function updateWorkspace(workspaceId, updateData) {
       action: 'workspace_updated',
       actor: updateData.updatedBy,
       details: updateData,
-      timestamp: now,
+      timestamp: nowISO,
     });
   }
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       workspace: result.Attributes,
@@ -299,7 +337,7 @@ async function deleteWorkspace(workspaceId) {
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: CORS_HEADERS,
       body: JSON.stringify({
         success: true,
         message: 'Workspace deleted successfully',
@@ -309,7 +347,7 @@ async function deleteWorkspace(workspaceId) {
 
   return {
     statusCode: 404,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({ error: 'Workspace not found' }),
   };
 }
@@ -352,7 +390,7 @@ async function getWorkspaceTasks(workspaceId, queryParams) {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       tasks: result.Items || [],
@@ -402,7 +440,7 @@ async function createTask(workspaceId, taskData) {
 
   return {
     statusCode: 201,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       task,
@@ -457,7 +495,7 @@ async function updateTask(workspaceId, taskId, updateData) {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       task: result.Attributes,
@@ -475,7 +513,7 @@ async function deleteTask(workspaceId, taskId) {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       message: 'Task deleted successfully',
@@ -496,7 +534,7 @@ async function getWorkspaceMembers(workspaceId) {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       members: result.Items || [],
@@ -529,7 +567,7 @@ async function addWorkspaceMember(workspaceId, memberData) {
 
   return {
     statusCode: 201,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       member,
@@ -547,7 +585,7 @@ async function removeWorkspaceMember(workspaceId, memberId) {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       message: 'Member removed successfully',
@@ -568,7 +606,7 @@ async function getWorkspaceBoards(workspaceId) {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       boards: result.Items || [],
@@ -606,7 +644,7 @@ async function createBoard(workspaceId, boardData) {
 
   return {
     statusCode: 201,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       board,
@@ -631,7 +669,7 @@ async function getWorkspaceActivity(workspaceId, queryParams) {
 
   return {
     statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
       activities: result.Items || [],
