@@ -1,7 +1,10 @@
 exports.handler = async event => {
   console.log('Ultra Simple WebSocket Handler - Event:', JSON.stringify(event, null, 2));
 
-  const { routeKey, connectionId, requestContext } = event;
+  // PayloadFormatVersion 1.0 structure for WebSocket
+  const routeKey = event.requestContext?.routeKey;
+  const connectionId = event.requestContext?.connectionId;
+  const requestContext = event.requestContext;
 
   try {
     switch (routeKey) {

@@ -288,51 +288,63 @@ export class TaxService {
       const periodStart = new Date(year, 0, 1);
       const periodEnd = new Date(year, 11, 31);
 
-      // TODO: Integration mit FinanceService für echte Buchungen
-      const mockData = {
-        umsaetze: 200000,
-        sonstigeEinnahmen: 5000,
-        privatentnahmen: 0,
-        wareneinkauf: 80000,
-        personalkosten: 60000,
-        raumkosten: 12000,
-        fahrzeugkosten: 8000,
-        werbekosten: 5000,
-        reisekosten: 3000,
-        kommunikation: 2000,
-        bueroBedarf: 1500,
-        versicherungen: 3500,
-        sonstigeAusgaben: 10000,
-        abschreibungen: 5000,
-        gewinn: 15000,
-        verlust: 0,
-      };
+      // CRITICAL: Check if using mock data for tax calculations
+      if (USE_MOCK_DATA) {
+        console.warn(
+          '🚨 TAX SERVICE: Using MOCK DATA for EÜR calculation! This should NEVER happen in production!'
+        );
 
-      // Gewinn/Verlust berechnen
-      const einnahmen = mockData.umsaetze + mockData.sonstigeEinnahmen;
-      const ausgaben =
-        mockData.wareneinkauf +
-        mockData.personalkosten +
-        mockData.raumkosten +
-        mockData.fahrzeugkosten +
-        mockData.werbekosten +
-        mockData.reisekosten +
-        mockData.kommunikation +
-        mockData.bueroBedarf +
-        mockData.versicherungen +
-        mockData.sonstigeAusgaben +
-        mockData.abschreibungen;
+        // TODO: Integration mit FinanceService für echte Buchungen
+        const mockData = {
+          umsaetze: 200000,
+          sonstigeEinnahmen: 5000,
+          privatentnahmen: 0,
+          wareneinkauf: 80000,
+          personalkosten: 60000,
+          raumkosten: 12000,
+          fahrzeugkosten: 8000,
+          werbekosten: 5000,
+          reisekosten: 3000,
+          kommunikation: 2000,
+          bueroBedarf: 1500,
+          versicherungen: 3500,
+          sonstigeAusgaben: 10000,
+          abschreibungen: 5000,
+          gewinn: 15000,
+          verlust: 0,
+        };
 
-      const result = einnahmen - ausgaben;
-      if (result > 0) {
-        mockData.gewinn = result;
-        mockData.verlust = 0;
-      } else {
-        mockData.gewinn = 0;
-        mockData.verlust = Math.abs(result);
+        // Gewinn/Verlust berechnen
+        const einnahmen = mockData.umsaetze + mockData.sonstigeEinnahmen;
+        const ausgaben =
+          mockData.wareneinkauf +
+          mockData.personalkosten +
+          mockData.raumkosten +
+          mockData.fahrzeugkosten +
+          mockData.werbekosten +
+          mockData.reisekosten +
+          mockData.kommunikation +
+          mockData.bueroBedarf +
+          mockData.versicherungen +
+          mockData.sonstigeAusgaben +
+          mockData.abschreibungen;
+
+        const result = einnahmen - ausgaben;
+        if (result > 0) {
+          mockData.gewinn = result;
+          mockData.verlust = 0;
+        } else {
+          mockData.gewinn = 0;
+          mockData.verlust = Math.abs(result);
+        }
+
+        return mockData;
       }
 
-      return mockData;
+      // PRODUCTION: Real EÜR calculation with FinanceService
+      throw new Error(
+        '🚨 TAX SERVICE: Real EÜR calculation not implemented! Cannot proceed without FinanceService integration.'
+      );
     } catch (error) {
       console.error('Fehler bei EÜR Berechnung:', error);
       throw new Error('EÜR konnte nicht berechnet werden');
@@ -344,46 +356,58 @@ export class TaxService {
    */
   static async calculateGuV(companyId: string, year: number): Promise<TaxCalculation['guv']> {
     try {
-      // TODO: Integration mit echten Buchhaltungsdaten
-      const mockData = {
-        umsatzerlöse: 200000,
-        bestandsveränderungen: 0,
-        sonstigeErträge: 5000,
-        materialaufwand: 80000,
-        personalaufwand: 60000,
-        abschreibungen: 5000,
-        sonstigeAufwendungen: 35000,
-        finanzertrage: 500,
-        finanzaufwendungen: 1000,
-        steuernVomEinkommen: 4000,
-        sonstigeSteuern: 1500,
-        jahresueberschuss: 0,
-        jahresfehlbetrag: 0,
-      };
+      // CRITICAL: Check if using mock data for tax calculations
+      if (USE_MOCK_DATA) {
+        console.warn(
+          '🚨 TAX SERVICE: Using MOCK DATA for GuV calculation! This should NEVER happen in production!'
+        );
 
-      // Jahresergebnis berechnen
-      const ertrageSumme =
-        mockData.umsatzerlöse +
-        mockData.bestandsveränderungen +
-        mockData.sonstigeErträge +
-        mockData.finanzertrage;
-      const aufwendungenSumme =
-        mockData.materialaufwand +
-        mockData.personalaufwand +
-        mockData.abschreibungen +
-        mockData.sonstigeAufwendungen +
-        mockData.finanzaufwendungen +
-        mockData.steuernVomEinkommen +
-        mockData.sonstigeSteuern;
+        // TODO: Integration mit echten Buchhaltungsdaten
+        const mockData = {
+          umsatzerlöse: 200000,
+          bestandsveränderungen: 0,
+          sonstigeErträge: 5000,
+          materialaufwand: 80000,
+          personalaufwand: 60000,
+          abschreibungen: 5000,
+          sonstigeAufwendungen: 35000,
+          finanzertrage: 500,
+          finanzaufwendungen: 1000,
+          steuernVomEinkommen: 4000,
+          sonstigeSteuern: 1500,
+          jahresueberschuss: 0,
+          jahresfehlbetrag: 0,
+        };
 
-      const jahresergebnis = ertrageSumme - aufwendungenSumme;
-      if (jahresergebnis > 0) {
-        mockData.jahresueberschuss = jahresergebnis;
-      } else {
-        mockData.jahresfehlbetrag = Math.abs(jahresergebnis);
+        // Jahresergebnis berechnen
+        const ertrageSumme =
+          mockData.umsatzerlöse +
+          mockData.bestandsveränderungen +
+          mockData.sonstigeErträge +
+          mockData.finanzertrage;
+        const aufwendungenSumme =
+          mockData.materialaufwand +
+          mockData.personalaufwand +
+          mockData.abschreibungen +
+          mockData.sonstigeAufwendungen +
+          mockData.finanzaufwendungen +
+          mockData.steuernVomEinkommen +
+          mockData.sonstigeSteuern;
+
+        const jahresergebnis = ertrageSumme - aufwendungenSumme;
+        if (jahresergebnis > 0) {
+          mockData.jahresueberschuss = jahresergebnis;
+        } else {
+          mockData.jahresfehlbetrag = Math.abs(jahresergebnis);
+        }
+
+        return mockData;
       }
 
-      return mockData;
+      // PRODUCTION: Real GuV calculation with accounting system
+      throw new Error(
+        '🚨 TAX SERVICE: Real GuV calculation not implemented! Cannot proceed without accounting system integration.'
+      );
     } catch (error) {
       console.error('Fehler bei GuV Berechnung:', error);
       throw new Error('GuV konnte nicht berechnet werden');
@@ -403,34 +427,46 @@ export class TaxService {
       const periodStart = new Date(year, month - 1, 1);
       const periodEnd = new Date(year, month, 0);
 
-      // TODO: Integration mit echten Buchhaltungsdaten
-      const mockData = {
-        gesamtleistung: 16667, // 200000 / 12 Monate
-        rohertrag: 10000,
-        personalkosten: 5000,
-        materialkosten: 6667,
-        fixkosten: 2917,
-        variableKosten: 1000,
-        deckungsbeitrag: 3333,
-        betriebsergebnis: 416,
-        personalaufwandsquote: 30, // %
-        materialeinsatzquote: 40, // %
-        vorjahresvergleich: {
-          umsatzEntwicklung: 5.2, // % Wachstum
-          kostenentwicklung: 3.1,
-          gewinnentwicklung: 12.5,
-        },
-      };
+      // CRITICAL: Check if using mock data for business analysis
+      if (USE_MOCK_DATA) {
+        console.warn(
+          '🚨 TAX SERVICE: Using MOCK DATA for BWA calculation! This should NEVER happen in production!'
+        );
 
-      // Kennzahlen berechnen
-      mockData.rohertrag = mockData.gesamtleistung - mockData.materialkosten;
-      mockData.deckungsbeitrag = mockData.rohertrag - mockData.variableKosten;
-      mockData.betriebsergebnis =
-        mockData.deckungsbeitrag - mockData.fixkosten - mockData.personalkosten;
-      mockData.personalaufwandsquote = (mockData.personalkosten / mockData.gesamtleistung) * 100;
-      mockData.materialeinsatzquote = (mockData.materialkosten / mockData.gesamtleistung) * 100;
+        // TODO: Integration mit echten Buchhaltungsdaten
+        const mockData = {
+          gesamtleistung: 16667, // 200000 / 12 Monate
+          rohertrag: 10000,
+          personalkosten: 5000,
+          materialkosten: 6667,
+          fixkosten: 2917,
+          variableKosten: 1000,
+          deckungsbeitrag: 3333,
+          betriebsergebnis: 416,
+          personalaufwandsquote: 30, // %
+          materialeinsatzquote: 40, // %
+          vorjahresvergleich: {
+            umsatzEntwicklung: 5.2, // % Wachstum
+            kostenentwicklung: 3.1,
+            gewinnentwicklung: 12.5,
+          },
+        };
 
-      return mockData;
+        // Kennzahlen berechnen
+        mockData.rohertrag = mockData.gesamtleistung - mockData.materialkosten;
+        mockData.deckungsbeitrag = mockData.rohertrag - mockData.variableKosten;
+        mockData.betriebsergebnis =
+          mockData.deckungsbeitrag - mockData.fixkosten - mockData.personalkosten;
+        mockData.personalaufwandsquote = (mockData.personalkosten / mockData.gesamtleistung) * 100;
+        mockData.materialeinsatzquote = (mockData.materialkosten / mockData.gesamtleistung) * 100;
+
+        return mockData;
+      }
+
+      // PRODUCTION: Real BWA calculation with accounting system
+      throw new Error(
+        '🚨 TAX SERVICE: Real BWA calculation not implemented! Cannot proceed without accounting system integration.'
+      );
     } catch (error) {
       console.error('Fehler bei BWA Berechnung:', error);
       throw new Error('BWA konnte nicht berechnet werden');
