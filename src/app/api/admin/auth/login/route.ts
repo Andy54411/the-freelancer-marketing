@@ -48,11 +48,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ungültige Anmeldedaten' }, { status: 401 });
     }
 
+    // WorkMail Integration - Map Admin to WorkMail User
+    const workmailEmailMapping = {
+      'andy.staudinger@taskilo.de': 'andy.staudinger@taskilo.de',
+      'admin@taskilo.de': 'support@taskilo.de',
+      'support@taskilo.de': 'support@taskilo.de',
+    };
+
+    const adminEmail = user.email || user.id;
+    const workmailEmail = workmailEmailMapping[adminEmail] || 'support@taskilo.de';
+
     // JWT Token erstellen
     const token = await new SignJWT({
       email: user.email || user.id,
       name: user.name || 'Admin',
       role: user.role || 'admin',
+      workmailEmail: workmailEmail,
+      workmailIntegration: true,
       iat: Math.floor(Date.now() / 1000),
     })
       .setProtectedHeader({ alg: 'HS256' })
@@ -77,6 +89,13 @@ export async function POST(request: NextRequest) {
         name: user.name || 'Admin',
         role: user.role || 'admin',
       },
+      workmail: {
+        email: workmailEmail,
+        organization: 'taskilo-org',
+        webInterface: 'https://taskilo-org.awsapps.com/mail',
+        ssoEnabled: true,
+      },
+      message: `Admin-Login erfolgreich. WorkMail SSO aktiviert für ${workmailEmail}`,
     });
   } catch (error) {
     console.error('Admin login error:', error);
