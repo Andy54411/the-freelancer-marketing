@@ -541,9 +541,16 @@ export function AdminWorkspaceBoard({
         onClose={() => setIsAddTaskOpen(false)}
         workspace={selectedWorkspace}
         columnId={selectedColumnId}
-        onAddTask={taskData => {
+        onAddTask={async taskData => {
           // Handle task creation here
-          handleTaskCreated();
+          if (selectedWorkspace) {
+            try {
+              await adminWorkspaceService.createTask(selectedWorkspace.id, taskData);
+              handleTaskCreated();
+            } catch (error) {
+              console.error('Error creating task:', error);
+            }
+          }
         }}
       />
 
@@ -553,23 +560,39 @@ export function AdminWorkspaceBoard({
         isOpen={isTaskDetailOpen}
         onClose={() => setIsTaskDetailOpen(false)}
         workspace={selectedWorkspace}
-        onUpdateTask={(taskId, updates) => {
+        onUpdateTask={async (taskId, updates) => {
           // Handle task update here
           if (selectedWorkspace) {
-            adminWorkspaceService.getWorkspace(selectedWorkspace.id).then(refreshedWorkspace => {
+            try {
+              await adminWorkspaceService.updateTask(selectedWorkspace.id, taskId, updates);
+              const refreshedWorkspace = await adminWorkspaceService.getAdminWorkspace(
+                selectedWorkspace.id
+              );
               if (refreshedWorkspace) {
                 setSelectedWorkspace(refreshedWorkspace);
               }
-            });
+            } catch (error) {
+              console.error('Error updating task:', error);
+            }
           }
         }}
-        onDeleteTask={taskId => {
+        onDeleteTask={async taskId => {
           // Handle task deletion here
           if (selectedWorkspace) {
-            adminWorkspaceService.deleteTask(selectedWorkspace.id, taskId).then(() => {
+            try {
+              await adminWorkspaceService.deleteTask(selectedWorkspace.id, taskId);
               setIsTaskDetailOpen(false);
               setSelectedTask(null);
-            });
+              // Refresh workspace to show updated task list
+              const refreshedWorkspace = await adminWorkspaceService.getAdminWorkspace(
+                selectedWorkspace.id
+              );
+              if (refreshedWorkspace) {
+                setSelectedWorkspace(refreshedWorkspace);
+              }
+            } catch (error) {
+              console.error('Error deleting task:', error);
+            }
           }
         }}
       />

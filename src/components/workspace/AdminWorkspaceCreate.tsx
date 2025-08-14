@@ -94,7 +94,7 @@ export default function AdminWorkspaceCreate() {
       router.push('/dashboard/admin/workspace');
     } catch (error) {
       console.error('Error creating workspace:', error);
-      // TODO: Show error message to user
+      // Show user-friendly error message
       alert('Fehler beim Erstellen des Workspaces. Bitte versuche es erneut.');
     } finally {
       setLoading(false);

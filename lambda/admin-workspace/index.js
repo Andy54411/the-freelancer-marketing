@@ -358,16 +358,16 @@ async function getWorkspaceTasks(workspaceId, queryParams) {
   const status = queryParams?.status;
   const assignee = queryParams?.assignee;
 
+  // Use Scan with FilterExpression instead of Query with GSI
   let params = {
     TableName: TABLES.WORKSPACE_TASKS,
-    IndexName: 'WorkspaceIndex', // GSI für workspaceId
-    KeyConditionExpression: 'workspaceId = :workspaceId',
+    FilterExpression: 'workspaceId = :workspaceId',
     ExpressionAttributeValues: { ':workspaceId': workspaceId },
     Limit: limit,
   };
 
-  // Filter hinzufügen
-  let filterExpressions = [];
+  // Add additional filters
+  let filterExpressions = ['workspaceId = :workspaceId'];
   if (status) {
     filterExpressions.push('#status = :status');
     params.ExpressionAttributeNames = { ...params.ExpressionAttributeNames, '#status': 'status' };
@@ -382,11 +382,9 @@ async function getWorkspaceTasks(workspaceId, queryParams) {
     params.ExpressionAttributeValues[':assignee'] = assignee;
   }
 
-  if (filterExpressions.length > 0) {
-    params.FilterExpression = filterExpressions.join(' AND ');
-  }
+  params.FilterExpression = filterExpressions.join(' AND ');
 
-  const result = await docClient.send(new QueryCommand(params));
+  const result = await docClient.send(new ScanCommand(params));
 
   return {
     statusCode: 200,
