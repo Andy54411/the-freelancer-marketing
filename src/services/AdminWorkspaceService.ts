@@ -722,26 +722,38 @@ export class AdminWorkspaceService {
   ): () => void {
     const subscriptionId = `workspaces_${adminId}_${Date.now()}`;
 
-    // Subscribe to AWS WebSocket for realtime updates
+    // Development Mode: Verwende nur lokale Mock-Daten ohne AWS
+    const isDevelopment = process.env.NODE_ENV === 'development' || typeof window !== 'undefined';
+
+    if (isDevelopment) {
+      console.log('🔧 Development Mode: AWS Realtime System deaktiviert, verwende Mock-Daten');
+
+      // Lade Mock-Daten sofort
+      this.getAllWorkspaces(adminId).then(callback).catch(console.error);
+
+      // Return no-op unsubscribe function
+      return () => {
+        console.log('🔧 Development: Mock subscription cleanup');
+      };
+    }
+
+    // Production: AWS WebSocket für Realtime Updates
     let unsubscribeWebSocket: (() => void) | null = null;
 
-    if (typeof window !== 'undefined') {
-      awsRealtimeService
-        .subscribeToWorkspaceEvents(adminId, async event => {
-          // Handle realtime workspace updates from AWS
-          console.log('🔄 Realtime workspace update received:', event);
-          try {
-            const workspaces = await this.getAllWorkspaces(adminId);
-            callback(workspaces);
-          } catch (error) {
-            console.error('Error reloading workspaces after realtime update:', error);
-          }
-        })
-        .then(unsubscribe => {
-          unsubscribeWebSocket = unsubscribe;
-        })
-        .catch(console.error);
-    }
+    awsRealtimeService
+      .subscribeToWorkspaceEvents(adminId, async event => {
+        console.log('🔄 Realtime workspace update received:', event);
+        try {
+          const workspaces = await this.getAllWorkspaces(adminId);
+          callback(workspaces);
+        } catch (error) {
+          console.error('Error reloading workspaces after realtime update:', error);
+        }
+      })
+      .then(unsubscribe => {
+        unsubscribeWebSocket = unsubscribe;
+      })
+      .catch(console.error);
 
     // Store callback for manual updates
     this.subscriptions.set(subscriptionId, async (data: any) => {
