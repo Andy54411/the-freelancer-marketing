@@ -98,13 +98,13 @@ export class AdminWorkspaceService {
   private apiUrl =
     'https://b14ia0e93d.execute-api.eu-central-1.amazonaws.com/prod/admin/workspaces';
 
-  // WebSocket für Realtime Updates
-  private websocket: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000; // Start with 1 second
+  // Smart Polling für Realtime Updates (bessere Performance als WebSocket für Admin-Dashboard)
+  private pollInterval: NodeJS.Timeout | null = null;
+  private isPolling = false;
+  private lastUpdate = new Date();
   private subscriptions = new Map<string, (data: any) => void>();
-  private isConnecting = false;
+  private watchedWorkspaces = new Set<string>();
+  private workspaceCache = new Map<string, AdminWorkspace>();
 
   // HTTP Helper für Lambda API Calls
   private async callLambdaAPI(endpoint: string, options: RequestInit = {}) {
@@ -600,77 +600,50 @@ export class AdminWorkspaceService {
     }
   }
 
-  // WebSocket Realtime Functionality für AWS
-  private connectWebSocket(): void {
-    if (this.websocket?.readyState === WebSocket.OPEN || this.isConnecting) {
-      return;
+  // Smart Polling Realtime System für Admin Workspaces
+  private startPolling(): void {
+    if (this.isPolling) return;
+
+    this.isPolling = true;
+    this.pollInterval = setInterval(async () => {
+      await this.checkForUpdates();
+    }, 3000); // Poll every 3 seconds (optimal for admin dashboards)
+  }
+
+  private stopPolling(): void {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
     }
+    this.isPolling = false;
+  }
 
-    this.isConnecting = true;
-
-    // AWS API Gateway WebSocket URL (würde normalerweise konfiguriert werden)
-    const wsUrl = 'wss://your-websocket-api.execute-api.eu-central-1.amazonaws.com/prod';
+  private async checkForUpdates(): Promise<void> {
+    if (this.watchedWorkspaces.size === 0) return;
 
     try {
-      this.websocket = new WebSocket(wsUrl);
+      // Check for updates on watched workspaces
+      for (const workspaceId of this.watchedWorkspaces) {
+        const workspace = await this.getWorkspace(workspaceId);
+        const cached = this.workspaceCache.get(workspaceId);
 
-      this.websocket.onopen = () => {
-        console.log('Admin WebSocket connected');
-        this.isConnecting = false;
-        this.reconnectAttempts = 0;
-        this.reconnectDelay = 1000;
-      };
+        if (!cached || workspace.updatedAt > cached.updatedAt) {
+          this.workspaceCache.set(workspaceId, workspace);
 
-      this.websocket.onmessage = event => {
-        try {
-          const data = JSON.parse(event.data);
-          const { type, payload, subscriptionId } = data;
-
-          // Route message to appropriate subscription
-          if (subscriptionId && this.subscriptions.has(subscriptionId)) {
-            const callback = this.subscriptions.get(subscriptionId);
-            callback?.(payload);
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          // Notify subscribers
+          this.subscriptions.forEach((callback, subscriptionId) => {
+            if (subscriptionId.includes(workspaceId)) {
+              callback(workspace);
+            }
+          });
         }
-      };
-
-      this.websocket.onclose = () => {
-        console.log('Admin WebSocket disconnected');
-        this.isConnecting = false;
-        this.websocket = null;
-
-        // Auto-reconnect with exponential backoff
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
-          setTimeout(() => {
-            this.reconnectAttempts++;
-            this.reconnectDelay *= 2;
-            this.connectWebSocket();
-          }, this.reconnectDelay);
-        }
-      };
-
-      this.websocket.onerror = error => {
-        console.error('Admin WebSocket error:', error);
-        this.isConnecting = false;
-      };
+      }
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
-      this.isConnecting = false;
+      console.error('Error checking for updates:', error);
     }
   }
 
-  private sendWebSocketMessage(message: any): void {
-    if (this.websocket?.readyState === WebSocket.OPEN) {
-      this.websocket.send(JSON.stringify(message));
-    } else {
-      console.warn('WebSocket not connected, attempting to connect...');
-      this.connectWebSocket();
-    }
-  }
-
-  // Subscribe to workspace changes (AWS Realtime equivalent zu Firebase)
+  // Subscribe to workspace changes (Intelligent Polling)
   subscribeToWorkspaces(
     adminId: string,
     callback: (workspaces: AdminWorkspace[]) => void
@@ -678,77 +651,130 @@ export class AdminWorkspaceService {
     const subscriptionId = `workspaces_${adminId}_${Date.now()}`;
 
     // Store callback
-    this.subscriptions.set(subscriptionId, (data: any) => {
-      if (data.type === 'workspaces_updated') {
-        const workspaces: AdminWorkspace[] = data.workspaces || [];
+    this.subscriptions.set(subscriptionId, async (data: any) => {
+      // Reload all workspaces for this admin
+      try {
+        const workspaces = await this.getAllWorkspaces(adminId);
         callback(workspaces);
+      } catch (error) {
+        console.error('Error reloading workspaces:', error);
       }
     });
 
-    // Connect WebSocket if not connected
-    this.connectWebSocket();
-
-    // Send subscription request
-    setTimeout(() => {
-      this.sendWebSocketMessage({
-        action: 'subscribe',
-        type: 'workspaces',
-        adminId: adminId,
-        subscriptionId: subscriptionId,
-      });
-    }, 100);
+    // Start polling if not already running
+    this.startPolling();
 
     // Return unsubscribe function
     return () => {
       this.subscriptions.delete(subscriptionId);
-      this.sendWebSocketMessage({
-        action: 'unsubscribe',
-        subscriptionId: subscriptionId,
-      });
+      if (this.subscriptions.size === 0) {
+        this.stopPolling();
+      }
     };
   }
 
-  // Subscribe to workspace tasks (AWS Realtime)
+  // Subscribe to workspace tasks (Smart Polling)
   subscribeToWorkspaceTasks(
     workspaceId: string,
     callback: (tasks: AdminWorkspaceTask[]) => void
   ): () => void {
     const subscriptionId = `workspace_tasks_${workspaceId}_${Date.now()}`;
 
-    this.subscriptions.set(subscriptionId, (data: any) => {
-      if (data.type === 'workspace_tasks_updated') {
-        const tasks: AdminWorkspaceTask[] = data.tasks || [];
-        callback(tasks);
+    // Add workspace to watched list
+    this.watchedWorkspaces.add(workspaceId);
+
+    this.subscriptions.set(subscriptionId, (workspace: AdminWorkspace) => {
+      if (workspace.id === workspaceId && workspace.tasks) {
+        callback(workspace.tasks);
       }
     });
 
-    this.connectWebSocket();
-
-    setTimeout(() => {
-      this.sendWebSocketMessage({
-        action: 'subscribe',
-        type: 'workspace_tasks',
-        workspaceId: workspaceId,
-        subscriptionId: subscriptionId,
-      });
-    }, 100);
+    this.startPolling();
 
     return () => {
       this.subscriptions.delete(subscriptionId);
-      this.sendWebSocketMessage({
-        action: 'unsubscribe',
-        subscriptionId: subscriptionId,
-      });
+      this.watchedWorkspaces.delete(workspaceId);
+      if (this.subscriptions.size === 0) {
+        this.stopPolling();
+      }
     };
   }
 
-  // Cleanup WebSocket connection
+  // Subscribe to specific workspace changes
+  subscribeToWorkspace(
+    workspaceId: string,
+    callback: (workspace: AdminWorkspace) => void
+  ): () => void {
+    const subscriptionId = `workspace_${workspaceId}_${Date.now()}`;
+
+    this.watchedWorkspaces.add(workspaceId);
+
+    this.subscriptions.set(subscriptionId, (workspace: AdminWorkspace) => {
+      if (workspace.id === workspaceId) {
+        callback(workspace);
+      }
+    });
+
+    this.startPolling();
+
+    return () => {
+      this.subscriptions.delete(subscriptionId);
+      this.watchedWorkspaces.delete(workspaceId);
+      if (this.subscriptions.size === 0) {
+        this.stopPolling();
+      }
+    };
+  }
+
+  // Enhanced CRUD operations with real-time notifications
+  async createWorkspaceWithRealtime(
+    workspaceData: Partial<AdminWorkspace>
+  ): Promise<AdminWorkspace> {
+    const workspace = await this.createWorkspace(workspaceData);
+
+    // Trigger immediate update check
+    setTimeout(() => this.checkForUpdates(), 100);
+
+    return workspace;
+  }
+
+  async updateWorkspaceWithRealtime(
+    workspaceId: string,
+    updates: Partial<AdminWorkspace>
+  ): Promise<AdminWorkspace> {
+    await this.updateWorkspace(workspaceId, updates);
+
+    // Get updated workspace
+    const workspace = await this.getWorkspace(workspaceId);
+
+    // Update cache and notify immediately
+    this.workspaceCache.set(workspaceId, workspace);
+    this.subscriptions.forEach((callback, subscriptionId) => {
+      if (subscriptionId.includes(workspaceId)) {
+        callback(workspace);
+      }
+    });
+
+    return workspace;
+  }
+
+  async deleteWorkspaceWithRealtime(workspaceId: string): Promise<void> {
+    await this.deleteWorkspace(workspaceId);
+
+    // Remove from cache and notify
+    this.workspaceCache.delete(workspaceId);
+    this.watchedWorkspaces.delete(workspaceId);
+
+    // Trigger immediate update check for remaining workspaces
+    setTimeout(() => this.checkForUpdates(), 100);
+  }
+
+  // Cleanup polling system
   disconnect(): void {
-    if (this.websocket) {
-      this.websocket.close();
-      this.websocket = null;
-    }
+    this.stopPolling();
     this.subscriptions.clear();
+    this.watchedWorkspaces.clear();
+    this.workspaceCache.clear();
   }
 }
 

@@ -155,31 +155,53 @@ async function getAllWorkspaces(queryParams) {
 
   // Filter nach Admin ID falls angegeben
   if (adminId) {
-    params.FilterExpression = 'contains(#members, :adminId)';
-    params.ExpressionAttributeNames = { '#members': 'members' };
+    params.FilterExpression =
+      'contains(#assignedTo, :adminId) OR #adminId = :adminId OR #createdBy = :adminId';
+    params.ExpressionAttributeNames = {
+      '#assignedTo': 'assignedTo',
+      '#adminId': 'adminId',
+      '#createdBy': 'createdBy',
+    };
     params.ExpressionAttributeValues = { ':adminId': adminId };
   }
 
   const result = await docClient.send(new ScanCommand(params));
+
+  // Transformiere alle Workspaces zu Frontend-Format
+  const transformedWorkspaces = (result.Items || []).map(transformWorkspaceToFrontend);
 
   return {
     statusCode: 200,
     headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
-      workspaces: result.Items || [],
+      workspaces: transformedWorkspaces,
       count: result.Count,
     }),
   };
 }
 
 async function getWorkspace(workspaceId) {
-  const result = await docClient.send(
+  // Unterstütze sowohl workspaceId als auch id als Key
+  let result;
+
+  // Zuerst versuche mit workspaceId (alte Struktur)
+  result = await docClient.send(
     new GetCommand({
       TableName: TABLES.ADMIN_WORKSPACES,
       Key: { workspaceId },
     })
   );
+
+  // Falls nicht gefunden, versuche mit id (neue Struktur)
+  if (!result.Item) {
+    result = await docClient.send(
+      new GetCommand({
+        TableName: TABLES.ADMIN_WORKSPACES,
+        Key: { id: workspaceId },
+      })
+    );
+  }
 
   if (!result.Item) {
     return {
@@ -189,45 +211,128 @@ async function getWorkspace(workspaceId) {
     };
   }
 
+  // Transformiere Backend-Daten zu Frontend-Format
+  const workspace = transformWorkspaceToFrontend(result.Item);
+
   return {
     statusCode: 200,
     headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
-      workspace: result.Item,
+      workspace: workspace,
     }),
+  };
+}
+
+// Hilfsfunktion: Backend-Daten zu Frontend-Format transformieren
+function transformWorkspaceToFrontend(backendWorkspace) {
+  return {
+    id: backendWorkspace.id || backendWorkspace.workspaceId,
+    title: backendWorkspace.title || backendWorkspace.name,
+    description: backendWorkspace.description || '',
+    type: backendWorkspace.type || 'project',
+    status: backendWorkspace.status || 'active',
+    priority: backendWorkspace.priority || 'medium',
+    assignedTo: backendWorkspace.assignedTo || backendWorkspace.members || [],
+    dueDate: backendWorkspace.dueDate || null,
+    createdAt:
+      backendWorkspace.createdAt || backendWorkspace.createdAtISO || new Date().toISOString(),
+    updatedAt:
+      backendWorkspace.updatedAt || backendWorkspace.updatedAtISO || new Date().toISOString(),
+    tags: backendWorkspace.tags || [],
+    adminId: backendWorkspace.adminId || backendWorkspace.owner || 'admin',
+    createdBy: backendWorkspace.createdBy || backendWorkspace.owner || 'admin',
+    progress: backendWorkspace.progress || 0,
+    boardColumns: backendWorkspace.boardColumns || [],
+    tasks: backendWorkspace.tasks || [],
+    archivedTasks: backendWorkspace.archivedTasks || [],
+    members: backendWorkspace.members || [],
+    relatedCompanies: backendWorkspace.relatedCompanies || [],
+    systemLevel: backendWorkspace.systemLevel || 'platform',
+    permissions: backendWorkspace.permissions || {
+      viewLevel: 'admin',
+      editLevel: 'admin',
+      deleteLevel: 'admin',
+    },
   };
 }
 
 async function createWorkspace(workspaceData) {
   const workspaceId = `ws_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const now = Date.now(); // Unix timestamp als Zahl für DynamoDB Index
-  const nowISO = new Date().toISOString(); // ISO String für Display
+  const now = new Date();
+  const nowISO = now.toISOString();
+
+  // Standard Board Columns für neue Workspaces
+  const defaultBoardColumns = [
+    {
+      id: 'todo',
+      title: 'Zu erledigen',
+      color: '#ef4444',
+      position: 0,
+      tasks: [],
+    },
+    {
+      id: 'in-progress',
+      title: 'In Bearbeitung',
+      color: '#f97316',
+      position: 1,
+      tasks: [],
+    },
+    {
+      id: 'review',
+      title: 'Review',
+      color: '#eab308',
+      position: 2,
+      tasks: [],
+    },
+    {
+      id: 'done',
+      title: 'Erledigt',
+      color: '#22c55e',
+      position: 3,
+      tasks: [],
+    },
+  ];
 
   const workspace = {
-    workspaceId,
-    name: workspaceData.name,
+    // Frontend Interface Kompatibilität
+    id: workspaceId,
+    title: workspaceData.title || workspaceData.name,
     description: workspaceData.description || '',
-    owner: workspaceData.owner || 'admin',
-    members: workspaceData.members || [workspaceData.owner || 'admin'],
-    type: 'admin', // Unterscheidung von Company-Workspaces
+    type: workspaceData.type || 'project',
     status: workspaceData.status || 'active',
-    settings: {
-      isPublic: workspaceData.isPublic || false,
-      allowGuests: workspaceData.allowGuests || false,
-      notifications: true,
-      ...workspaceData.settings,
+    priority: workspaceData.priority || 'medium',
+    assignedTo: workspaceData.assignedTo || [workspaceData.createdBy || 'admin'],
+    dueDate: workspaceData.dueDate || null,
+    createdAt: nowISO,
+    updatedAt: nowISO,
+    tags: workspaceData.tags || [],
+    adminId: workspaceData.adminId || workspaceData.createdBy || 'admin',
+    createdBy: workspaceData.createdBy || 'admin',
+    progress: workspaceData.progress || 0,
+    boardColumns: workspaceData.boardColumns || defaultBoardColumns,
+    tasks: [],
+    archivedTasks: [],
+    members: workspaceData.members || [],
+    relatedCompanies: workspaceData.relatedCompanies || [],
+    systemLevel: workspaceData.systemLevel || 'platform',
+    permissions: workspaceData.permissions || {
+      viewLevel: 'admin',
+      editLevel: 'admin',
+      deleteLevel: 'admin',
     },
-    createdAt: now, // Zahl für DynamoDB Index
-    createdAtISO: nowISO, // String für Display
-    updatedAt: now,
-    updatedAtISO: nowISO,
-    createdBy: workspaceData.owner || 'admin',
+
+    // Backend-spezifische Felder (für Kompatibilität)
+    workspaceId, // Alias für Backend-Kompatibilität
+    name: workspaceData.title || workspaceData.name, // Alias für Backend-Kompatibilität
+    owner: workspaceData.createdBy || 'admin',
+    createdAtTimestamp: now.getTime(), // Für DynamoDB Indexing
+    updatedAtTimestamp: now.getTime(),
   };
 
   // Entferne undefined values
   Object.keys(workspace).forEach(key => {
-    if (workspace[key] === undefined) {
+    if (workspace[key] === undefined || workspace[key] === null) {
       delete workspace[key];
     }
   });
@@ -242,8 +347,8 @@ async function createWorkspace(workspaceData) {
   // Activity Log erstellen
   await logActivity(workspaceId, {
     action: 'workspace_created',
-    actor: workspaceData.owner || 'admin',
-    details: { workspaceName: workspaceData.name },
+    actor: workspaceData.createdBy || 'admin',
+    details: { workspaceTitle: workspace.title, workspaceType: workspace.type },
     timestamp: nowISO,
   });
 
@@ -258,41 +363,79 @@ async function createWorkspace(workspaceData) {
 }
 
 async function updateWorkspace(workspaceId, updateData) {
-  const now = Date.now(); // Unix timestamp für DynamoDB Index
-  const nowISO = new Date().toISOString(); // ISO String für Display
+  const now = new Date();
+  const nowISO = now.toISOString();
 
+  // Unterstütze beide Key-Strukturen (alte: workspaceId, neue: id)
   let params = {
     TableName: TABLES.ADMIN_WORKSPACES,
     Key: { workspaceId },
-    UpdateExpression: 'SET #updatedAt = :updatedAt, #updatedAtISO = :updatedAtISO',
+    UpdateExpression: 'SET #updatedAt = :updatedAt, #updatedAtTimestamp = :updatedAtTimestamp',
     ExpressionAttributeNames: {
       '#updatedAt': 'updatedAt',
-      '#updatedAtISO': 'updatedAtISO',
+      '#updatedAtTimestamp': 'updatedAtTimestamp',
     },
     ExpressionAttributeValues: {
-      ':updatedAt': now,
-      ':updatedAtISO': nowISO,
+      ':updatedAt': nowISO,
+      ':updatedAtTimestamp': now.getTime(),
     },
     ReturnValues: 'ALL_NEW',
   };
 
+  // Mapping von Frontend-Feldern zu Backend-Feldern
+  const fieldMapping = {
+    title: ['title', 'name'], // Frontend: title -> Backend: title + name (alias)
+    description: ['description'],
+    type: ['type'],
+    status: ['status'],
+    priority: ['priority'],
+    assignedTo: ['assignedTo', 'members'], // Frontend: assignedTo -> Backend: assignedTo + members (alias)
+    dueDate: ['dueDate'],
+    tags: ['tags'],
+    progress: ['progress'],
+    boardColumns: ['boardColumns'],
+    tasks: ['tasks'],
+    archivedTasks: ['archivedTasks'],
+    members: ['members'],
+    relatedCompanies: ['relatedCompanies'],
+    systemLevel: ['systemLevel'],
+    permissions: ['permissions'],
+  };
+
   // Dynamisch Update-Expression erstellen
-  const updateFields = ['name', 'description', 'settings', 'status'];
-  updateFields.forEach(field => {
-    if (updateData[field] !== undefined) {
-      params.UpdateExpression += `, #${field} = :${field}`;
-      params.ExpressionAttributeNames[`#${field}`] = field;
-      params.ExpressionAttributeValues[`:${field}`] = updateData[field];
+  Object.keys(updateData).forEach(frontendField => {
+    if (updateData[frontendField] !== undefined && fieldMapping[frontendField]) {
+      fieldMapping[frontendField].forEach(backendField => {
+        params.UpdateExpression += `, #${backendField} = :${backendField}`;
+        params.ExpressionAttributeNames[`#${backendField}`] = backendField;
+        params.ExpressionAttributeValues[`:${backendField}`] = updateData[frontendField];
+      });
+    } else if (updateData[frontendField] !== undefined) {
+      // Direktes Mapping für Felder ohne Alias
+      params.UpdateExpression += `, #${frontendField} = :${frontendField}`;
+      params.ExpressionAttributeNames[`#${frontendField}`] = frontendField;
+      params.ExpressionAttributeValues[`:${frontendField}`] = updateData[frontendField];
     }
   });
 
-  const result = await docClient.send(new UpdateCommand(params));
+  let result;
+  try {
+    result = await docClient.send(new UpdateCommand(params));
+  } catch (error) {
+    // Falls workspaceId nicht funktioniert, versuche mit id
+    if (error.name === 'ValidationException' || error.statusCode === 400) {
+      params.Key = { id: workspaceId };
+      result = await docClient.send(new UpdateCommand(params));
+    } else {
+      throw error;
+    }
+  }
 
   // Activity Log
-  if (updateData.updatedBy) {
+  if (updateData.updatedBy || updateData.createdBy) {
     await logActivity(workspaceId, {
       action: 'workspace_updated',
-      actor: updateData.updatedBy,
+      actor: updateData.updatedBy || updateData.createdBy || 'admin',
       details: updateData,
       timestamp: nowISO,
     });
@@ -303,34 +446,50 @@ async function updateWorkspace(workspaceId, updateData) {
     headers: CORS_HEADERS,
     body: JSON.stringify({
       success: true,
-      workspace: result.Attributes,
+      workspace: transformWorkspaceToFrontend(result.Attributes),
     }),
   };
 }
 
 async function deleteWorkspace(workspaceId) {
-  // Erstelle Backup bevor gelöscht wird
-  const workspace = await docClient.send(
-    new GetCommand({
-      TableName: TABLES.ADMIN_WORKSPACES,
-      Key: { workspaceId },
-    })
-  );
+  // Versuche zuerst mit workspaceId, dann mit id
+  let workspace;
+
+  try {
+    workspace = await docClient.send(
+      new GetCommand({
+        TableName: TABLES.ADMIN_WORKSPACES,
+        Key: { workspaceId },
+      })
+    );
+  } catch (error) {
+    // Falls workspaceId nicht funktioniert, versuche mit id
+    workspace = await docClient.send(
+      new GetCommand({
+        TableName: TABLES.ADMIN_WORKSPACES,
+        Key: { id: workspaceId },
+      })
+    );
+  }
 
   if (workspace.Item) {
-    // Soft Delete - setze Status auf 'deleted'
+    const deleteKey = workspace.Item.workspaceId ? { workspaceId } : { id: workspaceId };
+
+    // Soft Delete - setze Status auf 'archived'
     await docClient.send(
       new UpdateCommand({
         TableName: TABLES.ADMIN_WORKSPACES,
-        Key: { workspaceId },
-        UpdateExpression: 'SET #status = :status, #deletedAt = :deletedAt',
+        Key: deleteKey,
+        UpdateExpression: 'SET #status = :status, #deletedAt = :deletedAt, #updatedAt = :updatedAt',
         ExpressionAttributeNames: {
           '#status': 'status',
           '#deletedAt': 'deletedAt',
+          '#updatedAt': 'updatedAt',
         },
         ExpressionAttributeValues: {
-          ':status': 'deleted',
+          ':status': 'archived',
           ':deletedAt': new Date().toISOString(),
+          ':updatedAt': new Date().toISOString(),
         },
       })
     );

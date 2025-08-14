@@ -50,38 +50,32 @@ export default function AdminWorkspaceDetailPage() {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    const loadWorkspace = async () => {
-      if (!workspaceId) return;
+    if (!workspaceId || !user?.uid) return;
 
-      try {
-        setLoading(true);
-        const workspaceData = await adminWorkspaceService.getWorkspace(workspaceId);
+    setLoading(true);
 
-        if (!workspaceData) {
-          router.push(`/dashboard/admin/workspace`);
-          return;
-        }
+    // Subscribe to realtime workspace updates (includes tasks)
+    const unsubscribe = adminWorkspaceService.subscribeToWorkspaces(user.uid, workspaceData => {
+      const targetWorkspace = workspaceData.find(ws => ws.id === workspaceId);
 
-        setWorkspace(workspaceData);
-      } catch (error) {
-        console.error('Error loading workspace:', error);
+      if (!targetWorkspace) {
         router.push(`/dashboard/admin/workspace`);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
-    loadWorkspace();
-  }, [workspaceId, router]);
+      setWorkspace(targetWorkspace);
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return unsubscribe;
+  }, [workspaceId, user?.uid, router]);
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<AdminWorkspace>) => {
     try {
-      await adminWorkspaceService.updateWorkspace(workspaceId, updates);
-      // Reload workspace data
-      const updatedWorkspace = await adminWorkspaceService.getWorkspace(workspaceId);
-      if (updatedWorkspace) {
-        setWorkspace(updatedWorkspace);
-      }
+      // Use realtime update method
+      await adminWorkspaceService.updateWorkspaceWithRealtime(workspaceId, updates);
+      // State will be updated automatically through realtime subscription
     } catch (error) {
       console.error('Error updating workspace:', error);
     }

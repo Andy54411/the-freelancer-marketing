@@ -43,22 +43,18 @@ export default function AdminWorkspaceManager() {
   const adminId = user?.uid;
 
   useEffect(() => {
-    const loadWorkspaces = async () => {
-      if (!adminId) return;
+    if (!adminId) return;
 
-      try {
-        setLoading(true);
-        // AWS-basierte Workspace-Laden ohne Realtime
-        const workspaceData = await adminWorkspaceService.getWorkspacesByAdmin(adminId);
-        setWorkspaces(workspaceData);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading admin workspaces:', error);
-        setLoading(false);
-      }
-    };
+    setLoading(true);
 
-    loadWorkspaces();
+    // Subscribe to realtime workspace updates
+    const unsubscribe = adminWorkspaceService.subscribeToWorkspaces(adminId, workspaceData => {
+      setWorkspaces(workspaceData);
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return unsubscribe;
   }, [adminId]);
 
   const handleCreateWorkspace = async (workspaceData: Partial<AdminWorkspace>) => {
@@ -83,17 +79,9 @@ export default function AdminWorkspaceManager() {
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<AdminWorkspace>) => {
     try {
-      // Optimistic update - update local state immediately
-      setWorkspaces(prev =>
-        prev.map(workspace =>
-          workspace.id === workspaceId
-            ? { ...workspace, ...updates, updatedAt: new Date() }
-            : workspace
-        )
-      );
-
-      // Update via AWS
-      await adminWorkspaceService.updateWorkspace(workspaceId, updates);
+      // Use realtime update method that updates and notifies subscribers
+      await adminWorkspaceService.updateWorkspaceWithRealtime(workspaceId, updates);
+      // State will be updated automatically through realtime subscription
     } catch (error) {
       console.error('Error updating admin workspace:', error);
       // Revert optimistic update on error by reloading
