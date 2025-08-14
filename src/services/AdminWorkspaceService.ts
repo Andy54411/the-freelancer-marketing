@@ -101,10 +101,7 @@ export class AdminWorkspaceService {
   private apiUrl =
     'https://b14ia0e93d.execute-api.eu-central-1.amazonaws.com/prod/admin/workspaces';
 
-  // Smart Polling für Realtime Updates (bessere Performance als WebSocket für Admin-Dashboard)
-  private pollInterval: NodeJS.Timeout | null = null;
-  private isPolling = false;
-  private lastUpdate = new Date();
+  // AWS Realtime System für Admin-Dashboard Updates
   private subscriptions = new Map<string, (data: any) => void>();
   private watchedWorkspaces = new Set<string>();
   private workspaceCache = new Map<string, AdminWorkspace>();
@@ -618,24 +615,8 @@ export class AdminWorkspaceService {
   }
 
   // AWS EventBridge/WebSocket Realtime System für Admin Workspaces
-  private startPolling(): void {
-    if (this.isPolling) return;
-
-    this.isPolling = true;
-    // Initialize AWS WebSocket connection for realtime updates
-    if (typeof window !== 'undefined') {
-      awsRealtimeService.initializeWebSocket().catch(console.error);
-    }
-    console.log('AWS Realtime system initialized for Admin Workspaces');
-  }
-
-  private stopPolling(): void {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval);
-      this.pollInterval = null;
-    }
-    this.isPolling = false;
-  }
+  // Note: Realtime updates werden jetzt über EventBridge + WebSocket abgewickelt
+  // Kein Polling mehr erforderlich
 
   private async checkForUpdates(): Promise<void> {
     // AWS EventBridge handles realtime updates automatically
@@ -681,9 +662,6 @@ export class AdminWorkspaceService {
       }
     });
 
-    // Initialize AWS realtime connection
-    this.startPolling();
-
     // Load initial data immediately
     this.getAllWorkspaces(adminId).then(callback).catch(console.error);
 
@@ -692,9 +670,6 @@ export class AdminWorkspaceService {
       this.subscriptions.delete(subscriptionId);
       if (unsubscribeWebSocket) {
         unsubscribeWebSocket();
-      }
-      if (this.subscriptions.size === 0) {
-        this.stopPolling();
       }
     };
   }
@@ -715,14 +690,9 @@ export class AdminWorkspaceService {
       }
     });
 
-    this.startPolling();
-
     return () => {
       this.subscriptions.delete(subscriptionId);
       this.watchedWorkspaces.delete(workspaceId);
-      if (this.subscriptions.size === 0) {
-        this.stopPolling();
-      }
     };
   }
 
@@ -741,14 +711,9 @@ export class AdminWorkspaceService {
       }
     });
 
-    this.startPolling();
-
     return () => {
       this.subscriptions.delete(subscriptionId);
       this.watchedWorkspaces.delete(workspaceId);
-      if (this.subscriptions.size === 0) {
-        this.stopPolling();
-      }
     };
   }
 
@@ -802,9 +767,8 @@ export class AdminWorkspaceService {
     setTimeout(() => this.checkForUpdates(), 100);
   }
 
-  // Cleanup polling system
+  // Cleanup realtime connections
   disconnect(): void {
-    this.stopPolling();
     this.subscriptions.clear();
     this.watchedWorkspaces.clear();
     this.workspaceCache.clear();
