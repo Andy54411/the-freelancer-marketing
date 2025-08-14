@@ -185,7 +185,15 @@ export default function CreateAdminWorkspacePage() {
       console.log('Workspace creation result:', result);
 
       toast.success('Admin Workspace erfolgreich erstellt');
-      router.push(`/dashboard/admin/workspace`);
+
+      // Navigate to workspace detail page if we have the workspace ID
+      if (result?.id) {
+        console.log('Navigating to workspace:', result.id);
+        router.push(`/dashboard/admin/workspace/${result.id}`);
+      } else {
+        console.log('No workspace ID returned, going to main page');
+        router.push(`/dashboard/admin/workspace`);
+      }
     } catch (error) {
       console.error('FULL Error creating workspace:', error);
       toast.error(`Fehler beim Erstellen des Workspace: ${error.message}`);

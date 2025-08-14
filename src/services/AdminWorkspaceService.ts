@@ -143,8 +143,8 @@ export class AdminWorkspaceService {
       const result = await this.callLambdaAPI(queryParams);
 
       return result.workspaces.map((workspace: any) => ({
-        id: workspace.workspaceId,
-        title: workspace.name,
+        id: workspace.workspaceId || workspace.id,
+        title: workspace.title || workspace.name,
         description: workspace.description || '',
         type: workspace.type || 'project',
         status: workspace.status,
@@ -154,7 +154,7 @@ export class AdminWorkspaceService {
         createdAt: new Date(workspace.createdAt),
         updatedAt: new Date(workspace.updatedAt),
         tags: workspace.tags || [],
-        adminId: workspace.owner,
+        adminId: workspace.adminId || workspace.owner,
         createdBy: workspace.createdBy,
         progress: workspace.progress || 0,
         boardColumns: workspace.boardColumns || [],
@@ -215,8 +215,8 @@ export class AdminWorkspaceService {
 
       const workspace = result.workspace;
       const transformedWorkspace = {
-        id: workspace.workspaceId,
-        title: workspace.name,
+        id: workspace.workspaceId || workspace.id,
+        title: workspace.title || workspace.name,
         description: workspace.description,
         type: workspace.type || 'project',
         status: workspace.status,
@@ -230,7 +230,7 @@ export class AdminWorkspaceService {
           ? new Date(workspace.updatedAtISO)
           : new Date(workspace.updatedAt),
         tags: workspace.tags || [],
-        adminId: workspace.owner,
+        adminId: workspace.adminId || workspace.owner,
         createdBy: workspace.createdBy,
         progress: 0,
         boardColumns: workspace.boardColumns || [],
