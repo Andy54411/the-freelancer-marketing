@@ -2,6 +2,9 @@
 const LAMBDA_API_BASE =
   'https://b14ia0e93d.execute-api.eu-central-1.amazonaws.com/prod/admin/workspaces';
 
+// AWS Realtime Service Integration
+import { awsRealtimeService } from './AWSRealtimeService';
+
 // Development Mode - verwende lokale Mock-Daten bis AWS Lambda deployed ist
 const USE_MOCK_DATA = false; // AWS Lambda ist jetzt verfügbar
 
@@ -220,6 +223,20 @@ export class AdminWorkspaceService {
           deleteLevel: 'admin',
         },
       };
+
+      // Send AWS EventBridge event for realtime updates
+      if (typeof window !== 'undefined') {
+        awsRealtimeService
+          .broadcastWorkspaceUpdate(
+            'workspace.created',
+            workspace.workspaceId,
+            workspace.owner,
+            workspace
+          )
+          .catch(console.error);
+      }
+
+      return workspace;
     } catch (error) {
       console.error('Error creating workspace:', error);
       throw error;
@@ -600,14 +617,16 @@ export class AdminWorkspaceService {
     }
   }
 
-  // Smart Polling Realtime System für Admin Workspaces
+  // AWS EventBridge/WebSocket Realtime System für Admin Workspaces
   private startPolling(): void {
     if (this.isPolling) return;
 
     this.isPolling = true;
-    this.pollInterval = setInterval(async () => {
-      await this.checkForUpdates();
-    }, 3000); // Poll every 3 seconds (optimal for admin dashboards)
+    // Initialize AWS WebSocket connection for realtime updates
+    if (typeof window !== 'undefined') {
+      awsRealtimeService.initializeWebSocket().catch(console.error);
+    }
+    console.log('AWS Realtime system initialized for Admin Workspaces');
   }
 
   private stopPolling(): void {
@@ -619,54 +638,61 @@ export class AdminWorkspaceService {
   }
 
   private async checkForUpdates(): Promise<void> {
-    if (this.watchedWorkspaces.size === 0) return;
-
-    try {
-      // Check for updates on watched workspaces
-      for (const workspaceId of this.watchedWorkspaces) {
-        const workspace = await this.getWorkspace(workspaceId);
-        const cached = this.workspaceCache.get(workspaceId);
-
-        if (!cached || workspace.updatedAt > cached.updatedAt) {
-          this.workspaceCache.set(workspaceId, workspace);
-
-          // Notify subscribers
-          this.subscriptions.forEach((callback, subscriptionId) => {
-            if (subscriptionId.includes(workspaceId)) {
-              callback(workspace);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error checking for updates:', error);
-    }
+    // AWS EventBridge handles realtime updates automatically
+    // No manual polling needed - updates come via WebSocket from AWS
+    return;
   }
 
-  // Subscribe to workspace changes (Intelligent Polling)
+  // Subscribe to workspace changes (AWS EventBridge Integration)
   subscribeToWorkspaces(
     adminId: string,
     callback: (workspaces: AdminWorkspace[]) => void
   ): () => void {
     const subscriptionId = `workspaces_${adminId}_${Date.now()}`;
 
-    // Store callback
+    // Subscribe to AWS WebSocket for realtime updates
+    let unsubscribeWebSocket: (() => void) | null = null;
+
+    if (typeof window !== 'undefined') {
+      awsRealtimeService
+        .subscribeToWorkspaceEvents(adminId, async event => {
+          // Handle realtime workspace updates from AWS
+          console.log('🔄 Realtime workspace update received:', event);
+          try {
+            const workspaces = await this.getAllWorkspaces(adminId);
+            callback(workspaces);
+          } catch (error) {
+            console.error('Error reloading workspaces after realtime update:', error);
+          }
+        })
+        .then(unsubscribe => {
+          unsubscribeWebSocket = unsubscribe;
+        })
+        .catch(console.error);
+    }
+
+    // Store callback for manual updates
     this.subscriptions.set(subscriptionId, async (data: any) => {
-      // Reload all workspaces for this admin
       try {
         const workspaces = await this.getAllWorkspaces(adminId);
         callback(workspaces);
       } catch (error) {
-        console.error('Error reloading workspaces:', error);
+        console.error('Error loading workspaces:', error);
       }
     });
 
-    // Start polling if not already running
+    // Initialize AWS realtime connection
     this.startPolling();
+
+    // Load initial data immediately
+    this.getAllWorkspaces(adminId).then(callback).catch(console.error);
 
     // Return unsubscribe function
     return () => {
       this.subscriptions.delete(subscriptionId);
+      if (unsubscribeWebSocket) {
+        unsubscribeWebSocket();
+      }
       if (this.subscriptions.size === 0) {
         this.stopPolling();
       }
@@ -746,6 +772,13 @@ export class AdminWorkspaceService {
 
     // Get updated workspace
     const workspace = await this.getWorkspace(workspaceId);
+
+    // Send AWS EventBridge event for realtime updates
+    if (typeof window !== 'undefined') {
+      awsRealtimeService
+        .broadcastWorkspaceUpdate('workspace.updated', workspaceId, workspace.adminId, workspace)
+        .catch(console.error);
+    }
 
     // Update cache and notify immediately
     this.workspaceCache.set(workspaceId, workspace);
