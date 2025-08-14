@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -28,9 +28,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
 import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
 import { toast } from 'sonner';
+
+// Interface for Admin User (matching layout.tsx)
+interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
 
 const workspaceTypes = [
   {
@@ -96,10 +103,33 @@ const statuses = [
 
 export default function CreateAdminWorkspacePage() {
   const router = useRouter();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>('');
   const [newTag, setNewTag] = useState('');
+
+  // Check admin authentication
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/auth/verify');
+        if (response.ok) {
+          const data = await response.json();
+          setAdminUser(data.user);
+        } else {
+          router.push('/admin/login');
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.push('/admin/login');
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -138,12 +168,13 @@ export default function CreateAdminWorkspacePage() {
     e.preventDefault();
 
     console.log('=== WORKSPACE CREATION DEBUG ===');
-    console.log('User object:', user);
+    console.log('Admin User object:', adminUser);
     console.log('Form data:', formData);
 
-    if (!user?.uid && !user?.email) {
-      toast.error('Sie müssen angemeldet sein');
-      console.error('No user found - authentication required');
+    // Use the admin user's email/ID
+    if (!adminUser?.id && !adminUser?.email) {
+      console.warn('No admin user found - authentication required');
+      toast.error('Sie müssen als Admin angemeldet sein');
       return;
     }
 
@@ -160,8 +191,8 @@ export default function CreateAdminWorkspacePage() {
     setLoading(true);
 
     try {
-      // Use email as primary identifier since that's what works with Lambda
-      const userId = user.email || user.uid || 'admin';
+      // Use admin email as primary identifier since that's what works with Lambda
+      const userId = adminUser.email || adminUser.id;
 
       const workspace = {
         title: formData.title.trim(),
@@ -201,6 +232,20 @@ export default function CreateAdminWorkspacePage() {
       setLoading(false);
     }
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f]"></div>
+      </div>
+    );
+  }
+
+  // If no admin user found, the useEffect will redirect to login
+  if (!adminUser) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

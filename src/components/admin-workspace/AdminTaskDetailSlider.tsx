@@ -50,9 +50,8 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
-// Firebase imports
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage } from '@/firebase/clients';
+// AWS S3 import
+import { AWSS3Service } from '@/lib/aws-s3-service';
 import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
 import type {
   AdminWorkspace,
@@ -88,7 +87,7 @@ interface TaskAttachment {
   id: string;
   name: string;
   url: string;
-  storagePath?: string; // Firebase Storage path
+  s3Key?: string; // AWS S3 key path
   size: number;
   type: string;
   uploadedAt: Date;
@@ -331,24 +330,26 @@ export default function AdminTaskDetailSlider({
         // Setze Upload-Progress
         setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
 
-        // Erstelle Firebase Storage Referenz
-        const storagePath = `workspaces/${workspace.id}/tasks/${task.id}/attachments/${fileId}-${file.name}`;
-        const storageRef = ref(storage, storagePath);
+        // Erstelle AWS S3 Pfad
+        const s3Key = AWSS3Service.generateWorkspacePath(workspace.id, task.id, fileId, file.name);
 
-        // Upload Datei zu Firebase Storage
+        // Upload Datei zu AWS S3
         setUploadProgress(prev => ({ ...prev, [fileId]: 50 }));
-        const snapshot = await uploadBytes(storageRef, file);
+        const uploadResult = await AWSS3Service.uploadFile(file, s3Key, {
+          contentType: file.type,
+          workspaceId: workspace.id,
+          taskId: task.id,
+        });
 
-        // Hole Download URL
+        // Upload erfolgreich
         setUploadProgress(prev => ({ ...prev, [fileId]: 75 }));
-        const downloadURL = await getDownloadURL(snapshot.ref);
 
         // Erstelle Attachment Object
         const attachment: TaskAttachment = {
           id: fileId,
           name: file.name,
-          url: downloadURL,
-          storagePath: storagePath,
+          url: uploadResult.url,
+          s3Key: uploadResult.key,
           size: file.size,
           type: file.type,
           uploadedAt: new Date(),
@@ -405,10 +406,9 @@ export default function AdminTaskDetailSlider({
     if (!task || !workspace) return;
 
     try {
-      // Lösche Datei aus Firebase Storage
-      if (attachment.storagePath) {
-        const storageRef = ref(storage, attachment.storagePath);
-        await deleteObject(storageRef);
+      // Lösche Datei aus AWS S3
+      if (attachment.s3Key) {
+        await AWSS3Service.deleteFile(attachment.s3Key);
       }
 
       // Entferne Attachment aus lokaler Liste

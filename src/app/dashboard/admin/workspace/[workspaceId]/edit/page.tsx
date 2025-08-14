@@ -18,15 +18,23 @@ import {
 } from '@/components/ui/select';
 import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
 import type { AdminWorkspace } from '@/services/AdminWorkspaceService';
-import { useAuth } from '@/contexts/AuthContext';
+
+// Interface for Admin User
+interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
 
 export default function EditAdminWorkspacePage() {
   const router = useRouter();
   const params = useParams();
-  const { user } = useAuth();
 
   const workspaceId = params.workspaceId as string;
 
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [workspace, setWorkspace] = useState<AdminWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,9 +49,31 @@ export default function EditAdminWorkspacePage() {
   });
   const [newTag, setNewTag] = useState('');
 
+  // Check admin authentication
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/auth/verify');
+        if (response.ok) {
+          const data = await response.json();
+          setAdminUser(data.user);
+        } else {
+          router.push('/admin/login');
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.push('/admin/login');
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
   useEffect(() => {
     const loadWorkspace = async () => {
-      if (!workspaceId) return;
+      if (!workspaceId || !adminUser?.id) return;
 
       try {
         setLoading(true);
@@ -75,10 +105,10 @@ export default function EditAdminWorkspacePage() {
     };
 
     loadWorkspace();
-  }, [workspaceId, router]);
+  }, [workspaceId, adminUser?.id, router]);
 
   const handleSave = async () => {
-    if (!workspace || !user?.uid) return;
+    if (!workspace || !adminUser?.id) return;
 
     try {
       setSaving(true);
@@ -213,6 +243,20 @@ export default function EditAdminWorkspacePage() {
         return priority;
     }
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f]"></div>
+      </div>
+    );
+  }
+
+  // If no admin user found, the useEffect will redirect to login
+  if (!adminUser) {
+    return null;
+  }
 
   if (loading) {
     return (

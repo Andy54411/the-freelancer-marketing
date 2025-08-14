@@ -35,27 +35,57 @@ import type {
   AdminWorkspaceBoardColumn,
   AdminWorkspaceTask,
 } from '@/services/AdminWorkspaceService';
-import { useAuth } from '@/contexts/AuthContext';
 import { AdminWorkspaceBoard } from '@/components/admin-workspace/AdminWorkspaceBoard';
+
+// Interface for Admin User
+interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
 
 export default function AdminWorkspaceDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { user } = useAuth();
 
   const workspaceId = params.workspaceId as string;
 
+  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [workspace, setWorkspace] = useState<AdminWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Check admin authentication
   useEffect(() => {
-    if (!workspaceId || !user?.uid) return;
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/auth/verify');
+        if (response.ok) {
+          const data = await response.json();
+          setAdminUser(data.user);
+        } else {
+          router.push('/admin/login');
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        router.push('/admin/login');
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  useEffect(() => {
+    if (!workspaceId || !adminUser?.id) return;
 
     setLoading(true);
 
     // Subscribe to realtime workspace updates (includes tasks)
-    const unsubscribe = adminWorkspaceService.subscribeToWorkspaces(user.uid, workspaceData => {
+    const unsubscribe = adminWorkspaceService.subscribeToWorkspaces(adminUser.id, workspaceData => {
       const targetWorkspace = workspaceData.find(ws => ws.id === workspaceId);
 
       if (!targetWorkspace) {
@@ -69,7 +99,7 @@ export default function AdminWorkspaceDetailPage() {
 
     // Cleanup subscription on unmount
     return unsubscribe;
-  }, [workspaceId, user?.uid, router]);
+  }, [workspaceId, adminUser?.id, router]);
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<AdminWorkspace>) => {
     try {
@@ -199,6 +229,20 @@ export default function AdminWorkspaceDetailPage() {
         return type;
     }
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f]"></div>
+      </div>
+    );
+  }
+
+  // If no admin user found, the useEffect will redirect to login
+  if (!adminUser) {
+    return null;
+  }
 
   if (loading) {
     return (
