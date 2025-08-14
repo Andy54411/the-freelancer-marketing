@@ -8,6 +8,10 @@ import { awsRealtimeService } from './AWSRealtimeService';
 // Development Mode - verwende lokale Mock-Daten bis AWS Lambda deployed ist
 const USE_MOCK_DATA = false; // AWS Lambda ist jetzt verfügbar
 
+// Fallback Polling für WebSocket-Probleme
+const ENABLE_FALLBACK_POLLING = true;
+const POLLING_INTERVAL = 5000; // 5 Sekunden
+
 // Mock Storage für Development
 const mockWorkspaces: AdminWorkspace[] = [];
 const mockTasks: AdminWorkspaceTask[] = [];
@@ -715,7 +719,7 @@ export class AdminWorkspaceService {
     return;
   }
 
-  // Subscribe to workspace changes (AWS EventBridge Integration)
+  // Subscribe to workspace changes (AWS EventBridge Integration + Fallback Polling)
   subscribeToWorkspaces(
     adminId: string,
     callback: (workspaces: AdminWorkspace[]) => void
@@ -737,12 +741,24 @@ export class AdminWorkspaceService {
       };
     }
 
-    // Production: AWS WebSocket für Realtime Updates
+    // Production: AWS WebSocket für Realtime Updates + Fallback Polling
     let unsubscribeWebSocket: (() => void) | null = null;
+    let pollingInterval: NodeJS.Timeout | null = null;
+    let webSocketConnected = false;
 
+    // Versuche WebSocket-Verbindung
     awsRealtimeService
       .subscribeToWorkspaceEvents(adminId, async event => {
         console.log('🔄 Realtime workspace update received:', event);
+        webSocketConnected = true;
+
+        // WebSocket funktioniert - deaktiviere Polling
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+          pollingInterval = null;
+          console.log('✅ WebSocket connected - Polling deaktiviert');
+        }
+
         try {
           const workspaces = await this.getAllWorkspaces(adminId);
           callback(workspaces);
@@ -752,8 +768,26 @@ export class AdminWorkspaceService {
       })
       .then(unsubscribe => {
         unsubscribeWebSocket = unsubscribe;
+        webSocketConnected = true;
+        console.log('✅ WebSocket Realtime System verbunden');
       })
-      .catch(console.error);
+      .catch(error => {
+        console.warn('⚠️ WebSocket Connection fehlgeschlagen, aktiviere Fallback Polling:', error);
+        webSocketConnected = false;
+
+        // Fallback: Polling System
+        if (ENABLE_FALLBACK_POLLING && !pollingInterval) {
+          console.log('🔄 Aktiviere Fallback Polling (5s Intervall)');
+          pollingInterval = setInterval(async () => {
+            try {
+              const workspaces = await this.getAllWorkspaces(adminId);
+              callback(workspaces);
+            } catch (error) {
+              console.error('Polling error:', error);
+            }
+          }, POLLING_INTERVAL);
+        }
+      });
 
     // Store callback for manual updates
     this.subscriptions.set(subscriptionId, async (data: any) => {
@@ -768,11 +802,30 @@ export class AdminWorkspaceService {
     // Load initial data immediately
     this.getAllWorkspaces(adminId).then(callback).catch(console.error);
 
+    // Backup Fallback: Starte Polling nach 3 Sekunden wenn WebSocket nicht funktioniert
+    setTimeout(() => {
+      if (!webSocketConnected && ENABLE_FALLBACK_POLLING && !pollingInterval) {
+        console.log('🔄 WebSocket Timeout - Aktiviere Backup Polling');
+        pollingInterval = setInterval(async () => {
+          try {
+            const workspaces = await this.getAllWorkspaces(adminId);
+            callback(workspaces);
+          } catch (error) {
+            console.error('Backup polling error:', error);
+          }
+        }, POLLING_INTERVAL);
+      }
+    }, 3000);
+
     // Return unsubscribe function
     return () => {
       this.subscriptions.delete(subscriptionId);
       if (unsubscribeWebSocket) {
         unsubscribeWebSocket();
+      }
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        console.log('🔄 Polling gestoppt');
       }
     };
   }

@@ -1,9 +1,5 @@
 // AWS Realtime Service für Admin Workspace Updates
-import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
-import {
-  ApiGatewayManagementApiClient,
-  PostToConnectionCommand,
-} from '@aws-sdk/client-apigatewaymanagementapi';
+// Client-Side Service - verwendet API Routes statt direkter AWS Calls
 
 interface WebSocketConnection {
   connectionId: string;
@@ -12,35 +8,15 @@ interface WebSocketConnection {
 }
 
 class AWSRealtimeService {
-  private eventBridge: EventBridgeClient;
-  private apiGateway: ApiGatewayManagementApiClient | null = null;
   private connections: Map<string, WebSocketConnection> = new Map();
   private websocketEndpoint: string;
+  private websocket: WebSocket | null = null;
 
   constructor() {
-    this.eventBridge = new EventBridgeClient({
-      region: process.env.AWS_REGION || 'eu-central-1',
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-      },
-    });
-
     this.websocketEndpoint = process.env.NEXT_PUBLIC_AWS_WEBSOCKET_URL || '';
-
-    if (this.websocketEndpoint) {
-      this.apiGateway = new ApiGatewayManagementApiClient({
-        region: process.env.AWS_REGION || 'eu-central-1',
-        endpoint: this.websocketEndpoint.replace('wss://', 'https://'),
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-        },
-      });
-    }
   }
 
-  // EventBridge Event senden für Workspace Updates
+  // EventBridge Event senden über API Route (sicher für Browser)
   async publishWorkspaceUpdate(
     workspaceId: string,
     adminId: string,
@@ -48,33 +24,32 @@ class AWSRealtimeService {
     data: any
   ) {
     try {
-      const params = {
-        Entries: [
-          {
-            Source: 'taskilo.admin.workspace',
-            DetailType: 'Workspace Update',
-            Detail: JSON.stringify({
-              workspaceId,
-              adminId,
-              updateType,
-              data,
-              timestamp: new Date().toISOString(),
-            }),
-            EventBusName: process.env.AWS_EVENTBRIDGE_BUS || 'taskilo-events-production',
-          },
-        ],
-      };
+      // Verwende API Route statt direkten EventBridge Call
+      const response = await fetch('/api/admin/realtime/publish', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workspaceId,
+          adminId,
+          updateType,
+          data,
+        }),
+      });
 
-      const command = new PutEventsCommand(params);
-      await this.eventBridge.send(command);
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status}`);
+      }
 
-      console.log(`EventBridge event published for workspace ${workspaceId}`);
+      const result = await response.json();
+      console.log(`EventBridge event published for workspace ${workspaceId}:`, result);
     } catch (error) {
       console.error('Error publishing EventBridge event:', error);
     }
   }
 
-  // WebSocket Connection Management
+  // WebSocket Connection Management (Client-Side)
   addConnection(connectionId: string, adminId: string, subscriptions: string[] = []) {
     this.connections.set(connectionId, {
       connectionId,
@@ -87,68 +62,9 @@ class AWSRealtimeService {
     this.connections.delete(connectionId);
   }
 
-  // WebSocket Message senden
-  async sendToConnection(connectionId: string, message: any) {
-    if (!this.apiGateway) {
-      console.warn('WebSocket API Gateway not configured');
-      return;
-    }
-
-    try {
-      const command = new PostToConnectionCommand({
-        ConnectionId: connectionId,
-        Data: JSON.stringify(message),
-      });
-
-      await this.apiGateway.send(command);
-    } catch (error) {
-      console.error('Error sending WebSocket message:', error);
-      // Remove stale connection
-      this.removeConnection(connectionId);
-    }
-  }
-
-  // Broadcast zu allen Connections eines Admins
-  async broadcastToAdmin(adminId: string, message: any) {
-    const adminConnections = Array.from(this.connections.values()).filter(
-      conn => conn.adminId === adminId
-    );
-
-    const promises = adminConnections.map(conn =>
-      this.sendToConnection(conn.connectionId, message)
-    );
-
-    await Promise.all(promises);
-  }
-
-  // Workspace Update zu allen subscribern senden
-  async notifyWorkspaceUpdate(workspaceId: string, updateType: string, data: any) {
-    const subscribedConnections = Array.from(this.connections.values()).filter(conn =>
-      conn.subscriptions.includes(workspaceId)
-    );
-
-    const message = {
-      type: 'workspace_update',
-      workspaceId,
-      updateType,
-      data,
-      timestamp: new Date().toISOString(),
-    };
-
-    const promises = subscribedConnections.map(conn =>
-      this.sendToConnection(conn.connectionId, message)
-    );
-
-    await Promise.all(promises);
-  }
-
   // Health Check
   isConfigured(): boolean {
-    return !!(
-      process.env.AWS_ACCESS_KEY_ID &&
-      process.env.AWS_SECRET_ACCESS_KEY &&
-      process.env.AWS_REGION
-    );
+    return !!this.websocketEndpoint;
   }
 
   // Connection Status
