@@ -123,11 +123,11 @@ export default function AdminWorkspaceManager() {
 
   const filteredWorkspaces = workspaces.filter(workspace => {
     const matchesSearch =
-      workspace.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      workspace.description.toLowerCase().includes(searchTerm.toLowerCase());
+      workspace.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      workspace.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesTags =
-      selectedTags.length === 0 || selectedTags.some(tag => workspace.tags.includes(tag));
+      selectedTags.length === 0 || selectedTags.some(tag => workspace.tags?.includes(tag));
 
     const matchesStatus = selectedStatus.length === 0 || selectedStatus.includes(workspace.status);
 
@@ -137,7 +137,7 @@ export default function AdminWorkspaceManager() {
     return matchesSearch && matchesTags && matchesStatus && matchesPriority;
   });
 
-  const allTags = [...new Set(workspaces.flatMap(w => w.tags))];
+  const allTags = [...new Set(workspaces.flatMap(w => w.tags || []))];
 
   const getStatusColor = (status: string) => {
     switch (status) {
