@@ -132,95 +132,93 @@ export class AdminWorkspaceService {
 
   async getAllWorkspaces(adminId?: string): Promise<AdminWorkspace[]> {
     try {
-      // Temporäre Mock-Implementierung für schnelles Laden
-      // TODO: AWS Lambda API Integration wenn Lambda korrekt funktioniert
-
       console.log('Loading workspaces for admin:', adminId);
 
-      // Mock Workspaces für Admin Dashboard
-      const mockWorkspaces: AdminWorkspace[] = [
-        {
-          id: 'workspace-1',
-          title: 'Platform Development',
-          description: 'Core platform features and improvements',
-          type: 'project',
-          status: 'active',
-          priority: 'high',
-          assignedTo: [adminId || 'admin'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          tags: ['development', 'platform'],
-          adminId: adminId || 'admin',
-          progress: 75,
-          boardColumns: [
-            {
-              id: 'col-1',
-              title: 'To Do',
-              color: '#e2e8f0',
-              position: 0,
-              tasks: [],
-            },
-            {
-              id: 'col-2',
-              title: 'In Progress',
-              color: '#fbbf24',
-              position: 1,
-              tasks: [],
-            },
-            {
-              id: 'col-3',
-              title: 'Done',
-              color: '#10b981',
-              position: 2,
-              tasks: [],
-            },
-          ],
-          tasks: [],
-        },
-        {
-          id: 'workspace-2',
-          title: 'AWS Migration',
-          description: 'Migration to AWS infrastructure',
-          type: 'system',
-          status: 'active',
-          priority: 'high',
-          assignedTo: [adminId || 'admin'],
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          tags: ['aws', 'migration', 'infrastructure'],
-          adminId: adminId || 'admin',
-          progress: 90,
-          boardColumns: [
-            {
-              id: 'col-4',
-              title: 'To Do',
-              color: '#e2e8f0',
-              position: 0,
-              tasks: [],
-            },
-            {
-              id: 'col-5',
-              title: 'In Progress',
-              color: '#fbbf24',
-              position: 1,
-              tasks: [],
-            },
-            {
-              id: 'col-6',
-              title: 'Done',
-              color: '#10b981',
-              position: 2,
-              tasks: [],
-            },
-          ],
-          tasks: [],
-        },
-      ];
+      if (USE_MOCK_DATA) {
+        // Mock Workspaces nur wenn explizit aktiviert
+        const mockWorkspaces: AdminWorkspace[] = [
+          {
+            id: 'workspace-1',
+            title: 'Platform Development',
+            description: 'Core platform features and improvements',
+            type: 'project',
+            status: 'active',
+            priority: 'high',
+            assignedTo: [adminId || 'admin'],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            tags: ['development', 'platform'],
+            adminId: adminId || 'admin',
+            progress: 75,
+            boardColumns: [
+              {
+                id: 'col-1',
+                title: 'To Do',
+                color: '#e2e8f0',
+                position: 0,
+                tasks: [],
+              },
+              {
+                id: 'col-2',
+                title: 'In Progress',
+                color: '#fbbf24',
+                position: 1,
+                tasks: [],
+              },
+              {
+                id: 'col-3',
+                title: 'Done',
+                color: '#10b981',
+                position: 2,
+                tasks: [],
+              },
+            ],
+            tasks: [],
+          },
+          {
+            id: 'workspace-2',
+            title: 'AWS Migration',
+            description: 'Migration to AWS infrastructure',
+            type: 'system',
+            status: 'active',
+            priority: 'high',
+            assignedTo: [adminId || 'admin'],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            tags: ['aws', 'migration', 'infrastructure'],
+            adminId: adminId || 'admin',
+            progress: 90,
+            boardColumns: [
+              {
+                id: 'col-4',
+                title: 'To Do',
+                color: '#e2e8f0',
+                position: 0,
+                tasks: [],
+              },
+              {
+                id: 'col-5',
+                title: 'In Progress',
+                color: '#fbbf24',
+                position: 1,
+                tasks: [],
+              },
+              {
+                id: 'col-6',
+                title: 'Done',
+                color: '#10b981',
+                position: 2,
+                tasks: [],
+              },
+            ],
+            tasks: [],
+          },
+        ];
 
-      return mockWorkspaces;
+        return mockWorkspaces;
+      }
 
-      /* 
-      // Original Lambda API Code (temporarily disabled)
+      // Production Lambda API Call
       const queryParams = adminId ? `?adminId=${adminId}` : '';
       const result = await this.callLambdaAPI(queryParams);
 
@@ -251,10 +249,9 @@ export class AdminWorkspaceService {
           deleteLevel: 'admin',
         },
       }));
-      */
     } catch (error) {
-      console.error('Error fetching workspaces:', error);
-      // Fallback zu Mock-Daten bei Fehlern
+      console.error('Error fetching admin workspaces:', error);
+      // Fallback to mock data on error
       return [];
     }
   }
@@ -726,18 +723,16 @@ export class AdminWorkspaceService {
   ): () => void {
     const subscriptionId = `workspaces_${adminId}_${Date.now()}`;
 
-    // Development Mode: Verwende nur lokale Mock-Daten ohne AWS
-    const isDevelopment = process.env.NODE_ENV === 'development' || typeof window !== 'undefined';
-
-    if (isDevelopment) {
-      console.log('🔧 Development Mode: AWS Realtime System deaktiviert, verwende Mock-Daten');
+    // Check if we should use mock data
+    if (USE_MOCK_DATA) {
+      console.log('🔧 Mock Mode: AWS Realtime System deaktiviert, verwende Mock-Daten');
 
       // Lade Mock-Daten sofort
       this.getAllWorkspaces(adminId).then(callback).catch(console.error);
 
       // Return no-op unsubscribe function
       return () => {
-        console.log('🔧 Development: Mock subscription cleanup');
+        console.log('🔧 Mock Mode: Mock subscription cleanup');
       };
     }
 
