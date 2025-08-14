@@ -263,6 +263,9 @@ export class AdminWorkspaceService {
 
       if (!workspace) return null;
 
+      // Tasks separat laden
+      const tasks = await this.getWorkspaceTasks(workspaceId);
+
       return {
         id: workspace.workspaceId,
         title: workspace.name,
@@ -279,8 +282,8 @@ export class AdminWorkspaceService {
         createdBy: workspace.createdBy,
         progress: workspace.progress || 0,
         boardColumns: workspace.boardColumns || [],
-        tasks: workspace.tasks || [],
-        archivedTasks: workspace.archivedTasks || [],
+        tasks: tasks, // Tasks separat geladen
+        archivedTasks: tasks.filter(task => task.archived), // Archivierte Tasks filtern
         members: workspace.members || [],
         relatedCompanies: workspace.relatedCompanies || [],
         systemLevel: workspace.systemLevel || 'platform',
@@ -322,7 +325,7 @@ export class AdminWorkspaceService {
         comments: task.comments || [],
         attachments: task.attachments || [],
         // Board-spezifische Eigenschaften
-        columnId: task.columnId,
+        columnId: task.columnId || task.status || 'backlog',
         position: task.position || 0,
         archived: task.archived || false,
         archivedAt: task.archivedAt ? new Date(task.archivedAt) : undefined,
@@ -352,7 +355,7 @@ export class AdminWorkspaceService {
       const payload = {
         title: taskData.title,
         description: taskData.description,
-        status: taskData.status || 'todo',
+        status: taskData.status || taskData.columnId || 'backlog',
         priority: taskData.priority || 'medium',
         assignees: taskData.assignees || [],
         dueDate: taskData.dueDate?.toISOString(),
@@ -360,6 +363,14 @@ export class AdminWorkspaceService {
         checklist: taskData.checklist || [],
         estimatedHours: taskData.estimatedHours,
         createdBy: taskData.createdBy,
+        // Board-spezifische Eigenschaften
+        columnId: taskData.columnId || taskData.status || 'backlog',
+        position: taskData.position || 0,
+        // Admin-spezifische Eigenschaften
+        systemTask: taskData.systemTask || false,
+        automatedTask: taskData.automatedTask || false,
+        relatedCompanies: taskData.relatedCompanies || [],
+        tags: taskData.tags || [],
       };
 
       const result = await this.callLambdaAPI(`/${workspaceId}/tasks`, {
@@ -389,7 +400,7 @@ export class AdminWorkspaceService {
         comments: [],
         attachments: [],
         // Board-spezifische Eigenschaften
-        columnId: task.columnId,
+        columnId: task.columnId || task.status || 'backlog',
         position: task.position || 0,
         archived: false,
         // Admin-spezifische Eigenschaften

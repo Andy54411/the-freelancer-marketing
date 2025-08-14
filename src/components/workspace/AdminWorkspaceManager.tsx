@@ -20,9 +20,6 @@ import { AdminWorkspaceBoard } from './AdminWorkspaceBoard';
 import { AdminWorkspaceList } from './AdminWorkspaceList';
 import { AdminWorkspaceCalendar } from './AdminWorkspaceCalendar';
 import { AdminWorkspaceFilters } from './AdminWorkspaceFilters';
-import { AdminWorkspaceDetailSlider } from './AdminWorkspaceDetailSlider';
-import { AdminTaskDetailSlider } from './AdminTaskDetailSlider';
-import { AdminAddTaskSlideOver } from './AdminAddTaskSlideOver';
 import { AdminQuickNoteDialog } from './AdminQuickNoteDialog';
 import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
 import { useRouter } from 'next/navigation';
@@ -48,8 +45,6 @@ export default function AdminWorkspaceManager() {
   const [selectedPriority, setSelectedPriority] = useState<string[]>([]);
   const [selectedSystemLevel, setSelectedSystemLevel] = useState<string[]>([]);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<AdminWorkspace | null>(null);
-  const [isDetailSliderOpen, setIsDetailSliderOpen] = useState(false);
 
   // Admin ID (normally from auth context, using hardcoded for now)
   const adminId = 'admin-user-1';
@@ -121,17 +116,8 @@ export default function AdminWorkspaceManager() {
   };
 
   const handleWorkspaceClick = (workspace: AdminWorkspace) => {
-    setSelectedWorkspace(workspace);
-    setIsDetailSliderOpen(true);
-  };
-
-  const handleCloseDetailSlider = () => {
-    setIsDetailSliderOpen(false);
-    setSelectedWorkspace(null);
-  };
-
-  const handleEditWorkspace = (workspace: AdminWorkspace) => {
-    router.push(`/dashboard/admin/workspace/${workspace.id}/edit`);
+    // Navigiere zur einzelnen Workspace-Ansicht statt Detail-Slider
+    router.push(`/dashboard/admin/workspace/${workspace.id}`);
   };
 
   const handleViewWorkspace = (workspace: AdminWorkspace) => {
@@ -443,18 +429,7 @@ export default function AdminWorkspaceManager() {
         )}
       </div>
 
-      {/* Workspace Detail Slider */}
-      <AdminWorkspaceDetailSlider
-        workspace={selectedWorkspace}
-        isOpen={isDetailSliderOpen}
-        onClose={handleCloseDetailSlider}
-        onUpdateWorkspace={handleUpdateWorkspace}
-        onDeleteWorkspace={handleDeleteWorkspace}
-        onTaskClick={taskId => {
-          console.log('Task clicked:', taskId);
-          // Handle task click if needed
-        }}
-      />
+      {/* Workspace Detail Slider - entfernt, da wir zur einzelnen Workspace-Seite navigieren */}
     </div>
   );
 }
