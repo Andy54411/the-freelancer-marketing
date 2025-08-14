@@ -1,18 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Plus,
-  Search,
-  Filter,
-  Grid,
-  List,
-  Calendar,
-  Shield,
-  Database,
-  Users,
-  Activity,
-} from 'lucide-react';
+import { Plus, Search, Filter, Grid, List, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -20,10 +9,12 @@ import { AdminWorkspaceBoard } from './AdminWorkspaceBoard';
 import { AdminWorkspaceList } from './AdminWorkspaceList';
 import { AdminWorkspaceCalendar } from './AdminWorkspaceCalendar';
 import { AdminWorkspaceFilters } from './AdminWorkspaceFilters';
-import { AdminQuickNoteDialog } from './AdminQuickNoteDialog';
+import { AdminWorkspaceDetailSlider } from './AdminWorkspaceDetailSlider';
 import { adminWorkspaceService } from '@/services/AdminWorkspaceService';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { AdminQuickNoteDialog } from './AdminQuickNoteDialog';
 
 // Import types from AdminWorkspaceService
 import type {
@@ -35,6 +26,7 @@ import type {
 type ViewMode = 'board' | 'list' | 'calendar';
 
 export default function AdminWorkspaceManager() {
+  const { user } = useAuth();
   const router = useRouter();
   const [workspaces, setWorkspaces] = useState<AdminWorkspace[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,44 +35,47 @@ export default function AdminWorkspaceManager() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [selectedPriority, setSelectedPriority] = useState<string[]>([]);
-  const [selectedSystemLevel, setSelectedSystemLevel] = useState<string[]>([]);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<AdminWorkspace | null>(null);
+  const [isDetailSliderOpen, setIsDetailSliderOpen] = useState(false);
 
-  // Admin ID (normally from auth context, using hardcoded for now)
-  const adminId = 'admin-user-1';
+  // Admin ID aus User UID verwenden
+  const adminId = user?.uid;
 
   useEffect(() => {
     const loadWorkspaces = async () => {
+      if (!adminId) return;
+
       try {
         setLoading(true);
-        const workspaceData = await adminWorkspaceService.getAdminWorkspaces();
+        // AWS-basierte Workspace-Laden ohne Realtime
+        const workspaceData = await adminWorkspaceService.getWorkspacesByAdmin(adminId);
         setWorkspaces(workspaceData);
+        setLoading(false);
       } catch (error) {
         console.error('Error loading admin workspaces:', error);
-      } finally {
         setLoading(false);
       }
     };
 
     loadWorkspaces();
-  }, []);
+  }, [adminId]);
 
   const handleCreateWorkspace = async (workspaceData: Partial<AdminWorkspace>) => {
+    if (!adminId || !user?.uid) return;
+
     try {
-      const newWorkspace = await adminWorkspaceService.createAdminWorkspace({
+      const newWorkspace = await adminWorkspaceService.createWorkspace({
         ...workspaceData,
         adminId: adminId,
-        createdBy: adminId,
+        createdBy: user.uid,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         progress: 0,
-        systemLevel: workspaceData.systemLevel || 'platform',
-        permissions: workspaceData.permissions || {
-          viewLevel: 'admin',
-          editLevel: 'admin',
-          deleteLevel: 'admin',
-        },
-      } as Omit<AdminWorkspace, 'id' | 'createdAt' | 'updatedAt'>);
+      } as AdminWorkspace);
 
       setWorkspaces(prev => [newWorkspace, ...prev]);
+      // Modal wurde entfernt, da wir jetzt eine separate Seite verwenden
     } catch (error) {
       console.error('Error creating admin workspace:', error);
     }
@@ -88,7 +83,7 @@ export default function AdminWorkspaceManager() {
 
   const handleUpdateWorkspace = async (workspaceId: string, updates: Partial<AdminWorkspace>) => {
     try {
-      // Optimistic update
+      // Optimistic update - update local state immediately
       setWorkspaces(prev =>
         prev.map(workspace =>
           workspace.id === workspaceId
@@ -97,18 +92,21 @@ export default function AdminWorkspaceManager() {
         )
       );
 
-      await adminWorkspaceService.updateAdminWorkspace(workspaceId, updates);
+      // Update via AWS
+      await adminWorkspaceService.updateWorkspace(workspaceId, updates);
     } catch (error) {
       console.error('Error updating admin workspace:', error);
-      // Revert optimistic update by reloading
-      const refreshedWorkspaces = await adminWorkspaceService.getAdminWorkspaces();
-      setWorkspaces(refreshedWorkspaces);
+      // Revert optimistic update on error by reloading
+      if (adminId) {
+        const workspaceData = await adminWorkspaceService.getWorkspacesByAdmin(adminId);
+        setWorkspaces(workspaceData);
+      }
     }
   };
 
   const handleDeleteWorkspace = async (workspaceId: string) => {
     try {
-      await adminWorkspaceService.deleteAdminWorkspace(workspaceId);
+      await adminWorkspaceService.deleteWorkspace(workspaceId);
       setWorkspaces(prev => prev.filter(workspace => workspace.id !== workspaceId));
     } catch (error) {
       console.error('Error deleting admin workspace:', error);
@@ -116,11 +114,22 @@ export default function AdminWorkspaceManager() {
   };
 
   const handleWorkspaceClick = (workspace: AdminWorkspace) => {
-    // Navigiere zur einzelnen Workspace-Ansicht statt Detail-Slider
-    router.push(`/dashboard/admin/workspace/${workspace.id}`);
+    setSelectedWorkspace(workspace);
+    setIsDetailSliderOpen(true);
+  };
+
+  const handleCloseDetailSlider = () => {
+    setIsDetailSliderOpen(false);
+    setSelectedWorkspace(null);
+  };
+
+  const handleEditWorkspace = (workspace: AdminWorkspace) => {
+    // Navigate to edit page
+    router.push(`/dashboard/admin/workspace/${workspace.id}/edit`);
   };
 
   const handleViewWorkspace = (workspace: AdminWorkspace) => {
+    // Navigate to workspace detail view
     router.push(`/dashboard/admin/workspace/${workspace.id}`);
   };
 
@@ -137,11 +146,7 @@ export default function AdminWorkspaceManager() {
     const matchesPriority =
       selectedPriority.length === 0 || selectedPriority.includes(workspace.priority);
 
-    const matchesSystemLevel =
-      selectedSystemLevel.length === 0 ||
-      selectedSystemLevel.includes(workspace.systemLevel || 'platform');
-
-    return matchesSearch && matchesTags && matchesStatus && matchesPriority && matchesSystemLevel;
+    return matchesSearch && matchesTags && matchesStatus && matchesPriority;
   });
 
   const allTags = [...new Set(workspaces.flatMap(w => w.tags))];
@@ -176,36 +181,6 @@ export default function AdminWorkspaceManager() {
     }
   };
 
-  const getSystemLevelColor = (systemLevel: string) => {
-    switch (systemLevel) {
-      case 'platform':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
-      case 'company':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'user':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'system':
-        return 'bg-red-100 text-red-800 border-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
-  const getSystemLevelIcon = (systemLevel: string) => {
-    switch (systemLevel) {
-      case 'platform':
-        return Shield;
-      case 'company':
-        return Users;
-      case 'user':
-        return Activity;
-      case 'system':
-        return Database;
-      default:
-        return Activity;
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -220,12 +195,9 @@ export default function AdminWorkspaceManager() {
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-              <Shield className="h-6 w-6 mr-2 text-[#14ad9f]" />
-              Admin Workspace
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">Workspace</h1>
             <p className="text-sm text-gray-500 mt-1">
-              Verwalte Platform-Prozesse, System-Aufgaben und Admin-Projekte mit AWS-Integration
+              Verwalte Projekte, Aufgaben und Prozesse in einer übersichtlichen Workspace-Umgebung
             </p>
           </div>
 
@@ -260,18 +232,18 @@ export default function AdminWorkspaceManager() {
 
             <div className="flex items-center gap-2">
               {/* Quick Note Dialog */}
-              <AdminQuickNoteDialog
-                isOpen={false}
-                onClose={() => {}}
-                onAddNote={note => {
-                  // Handle note addition here
-                  console.log('Note added:', note);
-                  adminWorkspaceService.getAdminWorkspaces().then(setWorkspaces);
-                }}
-                workspaceTitle="Admin Workspace"
-              />
+              {adminId && user?.uid && (
+                <AdminQuickNoteDialog
+                  workspaces={filteredWorkspaces}
+                  adminId={adminId}
+                  userId={user.uid}
+                  onNoteAdded={() => {
+                    // Realtime sync will automatically update the UI
+                  }}
+                />
+              )}
 
-              <Link href="/dashboard/admin/workspace/create">
+              <Link href={`/dashboard/admin/workspace/create`}>
                 <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Neuer Admin Workspace
@@ -286,7 +258,7 @@ export default function AdminWorkspaceManager() {
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Admin Workspaces durchsuchen..."
+              placeholder="Workspaces durchsuchen..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -300,26 +272,16 @@ export default function AdminWorkspaceManager() {
           >
             <Filter className="h-4 w-4" />
             Filter
-            {selectedTags.length +
-              selectedStatus.length +
-              selectedPriority.length +
-              selectedSystemLevel.length >
-              0 && (
+            {selectedTags.length + selectedStatus.length + selectedPriority.length > 0 && (
               <Badge variant="secondary" className="ml-1">
-                {selectedTags.length +
-                  selectedStatus.length +
-                  selectedPriority.length +
-                  selectedSystemLevel.length}
+                {selectedTags.length + selectedStatus.length + selectedPriority.length}
               </Badge>
             )}
           </Button>
         </div>
 
         {/* Active Filters */}
-        {(selectedTags.length > 0 ||
-          selectedStatus.length > 0 ||
-          selectedPriority.length > 0 ||
-          selectedSystemLevel.length > 0) && (
+        {(selectedTags.length > 0 || selectedStatus.length > 0 || selectedPriority.length > 0) && (
           <div className="flex items-center gap-2 mt-3 flex-wrap">
             <span className="text-sm text-gray-500">Aktive Filter:</span>
             {selectedTags.map(tag => (
@@ -352,22 +314,6 @@ export default function AdminWorkspaceManager() {
                 {priority} ×
               </Badge>
             ))}
-            {selectedSystemLevel.map(systemLevel => {
-              const IconComponent = getSystemLevelIcon(systemLevel);
-              return (
-                <Badge
-                  key={systemLevel}
-                  variant="outline"
-                  className={`cursor-pointer ${getSystemLevelColor(systemLevel)} flex items-center gap-1`}
-                  onClick={() =>
-                    setSelectedSystemLevel(prev => prev.filter(s => s !== systemLevel))
-                  }
-                >
-                  <IconComponent className="h-3 w-3" />
-                  {systemLevel} ×
-                </Badge>
-              );
-            })}
             <Button
               variant="ghost"
               size="sm"
@@ -375,7 +321,6 @@ export default function AdminWorkspaceManager() {
                 setSelectedTags([]);
                 setSelectedStatus([]);
                 setSelectedPriority([]);
-                setSelectedSystemLevel([]);
               }}
               className="text-[#14ad9f] hover:text-[#129488]"
             >
@@ -392,11 +337,9 @@ export default function AdminWorkspaceManager() {
           selectedTags={selectedTags}
           selectedStatus={selectedStatus}
           selectedPriority={selectedPriority}
-          selectedSystemLevel={selectedSystemLevel}
           onTagsChange={setSelectedTags}
           onStatusChange={setSelectedStatus}
           onPriorityChange={setSelectedPriority}
-          onSystemLevelChange={setSelectedSystemLevel}
           onClose={() => setIsFiltersOpen(false)}
         />
       )}
@@ -424,12 +367,21 @@ export default function AdminWorkspaceManager() {
           <AdminWorkspaceCalendar
             workspaces={filteredWorkspaces}
             onUpdateWorkspace={handleUpdateWorkspace}
+            onDeleteWorkspace={handleDeleteWorkspace}
             onWorkspaceClick={handleWorkspaceClick}
           />
         )}
       </div>
 
-      {/* Workspace Detail Slider - entfernt, da wir zur einzelnen Workspace-Seite navigieren */}
+      {/* Workspace Detail Slider */}
+      <AdminWorkspaceDetailSlider
+        workspace={selectedWorkspace}
+        isOpen={isDetailSliderOpen}
+        onClose={handleCloseDetailSlider}
+        onEdit={handleEditWorkspace}
+        onView={handleViewWorkspace}
+        onUpdateWorkspace={handleUpdateWorkspace}
+      />
     </div>
   );
 }
