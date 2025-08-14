@@ -181,22 +181,32 @@ export class AdminWorkspaceService {
 
   async createWorkspace(workspaceData: Partial<AdminWorkspace>): Promise<AdminWorkspace> {
     try {
+      // Validate required fields
+      if (!workspaceData.title?.trim()) {
+        throw new Error('Workspace title is required');
+      }
+
+      if (!workspaceData.adminId && !workspaceData.createdBy) {
+        throw new Error('Admin ID or createdBy is required');
+      }
+
       const payload = {
-        name: workspaceData.title,
+        title: workspaceData.title,
         description: workspaceData.description,
-        owner: workspaceData.adminId,
-        members: workspaceData.assignedTo || [],
-        settings: {
-          isPublic: false,
-          allowGuests: false,
-          notifications: true,
-        },
+        adminId: workspaceData.adminId || workspaceData.createdBy,
+        createdBy: workspaceData.createdBy || workspaceData.adminId,
+        assignedTo: workspaceData.assignedTo || [],
         type: workspaceData.type,
         priority: workspaceData.priority,
+        status: workspaceData.status || 'active',
+        tags: workspaceData.tags || [],
+        dueDate: workspaceData.dueDate,
         systemLevel: workspaceData.systemLevel,
         relatedCompanies: workspaceData.relatedCompanies,
         permissions: workspaceData.permissions,
       };
+
+      console.log('[AdminWorkspaceService] Creating workspace with payload:', payload);
 
       const result = await this.callLambdaAPI('', {
         method: 'POST',
@@ -204,7 +214,7 @@ export class AdminWorkspaceService {
       });
 
       const workspace = result.workspace;
-      return {
+      const transformedWorkspace = {
         id: workspace.workspaceId,
         title: workspace.name,
         description: workspace.description,
@@ -223,7 +233,7 @@ export class AdminWorkspaceService {
         adminId: workspace.owner,
         createdBy: workspace.createdBy,
         progress: 0,
-        boardColumns: [],
+        boardColumns: workspace.boardColumns || [],
         tasks: [],
         archivedTasks: [],
         members: workspace.members || [],
@@ -235,6 +245,8 @@ export class AdminWorkspaceService {
           deleteLevel: 'admin',
         },
       };
+
+      console.log('[AdminWorkspaceService] Workspace created successfully:', transformedWorkspace);
 
       // Send AWS EventBridge event for realtime updates
       if (typeof window !== 'undefined') {
@@ -248,9 +260,9 @@ export class AdminWorkspaceService {
           .catch(console.error);
       }
 
-      return workspace;
+      return transformedWorkspace;
     } catch (error) {
-      console.error('Error creating workspace:', error);
+      console.error('[AdminWorkspaceService] Error creating workspace:', error);
       throw error;
     }
   }

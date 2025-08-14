@@ -137,8 +137,13 @@ export default function CreateAdminWorkspacePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user?.uid) {
+    console.log('=== WORKSPACE CREATION DEBUG ===');
+    console.log('User object:', user);
+    console.log('Form data:', formData);
+
+    if (!user?.uid && !user?.email) {
       toast.error('Sie müssen angemeldet sein');
+      console.error('No user found - authentication required');
       return;
     }
 
@@ -155,6 +160,9 @@ export default function CreateAdminWorkspacePage() {
     setLoading(true);
 
     try {
+      // Use email as primary identifier since that's what works with Lambda
+      const userId = user.email || user.uid || 'admin';
+
       const workspace = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -164,19 +172,23 @@ export default function CreateAdminWorkspacePage() {
         assignedTo: formData.assignedTo,
         dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
         tags: formData.tags,
-        adminId: user.uid, // Fixed: AdminWorkspaceService expects adminId, not createdBy
-        createdBy: user.uid,
+        adminId: userId, // Use email as primary ID
+        createdBy: userId,
         progress: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      await adminWorkspaceService.createWorkspace(workspace);
+      console.log('Creating workspace with final data:', workspace);
+
+      const result = await adminWorkspaceService.createWorkspace(workspace);
+      console.log('Workspace creation result:', result);
+
       toast.success('Admin Workspace erfolgreich erstellt');
       router.push(`/dashboard/admin/workspace`);
     } catch (error) {
-      console.error('Error creating workspace:', error);
-      toast.error('Fehler beim Erstellen des Workspace');
+      console.error('FULL Error creating workspace:', error);
+      toast.error(`Fehler beim Erstellen des Workspace: ${error.message}`);
     } finally {
       setLoading(false);
     }
