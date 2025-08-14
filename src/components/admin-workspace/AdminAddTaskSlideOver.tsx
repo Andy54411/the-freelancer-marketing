@@ -22,6 +22,7 @@ interface AdminAddTaskSlideOverProps {
   onTaskCreated: (task: Partial<AdminWorkspaceTask>) => void;
   columnId: string;
   columnTitle: string;
+  createdBy?: string;
 }
 
 const priorities = [
@@ -37,6 +38,7 @@ export function AdminAddTaskSlideOver({
   onTaskCreated,
   columnId,
   columnTitle,
+  createdBy,
 }: AdminAddTaskSlideOverProps) {
   const [loading, setLoading] = useState(false);
   const [newTag, setNewTag] = useState('');
@@ -84,10 +86,16 @@ export function AdminAddTaskSlideOver({
         tags: formData.tags,
         columnId: columnId,
         status: columnId,
+        assignee: '',
+        assignees: [],
         assignedTo: [],
+        labels: [],
+        checklist: [],
         position: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
+        workspaceId: '',
+        createdBy: createdBy || 'Unbekannt',
       };
 
       onTaskCreated(task);

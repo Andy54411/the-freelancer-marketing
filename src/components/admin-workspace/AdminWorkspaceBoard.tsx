@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Plus, MoreHorizontal, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,27 @@ export function AdminWorkspaceBoard({
   // Task detail slider states
   const [selectedTask, setSelectedTask] = useState<AdminWorkspaceTask | null>(null);
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+
+  // Load tasks when selectedWorkspace changes
+  useEffect(() => {
+    const loadWorkspaceTasks = async () => {
+      if (!selectedWorkspace || !adminId) return;
+
+      console.log('Loading tasks for workspace:', selectedWorkspace.id);
+      try {
+        const tasks = await adminWorkspaceService.getWorkspaceTasks(selectedWorkspace.id);
+        console.log('Loaded tasks:', tasks);
+
+        // Update selectedWorkspace with tasks
+        const updatedWorkspace = { ...selectedWorkspace, tasks };
+        setSelectedWorkspace(updatedWorkspace);
+      } catch (error) {
+        console.error('Error loading workspace tasks:', error);
+      }
+    };
+
+    loadWorkspaceTasks();
+  }, [selectedWorkspace?.id, adminId]);
 
   // Konvertiert Dates zu JavaScript Dates für Kompatibilität
   const normalizeTaskDates = (task: AdminWorkspaceTask): AdminWorkspaceTask => {
@@ -100,15 +121,12 @@ export function AdminWorkspaceBoard({
 
   // Initialize columns with tasks properly distributed
   const getColumnsWithTasks = () => {
-    if (selectedWorkspace?.boardColumns && selectedWorkspace.boardColumns.length > 0) {
-      return selectedWorkspace.boardColumns.map(column => ({
-        ...column,
-        tasks: (column.tasks || []).filter(task => !task.archived), // Filtere archivierte Aufgaben aus
-      }));
-    }
+    console.log('getColumnsWithTasks called with selectedWorkspace:', selectedWorkspace);
 
-    // If using default columns, distribute workspace tasks into columns
-    const workspaceTasks = (selectedWorkspace?.tasks || []).filter(task => !task.archived); // Filtere archivierte Aufgaben aus
+    // FORCE using default columns with workspace tasks for now
+    // TODO: Fix backend to properly populate boardColumns.tasks
+    const workspaceTasks = (selectedWorkspace?.tasks || []).filter(task => !task.archived);
+    console.log('FORCING default columns with workspace tasks:', workspaceTasks);
 
     return defaultColumns.map(column => ({
       ...column,
@@ -124,13 +142,18 @@ export function AdminWorkspaceBoard({
             (column.id === 'review' && taskStatus === 'review') ||
             (column.id === 'done' && (taskStatus === 'done' || taskStatus === 'completed'));
 
+          console.log(
+            `Task ${task.title} with status ${taskStatus} matches column ${column.id}:`,
+            isMatch
+          );
           return isMatch;
         })
-        .sort((a, b) => a.position - b.position),
+        .sort((a, b) => (a.position || 0) - (b.position || 0)),
     }));
   };
 
   const columns = getColumnsWithTasks();
+  console.log('Final columns with tasks:', columns);
 
   // Optimistic update for better UX - update local state immediately
   const updateLocalWorkspace = (updates: Partial<AdminWorkspace>) => {
@@ -281,7 +304,15 @@ export function AdminWorkspaceBoard({
   };
 
   const handleTaskCreated = async (taskData: Partial<AdminWorkspaceTask>) => {
-    if (!selectedWorkspace || !selectedColumnId) return;
+    if (!selectedWorkspace || !selectedColumnId) {
+      console.error('Missing selectedWorkspace or selectedColumnId:', {
+        selectedWorkspace,
+        selectedColumnId,
+      });
+      return;
+    }
+
+    console.log('Creating task with data:', taskData);
 
     try {
       // Create task in backend via AdminWorkspaceService
@@ -292,26 +323,67 @@ export function AdminWorkspaceBoard({
         workspaceId: selectedWorkspace.id,
       });
 
-      // Update local state with the newly created task
-      const updatedColumns = columns.map(col => {
-        if (col.id === selectedColumnId) {
+      console.log('Task created successfully:', createdTask);
+
+      // Load fresh tasks from backend to ensure UI is up-to-date
+      try {
+        const freshTasks = await adminWorkspaceService.getWorkspaceTasks(selectedWorkspace.id);
+        console.log('Fresh tasks loaded from backend:', freshTasks);
+
+        // Update both boardColumns AND tasks array for complete sync
+        const updatedTasks = freshTasks;
+
+        // Update local workspace state immediately
+        const updatedWorkspace = {
+          ...selectedWorkspace,
+          tasks: updatedTasks,
+        };
+
+        // CRITICAL: Update the selectedWorkspace state so UI re-renders
+        setSelectedWorkspace(updatedWorkspace);
+
+        // Update columns with fresh data
+        const updatedColumns = columns.map(col => {
+          const columnTasks = freshTasks.filter(
+            task => task.status === col.id || task.columnId === col.id
+          );
           return {
             ...col,
-            tasks: [...(col.tasks || []), createdTask],
+            tasks: columnTasks,
           };
-        }
-        return col;
-      });
+        });
 
-      // Update workspace with new columns (this will trigger realtime update)
-      onUpdateWorkspace(selectedWorkspace.id, {
-        boardColumns: updatedColumns,
-      });
+        // Update parent component with fresh data
+        onUpdateWorkspace(selectedWorkspace.id, {
+          boardColumns: updatedColumns,
+          tasks: updatedTasks,
+        });
+      } catch (error) {
+        console.error('Error loading fresh tasks:', error);
 
-      console.log('Task successfully created:', createdTask);
+        // Fallback to local update if backend call fails
+        const updatedColumns = columns.map(col => {
+          if (col.id === selectedColumnId) {
+            return {
+              ...col,
+              tasks: [...(col.tasks || []), createdTask],
+            };
+          }
+          return col;
+        });
+
+        const updatedTasks = [...(selectedWorkspace.tasks || []), createdTask];
+
+        onUpdateWorkspace(selectedWorkspace.id, {
+          boardColumns: updatedColumns,
+          tasks: updatedTasks,
+        });
+      }
+
+      console.log('Task successfully created and UI updated:', createdTask);
     } catch (error) {
       console.error('Error creating task:', error);
-      // TODO: Show user-friendly error message
+      alert('Fehler beim Erstellen der Aufgabe: ' + (error as Error).message);
     }
   };
 
@@ -640,24 +712,9 @@ export function AdminWorkspaceBoard({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Workspace Selector */}
+      {/* Workspace Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center gap-4">
-          <select
-            value={selectedWorkspace?.id || ''}
-            onChange={e => {
-              const workspace = workspaces.find(w => w.id === e.target.value);
-              setSelectedWorkspace(workspace || null);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
-          >
-            {workspaces.map(workspace => (
-              <option key={workspace.id} value={workspace.id}>
-                {workspace.title}
-              </option>
-            ))}
-          </select>
-
           {selectedWorkspace && (
             <>
               <div className="flex items-center gap-2">
@@ -717,7 +774,7 @@ export function AdminWorkspaceBoard({
       <div className="flex-1 overflow-x-auto p-6">
         {showArchive ? (
           // Archiv-Ansicht
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-2xl mx-auto">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Archivierte Aufgaben</h2>
               <p className="text-gray-600">
@@ -825,7 +882,7 @@ export function AdminWorkspaceBoard({
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className="flex gap-6 h-full min-w-max"
+                  className="flex gap-4 h-full min-w-max"
                 >
                   {columns.map((column, index) => (
                     <Draggable key={column.id} draggableId={column.id} index={index}>
@@ -833,7 +890,7 @@ export function AdminWorkspaceBoard({
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          className={`flex flex-col w-64 bg-white rounded-lg shadow-sm border border-gray-200 ${
+                          className={`flex flex-col w-56 bg-white rounded-lg shadow-sm border border-gray-200 ${
                             snapshot.isDragging ? 'rotate-2 shadow-lg' : ''
                           }`}
                         >
@@ -1002,17 +1059,6 @@ export function AdminWorkspaceBoard({
                     </Draggable>
                   ))}
                   {provided.placeholder}
-
-                  {/* Add Column Button */}
-                  <div className="flex flex-col w-64">
-                    <Button
-                      variant="ghost"
-                      className="h-full justify-start text-gray-500 hover:text-gray-700 border-2 border-dashed border-gray-300 hover:border-gray-400"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Spalte hinzufügen
-                    </Button>
-                  </div>
                 </div>
               )}
             </Droppable>
@@ -1027,6 +1073,7 @@ export function AdminWorkspaceBoard({
         onTaskCreated={handleTaskCreated}
         columnId={selectedColumnId}
         columnTitle={selectedColumnTitle}
+        createdBy={adminId}
       />
 
       {/* Task Detail Slider */}

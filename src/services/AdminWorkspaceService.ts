@@ -142,33 +142,43 @@ export class AdminWorkspaceService {
       const queryParams = adminId ? `?adminId=${adminId}` : '';
       const result = await this.callLambdaAPI(queryParams);
 
-      return result.workspaces.map((workspace: any) => ({
-        id: workspace.workspaceId || workspace.id,
-        title: workspace.title || workspace.name,
-        description: workspace.description || '',
-        type: workspace.type || 'project',
-        status: workspace.status,
-        priority: workspace.priority || 'medium',
-        assignedTo: workspace.members || [],
-        dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
-        createdAt: new Date(workspace.createdAt),
-        updatedAt: new Date(workspace.updatedAt),
-        tags: workspace.tags || [],
-        adminId: workspace.adminId || workspace.owner,
-        createdBy: workspace.createdBy,
-        progress: workspace.progress || 0,
-        boardColumns: workspace.boardColumns || [],
-        tasks: workspace.tasks || [],
-        archivedTasks: workspace.archivedTasks || [],
-        members: workspace.members || [],
-        relatedCompanies: workspace.relatedCompanies || [],
-        systemLevel: workspace.systemLevel || 'platform',
-        permissions: workspace.permissions || {
-          viewLevel: 'admin',
-          editLevel: 'admin',
-          deleteLevel: 'admin',
-        },
-      }));
+      console.log('Raw workspace data from backend:', result.workspaces);
+
+      return result.workspaces.map((workspace: any) => {
+        const mappedWorkspace = {
+          id: workspace.workspaceId || workspace.id,
+          title: workspace.title || workspace.name,
+          description: workspace.description || '',
+          type: workspace.type || 'project',
+          status: workspace.status,
+          priority: workspace.priority || 'medium',
+          assignedTo: workspace.members || [],
+          dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
+          createdAt: new Date(workspace.createdAt),
+          updatedAt: new Date(workspace.updatedAt),
+          tags: workspace.tags || [],
+          adminId: workspace.adminId || workspace.owner,
+          createdBy: workspace.createdBy,
+          progress: workspace.progress || 0,
+          boardColumns: workspace.boardColumns || [],
+          tasks: workspace.tasks || [],
+          archivedTasks: workspace.archivedTasks || [],
+          members: workspace.members || [],
+          relatedCompanies: workspace.relatedCompanies || [],
+          systemLevel: workspace.systemLevel || 'platform',
+          permissions: workspace.permissions || {
+            viewLevel: 'admin',
+            editLevel: 'admin',
+            deleteLevel: 'admin',
+          },
+        };
+        console.log(`Mapped workspace ${mappedWorkspace.title}:`, {
+          id: mappedWorkspace.id,
+          tasksCount: mappedWorkspace.tasks.length,
+          tasks: mappedWorkspace.tasks,
+        });
+        return mappedWorkspace;
+      });
     } catch (error) {
       console.error('Error fetching admin workspaces:', error);
       return [];
@@ -400,6 +410,8 @@ export class AdminWorkspaceService {
     workspaceId: string,
     taskData: Partial<AdminWorkspaceTask>
   ): Promise<AdminWorkspaceTask> {
+    console.log('AdminWorkspaceService.createTask called with:', { workspaceId, taskData });
+
     try {
       const payload = {
         title: taskData.title,
@@ -422,10 +434,14 @@ export class AdminWorkspaceService {
         tags: taskData.tags || [],
       };
 
+      console.log('Sending payload to Lambda:', payload);
+
       const result = await this.callLambdaAPI(`/${workspaceId}/tasks`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+
+      console.log('Lambda response:', result);
 
       const task = result.task;
       return {

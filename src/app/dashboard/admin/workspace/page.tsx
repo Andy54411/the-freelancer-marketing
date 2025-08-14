@@ -1,12 +1,12 @@
 'use client';
 
 import React from 'react';
-import AdminWorkspaceManager from '@/components/admin-workspace/AdminWorkspaceManager';
+import AdminWorkspaceOverview from '@/components/admin-workspace/AdminWorkspaceOverview';
 
 export default function AdminWorkspacePage() {
   return (
     <div className="h-full">
-      <AdminWorkspaceManager />
+      <AdminWorkspaceOverview />
     </div>
   );
 }

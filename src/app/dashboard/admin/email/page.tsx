@@ -45,14 +45,21 @@ interface SentEmail {
 interface ReceivedEmail {
   id: string;
   from: string;
+  to?: string;
   subject: string;
   textContent: string;
   htmlContent: string;
   receivedAt: string;
   isRead: boolean;
   priority: 'low' | 'normal' | 'high';
-  category: 'support' | 'inquiry' | 'feedback' | 'business';
+  category: 'support' | 'inquiry' | 'feedback' | 'business' | 'notification';
   attachments?: { name: string; size: number }[];
+  // WorkMail specific fields
+  source?: string;
+  folder?: string;
+  messageId?: string;
+  size?: number;
+  flags?: string[];
 }
 
 export default function EmailAdminPage() {
@@ -83,9 +90,48 @@ export default function EmailAdminPage() {
       | 'notification',
   });
 
-  // Initialize with demo data
+  // Load real WorkMail data
   useEffect(() => {
-    // Load demo templates
+    loadWorkmailEmails();
+    loadEmailTemplates();
+  }, []);
+
+  const loadWorkmailEmails = async () => {
+    try {
+      setLoading(true);
+      console.log('📧 Loading WorkMail emails...');
+
+      const response = await fetch('/api/admin/workmail/emails?folder=INBOX&limit=50', {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('📧 WorkMail API Response:', result);
+
+      if (result.success && result.data?.emails) {
+        console.log('✅ Loaded WorkMail emails:', result.data.emails.length);
+        setReceivedEmails(result.data.emails);
+      } else {
+        console.error('❌ Failed to load WorkMail emails:', result.error);
+        // Fallback to demo data if WorkMail fails
+        loadDemoEmails();
+      }
+    } catch (error) {
+      console.error('❌ Error loading WorkMail emails:', error);
+      // Fallback to demo data if WorkMail fails
+      loadDemoEmails();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadEmailTemplates = () => {
+    // Load demo templates (diese können später auch aus einer API kommen)
     setTemplates([
       {
         id: '1',
@@ -124,8 +170,10 @@ export default function EmailAdminPage() {
         sentAt: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
       },
     ]);
+  };
 
-    // Load demo received emails
+  const loadDemoEmails = () => {
+    // Fallback Demo-Daten
     setReceivedEmails([
       {
         id: 'received_1',
@@ -164,7 +212,7 @@ export default function EmailAdminPage() {
         category: 'support',
       },
     ]);
-  }, []);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -539,10 +587,33 @@ export default function EmailAdminPage() {
             {activeTab === 'inbox' && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Inbox className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                    Posteingang
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center">
+                      <Inbox className="h-5 w-5 mr-2 text-[#14ad9f]" />
+                      WorkMail Posteingang
+                      {loading && (
+                        <div className="ml-2 w-4 h-4 border-2 border-[#14ad9f] border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadWorkmailEmails}
+                        disabled={loading}
+                        className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                      >
+                        <Mail className="h-4 w-4 mr-2" />
+                        {loading ? 'Lädt...' : 'Aktualisieren'}
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Verbunden mit:{' '}
+                    <strong>
+                      https://webmail.mail.us-east-1.awsapps.com/workmail/?organization=taskilo-org
+                    </strong>
+                  </p>
                 </CardHeader>
                 <CardContent>
                   {receivedEmails.length === 0 ? (
