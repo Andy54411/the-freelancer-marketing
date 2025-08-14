@@ -164,6 +164,7 @@ export default function CreateAdminWorkspacePage() {
         assignedTo: formData.assignedTo,
         dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
         tags: formData.tags,
+        adminId: user.uid, // Fixed: AdminWorkspaceService expects adminId, not createdBy
         createdBy: user.uid,
         progress: 0,
         createdAt: new Date(),

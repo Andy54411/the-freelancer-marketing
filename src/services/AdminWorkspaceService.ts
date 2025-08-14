@@ -5,18 +5,6 @@ const LAMBDA_API_BASE =
 // AWS Realtime Service Integration
 import { awsRealtimeService } from './AWSRealtimeService';
 
-// Development Mode - verwende lokale Mock-Daten bis AWS Lambda deployed ist
-const USE_MOCK_DATA = false; // AWS Lambda ist jetzt verfügbar
-
-// Fallback Polling für WebSocket-Probleme
-const ENABLE_FALLBACK_POLLING = true;
-const POLLING_INTERVAL = 5000; // 5 Sekunden
-
-// Mock Storage für Development
-const mockWorkspaces: AdminWorkspace[] = [];
-const mockTasks: AdminWorkspaceTask[] = [];
-const mockMembers: AdminWorkspaceMember[] = [];
-
 // Admin Workspace Interfaces
 export interface AdminWorkspace {
   id: string;
@@ -114,6 +102,12 @@ export class AdminWorkspaceService {
   private async callLambdaAPI(endpoint: string, options: RequestInit = {}) {
     const url = `${this.apiUrl}${endpoint}`;
 
+    console.log('[AdminWorkspaceService] Lambda API Call:', {
+      url,
+      method: options.method || 'GET',
+      hasBody: !!options.body,
+    });
+
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -123,100 +117,26 @@ export class AdminWorkspaceService {
       ...options,
     });
 
+    console.log('[AdminWorkspaceService] Lambda API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+    });
+
     if (!response.ok) {
-      throw new Error(`Lambda API Error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error('[AdminWorkspaceService] Lambda API Error Details:', errorText);
+      throw new Error(`Lambda API Error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('[AdminWorkspaceService] Lambda API Success Response:', data);
+    return data;
   }
 
   async getAllWorkspaces(adminId?: string): Promise<AdminWorkspace[]> {
     try {
       console.log('Loading workspaces for admin:', adminId);
-
-      if (USE_MOCK_DATA) {
-        // Mock Workspaces nur wenn explizit aktiviert
-        const mockWorkspaces: AdminWorkspace[] = [
-          {
-            id: 'workspace-1',
-            title: 'Platform Development',
-            description: 'Core platform features and improvements',
-            type: 'project',
-            status: 'active',
-            priority: 'high',
-            assignedTo: [adminId || 'admin'],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            tags: ['development', 'platform'],
-            adminId: adminId || 'admin',
-            progress: 75,
-            boardColumns: [
-              {
-                id: 'col-1',
-                title: 'To Do',
-                color: '#e2e8f0',
-                position: 0,
-                tasks: [],
-              },
-              {
-                id: 'col-2',
-                title: 'In Progress',
-                color: '#fbbf24',
-                position: 1,
-                tasks: [],
-              },
-              {
-                id: 'col-3',
-                title: 'Done',
-                color: '#10b981',
-                position: 2,
-                tasks: [],
-              },
-            ],
-            tasks: [],
-          },
-          {
-            id: 'workspace-2',
-            title: 'AWS Migration',
-            description: 'Migration to AWS infrastructure',
-            type: 'system',
-            status: 'active',
-            priority: 'high',
-            assignedTo: [adminId || 'admin'],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            tags: ['aws', 'migration', 'infrastructure'],
-            adminId: adminId || 'admin',
-            progress: 90,
-            boardColumns: [
-              {
-                id: 'col-4',
-                title: 'To Do',
-                color: '#e2e8f0',
-                position: 0,
-                tasks: [],
-              },
-              {
-                id: 'col-5',
-                title: 'In Progress',
-                color: '#fbbf24',
-                position: 1,
-                tasks: [],
-              },
-              {
-                id: 'col-6',
-                title: 'Done',
-                color: '#10b981',
-                position: 2,
-                tasks: [],
-              },
-            ],
-            tasks: [],
-          },
-        ];
-
-        return mockWorkspaces;
-      }
 
       // Production Lambda API Call
       const queryParams = adminId ? `?adminId=${adminId}` : '';
@@ -251,7 +171,6 @@ export class AdminWorkspaceService {
       }));
     } catch (error) {
       console.error('Error fetching admin workspaces:', error);
-      // Fallback to mock data on error
       return [];
     }
   }
@@ -294,8 +213,12 @@ export class AdminWorkspaceService {
         priority: workspace.priority || 'medium',
         assignedTo: workspace.members || [],
         dueDate: workspace.dueDate ? new Date(workspace.dueDate) : undefined,
-        createdAt: new Date(workspace.createdAt),
-        updatedAt: new Date(workspace.updatedAt),
+        createdAt: workspace.createdAtISO
+          ? new Date(workspace.createdAtISO)
+          : new Date(workspace.createdAt),
+        updatedAt: workspace.updatedAtISO
+          ? new Date(workspace.updatedAtISO)
+          : new Date(workspace.updatedAt),
         tags: workspace.tags || [],
         adminId: workspace.owner,
         createdBy: workspace.createdBy,
@@ -723,19 +646,6 @@ export class AdminWorkspaceService {
   ): () => void {
     const subscriptionId = `workspaces_${adminId}_${Date.now()}`;
 
-    // Check if we should use mock data
-    if (USE_MOCK_DATA) {
-      console.log('🔧 Mock Mode: AWS Realtime System deaktiviert, verwende Mock-Daten');
-
-      // Lade Mock-Daten sofort
-      this.getAllWorkspaces(adminId).then(callback).catch(console.error);
-
-      // Return no-op unsubscribe function
-      return () => {
-        console.log('🔧 Mock Mode: Mock subscription cleanup');
-      };
-    }
-
     // Production: AWS WebSocket für Realtime Updates + Fallback Polling
     let unsubscribeWebSocket: (() => void) | null = null;
     let pollingInterval: NodeJS.Timeout | null = null;
@@ -767,21 +677,8 @@ export class AdminWorkspaceService {
         console.log('✅ WebSocket Realtime System verbunden');
       })
       .catch(error => {
-        console.warn('⚠️ WebSocket Connection fehlgeschlagen, aktiviere Fallback Polling:', error);
+        console.warn('⚠️ WebSocket Connection fehlgeschlagen:', error);
         webSocketConnected = false;
-
-        // Fallback: Polling System
-        if (ENABLE_FALLBACK_POLLING && !pollingInterval) {
-          console.log('🔄 Aktiviere Fallback Polling (5s Intervall)');
-          pollingInterval = setInterval(async () => {
-            try {
-              const workspaces = await this.getAllWorkspaces(adminId);
-              callback(workspaces);
-            } catch (error) {
-              console.error('Polling error:', error);
-            }
-          }, POLLING_INTERVAL);
-        }
       });
 
     // Store callback for manual updates
@@ -797,30 +694,11 @@ export class AdminWorkspaceService {
     // Load initial data immediately
     this.getAllWorkspaces(adminId).then(callback).catch(console.error);
 
-    // Backup Fallback: Starte Polling nach 3 Sekunden wenn WebSocket nicht funktioniert
-    setTimeout(() => {
-      if (!webSocketConnected && ENABLE_FALLBACK_POLLING && !pollingInterval) {
-        console.log('🔄 WebSocket Timeout - Aktiviere Backup Polling');
-        pollingInterval = setInterval(async () => {
-          try {
-            const workspaces = await this.getAllWorkspaces(adminId);
-            callback(workspaces);
-          } catch (error) {
-            console.error('Backup polling error:', error);
-          }
-        }, POLLING_INTERVAL);
-      }
-    }, 3000);
-
     // Return unsubscribe function
     return () => {
       this.subscriptions.delete(subscriptionId);
       if (unsubscribeWebSocket) {
         unsubscribeWebSocket();
-      }
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-        console.log('🔄 Polling gestoppt');
       }
     };
   }

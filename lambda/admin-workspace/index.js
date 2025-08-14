@@ -235,10 +235,19 @@ function transformWorkspaceToFrontend(backendWorkspace) {
     priority: backendWorkspace.priority || 'medium',
     assignedTo: backendWorkspace.assignedTo || backendWorkspace.members || [],
     dueDate: backendWorkspace.dueDate || null,
+    // FIX: Handle both timestamp and ISO string formats properly
     createdAt:
-      backendWorkspace.createdAt || backendWorkspace.createdAtISO || new Date().toISOString(),
+      backendWorkspace.createdAtISO ||
+      (typeof backendWorkspace.createdAt === 'number'
+        ? new Date(backendWorkspace.createdAt).toISOString()
+        : backendWorkspace.createdAt) ||
+      new Date().toISOString(),
     updatedAt:
-      backendWorkspace.updatedAt || backendWorkspace.updatedAtISO || new Date().toISOString(),
+      backendWorkspace.updatedAtISO ||
+      (typeof backendWorkspace.updatedAt === 'number'
+        ? new Date(backendWorkspace.updatedAt).toISOString()
+        : backendWorkspace.updatedAt) ||
+      new Date().toISOString(),
     tags: backendWorkspace.tags || [],
     adminId: backendWorkspace.adminId || backendWorkspace.owner || 'admin',
     createdBy: backendWorkspace.createdBy || backendWorkspace.owner || 'admin',
@@ -304,8 +313,10 @@ async function createWorkspace(workspaceData) {
     priority: workspaceData.priority || 'medium',
     assignedTo: workspaceData.assignedTo || [workspaceData.createdBy || 'admin'],
     dueDate: workspaceData.dueDate || null,
-    createdAt: nowISO,
-    updatedAt: nowISO,
+    createdAt: now.getTime(), // FIX: Use timestamp number for DynamoDB index compatibility
+    updatedAt: now.getTime(), // FIX: Use timestamp number for DynamoDB index compatibility
+    createdAtISO: nowISO, // Keep ISO string for frontend compatibility
+    updatedAtISO: nowISO, // Keep ISO string for frontend compatibility
     tags: workspaceData.tags || [],
     adminId: workspaceData.adminId || workspaceData.createdBy || 'admin',
     createdBy: workspaceData.createdBy || 'admin',
