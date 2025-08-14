@@ -280,42 +280,39 @@ export function AdminWorkspaceBoard({
     setIsAddTaskOpen(true);
   };
 
-  const handleTaskCreated = (taskData: Partial<AdminWorkspaceTask>) => {
+  const handleTaskCreated = async (taskData: Partial<AdminWorkspaceTask>) => {
     if (!selectedWorkspace || !selectedColumnId) return;
 
-    const newTask: AdminWorkspaceTask = {
-      id: `task_${Date.now()}`,
-      title: taskData.title || '',
-      description: taskData.description,
-      status: selectedColumnId,
-      priority: taskData.priority || 'medium',
-      assignee: taskData.assignee || '',
-      assignees: taskData.assignees || [],
-      assignedTo: taskData.assignedTo || [],
-      dueDate: taskData.dueDate,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      labels: taskData.labels || [],
-      checklist: taskData.checklist || [],
-      workspaceId: selectedWorkspace.id,
-      tags: taskData.tags || [],
-      position: taskData.position || 0,
-      columnId: selectedColumnId,
-    };
+    try {
+      // Create task in backend via AdminWorkspaceService
+      const createdTask = await adminWorkspaceService.createTask(selectedWorkspace.id, {
+        ...taskData,
+        columnId: selectedColumnId,
+        status: selectedColumnId,
+        workspaceId: selectedWorkspace.id,
+      });
 
-    const updatedColumns = columns.map(col => {
-      if (col.id === selectedColumnId) {
-        return {
-          ...col,
-          tasks: [...(col.tasks || []), newTask],
-        };
-      }
-      return col;
-    });
+      // Update local state with the newly created task
+      const updatedColumns = columns.map(col => {
+        if (col.id === selectedColumnId) {
+          return {
+            ...col,
+            tasks: [...(col.tasks || []), createdTask],
+          };
+        }
+        return col;
+      });
 
-    onUpdateWorkspace(selectedWorkspace.id, {
-      boardColumns: updatedColumns,
-    });
+      // Update workspace with new columns (this will trigger realtime update)
+      onUpdateWorkspace(selectedWorkspace.id, {
+        boardColumns: updatedColumns,
+      });
+
+      console.log('Task successfully created:', createdTask);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      // TODO: Show user-friendly error message
+    }
   };
 
   const handleEditTask = (task: AdminWorkspaceTask) => {
