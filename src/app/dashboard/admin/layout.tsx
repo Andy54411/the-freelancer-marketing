@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Ticket,
+  Briefcase,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +33,7 @@ interface AdminLayoutProps {
 
 const navigation = [
   { name: 'Übersicht', href: '/dashboard/admin', icon: BarChart3 },
+  { name: 'Workspace', href: '/dashboard/admin/workspace', icon: Briefcase },
   { name: 'Tickets', href: '/dashboard/admin/tickets', icon: Ticket },
   { name: 'Enhanced Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
   { name: 'Unternehmen', href: '/dashboard/admin/companies', icon: Building2 },
