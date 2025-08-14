@@ -40,10 +40,12 @@ import type {
 import { SingleAdminWorkspaceBoard } from '@/components/workspace/SingleAdminWorkspaceBoard';
 
 export default function AdminWorkspaceDetailPage() {
+  console.log('AdminWorkspaceDetailPage component loaded!');
   const router = useRouter();
   const params = useParams();
 
   const workspaceId = params.workspaceId as string;
+  console.log('workspaceId from params:', workspaceId);
 
   const [workspace, setWorkspace] = useState<AdminWorkspace | null>(null);
   const [loading, setLoading] = useState(true);
