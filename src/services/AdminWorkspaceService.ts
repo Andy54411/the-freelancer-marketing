@@ -889,12 +889,10 @@ export class AdminWorkspaceService {
     // Get updated workspace
     const workspace = await this.getWorkspace(workspaceId);
 
-    // Send AWS EventBridge event for realtime updates
-    if (typeof window !== 'undefined') {
-      awsRealtimeService
-        .broadcastWorkspaceUpdate('workspace.updated', workspaceId, workspace.adminId, workspace)
-        .catch(console.error);
-    }
+    // Send AWS EventBridge event for realtime updates (both client and server)
+    awsRealtimeService
+      .broadcastWorkspaceUpdate('workspace.updated', workspaceId, workspace.adminId, workspace)
+      .catch(console.error);
 
     // Update cache and notify immediately
     this.workspaceCache.set(workspaceId, workspace);

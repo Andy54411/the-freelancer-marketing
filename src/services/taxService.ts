@@ -3,6 +3,9 @@
  * Automatisierte Steuererklärungen und Finanzberichte nach deutschem Steuerrecht
  */
 
+// CRITICAL: Tax calculations using real financial data
+const USE_MOCK_DATA = false; // PRODUCTION: Integration mit FinanceService required
+
 import {
   collection,
   addDoc,
@@ -242,22 +245,34 @@ export class TaxService {
     try {
       const period = this.getQuarterPeriod(year, quarter);
 
-      // Umsätze und Steuern aus Transaktionen berechnen
-      // TODO: Integration mit FinanceService für echte Daten
-      const mockData = {
-        umsatzSteuerpflichtig: 50000,
-        umsatzSteuerfrei: 5000,
-        innergemeinschaftlich: 0,
-        vorsteuerAbziehbar: 8000,
-        vorsteuerInnergem: 0,
-        vorsteuerImport: 0,
-        umsatzsteuerSchuld: 9500, // 19% von 50000
-        vorsteuerGuthaben: 8000,
-        zahllast: 1500, // 9500 - 8000
-        erstattung: 0,
-      };
+      // CRITICAL: Check if using mock data for tax calculations
+      if (USE_MOCK_DATA) {
+        console.warn(
+          '🚨 TAX SERVICE: Using MOCK DATA for UStVA calculation! This should NEVER happen in production!'
+        );
 
-      return mockData;
+        // Umsätze und Steuern aus Transaktionen berechnen
+        // TODO: Integration mit FinanceService für echte Daten
+        const mockData = {
+          umsatzSteuerpflichtig: 50000,
+          umsatzSteuerfrei: 5000,
+          innergemeinschaftlich: 0,
+          vorsteuerAbziehbar: 8000,
+          vorsteuerInnergem: 0,
+          vorsteuerImport: 0,
+          umsatzsteuerSchuld: 9500, // 19% von 50000
+          vorsteuerGuthaben: 8000,
+          zahllast: 1500, // 9500 - 8000
+          erstattung: 0,
+        };
+
+        return mockData;
+      }
+
+      // PRODUCTION: Real UStVA calculation with FinanceService
+      throw new Error(
+        '🚨 TAX SERVICE: Real UStVA calculation not implemented! Cannot proceed without FinanceService integration.'
+      );
     } catch (error) {
       console.error('Fehler bei UStVA Berechnung:', error);
       throw new Error('UStVA konnte nicht berechnet werden');
