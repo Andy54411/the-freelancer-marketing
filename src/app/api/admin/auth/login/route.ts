@@ -14,9 +14,9 @@ const dynamodb = new DynamoDBClient({
 });
 
 // JWT Secret für Admin-Tokens
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024'
-);
+const JWT_SECRET =
+  process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024';
+const JWT_SECRET_BYTES = new TextEncoder().encode(JWT_SECRET);
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
-      .sign(JWT_SECRET);
+      .sign(JWT_SECRET_BYTES);
 
     // Cookie setzen
     const cookieStore = await cookies();
