@@ -12,11 +12,14 @@ const nextConfig = {
           exclude: ['error', 'warn'],
         }
         : false,
+    // Verbessertes Minification
+    styledComponents: true,
   },
 
   // Performance Optimizations
   poweredByHeader: false,
-
+  generateEtags: true,
+  
   // Experimental features for faster builds
   experimental: {
     optimizeCss: true,
@@ -24,7 +27,10 @@ const nextConfig = {
       'react-icons', 
       'lucide-react', 
       '@radix-ui/react-icons',
-      '@tabler/icons-react'
+      '@tabler/icons-react',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      'react-hook-form'
     ],
     // Parallel builds für schnellere Kompilation
     cpus: Math.max(1, os.cpus().length - 1),
@@ -57,6 +63,15 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
+          // Performance Security Headers
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
         ],
       },
       {
@@ -70,6 +85,25 @@ const nextConfig = {
       },
       {
         source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Statische Assets optimieren
+      {
+        source: '/:all*(svg|jpg|jpeg|png|gif|ico|webp|avif)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/fonts/(.*)',
         headers: [
           {
             key: 'Cache-Control',
@@ -91,28 +125,47 @@ const nextConfig = {
       './firebase_functions/*': './firebase_functions/*',
     });
 
-    // Bundle Optimization - REVERTED: Causing massive bundle size
-    // if (!dev && !isServer) {
-    //   config.optimization = {
-    //     ...config.optimization,
-    //     splitChunks: {
-    //       chunks: 'all',
-    //       cacheGroups: {
-    //         vendor: {
-    //           test: /[\\/]node_modules[\\/]/,
-    //           name: 'vendors',
-    //           priority: 10,
-    //           chunks: 'all',
-    //         },
-    //         common: {
-    //           minChunks: 2,
-    //           priority: 5,
-    //           reuseExistingChunk: true,
-    //         },
-    //       },
-    //     },
-    //   };
-    // }
+    // Performance-Optimierungen für Bundle-Größe
+    if (!dev && !isServer) {
+      // Tree-shaking verbessern
+      config.optimization = {
+        ...config.optimization,
+        usedExports: true,
+        sideEffects: false,
+        // Chunk-Splitting für bessere Caching-Performance
+        splitChunks: {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000,
+          cacheGroups: {
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              priority: -10,
+              reuseExistingChunk: true,
+            },
+            // React vendor chunk separat halten
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react-vendor',
+              chunks: 'all',
+              priority: 20,
+            },
+            // UI Library chunk
+            ui: {
+              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
+              name: 'ui-vendor',
+              chunks: 'all',
+              priority: 15,
+            },
+          },
+        },
+      };
+    }
 
     // Performance improvements
     config.resolve = config.resolve || {};
@@ -120,14 +173,6 @@ const nextConfig = {
       ...(config.resolve.alias || {}),
       '@': path.resolve(process.cwd(), 'src'),
     };
-
-    // Cache webpack builds - REMOVED: Causing issues
-    // config.cache = {
-    //   type: 'filesystem',
-    //   buildDependencies: {
-    //     config: [path.resolve(process.cwd(), 'next.config.mjs')],
-    //   },
-    // };
 
     return config;
   },

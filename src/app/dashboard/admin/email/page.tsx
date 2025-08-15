@@ -1,14 +1,24 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import EmailDetailView from '@/components/admin/EmailDetailView';
-import ArchivedEmailsView from '@/components/admin/ArchivedEmailsView';
+
+// Dynamic Imports für bessere Performance und Code-Splitting
+const EmailDetailView = dynamic(() => import('@/components/admin/EmailDetailView'), {
+  loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded-lg"></div>,
+  ssr: false,
+});
+
+const ArchivedEmailsView = dynamic(() => import('@/components/admin/ArchivedEmailsView'), {
+  loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded-lg"></div>,
+  ssr: false,
+});
 import {
   Send,
   Archive,
