@@ -232,8 +232,8 @@ function getCleanTextContent(email: ReceivedEmail): string {
   if (email.textContent && email.textContent.trim()) {
     console.log('🔍 DEBUG: Using textContent');
     const cleaned = decodeUTF8Properly(email.textContent);
-    if (cleaned && cleaned.length > 50) {
-      // Nur wenn sinnvoller Inhalt
+    if (cleaned && cleaned.trim().length > 0) {
+      // Jeder vorhandene Inhalt ist gültig, auch kurze Nachrichten wie "Test"
       console.log('🔍 DEBUG: textContent result length:', cleaned.length);
       return cleaned;
     }
@@ -266,7 +266,8 @@ function getCleanTextContent(email: ReceivedEmail): string {
 
       console.log('🔍 DEBUG: final cleaned result:', finalCleanedText.substring(0, 200));
 
-      if (finalCleanedText && finalCleanedText.trim().length > 20) {
+      if (finalCleanedText && finalCleanedText.trim().length > 0) {
+        // Jeder vorhandene Inhalt ist gültig
         console.log(
           '🔍 DEBUG: Returning final cleaned result, length:',
           finalCleanedText.trim().length
@@ -1188,17 +1189,44 @@ export default function EmailDetailView({
       };
     }
 
-    // Priorität 3: Nur textContent verwenden mit Bereinigung
-    if (email.textContent) {
-      console.log('📧 Using textContent only with cleaning');
+    // Priorität 3: Direkte textContent verwenden
+    if (email.textContent && email.textContent.trim()) {
+      console.log('📧 Using direct textContent:', email.textContent);
       return {
-        text: getCleanTextContent(email),
+        text: email.textContent.trim(),
         html: null,
       };
     }
 
-    // Priorität 4: Fallback - NIEMALS rawContent direkt anzeigen!
-    console.log('⚠️ No usable content found, showing error message');
+    // Priorität 4: Einfache HTML-zu-Text Konvertierung
+    if (email.htmlContent && email.htmlContent.trim()) {
+      console.log('📧 Converting HTML to text');
+      try {
+        const textFromHtml = convert(email.htmlContent, {
+          wordwrap: 80,
+          selectors: [
+            { selector: 'a', options: { ignoreHref: true } },
+            { selector: 'img', format: 'skip' },
+            { selector: 'style', format: 'skip' },
+            { selector: 'script', format: 'skip' },
+          ],
+        });
+
+        if (textFromHtml && textFromHtml.trim()) {
+          return {
+            text: textFromHtml.trim(),
+            html: email.htmlContent,
+          };
+        }
+      } catch (error) {
+        console.warn('HTML conversion failed:', error);
+      }
+    }
+
+    // Priorität 5: Fallback - nur wenn wirklich nichts vorhanden ist
+    console.log('⚠️ No usable content found at all');
+    console.log('email.textContent:', email.textContent);
+    console.log('email.htmlContent exists:', !!email.htmlContent);
     return {
       text: 'E-Mail-Inhalt konnte nicht geladen werden',
       html: '<div style="padding: 20px; text-align: center; color: #666;">E-Mail-Inhalt konnte nicht geladen werden</div>',
