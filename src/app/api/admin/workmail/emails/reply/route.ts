@@ -67,14 +67,32 @@ export async function POST(request: NextRequest) {
 
     // Echte E-Mail-Versendung über SMTP
     try {
+      // Admin-spezifische SMTP-Credentials auswählen
+      let smtpUser, smtpPassword;
+
+      if (decoded.email === 'andy.staudinger@taskilo.de') {
+        smtpUser = process.env.WORKMAIL_ANDY_EMAIL || 'andy.staudinger@taskilo.de';
+        smtpPassword = process.env.WORKMAIL_ANDY_PASSWORD || '';
+      } else {
+        // Fallback zu Support-Account für andere Admins
+        smtpUser = process.env.WORKMAIL_SMTP_USER || 'support@taskilo.de';
+        smtpPassword = process.env.WORKMAIL_SMTP_PASSWORD || '';
+      }
+
+      console.log('🔐 [Quick Reply API] Using SMTP credentials:', {
+        adminEmail: decoded.email,
+        smtpUser: smtpUser,
+        hasPassword: !!smtpPassword,
+      });
+
       // WorkMail SMTP Konfiguration
       const transporter = nodemailer.createTransport({
         host: 'smtp.mail.us-east-1.awsapps.com', // WorkMail SMTP
         port: 465,
         secure: true,
         auth: {
-          user: process.env.WORKMAIL_SMTP_USER || 'info@taskilo.de',
-          pass: process.env.WORKMAIL_SMTP_PASSWORD || '',
+          user: smtpUser,
+          pass: smtpPassword,
         },
       });
 
