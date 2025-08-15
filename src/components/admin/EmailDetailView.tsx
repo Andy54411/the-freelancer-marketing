@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Switch } from '@/components/ui/switch';
 import {
   Html,
   Head,
@@ -81,6 +80,9 @@ interface EmailDetailViewProps {
   email: ReceivedEmail;
   onBack: () => void;
   onReply?: (email: ReceivedEmail) => void;
+  onReplyAll?: (email: ReceivedEmail) => void;
+  onForward?: (email: ReceivedEmail) => void;
+  onFavorite?: (emailId: string) => Promise<void>;
   onDelete?: (emailId: string) => Promise<void>;
   onArchive?: (emailId: string) => Promise<void>;
   onMarkAsRead?: (emailId: string, isRead: boolean) => Promise<void>;
@@ -293,17 +295,34 @@ function QuickReplyForm({ email }: { email: ReceivedEmail }) {
 
     setIsSending(true);
     try {
-      console.log('Antwort wird gesendet:', {
+      const quickReplyData = {
         to: email.from,
         subject: `Re: ${email.subject}`,
         message: message.trim(),
+        inReplyTo: email.id,
+      };
+
+      console.log('📤 Sending quick reply:', quickReplyData);
+
+      const response = await fetch('/api/admin/workmail/emails/reply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(quickReplyData),
       });
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send reply');
+      }
+
+      console.log('✅ Quick reply sent successfully:', result);
       setMessage('');
       alert('Antwort wurde erfolgreich gesendet!');
     } catch (error) {
-      console.error('Fehler beim Senden der Antwort:', error);
+      console.error('❌ Error sending quick reply:', error);
       alert('Fehler beim Senden der Antwort. Bitte versuchen Sie es erneut.');
     } finally {
       setIsSending(false);
@@ -691,11 +710,13 @@ export default function EmailDetailView({
   email,
   onBack,
   onReply,
+  onReplyAll,
+  onForward,
+  onFavorite,
   onDelete,
   onArchive,
   onMarkAsRead,
 }: EmailDetailViewProps) {
-  const [isRawView, setIsRawView] = useState(false);
   const [parsedEmail, setParsedEmail] = useState<ModernEmailContent | null>(null);
 
   // Moderne E-Mail-Verarbeitung mit Native Browser APIs und professionellen Tools
@@ -1265,15 +1286,6 @@ export default function EmailDetailView({
             <Eye className="h-4 w-4" />
             {email.isRead ? 'Als ungelesen markieren' : 'Als gelesen markieren'}
           </Button>
-
-          <Switch
-            checked={isRawView}
-            onCheckedChange={setIsRawView}
-            className="data-[state=checked]:bg-[#14ad9f]"
-          />
-          <span className="text-sm text-gray-600">
-            {isRawView ? 'Raw-Ansicht' : 'Standard-Ansicht'}
-          </span>
         </div>
       </div>
 
@@ -1338,18 +1350,33 @@ export default function EmailDetailView({
                 <Reply className="h-4 w-4" />
                 <span>Antworten</span>
               </Button>
-              <Button variant="outline" size="sm" className="flex items-center space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onReplyAll?.(email)}
+                className="flex items-center space-x-1"
+              >
                 <ReplyAll className="h-4 w-4" />
                 <span>Allen antworten</span>
               </Button>
-              <Button variant="outline" size="sm" className="flex items-center space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onForward?.(email)}
+                className="flex items-center space-x-1"
+              >
                 <Forward className="h-4 w-4" />
                 <span>Weiterleiten</span>
               </Button>
             </div>
 
             <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" className="flex items-center space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onFavorite?.(email.id)}
+                className="flex items-center space-x-1"
+              >
                 <Star className="h-4 w-4" />
                 <span>Favorit</span>
               </Button>
@@ -1418,13 +1445,7 @@ export default function EmailDetailView({
           <CardTitle>E-Mail-Inhalt</CardTitle>
         </CardHeader>
         <CardContent>
-          {isRawView ? (
-            <ScrollArea className="h-96 w-full border rounded p-4">
-              <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
-                {email.rawContent || 'Kein Raw-Inhalt verfügbar'}
-              </pre>
-            </ScrollArea>
-          ) : processedContent.html ? (
+          {processedContent.html ? (
             <SecureHTMLRenderer htmlContent={processedContent.html} />
           ) : (
             <ScrollArea className="h-96 w-full border rounded p-4">

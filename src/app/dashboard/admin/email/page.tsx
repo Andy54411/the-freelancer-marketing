@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import EmailDetailView from '@/components/admin/EmailDetailView';
+import ArchivedEmailsView from '@/components/admin/ArchivedEmailsView';
 import {
   Send,
   Archive,
@@ -21,6 +22,8 @@ import {
   Trash2,
   Zap,
   Mail,
+  Paperclip,
+  FileText,
 } from 'lucide-react';
 
 interface EmailTemplate {
@@ -52,6 +55,9 @@ interface ReceivedEmail {
   htmlContent: string;
   receivedAt: string;
   isRead: boolean;
+  isFavorite?: boolean;
+  isArchived?: boolean;
+  archivedAt?: string;
   priority: 'low' | 'normal' | 'high';
   category: 'support' | 'inquiry' | 'feedback' | 'business' | 'notification';
   attachments?: { name: string; size: number }[];
@@ -69,8 +75,10 @@ export default function EmailAdminPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [sentEmails, setSentEmails] = useState<SentEmail[]>([]);
   const [receivedEmails, setReceivedEmails] = useState<ReceivedEmail[]>([]);
+  const [archivedEmails, setArchivedEmails] = useState<ReceivedEmail[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<ReceivedEmail | null>(null);
   const [showEmailDetail, setShowEmailDetail] = useState(false);
+  const [showArchiveView, setShowArchiveView] = useState(false);
 
   const [composeForm, setComposeForm] = useState({
     to: '',
@@ -259,10 +267,45 @@ export default function EmailAdminPage() {
   };
 
   const handleArchiveEmail = async (emailId: string) => {
-    // Here you would typically call an API to archive the email
-    setReceivedEmails(prev => prev.filter(email => email.id !== emailId));
-    setShowEmailDetail(false);
-    setSelectedEmail(null);
+    try {
+      // Finde die E-Mail im Posteingang
+      const emailToArchive = receivedEmails.find(email => email.id === emailId);
+
+      if (emailToArchive) {
+        // Füge die E-Mail zum Archiv hinzu
+        setArchivedEmails(prev => [
+          ...prev,
+          {
+            ...emailToArchive,
+            isArchived: true,
+            archivedAt: new Date().toISOString(),
+          },
+        ]);
+
+        // Entferne die E-Mail aus dem Posteingang
+        setReceivedEmails(prev => prev.filter(email => email.id !== emailId));
+
+        console.log(`✅ E-Mail "${emailToArchive.subject}" erfolgreich archiviert`);
+
+        // API-Call für echte Archivierung (WorkMail IMAP MOVE-Operation)
+        await fetch('/api/admin/workmail/emails/archive', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: document.cookie,
+          },
+          body: JSON.stringify({ emailId, messageId: emailToArchive.messageId }),
+        }).catch(err => {
+          console.warn('⚠️ Archiv-API-Call fehlgeschlagen:', err);
+        });
+      }
+
+      // Schließe Detail-View
+      setShowEmailDetail(false);
+      setSelectedEmail(null);
+    } catch (error) {
+      console.error('❌ Fehler beim Archivieren:', error);
+    }
   };
 
   const handleMarkAsRead = async (emailId: string, isRead: boolean) => {
@@ -277,6 +320,108 @@ export default function EmailAdminPage() {
     //   headers: { 'Content-Type': 'application/json' },
     //   body: JSON.stringify({ isRead })
     // });
+  };
+
+  const handleReplyAllToEmail = (email: ReceivedEmail) => {
+    console.log('Allen antworten für E-Mail:', email.subject);
+    // Implementierung für "Allen antworten"
+    // Hier würde normalerweise ein Reply-All-Dialog geöffnet werden
+  };
+
+  const handleForwardEmail = (email: ReceivedEmail) => {
+    console.log('Weiterleiten E-Mail:', email.subject);
+    // Implementierung für "Weiterleiten"
+    // Hier würde normalerweise ein Forward-Dialog geöffnet werden
+  };
+
+  const handleFavoriteEmail = async (emailId: string) => {
+    console.log('Favorit markieren E-Mail ID:', emailId);
+    // Implementierung für "Favorit"
+    // Hier würde normalerweise der Favorit-Status in der API aktualisiert werden
+    setReceivedEmails(prev =>
+      prev.map(email =>
+        email.id === emailId ? { ...email, isFavorite: !email.isFavorite } : email
+      )
+    );
+  };
+
+  // Archiv-spezifische Handler
+  const handleShowArchive = () => {
+    setShowArchiveView(true);
+    setShowEmailDetail(false);
+    setSelectedEmail(null);
+  };
+
+  const handleBackFromArchive = () => {
+    setShowArchiveView(false);
+  };
+
+  const handleRestoreEmail = async (emailId: string) => {
+    try {
+      const emailToRestore = archivedEmails.find(email => email.id === emailId);
+      if (emailToRestore) {
+        // Entferne aus Archiv
+        setArchivedEmails(prev => prev.filter(email => email.id !== emailId));
+
+        // Füge zurück zur Inbox hinzu
+        setReceivedEmails(prev => [
+          ...prev,
+          {
+            ...emailToRestore,
+            isArchived: false,
+            archivedAt: undefined,
+          },
+        ]);
+
+        console.log(`✅ E-Mail "${emailToRestore.subject}" erfolgreich wiederhergestellt`);
+
+        // API-Call für echte Wiederherstellung
+        await fetch('/api/admin/workmail/emails/restore', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: document.cookie,
+          },
+          body: JSON.stringify({ emailId, messageId: emailToRestore.messageId }),
+        }).catch(err => {
+          console.warn('⚠️ Wiederherstellungs-API-Call fehlgeschlagen:', err);
+        });
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Wiederherstellen:', error);
+    }
+  };
+
+  const handleDeleteFromArchive = async (emailId: string) => {
+    try {
+      const emailToDelete = archivedEmails.find(email => email.id === emailId);
+      if (emailToDelete && window.confirm(`E-Mail "${emailToDelete.subject}" endgültig löschen?`)) {
+        // Entferne aus Archiv
+        setArchivedEmails(prev => prev.filter(email => email.id !== emailId));
+
+        console.log(`✅ E-Mail "${emailToDelete.subject}" endgültig gelöscht`);
+
+        // API-Call für echtes Löschen
+        await fetch('/api/admin/workmail/emails/delete', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: document.cookie,
+          },
+          body: JSON.stringify({ emailId, messageId: emailToDelete.messageId }),
+        }).catch(err => {
+          console.warn('⚠️ Lösch-API-Call fehlgeschlagen:', err);
+        });
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen:', error);
+    }
+  };
+
+  const handleArchivedEmailClick = (email: ReceivedEmail) => {
+    setSelectedEmail(email);
+    setShowEmailDetail(true);
+    setShowArchiveView(false);
   };
 
   const getStatusBadge = (status: string) => {
@@ -393,7 +538,8 @@ export default function EmailAdminPage() {
   const sidebarItems = [
     { id: 'compose', label: 'E-Mail verfassen', icon: Send },
     { id: 'inbox', label: 'Posteingang', icon: Inbox },
-    { id: 'templates', label: 'Templates', icon: Archive },
+    { id: 'archive', label: 'Archiv', icon: Archive },
+    { id: 'templates', label: 'Templates', icon: FileText },
     { id: 'sent', label: 'Gesendet', icon: Inbox },
     { id: 'create-template', label: 'Template erstellen', icon: Plus },
     { id: 'settings', label: 'Einstellungen', icon: Settings },
@@ -401,12 +547,24 @@ export default function EmailAdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Show Email Detail View if email is selected */}
-      {showEmailDetail && selectedEmail ? (
+      {/* Show Archive View if archive is selected */}
+      {showArchiveView ? (
+        <ArchivedEmailsView
+          archivedEmails={archivedEmails}
+          onBack={handleBackFromArchive}
+          onRestore={handleRestoreEmail}
+          onDelete={handleDeleteFromArchive}
+          onEmailClick={handleArchivedEmailClick}
+        />
+      ) : /* Show Email Detail View if email is selected */
+      showEmailDetail && selectedEmail ? (
         <EmailDetailView
           email={selectedEmail}
           onBack={handleBackToInbox}
           onReply={handleReplyToEmail}
+          onReplyAll={handleReplyAllToEmail}
+          onForward={handleForwardEmail}
+          onFavorite={handleFavoriteEmail}
           onDelete={handleDeleteEmail}
           onArchive={handleArchiveEmail}
           onMarkAsRead={handleMarkAsRead}
@@ -436,12 +594,19 @@ export default function EmailAdminPage() {
                   const Icon = item.icon;
                   const unreadCount =
                     item.id === 'inbox' ? receivedEmails.filter(email => !email.isRead).length : 0;
+                  const archiveCount = item.id === 'archive' ? archivedEmails.length : 0;
                   return (
                     <button
                       key={item.id}
-                      onClick={() => setActiveTab(item.id)}
+                      onClick={() => {
+                        if (item.id === 'archive') {
+                          handleShowArchive();
+                        } else {
+                          setActiveTab(item.id);
+                        }
+                      }}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
-                        activeTab === item.id
+                        activeTab === item.id || (item.id === 'archive' && showArchiveView)
                           ? 'bg-[#14ad9f] text-white'
                           : 'text-gray-700 hover:bg-gray-100'
                       }`}
@@ -453,6 +618,11 @@ export default function EmailAdminPage() {
                       {unreadCount > 0 && (
                         <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                           {unreadCount}
+                        </span>
+                      )}
+                      {archiveCount > 0 && (
+                        <span className="bg-[#14ad9f] text-white text-xs px-2 py-1 rounded-full">
+                          {archiveCount}
                         </span>
                       )}
                     </button>
@@ -649,6 +819,115 @@ export default function EmailAdminPage() {
                                   Verwenden
                                 </Button>
                                 <Button size="sm" variant="outline">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Archive Content */}
+              {activeTab === 'archive' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Archive className="h-5 w-5 mr-2 text-[#14ad9f]" />
+                      Archivierte E-Mails
+                      <Badge variant="secondary" className="ml-2">
+                        {archivedEmails.length}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {archivedEmails.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Archive className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <p>Keine archivierten E-Mails</p>
+                        <p className="text-sm">Archivierte E-Mails werden hier angezeigt</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {archivedEmails.map(email => (
+                          <div
+                            key={email.id}
+                            className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedEmail(email);
+                              setShowEmailDetail(true);
+                            }}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <span className="font-medium text-gray-900">{email.from}</span>
+                                  <Badge
+                                    variant={
+                                      email.priority === 'high' ? 'destructive' : 'secondary'
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {email.priority}
+                                  </Badge>
+                                  {email.isFavorite && (
+                                    <Badge variant="outline" className="text-xs">
+                                      ⭐ Favorit
+                                    </Badge>
+                                  )}
+                                </div>
+                                <h3 className="font-medium text-gray-900 mb-1">{email.subject}</h3>
+                                <p className="text-sm text-gray-600 line-clamp-2">
+                                  {email.textContent?.substring(0, 100)}...
+                                </p>
+                                <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                  <span>
+                                    {new Date(email.receivedAt).toLocaleDateString('de-DE')}
+                                  </span>
+                                  {email.attachments && email.attachments.length > 0 && (
+                                    <span className="flex items-center">
+                                      <Paperclip className="h-3 w-3 mr-1" />
+                                      {email.attachments.length}
+                                    </span>
+                                  )}
+                                  <Badge variant="outline" className="text-xs">
+                                    📁 Archiviert
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    // Aus Archiv zurück in Posteingang verschieben
+                                    setReceivedEmails(prev => [
+                                      ...prev,
+                                      { ...email, isArchived: false },
+                                    ]);
+                                    setArchivedEmails(prev => prev.filter(e => e.id !== email.id));
+                                  }}
+                                  className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                                >
+                                  <Inbox className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    if (confirm('E-Mail endgültig löschen?')) {
+                                      setArchivedEmails(prev =>
+                                        prev.filter(e => e.id !== email.id)
+                                      );
+                                    }
+                                  }}
+                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
