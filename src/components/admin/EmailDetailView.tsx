@@ -377,29 +377,55 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
     console.log('🎯 [HTML RENDERER] Original HTML content preview:', htmlContent.substring(0, 300));
 
     // CHARACTER CODE ANALYZER - Finde die exakten problematischen Zeichen!
+    // 🔥 ULTIMATE CHARACTER ANALYZER - FINDET ALLE PROBLEMATISCHEN ZEICHEN
     const suspiciousChars = [];
-    const textToAnalyze = htmlContent.substring(0, 1000);
+    const matchSearchResults = [];
+
+    // Suche speziell nach "Match" mit problematischen Zeichen
+    const matchRegex = /[""''€‚„‹›«»‰‱][Mm]atch[""''€‚„‹›«»‰‱]/g;
+    let matchResult;
+    while ((matchResult = matchRegex.exec(htmlContent)) !== null) {
+      matchSearchResults.push({
+        match: matchResult[0],
+        index: matchResult.index,
+        context: htmlContent.substring(Math.max(0, matchResult.index - 30), matchResult.index + 30),
+      });
+    }
+
+    console.log('🎯 [MATCH ANALYZER] Found problematic "Match" instances:', matchSearchResults);
+
+    // Analysiere ALLE nicht-ASCII Zeichen (erweitert)
+    const textToAnalyze = htmlContent.substring(0, 5000); // Mehr Text analysieren
     for (let i = 0; i < textToAnalyze.length; i++) {
       const char = textToAnalyze[i];
       const code = char.charCodeAt(0);
 
-      // Suche nach verdächtigen Unicode-Zeichen (nicht normale ASCII)
+      // Alle nicht-ASCII Zeichen UND spezielle problematische Zeichen
       if (
-        code > 127 &&
-        (code === 8220 ||
-          code === 8221 ||
-          code === 8216 ||
-          code === 8217 ||
-          code === 8211 ||
-          code === 8212 ||
-          code === 8364)
+        code > 127 || // Alle Unicode-Zeichen
+        code === 8364 || // Euro-Symbol €
+        code === 8220 || // Left double quotation mark "
+        code === 8221 || // Right double quotation mark "
+        code === 8216 || // Left single quotation mark '
+        code === 8217 || // Right single quotation mark '
+        code === 8211 || // En dash –
+        code === 8212 || // Em dash —
+        code === 8218 || // Single low-9 quotation mark ‚
+        code === 8222 || // Double low-9 quotation mark „
+        code === 8249 || // Single left-pointing angle quotation mark ‹
+        code === 8250 || // Single right-pointing angle quotation mark ›
+        code === 171 || // Left-pointing double angle quotation mark «
+        code === 187 || // Right-pointing double angle quotation mark »
+        code === 8240 || // Per mille sign ‰
+        code === 8241 // Per ten thousand sign ‱
       ) {
         suspiciousChars.push({
           char: char,
           charCode: code,
           hex: '0x' + code.toString(16),
+          unicode: `\\u${code.toString(16).padStart(4, '0')}`,
           index: i,
-          context: textToAnalyze.substring(Math.max(0, i - 10), i + 10),
+          context: textToAnalyze.substring(Math.max(0, i - 15), i + 15),
         });
       }
     }
@@ -407,29 +433,62 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
     console.log('🔍 [CHARACTER ANALYZER] Found suspicious characters:', suspiciousChars);
     console.log(
       '🔍 [CHARACTER ANALYZER] Character codes found:',
-      suspiciousChars.map(c => `${c.char}(${c.charCode})`)
+      suspiciousChars.map(c => `${c.char}(${c.charCode}/${c.unicode})`)
+    );
+    console.log(
+      '🔍 [CHARACTER ANALYZER] First 10 contexts:',
+      suspiciousChars.slice(0, 10).map(c => c.context)
     );
 
     const cleanedHtml = htmlContent
-      // Aggressive Euro-Symbol-Bereinigung für HTML-Rendering
-      .replace(/€œ/g, '"') // €œ -> "
-      .replace(/€/g, '"') // € -> "
-      .replace(/€™/g, "'") // €™ -> '
-      .replace(/€"/g, '–') // €" -> –
-      .replace(/€/g, '"') // Alle anderen € -> "
-      // Alternative Character-Codes
+      // 🔥 ULTIMATE Unicode-Bereinigung - ALLE problematischen Zeichen
+      // Euro-Zeichen und Varianten
+      .replace(/€œ/g, '"')
+      .replace(/€/g, '"')
+      .replace(/€™/g, "'")
+      .replace(/€"/g, '–')
+      .replace(/€/g, '"')
+
+      // Alle Anführungszeichen-Varianten → normale Anführungszeichen
+      .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"') // " " „ ‟ ″ ‶ → "
+      .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'") // ' ' ‚ ‛ ′ → '
+
+      // Alle Bindestrich-Varianten → normaler Bindestrich
+      .replace(/[\u2013\u2014\u2015]/g, '-') // – — ― → -
+
+      // Weitere problematische Zeichen
+      .replace(/[\u2039\u203A]/g, "'") // ‹ › → '
+      .replace(/[\u00AB\u00BB]/g, '"') // « » → "
+      .replace(/[\u2030\u2031]/g, '%') // ‰ ‱ → %
+      .replace(/[\u2026]/g, '...') // … → ...
+      .replace(/[\u00A0]/g, ' ') // Non-breaking space → normal space
+
+      // Spezielle Bereinigung für "Match" Probleme
+      .replace(/[""''€‚„‹›«»‰‱]([Mm]atch)[""''€‚„‹›«»‰‱]/g, '"$1"')
+
+      // Unicode-spezifische Kombinationen
       .replace(/\u20AC\u201C/g, '"') // Unicode Euro + Left Quote
       .replace(/\u20AC\u201D/g, '"') // Unicode Euro + Right Quote
       .replace(/\u20AC\u2019/g, "'") // Unicode Euro + Right Single Quote
       .replace(/\u20AC\u2013/g, '–') // Unicode Euro + En Dash
       .replace(/\u20AC/g, '"') // Alle verbleibenden Euro-Symbole
+
       // SPEZIFISCH: Die exakten problematischen Zeichen aus dem HTML!
       .replace(/"/g, '"') // Smart quotes (Unicode 201C, 201D) -> normale Anführungszeichen
       .replace(/"/g, '"') // Smart quotes (Unicode 201C, 201D) -> normale Anführungszeichen
       .replace(/'/g, "'") // Smart single quote (Unicode 2019) -> normaler Apostroph
       .replace(/'/g, "'") // Smart single quote (Unicode 2018) -> normaler Apostroph
       .replace(/–/g, '-') // En dash (Unicode 2013) -> normaler Bindestrich
-      .replace(/—/g, '-'); // Em dash (Unicode 2014) -> normaler Bindestrich
+      .replace(/—/g, '-') // Em dash (Unicode 2014) -> normaler Bindestrich
+
+      // Fallback: Alle verbliebenen Unicode-Zeichen > 127 (außer deutsche Umlaute)
+      .replace(/[^\x00-\x7FäöüÄÖÜß]/g, function (match) {
+        const code = match.charCodeAt(0);
+        console.log(`🚨 [FALLBACK CLEANER] Replacing unknown char: ${match} (${code}) with ""`);
+        if (code >= 8200 && code <= 8300) return '"'; // Smart quotes range
+        if (code >= 8000 && code <= 8500) return "'"; // Other punctuation
+        return '';
+      });
 
     console.log('🎯 [HTML RENDERER] After Euro cleaning preview:', cleanedHtml.substring(0, 300));
 
