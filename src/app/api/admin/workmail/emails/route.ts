@@ -99,7 +99,8 @@ function decodeQuotedPrintable(encoded: string): string {
 }
 
 // JWT Secret für Admin-Tokens
-const JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024';
+const JWT_SECRET =
+  process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024';
 const JWT_SECRET_BYTES = new TextEncoder().encode(JWT_SECRET);
 
 // WorkMail Admin User Mapping mit IMAP-Zugangsdaten

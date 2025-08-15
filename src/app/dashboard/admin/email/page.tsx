@@ -965,12 +965,6 @@ export default function EmailAdminPage() {
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 mt-2">
-                      Verbunden mit:{' '}
-                      <strong>
-                        https://webmail.mail.us-east-1.awsapps.com/workmail/?organization=taskilo-org
-                      </strong>
-                    </p>
                   </CardHeader>
                   <CardContent>
                     {receivedEmails.length === 0 ? (
