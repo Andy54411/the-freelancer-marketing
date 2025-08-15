@@ -92,6 +92,7 @@ export default function EmailAdminPage() {
 
   // Load real WorkMail data
   useEffect(() => {
+    console.log('🔄 useEffect executed - loading WorkMail emails...');
     loadWorkmailEmails();
     loadEmailTemplates();
   }, []);
@@ -115,6 +116,7 @@ export default function EmailAdminPage() {
 
       if (result.success && result.data?.emails) {
         console.log('✅ Loaded WorkMail emails:', result.data.emails.length);
+        console.log('📧 Setting WorkMail emails to state:', result.data.emails);
         setReceivedEmails(result.data.emails);
       } else {
         console.error('❌ Failed to load WorkMail emails:', result.error);
@@ -174,6 +176,7 @@ export default function EmailAdminPage() {
 
   const loadDemoEmails = () => {
     // Fallback Demo-Daten
+    console.log('🚨 Loading DEMO emails (fallback)');
     setReceivedEmails([
       {
         id: 'received_1',
