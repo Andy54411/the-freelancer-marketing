@@ -380,7 +380,74 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 
                       // NUR den extrahierten und reparierten HTML-Content verwenden
                       email.htmlContent = extractedHtml;
-                      email.textContent = extractedHtml.replace(/<[^>]*>/g, '').substring(0, 500);
+
+                      // KRITISCH: ULTRA-AGGRESSIVE CSS-Fragment-Bereinigung für textContent
+                      const cleanTextFromHtml = extractedHtml
+                        // Entferne HTML-Tags
+                        .replace(/<[^>]*>/g, ' ')
+                        // KRITISCH: Entferne CSS @-Regeln SOFORT
+                        .replace(/@media[^{]*\{[^}]*\}/gi, '') // @media queries
+                        .replace(/@import[^;]*;/gi, '') // @import statements
+                        .replace(/@[a-z-]+[^{]*\{[^}]*\}/gi, '') // Alle @-Regeln
+                        .replace(/@[a-z-]+[^;]*;/gi, '') // @-Statements ohne Blöcke
+                        // KRITISCH: HTML-Element-Selektoren entfernen
+                        .replace(
+                          /\b(table|td|tr|th|tbody|thead|img|div|span|p|a|ul|li|h1|h2|h3|h4|h5|h6)\s+/gi,
+                          ' '
+                        ) // HTML-Elemente als Selektoren
+                        .replace(
+                          /\b(table|td|tr|th|tbody|thead|img|div|span|p|a|ul|li|h1|h2|h3|h4|h5|h6)\b/gi,
+                          ' '
+                        ) // HTML-Elemente einzeln
+                        // KRITISCH: CSS-Selektoren mit Attributen
+                        .replace(/\*\[class[^\]]*\]/gi, '') // *[class="..."]
+                        .replace(/\[[^\]]*\]/gi, '') // Alle Attribut-Selektoren
+                        // KRITISCH: SOFORTIGE CSS-Fragment-Entfernung
+                        .replace(/#outlook[^}]*}/gi, '') // #outlook a { padding:0; }
+                        .replace(/\.ExternalClass[^}]*}/gi, '') // .ExternalClass { width:100%; }
+                        .replace(/\.ExternalClass[^,]*,/gi, '') // .ExternalClass, .ExternalClass p,
+                        .replace(/[.#][\w-]+[^}]*\{[^}]*\}/gi, '') // Alle CSS-Regeln
+                        .replace(/[\w-]+\s*:\s*[^;}]*[;}]/gi, '') // CSS-Eigenschaften
+                        // KRITISCH: CSS-Eigenschaften einzeln
+                        .replace(/display[^;]*;?/gi, '')
+                        .replace(/mso-[^;]*;?/gi, '')
+                        .replace(/visibility[^;]*;?/gi, '')
+                        .replace(/-webkit[^;]*;?/gi, '')
+                        .replace(/-moz[^;]*;?/gi, '')
+                        .replace(/-ms[^;]*;?/gi, '')
+                        .replace(/padding[^;]*;?/gi, '')
+                        .replace(/margin[^;]*;?/gi, '')
+                        .replace(/font-[^;]*;?/gi, '')
+                        .replace(/color[^;]*;?/gi, '')
+                        .replace(/background[^;]*;?/gi, '')
+                        .replace(/width[^;]*;?/gi, '')
+                        .replace(/height[^;]*;?/gi, '')
+                        .replace(/line-height[^;]*;?/gi, '')
+                        .replace(/border[^;]*;?/gi, '')
+                        .replace(/text-[^;]*;?/gi, '')
+                        // FINAL: Entferne alle verbleibenden CSS-Fragmente
+                        .replace(/\{[^}]*\}/g, '') // Alle { } Blöcke
+                        .replace(/\([^)]*\)/g, ' ') // Alle ( ) Blöcke
+                        .replace(/url\([^)]*\)/gi, '') // url() Statements
+                        .replace(/[{}();]/g, ' ') // CSS-Zeichen einzeln
+                        // ULTRA-KRITISCH: Bekannte CSS-Fragmente von finAPI
+                        .replace(/table\s+td\s+body\s+img\s+a\s+img\s+table\s+th/gi, '')
+                        .replace(/gmail-fix/gi, '')
+                        .replace(/x-apple-data-detectors/gi, '')
+                        // FINAL: HTML-Entities bereinigen
+                        .replace(/&shy;?/gi, '') // Soft hyphens
+                        .replace(/&zwnj;?/gi, '') // Zero-width non-joiners
+                        .replace(/&nbsp;?/gi, ' ') // Non-breaking spaces
+                        .replace(/&[a-z0-9#]+;?/gi, ' ') // Alle anderen HTML-Entities
+                        // FINAL: Verbleibende HTML-Elemente einzeln entfernen
+                        .replace(/\bbody\b/gi, '')
+                        .replace(/\b(html|head|meta|title|link|style|script)\b/gi, '')
+                        // Bereinige Leerzeichen und Zeilenumbrüche
+                        .replace(/\s+/g, ' ')
+                        .replace(/\n+/g, ' ')
+                        .trim();
+
+                      email.textContent = cleanTextFromHtml.substring(0, 500);
 
                       console.log('✅ [API] HTML content extracted and assigned to email object');
                       console.log('📝 [API] TextContent length:', email.textContent?.length || 0);
@@ -406,7 +473,7 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                   email.htmlContent = decodedHtmlContent;
                   // Wenn kein textContent vorhanden, HTML als Fallback verwenden
                   if (!email.textContent) {
-                    // KRITISCH: Aggressive CSS-Fragment-Bereinigung für finAPI und andere Marketing-E-Mails
+                    // KRITISCH: ULTRA-AGGRESSIVE CSS-Fragment-Bereinigung für finAPI und andere Marketing-E-Mails
                     const cleanText = decodedHtmlContent
                       // Entferne alle <style> Tags komplett
                       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -414,24 +481,63 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
                       // Entferne alle HTML-Tags
                       .replace(/<[^>]*>/g, ' ')
-                      // KRITISCH: Entferne CSS-Deklarationen (auch fragmentarische)
-                      .replace(/display\s*:\s*none\s*!important[^;]*;?/gi, '')
-                      .replace(/mso-[^:]*:[^;]*;?/gi, '')
-                      .replace(/visibility\s*:\s*hidden\s*!important[^;]*;?/gi, '')
-                      .replace(/-webkit-[^:]*:[^;]*;?/gi, '')
-                      .replace(/-moz-[^:]*:[^;]*;?/gi, '')
-                      .replace(/-ms-[^:]*:[^;]*;?/gi, '')
-                      // Entferne CSS-Eigenschaften die häufig in E-Mail-HTML vorkommen
-                      .replace(/padding\s*:\s*[^;]*;?/gi, '')
-                      .replace(/margin\s*:\s*[^;]*;?/gi, '')
-                      .replace(/font-[^:]*:[^;]*;?/gi, '')
-                      .replace(/color\s*:\s*[^;]*;?/gi, '')
-                      .replace(/background[^:]*:[^;]*;?/gi, '')
-                      .replace(/width\s*:\s*[^;]*;?/gi, '')
-                      .replace(/height\s*:\s*[^;]*;?/gi, '')
-                      // Entferne übrig gebliebene CSS-Fragmente
-                      .replace(/[^;]*:\s*[^;]*!important[^;]*;?/gi, '')
-                      // Entferne mehrfache Leerzeichen und Zeilenumbrüche
+                      // KRITISCH: Entferne CSS @-Regeln SOFORT
+                      .replace(/@media[^{]*\{[^}]*\}/gi, '') // @media queries
+                      .replace(/@import[^;]*;/gi, '') // @import statements
+                      .replace(/@[a-z-]+[^{]*\{[^}]*\}/gi, '') // Alle @-Regeln
+                      .replace(/@[a-z-]+[^;]*;/gi, '') // @-Statements ohne Blöcke
+                      // KRITISCH: HTML-Element-Selektoren entfernen
+                      .replace(
+                        /\b(table|td|tr|th|tbody|thead|img|div|span|p|a|ul|li|h1|h2|h3|h4|h5|h6)\s+/gi,
+                        ' '
+                      ) // HTML-Elemente als Selektoren
+                      .replace(
+                        /\b(table|td|tr|th|tbody|thead|img|div|span|p|a|ul|li|h1|h2|h3|h4|h5|h6)\b/gi,
+                        ' '
+                      ) // HTML-Elemente einzeln
+                      // KRITISCH: CSS-Selektoren mit Attributen
+                      .replace(/\*\[class[^\]]*\]/gi, '') // *[class="..."]
+                      .replace(/\[[^\]]*\]/gi, '') // Alle Attribut-Selektoren
+                      // KRITISCH: SOFORTIGE CSS-Fragment-Entfernung (auch zusammenhängend)
+                      .replace(/#outlook[^}]*}/gi, '') // #outlook a { padding:0; }
+                      .replace(/\.ExternalClass[^}]*}/gi, '') // .ExternalClass { width:100%; }
+                      .replace(/\.ExternalClass[^,]*,/gi, '') // .ExternalClass, .ExternalClass p,
+                      .replace(/[.#][\w-]+[^}]*\{[^}]*\}/gi, '') // Alle CSS-Regeln
+                      .replace(/[\w-]+\s*:\s*[^;}]*[;}]/gi, '') // CSS-Eigenschaften
+                      .replace(/display[^;]*;?/gi, '')
+                      .replace(/mso-[^;]*;?/gi, '')
+                      .replace(/visibility[^;]*;?/gi, '')
+                      .replace(/-webkit[^;]*;?/gi, '')
+                      .replace(/-moz[^;]*;?/gi, '')
+                      .replace(/-ms[^;]*;?/gi, '')
+                      .replace(/padding[^;]*;?/gi, '')
+                      .replace(/margin[^;]*;?/gi, '')
+                      .replace(/font-[^;]*;?/gi, '')
+                      .replace(/color[^;]*;?/gi, '')
+                      .replace(/background[^;]*;?/gi, '')
+                      .replace(/width[^;]*;?/gi, '')
+                      .replace(/height[^;]*;?/gi, '')
+                      .replace(/line-height[^;]*;?/gi, '')
+                      .replace(/border[^;]*;?/gi, '')
+                      .replace(/text-[^;]*;?/gi, '')
+                      // FINAL: Entferne alle verbleibenden CSS-Fragmente
+                      .replace(/\{[^}]*\}/g, '') // Alle { } Blöcke
+                      .replace(/\([^)]*\)/g, ' ') // Alle ( ) Blöcke
+                      .replace(/url\([^)]*\)/gi, '') // url() Statements
+                      .replace(/[{}();]/g, ' ') // CSS-Zeichen einzeln
+                      // ULTRA-KRITISCH: Bekannte CSS-Fragmente von finAPI
+                      .replace(/table\s+td\s+body\s+img\s+a\s+img\s+table\s+th/gi, '')
+                      .replace(/gmail-fix/gi, '')
+                      .replace(/x-apple-data-detectors/gi, '')
+                      // FINAL: HTML-Entities bereinigen
+                      .replace(/&shy;?/gi, '') // Soft hyphens
+                      .replace(/&zwnj;?/gi, '') // Zero-width non-joiners
+                      .replace(/&nbsp;?/gi, ' ') // Non-breaking spaces
+                      .replace(/&[a-z0-9#]+;?/gi, ' ') // Alle anderen HTML-Entities
+                      // FINAL: Verbleibende HTML-Elemente einzeln entfernen
+                      .replace(/\bbody\b/gi, '')
+                      .replace(/\b(html|head|meta|title|link|style|script)\b/gi, '')
+                      // Bereinige Leerzeichen und Zeilenumbrüche
                       .replace(/\s+/g, ' ')
                       .replace(/\n+/g, ' ')
                       .trim();
@@ -461,8 +567,11 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 
                   const dateLine = headerLines
                     .find(line => line.toLowerCase().startsWith('date:'))
-                    ?.split(':')[1]
+                    ?.substring(5) // Entferne "Date:" prefix
                     ?.trim();
+
+                  console.log('📅 [WorkMail API] Date parsing:', dateLine);
+
                   email.receivedAt = dateLine
                     ? new Date(dateLine).toISOString()
                     : new Date().toISOString();
