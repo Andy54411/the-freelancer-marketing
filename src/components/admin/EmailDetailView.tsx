@@ -4,7 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import { Html, Head, Body, Container, Text, Heading, Button as EmailButton, Link } from '@react-email/components';
+import {
+  Html,
+  Head,
+  Body,
+  Container,
+  Text,
+  Heading,
+  Button as EmailButton,
+  Link,
+} from '@react-email/components';
 import { convert } from 'html-to-text';
 import DOMPurify from 'dompurify';
 import { decode } from 'html-entities';
@@ -26,7 +35,7 @@ import {
   Mail,
   Clock,
   Eye,
-  FileText
+  FileText,
 } from 'lucide-react';
 
 interface ReceivedEmail {
@@ -83,17 +92,13 @@ interface QuickReplyData {
   message: string;
 }
 
-function QuickReplyForm({ 
-  email
-}: { 
-  email: ReceivedEmail;
-}) {
+function QuickReplyForm({ email }: { email: ReceivedEmail }) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!message.trim()) {
       return;
     }
@@ -103,9 +108,9 @@ function QuickReplyForm({
       console.log('Antwort wird gesendet:', {
         to: email.from,
         subject: `Re: ${email.subject}`,
-        message: message.trim()
+        message: message.trim(),
       });
-      
+
       await new Promise(resolve => setTimeout(resolve, 2000));
       setMessage('');
       alert('Antwort wurde erfolgreich gesendet!');
@@ -132,22 +137,25 @@ function QuickReplyForm({
               <strong>Betreff:</strong> Re: {email.subject}
             </div>
           </div>
-          
+
           <div>
-            <label htmlFor="quick-reply-message" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="quick-reply-message"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Ihre Nachricht
             </label>
             <textarea
               id="quick-reply-message"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={e => setMessage(e.target.value)}
               placeholder="Ihre Antwort eingeben..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] resize-vertical"
               rows={4}
               disabled={isSending}
             />
           </div>
-          
+
           <div className="flex justify-end space-x-2">
             <Button
               type="button"
@@ -178,11 +186,56 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
   // HTML-Inhalte für iframe vorbereiten
   const sanitizedHTML = useMemo(() => {
     const cleanHtml = DOMPurify.sanitize(htmlContent, {
-      ALLOWED_TAGS: ['div', 'p', 'span', 'b', 'i', 'u', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'tbody', 'thead', 'img', 'a', 'center', 'font'],
-      ALLOWED_ATTR: ['style', 'class', 'href', 'src', 'alt', 'title', 'target', 'align', 'width', 'height', 'color', 'bgcolor', 'cellpadding', 'cellspacing', 'border'],
+      ALLOWED_TAGS: [
+        'div',
+        'p',
+        'span',
+        'b',
+        'i',
+        'u',
+        'strong',
+        'em',
+        'br',
+        'ul',
+        'ol',
+        'li',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'table',
+        'tr',
+        'td',
+        'th',
+        'tbody',
+        'thead',
+        'img',
+        'a',
+        'center',
+        'font',
+      ],
+      ALLOWED_ATTR: [
+        'style',
+        'class',
+        'href',
+        'src',
+        'alt',
+        'title',
+        'target',
+        'align',
+        'width',
+        'height',
+        'color',
+        'bgcolor',
+        'cellpadding',
+        'cellspacing',
+        'border',
+      ],
       ALLOW_DATA_ATTR: false,
       FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button'],
-      FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover']
+      FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
     });
 
     return `
@@ -277,16 +330,16 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
       } else if (event.data && event.data.type === 'openLink') {
         // Sichere Link-Behandlung für finAPI und andere Newsletter-Links
         console.log('🔗 Handling email link:', event.data.url);
-        
+
         try {
           // finAPI Tracking-Links und Newsletter-Links sicher öffnen
           if (event.data.isTracking) {
             console.log('📊 Opening tracking link:', event.data.url);
           }
-          
+
           // Link in neuem Tab öffnen mit verbesserter Sicherheit
           const newWindow = window.open(event.data.url, '_blank', 'noopener,noreferrer');
-          
+
           if (!newWindow) {
             // Fallback: Browser-native Link-Handling
             console.warn('⚠️ Popup blocked, using fallback');
@@ -314,7 +367,7 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
         height: `${iframeHeight}px`,
         border: '1px solid #e5e7eb',
         borderRadius: '6px',
-        backgroundColor: 'white'
+        backgroundColor: 'white',
       }}
       sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation allow-forms allow-downloads allow-modals"
       title="E-Mail Inhalt"
@@ -331,49 +384,53 @@ export default function EmailDetailView({
   onReply,
   onDelete,
   onArchive,
-  onMarkAsRead
+  onMarkAsRead,
 }: EmailDetailViewProps) {
   const [isRawView, setIsRawView] = useState(false);
-    const [parsedEmail, setParsedEmail] = useState<ModernEmailContent | null>(null);
+  const [parsedEmail, setParsedEmail] = useState<ModernEmailContent | null>(null);
 
   // Moderne E-Mail-Verarbeitung mit Native Browser APIs und professionellen Tools
-  const processEmailWithModernAPIs = async (htmlContent: string, subject?: string, from?: string): Promise<ModernEmailContent | null> => {
+  const processEmailWithModernAPIs = async (
+    htmlContent: string,
+    subject?: string,
+    from?: string
+  ): Promise<ModernEmailContent | null> => {
     try {
       // 1. UTF-8 Perfekte Dekodierung mit Native Browser APIs
       const utf8Content = decodeUTF8Properly(htmlContent);
-      
+
       // 2. HTML mit Juice für bessere E-Mail-Darstellung optimieren
       const inlinedHtml = juice(utf8Content, {
         removeStyleTags: false,
         preserveMediaQueries: true,
         applyWidthAttributes: true,
-        applyHeightAttributes: true
+        applyHeightAttributes: true,
       });
-      
+
       // 3. HTML sanitizen mit DOMPurify
       const cleanHtml = DOMPurify.sanitize(inlinedHtml, {
         ADD_TAGS: ['style', 'link'],
         ADD_ATTR: ['href', 'src', 'style', 'target', 'rel', 'class', 'id'],
         ALLOW_DATA_ATTR: true,
         ALLOW_UNKNOWN_PROTOCOLS: false,
-        WHOLE_DOCUMENT: false
+        WHOLE_DOCUMENT: false,
       });
-      
+
       // 4. Text-Version mit Browser-nativem Parser erstellen
       const textParser = new DOMParser();
       const htmlDoc = textParser.parseFromString(cleanHtml, 'text/html');
       const textVersion = htmlDoc.body?.textContent || htmlDoc.textContent || '';
-      
+
       // 5. Markdown mit Turndown erstellen
       const turndown = new TurndownService({
         headingStyle: 'atx',
         codeBlockStyle: 'fenced',
         bulletListMarker: '-',
-        linkStyle: 'inlined'
+        linkStyle: 'inlined',
       });
-      
+
       const markdown = turndown.turndown(cleanHtml);
-      
+
       return {
         html: cleanHtml,
         text: textVersion,
@@ -381,12 +438,13 @@ export default function EmailDetailView({
         subject: subject || email.subject,
         from: from || email.from,
         to: email.to ? [email.to] : [],
-        attachments: email.attachments?.map(att => ({
-          filename: att.name,
-          mimeType: att.type || 'application/octet-stream',
-          size: att.size,
-          contentId: undefined
-        })) || []
+        attachments:
+          email.attachments?.map(att => ({
+            filename: att.name,
+            mimeType: att.type || 'application/octet-stream',
+            size: att.size,
+            contentId: undefined,
+          })) || [],
       };
     } catch (error) {
       console.error('Modern email processing failed:', error);
@@ -398,22 +456,22 @@ export default function EmailDetailView({
   const decodeQuotedPrintable = (str: string): string => {
     try {
       console.log('🔧 Quoted-Printable decoding input:', str.substring(0, 200) + '...');
-      
+
       let result = str;
-      
+
       // 1. Soft line breaks entfernen (= am Zeilende) - ZUERST!
       result = result.replace(/=\r?\n/g, '').replace(/=\n/g, '');
-      
+
       // 2. Spezifische UTF-8 Sequenzen für deutsche Zeichen (häufigste zuerst)
       result = result
-        .replace(/=C3=A4/g, 'ä')    // ä
-        .replace(/=C3=B6/g, 'ö')    // ö  
-        .replace(/=C3=BC/g, 'ü')    // ü
-        .replace(/=C3=84/g, 'Ä')    // Ä
-        .replace(/=C3=96/g, 'Ö')    // Ö
-        .replace(/=C3=9C/g, 'Ü')    // Ü
-        .replace(/=C3=9F/g, 'ß')    // ß
-        .replace(/=C2=A0/g, ' ')    // Non-breaking space
+        .replace(/=C3=A4/g, 'ä') // ä
+        .replace(/=C3=B6/g, 'ö') // ö
+        .replace(/=C3=BC/g, 'ü') // ü
+        .replace(/=C3=84/g, 'Ä') // Ä
+        .replace(/=C3=96/g, 'Ö') // Ö
+        .replace(/=C3=9C/g, 'Ü') // Ü
+        .replace(/=C3=9F/g, 'ß') // ß
+        .replace(/=C2=A0/g, ' ') // Non-breaking space
         .replace(/=E2=80=93/g, '–') // En dash
         .replace(/=E2=80=94/g, '—') // Em dash
         .replace(/=E2=80=9C/g, '"') // Left double quotation
@@ -421,22 +479,22 @@ export default function EmailDetailView({
         .replace(/=E2=80=9E/g, '„') // Double low-9 quotation
         .replace(/=E2=80=99/g, "'") // Right single quotation
         .replace(/=E2=9C=85/g, '✅') // Check mark
-        .replace(/=E2=9A=A0/g, '⚠')  // Warning sign
+        .replace(/=E2=9A=A0/g, '⚠') // Warning sign
         .replace(/=E2=9D=8C/g, '❌') // Cross mark
-        .replace(/=EF=B8=8F/g, '️')   // Variation selector
-        .replace(/=C2=B7/g, '·')    // Middle dot
+        .replace(/=EF=B8=8F/g, '️') // Variation selector
+        .replace(/=C2=B7/g, '·') // Middle dot
         .replace(/=E2=82=AC/g, '€') // Euro symbol
-        .replace(/=C2=AE/g, '®')    // Registered trademark
-        .replace(/=C2=A9/g, '©')    // Copyright
-        .replace(/=C2=B0/g, '°')    // Degree symbol
-        .replace(/=3D/g, '=');      // 3D Ersetzungen für HTML - WICHTIG für URLs!
-      
+        .replace(/=C2=AE/g, '®') // Registered trademark
+        .replace(/=C2=A9/g, '©') // Copyright
+        .replace(/=C2=B0/g, '°') // Degree symbol
+        .replace(/=3D/g, '='); // 3D Ersetzungen für HTML - WICHTIG für URLs!
+
       // 3. Allgemeine Hex-kodierte Zeichen dekodieren (NACH spezifischen Ersetzungen)
       result = result.replace(/=([0-9A-F]{2})/g, (match, hex) => {
         const charCode = parseInt(hex, 16);
         return String.fromCharCode(charCode);
       });
-      
+
       console.log('✅ Quoted-Printable decoding output:', result.substring(0, 200) + '...');
       return result;
     } catch (error) {
@@ -449,37 +507,41 @@ export default function EmailDetailView({
   const decodeUTF8Properly = (content: string): string => {
     try {
       console.log('🚀 decodeUTF8Properly called with content:', content.substring(0, 200) + '...');
-      
+
       // 1. Quoted-Printable Dekodierung falls nötig (erweiterte Erkennung)
       let result = content;
-      const hasQuotedPrintable = content.includes('=C3=') || 
-          content.includes('=E2=') || 
-          content.includes('=C2=') ||
-          content.includes('=\r\n') ||
-          content.includes('=\n') ||
-          content.includes('=3D') ||
-          /=[0-9A-F]{2}/.test(content);
-          
+      const hasQuotedPrintable =
+        content.includes('=C3=') ||
+        content.includes('=E2=') ||
+        content.includes('=C2=') ||
+        content.includes('=\r\n') ||
+        content.includes('=\n') ||
+        content.includes('=3D') ||
+        /=[0-9A-F]{2}/.test(content);
+
       console.log('🔍 Quoted-Printable detection:', hasQuotedPrintable);
-      
+
       if (hasQuotedPrintable) {
         console.log('🔧 Applying quoted-printable decoding...');
         result = decodeQuotedPrintable(content);
       } else {
         console.log('❌ No quoted-printable detected, applying basic fixes...');
       }
-      
+
       // 2. HTML Entities dekodieren (IMMER anwenden)
       result = decode(result);
-      
+
       // 3. Spezifische Korrekturen für häufige E-Mail-Probleme (nach Quoted-Printable)
       result = result
         // finAPI Newsletter spezifische Fixes (falls noch Probleme bestehen)
         .replace(/FÖ¼R/g, 'FÜR')
-        .replace(/Öberweisungen/g, 'Überweisungen') 
+        .replace(/Öberweisungen/g, 'Überweisungen')
         .replace(/Öberweisung/g, 'Überweisung')
         // finAPI E-Mail spezifische Korrekturen basierend auf Original
-        .replace(/Was Unternehmen bei VoP beachten sollten, damit Kunden ein ❌Match" sehen/g, 'Was Unternehmen bei VoP beachten sollten, damit Kunden ein ✅ Match sehen')
+        .replace(
+          /Was Unternehmen bei VoP beachten sollten, damit Kunden ein ❌Match" sehen/g,
+          'Was Unternehmen bei VoP beachten sollten, damit Kunden ein ✅ Match sehen'
+        )
         .replace(/Bei einem ❌ Match ist alles klar\./g, 'Bei einem ✅ Match ist alles klar.')
         .replace(/❌ ï¸ Close Match/g, '⚠️ Close Match')
         .replace(/❌ No Match/g, '❌ No Match')
@@ -504,29 +566,35 @@ export default function EmailDetailView({
       // 4. HTML-Entities und falsche Unicode-Zeichen (finAPI spezifische Probleme)
       const htmlEntityFixes: { [key: string]: string } = {
         // finAPI Newsletter spezifische Probleme (BASIEREND AUF ORIGINAL E-MAIL!)
-        '❌Match"': '✅ Match',               // Original zeigt: "damit Kunden ein ✅ Match" sehen"
-        '❌ ï¸ Close Match': '⚠️ Close Match',  // Original: ⚠️ Close Match
-        '❌ No Match': '❌ No Match',          // Original: ❌ No Match (korrekt)
-        '❌ Match': '✅ Match',               // Original: ✅ Match
+        '❌Match"': '✅ Match', // Original zeigt: "damit Kunden ein ✅ Match" sehen"
+        '❌ ï¸ Close Match': '⚠️ Close Match', // Original: ⚠️ Close Match
+        '❌ No Match': '❌ No Match', // Original: ❌ No Match (korrekt)
+        '❌ Match': '✅ Match', // Original: ✅ Match
+        // KRITISCH: €-Zeichen-Probleme (finAPI spezifisch)
+        '€œ': '"', // €œ -> " (Left double quote)
+        '€': '"', // € -> " (Right double quote)
+        '€™': "'", // €™ -> ' (Right single quote)
+        '€"': '–', // €" -> – (En dash)
         // finAPI E-Mail Text-Korrekturen
-        'Demobank: Testen **mit realistischen Bankdaten**': 'Demobank: Testen mit realistischen Bankdaten',
+        'Demobank: Testen **mit realistischen Bankdaten**':
+          'Demobank: Testen mit realistischen Bankdaten',
         '**Die VoP betrifft alle': 'Die VoP betrifft alle',
         '**finAPI GmbH**': 'finAPI GmbH',
         // Markdown-Formatierung entfernen aus Text-Version
         '**': '',
         // Zusätzliche Varianten die auftreten können
-        'âMatch"': '✅ Match"',                // Entfernt â komplett
-        'âMatch': '✅ Match',                  // Entfernt â komplett
+        'âMatch"': '✅ Match"', // Entfernt â komplett
+        âMatch: '✅ Match', // Entfernt â komplett
         'â€œ': '"',
         'â€': '"',
         'â€™': "'",
         'â€"': '–',
-        'â ï¸': '⚠️',        // Fallback für verbleibende Warnzeichen
-        'Â­': '',           // Soft hyphen (entfernen)
-        '­': '',            // Direkte Soft Hyphens (sehr häufig in finAPI Newsletter)
-        '‌': '',            // Zero Width Non-Joiner (entfernen)
-        '­‌': '',           // Kombination aus Soft Hyphen + ZWNJ
-        'Â ': ' ',          // Non-breaking space
+        'â ï¸': '⚠️', // Fallback für verbleibende Warnzeichen
+        'Â­': '', // Soft hyphen (entfernen)
+        '­': '', // Direkte Soft Hyphens (sehr häufig in finAPI Newsletter)
+        '‌': '', // Zero Width Non-Joiner (entfernen)
+        '­‌': '', // Kombination aus Soft Hyphen + ZWNJ
+        'Â ': ' ', // Non-breaking space
         '&nbsp;': ' ',
         '&amp;': '&',
         '&lt;': '<',
@@ -544,10 +612,13 @@ export default function EmailDetailView({
       for (const [entity, replacement] of Object.entries(htmlEntityFixes)) {
         if (result.includes(entity)) {
           console.log(`🔧 Replacing "${entity}" with "${replacement}"`);
-          result = result.replace(new RegExp(entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
+          result = result.replace(
+            new RegExp(entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+            replacement
+          );
         }
       }
-      
+
       // 5. Native TextDecoder für zusätzliche UTF-8-Sicherheit
       try {
         const encoder = new TextEncoder();
@@ -557,7 +628,7 @@ export default function EmailDetailView({
       } catch (e) {
         console.log('TextDecoder fallback used');
       }
-      
+
       console.log('✅ Final decoded result:', result.substring(0, 200) + '...');
       return result;
     } catch (error) {
@@ -571,28 +642,114 @@ export default function EmailDetailView({
     const parseEmail = async () => {
       if (email.htmlContent) {
         // Direkte Verarbeitung mit modernen APIs
-        const parsed = await processEmailWithModernAPIs(email.htmlContent, email.subject, email.from);
+        const parsed = await processEmailWithModernAPIs(
+          email.htmlContent,
+          email.subject,
+          email.from
+        );
         setParsedEmail(parsed);
       } else if (email.rawContent) {
-        // Fallback für Raw-Content - HTML extrahieren
+        // Erweiterte HTML-Extraktion aus Raw-E-Mail
         try {
-          // Simple HTML-Extraktion aus Raw-E-Mail
+          console.log('🔍 Processing raw email content for HTML extraction...');
+
+          // 1. Spezielle finAPI Newsletter HTML-Extraktion
+          const htmlSectionMatch = email.rawContent.match(
+            /Content-Type:\s*text\/html[^]*?(?=\r?\n---------)/i
+          );
+
+          if (htmlSectionMatch) {
+            console.log('✅ Found HTML section in finAPI email');
+            const htmlSection = htmlSectionMatch[0];
+
+            // 2. HTML-Content nach dem ersten Leerblock extrahieren
+            const htmlContentMatch = htmlSection.match(/\r?\n\r?\n([\s\S]*?)$/);
+
+            if (htmlContentMatch) {
+              let htmlContent = htmlContentMatch[1];
+
+              // 3. Quoted-printable dekodieren
+              if (htmlSection.includes('quoted-printable')) {
+                console.log('🔧 Decoding quoted-printable HTML...');
+                htmlContent = decodeUTF8Properly(htmlContent);
+              }
+
+              // 4. Prüfen ob valides HTML
+              if (
+                htmlContent.trim().length > 0 &&
+                (htmlContent.includes('<') || htmlContent.includes('&lt;'))
+              ) {
+                console.log('🎯 Processing extracted HTML content');
+                console.log('� HTML sample:', htmlContent.substring(0, 300));
+
+                const parsed = await processEmailWithModernAPIs(
+                  htmlContent,
+                  email.subject,
+                  email.from
+                );
+                setParsedEmail(parsed);
+                return;
+              }
+            }
+          }
+
+          // Fallback: Standard HTML-Extraktion
           const htmlMatch = email.rawContent.match(/<html[\s\S]*?<\/html>/i);
-          const htmlContent = htmlMatch ? htmlMatch[0] : email.rawContent;
-          
-          const parsed = await processEmailWithModernAPIs(htmlContent, email.subject, email.from);
-          setParsedEmail(parsed);
+          if (htmlMatch) {
+            console.log('🔄 Using fallback HTML extraction');
+            const htmlContent = htmlMatch[0];
+            const parsed = await processEmailWithModernAPIs(htmlContent, email.subject, email.from);
+            setParsedEmail(parsed);
+            return;
+          }
+
+          // Letzter Fallback: Nur Text-Inhalt
+          console.log('⚠️ No HTML found, using text fallback');
+          const textSectionMatch = email.rawContent.match(
+            /Content-Type:\s*text\/plain[\s\S]*?(?=\r?\n---------|\r?\nContent-Type|\r?\n$|$)/i
+          );
+
+          if (textSectionMatch) {
+            const textSection = textSectionMatch[0];
+            const headerEndMatch = textSection.match(/\r?\n\r?\n([\s\S]*)/);
+            let textContent = headerEndMatch ? headerEndMatch[1] : textSection;
+
+            if (textSection.includes('quoted-printable')) {
+              textContent = decodeUTF8Properly(textContent);
+            }
+
+            setParsedEmail({
+              html: `<div style="white-space: pre-wrap; font-family: Arial, sans-serif; padding: 20px;">${textContent}</div>`,
+              text: textContent,
+              markdown: textContent,
+              subject: email.subject,
+              from: email.from,
+              to: [email.to].filter(Boolean),
+              attachments: [],
+            });
+          } else {
+            // Ganz letzter Fallback
+            setParsedEmail({
+              html: `<div style="white-space: pre-wrap; font-family: monospace; padding: 20px;">${email.rawContent.replace(/\n/g, '<br>')}</div>`,
+              text: email.rawContent,
+              markdown: email.rawContent,
+              subject: email.subject,
+              from: email.from,
+              to: [email.to].filter(Boolean),
+              attachments: [],
+            });
+          }
         } catch (error) {
           console.error('Raw content processing failed:', error);
-          // Text-Fallback
+          // Error-Fallback
           setParsedEmail({
-            html: `<div>${email.rawContent.replace(/\n/g, '<br>')}</div>`,
-            text: email.rawContent,
-            markdown: email.rawContent,
+            html: `<div style="color: red; padding: 20px;">Fehler beim Verarbeiten der E-Mail: ${error}</div>`,
+            text: 'E-Mail konnte nicht verarbeitet werden',
+            markdown: 'E-Mail konnte nicht verarbeitet werden',
             subject: email.subject,
             from: email.from,
             to: [email.to].filter(Boolean),
-            attachments: []
+            attachments: [],
           });
         }
       }
@@ -603,49 +760,78 @@ export default function EmailDetailView({
 
   // Verbesserter E-Mail-Inhalt mit modernen APIs
   const processedContent = useMemo(() => {
+    // Priorität 1: Verwende parsedEmail falls verfügbar
     if (parsedEmail) {
+      console.log('📧 Using parsedEmail for display');
       return {
         text: parsedEmail.text || 'Kein Text-Inhalt verfügbar',
-        html: parsedEmail.html
+        html: parsedEmail.html,
       };
     }
 
-    // Einfacher Fallback ohne parsedEmail
-    if (!email.htmlContent && !email.textContent) {
-      return {
-        text: 'Kein E-Mail-Inhalt verfügbar',
-        html: null
-      };
-    }
-
-    // Direkte Verarbeitung als Fallback
-    let processedHtml: string | null = null;
-    let processedText: string;
-
+    // Priorität 2: Direkte htmlContent Verarbeitung
     if (email.htmlContent) {
-      // UTF-8 korrigieren und sanitizen
+      console.log('📧 Using direct htmlContent');
       const utf8Content = decodeUTF8Properly(email.htmlContent);
-      
-      processedHtml = DOMPurify.sanitize(utf8Content, {
-        ALLOWED_TAGS: ['div', 'p', 'span', 'b', 'i', 'u', 'strong', 'em', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'tbody', 'thead', 'img', 'a'],
+
+      const processedHtml = DOMPurify.sanitize(utf8Content, {
+        ALLOWED_TAGS: [
+          'div',
+          'p',
+          'span',
+          'b',
+          'i',
+          'u',
+          'strong',
+          'em',
+          'br',
+          'ul',
+          'ol',
+          'li',
+          'h1',
+          'h2',
+          'h3',
+          'h4',
+          'h5',
+          'h6',
+          'table',
+          'tr',
+          'td',
+          'th',
+          'tbody',
+          'thead',
+          'img',
+          'a',
+        ],
         ALLOWED_ATTR: ['style', 'class', 'href', 'src', 'alt', 'title', 'target'],
-        ALLOW_DATA_ATTR: false
+        ALLOW_DATA_ATTR: false,
       });
-      
-      // Text-Version aus HTML generieren
+
       const textParser = new DOMParser();
       const htmlDoc = textParser.parseFromString(processedHtml, 'text/html');
-      processedText = htmlDoc.body?.textContent || htmlDoc.textContent || 'Text-Extraktion fehlgeschlagen';
-      
-    } else if (email.textContent) {
-      processedText = decodeUTF8Properly(email.textContent);
-    } else {
-      processedText = 'Kein Inhalt verfügbar';
+      const processedText =
+        htmlDoc.body?.textContent || htmlDoc.textContent || 'Text-Extraktion fehlgeschlagen';
+
+      return {
+        text: processedText,
+        html: processedHtml,
+      };
     }
 
+    // Priorität 3: Nur textContent verwenden
+    if (email.textContent) {
+      console.log('📧 Using textContent only');
+      return {
+        text: decodeUTF8Properly(email.textContent),
+        html: null,
+      };
+    }
+
+    // Priorität 4: Fallback - NIEMALS rawContent direkt anzeigen!
+    console.log('⚠️ No usable content found, showing error message');
     return {
-      text: processedText,
-      html: processedHtml
+      text: 'E-Mail-Inhalt konnte nicht geladen werden',
+      html: '<div style="padding: 20px; text-align: center; color: #666;">E-Mail-Inhalt konnte nicht geladen werden</div>',
     };
   }, [parsedEmail, email.htmlContent, email.textContent]);
 
@@ -657,7 +843,7 @@ export default function EmailDetailView({
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch {
       return dateString;
@@ -668,23 +854,26 @@ export default function EmailDetailView({
     if (!bytes) return '0 B';
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'low': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high':
+        return 'bg-red-100 text-red-800';
+      case 'low':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getCategoryColor = (category?: string) => {
     const colors: Record<string, string> = {
-      'newsletter': 'bg-purple-100 text-purple-800',
-      'support': 'bg-orange-100 text-orange-800',
-      'business': 'bg-green-100 text-green-800',
-      'personal': 'bg-blue-100 text-blue-800',
+      newsletter: 'bg-purple-100 text-purple-800',
+      support: 'bg-orange-100 text-orange-800',
+      business: 'bg-green-100 text-green-800',
+      personal: 'bg-blue-100 text-blue-800',
     };
     return colors[category || ''] || 'bg-gray-100 text-gray-800';
   };
@@ -694,11 +883,11 @@ export default function EmailDetailView({
     if (parsedEmail) {
       return parsedEmail.text || 'Kein Text verfügbar';
     }
-    
+
     if (email.textContent && email.textContent.trim() && email.textContent !== email.htmlContent) {
       return decodeUTF8Properly(email.textContent);
     }
-    
+
     // Fallback zu HTML-zu-Text Konvertierung
     if (email.htmlContent) {
       const textParser = new DOMParser();
@@ -706,7 +895,7 @@ export default function EmailDetailView({
       const textContent = htmlDoc.body?.textContent || htmlDoc.textContent || '';
       return decodeUTF8Properly(textContent);
     }
-    
+
     return 'Kein Inhalt verfügbar';
   };
 
@@ -714,15 +903,11 @@ export default function EmailDetailView({
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* Header mit Navigation */}
       <div className="flex items-center justify-between">
-        <Button
-          variant="outline"
-          onClick={onBack}
-          className="flex items-center space-x-2"
-        >
+        <Button variant="outline" onClick={onBack} className="flex items-center space-x-2">
           <ArrowLeft className="h-4 w-4" />
           <span>Zurück zur Übersicht</span>
         </Button>
-        
+
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -732,7 +917,7 @@ export default function EmailDetailView({
             <Eye className="h-4 w-4" />
             {email.isRead ? 'Als ungelesen markieren' : 'Als gelesen markieren'}
           </Button>
-          
+
           <Switch
             checked={isRawView}
             onCheckedChange={setIsRawView}
@@ -767,7 +952,7 @@ export default function EmailDetailView({
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               {!email.isRead && (
                 <Badge variant="secondary" className="bg-[#14ad9f] text-white">
@@ -776,13 +961,15 @@ export default function EmailDetailView({
               )}
               {email.priority && (
                 <Badge className={getPriorityColor(email.priority)}>
-                  {email.priority === 'high' ? 'Hoch' : email.priority === 'low' ? 'Niedrig' : 'Normal'}
+                  {email.priority === 'high'
+                    ? 'Hoch'
+                    : email.priority === 'low'
+                      ? 'Niedrig'
+                      : 'Normal'}
                 </Badge>
               )}
               {email.category && (
-                <Badge className={getCategoryColor(email.category)}>
-                  {email.category}
-                </Badge>
+                <Badge className={getCategoryColor(email.category)}>{email.category}</Badge>
               )}
             </div>
           </div>
@@ -803,30 +990,18 @@ export default function EmailDetailView({
                 <Reply className="h-4 w-4" />
                 <span>Antworten</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-1"
-              >
+              <Button variant="outline" size="sm" className="flex items-center space-x-1">
                 <ReplyAll className="h-4 w-4" />
                 <span>Allen antworten</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-1"
-              >
+              <Button variant="outline" size="sm" className="flex items-center space-x-1">
                 <Forward className="h-4 w-4" />
                 <span>Weiterleiten</span>
               </Button>
             </div>
-            
+
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-1"
-              >
+              <Button variant="outline" size="sm" className="flex items-center space-x-1">
                 <Star className="h-4 w-4" />
                 <span>Favorit</span>
               </Button>
@@ -901,16 +1076,14 @@ export default function EmailDetailView({
                 {email.rawContent || 'Kein Raw-Inhalt verfügbar'}
               </pre>
             </ScrollArea>
+          ) : processedContent.html ? (
+            <SecureHTMLRenderer htmlContent={processedContent.html} />
           ) : (
-            processedContent.html ? (
-              <SecureHTMLRenderer htmlContent={processedContent.html} />
-            ) : (
-              <ScrollArea className="h-96 w-full border rounded p-4">
-                <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {processedContent.text}
-                </div>
-              </ScrollArea>
-            )
+            <ScrollArea className="h-96 w-full border rounded p-4">
+              <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                {processedContent.text}
+              </div>
+            </ScrollArea>
           )}
         </CardContent>
       </Card>

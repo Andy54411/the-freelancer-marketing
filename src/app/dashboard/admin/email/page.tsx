@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import EmailDetailView from '@/components/admin/EmailDetailView';
 import {
   Send,
   Archive,
@@ -68,6 +69,8 @@ export default function EmailAdminPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [sentEmails, setSentEmails] = useState<SentEmail[]>([]);
   const [receivedEmails, setReceivedEmails] = useState<ReceivedEmail[]>([]);
+  const [selectedEmail, setSelectedEmail] = useState<ReceivedEmail | null>(null);
+  const [showEmailDetail, setShowEmailDetail] = useState(false);
 
   const [composeForm, setComposeForm] = useState({
     to: '',
@@ -217,6 +220,65 @@ export default function EmailAdminPage() {
     ]);
   };
 
+  // Email Detail View Handler Functions
+  const handleEmailClick = (email: ReceivedEmail) => {
+    setSelectedEmail(email);
+    setShowEmailDetail(true);
+
+    // Mark as read if not already
+    if (!email.isRead) {
+      handleMarkAsRead(email.id, true);
+    }
+  };
+
+  const handleBackToInbox = () => {
+    setShowEmailDetail(false);
+    setSelectedEmail(null);
+  };
+
+  const handleReplyToEmail = (email: ReceivedEmail) => {
+    // Switch to compose tab and pre-fill with reply data
+    setActiveTab('compose');
+    setComposeForm({
+      to: email.from,
+      subject: email.subject.startsWith('Re: ') ? email.subject : `Re: ${email.subject}`,
+      htmlContent: `<br><br>--- Original Message ---<br>From: ${email.from}<br>Subject: ${email.subject}<br><br>${email.htmlContent}`,
+      textContent: `\n\n--- Original Message ---\nFrom: ${email.from}\nSubject: ${email.subject}\n\n${email.textContent}`,
+    });
+    setShowEmailDetail(false);
+    setSelectedEmail(null);
+  };
+
+  const handleDeleteEmail = async (emailId: string) => {
+    if (confirm('Sind Sie sicher, dass Sie diese E-Mail löschen möchten?')) {
+      // Here you would typically call an API to delete the email
+      setReceivedEmails(prev => prev.filter(email => email.id !== emailId));
+      setShowEmailDetail(false);
+      setSelectedEmail(null);
+    }
+  };
+
+  const handleArchiveEmail = async (emailId: string) => {
+    // Here you would typically call an API to archive the email
+    setReceivedEmails(prev => prev.filter(email => email.id !== emailId));
+    setShowEmailDetail(false);
+    setSelectedEmail(null);
+  };
+
+  const handleMarkAsRead = async (emailId: string, isRead: boolean) => {
+    // Update local state
+    setReceivedEmails(prev =>
+      prev.map(email => (email.id === emailId ? { ...email, isRead } : email))
+    );
+
+    // Here you would typically call an API to update the read status
+    // await fetch(`/api/admin/workmail/emails/${emailId}/read`, {
+    //   method: 'PATCH',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ isRead })
+    // });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'delivered':
@@ -339,161 +401,173 @@ export default function EmailAdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex h-screen">
-        {/* Sidebar */}
-        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-[#14ad9f] rounded-lg">
-                <Mail className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-900">E-Mail Center</h1>
-                <p className="text-sm text-gray-500">WorkMail Management</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <ScrollArea className="flex-1 px-4 py-6">
-            <div className="space-y-2">
-              {sidebarItems.map(item => {
-                const Icon = item.icon;
-                const unreadCount =
-                  item.id === 'inbox' ? receivedEmails.filter(email => !email.isRead).length : 0;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
-                      activeTab === item.id
-                        ? 'bg-[#14ad9f] text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Icon className="h-5 w-5" />
-                      <span className="font-medium">{item.label}</span>
-                    </div>
-                    {unreadCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </ScrollArea>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span>WorkMail verbunden</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Bar */}
-          <div className="bg-white border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {sidebarItems.find(item => item.id === activeTab)?.label}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  AWS WorkMail Integration für Taskilo Platform
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge className="bg-green-100 text-green-800">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Aktiv
-                </Badge>
+      {/* Show Email Detail View if email is selected */}
+      {showEmailDetail && selectedEmail ? (
+        <EmailDetailView
+          email={selectedEmail}
+          onBack={handleBackToInbox}
+          onReply={handleReplyToEmail}
+          onDelete={handleDeleteEmail}
+          onArchive={handleArchiveEmail}
+          onMarkAsRead={handleMarkAsRead}
+        />
+      ) : (
+        /* Normal Email Dashboard */
+        <div className="flex h-screen">
+          {/* Sidebar */}
+          <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-[#14ad9f] rounded-lg">
+                  <Mail className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-semibold text-gray-900">E-Mail Center</h1>
+                  <p className="text-sm text-gray-500">WorkMail Management</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Content Area */}
-          <div className="flex-1 p-6 overflow-auto">
-            {/* Compose Content */}
-            {activeTab === 'compose' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Send className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                    E-Mail verfassen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Empfänger *</label>
-                    <Input
-                      type="email"
-                      placeholder="empfaenger@beispiel.de"
-                      value={composeForm.to}
-                      onChange={e => setComposeForm({ ...composeForm, to: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Betreff *</label>
-                    <Input
-                      placeholder="E-Mail Betreff"
-                      value={composeForm.subject}
-                      onChange={e => setComposeForm({ ...composeForm, subject: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">HTML Inhalt</label>
-                    <Textarea
-                      placeholder="HTML Version der E-Mail"
-                      value={composeForm.htmlContent}
-                      onChange={e =>
-                        setComposeForm({ ...composeForm, htmlContent: e.target.value })
-                      }
-                      rows={8}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Text Inhalt</label>
-                    <Textarea
-                      placeholder="Text Version der E-Mail"
-                      value={composeForm.textContent}
-                      onChange={e =>
-                        setComposeForm({ ...composeForm, textContent: e.target.value })
-                      }
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleSendWorkMail}
-                      disabled={loading}
-                      className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white"
+            {/* Navigation */}
+            <ScrollArea className="flex-1 px-4 py-6">
+              <div className="space-y-2">
+                {sidebarItems.map(item => {
+                  const Icon = item.icon;
+                  const unreadCount =
+                    item.id === 'inbox' ? receivedEmails.filter(email => !email.isRead).length : 0;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
+                        activeTab === item.id
+                          ? 'bg-[#14ad9f] text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
                     >
-                      {loading ? 'Wird gesendet...' : 'E-Mail senden'}
-                    </Button>
+                      <div className="flex items-center space-x-3">
+                        <Icon className="h-5 w-5" />
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      {unreadCount > 0 && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
 
-                    <Button
-                      onClick={async () => {
-                        // WorkMail Test Function
-                        setLoading(true);
-                        try {
-                          const response = await fetch('/api/admin/workmail/send', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              to: 'andy.staudinger@taskilo.de',
-                              subject: 'WorkMail Test - Taskilo Platform',
-                              htmlContent: `
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <span>WorkMail verbunden</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col">
+            {/* Top Bar */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {sidebarItems.find(item => item.id === activeTab)?.label}
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    AWS WorkMail Integration für Taskilo Platform
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge className="bg-green-100 text-green-800">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Aktiv
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 p-6 overflow-auto">
+              {/* Compose Content */}
+              {activeTab === 'compose' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Send className="h-5 w-5 mr-2 text-[#14ad9f]" />
+                      E-Mail verfassen
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Empfänger *</label>
+                      <Input
+                        type="email"
+                        placeholder="empfaenger@beispiel.de"
+                        value={composeForm.to}
+                        onChange={e => setComposeForm({ ...composeForm, to: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Betreff *</label>
+                      <Input
+                        placeholder="E-Mail Betreff"
+                        value={composeForm.subject}
+                        onChange={e => setComposeForm({ ...composeForm, subject: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">HTML Inhalt</label>
+                      <Textarea
+                        placeholder="HTML Version der E-Mail"
+                        value={composeForm.htmlContent}
+                        onChange={e =>
+                          setComposeForm({ ...composeForm, htmlContent: e.target.value })
+                        }
+                        rows={8}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Text Inhalt</label>
+                      <Textarea
+                        placeholder="Text Version der E-Mail"
+                        value={composeForm.textContent}
+                        onChange={e =>
+                          setComposeForm({ ...composeForm, textContent: e.target.value })
+                        }
+                        rows={4}
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSendWorkMail}
+                        disabled={loading}
+                        className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      >
+                        {loading ? 'Wird gesendet...' : 'E-Mail senden'}
+                      </Button>
+
+                      <Button
+                        onClick={async () => {
+                          // WorkMail Test Function
+                          setLoading(true);
+                          try {
+                            const response = await fetch('/api/admin/workmail/send', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                to: 'andy.staudinger@taskilo.de',
+                                subject: 'WorkMail Test - Taskilo Platform',
+                                htmlContent: `
                                 <h2>WorkMail Test erfolgreich!</h2>
                                 <p>Diese E-Mail wurde über AWS WorkMail versendet.</p>
                                 <p><strong>Organisation:</strong> taskilo-org</p>
@@ -503,460 +577,479 @@ export default function EmailAdminPage() {
                                 <hr>
                                 <p><em>Taskilo Platform - E-Mail System</em></p>
                               `,
-                              from: 'support@taskilo.de',
-                            }),
-                          });
+                                from: 'support@taskilo.de',
+                              }),
+                            });
 
-                          const result = await response.json();
-                          if (result.success) {
-                            alert(
-                              `WorkMail Test erfolgreich! E-Mail an andy.staudinger@taskilo.de gesendet. Message ID: ${result.messageId}`
-                            );
-                          } else {
-                            alert(`WorkMail Test fehlgeschlagen: ${result.error}`);
+                            const result = await response.json();
+                            if (result.success) {
+                              alert(
+                                `WorkMail Test erfolgreich! E-Mail an andy.staudinger@taskilo.de gesendet. Message ID: ${result.messageId}`
+                              );
+                            } else {
+                              alert(`WorkMail Test fehlgeschlagen: ${result.error}`);
+                            }
+                          } catch (error) {
+                            console.error('WorkMail test error:', error);
+                            alert('Fehler beim WorkMail Test');
+                          } finally {
+                            setLoading(false);
                           }
-                        } catch (error) {
-                          console.error('WorkMail test error:', error);
-                          alert('Fehler beim WorkMail Test');
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
-                      disabled={loading}
-                      variant="outline"
-                      className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-                    >
-                      <Zap className="h-4 w-4 mr-2" />
-                      Test senden
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Templates Content */}
-            {activeTab === 'templates' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Archive className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                    E-Mail Templates
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {templates.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Archive className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>Keine Templates vorhanden</p>
-                      <p className="text-sm">
-                        Erstellen Sie Ihr erstes Template im Tab &quot;Template erstellen&quot;
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {templates.map(template => (
-                        <div key={template.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="font-medium">{template.name}</h3>
-                              <p className="text-sm text-gray-600">{template.subject}</p>
-                              <p className="text-xs text-gray-500">
-                                Erstellt: {new Date(template.createdAt).toLocaleDateString('de-DE')}
-                              </p>
-                            </div>
-                            <div className="flex space-x-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleUseTemplate(template)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Verwenden
-                              </Button>
-                              <Button size="sm" variant="outline">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Inbox Content */}
-            {activeTab === 'inbox' && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center">
-                      <Inbox className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                      WorkMail Posteingang
-                      {loading && (
-                        <div className="ml-2 w-4 h-4 border-2 border-[#14ad9f] border-t-transparent rounded-full animate-spin"></div>
-                      )}
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={loadWorkmailEmails}
+                        }}
                         disabled={loading}
-                        className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                        variant="outline"
+                        className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                       >
-                        <Mail className="h-4 w-4 mr-2" />
-                        {loading ? 'Lädt...' : 'Aktualisieren'}
+                        <Zap className="h-4 w-4 mr-2" />
+                        Test senden
                       </Button>
                     </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    Verbunden mit:{' '}
-                    <strong>
-                      https://webmail.mail.us-east-1.awsapps.com/workmail/?organization=taskilo-org
-                    </strong>
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {receivedEmails.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Inbox className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>Keine E-Mails empfangen</p>
-                      <p className="text-sm">Empfangene E-Mails werden hier angezeigt</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {receivedEmails.map(email => (
-                        <div
-                          key={email.id}
-                          className={`border rounded-lg p-4 ${!email.isRead ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <p className="font-medium text-gray-900">{email.from}</p>
-                                {!email.isRead && (
-                                  <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                                    Neu
-                                  </span>
-                                )}
-                                {email.priority === 'high' && (
-                                  <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">
-                                    Wichtig
-                                  </span>
-                                )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Templates Content */}
+              {activeTab === 'templates' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Archive className="h-5 w-5 mr-2 text-[#14ad9f]" />
+                      E-Mail Templates
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {templates.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Archive className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <p>Keine Templates vorhanden</p>
+                        <p className="text-sm">
+                          Erstellen Sie Ihr erstes Template im Tab &quot;Template erstellen&quot;
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {templates.map(template => (
+                          <div key={template.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="font-medium">{template.name}</h3>
+                                <p className="text-sm text-gray-600">{template.subject}</p>
+                                <p className="text-xs text-gray-500">
+                                  Erstellt:{' '}
+                                  {new Date(template.createdAt).toLocaleDateString('de-DE')}
+                                </p>
                               </div>
-                              <p className="text-gray-900 font-medium">{email.subject}</p>
-                              <p className="text-gray-600 text-sm mt-1">
-                                {email.textContent.substring(0, 150)}...
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-gray-500 text-sm">
-                                {new Date(email.receivedAt).toLocaleDateString('de-DE')}
-                              </p>
-                              <p className="text-gray-500 text-sm">
-                                {new Date(email.receivedAt).toLocaleTimeString('de-DE')}
-                              </p>
-                              {email.attachments && email.attachments.length > 0 && (
-                                <div className="flex items-center text-gray-500 text-sm mt-1">
-                                  <Archive className="h-3 w-3 mr-1" />
-                                  {email.attachments.length} Anhang(e)
-                                </div>
-                              )}
+                              <div className="flex space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleUseTemplate(template)}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Verwenden
+                                </Button>
+                                <Button size="sm" variant="outline">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
-
-                          <div className="mt-4 flex space-x-2">
-                            <Button
-                              onClick={() => {
-                                // Mark as read/unread logic
-                                const updatedEmails = receivedEmails.map(e =>
-                                  e.id === email.id ? { ...e, isRead: !e.isRead } : e
-                                );
-                                setReceivedEmails(updatedEmails);
-                              }}
-                              variant="outline"
-                              size="sm"
-                            >
-                              {email.isRead ? 'Als ungelesen markieren' : 'Als gelesen markieren'}
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                setComposeForm({
-                                  to: email.from,
-                                  subject: `Re: ${email.subject}`,
-                                  htmlContent: `<p></p><br><hr><p><strong>Von:</strong> ${email.from}<br><strong>Betreff:</strong> ${email.subject}</p><p>${email.htmlContent}</p>`,
-                                  textContent: `\n\n---\nVon: ${email.from}\nBetreff: ${email.subject}\n${email.textContent}`,
-                                });
-                                setActiveTab('compose');
-                              }}
-                              variant="outline"
-                              size="sm"
-                            >
-                              Antworten
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Sent Content */}
-            {activeTab === 'sent' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Inbox className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                    Gesendete E-Mails
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {sentEmails.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <Inbox className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>Keine E-Mails gesendet</p>
-                      <p className="text-sm">Gesendete E-Mails werden hier angezeigt</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {sentEmails.map(email => (
-                        <div key={email.id} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{email.to}</p>
-                              <p className="text-sm text-gray-600">{email.subject}</p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(email.sentAt).toLocaleString('de-DE')}
-                              </p>
-                            </div>
-                            <div>{getStatusBadge(email.status)}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Create Template Content */}
-            {activeTab === 'create-template' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Plus className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                    Template erstellen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Template Name *</label>
-                    <Input
-                      placeholder="z.B. Willkommen E-Mail"
-                      value={templateForm.name}
-                      onChange={e => setTemplateForm({ ...templateForm, name: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Standard Betreff *</label>
-                    <Input
-                      placeholder="E-Mail Betreff"
-                      value={templateForm.subject}
-                      onChange={e => setTemplateForm({ ...templateForm, subject: e.target.value })}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">HTML Inhalt</label>
-                    <Textarea
-                      placeholder="HTML Version der E-Mail"
-                      value={templateForm.htmlContent}
-                      onChange={e =>
-                        setTemplateForm({ ...templateForm, htmlContent: e.target.value })
-                      }
-                      rows={8}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Text Inhalt</label>
-                    <Textarea
-                      placeholder="Text Version der E-Mail"
-                      value={templateForm.textContent}
-                      onChange={e =>
-                        setTemplateForm({ ...templateForm, textContent: e.target.value })
-                      }
-                      rows={4}
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleSaveTemplate}
-                    disabled={loading}
-                    className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
-                  >
-                    {loading ? 'Wird gespeichert...' : 'Template speichern'}
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Settings Content */}
-            {activeTab === 'settings' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Settings className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                    WorkMail Einstellungen
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">
-                          Organisation ID:
-                        </label>
-                        <p className="text-gray-900 font-mono text-sm">
-                          m-e5edbf8b2078453d91ad8c367671c228
-                        </p>
+                        ))}
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Status:</label>
-                        <p className="text-green-600">Aktiv</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">
-                          Verifizierte Domain:
-                        </label>
-                        <p className="text-gray-900">taskilo.de</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">
-                          Standard Absender:
-                        </label>
-                        <p className="text-gray-900">support@taskilo.de</p>
-                      </div>
-                    </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Region:</label>
-                        <p className="text-gray-900">AWS WorkMail (us-east-1)</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">Web Interface:</label>
-                        <p className="text-gray-900">taskilo-org.awsapps.com</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">SMTP Host:</label>
-                        <p className="text-gray-900 font-mono text-sm">
-                          smtp.mail.us-east-1.awsapps.com
-                        </p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-700">IMAP Host:</label>
-                        <p className="text-gray-900 font-mono text-sm">
-                          imap.mail.us-east-1.awsapps.com
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-6 mt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      AWS WorkMail SSO Integration
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="text-green-600">
-                          Admin-Login mit WorkMail synchronisiert
-                        </span>
-                      </div>
-
-                      <div className="flex gap-3">
+              {/* Inbox Content */}
+              {activeTab === 'inbox' && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center">
+                        <Inbox className="h-5 w-5 mr-2 text-[#14ad9f]" />
+                        WorkMail Posteingang
+                        {loading && (
+                          <div className="ml-2 w-4 h-4 border-2 border-[#14ad9f] border-t-transparent rounded-full animate-spin"></div>
+                        )}
+                      </CardTitle>
+                      <div className="flex gap-2">
                         <Button
-                          onClick={async () => {
-                            try {
-                              const response = await fetch('/api/admin/workmail/sso');
-                              const result = await response.json();
-
-                              if (result.success) {
-                                alert(
-                                  `WorkMail SSO aktiv für: ${result.workmail.email}\nOrganisation: ${result.workmail.organization}\nRole: ${result.workmail.role}`
-                                );
-                              } else {
-                                alert(`SSO Fehler: ${result.error}`);
-                              }
-                            } catch (error) {
-                              console.error('SSO check error:', error);
-                              alert('Fehler beim SSO-Check');
-                            }
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          SSO Status prüfen
-                        </Button>
-
-                        <Button
-                          onClick={async () => {
-                            try {
-                              const response = await fetch('/api/admin/workmail/sso', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ action: 'open_workmail_interface' }),
-                              });
-
-                              const result = await response.json();
-
-                              if (result.success) {
-                                window.open(result.redirectUrl, '_blank');
-                                alert(
-                                  'WorkMail Interface wird geöffnet. Verwenden Sie Ihre Admin-E-Mail zum Login.'
-                                );
-                              } else {
-                                alert(`Fehler: ${result.error}`);
-                              }
-                            } catch (error) {
-                              console.error('WorkMail interface error:', error);
-                              alert('Fehler beim Öffnen des WorkMail Interface');
-                            }
-                          }}
                           variant="outline"
-                          className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                          size="sm"
+                          onClick={loadWorkmailEmails}
+                          disabled={loading}
+                          className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                         >
                           <Mail className="h-4 w-4 mr-2" />
-                          WorkMail Interface öffnen
+                          {loading ? 'Lädt...' : 'Aktualisieren'}
                         </Button>
                       </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Verbunden mit:{' '}
+                      <strong>
+                        https://webmail.mail.us-east-1.awsapps.com/workmail/?organization=taskilo-org
+                      </strong>
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {receivedEmails.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Inbox className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <p>Keine E-Mails empfangen</p>
+                        <p className="text-sm">Empfangene E-Mails werden hier angezeigt</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {receivedEmails.map(email => (
+                          <div
+                            key={email.id}
+                            className={`border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${!email.isRead ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}
+                            onClick={() => handleEmailClick(email)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <p className="font-medium text-gray-900">{email.from}</p>
+                                  {!email.isRead && (
+                                    <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                                      Neu
+                                    </span>
+                                  )}
+                                  {email.priority === 'high' && (
+                                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                                      Wichtig
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-gray-900 font-medium">{email.subject}</p>
+                                <p className="text-gray-600 text-sm mt-1">
+                                  {(
+                                    email.textContent ||
+                                    email.htmlContent?.replace(/<[^>]*>/g, '') ||
+                                    'No content available'
+                                  ).substring(0, 150) || 'No content available'}
+                                  ...
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-gray-500 text-sm">
+                                  {new Date(email.receivedAt).toLocaleDateString('de-DE')}
+                                </p>
+                                <p className="text-gray-500 text-sm">
+                                  {new Date(email.receivedAt).toLocaleTimeString('de-DE')}
+                                </p>
+                                {email.attachments && email.attachments.length > 0 && (
+                                  <div className="flex items-center text-gray-500 text-sm mt-1">
+                                    <Archive className="h-3 w-3 mr-1" />
+                                    {email.attachments.length} Anhang(e)
+                                  </div>
+                                )}
+                              </div>
+                            </div>
 
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <h4 className="font-medium text-blue-900 mb-2">
-                          Single Sign-On (SSO) Funktionalität:
-                        </h4>
-                        <ul className="text-sm text-blue-800 space-y-1">
-                          <li>• Automatische WorkMail-Authentifizierung beim Admin-Login</li>
-                          <li>• Verwendung der Admin-E-Mail für WorkMail-Zugriff</li>
-                          <li>• Kein separates Login für E-Mail-Funktionen erforderlich</li>
-                          <li>• Sichere Credential-Verwaltung über Admin-Session</li>
-                        </ul>
+                            <div className="mt-4 flex space-x-2">
+                              <Button
+                                onClick={e => {
+                                  e.stopPropagation(); // Prevent triggering email click
+                                  handleEmailClick(email);
+                                }}
+                                variant="default"
+                                size="sm"
+                                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                E-Mail öffnen
+                              </Button>
+                              <Button
+                                onClick={e => {
+                                  e.stopPropagation(); // Prevent triggering email click
+                                  const updatedEmails = receivedEmails.map(e =>
+                                    e.id === email.id ? { ...e, isRead: !e.isRead } : e
+                                  );
+                                  setReceivedEmails(updatedEmails);
+                                }}
+                                variant="outline"
+                                size="sm"
+                              >
+                                {email.isRead ? 'Als ungelesen markieren' : 'Als gelesen markieren'}
+                              </Button>
+                              <Button
+                                onClick={e => {
+                                  e.stopPropagation(); // Prevent triggering email click
+                                  handleReplyToEmail(email);
+                                }}
+                                variant="outline"
+                                size="sm"
+                              >
+                                Antworten
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Sent Content */}
+              {activeTab === 'sent' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Inbox className="h-5 w-5 mr-2 text-[#14ad9f]" />
+                      Gesendete E-Mails
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {sentEmails.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Inbox className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                        <p>Keine E-Mails gesendet</p>
+                        <p className="text-sm">Gesendete E-Mails werden hier angezeigt</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {sentEmails.map(email => (
+                          <div key={email.id} className="border rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">{email.to}</p>
+                                <p className="text-sm text-gray-600">{email.subject}</p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(email.sentAt).toLocaleString('de-DE')}
+                                </p>
+                              </div>
+                              <div>{getStatusBadge(email.status)}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Create Template Content */}
+              {activeTab === 'create-template' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Plus className="h-5 w-5 mr-2 text-[#14ad9f]" />
+                      Template erstellen
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Template Name *</label>
+                      <Input
+                        placeholder="z.B. Willkommen E-Mail"
+                        value={templateForm.name}
+                        onChange={e => setTemplateForm({ ...templateForm, name: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Standard Betreff *</label>
+                      <Input
+                        placeholder="E-Mail Betreff"
+                        value={templateForm.subject}
+                        onChange={e =>
+                          setTemplateForm({ ...templateForm, subject: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">HTML Inhalt</label>
+                      <Textarea
+                        placeholder="HTML Version der E-Mail"
+                        value={templateForm.htmlContent}
+                        onChange={e =>
+                          setTemplateForm({ ...templateForm, htmlContent: e.target.value })
+                        }
+                        rows={8}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Text Inhalt</label>
+                      <Textarea
+                        placeholder="Text Version der E-Mail"
+                        value={templateForm.textContent}
+                        onChange={e =>
+                          setTemplateForm({ ...templateForm, textContent: e.target.value })
+                        }
+                        rows={4}
+                      />
+                    </div>
+
+                    <Button
+                      onClick={handleSaveTemplate}
+                      disabled={loading}
+                      className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    >
+                      {loading ? 'Wird gespeichert...' : 'Template speichern'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Settings Content */}
+              {activeTab === 'settings' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Settings className="h-5 w-5 mr-2 text-[#14ad9f]" />
+                      WorkMail Einstellungen
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">
+                            Organisation ID:
+                          </label>
+                          <p className="text-gray-900 font-mono text-sm">
+                            m-e5edbf8b2078453d91ad8c367671c228
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Status:</label>
+                          <p className="text-green-600">Aktiv</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">
+                            Verifizierte Domain:
+                          </label>
+                          <p className="text-gray-900">taskilo.de</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">
+                            Standard Absender:
+                          </label>
+                          <p className="text-gray-900">support@taskilo.de</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">Region:</label>
+                          <p className="text-gray-900">AWS WorkMail (us-east-1)</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">
+                            Web Interface:
+                          </label>
+                          <p className="text-gray-900">taskilo-org.awsapps.com</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">SMTP Host:</label>
+                          <p className="text-gray-900 font-mono text-sm">
+                            smtp.mail.us-east-1.awsapps.com
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-700">IMAP Host:</label>
+                          <p className="text-gray-900 font-mono text-sm">
+                            imap.mail.us-east-1.awsapps.com
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+
+                    <div className="border-t pt-6 mt-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        AWS WorkMail SSO Integration
+                      </h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <span className="text-green-600">
+                            Admin-Login mit WorkMail synchronisiert
+                          </span>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/admin/workmail/sso');
+                                const result = await response.json();
+
+                                if (result.success) {
+                                  alert(
+                                    `WorkMail SSO aktiv für: ${result.workmail.email}\nOrganisation: ${result.workmail.organization}\nRole: ${result.workmail.role}`
+                                  );
+                                } else {
+                                  alert(`SSO Fehler: ${result.error}`);
+                                }
+                              } catch (error) {
+                                console.error('SSO check error:', error);
+                                alert('Fehler beim SSO-Check');
+                              }
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            SSO Status prüfen
+                          </Button>
+
+                          <Button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/admin/workmail/sso', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ action: 'open_workmail_interface' }),
+                                });
+
+                                const result = await response.json();
+
+                                if (result.success) {
+                                  window.open(result.redirectUrl, '_blank');
+                                  alert(
+                                    'WorkMail Interface wird geöffnet. Verwenden Sie Ihre Admin-E-Mail zum Login.'
+                                  );
+                                } else {
+                                  alert(`Fehler: ${result.error}`);
+                                }
+                              } catch (error) {
+                                console.error('WorkMail interface error:', error);
+                                alert('Fehler beim Öffnen des WorkMail Interface');
+                              }
+                            }}
+                            variant="outline"
+                            className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            WorkMail Interface öffnen
+                          </Button>
+                        </div>
+
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <h4 className="font-medium text-blue-900 mb-2">
+                            Single Sign-On (SSO) Funktionalität:
+                          </h4>
+                          <ul className="text-sm text-blue-800 space-y-1">
+                            <li>• Automatische WorkMail-Authentifizierung beim Admin-Login</li>
+                            <li>• Verwendung der Admin-E-Mail für WorkMail-Zugriff</li>
+                            <li>• Kein separates Login für E-Mail-Funktionen erforderlich</li>
+                            <li>• Sichere Credential-Verwaltung über Admin-Session</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

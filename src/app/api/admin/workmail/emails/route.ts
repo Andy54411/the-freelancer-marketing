@@ -4,6 +4,100 @@ import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import Imap from 'imap';
 
+// Quoted-Printable Decoder für E-Mail-Inhalte
+function decodeQuotedPrintable(encoded: string): string {
+  console.log('🚀 [WorkMail API] Decoding quoted-printable content...');
+
+  if (!encoded || typeof encoded !== 'string') {
+    return encoded || '';
+  }
+
+  // Soft line breaks (=\r\n or =\n) entfernen
+  let decoded = encoded.replace(/=\r?\n/g, '');
+
+  // Spezifische UTF-8 Umlaute und deutsche Zeichen
+  const germanChars: { [key: string]: string } = {
+    '=C3=A4': 'ä',
+    '=C3=84': 'Ä', // ä, Ä
+    '=C3=B6': 'ö',
+    '=C3=96': 'Ö', // ö, Ö
+    '=C3=BC': 'ü',
+    '=C3=9C': 'Ü', // ü, Ü
+    '=C3=9F': 'ß', // ß
+    '=E2=80=93': '–', // En dash
+    '=E2=80=94': '—', // Em dash
+    '=E2=80=99': "'", // Right single quotation mark
+    '=E2=80=9C': '"', // Left double quotation mark
+    '=E2=80=9D': '"', // Right double quotation mark
+    '=C2=A0': ' ', // Non-breaking space
+    // KRITISCH: Emoji UTF-8 Codes für finAPI
+    '=E2=9A=A0=EF=B8=8F': '⚠️', // Warning emoji ⚠️
+    '=E2=9C=85': '✅', // Check mark emoji ✅
+    '=E2=9D=8C': '❌', // Cross mark emoji ❌
+    '=E2=9A=A0': '⚠️', // Warning sign (ohne variation selector)
+  };
+
+  // HTML-Entities und falsche Unicode-Zeichen
+  const htmlEntities: { [key: string]: string } = {
+    // finAPI spezifische Probleme (EXAKTE Matches zuerst!)
+    'â ï¸ Close Match': '⚠️ Close Match', // MUSS vor anderen â-Regeln stehen
+    'â No Match': '❌ No Match', // MUSS vor anderen â-Regeln stehen
+    'â Match': '✅ Match', // MUSS vor anderen â-Regeln stehen
+    'âMatch"': '"Match"', // Entfernt â komplett
+    âMatch: '"Match', // Entfernt â komplett
+    // KRITISCH: Weitere â-Kombinationen für finAPI
+    'â€œ': '"', // Left double quote
+    'â€': '"', // Right double quote
+    'â€™': "'", // Right single quote
+    'â€"': '–', // En dash
+    'â ï¸': '⚠️', // Warning sign (Fallback)
+    'â "': '"', // â mit Anführungszeichen
+    'â"': '"', // â direkt mit Anführungszeichen
+    'â ': '"', // â mit Leerzeichen
+    â: '"', // KRITISCH: Entferne â komplett (finAPI Problem)
+    // KRITISCH: € Encoding-Probleme
+    '€œ': '"', // €œ -> " (Left double quote)
+    '€': '"', // € -> " (Right double quote)
+    '€™': "'", // €™ -> ' (Right single quote)
+    '€"': '–', // €" -> – (En dash)
+    'Â­': '', // Soft hyphen (remove)
+    'Â ': ' ', // Non-breaking space
+    // Standard entities
+    '&nbsp;': ' ',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#8211;': '–',
+    '&#8212;': '—',
+    '&#8216;': "'",
+    '&#8217;': "'",
+    '&#8220;': '"',
+    '&#8221;': '"',
+  };
+
+  // Deutsche Zeichen ersetzen
+  for (const [encoded_char, decoded_char] of Object.entries(germanChars)) {
+    decoded = decoded.replace(new RegExp(encoded_char, 'g'), decoded_char);
+  }
+
+  // HTML-Entities und Unicode-Zeichen ersetzen
+  for (const [entity, replacement] of Object.entries(htmlEntities)) {
+    decoded = decoded.replace(
+      new RegExp(entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+      replacement
+    );
+  }
+
+  // Generische Hex-Dekodierung für alle anderen =XX Codes
+  decoded = decoded.replace(/=([0-9A-F]{2})/gi, (match, hex) => {
+    return String.fromCharCode(parseInt(hex, 16));
+  });
+
+  console.log('✅ [WorkMail API] Quoted-printable decoding completed');
+  return decoded;
+}
+
 // JWT Secret für Admin-Tokens
 const JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024';
 const JWT_SECRET_BYTES = new TextEncoder().encode(JWT_SECRET);
@@ -108,7 +202,7 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
           console.log(`📧 Fetching messages ${range} from ${folder}`);
 
           const fetch = imap.seq.fetch(range, {
-            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)', 'TEXT'],
+            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)', 'TEXT', '1.2'],
             struct: true,
           });
 
@@ -132,27 +226,102 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 
               stream.once('end', () => {
                 if (info.which === 'TEXT') {
-                  email.textContent = buffer.trim();
-                  email.htmlContent = `<div style="white-space: pre-wrap;">${buffer.trim()}</div>`;
+                  // Original-Content für Debug-Zwecke
+                  const originalBuffer = buffer.trim();
+
+                  // Quoted-Printable Dekodierung anwenden
+                  const decodedContent = decodeQuotedPrintable(originalBuffer);
+
+                  console.log('📧 [WorkMail API] TEXT Content processing:');
+                  console.log('🔍 Original length:', originalBuffer.length);
+                  console.log('🔧 Decoded length:', decodedContent.length);
+
+                  // KRITISCH: HTML-Section aus Raw-Content extrahieren!
+                  const htmlSectionMatch = decodedContent.match(
+                    /Content-Type:\s*text\/html[^]*?(?=\r?\n---------|\r?\nContent-Type:|\r?\n$)/i
+                  );
+
+                  if (htmlSectionMatch) {
+                    // HTML-Content aus der Section extrahieren (ohne Headers)
+                    const htmlSection = htmlSectionMatch[0];
+                    const htmlBodyMatch = htmlSection.match(/(?:\r?\n\r?\n)([\s\S]+)$/);
+
+                    if (htmlBodyMatch) {
+                      let extractedHtml = decodeQuotedPrintable(htmlBodyMatch[1].trim());
+
+                      // KRITISCH: Sofortige â-Reparatur direkt nach HTML-Extraktion!
+                      extractedHtml = extractedHtml
+                        .replace(/â ï¸ Close Match/g, '⚠️ Close Match')
+                        .replace(/â No Match/g, '❌ No Match')
+                        .replace(/â Match/g, '✅ Match')
+                        .replace(/€œ/g, '"') // €œ -> "
+                        .replace(/€/g, '"') // € -> "
+                        .replace(/€™/g, "'") // €™ -> '
+                        .replace(/€"/g, '–') // €" -> –
+                        .replace(/â "/g, '"')
+                        .replace(/â"/g, '"')
+                        .replace(/â /g, '"')
+                        .replace(/â(?=\s)/g, '"') // â gefolgt von Leerzeichen
+                        .replace(/â/g, '"'); // alle anderen â
+
+                      console.log(
+                        '✅ [API] HTML extracted and â-characters fixed:',
+                        extractedHtml.substring(0, 200)
+                      );
+
+                      // NUR den extrahierten und reparierten HTML-Content verwenden
+                      email.htmlContent = extractedHtml;
+                      email.textContent = extractedHtml.replace(/<[^>]*>/g, '').substring(0, 500);
+                      return; // Früher Return - keine weitere Verarbeitung!
+                    }
+                  }
+
+                  // Fallback: Nur wenn KEIN HTML gefunden wurde
+                  email.textContent = decodedContent;
+                } else if (info.which === 'HTML' || info.which.includes('HTML')) {
+                  // HTML-Content verarbeiten
+                  const originalBuffer = buffer.trim();
+                  const decodedHtmlContent = decodeQuotedPrintable(originalBuffer);
+
+                  console.log('🌐 [WorkMail API] HTML Content processing:');
+                  console.log('🔍 HTML Original length:', originalBuffer.length);
+                  console.log('🔧 HTML Decoded length:', decodedHtmlContent.length);
+
+                  email.htmlContent = decodedHtmlContent;
+                  // Wenn kein textContent vorhanden, HTML als Fallback verwenden
+                  if (!email.textContent) {
+                    email.textContent = decodedHtmlContent
+                      .replace(/<[^>]*>/g, '')
+                      .substring(0, 500);
+                  }
                 } else if (info.which.includes('HEADER')) {
                   // Parse header manually
                   const headerText = buffer.toString();
                   const headerLines = headerText.split('\n');
 
-                  email.from = headerLines
-                    .find(line => line.toLowerCase().startsWith('from:'))
-                    ?.split(':')[1]?.trim() || 'Unknown';
-                  email.to = headerLines
-                    .find(line => line.toLowerCase().startsWith('to:'))
-                    ?.split(':')[1]?.trim() || credentials.email;
-                  email.subject = headerLines
-                    .find(line => line.toLowerCase().startsWith('subject:'))
-                    ?.split(':')[1]?.trim() || 'No Subject';
+                  email.from =
+                    headerLines
+                      .find(line => line.toLowerCase().startsWith('from:'))
+                      ?.split(':')[1]
+                      ?.trim() || 'Unknown';
+                  email.to =
+                    headerLines
+                      .find(line => line.toLowerCase().startsWith('to:'))
+                      ?.split(':')[1]
+                      ?.trim() || credentials.email;
+                  email.subject =
+                    headerLines
+                      .find(line => line.toLowerCase().startsWith('subject:'))
+                      ?.split(':')[1]
+                      ?.trim() || 'No Subject';
 
                   const dateLine = headerLines
                     .find(line => line.toLowerCase().startsWith('date:'))
-                    ?.split(':')[1]?.trim();
-                  email.receivedAt = dateLine ? new Date(dateLine).toISOString() : new Date().toISOString();
+                    ?.split(':')[1]
+                    ?.trim();
+                  email.receivedAt = dateLine
+                    ? new Date(dateLine).toISOString()
+                    : new Date().toISOString();
                 }
               });
             });
@@ -179,7 +348,9 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
             imap.end();
 
             // Sortiere E-Mails nach Datum (neueste zuerst)
-            emails.sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
+            emails.sort(
+              (a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
+            );
 
             resolve({
               emails: emails,
@@ -210,7 +381,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
       }, 15000); // 15 Sekunden Timeout
 
       imap.connect();
-
     } catch (error) {
       console.error('❌ fetchWorkmailEmailsViaIMAP error:', error);
       reject(error);
@@ -221,10 +391,10 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 async function getWorkmailEmailsViaSSO(adminEmail: string, folder = 'INBOX', limit = 50) {
   try {
     console.log('🔄 Generating WorkMail SSO integration for:', adminEmail);
-    
+
     // Generate SSO URL for WorkMail access
     const ssoUrl = `${WORKMAIL_CONFIG.webInterface}?organization=${WORKMAIL_CONFIG.organization}&user=${encodeURIComponent(adminEmail)}`;
-    
+
     // Create SSO integration email with link to real WorkMail
     const ssoEmails = [
       {
@@ -265,7 +435,7 @@ async function getWorkmailEmailsViaSSO(adminEmail: string, folder = 'INBOX', lim
         attachments: [],
         ssoUrl: ssoUrl,
         ssoEnabled: true,
-      }
+      },
     ];
 
     console.log('✅ WorkMail SSO integration ready');
@@ -280,7 +450,6 @@ async function getWorkmailEmailsViaSSO(adminEmail: string, folder = 'INBOX', lim
       ssoEnabled: true,
       workmailWebInterface: WORKMAIL_CONFIG.webInterface,
     };
-
   } catch (error) {
     console.error('❌ WorkMail SSO error:', error);
     throw error;
@@ -301,23 +470,22 @@ export async function GET(request: Request) {
       timestamp: new Date().toISOString(),
     });
 
-    // JWT Token Verification for Admin Dashboard
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('❌ Missing or invalid authorization header');
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid Bearer token' },
-        { status: 401 }
-      );
+    // JWT Token Verification for Admin Dashboard (Cookie-based)
+    const cookies = request.headers.get('cookie');
+    const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
+
+    if (!tokenCookie) {
+      console.error('❌ Missing admin token cookie');
+      return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
-    const token = authHeader.substring(7);
-    
+    const token = tokenCookie.split('=')[1];
+
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
       const adminEmail = payload.email as string;
-      
-      console.log('✅ JWT verified for admin:', { email: adminEmail, method });
+
+      console.log('✅ JWT Cookie verified for admin:', { email: adminEmail, method });
 
       // Find admin credentials
       const adminConfig = WORKMAIL_ADMIN_MAPPING[adminEmail];
@@ -364,15 +532,10 @@ export async function GET(request: Request) {
           hasCredentials: !!adminConfig.password,
         },
       });
-
     } catch (jwtError) {
       console.error('❌ JWT verification failed:', jwtError);
-      return NextResponse.json(
-        { error: 'Invalid JWT token' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
-
   } catch (error) {
     console.error('❌ WorkMail API error:', error);
     return NextResponse.json(
