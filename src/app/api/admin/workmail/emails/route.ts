@@ -406,9 +406,37 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                   email.htmlContent = decodedHtmlContent;
                   // Wenn kein textContent vorhanden, HTML als Fallback verwenden
                   if (!email.textContent) {
-                    email.textContent = decodedHtmlContent
-                      .replace(/<[^>]*>/g, '')
-                      .substring(0, 500);
+                    // KRITISCH: Aggressive CSS-Fragment-Bereinigung für finAPI und andere Marketing-E-Mails
+                    const cleanText = decodedHtmlContent
+                      // Entferne alle <style> Tags komplett
+                      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                      // Entferne alle <script> Tags
+                      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                      // Entferne alle HTML-Tags
+                      .replace(/<[^>]*>/g, ' ')
+                      // KRITISCH: Entferne CSS-Deklarationen (auch fragmentarische)
+                      .replace(/display\s*:\s*none\s*!important[^;]*;?/gi, '')
+                      .replace(/mso-[^:]*:[^;]*;?/gi, '')
+                      .replace(/visibility\s*:\s*hidden\s*!important[^;]*;?/gi, '')
+                      .replace(/-webkit-[^:]*:[^;]*;?/gi, '')
+                      .replace(/-moz-[^:]*:[^;]*;?/gi, '')
+                      .replace(/-ms-[^:]*:[^;]*;?/gi, '')
+                      // Entferne CSS-Eigenschaften die häufig in E-Mail-HTML vorkommen
+                      .replace(/padding\s*:\s*[^;]*;?/gi, '')
+                      .replace(/margin\s*:\s*[^;]*;?/gi, '')
+                      .replace(/font-[^:]*:[^;]*;?/gi, '')
+                      .replace(/color\s*:\s*[^;]*;?/gi, '')
+                      .replace(/background[^:]*:[^;]*;?/gi, '')
+                      .replace(/width\s*:\s*[^;]*;?/gi, '')
+                      .replace(/height\s*:\s*[^;]*;?/gi, '')
+                      // Entferne übrig gebliebene CSS-Fragmente
+                      .replace(/[^;]*:\s*[^;]*!important[^;]*;?/gi, '')
+                      // Entferne mehrfache Leerzeichen und Zeilenumbrüche
+                      .replace(/\s+/g, ' ')
+                      .replace(/\n+/g, ' ')
+                      .trim();
+
+                    email.textContent = cleanText.substring(0, 500);
                   }
                 } else if (info.which.includes('HEADER')) {
                   // Parse header manually

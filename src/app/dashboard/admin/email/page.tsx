@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { convert } from 'html-to-text';
 
 // Dynamic Imports für bessere Performance und Code-Splitting
 const EmailDetailView = dynamic(() => import('@/components/admin/EmailDetailView'), {
@@ -35,6 +36,52 @@ import {
   Paperclip,
   FileText,
 } from 'lucide-react';
+
+// Hilfsfunktion für bessere Datumsformatierung
+const formatEmailDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      // Fallback: aktuelles Datum verwenden
+      return {
+        date: new Date().toLocaleDateString('de-DE'),
+        time: new Date().toLocaleTimeString('de-DE'),
+      };
+    }
+    return {
+      date: date.toLocaleDateString('de-DE'),
+      time: date.toLocaleTimeString('de-DE'),
+    };
+  } catch (error) {
+    // Fallback bei Fehlern
+    return {
+      date: new Date().toLocaleDateString('de-DE'),
+      time: new Date().toLocaleTimeString('de-DE'),
+    };
+  }
+};
+
+// Hilfsfunktion für bessere HTML-zu-Text-Konvertierung
+const cleanTextContent = (content: string): string => {
+  if (!content) return '';
+
+  try {
+    // HTML-zu-Text Konvertierung mit html-to-text
+    const textContent = convert(content, {
+      wordwrap: false,
+      selectors: [
+        { selector: 'a', options: { ignoreHref: true } },
+        { selector: 'img', format: 'skip' },
+      ],
+    });
+
+    return textContent.trim();
+  } catch (error) {
+    console.warn('Fallback: Nur manuelle Bereinigung:', error);
+    // Fallback: Einfache Tag-Entfernung falls html-to-text fehlschlägt
+    return content.replace(/<[^>]*>/g, '').trim();
+  }
+};
 
 interface EmailTemplate {
   id: string;
@@ -893,12 +940,13 @@ export default function EmailAdminPage() {
                                 </div>
                                 <h3 className="font-medium text-gray-900 mb-1">{email.subject}</h3>
                                 <p className="text-sm text-gray-600 line-clamp-2">
-                                  {email.textContent?.substring(0, 100)}...
+                                  {cleanTextContent(
+                                    email.textContent || email.htmlContent || ''
+                                  ).substring(0, 150)}
+                                  ...
                                 </p>
                                 <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                  <span>
-                                    {new Date(email.receivedAt).toLocaleDateString('de-DE')}
-                                  </span>
+                                  <span>{formatEmailDate(email.receivedAt).date}</span>
                                   {email.attachments && email.attachments.length > 0 && (
                                     <span className="flex items-center">
                                       <Paperclip className="h-3 w-3 mr-1" />
@@ -1010,20 +1058,20 @@ export default function EmailAdminPage() {
                                 </div>
                                 <p className="text-gray-900 font-medium">{email.subject}</p>
                                 <p className="text-gray-600 text-sm mt-1">
-                                  {(
+                                  {cleanTextContent(
                                     email.textContent ||
-                                    email.htmlContent?.replace(/<[^>]*>/g, '') ||
-                                    'No content available'
-                                  ).substring(0, 150) || 'No content available'}
+                                      email.htmlContent ||
+                                      'Kein Inhalt verfügbar'
+                                  ).substring(0, 150) || 'Kein Inhalt verfügbar'}
                                   ...
                                 </p>
                               </div>
                               <div className="text-right">
                                 <p className="text-gray-500 text-sm">
-                                  {new Date(email.receivedAt).toLocaleDateString('de-DE')}
+                                  {formatEmailDate(email.receivedAt).date}
                                 </p>
                                 <p className="text-gray-500 text-sm">
-                                  {new Date(email.receivedAt).toLocaleTimeString('de-DE')}
+                                  {formatEmailDate(email.receivedAt).time}
                                 </p>
                                 {email.attachments && email.attachments.length > 0 && (
                                   <div className="flex items-center text-gray-500 text-sm mt-1">
