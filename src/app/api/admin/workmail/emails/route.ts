@@ -381,12 +381,19 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                       // NUR den extrahierten und reparierten HTML-Content verwenden
                       email.htmlContent = extractedHtml;
                       email.textContent = extractedHtml.replace(/<[^>]*>/g, '').substring(0, 500);
-                      return; // Früher Return - keine weitere Verarbeitung!
+
+                      console.log('✅ [API] HTML content extracted and assigned to email object');
+                      console.log('📝 [API] TextContent length:', email.textContent?.length || 0);
+                      console.log('🌐 [API] HTMLContent length:', email.htmlContent?.length || 0);
+                      // Weiter verarbeiten, kein früher Return!
                     }
                   }
 
-                  // Fallback: Nur wenn KEIN HTML gefunden wurde
-                  email.textContent = decodedContent;
+                  // Fallback: Wenn KEIN HTML gefunden wurde, textContent setzen
+                  if (!email.htmlContent) {
+                    email.textContent = decodedContent;
+                    console.log('📝 [API] No HTML found, using text content only');
+                  }
                 } else if (info.which === 'HTML' || info.which.includes('HTML')) {
                   // HTML-Content verarbeiten
                   const originalBuffer = buffer.trim();
