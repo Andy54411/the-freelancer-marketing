@@ -230,11 +230,95 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                   const originalBuffer = buffer.trim();
 
                   // Quoted-Printable Dekodierung anwenden
-                  const decodedContent = decodeQuotedPrintable(originalBuffer);
+                  let decodedContent = decodeQuotedPrintable(originalBuffer);
 
                   console.log('📧 [WorkMail API] TEXT Content processing:');
                   console.log('🔍 Original length:', originalBuffer.length);
                   console.log('🔧 Decoded length:', decodedContent.length);
+
+                  // KRITISCH: Euro-Symbol-Bereinigung auch für TEXT-Content!
+                  console.log('🔧 [API] Applying Euro symbol fixes to decodedContent...');
+
+                  // DEBUG: Vorher-Analyse
+                  const beforeClean = decodedContent.substring(0, 500);
+                  console.log(
+                    '🎯 [API DEBUG] Content before cleaning (first 500 chars):',
+                    beforeClean
+                  );
+
+                  // Suche nach Euro-Symbolen vor der Bereinigung
+                  const euroBefore = [];
+                  for (let i = 0; i < Math.min(decodedContent.length, 1000); i++) {
+                    const char = decodedContent[i];
+                    if (char === '€') {
+                      euroBefore.push({
+                        index: i,
+                        char: char,
+                        charCode: char.charCodeAt(0),
+                        context: decodedContent.substring(Math.max(0, i - 10), i + 15),
+                      });
+                    }
+                  }
+                  console.log(
+                    '🎯 [API DEBUG] Found',
+                    euroBefore.length,
+                    'Euro symbols before cleaning:',
+                    euroBefore
+                  );
+
+                  decodedContent = decodedContent
+                    .replace(/â ï¸ Close Match/g, '⚠️ Close Match')
+                    .replace(/â No Match/g, '❌ No Match')
+                    .replace(/â Match/g, '✅ Match')
+                    .replace(/€œ/g, '"') // €œ -> "
+                    .replace(/€/g, '"') // € -> "
+                    .replace(/€™/g, "'") // €™ -> '
+                    .replace(/€"/g, '–') // €" -> –
+                    .replace(/â "/g, '"')
+                    .replace(/â"/g, '"')
+                    .replace(/â /g, '"')
+                    .replace(/â(?=\s)/g, '"') // â gefolgt von Leerzeichen
+                    .replace(/â/g, '"') // alle anderen â
+                    // KRITISCH: Smart-Quote-Bereinigung auch in API!
+                    .replace(/"/g, '"') // Unicode 201C/201D -> normale Anführungszeichen
+                    .replace(/"/g, '"')
+                    .replace(/'/g, "'") // Unicode 2018/2019 -> normaler Apostroph
+                    .replace(/'/g, "'")
+                    .replace(/–/g, '-') // Unicode 2013 -> normaler Bindestrich
+                    .replace(/—/g, '-') // Unicode 2014 -> normaler Bindestrich
+                    // ULTIMATIV: Alle nicht-ASCII Anführungszeichen ersetzen
+                    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"') // Alle Arten von Anführungszeichen
+                    .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'") // Alle Arten von Apostrophen
+                    .replace(/[\u2013\u2014\u2015]/g, '-') // Alle Arten von Strichen
+                    .replace(/[\u2026]/g, '...'); // Ellipsis
+
+                  // DEBUG: Nachher-Analyse
+                  const afterClean = decodedContent.substring(0, 500);
+                  console.log(
+                    '🎯 [API DEBUG] Content after cleaning (first 500 chars):',
+                    afterClean
+                  );
+
+                  // Suche nach verbleibenden Euro-Symbolen
+                  const euroAfter = [];
+                  for (let i = 0; i < Math.min(decodedContent.length, 1000); i++) {
+                    const char = decodedContent[i];
+                    if (char === '€') {
+                      euroAfter.push({
+                        index: i,
+                        char: char,
+                        charCode: char.charCodeAt(0),
+                        context: decodedContent.substring(Math.max(0, i - 10), i + 15),
+                      });
+                    }
+                  }
+                  console.log(
+                    '🎯 [API DEBUG] Remaining Euro symbols after cleaning:',
+                    euroAfter.length,
+                    euroAfter
+                  );
+
+                  console.log('✅ [API] Euro symbol fixes applied to TEXT content');
 
                   // KRITISCH: HTML-Section aus Raw-Content extrahieren!
                   const htmlSectionMatch = decodedContent.match(
@@ -249,6 +333,12 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                     if (htmlBodyMatch) {
                       let extractedHtml = decodeQuotedPrintable(htmlBodyMatch[1].trim());
 
+                      // DEBUG: HTML Content vor Bereinigung
+                      console.log(
+                        '🎯 [API DEBUG] HTML before cleaning (first 300 chars):',
+                        extractedHtml.substring(0, 300)
+                      );
+
                       // KRITISCH: Sofortige â-Reparatur direkt nach HTML-Extraktion!
                       extractedHtml = extractedHtml
                         .replace(/â ï¸ Close Match/g, '⚠️ Close Match')
@@ -262,7 +352,25 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                         .replace(/â"/g, '"')
                         .replace(/â /g, '"')
                         .replace(/â(?=\s)/g, '"') // â gefolgt von Leerzeichen
-                        .replace(/â/g, '"'); // alle anderen â
+                        .replace(/â/g, '"') // alle anderen â
+                        // KRITISCH: Smart-Quote-Bereinigung auch für HTML!
+                        .replace(/"/g, '"') // Unicode 201C/201D -> normale Anführungszeichen
+                        .replace(/"/g, '"')
+                        .replace(/'/g, "'") // Unicode 2018/2019 -> normaler Apostroph
+                        .replace(/'/g, "'")
+                        .replace(/–/g, '-') // Unicode 2013 -> normaler Bindestrich
+                        .replace(/—/g, '-') // Unicode 2014 -> normaler Bindestrich
+                        // ULTIMATIV: Alle nicht-ASCII Anführungszeichen ersetzen
+                        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"') // Alle Arten von Anführungszeichen
+                        .replace(/[\u2018\u2019\u201A\u201B\u2032]/g, "'") // Alle Arten von Apostrophen
+                        .replace(/[\u2013\u2014\u2015]/g, '-') // Alle Arten von Strichen
+                        .replace(/[\u2026]/g, '...'); // Ellipsis
+
+                      // DEBUG: HTML Content nach Bereinigung
+                      console.log(
+                        '🎯 [API DEBUG] HTML after cleaning (first 300 chars):',
+                        extractedHtml.substring(0, 300)
+                      );
 
                       console.log(
                         '✅ [API] HTML extracted and â-characters fixed:',

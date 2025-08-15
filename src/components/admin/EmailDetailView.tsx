@@ -92,6 +92,194 @@ interface QuickReplyData {
   message: string;
 }
 
+// Hilfsfunktionen für bessere E-Mail-Bereinigung
+function decodeUTF8Properly(text: string): string {
+  if (!text) return '';
+
+  // Spezielle Debug-Analyse für problematische Zeichen
+  if (text.includes('Match')) {
+    console.log(
+      '🎯 MATCH DEBUG: Original text around "Match":',
+      text.substring(text.indexOf('Match') - 20, text.indexOf('Match') + 20)
+    );
+
+    // Zeichen-Code-Analyse
+    const matchIndex = text.indexOf('Match');
+    if (matchIndex > 0) {
+      const beforeChar = text.charAt(matchIndex - 1);
+      const afterChar = text.charAt(matchIndex + 5);
+      console.log('🎯 Character before "Match":', beforeChar, 'Code:', beforeChar.charCodeAt(0));
+      console.log('🎯 Character after "Match":', afterChar, 'Code:', afterChar.charCodeAt(0));
+    }
+  }
+
+  console.log('🔍 DEBUG: Original text:', text.substring(0, 200));
+
+  try {
+    // Schritt 1: HTML-Entitäten dekodieren (z.B. &#252; -> ü)
+    let decoded = decode(text);
+    console.log('🔍 DEBUG: After HTML decode:', decoded.substring(0, 200));
+
+    // Schritt 2: URL-encoded Zeichen dekodieren (z.B. %C3%BC -> ü)
+    try {
+      decoded = decodeURIComponent(decoded);
+      console.log('🔍 DEBUG: After URI decode:', decoded.substring(0, 200));
+    } catch {
+      // Wenn URL-decoding fehlschlägt, Original verwenden
+      console.log('🔍 DEBUG: URI decoding failed, using original');
+    }
+
+    // Schritt 3: Quoted-printable dekodieren (z.B. =FC -> ü)
+    decoded = decoded.replace(/=([0-9A-F]{2})/gi, (match, hex) => {
+      try {
+        return String.fromCharCode(parseInt(hex, 16));
+      } catch {
+        return match;
+      }
+    });
+    console.log('🔍 DEBUG: After quoted-printable:', decoded.substring(0, 200));
+
+    // Schritt 4: Spezielle Newsletter-Kodierungen und häufige Sonderzeichen
+    decoded = decoded
+      .replace(/ü9C/g, 'Ü')
+      .replace(/üBC/g, 'ü')
+      .replace(/üA4/g, 'ä')
+      .replace(/üB6/g, 'ö')
+      .replace(/ü9F/g, 'ß')
+      // Spezielle finAPI Newsletter-Kodierungen
+      .replace(/füBCr/g, 'für') // füBCr → für
+      .replace(/üBCber/g, 'über') // üBCber → über
+      .replace(/EmpfüA4nger/g, 'Empfänger') // EmpfüA4nger → Empfänger
+      .replace(/üBCberprüBCfung/g, 'Überprüfung') // üBCberprüBCfung → Überprüfung
+      .replace(/müB6glich/g, 'möglich') // müB6glich → möglich
+      .replace(/ermüB6glicht/g, 'ermöglicht') // ermüB6glicht → ermöglicht
+      .replace(/LüB6sung/g, 'Lösung') // LüB6sung → Lösung
+      .replace(/erfüBCllen/g, 'erfüllen') // erfüBCllen → erfüllen
+      .replace(/zuverlüA4ssig/g, 'zuverlässig') // zuverlüA4ssig → zuverlässig
+      .replace(/vollstüA4ndige/g, 'vollständige') // vollstüA4ndige → vollständige
+      .replace(/KonformitüA4t/g, 'Konformität') // KonformitüA4t → Konformität
+      // Generische Patterns für häufige Kodierungen
+      .replace(/BC/g, 'r') // BC → r (häufig bei für, über, etc.)
+      .replace(/A4/g, 'ä') // A4 → ä
+      .replace(/B6/g, 'ö') // B6 → ö
+      .replace(/9C/g, 'Ü') // 9C → Ü
+      .replace(/9F/g, 'ß') // 9F → ß
+      // AGGRESSIVE Euro-Zeichen Ersetzung - ALLE Varianten zu normalen Anführungszeichen
+      .replace(/&euro;/gi, '"') // HTML-Entity für Euro → normale Anführungszeichen
+      .replace(/&#8364;/g, '"') // Numeric HTML-Entity für Euro → normale Anführungszeichen
+      .replace(/&#x20AC;/gi, '"') // Hex HTML-Entity für Euro → normale Anführungszeichen
+      .replace(/\u20AC/g, '"') // Unicode für Euro → normale Anführungszeichen
+      .replace(/=E2=82=AC/g, '"') // Quoted-printable für Euro → normale Anführungszeichen
+      .replace(/€/g, '"') // Euro-Zeichen direkt → normale Anführungszeichen
+      .replace(/\uFFFD/g, '"') // Replacement Character → normale Anführungszeichen
+      .replace(/\u20AC/g, '"') // Zusätzlicher Unicode für Euro
+      // Spezifische Muster für diese E-Mail
+      .replace(/€Match€/g, '"Match"') // Direkter Match-Ersatz
+      .replace(/€Close Match€/g, '"Close Match"') // Close Match-Ersatz
+      .replace(/€No Match€/g, '"No Match"') // No Match-Ersatz
+      // SUPER-AGGRESSIVE Bereinigung aller problematischen Zeichen
+      .replace(/€/g, '"') // Euro-Zeichen → normale Anführungszeichen
+      .replace(/\u20AC/g, '"') // Unicode Euro → normale Anführungszeichen
+      .replace(/\u201C/g, '"') // Linke typografische Anführungszeichen
+      .replace(/\u201D/g, '"') // Rechte typografische Anführungszeichen
+      .replace(/\u201E/g, '"') // Deutsche öffnende Anführungszeichen
+      .replace(/\u201F/g, '"') // Deutsche schließende Anführungszeichen
+      .replace(/\u2018/g, "'") // Linke typografische Apostrophe
+      .replace(/\u2019/g, "'") // Rechte typografische Apostrophe
+      .replace(/"/g, '"') // Alle " zu normalen "
+      .replace(/"/g, '"') // Alle " zu normalen "
+      .replace(/„/g, '"') // Alle „ zu normalen "
+      .replace(/'/g, "'") // Alle ' zu normalen '
+      .replace(/'/g, "'") // Alle ' zu normalen '
+      // Spezifische Problem-Pattern
+      .replace(/Match€/g, 'Match"') // Match€ → Match"
+      .replace(/€Match/g, '"Match') // €Match → "Match
+      // Fallback: Alle unbekannten Sonderzeichen zu Anführungszeichen
+      .replace(/[\u2010-\u2027]/g, '"') // Verschiedene Striche und Anführungszeichen
+      .replace(/[\u20A0-\u20CF]/g, '"') // Währungssymbole
+      // Weitere häufige Sonderzeichen
+      .replace(/&amp;/g, '&') // Ampersand
+      .replace(/&lt;/g, '<') // Kleiner als
+      .replace(/&gt;/g, '>') // Größer als
+      .replace(/&quot;/g, '"') // Anführungszeichen
+      .replace(/&#39;/g, "'") // Apostroph
+      .replace(/&nbsp;/g, ' ') // Non-breaking space
+      .replace(/&mdash;/g, '—') // Em-Dash
+      .replace(/&ndash;/g, '–') // En-Dash
+      .replace(/&hellip;/g, '…') // Ellipsis
+      // Bereinigung
+      .replace(/=\r?\n/g, '') // Soft line breaks entfernen
+      .replace(/\r?\n\s+/g, ' ') // Überschüssige Leerzeichen
+      .replace(/\s+/g, ' ') // Mehrfache Leerzeichen zu einem
+      .trim();
+
+    console.log('🔍 DEBUG: Final result:', decoded.substring(0, 200));
+    return decoded;
+  } catch (error) {
+    console.warn('🔍 DEBUG: Fehler beim Dekodieren:', error);
+    return text;
+  }
+}
+
+function getCleanTextContent(email: ReceivedEmail): string {
+  console.log('🔍 DEBUG: getCleanTextContent called');
+  console.log('🔍 DEBUG: email.textContent length:', email.textContent?.length || 0);
+  console.log('🔍 DEBUG: email.htmlContent length:', email.htmlContent?.length || 0);
+
+  // Erste Priorität: Bereits bereinigte textContent
+  if (email.textContent && email.textContent.trim()) {
+    console.log('🔍 DEBUG: Using textContent');
+    const cleaned = decodeUTF8Properly(email.textContent);
+    if (cleaned && cleaned.length > 50) {
+      // Nur wenn sinnvoller Inhalt
+      console.log('🔍 DEBUG: textContent result length:', cleaned.length);
+      return cleaned;
+    }
+  }
+
+  // Zweite Priorität: HTML zu sauberem Text konvertieren
+  if (email.htmlContent) {
+    console.log('🔍 DEBUG: Using htmlContent');
+    try {
+      const cleanedHtml = decodeUTF8Properly(email.htmlContent);
+      console.log('🔍 DEBUG: cleanedHtml preview:', cleanedHtml.substring(0, 200));
+
+      // HTML-zu-Text Konvertierung mit html-to-text
+      const textContent = convert(cleanedHtml, {
+        wordwrap: 80,
+        selectors: [
+          { selector: 'a', options: { ignoreHref: true } },
+          { selector: 'img', format: 'skip' },
+          { selector: 'style', format: 'skip' },
+          { selector: 'script', format: 'skip' },
+          { selector: '.nl2go_preheader', format: 'skip' },
+          { selector: 'table[class*="gmail-fix"]', format: 'skip' },
+        ],
+      });
+
+      console.log('🔍 DEBUG: html-to-text result BEFORE cleaning:', textContent.substring(0, 200));
+
+      // WICHTIG: Bereinigung NACH html-to-text anwenden!
+      const finalCleanedText = decodeUTF8Properly(textContent);
+
+      console.log('🔍 DEBUG: final cleaned result:', finalCleanedText.substring(0, 200));
+
+      if (finalCleanedText && finalCleanedText.trim().length > 20) {
+        console.log(
+          '🔍 DEBUG: Returning final cleaned result, length:',
+          finalCleanedText.trim().length
+        );
+        return finalCleanedText.trim();
+      }
+    } catch (error) {
+      console.warn('🔍 DEBUG: Fehler bei HTML-zu-Text Konvertierung:', error);
+    }
+  }
+
+  console.log('🔍 DEBUG: Fallback - no usable content found');
+  return 'E-Mail-Inhalt konnte nicht geladen werden.';
+}
+
 function QuickReplyForm({ email }: { email: ReceivedEmail }) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -185,7 +373,67 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
 
   // HTML-Inhalte für iframe vorbereiten
   const sanitizedHTML = useMemo(() => {
-    const cleanHtml = DOMPurify.sanitize(htmlContent, {
+    // KRITISCH: Euro-Symbol-Bereinigung AUCH im HTML-Renderer!
+    console.log('🎯 [HTML RENDERER] Original HTML content preview:', htmlContent.substring(0, 300));
+
+    // CHARACTER CODE ANALYZER - Finde die exakten problematischen Zeichen!
+    const suspiciousChars = [];
+    const textToAnalyze = htmlContent.substring(0, 1000);
+    for (let i = 0; i < textToAnalyze.length; i++) {
+      const char = textToAnalyze[i];
+      const code = char.charCodeAt(0);
+
+      // Suche nach verdächtigen Unicode-Zeichen (nicht normale ASCII)
+      if (
+        code > 127 &&
+        (code === 8220 ||
+          code === 8221 ||
+          code === 8216 ||
+          code === 8217 ||
+          code === 8211 ||
+          code === 8212 ||
+          code === 8364)
+      ) {
+        suspiciousChars.push({
+          char: char,
+          charCode: code,
+          hex: '0x' + code.toString(16),
+          index: i,
+          context: textToAnalyze.substring(Math.max(0, i - 10), i + 10),
+        });
+      }
+    }
+
+    console.log('🔍 [CHARACTER ANALYZER] Found suspicious characters:', suspiciousChars);
+    console.log(
+      '🔍 [CHARACTER ANALYZER] Character codes found:',
+      suspiciousChars.map(c => `${c.char}(${c.charCode})`)
+    );
+
+    const cleanedHtml = htmlContent
+      // Aggressive Euro-Symbol-Bereinigung für HTML-Rendering
+      .replace(/€œ/g, '"') // €œ -> "
+      .replace(/€/g, '"') // € -> "
+      .replace(/€™/g, "'") // €™ -> '
+      .replace(/€"/g, '–') // €" -> –
+      .replace(/€/g, '"') // Alle anderen € -> "
+      // Alternative Character-Codes
+      .replace(/\u20AC\u201C/g, '"') // Unicode Euro + Left Quote
+      .replace(/\u20AC\u201D/g, '"') // Unicode Euro + Right Quote
+      .replace(/\u20AC\u2019/g, "'") // Unicode Euro + Right Single Quote
+      .replace(/\u20AC\u2013/g, '–') // Unicode Euro + En Dash
+      .replace(/\u20AC/g, '"') // Alle verbleibenden Euro-Symbole
+      // SPEZIFISCH: Die exakten problematischen Zeichen aus dem HTML!
+      .replace(/"/g, '"') // Smart quotes (Unicode 201C, 201D) -> normale Anführungszeichen
+      .replace(/"/g, '"') // Smart quotes (Unicode 201C, 201D) -> normale Anführungszeichen
+      .replace(/'/g, "'") // Smart single quote (Unicode 2019) -> normaler Apostroph
+      .replace(/'/g, "'") // Smart single quote (Unicode 2018) -> normaler Apostroph
+      .replace(/–/g, '-') // En dash (Unicode 2013) -> normaler Bindestrich
+      .replace(/—/g, '-'); // Em dash (Unicode 2014) -> normaler Bindestrich
+
+    console.log('🎯 [HTML RENDERER] After Euro cleaning preview:', cleanedHtml.substring(0, 300));
+
+    const finalHtml = DOMPurify.sanitize(cleanedHtml, {
       ALLOWED_TAGS: [
         'div',
         'p',
@@ -237,6 +485,8 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
       FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button'],
       FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
     });
+
+    console.log('🎯 [HTML RENDERER] Final sanitized HTML preview:', finalHtml.substring(0, 300));
 
     return `
       <!DOCTYPE html>
@@ -316,7 +566,7 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
           </script>
         </head>
         <body>
-          ${cleanHtml}
+          ${finalHtml}
         </body>
       </html>
     `;
@@ -760,18 +1010,56 @@ export default function EmailDetailView({
 
   // Verbesserter E-Mail-Inhalt mit modernen APIs
   const processedContent = useMemo(() => {
-    // Priorität 1: Verwende parsedEmail falls verfügbar
+    // Priorität 1: Verwende parsedEmail falls verfügbar - ABER MIT BEREINIGUNG!
     if (parsedEmail) {
-      console.log('📧 Using parsedEmail for display');
+      console.log('�🔥🔥 PARSEEMAIL DEBUG MODE ACTIVATED - VERSION 3 🔥🔥🔥');
+      console.log('DEBUG: parsedEmail object keys:', Object.keys(parsedEmail));
+      console.log('DEBUG: parsedEmail.text exists?', !!parsedEmail.text);
+
+      if (parsedEmail.text) {
+        console.log('DEBUG: parsedEmail.text preview:', parsedEmail.text.substring(0, 300));
+        console.log('DEBUG: Euro symbol search in parsedEmail.text...');
+
+        // Detaillierte Euro-Symbol-Analyse
+        let euroCount = 0;
+        const sampleEuros = [];
+        for (let i = 0; i < Math.min(parsedEmail.text.length, 1000); i++) {
+          const char = parsedEmail.text[i];
+          if (char === '€') {
+            euroCount++;
+            if (sampleEuros.length < 5) {
+              sampleEuros.push({
+                index: i,
+                char: char,
+                charCode: char.charCodeAt(0),
+                context: parsedEmail.text.substring(Math.max(0, i - 10), i + 10),
+              });
+            }
+          }
+        }
+
+        console.log('DEBUG: Found', euroCount, 'Euro symbols in parsedEmail.text');
+        console.log('DEBUG: Sample Euro locations:', sampleEuros);
+      } else {
+        console.log('DEBUG: parsedEmail.text is NULL/undefined');
+      }
+
+      // WICHTIG: Auch parsedEmail.text muss bereinigt werden!
+      const cleanedText = parsedEmail.text
+        ? decodeUTF8Properly(parsedEmail.text)
+        : getCleanTextContent(email);
+
+      console.log('🎯 parsedEmail.text after cleaning:', cleanedText.substring(0, 200));
+
       return {
-        text: parsedEmail.text || 'Kein Text-Inhalt verfügbar',
+        text: cleanedText,
         html: parsedEmail.html,
       };
     }
 
-    // Priorität 2: Direkte htmlContent Verarbeitung
+    // Priorität 2: Direkte htmlContent Verarbeitung mit verbesserter Bereinigung
     if (email.htmlContent) {
-      console.log('📧 Using direct htmlContent');
+      console.log('� USING DIRECT HTML CONTENT - VERSION 3 DEBUG 🔥');
       const utf8Content = decodeUTF8Properly(email.htmlContent);
 
       const processedHtml = DOMPurify.sanitize(utf8Content, {
@@ -809,8 +1097,9 @@ export default function EmailDetailView({
 
       const textParser = new DOMParser();
       const htmlDoc = textParser.parseFromString(processedHtml, 'text/html');
-      const processedText =
-        htmlDoc.body?.textContent || htmlDoc.textContent || 'Text-Extraktion fehlgeschlagen';
+
+      // Verwende getCleanTextContent für bessere Text-Extraktion
+      const processedText = getCleanTextContent(email);
 
       return {
         text: processedText,
@@ -818,11 +1107,11 @@ export default function EmailDetailView({
       };
     }
 
-    // Priorität 3: Nur textContent verwenden
+    // Priorität 3: Nur textContent verwenden mit Bereinigung
     if (email.textContent) {
-      console.log('📧 Using textContent only');
+      console.log('📧 Using textContent only with cleaning');
       return {
-        text: decodeUTF8Properly(email.textContent),
+        text: getCleanTextContent(email),
         html: null,
       };
     }
@@ -1093,3 +1382,4 @@ export default function EmailDetailView({
     </div>
   );
 }
+// Debug update Fr 15 Aug 2025 07:55:49 CEST
