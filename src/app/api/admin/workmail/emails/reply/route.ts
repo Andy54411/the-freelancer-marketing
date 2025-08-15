@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       });
 
       const emailOptions = {
-        from: process.env.WORKMAIL_SMTP_USER || 'info@taskilo.de',
+        from: decoded.email, // Verwende die E-Mail des eingeloggten Admins
         to: to,
         subject: subject,
         text: message,
