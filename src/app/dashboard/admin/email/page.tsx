@@ -292,8 +292,8 @@ export default function EmailAdminPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Cookie: document.cookie,
           },
+          credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToArchive.messageId }),
         }).catch(err => {
           console.warn('⚠️ Archiv-API-Call fehlgeschlagen:', err);
@@ -380,8 +380,8 @@ export default function EmailAdminPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Cookie: document.cookie,
           },
+          credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToRestore.messageId }),
         }).catch(err => {
           console.warn('⚠️ Wiederherstellungs-API-Call fehlgeschlagen:', err);
@@ -406,8 +406,8 @@ export default function EmailAdminPage() {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
-            Cookie: document.cookie,
           },
+          credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToDelete.messageId }),
         }).catch(err => {
           console.warn('⚠️ Lösch-API-Call fehlgeschlagen:', err);
@@ -463,6 +463,7 @@ export default function EmailAdminPage() {
       const response = await fetch('/api/admin/workmail/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           ...composeForm,
           from: 'support@taskilo.de',
@@ -734,6 +735,7 @@ export default function EmailAdminPage() {
                             const response = await fetch('/api/admin/workmail/send', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
                               body: JSON.stringify({
                                 to: 'andy.staudinger@taskilo.de',
                                 subject: 'WorkMail Test - Taskilo Platform',
@@ -1250,7 +1252,9 @@ export default function EmailAdminPage() {
                           <Button
                             onClick={async () => {
                               try {
-                                const response = await fetch('/api/admin/workmail/sso');
+                                const response = await fetch('/api/admin/workmail/sso', {
+                                  credentials: 'include',
+                                });
                                 const result = await response.json();
 
                                 if (result.success) {
@@ -1277,6 +1281,7 @@ export default function EmailAdminPage() {
                                 const response = await fetch('/api/admin/workmail/sso', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
                                   body: JSON.stringify({ action: 'open_workmail_interface' }),
                                 });
 

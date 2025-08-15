@@ -309,6 +309,7 @@ function QuickReplyForm({ email }: { email: ReceivedEmail }) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // KRITISCH: Cookies mitschicken für Authentication!
         body: JSON.stringify(quickReplyData),
       });
 
