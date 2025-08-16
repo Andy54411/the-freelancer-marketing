@@ -5,24 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ReceivedEmail } from '@/types/email';
 import { Archive, Clock, User, Mail, Paperclip, Undo2, Trash2, ArrowLeft } from 'lucide-react';
-
-interface ReceivedEmail {
-  id: string;
-  from: string;
-  to?: string;
-  subject: string;
-  textContent: string;
-  htmlContent: string;
-  receivedAt: string;
-  isRead: boolean;
-  isFavorite?: boolean;
-  isArchived?: boolean;
-  priority: 'low' | 'normal' | 'high';
-  category: 'support' | 'inquiry' | 'feedback' | 'business' | 'notification';
-  attachments?: { name: string; size: number }[];
-  archivedAt?: string;
-}
 
 interface ArchivedEmailsViewProps {
   archivedEmails: ReceivedEmail[];
@@ -163,7 +147,12 @@ export default function ArchivedEmailsView({
                           </h3>
 
                           <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                            {email.textContent.substring(0, 200)}...
+                            {(
+                              email.textContent ||
+                              email.htmlContent ||
+                              'Kein Inhalt verfügbar'
+                            ).substring(0, 200)}
+                            ...
                           </p>
 
                           <div className="flex items-center space-x-4 text-xs text-gray-500">

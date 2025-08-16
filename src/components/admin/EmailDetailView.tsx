@@ -68,6 +68,7 @@ interface EmailDetailViewProps {
   onArchive?: (emailId: string) => Promise<void>;
   onMarkAsRead?: (emailId: string, isRead: boolean) => Promise<void>;
   onEmailSelect?: (email: ReceivedEmail) => void; // Für Accordion-Navigation
+  onEmailSent?: () => void; // Callback wenn E-Mail gesendet wurde
 }
 
 interface QuickReplyData {
@@ -265,14 +266,22 @@ function getCleanTextContent(email: ReceivedEmail): string {
   return 'E-Mail-Inhalt konnte nicht geladen werden.';
 }
 
-function QuickReplyForm({ email }: { email: ReceivedEmail }) {
+function QuickReplyForm({
+  email,
+  onEmailSent,
+}: {
+  email: ReceivedEmail;
+  onEmailSent?: () => void;
+}) {
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!message.trim()) {
+    // Verhindere mehrfache Ausführung
+    if (isSending || !message.trim()) {
+      console.log('🚫 Quick reply prevented - already sending or empty message');
       return;
     }
 
@@ -305,6 +314,12 @@ function QuickReplyForm({ email }: { email: ReceivedEmail }) {
       console.log('✅ Quick reply sent successfully:', result);
       setMessage('');
       alert('Antwort wurde erfolgreich gesendet!');
+
+      // E-Mail-Liste aktualisieren
+      if (onEmailSent) {
+        console.log('🔄 Triggering email list refresh...');
+        onEmailSent();
+      }
     } catch (error) {
       console.error('❌ Error sending quick reply:', error);
       alert('Fehler beim Senden der Antwort. Bitte versuchen Sie es erneut.');
@@ -702,6 +717,7 @@ export default function EmailDetailView({
   onArchive,
   onMarkAsRead,
   onEmailSelect,
+  onEmailSent,
 }: EmailDetailViewProps) {
   const [parsedEmail, setParsedEmail] = useState<ModernEmailContent | null>(null);
 
@@ -1506,7 +1522,7 @@ export default function EmailDetailView({
       </Card>
 
       {/* Quick Reply */}
-      <QuickReplyForm email={email} />
+      <QuickReplyForm email={email} onEmailSent={onEmailSent} />
     </div>
   );
 }

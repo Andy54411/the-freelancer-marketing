@@ -14,7 +14,18 @@ export interface ReceivedEmail {
   archivedAt?: string;
   priority?: 'low' | 'normal' | 'high';
   category?: 'support' | 'inquiry' | 'feedback' | 'business' | 'notification';
-  attachments?: { name: string; size: number }[];
+  attachments?: Array<{
+    name: string;
+    size: number;
+    type?: string;
+  }>;
+  // WorkMail specific fields
+  source?: string;
+  folder?: string;
+  messageId?: string;
+  size?: number;
+  flags?: string[];
+  rawContent?: string; // Für PostalMime Parsing
 }
 
 export interface SentEmail {

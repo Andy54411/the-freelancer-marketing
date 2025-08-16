@@ -21,6 +21,11 @@ const ArchivedEmailsView = dynamic(() => import('@/components/admin/ArchivedEmai
   loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded-lg"></div>,
   ssr: false,
 });
+
+const SentEmailsView = dynamic(() => import('@/components/admin/SentEmailsView'), {
+  loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded-lg"></div>,
+  ssr: false,
+});
 import {
   Send,
   Archive,
@@ -94,6 +99,7 @@ export default function EmailAdminPage() {
   const [selectedEmail, setSelectedEmail] = useState<ReceivedEmail | null>(null);
   const [showEmailDetail, setShowEmailDetail] = useState(false);
   const [showArchiveView, setShowArchiveView] = useState(false);
+  const [sentEmailsRefreshTrigger, setSentEmailsRefreshTrigger] = useState(0);
 
   const [composeForm, setComposeForm] = useState({
     to: '',
@@ -589,6 +595,10 @@ export default function EmailAdminPage() {
             setSelectedEmail(email);
             // Optional: E-Mail als gelesen markieren wenn sie ausgewählt wird
             handleMarkAsRead(email.id, true);
+          }}
+          onEmailSent={() => {
+            loadWorkmailEmails(); // E-Mail-Liste nach dem Senden neu laden
+            setSentEmailsRefreshTrigger(prev => prev + 1); // SentEmailsView neu laden
           }}
         />
       ) : (
@@ -1093,40 +1103,13 @@ export default function EmailAdminPage() {
 
               {/* Sent Content */}
               {activeTab === 'sent' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Inbox className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                      Gesendete E-Mails
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {sentEmails.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        <Inbox className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                        <p>Keine E-Mails gesendet</p>
-                        <p className="text-sm">Gesendete E-Mails werden hier angezeigt</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {sentEmails.map(email => (
-                          <div key={email.id} className="border rounded-lg p-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium">{email.to}</p>
-                                <p className="text-sm text-gray-600">{email.subject}</p>
-                                <p className="text-xs text-gray-500">
-                                  {new Date(email.sentAt).toLocaleString('de-DE')}
-                                </p>
-                              </div>
-                              <div>{getStatusBadge(email.status)}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <SentEmailsView
+                  refreshTrigger={sentEmailsRefreshTrigger}
+                  onEmailClick={email => {
+                    console.log('Sent email clicked:', email);
+                    // Hier können wir später eine Detail-Ansicht für gesendete E-Mails implementieren
+                  }}
+                />
               )}
 
               {/* Create Template Content */}
