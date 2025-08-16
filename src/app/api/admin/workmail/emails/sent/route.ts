@@ -105,25 +105,25 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
             });
           }
 
-          // Bewährte, einfache Logik wie in der normalen Email API
-          const total = box.messages.total;
-          const actualLimit = Math.min(limit, total);
-          const range = `1:${actualLimit}`;
+          // Hole die neuesten E-Mails (wie in der funktionierenden Email API)
+          const range = Math.max(1, total - actualLimit + 1) + ':' + total;
 
           console.log(`📧 [Sent Emails NEW] Fetching messages ${range} from ${currentFolder}`);
 
           const emails: any[] = [];
 
-          const fetch = imap.fetch(range, {
-            bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE MESSAGE-ID)',
+          const fetch = imap.seq.fetch(range, {
+            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE MESSAGE-ID)', 'TEXT'],
             struct: true,
           });
-
           fetch.on('message', (msg: any, seqno: number) => {
             const email: any = {
               id: `sent_${Date.now()}_${seqno}`,
               seqno: seqno,
               folder: currentFolder,
+              source: 'workmail_imap_sent_new',
+              isRead: true, // Sent emails sind immer "gelesen"
+              category: 'sent',
             };
 
             msg.on('body', (stream: any, info: any) => {
@@ -133,38 +133,55 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
               });
 
               stream.once('end', () => {
-                try {
-                  const headers = (Imap as any).parseHeader(buffer);
+                if (info.which.includes('HEADER')) {
+                  // Parse header manually (genau wie in der funktionierenden API)
+                  const headerText = buffer.toString();
+                  const headerLines = headerText.split('\n');
 
-                  email.from = headers.from?.[0] || credentials.email;
-                  email.to = headers.to?.[0] || 'Unbekannt';
-                  email.subject = headers.subject?.[0] || 'Kein Betreff';
-                  email.messageId = headers['message-id']?.[0];
+                  email.from =
+                    headerLines
+                      .find(line => line.toLowerCase().startsWith('from:'))
+                      ?.split(':')[1]
+                      ?.trim() || credentials.email;
 
-                  // Datum parsen
-                  if (headers.date?.[0]) {
-                    try {
-                      email.timestamp = new Date(headers.date[0]).toISOString();
-                    } catch (dateError) {
-                      console.warn('⚠️ [Sent Emails NEW] Date parse error:', dateError);
-                      email.timestamp = new Date().toISOString();
-                    }
-                  } else {
-                    email.timestamp = new Date().toISOString();
-                  }
+                  email.to =
+                    headerLines
+                      .find(line => line.toLowerCase().startsWith('to:'))
+                      ?.split(':')[1]
+                      ?.trim() || 'Unbekannt';
 
-                  // Für Sent Emails verwenden wir vereinfachte Text-Extraktion
-                  email.body = `Sent to: ${email.to}`;
+                  email.subject =
+                    headerLines
+                      .find(line => line.toLowerCase().startsWith('subject:'))
+                      ?.split(':')[1]
+                      ?.trim() || 'Kein Betreff';
 
-                  console.log(`📧 [Sent Emails NEW] Processed: ${email.subject} to ${email.to}`);
+                  email.messageId = headerLines
+                    .find(line => line.toLowerCase().startsWith('message-id:'))
+                    ?.split(':')[1]
+                    ?.trim();
 
-                  // Email direkt hinzufügen wenn Header verfügbar sind
-                  if (email.from && email.to && email.subject) {
-                    emails.push(email);
-                    console.log(`✅ [Sent Emails NEW] Email added to list: ${emails.length}`);
-                  }
-                } catch (error) {
-                  console.error('❌ [Sent Emails NEW] Header parsing error:', error);
+                  const dateLine = headerLines
+                    .find(line => line.toLowerCase().startsWith('date:'))
+                    ?.substring(5) // Entferne "Date:" prefix
+                    ?.trim();
+
+                  console.log('📅 [Sent Emails NEW] Date parsing:', dateLine);
+
+                  email.timestamp = dateLine
+                    ? new Date(dateLine).toISOString()
+                    : new Date().toISOString();
+
+                  email.receivedAt = email.timestamp; // Für Kompatibilität
+
+                  console.log(
+                    `📧 [Sent Emails NEW] Header processed: ${email.subject} to ${email.to}`
+                  );
+                } else if (info.which === 'TEXT') {
+                  // Für Sent Emails vereinfachte Text-Extraktion
+                  email.textContent = `Sent to: ${email.to}`;
+                  email.body = email.textContent;
+                  console.log(`📝 [Sent Emails NEW] Text processed for: ${email.subject}`);
                 }
               });
             });
@@ -173,6 +190,18 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
               email.uid = attrs.uid;
               email.flags = attrs.flags || [];
               email.isRead = email.flags.includes('\\Seen');
+              email.messageId = attrs.uid || `sent_msg_${seqno}`;
+              email.size = attrs.size || 0;
+            });
+
+            msg.once('end', () => {
+              // Email hinzufügen wenn mindestens Subject vorhanden
+              if (email.subject) {
+                emails.push(email);
+                console.log(
+                  `✅ [Sent Emails NEW] Email added to list: ${emails.length} - ${email.subject}`
+                );
+              }
             });
           });
 
@@ -187,12 +216,14 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
               `✅ [Sent Emails NEW] IMAP fetch completed, emails found: ${emails.length}`
             );
 
-            // Sortiere nach Datum (neueste zuerst)
-            emails.sort(
-              (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-
             imap.end();
+
+            // Sortiere E-Mails nach Datum (neueste zuerst)
+            emails.sort(
+              (a, b) =>
+                new Date(b.timestamp || b.receivedAt).getTime() -
+                new Date(a.timestamp || a.receivedAt).getTime()
+            );
 
             resolve({
               emails: emails,
