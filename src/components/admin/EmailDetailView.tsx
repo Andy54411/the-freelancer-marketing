@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { EmailThreadAccordion } from '@/components/admin/EmailThreadAccordion';
+import { ReceivedEmail } from '@/types/email';
 import {
   Html,
   Head,
@@ -35,31 +37,9 @@ import {
   Clock,
   Eye,
   FileText,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
-
-interface ReceivedEmail {
-  id: string;
-  from: string;
-  to?: string;
-  subject: string;
-  textContent?: string;
-  htmlContent?: string;
-  receivedAt?: string;
-  isRead: boolean;
-  priority?: 'high' | 'normal' | 'low';
-  category?: string;
-  attachments?: Array<{
-    name: string;
-    size: number;
-    type?: string;
-  }>;
-  source?: string;
-  folder?: string;
-  messageId?: string;
-  size?: number;
-  flags?: string[];
-  rawContent?: string; // Für PostalMime Parsing
-}
 
 interface ModernEmailContent {
   html: string;
@@ -78,6 +58,7 @@ interface ModernEmailContent {
 
 interface EmailDetailViewProps {
   email: ReceivedEmail;
+  emails?: ReceivedEmail[]; // Optionales Array für E-Mail-Verlauf
   onBack: () => void;
   onReply?: (email: ReceivedEmail) => void;
   onReplyAll?: (email: ReceivedEmail) => void;
@@ -86,6 +67,7 @@ interface EmailDetailViewProps {
   onDelete?: (emailId: string) => Promise<void>;
   onArchive?: (emailId: string) => Promise<void>;
   onMarkAsRead?: (emailId: string, isRead: boolean) => Promise<void>;
+  onEmailSelect?: (email: ReceivedEmail) => void; // Für Accordion-Navigation
 }
 
 interface QuickReplyData {
@@ -710,6 +692,7 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
 // Hauptkomponente
 export default function EmailDetailView({
   email,
+  emails = [], // Default empty array
   onBack,
   onReply,
   onReplyAll,
@@ -718,6 +701,7 @@ export default function EmailDetailView({
   onDelete,
   onArchive,
   onMarkAsRead,
+  onEmailSelect,
 }: EmailDetailViewProps) {
   const [parsedEmail, setParsedEmail] = useState<ModernEmailContent | null>(null);
 
@@ -1431,6 +1415,41 @@ export default function EmailDetailView({
           </div>
         </CardContent>
       </Card>
+
+      {/* E-Mail-Verlauf Accordion - DEBUG: Temporär immer anzeigen */}
+      {(() => {
+        console.log('🔍 [EmailDetailView] Accordion Debug:', {
+          emails: emails?.length || 0,
+          emailsArray: emails,
+          showAccordion: emails && emails.length >= 1, // DEBUG: >= 1 statt > 1
+          currentEmailId: email.id,
+          emailsType: typeof emails,
+          emailsIsArray: Array.isArray(emails),
+        });
+        return emails && emails.length >= 1 ? ( // DEBUG: >= 1 statt > 1
+          <div>
+            <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-xs text-green-700">
+                🔍 DEBUG: Accordion wird angezeigt mit {emails.length} E-Mail(s)
+              </p>
+            </div>
+            <EmailThreadAccordion
+              emails={emails}
+              currentEmailId={email.id}
+              onEmailSelect={onEmailSelect || (() => {})}
+            />
+          </div>
+        ) : (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-700">
+              ❌ E-Mail-Verlauf: {emails?.length || 0} E-Mail(s) verfügbar. Emails array:{' '}
+              {emails ? 'exists' : 'null/undefined'}
+              Type: {typeof emails}
+              Is Array: {Array.isArray(emails) ? 'yes' : 'no'}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Anhänge */}
       {email.attachments && email.attachments.length > 0 && (

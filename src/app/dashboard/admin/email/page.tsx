@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { convert } from 'html-to-text';
+import { ReceivedEmail, SentEmail, EmailTemplate } from '@/types/email';
 
 // Dynamic Imports für bessere Performance und Code-Splitting
 const EmailDetailView = dynamic(() => import('@/components/admin/EmailDetailView'), {
@@ -82,49 +83,6 @@ const cleanTextContent = (content: string): string => {
     return content.replace(/<[^>]*>/g, '').trim();
   }
 };
-
-interface EmailTemplate {
-  id: string;
-  name: string;
-  subject: string;
-  htmlContent: string;
-  textContent: string;
-  category: 'support' | 'inquiry' | 'feedback' | 'business' | 'welcome' | 'notification';
-  createdAt: string;
-}
-
-interface SentEmail {
-  id: string;
-  to: string;
-  subject: string;
-  status: 'sent' | 'delivered' | 'failed';
-  sentAt: string;
-  templateId?: string;
-}
-
-// ReceivedEmail Interface für empfangene E-Mails
-interface ReceivedEmail {
-  id: string;
-  from: string;
-  to?: string;
-  subject: string;
-  textContent: string;
-  htmlContent: string;
-  receivedAt: string;
-  isRead: boolean;
-  isFavorite?: boolean;
-  isArchived?: boolean;
-  archivedAt?: string;
-  priority: 'low' | 'normal' | 'high';
-  category: 'support' | 'inquiry' | 'feedback' | 'business' | 'notification';
-  attachments?: { name: string; size: number }[];
-  // WorkMail specific fields
-  source?: string;
-  folder?: string;
-  messageId?: string;
-  size?: number;
-  flags?: string[];
-}
 
 export default function EmailAdminPage() {
   const [activeTab, setActiveTab] = useState('compose');
@@ -618,6 +576,7 @@ export default function EmailAdminPage() {
       showEmailDetail && selectedEmail ? (
         <EmailDetailView
           email={selectedEmail}
+          emails={receivedEmails} // E-Mail-Array für Thread-Navigation
           onBack={handleBackToInbox}
           onReply={handleReplyToEmail}
           onReplyAll={handleReplyAllToEmail}
@@ -626,6 +585,11 @@ export default function EmailAdminPage() {
           onDelete={handleDeleteEmail}
           onArchive={handleArchiveEmail}
           onMarkAsRead={handleMarkAsRead}
+          onEmailSelect={email => {
+            setSelectedEmail(email);
+            // Optional: E-Mail als gelesen markieren wenn sie ausgewählt wird
+            handleMarkAsRead(email.id, true);
+          }}
         />
       ) : (
         /* Normal Email Dashboard */
