@@ -105,6 +105,10 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
             });
           }
 
+          // Bewährte, einfache Logik wie in der normalen Email API
+          const total = box.messages.total;
+          const actualLimit = Math.min(limit, total);
+
           // Hole die neuesten E-Mails (wie in der funktionierenden Email API)
           const range = Math.max(1, total - actualLimit + 1) + ':' + total;
 
