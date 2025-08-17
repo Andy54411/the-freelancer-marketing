@@ -224,12 +224,6 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
       {/* Sent Emails List */}
       {!loading && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Send className="h-5 w-5 text-[#14ad9f]" />
-              <span>Gesendete E-Mails</span>
-            </CardTitle>
-          </CardHeader>
           <CardContent>
             <ScrollArea className="h-96">
               <div className="space-y-2">

@@ -26,6 +26,11 @@ const SentEmailsView = dynamic(() => import('@/components/admin/SentEmailsView')
   loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded-lg"></div>,
   ssr: false,
 });
+
+const SentEmailDetailView = dynamic(() => import('@/components/admin/SentEmailDetailView'), {
+  loading: () => <div className="animate-pulse bg-gray-200 h-96 rounded-lg"></div>,
+  ssr: false,
+});
 import {
   Send,
   Archive,
@@ -97,9 +102,20 @@ export default function EmailAdminPage() {
   const [receivedEmails, setReceivedEmails] = useState<ReceivedEmail[]>([]);
   const [archivedEmails, setArchivedEmails] = useState<ReceivedEmail[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<ReceivedEmail | null>(null);
+  const [selectedSentEmail, setSelectedSentEmail] = useState<SentEmail | null>(null);
   const [showEmailDetail, setShowEmailDetail] = useState(false);
+  const [showSentEmailDetail, setShowSentEmailDetail] = useState(false);
   const [showArchiveView, setShowArchiveView] = useState(false);
   const [sentEmailsRefreshTrigger, setSentEmailsRefreshTrigger] = useState(0);
+
+  // Helper function to change tabs and reset detail views
+  const handleTabChange = (tab: string) => {
+    setShowEmailDetail(false);
+    setShowSentEmailDetail(false);
+    setSelectedEmail(null);
+    setSelectedSentEmail(null);
+    setActiveTab(tab);
+  };
 
   const [composeForm, setComposeForm] = useState({
     to: '',
@@ -267,7 +283,7 @@ export default function EmailAdminPage() {
 
   const handleReplyToEmail = (email: ReceivedEmail) => {
     // Switch to compose tab and pre-fill with reply data
-    setActiveTab('compose');
+    handleTabChange('compose');
     setComposeForm({
       to: email.from,
       subject: email.subject.startsWith('Re: ') ? email.subject : `Re: ${email.subject}`,
@@ -554,7 +570,7 @@ export default function EmailAdminPage() {
       htmlContent: template.htmlContent,
       textContent: template.textContent,
     });
-    setActiveTab('compose');
+    handleTabChange('compose');
   };
 
   const sidebarItems = [
@@ -634,7 +650,7 @@ export default function EmailAdminPage() {
                         if (item.id === 'archive') {
                           handleShowArchive();
                         } else {
-                          setActiveTab(item.id);
+                          handleTabChange(item.id);
                         }
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
@@ -1102,12 +1118,30 @@ export default function EmailAdminPage() {
               )}
 
               {/* Sent Content */}
-              {activeTab === 'sent' && (
+              {activeTab === 'sent' && !showSentEmailDetail && (
                 <SentEmailsView
                   refreshTrigger={sentEmailsRefreshTrigger}
                   onEmailClick={email => {
                     console.log('Sent email clicked:', email);
-                    // Hier können wir später eine Detail-Ansicht für gesendete E-Mails implementieren
+                    setSelectedSentEmail(email);
+                    setShowSentEmailDetail(true);
+                  }}
+                />
+              )}
+
+              {/* Sent Email Detail View */}
+              {activeTab === 'sent' && showSentEmailDetail && selectedSentEmail && (
+                <SentEmailDetailView
+                  email={selectedSentEmail}
+                  onBack={() => {
+                    setShowSentEmailDetail(false);
+                    setSelectedSentEmail(null);
+                  }}
+                  onDelete={() => {
+                    // Trigger refresh of sent emails after deletion
+                    setSentEmailsRefreshTrigger(prev => prev + 1);
+                    setShowSentEmailDetail(false);
+                    setSelectedSentEmail(null);
                   }}
                 />
               )}

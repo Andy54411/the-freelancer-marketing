@@ -17,6 +17,84 @@ const JWT_SECRET =
   process.env.JWT_SECRET || process.env.ADMIN_JWT_SECRET || 'taskilo-admin-secret-key-2024';
 const JWT_SECRET_BYTES = new TextEncoder().encode(JWT_SECRET);
 
+// Cache-Funktion für schnelle Antworten
+async function getCachedEmails(
+  adminEmail: string,
+  folder: string,
+  limit: number
+): Promise<EmailResult | null> {
+  try {
+    console.log('🗄️ [Sent Emails] Checking cache for emails...');
+
+    const cacheResponse = await fetch(
+      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/admin/workmail/emails/cache?folder=${folder}&limit=${limit}`,
+      {
+        method: 'GET',
+        headers: {
+          Cookie: `taskilo-admin-token=${adminEmail}`, // Simplified for internal call
+        },
+      }
+    );
+
+    if (cacheResponse.ok) {
+      const cacheResult = await cacheResponse.json();
+      if (cacheResult.success && cacheResult.data?.emails?.length > 0) {
+        console.log('✅ [Sent Emails] Found cached emails:', cacheResult.data.emails.length);
+        return {
+          emails: cacheResult.data.emails,
+          totalCount: cacheResult.data.totalCount,
+          unreadCount: 0,
+          source: 'dynamodb_cache',
+          folder: folder,
+          lastSync: cacheResult.data.lastSync,
+        };
+      }
+    }
+
+    console.log('⚠️ [Sent Emails] No cached emails found, will use IMAP');
+    return null;
+  } catch (error) {
+    console.warn('⚠️ [Sent Emails] Cache check failed:', error);
+    return null;
+  }
+}
+
+// Cache-Sync-Funktion um neue E-Mails zu speichern
+async function syncEmailsToCache(emails: any[], folder: string, adminEmail: string): Promise<void> {
+  try {
+    console.log('💾 [Sent Emails] Syncing emails to cache...');
+
+    const syncResponse = await fetch(
+      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/admin/workmail/emails/cache`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: `taskilo-admin-token=${adminEmail}`, // Simplified for internal call
+        },
+        body: JSON.stringify({
+          emails: emails,
+          folder: folder,
+          forceSync: false,
+        }),
+      }
+    );
+
+    if (syncResponse.ok) {
+      const syncResult = await syncResponse.json();
+      console.log(
+        '✅ [Sent Emails] Successfully synced to cache:',
+        syncResult.data?.synced || 0,
+        'emails'
+      );
+    } else {
+      console.warn('⚠️ [Sent Emails] Cache sync failed');
+    }
+  } catch (error) {
+    console.warn('⚠️ [Sent Emails] Cache sync error:', error);
+  }
+}
+
 // WorkMail Admin User Mapping mit IMAP-Zugangsdaten
 const WORKMAIL_ADMIN_MAPPING = {
   'andy.staudinger@taskilo.de': {
@@ -303,9 +381,28 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      console.log('📧 [Sent Emails NEW API] Using IMAP method for sent email retrieval');
+      let result: EmailResult;
 
-      const result = await fetchSentEmailsViaIMAP(adminConfig, limit);
+      // 1. Versuche zuerst Cache abzurufen (schnell)
+      const cachedResult = await getCachedEmails(adminEmail, 'sent', limit);
+
+      if (cachedResult && method !== 'force-imap') {
+        console.log('⚡ [Sent Emails NEW API] Using cached emails for fast response');
+        result = cachedResult;
+      } else {
+        // 2. Falls kein Cache oder force-imap: IMAP verwenden
+        console.log('📧 [Sent Emails NEW API] Using IMAP method for sent email retrieval');
+
+        result = await fetchSentEmailsViaIMAP(adminConfig, limit);
+
+        // 3. Nach IMAP-Abruf: E-Mails im Cache speichern (async, blockiert Response nicht)
+        if (result.emails.length > 0) {
+          console.log('💾 [Sent Emails NEW API] Syncing emails to cache in background...');
+          syncEmailsToCache(result.emails, 'sent', adminEmail).catch(err =>
+            console.warn('⚠️ [Sent Emails NEW API] Background cache sync failed:', err)
+          );
+        }
+      }
 
       console.log('📊 [Sent Emails NEW API] Response summary:', {
         emailCount: result.emails?.length || 0,
@@ -331,6 +428,81 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('❌ [Sent Emails NEW API] Unexpected error:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - E-Mail endgültig aus Cache löschen
+export async function DELETE(request: NextRequest) {
+  try {
+    console.log('🗑️ [Sent Emails DELETE] Starting delete request...');
+
+    // URL-Parameter
+    const { searchParams } = new URL(request.url);
+    const emailId = searchParams.get('emailId');
+    const folder = searchParams.get('folder') || 'sent';
+
+    if (!emailId) {
+      return NextResponse.json({ error: 'Email ID is required' }, { status: 400 });
+    }
+
+    console.log('📋 [Sent Emails DELETE] Request parameters:', { emailId, folder });
+
+    // JWT Token Verification
+    const cookies = request.headers.get('cookie');
+    const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
+
+    if (!tokenCookie) {
+      console.error('❌ [Sent Emails DELETE] Missing admin token cookie');
+      return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
+    }
+
+    const token = tokenCookie.split('=')[1];
+
+    try {
+      const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
+      const adminEmail = payload.email as string;
+
+      console.log('✅ [Sent Emails DELETE] JWT Cookie verified for admin:', adminEmail);
+
+      // Cache-Delete API aufrufen
+      const deleteResponse = await fetch(
+        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/admin/workmail/emails/cache?emailId=${emailId}&folder=${folder}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Cookie: `taskilo-admin-token=${token}`,
+          },
+        }
+      );
+
+      if (deleteResponse.ok) {
+        const deleteResult = await deleteResponse.json();
+        console.log('✅ [Sent Emails DELETE] Email deleted successfully:', emailId);
+
+        return NextResponse.json({
+          success: true,
+          message: 'Email successfully deleted',
+          emailId: emailId,
+          folder: folder,
+          deletedAt: new Date().toISOString(),
+        });
+      } else {
+        throw new Error('Failed to delete email from cache');
+      }
+    } catch (jwtError) {
+      console.error('❌ [Sent Emails DELETE] JWT verification failed:', jwtError);
+      return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
+    }
+  } catch (error) {
+    console.error('❌ [Sent Emails DELETE] Error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

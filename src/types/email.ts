@@ -31,10 +31,18 @@ export interface ReceivedEmail {
 export interface SentEmail {
   id: string;
   to: string;
+  from?: string;
   subject: string;
   status: 'sent' | 'delivered' | 'failed';
   sentAt: string;
   templateId?: string;
+  messageId?: string;
+  textContent?: string;
+  htmlContent?: string;
+  // Compatibility fields for WorkMail integration
+  receivedAt?: string; // alias for sentAt
+  folder?: string;
+  source?: string;
 }
 
 export interface EmailTemplate {

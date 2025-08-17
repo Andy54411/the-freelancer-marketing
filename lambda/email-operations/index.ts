@@ -57,6 +57,13 @@ interface AdminEmail {
     webhookReceivedAt: string;
     source: string;
   };
+  // New fields for IMAP sync
+  folder?: string;
+  adminEmail?: string;
+  lastSynced?: string;
+  uid?: number;
+  flags?: string[];
+  size?: number;
 }
 
 interface EmailTemplate {
@@ -135,6 +142,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // Email Stats endpoint
     if (path === '/admin/emails/stats' || path.endsWith('/admin/emails/stats')) {
       return await handleEmailStats(method, queryParams);
+    }
+    // Email Sync endpoint (NEW)
+    else if (path === '/admin/emails/sync' || path.endsWith('/admin/emails/sync')) {
+      return await handleEmailSync(method, body);
     }
     // Email Send endpoint
     else if (path === '/admin/emails/send' || path.endsWith('/admin/emails/send')) {
@@ -764,6 +775,227 @@ async function handleEmailStats(method: string, queryParams: any) {
       success: false,
       error: 'Failed to get email statistics',
       details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
+// Email Sync Operations - Cache IMAP emails in DynamoDB
+async function handleEmailSync(method: string, body: any) {
+  try {
+    switch (method) {
+      case 'POST':
+        // Sync emails from IMAP to DynamoDB cache
+        const { emails, folder, adminEmail, source } = body;
+
+        if (!emails || !Array.isArray(emails)) {
+          return createResponse(400, {
+            success: false,
+            error: 'emails array is required',
+          });
+        }
+
+        if (!adminEmail) {
+          return createResponse(400, {
+            success: false,
+            error: 'adminEmail is required',
+          });
+        }
+
+        console.log(`Syncing ${emails.length} emails for ${adminEmail} from ${folder}`);
+
+        const syncedEmails = [];
+        const errors = [];
+
+        for (const email of emails) {
+          try {
+            const emailId = `${adminEmail}_${email.id || email.messageId || Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            const emailData: AdminEmail = {
+              emailId,
+              messageId: email.messageId || email.id || emailId,
+              from: email.from || 'Unknown',
+              to: Array.isArray(email.to) ? email.to : [email.to || 'Unknown'],
+              cc: email.cc ? (Array.isArray(email.cc) ? email.cc : [email.cc]) : [],
+              bcc: email.bcc ? (Array.isArray(email.bcc) ? email.bcc : [email.bcc]) : [],
+              replyTo: email.replyTo || email.from,
+              subject: email.subject || 'No Subject',
+              htmlContent: email.htmlContent || email.body || '',
+              textContent: email.textContent || email.body || '',
+              receivedAt: email.receivedAt || email.timestamp || new Date().toISOString(),
+              isRead: email.isRead || false,
+              isStarred: false,
+              isArchived: false,
+              labels: email.labels || [],
+              priority: email.priority || 'normal',
+              headers: email.headers || {},
+              source: source || 'workmail_imap',
+              spamScore: 0,
+              isSpam: false,
+              metadata: {
+                webhookReceivedAt: new Date().toISOString(),
+                source: 'imap_sync',
+              },
+              folder: folder || 'INBOX',
+              adminEmail,
+              lastSynced: new Date().toISOString(),
+              uid: email.uid,
+              flags: email.flags || [],
+              size: email.size || 0,
+            };
+
+            await docClient.send(
+              new PutCommand({
+                TableName: ADMIN_EMAILS_TABLE,
+                Item: emailData,
+                ConditionExpression: 'attribute_not_exists(emailId)', // Don't overwrite existing
+              })
+            );
+
+            syncedEmails.push(emailData);
+            console.log(`✅ Synced email: ${emailData.subject}`);
+          } catch (error) {
+            if (error instanceof Error && error.name === 'ConditionalCheckFailedException') {
+              // Email already exists, skip
+              console.log(`⚠️ Email already exists: ${email.subject}`);
+            } else {
+              console.error(`❌ Failed to sync email: ${email.subject}`, error);
+              errors.push({
+                email: email.subject || 'Unknown',
+                error: error instanceof Error ? error.message : 'Unknown error',
+              });
+            }
+          }
+        }
+
+        return createResponse(200, {
+          success: true,
+          data: {
+            syncedCount: syncedEmails.length,
+            totalCount: emails.length,
+            errors: errors.length,
+            syncedEmails: syncedEmails.map(email => ({
+              emailId: email.emailId,
+              subject: email.subject,
+              from: email.from,
+              receivedAt: email.receivedAt,
+            })),
+            errorDetails: errors,
+          },
+          message: `Successfully synced ${syncedEmails.length}/${emails.length} emails`,
+        });
+
+      case 'GET':
+        // Get cached emails from DynamoDB
+        const adminEmailParam = body.adminEmail;
+        const folderParam = body.folder || 'INBOX';
+        const limit = parseInt(body.limit) || 50;
+
+        if (!adminEmailParam) {
+          return createResponse(400, {
+            success: false,
+            error: 'adminEmail is required',
+          });
+        }
+
+        const result = await docClient.send(
+          new ScanCommand({
+            TableName: ADMIN_EMAILS_TABLE,
+            FilterExpression: 'adminEmail = :adminEmail AND folder = :folder',
+            ExpressionAttributeValues: {
+              ':adminEmail': adminEmailParam,
+              ':folder': folderParam,
+            },
+            Limit: limit,
+          })
+        );
+
+        const cachedEmails = result.Items || [];
+
+        // Sort by receivedAt descending
+        cachedEmails.sort(
+          (a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
+        );
+
+        return createResponse(200, {
+          success: true,
+          data: {
+            emails: cachedEmails,
+            totalCount: cachedEmails.length,
+            unreadCount: cachedEmails.filter(email => !email.isRead).length,
+            source: 'dynamodb_cache',
+            folder: folderParam,
+            lastSync: cachedEmails[0]?.lastSynced || null,
+          },
+        });
+
+      case 'DELETE':
+        // Delete cached emails (permanent delete)
+        const { emailIds, adminEmail: deleteAdminEmail } = body;
+
+        if (!emailIds || !Array.isArray(emailIds)) {
+          return createResponse(400, {
+            success: false,
+            error: 'emailIds array is required',
+          });
+        }
+
+        if (!deleteAdminEmail) {
+          return createResponse(400, {
+            success: false,
+            error: 'adminEmail is required',
+          });
+        }
+
+        const deletedEmails = [];
+        const deleteErrors = [];
+
+        for (const emailId of emailIds) {
+          try {
+            await docClient.send(
+              new DeleteCommand({
+                TableName: ADMIN_EMAILS_TABLE,
+                Key: { emailId },
+                ConditionExpression: 'adminEmail = :adminEmail', // Security check
+                ExpressionAttributeValues: {
+                  ':adminEmail': deleteAdminEmail,
+                },
+              })
+            );
+
+            deletedEmails.push(emailId);
+            console.log(`🗑️ Permanently deleted email: ${emailId}`);
+          } catch (error) {
+            console.error(`❌ Failed to delete email: ${emailId}`, error);
+            deleteErrors.push({
+              emailId,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        }
+
+        return createResponse(200, {
+          success: true,
+          data: {
+            deletedCount: deletedEmails.length,
+            totalCount: emailIds.length,
+            errors: deleteErrors.length,
+            deletedEmails,
+            errorDetails: deleteErrors,
+          },
+          message: `Permanently deleted ${deletedEmails.length}/${emailIds.length} emails`,
+        });
+
+      default:
+        return createResponse(405, {
+          success: false,
+          error: `Method ${method} not allowed for /admin/emails/sync`,
+        });
+    }
+  } catch (error) {
+    console.error('❌ Email sync error:', error);
+    return createResponse(500, {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }
