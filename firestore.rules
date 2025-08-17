@@ -1318,7 +1318,7 @@ service cloud.firestore {
 
     // === E-INVOICE SYSTEM ===
     // E-Rechnungen (ZUGFeRD/XRechnung)
-    match /e_invoices/{invoiceId} {
+    match /eInvoices/{invoiceId} {
       // Lesen: Nur für die eigene Firma oder Support Staff
       allow read: if request.auth != null &&
                      (resource.data.companyId == request.auth.uid ||
@@ -1340,7 +1340,7 @@ service cloud.firestore {
     }
 
     // E-Rechnungs-Einstellungen
-    match /e_invoice_settings/{settingsId} {
+    match /eInvoiceSettings/{settingsId} {
       // Lesen: Nur für die eigene Firma oder Support Staff
       allow read: if request.auth != null &&
                      (resource.data.companyId == request.auth.uid ||
@@ -1362,7 +1362,7 @@ service cloud.firestore {
     }
 
     // E-Rechnungs-Übertragungsprotokolle
-    match /e_invoice_transmissions/{transmissionId} {
+    match /eInvoiceTransmissionLogs/{transmissionId} {
       // Lesen: Nur für die eigene Firma oder Support Staff
       allow read: if request.auth != null &&
                      (resource.data.companyId == request.auth.uid ||
