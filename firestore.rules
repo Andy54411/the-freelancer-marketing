@@ -1315,5 +1315,70 @@ service cloud.firestore {
                        (resource.data.companyId == request.auth.uid ||
                         isSupportStaff());
     }
+
+    // === E-INVOICE SYSTEM ===
+    // E-Rechnungen (ZUGFeRD/XRechnung)
+    match /e_invoices/{invoiceId} {
+      // Lesen: Nur für die eigene Firma oder Support Staff
+      allow read: if request.auth != null &&
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur für authentifizierte Firmen
+      allow create: if request.auth != null &&
+                       isCompany() &&
+                       request.resource.data.companyId == request.auth.uid;
+      
+      // Aktualisieren: Nur für die eigene Firma
+      allow update: if request.auth != null &&
+                       resource.data.companyId == request.auth.uid;
+      
+      // Löschen: Nur für die eigene Firma oder Support Staff
+      allow delete: if request.auth != null &&
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+    }
+
+    // E-Rechnungs-Einstellungen
+    match /e_invoice_settings/{settingsId} {
+      // Lesen: Nur für die eigene Firma oder Support Staff
+      allow read: if request.auth != null &&
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur für authentifizierte Firmen
+      allow create: if request.auth != null &&
+                       isCompany() &&
+                       request.resource.data.companyId == request.auth.uid;
+      
+      // Aktualisieren: Nur für die eigene Firma
+      allow update: if request.auth != null &&
+                       resource.data.companyId == request.auth.uid;
+      
+      // Löschen: Nur für die eigene Firma oder Support Staff
+      allow delete: if request.auth != null &&
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+    }
+
+    // E-Rechnungs-Übertragungsprotokolle
+    match /e_invoice_transmissions/{transmissionId} {
+      // Lesen: Nur für die eigene Firma oder Support Staff
+      allow read: if request.auth != null &&
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur für authentifizierte Firmen
+      allow create: if request.auth != null &&
+                       isCompany() &&
+                       request.resource.data.companyId == request.auth.uid;
+      
+      // Aktualisieren: Nur für die eigene Firma (für Status-Updates)
+      allow update: if request.auth != null &&
+                       resource.data.companyId == request.auth.uid;
+      
+      // Löschen: Nur Support Staff (8-jährige Aufbewahrungspflicht)
+      allow delete: if request.auth != null && isSupportStaff();
+    }
   }
 }
