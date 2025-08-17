@@ -215,7 +215,7 @@ export default function EmailAdminPage() {
       {
         id: 'demo_2',
         to: 'andy.staudinger@taskilo.de',
-        subject: 'WorkMail Test erfolgreich',
+        subject: 'E-Mail Test erfolgreich',
         status: 'sent',
         sentAt: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
       },
@@ -253,10 +253,10 @@ export default function EmailAdminPage() {
       },
       {
         id: 'received_3',
-        from: 'support@aws.amazon.com',
-        subject: 'WorkMail Wartung',
-        textContent: 'Ihre WorkMail Organisation wird planmäßig gewartet.',
-        htmlContent: '<p>Ihre WorkMail Organisation wird planmäßig gewartet.</p>',
+        from: 'support@taskilo.de',
+        subject: 'E-Mail System Wartung',
+        textContent: 'Ihre E-Mail Organisation wird planmäßig gewartet.',
+        htmlContent: '<p>Ihre E-Mail Organisation wird planmäßig gewartet.</p>',
         receivedAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
         isRead: false,
         priority: 'low',
@@ -489,7 +489,7 @@ export default function EmailAdminPage() {
     }
   };
 
-  const handleSendWorkMail = async () => {
+  const handleSendEmail = async () => {
     if (!composeForm.to || !composeForm.subject) {
       alert('Bitte füllen Sie alle Pflichtfelder aus.');
       return;
@@ -509,7 +509,7 @@ export default function EmailAdminPage() {
 
       const result = await response.json();
       if (result.success) {
-        alert(`WorkMail E-Mail erfolgreich versendet! Message ID: ${result.messageId}`);
+        alert(`E-Mail erfolgreich versendet! Message ID: ${result.messageId}`);
         setComposeForm({ to: '', subject: '', htmlContent: '', textContent: '' });
 
         // Add to sent emails local state
@@ -522,11 +522,11 @@ export default function EmailAdminPage() {
         };
         setSentEmails(prev => [newSentEmail, ...prev]);
       } else {
-        alert(`WorkMail Fehler: ${result.error}`);
+        alert(`E-Mail Fehler: ${result.error}`);
       }
     } catch (error) {
-      console.error('WorkMail error:', error);
-      alert('Fehler beim Senden über WorkMail');
+      console.error('E-Mail error:', error);
+      alert('Fehler beim E-Mail-Versand');
     } finally {
       setLoading(false);
     }
@@ -630,7 +630,7 @@ export default function EmailAdminPage() {
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold text-gray-900">E-Mail Center</h1>
-                  <p className="text-sm text-gray-500">WorkMail Management</p>
+                  <p className="text-sm text-gray-500">E-Mail Management</p>
                 </div>
               </div>
             </div>
@@ -683,7 +683,7 @@ export default function EmailAdminPage() {
             <div className="p-4 border-t border-gray-200">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>WorkMail verbunden</span>
+                <span>E-Mail System verbunden</span>
               </div>
             </div>
           </div>
@@ -697,9 +697,7 @@ export default function EmailAdminPage() {
                   <h2 className="text-xl font-semibold text-gray-900">
                     {sidebarItems.find(item => item.id === activeTab)?.label}
                   </h2>
-                  <p className="text-sm text-gray-600">
-                    AWS WorkMail Integration für Taskilo Platform
-                  </p>
+                  <p className="text-sm text-gray-600">E-Mail Integration für Taskilo Platform</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge className="bg-green-100 text-green-800">
@@ -767,7 +765,7 @@ export default function EmailAdminPage() {
 
                     <div className="flex gap-2">
                       <Button
-                        onClick={handleSendWorkMail}
+                        onClick={handleSendEmail}
                         disabled={loading}
                         className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white"
                       >
@@ -776,7 +774,7 @@ export default function EmailAdminPage() {
 
                       <Button
                         onClick={async () => {
-                          // WorkMail Test Function
+                          // E-Mail Test Function
                           setLoading(true);
                           try {
                             const response = await fetch('/api/admin/workmail/send', {
@@ -785,10 +783,10 @@ export default function EmailAdminPage() {
                               credentials: 'include',
                               body: JSON.stringify({
                                 to: 'andy.staudinger@taskilo.de',
-                                subject: 'WorkMail Test - Taskilo Platform',
+                                subject: 'E-Mail Test - Taskilo Platform',
                                 htmlContent: `
-                                <h2>WorkMail Test erfolgreich!</h2>
-                                <p>Diese E-Mail wurde über AWS WorkMail versendet.</p>
+                                <h2>E-Mail Test erfolgreich!</h2>
+                                <p>Diese E-Mail wurde über das Taskilo E-Mail-System versendet.</p>
                                 <p><strong>Organisation:</strong> taskilo-org</p>
                                 <p><strong>Domain:</strong> taskilo.de</p>
                                 <p><strong>Absender:</strong> support@taskilo.de</p>
@@ -803,14 +801,14 @@ export default function EmailAdminPage() {
                             const result = await response.json();
                             if (result.success) {
                               alert(
-                                `WorkMail Test erfolgreich! E-Mail an andy.staudinger@taskilo.de gesendet. Message ID: ${result.messageId}`
+                                `E-Mail Test erfolgreich! E-Mail an andy.staudinger@taskilo.de gesendet. Message ID: ${result.messageId}`
                               );
                             } else {
-                              alert(`WorkMail Test fehlgeschlagen: ${result.error}`);
+                              alert(`E-Mail Test fehlgeschlagen: ${result.error}`);
                             }
                           } catch (error) {
-                            console.error('WorkMail test error:', error);
-                            alert('Fehler beim WorkMail Test');
+                            console.error('E-Mail test error:', error);
+                            alert('Fehler beim E-Mail Test');
                           } finally {
                             setLoading(false);
                           }
@@ -997,7 +995,7 @@ export default function EmailAdminPage() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center">
                         <Inbox className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                        WorkMail Posteingang
+                        E-Mail Posteingang
                         {loading && (
                           <div className="ml-2 w-4 h-4 border-2 border-[#14ad9f] border-t-transparent rounded-full animate-spin"></div>
                         )}
@@ -1132,18 +1130,24 @@ export default function EmailAdminPage() {
               )}
 
               {/* Sent Email Detail View */}
-              {console.log('🔍 [DEBUG] Detail View Check:', {
-                activeTab,
-                showSentEmailDetail,
-                hasSelectedSentEmail: !!selectedSentEmail,
-                condition: activeTab === 'sent' && showSentEmailDetail && selectedSentEmail,
-              })}
+              {(() => {
+                console.log('🔍 [DEBUG] Detail View Check:', {
+                  activeTab,
+                  showSentEmailDetail,
+                  hasSelectedSentEmail: !!selectedSentEmail,
+                  condition: activeTab === 'sent' && showSentEmailDetail && selectedSentEmail,
+                });
+                return null;
+              })()}
               {activeTab === 'sent' && showSentEmailDetail && selectedSentEmail && (
                 <div>
-                  {console.log('🔍 [DEBUG] Rendering SentEmailDetailView:', {
-                    showSentEmailDetail,
-                    selectedSentEmail,
-                  })}
+                  {(() => {
+                    console.log('🔍 [DEBUG] Rendering SentEmailDetailView:', {
+                      showSentEmailDetail,
+                      selectedSentEmail,
+                    });
+                    return null;
+                  })()}
                   <SentEmailDetailView
                     email={selectedSentEmail}
                     onBack={() => {
@@ -1233,7 +1237,7 @@ export default function EmailAdminPage() {
                   <CardHeader>
                     <CardTitle className="flex items-center">
                       <Settings className="h-5 w-5 mr-2 text-[#14ad9f]" />
-                      WorkMail Einstellungen
+                      E-Mail Einstellungen
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1268,7 +1272,7 @@ export default function EmailAdminPage() {
                       <div className="space-y-4">
                         <div>
                           <label className="text-sm font-medium text-gray-700">Region:</label>
-                          <p className="text-gray-900">AWS WorkMail (us-east-1)</p>
+                          <p className="text-gray-900">E-Mail System (Region: us-east-1)</p>
                         </div>
                         <div>
                           <label className="text-sm font-medium text-gray-700">

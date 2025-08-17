@@ -195,7 +195,7 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
           const emails: any[] = [];
 
           const fetch = imap.seq.fetch(range, {
-            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE MESSAGE-ID)', 'TEXT'],
+            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE MESSAGE-ID)', 'TEXT', ''],
             struct: true,
           });
           fetch.on('message', (msg: any, seqno: number) => {
@@ -260,10 +260,69 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                     `📧 [Sent Emails NEW] Header processed: ${email.subject} to ${email.to}`
                   );
                 } else if (info.which === 'TEXT') {
-                  // Für Sent Emails vereinfachte Text-Extraktion
-                  email.textContent = `Sent to: ${email.to}`;
+                  // Vollständige Text-Extraktion für Sent Emails
+                  console.log(`📝 [Sent Emails NEW] Processing TEXT body for: ${email.subject}`);
+                  console.log(`📝 [Sent Emails NEW] Buffer length: ${buffer.length}`);
+                  console.log(`📝 [Sent Emails NEW] Buffer preview: ${buffer.substring(0, 200)}`);
+
+                  // Direkte TEXT-Extraktion
+                  email.textContent = buffer.toString();
                   email.body = email.textContent;
-                  console.log(`📝 [Sent Emails NEW] Text processed for: ${email.subject}`);
+
+                  // Versuche HTML-Extraktion falls verfügbar
+                  if (buffer.includes('<html') || buffer.includes('<HTML')) {
+                    const htmlMatch = buffer.match(/<html[\s\S]*?<\/html>/i);
+                    if (htmlMatch) {
+                      email.htmlContent = htmlMatch[0];
+                      console.log(
+                        `🎯 [Sent Emails NEW] HTML content extracted for: ${email.subject}`
+                      );
+                    }
+                  }
+
+                  console.log(`📝 [Sent Emails NEW] Full content processed for: ${email.subject}`);
+                } else if (info.which === '') {
+                  // Vollständiger E-Mail-Body (falls TEXT nicht funktioniert)
+                  console.log(`📧 [Sent Emails NEW] Processing FULL body for: ${email.subject}`);
+                  console.log(`📧 [Sent Emails NEW] Full buffer length: ${buffer.length}`);
+
+                  if (buffer.length > email.textContent?.length || 0) {
+                    // Nutze vollständigen Body falls länger als TEXT
+                    email.rawContent = buffer.toString();
+
+                    // Erweiterte HTML-Extraktion
+                    const htmlMatch = buffer.match(/<html[\s\S]*?<\/html>/i);
+                    if (htmlMatch) {
+                      email.htmlContent = htmlMatch[0];
+                      console.log(`🎯 [Sent Emails NEW] HTML from full body extracted`);
+                    }
+
+                    // Erweiterte Text-Extraktion
+                    if (!email.textContent || email.textContent.trim().length < 50) {
+                      // Einfache Text-Extraktion aus dem Body
+                      let textContent = buffer.toString();
+
+                      // Entferne Headers und E-Mail-Routing-Information
+                      textContent = textContent.replace(/^[\s\S]*?\n\n/, ''); // Entferne Headers bis erste Leerzeile
+                      textContent = textContent.replace(/Content-Type:[\s\S]*?\n\n/gi, ''); // Entferne Content-Type Blöcke
+                      textContent = textContent.replace(/--[a-zA-Z0-9_-]+[\s\S]*?$/g, ''); // Entferne MIME boundaries
+
+                      // HTML-Tags entfernen falls vorhanden
+                      textContent = textContent.replace(/<[^>]*>/g, '');
+                      textContent = textContent.replace(/&[a-zA-Z0-9#]+;/g, ' '); // HTML entities
+
+                      // Mehrfache Leerzeichen und Zeilenumbrüche bereinigen
+                      textContent = textContent.replace(/\s+/g, ' ').trim();
+
+                      if (textContent.length > 10) {
+                        email.textContent = textContent;
+                        email.body = textContent;
+                        console.log(
+                          `📝 [Sent Emails NEW] Text extracted from full body: ${textContent.substring(0, 100)}`
+                        );
+                      }
+                    }
+                  }
                 }
               });
             });

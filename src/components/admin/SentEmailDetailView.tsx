@@ -152,74 +152,72 @@ export default function SentEmailDetailView({ email, onBack, onDelete }: SentEma
 
       {/* E-Mail Header Information */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Send className="h-5 w-5 text-[#14ad9f]" />
-            <span>E-Mail Informationen</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Empfänger */}
-          <div className="flex items-start space-x-3">
-            <User className="h-5 w-5 text-gray-500 mt-0.5" />
-            <div>
-              <div className="text-sm font-medium text-gray-700">Empfänger</div>
-              <div className="text-gray-900 font-medium">{email.to}</div>
-            </div>
-          </div>
+        <CardContent className="p-0">
+          {/* Header-Leiste mit wichtigsten Informationen */}
+          <div className="bg-gray-50 border-b px-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Hauptinformationen */}
+              <div className="md:col-span-2">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="p-2 bg-[#14ad9f] rounded-full">
+                    <User className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      An
+                    </div>
+                    <div className="text-lg font-semibold text-gray-900">{email.to}</div>
+                  </div>
+                </div>
 
-          {/* Absender */}
-          {email.from && (
-            <div className="flex items-start space-x-3">
-              <Mail className="h-5 w-5 text-gray-500 mt-0.5" />
-              <div>
-                <div className="text-sm font-medium text-gray-700">Absender</div>
-                <div className="text-gray-900">{email.from}</div>
+                <div className="flex items-start space-x-3">
+                  <div className="p-2 bg-blue-500 rounded-full">
+                    <MessageSquare className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Betreff
+                    </div>
+                    <div className="text-lg font-semibold text-gray-900 leading-tight">
+                      {email.subject || 'Kein Betreff'}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
 
-          {/* Betreff */}
-          <div className="flex items-start space-x-3">
-            <MessageSquare className="h-5 w-5 text-gray-500 mt-0.5" />
-            <div>
-              <div className="text-sm font-medium text-gray-700">Betreff</div>
-              <div className="text-gray-900 font-medium">{email.subject}</div>
-            </div>
-          </div>
+              {/* Status und Meta-Informationen */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  {getStatusIcon(email.status)}
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Status
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`${getStatusBadgeColor(email.status)} font-medium`}
+                    >
+                      {getStatusText(email.status)}
+                    </Badge>
+                  </div>
+                </div>
 
-          {/* Sendedatum */}
-          <div className="flex items-start space-x-3">
-            <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
-            <div>
-              <div className="text-sm font-medium text-gray-700">Gesendet am</div>
-              <div className="text-gray-900">{formatEmailDate(email.sentAt)}</div>
-            </div>
-          </div>
-
-          {/* Status */}
-          <div className="flex items-center space-x-3">
-            {getStatusIcon(email.status)}
-            <div>
-              <div className="text-sm font-medium text-gray-700">Status</div>
-              <Badge variant="outline" className={`${getStatusBadgeColor(email.status)} mt-1`}>
-                {getStatusText(email.status)}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Message ID */}
-          {email.messageId && (
-            <div className="flex items-start space-x-3">
-              <Globe className="h-5 w-5 text-gray-500 mt-0.5" />
-              <div>
-                <div className="text-sm font-medium text-gray-700">Message ID</div>
-                <div className="text-xs text-gray-600 font-mono bg-gray-50 p-2 rounded">
-                  {email.messageId}
+                <div className="flex items-center space-x-3">
+                  <div className="p-1 bg-gray-400 rounded-full">
+                    <Calendar className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      Gesendet
+                    </div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {formatEmailDate(email.sentAt)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
 
@@ -233,7 +231,7 @@ export default function SentEmailDetailView({ email, onBack, onDelete }: SentEma
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-96">
-            {email.htmlContent ? (
+            {email.htmlContent && email.htmlContent.trim() ? (
               <div>
                 <div className="mb-4">
                   <Badge variant="outline" className="mb-2">
@@ -244,23 +242,61 @@ export default function SentEmailDetailView({ email, onBack, onDelete }: SentEma
                     dangerouslySetInnerHTML={{ __html: email.htmlContent }}
                   />
                 </div>
+                {/* Zeige auch Text-Inhalt falls unterschiedlich und kein HTML */}
+                {email.textContent &&
+                  email.textContent.trim() &&
+                  email.textContent !== email.htmlContent &&
+                  !email.textContent.startsWith('Sent to:') &&
+                  !email.textContent.includes('<div') &&
+                  !email.textContent.includes('<p>') && (
+                    <div className="mt-4">
+                      <Badge variant="outline" className="mb-2">
+                        Text Version
+                      </Badge>
+                      <div className="bg-gray-50 p-4 rounded-lg border whitespace-pre-wrap text-sm">
+                        {email.textContent}
+                      </div>
+                    </div>
+                  )}
               </div>
-            ) : email.textContent ? (
+            ) : email.textContent &&
+              email.textContent.trim() &&
+              !email.textContent.startsWith('Sent to:') ? (
               <div>
-                <Badge variant="outline" className="mb-2">
-                  Text Inhalt
-                </Badge>
-                <div className="bg-gray-50 p-4 rounded-lg border whitespace-pre-wrap text-sm">
-                  {email.textContent}
-                </div>
+                {/* Prüfe ob der textContent eigentlich HTML ist */}
+                {email.textContent.includes('<div') ||
+                email.textContent.includes('<p>') ||
+                email.textContent.includes('<html') ? (
+                  <div>
+                    <div
+                      className="prose prose-sm max-w-none bg-gray-50 p-4 rounded-lg border"
+                      dangerouslySetInnerHTML={{ __html: email.textContent }}
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <Badge variant="outline" className="mb-2">
+                      Text Inhalt
+                    </Badge>
+                    <div className="bg-gray-50 p-4 rounded-lg border whitespace-pre-wrap text-sm">
+                      {email.textContent}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-8">
                 <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Kein E-Mail-Inhalt verfügbar</p>
+                <p className="text-gray-500">E-Mail-Inhalt wird geladen...</p>
                 <p className="text-sm text-gray-400 mt-2">
-                  Diese E-Mail wurde erfolgreich gesendet, aber der Inhalt ist nicht verfügbar.
+                  Diese E-Mail wurde erfolgreich gesendet. Der Inhalt wird aus dem E-Mail-System
+                  extrahiert.
                 </p>
+                {email.textContent && email.textContent.startsWith('Sent to:') && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-700">{email.textContent}</p>
+                  </div>
+                )}
               </div>
             )}
           </ScrollArea>
