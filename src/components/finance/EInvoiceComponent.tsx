@@ -45,6 +45,11 @@ import {
   XRechnungMetadata,
   ZUGFeRDMetadata,
 } from '@/services/eInvoiceService';
+import { EInvoicePreview } from './EInvoicePreview';
+import { EInvoiceSendDialog } from './EInvoiceSendDialog';
+import { EInvoiceTransmissionLogs } from './EInvoiceTransmissionLogs';
+import { EInvoiceComplianceOverview } from './EInvoiceComplianceOverview';
+import { EInvoiceStatsDashboard } from './EInvoiceStatsDashboard';
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import { InvoiceData } from '@/types/invoiceTypes';
 
@@ -64,6 +69,8 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
   const [validating, setValidating] = useState(false);
   const [loadingInvoice, setLoadingInvoice] = useState(false);
   const [selectedInvoiceData, setSelectedInvoiceData] = useState<any>(null);
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [sendingEInvoice, setSendingEInvoice] = useState<EInvoiceData | null>(null);
 
   // Form States für neue E-Rechnung
   const [newEInvoiceForm, setNewEInvoiceForm] = useState({
@@ -383,74 +390,50 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="generate">Erstellen</TabsTrigger>
           <TabsTrigger value="validate">Validierung</TabsTrigger>
+          <TabsTrigger value="transmissions">Versendungen</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          {/* Statistiken */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <FileText className="h-8 w-8 text-[#14ad9f]" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Gesamt</p>
-                    <p className="text-2xl font-bold text-gray-900">{eInvoices.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <CheckCircle className="h-8 w-8 text-green-500" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Gültig</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {eInvoices.filter(inv => inv.validationStatus === 'valid').length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Send className="h-8 w-8 text-blue-500" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Versendet</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {eInvoices.filter(inv => inv.transmissionStatus === 'sent').length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <XCircle className="h-8 w-8 text-red-500" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Fehler</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {eInvoices.filter(inv => inv.validationStatus === 'invalid').length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <EInvoiceStatsDashboard
+            data={{
+              totalInvoices: eInvoices.length,
+              validInvoices: eInvoices.filter(inv => inv.validationStatus === 'valid').length,
+              sentInvoices: eInvoices.filter(inv => inv.transmissionStatus === 'sent').length,
+              pendingInvoices: eInvoices.filter(inv => inv.transmissionStatus === 'pending').length,
+              totalAmount: eInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0),
+              averageProcessingTime: 2.5, // TODO: Aus echten Daten berechnen
+              complianceRate:
+                eInvoices.length > 0
+                  ? (eInvoices.filter(inv => inv.validationStatus === 'valid').length /
+                      eInvoices.length) *
+                    100
+                  : 0,
+              monthlyGrowth: 15.8, // TODO: Aus echten Daten berechnen
+              formatDistribution: {
+                zugferd: eInvoices.filter(inv => inv.format === 'zugferd').length,
+                xrechnung: eInvoices.filter(inv => inv.format === 'xrechnung').length,
+              },
+              transmissionMethods: {
+                email: eInvoices.filter(inv => inv.transmissionMethod === 'email').length,
+                webservice: eInvoices.filter(inv => inv.transmissionMethod === 'webservice').length,
+                portal: eInvoices.filter(inv => inv.transmissionMethod === 'portal').length,
+              },
+              recipientTypes: {
+                business: eInvoices.filter(inv => inv.recipientType === 'business').length,
+                government: eInvoices.filter(inv => inv.recipientType === 'government').length,
+              },
+            }}
+          />
 
           {/* E-Rechnungs-Liste */}
           <Card>
             <CardHeader>
-              <CardTitle>E-Rechnungen</CardTitle>
+              <CardTitle>Aktuelle E-Rechnungen</CardTitle>
               <CardDescription>
                 Alle erstellten elektronischen Rechnungen im Überblick
               </CardDescription>
@@ -475,7 +458,7 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {eInvoices.map(invoice => (
+                  {eInvoices.slice(0, 5).map(invoice => (
                     <div
                       key={invoice.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
@@ -513,25 +496,43 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
                           Download
                         </Button>
                         <Button
-                          variant="outline"
                           size="sm"
-                          onClick={() => handleValidateInvoice(invoice)}
-                          disabled={validating}
+                          onClick={() => {
+                            setSendingEInvoice(invoice);
+                            setShowSendDialog(true);
+                          }}
+                          disabled={invoice.validationStatus !== 'valid'}
+                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                         >
-                          {validating ? (
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                          )}
-                          Validieren
+                          <Send className="h-4 w-4 mr-1" />
+                          Versenden
                         </Button>
                       </div>
                     </div>
                   ))}
+
+                  {eInvoices.length > 5 && (
+                    <div className="text-center pt-4">
+                      <Button variant="outline" onClick={() => setActiveTab('validate')}>
+                        Alle {eInvoices.length} E-Rechnungen anzeigen
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="compliance" className="space-y-4">
+          <EInvoiceComplianceOverview
+            totalInvoices={eInvoices.length}
+            compliantInvoices={
+              eInvoices.filter(invoice => invoice.validationStatus === 'valid').length
+            }
+            sentInvoices={eInvoices.filter(invoice => invoice.transmissionStatus === 'sent').length}
+            companyTurnover={800000} // TODO: Aus Firmendaten laden
+          />
         </TabsContent>
 
         <TabsContent value="generate" className="space-y-4">
@@ -751,23 +752,23 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="transmissions" className="space-y-4">
+          <EInvoiceTransmissionLogs companyId={companyId} />
+        </TabsContent>
       </Tabs>
 
-      {/* XML Vorschau Modal */}
+      {/* E-Rechnung Vorschau Modal */}
       {selectedInvoice && (
         <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogContent className="!max-w-4xl max-h-[85vh] overflow-auto w-full sm:!max-w-4xl">
             <DialogHeader>
-              <DialogTitle>E-Rechnung: {selectedInvoice.invoiceId}</DialogTitle>
-              <DialogDescription>
-                {selectedInvoice.format.toUpperCase()} Format, Standard: {selectedInvoice.standard}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {getStatusBadge(selectedInvoice.validationStatus)}
-                  {getTransmissionBadge(selectedInvoice.transmissionStatus)}
+                <div>
+                  <DialogTitle>E-Rechnung Vorschau</DialogTitle>
+                  <DialogDescription>
+                    Strukturierte Ansicht der elektronischen Rechnung
+                  </DialogDescription>
                 </div>
                 <Button
                   variant="outline"
@@ -778,27 +779,51 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
                   XML Download
                 </Button>
               </div>
+            </DialogHeader>
 
-              <div>
-                <Label>XML Inhalt</Label>
-                <Textarea
-                  value={selectedInvoice.xmlContent}
-                  readOnly
-                  rows={15}
-                  className="font-mono text-sm mt-2"
-                />
-              </div>
+            <div className="mt-6">
+              <EInvoicePreview invoice={selectedInvoice} />
+            </div>
 
-              {selectedInvoice.validationErrors && selectedInvoice.validationErrors.length > 0 && (
-                <div>
-                  <Label className="text-red-600">Validierungsfehler</Label>
-                  <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-red-600">
-                    {selectedInvoice.validationErrors.map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+            {/* Zusätzliche Aktionen */}
+            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => handleValidateInvoice(selectedInvoice)}
+                disabled={validating}
+              >
+                {validating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Neu validieren
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // Toggle zwischen strukturierter und XML-Ansicht
+                  const textarea = document.createElement('textarea');
+                  textarea.value = selectedInvoice.xmlContent;
+                  textarea.style.width = '100%';
+                  textarea.style.height = '400px';
+                  textarea.style.fontFamily = 'monospace';
+                  textarea.style.fontSize = '12px';
+                  textarea.readOnly = true;
+
+                  const div = document.createElement('div');
+                  div.appendChild(textarea);
+
+                  const newWindow = window.open('', '_blank', 'width=800,height=600');
+                  if (newWindow) {
+                    newWindow.document.title = `XML: ${selectedInvoice.invoiceId}`;
+                    newWindow.document.body.appendChild(div);
+                  }
+                }}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                XML Ansicht
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -905,6 +930,22 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* E-Rechnungs-Versendungs-Dialog */}
+      {sendingEInvoice && (
+        <EInvoiceSendDialog
+          isOpen={showSendDialog}
+          onClose={() => {
+            setShowSendDialog(false);
+            setSendingEInvoice(null);
+          }}
+          eInvoiceId={sendingEInvoice.id!}
+          companyId={companyId}
+          xmlContent={sendingEInvoice.xmlContent}
+          pdfContent={sendingEInvoice.pdfContent}
+          invoiceNumber={sendingEInvoice.invoiceId}
+        />
       )}
     </div>
   );

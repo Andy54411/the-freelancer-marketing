@@ -25,9 +25,12 @@ export interface EInvoiceData {
   standard: 'EN16931' | 'BASIC' | 'COMFORT' | 'EXTENDED';
   xmlContent: string;
   pdfContent?: string; // Base64 encoded PDF
+  amount?: number; // Rechnungsbetrag für Statistiken
   validationStatus: 'valid' | 'invalid' | 'pending';
   validationErrors?: string[];
-  transmissionStatus: 'draft' | 'sent' | 'received' | 'processed';
+  transmissionStatus: 'draft' | 'sent' | 'received' | 'processed' | 'pending';
+  transmissionMethod?: 'email' | 'webservice' | 'portal'; // Übertragungsart
+  recipientType?: 'business' | 'government'; // B2B oder B2G
   recipientEndpoint?: string;
   leitweg?: string; // XRechnung Leitweg-ID
   buyerReference?: string;
@@ -320,25 +323,49 @@ export class EInvoiceService {
         if (!xmlContent.includes('CrossIndustryInvoice')) {
           errors.push('Ungültiges ZUGFeRD Format - CrossIndustryInvoice Element fehlt');
         }
+
+        // ZUGFeRD spezifische Pflichtfelder prüfen
+        const zugferdRequiredFields = [
+          'rsm:ExchangedDocument',
+          'ram:ID',
+          'ram:TypeCode',
+          'ram:IssueDateTime',
+          'ram:InvoiceCurrencyCode',
+          'ram:SellerTradeParty',
+          'ram:BuyerTradeParty',
+        ];
+
+        for (const field of zugferdRequiredFields) {
+          if (!xmlContent.includes(field)) {
+            errors.push(`Pflichtfeld fehlt: ${field}`);
+          }
+        }
+
+        // ZUGFeRD spezifische Warnungen
+        if (!xmlContent.includes('GuidelineSpecifiedDocumentContextParameter')) {
+          warnings.push(
+            'GuidelineSpecifiedDocumentContextParameter sollte für Standards-Konformität vorhanden sein'
+          );
+        }
       } else if (format === 'xrechnung') {
         if (!xmlContent.includes('urn:oasis:names:specification:ubl:schema:xsd:Invoice-2')) {
           errors.push('Ungültiges XRechnung Format - UBL Namespace fehlt');
         }
-      }
 
-      // Pflichtfelder prüfen
-      const requiredFields = [
-        'ID',
-        'IssueDate',
-        'InvoiceTypeCode',
-        'DocumentCurrencyCode',
-        'AccountingSupplierParty',
-        'AccountingCustomerParty',
-      ];
+        // XRechnung spezifische Pflichtfelder prüfen
+        const xrechnungRequiredFields = [
+          'ID',
+          'IssueDate',
+          'InvoiceTypeCode',
+          'DocumentCurrencyCode',
+          'AccountingSupplierParty',
+          'AccountingCustomerParty',
+        ];
 
-      for (const field of requiredFields) {
-        if (!xmlContent.includes(field)) {
-          errors.push(`Pflichtfeld fehlt: ${field}`);
+        for (const field of xrechnungRequiredFields) {
+          if (!xmlContent.includes(field)) {
+            errors.push(`Pflichtfeld fehlt: ${field}`);
+          }
         }
       }
 
