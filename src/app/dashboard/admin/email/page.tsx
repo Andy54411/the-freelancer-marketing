@@ -1122,7 +1122,9 @@ export default function EmailAdminPage() {
                 <SentEmailsView
                   refreshTrigger={sentEmailsRefreshTrigger}
                   onEmailClick={email => {
-                    console.log('Sent email clicked:', email);
+                    console.log('🔍 [DEBUG] Sent email clicked:', email);
+                    console.log('🔍 [DEBUG] Setting selectedSentEmail:', email);
+                    console.log('🔍 [DEBUG] Setting showSentEmailDetail to true');
                     setSelectedSentEmail(email);
                     setShowSentEmailDetail(true);
                   }}
@@ -1130,20 +1132,34 @@ export default function EmailAdminPage() {
               )}
 
               {/* Sent Email Detail View */}
+              {console.log('🔍 [DEBUG] Detail View Check:', {
+                activeTab,
+                showSentEmailDetail,
+                hasSelectedSentEmail: !!selectedSentEmail,
+                condition: activeTab === 'sent' && showSentEmailDetail && selectedSentEmail,
+              })}
               {activeTab === 'sent' && showSentEmailDetail && selectedSentEmail && (
-                <SentEmailDetailView
-                  email={selectedSentEmail}
-                  onBack={() => {
-                    setShowSentEmailDetail(false);
-                    setSelectedSentEmail(null);
-                  }}
-                  onDelete={() => {
-                    // Trigger refresh of sent emails after deletion
-                    setSentEmailsRefreshTrigger(prev => prev + 1);
-                    setShowSentEmailDetail(false);
-                    setSelectedSentEmail(null);
-                  }}
-                />
+                <div>
+                  {console.log('🔍 [DEBUG] Rendering SentEmailDetailView:', {
+                    showSentEmailDetail,
+                    selectedSentEmail,
+                  })}
+                  <SentEmailDetailView
+                    email={selectedSentEmail}
+                    onBack={() => {
+                      console.log('🔍 [DEBUG] Back button clicked');
+                      setShowSentEmailDetail(false);
+                      setSelectedSentEmail(null);
+                    }}
+                    onDelete={() => {
+                      console.log('🔍 [DEBUG] Delete button clicked');
+                      // Trigger refresh of sent emails after deletion
+                      setSentEmailsRefreshTrigger(prev => prev + 1);
+                      setShowSentEmailDetail(false);
+                      setSelectedSentEmail(null);
+                    }}
+                  />
+                </div>
               )}
 
               {/* Create Template Content */}
