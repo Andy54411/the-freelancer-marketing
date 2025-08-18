@@ -70,6 +70,10 @@ export default function DirectChatModal({
       if (!chatDoc.exists()) {
         await setDoc(chatRef, {
           participants: [companyId, providerId],
+          participantNames: {
+            [companyId]: companyName,
+            [providerId]: providerName,
+          },
           companyId,
           providerId,
           companyName,

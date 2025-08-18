@@ -17,6 +17,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import ChatComponent from '@/components/ChatComponent';
+import DirectChatComponent from '@/components/DirectChatComponent';
 import Image from 'next/image';
 
 // --- Interfaces ---
@@ -57,61 +58,131 @@ export default function CompanyInboxPage() {
       return;
     }
 
-    const chatsCollectionRef = collection(db, 'chats');
-    const q = query(
-      chatsCollectionRef,
-      where('users', 'array-contains', currentUser.uid),
-      where('isLocked', '==', false), // Explizit nur nicht-gesperrte Chats abfragen
-      orderBy('lastUpdated', 'desc')
-    );
+    // Kombiniere beide Chat-Collections
+    const loadAllChats = () => {
+      setLoadingChats(true);
+      const allChats: ChatPreview[] = [];
 
-    const unsubscribe = onSnapshot(
-      q,
-      snapshot => {
-        setLoadingChats(true);
-        if (snapshot.empty) {
-          setChats([]);
+      // 1. Lade normale Chats aus der 'chats' Collection
+      const chatsCollectionRef = collection(db, 'chats');
+      const chatsQuery = query(
+        chatsCollectionRef,
+        where('users', 'array-contains', currentUser.uid),
+        where('isLocked', '==', false),
+        orderBy('lastUpdated', 'desc')
+      );
+
+      // 2. Lade direkte Chats aus der 'directChats' Collection
+      const directChatsCollectionRef = collection(db, 'directChats');
+      const directChatsQuery = query(
+        directChatsCollectionRef,
+        where('participants', 'array-contains', currentUser.uid),
+        orderBy('lastUpdated', 'desc')
+      );
+
+      let completedQueries = 0;
+      const totalQueries = 2;
+
+      const checkCompletion = () => {
+        completedQueries++;
+        if (completedQueries === totalQueries) {
+          // Sortiere alle Chats nach letztem Update
+          const sortedChats = allChats.sort((a, b) => {
+            const aTime = a.lastMessage.timestamp?.toDate() || new Date(0);
+            const bTime = b.lastMessage.timestamp?.toDate() || new Date(0);
+            return bTime.getTime() - aTime.getTime();
+          });
+          setChats(sortedChats);
           setLoadingChats(false);
-          return;
         }
+      };
 
-        const validChats = snapshot.docs.map(chatDoc => {
-          const chatData = chatDoc.data();
-          const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
-          const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
+      // Normale Chats abonnieren
+      const unsubscribeChats = onSnapshot(
+        chatsQuery,
+        snapshot => {
+          const normalChats = snapshot.docs.map(chatDoc => {
+            const chatData = chatDoc.data();
+            const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
+            const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
 
-          const otherUser: OtherUser = {
-            id: otherUserId,
-            name: userDetails?.name || UNKNOWN_USER_NAME,
-            avatarUrl: userDetails?.avatarUrl || null,
-          };
+            const otherUser: OtherUser = {
+              id: otherUserId,
+              name: userDetails?.name || UNKNOWN_USER_NAME,
+              avatarUrl: userDetails?.avatarUrl || null,
+            };
 
-          return {
-            id: chatDoc.id,
-            otherUser,
-            lastMessage: {
-              text: chatData.lastMessage?.text || '',
-              timestamp: chatData.lastMessage?.timestamp || null,
-              isRead:
-                chatData.lastMessage?.senderId === currentUser.uid
-                  ? true
-                  : (chatData.lastMessage?.isRead ?? false),
-              senderId: chatData.lastMessage?.senderId || '',
-            },
-          };
-        });
+            return {
+              id: chatDoc.id,
+              otherUser,
+              lastMessage: {
+                text: chatData.lastMessage?.text || '',
+                timestamp: chatData.lastMessage?.timestamp || null,
+                isRead:
+                  chatData.lastMessage?.senderId === currentUser.uid
+                    ? true
+                    : (chatData.lastMessage?.isRead ?? false),
+                senderId: chatData.lastMessage?.senderId || '',
+              },
+            };
+          });
 
-        setChats(validChats);
-        setLoadingChats(false);
-      },
-      err => {
-        console.error('Fehler beim Laden der Chats:', err);
-        setError('Fehler beim Laden der Chats.');
-        setLoadingChats(false);
-      }
-    );
+          // Aktualisiere normale Chats
+          allChats.splice(0, allChats.length, ...normalChats);
+          checkCompletion();
+        },
+        err => {
+          console.error('Fehler beim Laden der normalen Chats:', err);
+          checkCompletion();
+        }
+      );
 
-    return () => unsubscribe();
+      // Direkte Chats abonnieren
+      const unsubscribeDirectChats = onSnapshot(
+        directChatsQuery,
+        snapshot => {
+          const directChats = snapshot.docs.map(chatDoc => {
+            const chatData = chatDoc.data();
+            const otherUserId = chatData.participants.find((id: string) => id !== currentUser.uid);
+
+            const otherUser: OtherUser = {
+              id: otherUserId,
+              name: chatData.participantNames?.[otherUserId] || UNKNOWN_USER_NAME,
+              avatarUrl: null,
+            };
+
+            return {
+              id: `direct_${chatDoc.id}`, // Prefix um Kollisionen zu vermeiden
+              otherUser,
+              lastMessage: {
+                text: chatData.lastMessage?.text || '',
+                timestamp: chatData.lastMessage?.timestamp || null,
+                isRead:
+                  chatData.lastMessage?.senderId === currentUser.uid
+                    ? true
+                    : (chatData.lastMessage?.isRead ?? false),
+                senderId: chatData.lastMessage?.senderId || '',
+              },
+            };
+          });
+
+          // Füge direkte Chats hinzu
+          allChats.push(...directChats);
+          checkCompletion();
+        },
+        err => {
+          console.error('Fehler beim Laden der direkten Chats:', err);
+          checkCompletion();
+        }
+      );
+
+      return () => {
+        unsubscribeChats();
+        unsubscribeDirectChats();
+      };
+    };
+
+    return loadAllChats();
   }, [currentUser]);
 
   const selectedChat = useMemo(() => {
@@ -237,14 +308,23 @@ export default function CompanyInboxPage() {
             </p>
           </div>
         ) : selectedChatId && selectedChat && currentUser ? (
-          <ChatComponent
-            orderId={selectedChatId}
-            participants={{
-              customerId: selectedChat.otherUser.id,
-              providerId: currentUser.uid,
-            }}
-            orderStatus={selectedOrderStatus}
-          />
+          // Prüfe ob es ein direkter Chat ist (hat "direct_" prefix)
+          selectedChatId.startsWith('direct_') ? (
+            <DirectChatComponent
+              chatId={selectedChatId}
+              otherUserId={selectedChat.otherUser.id}
+              otherUserName={selectedChat.otherUser.name}
+            />
+          ) : (
+            <ChatComponent
+              orderId={selectedChatId}
+              participants={{
+                customerId: selectedChat.otherUser.id,
+                providerId: currentUser.uid,
+              }}
+              orderStatus={selectedOrderStatus}
+            />
+          )
         ) : (
           <div className="flex-1 flex flex-col justify-center items-center text-center text-gray-500 p-8">
             <FiMessageSquare size={64} className="mb-4 text-gray-300" />
