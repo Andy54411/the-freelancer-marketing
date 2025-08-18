@@ -123,17 +123,11 @@ export default function DirectChatModal({
       // Hole Provider Garantie-Stunden (Standard: 24h)
       let guaranteeHours = 24;
       try {
-        const providerDoc = await getDoc(doc(db, 'firma', providerId));
-        if (providerDoc.exists()) {
-          const providerData = providerDoc.data();
-          guaranteeHours = providerData?.responseTimeGuaranteeHours || 24;
-        } else {
-          // Versuche users Collection
-          const userDoc = await getDoc(doc(db, 'users', providerId));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            guaranteeHours = userData?.responseTimeGuaranteeHours || 24;
-          }
+        // Verwende users Collection als Hauptcollection
+        const userDoc = await getDoc(doc(db, 'users', providerId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          guaranteeHours = userData?.responseTimeGuaranteeHours || 24;
         }
       } catch (error) {
         console.error('Fehler beim Laden der Provider-Garantie:', error);

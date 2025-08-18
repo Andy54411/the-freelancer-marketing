@@ -29,11 +29,26 @@ export function RoleBasedRedirect() {
         userRole: user.role,
       });
 
-      // Extrahiere den aktuellen Pfad nach der UID
-      const pathAfterUID = pathname?.replace(/\/dashboard\/(user|company)\/[^\/]+/, '') || '';
+      // Nur wenn der User auf /dashboard ist, leite direkt weiter
+      if (pathname === '/dashboard') {
+        router.replace(`/dashboard/company/${user.uid}`);
+        return;
+      }
+
+      // Für andere Pfade wie /profile/xxx, behalte den ursprünglichen Pfad
+      if (!pathname?.startsWith('/dashboard/')) {
+        return; // Nicht weiterleiten wenn nicht im Dashboard-Bereich
+      }
+
+      // Extrahiere den Pfad nach der UID korrekt
+      const pathMatch = pathname?.match(/\/dashboard\/(user|company)\/[^\/]+(.*)$/);
+      const pathAfterUID = pathMatch && pathMatch[2] ? pathMatch[2] : '';
       const correctPath = `/dashboard/company/${user.uid}${pathAfterUID}`;
 
-      router.replace(correctPath);
+      // Verhindere Endlosschleife
+      if (pathname !== correctPath) {
+        router.replace(correctPath);
+      }
       return;
     }
 
@@ -45,10 +60,26 @@ export function RoleBasedRedirect() {
         userRole: user.role,
       });
 
-      const pathAfterUID = pathname?.replace(/\/dashboard\/(user|company)\/[^\/]+/, '') || '';
+      // Nur wenn der User auf /dashboard ist, leite direkt weiter
+      if (pathname === '/dashboard') {
+        router.replace(`/dashboard/user/${user.uid}`);
+        return;
+      }
+
+      // Für andere Pfade wie /profile/xxx, behalte den ursprünglichen Pfad
+      if (!pathname?.startsWith('/dashboard/')) {
+        return; // Nicht weiterleiten wenn nicht im Dashboard-Bereich
+      }
+
+      // Extrahiere den Pfad nach der UID korrekt
+      const pathMatch = pathname?.match(/\/dashboard\/(user|company)\/[^\/]+(.*)$/);
+      const pathAfterUID = pathMatch && pathMatch[2] ? pathMatch[2] : '';
       const correctPath = `/dashboard/user/${user.uid}${pathAfterUID}`;
 
-      router.replace(correctPath);
+      // Verhindere Endlosschleife
+      if (pathname !== correctPath) {
+        router.replace(correctPath);
+      }
       return;
     }
 

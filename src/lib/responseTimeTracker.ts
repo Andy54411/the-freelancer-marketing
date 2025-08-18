@@ -153,8 +153,8 @@ export class ResponseTimeTracker {
         lastUpdated: serverTimestamp() as Timestamp,
       };
 
-      // Aktualisiere Provider-Dokument
-      const providerDocRef = doc(db, 'firma', providerId);
+      // Aktualisiere Provider-Dokument (verwende users als Hauptcollection)
+      const providerDocRef = doc(db, 'users', providerId);
       const providerDoc = await getDoc(providerDocRef);
 
       if (providerDoc.exists()) {
@@ -191,13 +191,8 @@ export class ResponseTimeTracker {
    */
   static async getProviderResponseTimeStats(providerId: string): Promise<ResponseTimeStats | null> {
     try {
-      // Versuche zuerst firma Collection
-      let providerDoc = await getDoc(doc(db, 'firma', providerId));
-
-      if (!providerDoc.exists()) {
-        // Versuche users Collection
-        providerDoc = await getDoc(doc(db, 'users', providerId));
-      }
+      // Verwende users Collection als Hauptcollection
+      const providerDoc = await getDoc(doc(db, 'users', providerId));
 
       if (providerDoc.exists()) {
         const data = providerDoc.data();

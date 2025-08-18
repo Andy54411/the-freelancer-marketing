@@ -462,7 +462,7 @@ service cloud.firestore {
     match /directChats/{chatId} {
       // Erlaubt Lesen und Schreiben für Teilnehmer des Chats
       allow read, write: if request.auth != null && 
-        request.auth.uid in resource.data.participants;
+        (resource == null || request.auth.uid in resource.data.participants);
       
       // Erlaubt das Erstellen eines neuen Chats
       allow create: if request.auth != null && 

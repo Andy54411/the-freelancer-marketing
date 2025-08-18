@@ -92,17 +92,11 @@ export const trackCustomerMessage = onDocumentCreated(
         // Hole Provider-Garantie-Stunden
         let guaranteeHours = 24; // Default
         
-        const providerDoc = await db.collection('firma').doc(providerId).get();
+        // Versuche users Collection
+        const providerDoc = await db.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           const providerData = providerDoc.data();
           guaranteeHours = providerData?.responseTimeGuaranteeHours || 24;
-        } else {
-          // Versuche users Collection
-          const userDoc = await db.collection('users').doc(providerId).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            guaranteeHours = userData?.responseTimeGuaranteeHours || 24;
-          }
         }
         
         // Erstelle Response Time Metric
@@ -234,8 +228,8 @@ async function updateProviderStats(providerId: string): Promise<void> {
       lastUpdated: Timestamp.now()
     };
 
-    // Aktualisiere Provider-Dokument
-    const providerDocRef = db.collection('firma').doc(providerId);
+    // Aktualisiere Provider-Dokument in users Collection
+    const providerDocRef = db.collection('users').doc(providerId);
     const providerDoc = await providerDocRef.get();
     
     if (providerDoc.exists) {
@@ -245,19 +239,6 @@ async function updateProviderStats(providerId: string): Promise<void> {
         guaranteeComplianceRate: stats.guaranteeComplianceRate,
         lastStatsUpdate: Timestamp.now()
       });
-    } else {
-      // Versuche auch in users Collection
-      const userDocRef = db.collection('users').doc(providerId);
-      const userDoc = await userDocRef.get();
-      
-      if (userDoc.exists) {
-        await userDocRef.update({
-          responseTimeStats: stats,
-          averageResponseTimeHours: stats.averageResponseTimeHours,
-          guaranteeComplianceRate: stats.guaranteeComplianceRate,
-          lastStatsUpdate: Timestamp.now()
-        });
-      }
     }
 
     console.log('[updateProviderStats] Provider stats updated:', {

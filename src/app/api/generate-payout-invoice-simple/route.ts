@@ -81,15 +81,6 @@ export async function POST(request: NextRequest) {
           data = userDoc.data();
           foundIn = 'users';
           console.log('[Invoice API] ✅ User found in users collection');
-        } else {
-          // Fallback: Versuche firma Collection
-          console.log('[Invoice API] User not found in users, trying firma collection...');
-          const firmaDoc = await db.collection('firma').doc(firebaseUserId).get();
-          if (firmaDoc.exists) {
-            data = firmaDoc.data();
-            foundIn = 'firma';
-            console.log('[Invoice API] ✅ User found in firma collection');
-          }
         }
 
         if (data) {
@@ -615,15 +606,16 @@ export async function POST(request: NextRequest) {
                     <div class="detail-value">${new Date(payout.created * 1000).toLocaleDateString('de-DE')}</div>
                 </div>
                 
-                ${payout.arrival_date
-        ? `
+                ${
+                  payout.arrival_date
+                    ? `
                 <div class="detail-grid">
                     <div class="detail-label">Ankunftsdatum:</div>
                     <div class="detail-value">${new Date(payout.arrival_date * 1000).toLocaleDateString('de-DE')}</div>
                 </div>
                 `
-        : ''
-      }
+                    : ''
+                }
             </div>
             
             <!-- Gebührenaufschlüsselung -->
