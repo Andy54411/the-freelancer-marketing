@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db, admin } from '@/firebase/server';
+import { OrderNotificationService } from '../../../lib/order-notifications';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -513,12 +514,16 @@ export async function POST(req: NextRequest) {
             // CREATE B2B ORDER IN WEBHOOK (wie bei B2C-Orders)
             const auftragCollectionRef = db.collection('auftraege');
 
+            // Definiere Variablen außerhalb der Transaction
+            let orderId: string;
+            let totalAmountCents: number;
+
             await db.runTransaction(async transaction => {
               // Generiere eine eindeutige Auftrags-ID
-              const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+              orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
               // Berechne B2B-spezifische Daten
-              const totalAmountCents = paymentIntentSucceeded.amount;
+              totalAmountCents = paymentIntentSucceeded.amount;
               const platformFeeAmount = paymentIntentSucceeded.application_fee_amount || 0;
               const providerReceives = totalAmountCents - platformFeeAmount;
 
@@ -614,6 +619,29 @@ export async function POST(req: NextRequest) {
               );
             });
 
+            // 🔔 BELL NOTIFICATION: B2B Order erfolgreich erstellt
+            try {
+              const orderNotificationData = {
+                customerName: 'B2B-Kunde', // Default, da B2B oft anonymer
+                providerName: 'Provider', // Default, echte Namen kommen aus DB
+                subcategory: 'Business Service',
+                category: 'B2B Service',
+                amount: totalAmountCents,
+                dateFrom: new Date().toISOString().split('T')[0],
+                dateTo: new Date().toISOString().split('T')[0],
+              };
+
+              await OrderNotificationService.createNewOrderNotifications(
+                orderId,
+                customerFirebaseId, // Customer ID
+                providerFirebaseId, // Provider ID
+                orderNotificationData
+              );
+              console.log(`[WEBHOOK LOG] B2B Order Notifications gesendet für Order ${orderId}`);
+            } catch (notificationError) {
+              console.error('[WEBHOOK ERROR] B2B Notification failed:', notificationError);
+            }
+
             return NextResponse.json({
               received: true,
               message: 'B2B payment and order processed successfully',
@@ -655,6 +683,10 @@ export async function POST(req: NextRequest) {
         try {
           const tempJobDraftRef = db.collection('temporaryJobDrafts').doc(tempJobDraftId);
           const auftragCollectionRef = db.collection('auftraege');
+
+          // Definiere Variablen außerhalb der Transaction für Notifications
+          let newOrderId: string;
+          let orderData: any;
 
           await db.runTransaction(async transaction => {
             const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
@@ -753,6 +785,9 @@ export async function POST(req: NextRequest) {
             };
 
             const newAuftragRef = auftragCollectionRef.doc();
+            newOrderId = newAuftragRef.id; // Speichere Order ID für Notifications
+            orderData = auftragData; // Speichere Order Data für Notifications
+
             transaction.set(newAuftragRef, auftragData);
 
             transaction.update(tempJobDraftRef, {
@@ -760,6 +795,32 @@ export async function POST(req: NextRequest) {
               convertedToOrderId: newAuftragRef.id,
             });
           });
+
+          // 🔔 BELL NOTIFICATION: Regular Order erfolgreich erstellt
+          try {
+            const orderNotificationData = {
+              customerName: orderData.customerName || 'Kunde',
+              providerName: orderData.providerName || 'Anbieter',
+              subcategory: orderData.selectedSubcategory || 'Service',
+              category: orderData.selectedCategory || 'Dienstleistung',
+              amount: orderData.totalAmountPaidByBuyer || 0,
+              dateFrom: orderData.jobDateFrom || new Date().toISOString().split('T')[0],
+              dateTo: orderData.jobDateTo,
+            };
+
+            await OrderNotificationService.createNewOrderNotifications(
+              newOrderId,
+              firebaseUserId, // Customer ID
+              orderData.selectedAnbieterId, // Provider ID
+              orderNotificationData
+            );
+            console.log(
+              `[WEBHOOK LOG] Regular Order Notifications gesendet für Order ${newOrderId}`
+            );
+          } catch (notificationError) {
+            console.error('[WEBHOOK ERROR] Regular Order Notification failed:', notificationError);
+          }
+
           console.log(
             `[WEBHOOK LOG] Transaktion für Job ${tempJobDraftId} erfolgreich abgeschlossen.`
           );
