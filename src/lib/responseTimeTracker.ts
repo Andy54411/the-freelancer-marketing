@@ -27,6 +27,19 @@ export interface ResponseTimeMetric {
   createdAt: Timestamp;
 }
 
+export interface LocalTrackingData {
+  providerId: string;
+  messageId: string;
+  chatId: string;
+  customerMessageTime: number;
+  guaranteeHours: number;
+  createdAt: number;
+  responseTime?: number;
+  responseTimeHours?: number;
+  isWithinGuarantee?: boolean;
+  responseMessageId?: string;
+}
+
 export interface ResponseTimeStats {
   averageResponseTimeHours: number;
   totalMessages: number;
@@ -37,26 +50,36 @@ export interface ResponseTimeStats {
 
 export class ResponseTimeTracker {
   /**
-   * Startet die Zeitmessung für eine neue Kundenanfrage
+   * Startet die Zeitmessung für eine Kundennachricht
+   * CLIENT-VERSION: Nur lokale Speicherung, keine Firestore-Schreibvorgänge
    */
-  static async startResponseTimeTracking(
+  static async startTracking(
     providerId: string,
     chatId: string,
     messageId: string,
     guaranteeHours: number = 24
   ): Promise<void> {
     try {
-      const metric: Omit<ResponseTimeMetric, 'id'> = {
+      // CLIENT-SEITIGE VERSION: Nur lokale Speicherung
+      const trackingData: LocalTrackingData = {
         providerId,
         messageId,
         chatId,
-        customerMessageTime: serverTimestamp() as Timestamp,
+        customerMessageTime: Date.now(),
         guaranteeHours,
-        createdAt: serverTimestamp() as Timestamp,
+        createdAt: Date.now(),
       };
 
-      await addDoc(collection(db, 'responseTimeMetrics'), metric);
-      console.log('[ResponseTimeTracker] Started tracking for message:', messageId);
+      // Lokale Speicherung im LocalStorage für Client-seitige Verfolgung
+      const existingData = localStorage.getItem('responseTimeTracking') || '{}';
+      const allTracking: Record<string, LocalTrackingData> = JSON.parse(existingData);
+      allTracking[messageId] = trackingData;
+      localStorage.setItem('responseTimeTracking', JSON.stringify(allTracking));
+
+      console.log('[ResponseTimeTracker] Started local tracking for message:', messageId);
+
+      // HINWEIS: Echte Metrics werden durch Cloud Functions erstellt
+      // Diese Client-Version dient nur zur lokalen Verfolgung
     } catch (error) {
       console.error('[ResponseTimeTracker] Error starting tracking:', error);
     }
@@ -64,6 +87,7 @@ export class ResponseTimeTracker {
 
   /**
    * Stoppt die Zeitmessung und berechnet die Antwortzeit
+   * CLIENT-VERSION: Nur lokale Verarbeitung
    */
   static async recordProviderResponse(
     providerId: string,
@@ -71,44 +95,47 @@ export class ResponseTimeTracker {
     responseMessageId: string
   ): Promise<void> {
     try {
-      // Finde die letzte unbeantwortete Kundenanfrage in diesem Chat
-      const metricsQuery = query(
-        collection(db, 'responseTimeMetrics'),
-        where('providerId', '==', providerId),
-        where('chatId', '==', chatId),
-        where('providerResponseTime', '==', null),
-        orderBy('customerMessageTime', 'desc'),
-        limit(1)
-      );
+      // CLIENT-SEITIGE VERSION: Lokale Datenverarbeitung
+      const existingData = localStorage.getItem('responseTimeTracking') || '{}';
+      const allTracking: Record<string, LocalTrackingData> = JSON.parse(existingData);
 
-      const metricsSnapshot = await getDocs(metricsQuery);
+      // Finde die letzte unbeantwortete Nachricht für diesen Chat
+      let latestUnrespondedMessage: (LocalTrackingData & { messageId: string }) | null = null;
+      let latestTime = 0;
 
-      if (!metricsSnapshot.empty) {
-        const metricDoc = metricsSnapshot.docs[0];
-        const metricData = metricDoc.data() as ResponseTimeMetric;
-        const responseTime = new Date();
-        const customerMessageTime = metricData.customerMessageTime.toDate();
+      for (const [messageId, tracking] of Object.entries(allTracking)) {
+        if (
+          tracking.providerId === providerId &&
+          tracking.chatId === chatId &&
+          !tracking.responseTime &&
+          tracking.customerMessageTime > latestTime
+        ) {
+          latestUnrespondedMessage = { messageId, ...tracking };
+          latestTime = tracking.customerMessageTime;
+        }
+      }
 
-        // Berechne Antwortzeit in Stunden
+      if (latestUnrespondedMessage) {
+        const responseTime = Date.now();
         const responseTimeHours =
-          (responseTime.getTime() - customerMessageTime.getTime()) / (1000 * 60 * 60);
-        const isWithinGuarantee = responseTimeHours <= metricData.guaranteeHours;
+          (responseTime - latestUnrespondedMessage.customerMessageTime) / (1000 * 60 * 60);
+        const isWithinGuarantee = responseTimeHours <= latestUnrespondedMessage.guaranteeHours;
 
-        // Update das Metric-Dokument
-        await updateDoc(doc(db, 'responseTimeMetrics', metricDoc.id), {
-          providerResponseTime: serverTimestamp(),
-          responseTimeHours: Math.round(responseTimeHours * 100) / 100, // Runde auf 2 Dezimalstellen
-          isWithinGuarantee,
-        });
+        // Aktualisiere lokale Daten
+        allTracking[latestUnrespondedMessage.messageId].responseTime = responseTime;
+        allTracking[latestUnrespondedMessage.messageId].responseTimeHours = responseTimeHours;
+        allTracking[latestUnrespondedMessage.messageId].isWithinGuarantee = isWithinGuarantee;
+        allTracking[latestUnrespondedMessage.messageId].responseMessageId = responseMessageId;
 
-        console.log('[ResponseTimeTracker] Response recorded:', {
+        localStorage.setItem('responseTimeTracking', JSON.stringify(allTracking));
+
+        console.log('[ResponseTimeTracker] Local response recorded:', {
+          messageId: latestUnrespondedMessage.messageId,
           responseTimeHours,
           isWithinGuarantee,
-          guaranteeHours: metricData.guaranteeHours,
         });
 
-        // Aktualisiere Provider-Statistiken
-        await this.updateProviderStats(providerId);
+        // HINWEIS: Echte Metrics-Updates werden durch Cloud Functions verarbeitet
       }
     } catch (error) {
       console.error('[ResponseTimeTracker] Error recording response:', error);
@@ -117,6 +144,7 @@ export class ResponseTimeTracker {
 
   /**
    * Aktualisiert die Antwortzeit-Statistiken für einen Provider
+   * CLIENT-VERSION: Deaktiviert, da nur Cloud Functions schreiben können
    */
   static async updateProviderStats(providerId: string): Promise<void> {
     try {

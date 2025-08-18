@@ -11,10 +11,11 @@ import Chatbot from '@/components/Chatbot';
 // import { FooterSection } from '@/components/FooterSection';
 // import GoogleAnalytics from '@/components/GoogleAnalytics'; // Removed to avoid conflicts with GTM
 import CookieBanner from '@/components/CookieBanner';
-import { Analytics } from '@vercel/analytics/next';
+import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import Footer from '@/components/footer';
 import Script from 'next/script';
+import CSPDebugger from '@/components/debug/CSPDebugger';
 
 export const metadata: Metadata = {
   title: 'TASKILO',
@@ -176,6 +177,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {/* GoogleAnalytics removed - GTM handles all analytics */}
                   <Analytics />
                   <SpeedInsights />
+                  {/* CSP Debugger for Development */}
+                  {process.env.NODE_ENV === 'development' && <CSPDebugger />}
                 </Providers>
               </AlertProvider>
             </AnalyticsProvider>

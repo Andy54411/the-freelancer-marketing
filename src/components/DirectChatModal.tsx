@@ -134,12 +134,7 @@ export default function DirectChatModal({
       }
 
       // Starte Response Time Tracking
-      await ResponseTimeTracker.startResponseTimeTracking(
-        providerId,
-        chatId,
-        messageDoc.id,
-        guaranteeHours
-      );
+      await ResponseTimeTracker.startTracking(providerId, chatId, messageDoc.id, guaranteeHours);
 
       // Update last message in chat document
       const chatRef = doc(db, 'directChats', chatId);
