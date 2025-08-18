@@ -115,6 +115,19 @@ export class EInvoiceTransmissionService {
   private static readonly RECIPIENT_SETTINGS_COLLECTION = 'eInvoiceRecipientSettings';
 
   /**
+   * Entfernt undefined-Werte aus einem Objekt (Firestore-kompatibel)
+   */
+  private static removeUndefinedFields<T extends Record<string, any>>(obj: T): T {
+    const cleaned = {} as T;
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key as keyof T] = value;
+      }
+    }
+    return cleaned;
+  }
+
+  /**
    * Versendet eine E-Rechnung nach deutschen rechtlichen Anforderungen
    * Implementiert UStG §14 Compliance und automatische Wiederholung
    */
@@ -133,17 +146,22 @@ export class EInvoiceTransmissionService {
         throw new Error(`E-Rechnung nicht UStG-konform: ${complianceCheck.errors.join(', ')}`);
       }
 
-      // 2. Übertragungsprotokoll erstellen
-      const transmissionLog: Omit<EInvoiceTransmissionLog, 'id' | 'createdAt' | 'updatedAt'> = {
+      // 2. Übertragungsprotokoll erstellen (Fixed undefined fields)
+      const transmissionLogData: Omit<EInvoiceTransmissionLog, 'id' | 'createdAt' | 'updatedAt'> = {
         eInvoiceId,
         companyId,
         transmissionMethod: recipientSettings.preferredTransmissionMethod,
-        recipientEmail: recipientSettings.email?.address,
-        recipientEndpoint: recipientSettings.edi?.endpointUrl,
         transmissionStatus: 'queued',
         transmissionDate: new Date(),
         retryCount: 0,
         maxRetries: 3,
+        // Nur definierte Felder hinzufügen
+        ...(recipientSettings.email?.address
+          ? { recipientEmail: recipientSettings.email.address }
+          : {}),
+        ...(recipientSettings.edi?.endpointUrl
+          ? { recipientEndpoint: recipientSettings.edi.endpointUrl }
+          : {}),
         legalCompliance: {
           isUStGCompliant: complianceCheck.isCompliant,
           hasRequiredFields:
@@ -156,12 +174,14 @@ export class EInvoiceTransmissionService {
         archivalStatus: 'active',
       };
 
-      // 3. Transmission Log in Firestore speichern
-      const logRef = await addDoc(collection(db, this.TRANSMISSION_LOG_COLLECTION), {
-        ...transmissionLog,
+      // 3. Transmission Log in Firestore speichern (Cache invalidation fix)
+      const cleanedLogData = this.removeUndefinedFields({
+        ...transmissionLogData,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
+
+      const logRef = await addDoc(collection(db, this.TRANSMISSION_LOG_COLLECTION), cleanedLogData);
 
       // 4. Versendung nach gewählter Methode
       try {
@@ -205,6 +225,7 @@ export class EInvoiceTransmissionService {
   /**
    * Prüft E-Rechnung auf UStG §14 Compliance
    * Validiert alle Pflichtfelder und strukturierten Format-Anforderungen
+   * Updated: Verbesserte Steuer-Validierung für vollständige UStG Konformität
    */
   static async checkUStGCompliance(xmlContent: string): Promise<EInvoiceComplianceCheck> {
     const errors: string[] = [];
@@ -460,11 +481,17 @@ export class EInvoiceTransmissionService {
     settings: Omit<EInvoiceRecipientSettings, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, this.RECIPIENT_SETTINGS_COLLECTION), {
+      // Undefined-Felder entfernen (Firestore erlaubt keine undefined Werte) - Cache Invalidation
+      const cleanedSettings = this.removeUndefinedFields({
         ...settings,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       });
+
+      const docRef = await addDoc(
+        collection(db, this.RECIPIENT_SETTINGS_COLLECTION),
+        cleanedSettings
+      );
 
       return docRef.id;
     } catch (error) {
@@ -525,13 +552,45 @@ export class EInvoiceTransmissionService {
   }
 
   private static hasValidTaxData(xmlContent: string): boolean {
-    // Prüft auf korrekte Steuerangaben
+    // Prüft auf korrekte Steuerangaben nach UStG §14 Abs. 4 Nr. 5-8
+
+    // 1. Steuerart (VAT)
+    const hasTaxType =
+      xmlContent.includes('<ram:TypeCode>VAT</ram:TypeCode>') ||
+      xmlContent.includes('<cbc:TaxTypeCode>VAT</cbc:TaxTypeCode>');
+
+    // 2. Steuerbetrag
     const hasTaxAmount =
-      xmlContent.includes('<ram:TaxTotalAmount>') || xmlContent.includes('<cbc:TaxAmount>');
+      xmlContent.includes('<ram:CalculatedAmount>') ||
+      xmlContent.includes('<ram:TaxTotalAmount>') ||
+      xmlContent.includes('<cbc:TaxAmount>');
+
+    // 3. Steuersatz
     const hasTaxRate =
       xmlContent.includes('<ram:RateApplicablePercent>') || xmlContent.includes('<cbc:Percent>');
 
-    return hasTaxAmount && hasTaxRate;
+    // 4. Steuerkategorie (S = Standard, Z = Zero rated, etc.)
+    const hasTaxCategory =
+      xmlContent.includes('<ram:CategoryCode>') || xmlContent.includes('<cbc:TaxCategoryCode>');
+
+    // 5. Bemessungsgrundlage
+    const hasTaxBasis =
+      xmlContent.includes('<ram:BasisAmount>') ||
+      xmlContent.includes('<ram:TaxBasisTotalAmount>') ||
+      xmlContent.includes('<cbc:TaxableAmount>');
+
+    // Debug-Logs
+    console.log('🔍 Tax Validation Debug:');
+    console.log('- hasTaxType:', hasTaxType);
+    console.log('- hasTaxAmount:', hasTaxAmount);
+    console.log('- hasTaxRate:', hasTaxRate);
+    console.log('- hasTaxCategory:', hasTaxCategory);
+    console.log('- hasTaxBasis:', hasTaxBasis);
+
+    // Alle kritischen Steuerfelder müssen vorhanden sein
+    const result = hasTaxType && hasTaxAmount && hasTaxRate && hasTaxCategory && hasTaxBasis;
+    console.log('📊 Tax Data Valid:', result);
+    return result;
   }
 
   private static hasPaymentTerms(xmlContent: string): boolean {

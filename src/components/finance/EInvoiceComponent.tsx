@@ -71,6 +71,9 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
   const [selectedInvoiceData, setSelectedInvoiceData] = useState<any>(null);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [sendingEInvoice, setSendingEInvoice] = useState<EInvoiceData | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [validationResult, setValidationResult] = useState<any>(null);
+  const [isValidatingUpload, setIsValidatingUpload] = useState(false);
 
   // Form States für neue E-Rechnung
   const [newEInvoiceForm, setNewEInvoiceForm] = useState({
@@ -293,6 +296,57 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
       toast.error('Validierung fehlgeschlagen');
     } finally {
       setValidating(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validiere Dateityp
+    if (!file.name.toLowerCase().endsWith('.xml')) {
+      toast.error('Bitte wählen Sie eine XML-Datei aus');
+      return;
+    }
+
+    setUploadedFile(file);
+    setIsValidatingUpload(true);
+    setValidationResult(null);
+
+    try {
+      // Datei einlesen
+      const fileContent = await file.text();
+
+      // Format automatisch erkennen (ZUGFeRD oder XRechnung)
+      const format = fileContent.includes('ZUGFeRD') ? 'zugferd' : 'xrechnung';
+
+      // Validierung durchführen
+      const validation = await EInvoiceService.validateEInvoice(fileContent, format);
+
+      setValidationResult({
+        ...validation,
+        fileName: file.name,
+        format: format,
+        fileSize: file.size,
+        xmlContent: fileContent,
+      });
+
+      if (validation.isValid) {
+        toast.success('E-Rechnung ist gültig und entspricht EN 16931');
+      } else {
+        toast.error(`Validierung fehlgeschlagen: ${validation.errors.length} Fehler gefunden`);
+      }
+    } catch (error) {
+      console.error('Fehler beim Validieren der hochgeladenen Datei:', error);
+      toast.error('Fehler beim Validieren der Datei');
+      setValidationResult({
+        isValid: false,
+        errors: ['Datei konnte nicht gelesen oder validiert werden'],
+        fileName: file.name,
+        format: 'unknown',
+      });
+    } finally {
+      setIsValidatingUpload(false);
     }
   };
 
@@ -739,16 +793,128 @@ export function EInvoiceComponent({ companyId }: EInvoiceComponentProps) {
                 Laden Sie eine E-Rechnung hoch um sie nach EN 16931 Standard zu validieren
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                 <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">E-Rechnung hochladen</h3>
                 <p className="text-gray-600 mb-4">Unterstützte Formate: XML (ZUGFeRD, XRechnung)</p>
-                <Button variant="outline">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Datei auswählen
-                </Button>
+
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".xml"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={isValidatingUpload}
+                  />
+                  <Button variant="outline" disabled={isValidatingUpload}>
+                    {isValidatingUpload ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Validiere...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Datei auswählen
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
+
+              {/* Validierungsergebnis */}
+              {validationResult && (
+                <Card
+                  className={`border ${validationResult.isValid ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}
+                >
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      {validationResult.isValid ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      )}
+                      Validierungsergebnis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <Label className="font-medium">Dateiname</Label>
+                        <p className="text-gray-600">{validationResult.fileName}</p>
+                      </div>
+                      <div>
+                        <Label className="font-medium">Format</Label>
+                        <p className="text-gray-600 capitalize">{validationResult.format}</p>
+                      </div>
+                      {validationResult.fileSize && (
+                        <div>
+                          <Label className="font-medium">Dateigröße</Label>
+                          <p className="text-gray-600">
+                            {Math.round(validationResult.fileSize / 1024)} KB
+                          </p>
+                        </div>
+                      )}
+                      <div>
+                        <Label className="font-medium">Status</Label>
+                        <Badge variant={validationResult.isValid ? 'default' : 'destructive'}>
+                          {validationResult.isValid ? 'Gültig' : 'Ungültig'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {validationResult.errors && validationResult.errors.length > 0 && (
+                      <div>
+                        <Label className="font-medium text-red-600">Validierungsfehler</Label>
+                        <div className="mt-2 space-y-1">
+                          {validationResult.errors.map((error: string, index: number) => (
+                            <div
+                              key={index}
+                              className="text-sm text-red-600 bg-red-100 p-2 rounded"
+                            >
+                              • {error}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {validationResult.isValid && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const blob = new Blob([validationResult.xmlContent], {
+                              type: 'application/xml',
+                            });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = validationResult.fileName;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          XML Download
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="bg-[#14ad9f] hover:bg-[#129488]"
+                          onClick={() => {
+                            // Hier könnte man die validierte E-Rechnung importieren
+                            toast.success('Import-Funktion folgt in zukünftiger Version');
+                          }}
+                        >
+                          In System importieren
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
