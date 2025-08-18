@@ -255,10 +255,48 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
           'Der ausgewählte Anbieter kann derzeit keine Zahlungen empfangen. Bitte wählen Sie einen anderen Anbieter.'
         );
       }
-      if (!userProfile.stripeCustomerId) {
-        throw new Error(
-          "Ihr Zahlungsprofil ist nicht vollständig. Bitte fügen Sie unter 'Einstellungen' eine Zahlungsmethode hinzu, bevor Sie buchen."
-        );
+
+      // Automatische Erstellung von BEIDEN Stripe-Profilen wenn sie fehlen
+      if (!userProfile.stripeCustomerId || !userProfile.stripeAccountId) {
+        console.log('DEBUG: Fehlende Stripe-Profile erkannt, erstelle automatisch...');
+        console.log('DEBUG: Customer ID vorhanden:', !!userProfile.stripeCustomerId);
+        console.log('DEBUG: Account ID vorhanden:', !!userProfile.stripeAccountId);
+
+        try {
+          const createProfilesResponse = await fetch('/api/create-company-stripe-profiles', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              companyName: userProfile.companyName || userProfile.displayName || 'Unternehmen',
+              email: userProfile.email,
+              uid: userProfile.uid,
+              userType: 'company',
+            }),
+          });
+
+          if (!createProfilesResponse.ok) {
+            const errorData = await createProfilesResponse.json();
+            throw new Error(errorData.error || 'Stripe-Profile-Erstellung fehlgeschlagen');
+          }
+
+          const profileData = await createProfilesResponse.json();
+          console.log('✅ Stripe-Profile erfolgreich erstellt:', profileData);
+
+          // Update das lokale userProfile mit den neuen IDs
+          if (profileData.stripeCustomerId) {
+            userProfile.stripeCustomerId = profileData.stripeCustomerId;
+          }
+          if (profileData.stripeAccountId) {
+            userProfile.stripeAccountId = profileData.stripeAccountId;
+          }
+        } catch (profileError) {
+          console.error('❌ Fehler beim Erstellen der Stripe-Profile:', profileError);
+          throw new Error(
+            "Ihre Zahlungsprofile konnten nicht automatisch erstellt werden. Bitte fügen Sie unter 'Einstellungen' eine Zahlungsmethode hinzu, bevor Sie buchen."
+          );
+        }
       }
 
       console.log('DEBUG: Datum formatieren und Dauer berechnen...');

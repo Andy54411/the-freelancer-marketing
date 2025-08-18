@@ -312,15 +312,54 @@ export default function CompanyProviderDetailPage() {
       return;
     }
 
-    if (!userProfile.stripeCustomerId) {
-      console.log('User profile:', userProfile);
-      const setupPayment = confirm(
-        'Ihr Zahlungsprofil ist nicht vollständig. Möchten Sie jetzt zu den Einstellungen gehen, um eine Zahlungsmethode einzurichten?'
-      );
-      if (setupPayment) {
-        router.push(`/dashboard/company/${companyUid}/settings`);
+    // Automatische Erstellung von BEIDEN Stripe-Profilen wenn sie fehlen
+    if (!userProfile.stripeCustomerId || !userProfile.stripeAccountId) {
+      console.log('User profile ohne vollständige Stripe-Profile:', {
+        hasCustomerId: !!userProfile.stripeCustomerId,
+        hasAccountId: !!userProfile.stripeAccountId,
+        profile: userProfile,
+      });
+
+      try {
+        console.log('🔄 Erstelle automatisch fehlende Stripe-Profile...');
+        const createProfilesResponse = await fetch('/api/create-company-stripe-profiles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            companyName: userProfile.companyName || userProfile.displayName || 'Unternehmen',
+            email: userProfile.email,
+            uid: userProfile.uid,
+            userType: 'company',
+          }),
+        });
+
+        if (!createProfilesResponse.ok) {
+          const errorData = await createProfilesResponse.json();
+          throw new Error(errorData.error || 'Stripe-Profile-Erstellung fehlgeschlagen');
+        }
+
+        const profileData = await createProfilesResponse.json();
+        console.log('✅ Stripe-Profile erfolgreich erstellt:', profileData);
+
+        // Update das lokale userProfile mit den neuen IDs
+        if (profileData.stripeCustomerId) {
+          userProfile.stripeCustomerId = profileData.stripeCustomerId;
+        }
+        if (profileData.stripeAccountId) {
+          userProfile.stripeAccountId = profileData.stripeAccountId;
+        }
+      } catch (profileError) {
+        console.error('❌ Fehler beim Erstellen der Stripe-Profile:', profileError);
+        const setupPayment = confirm(
+          'Ihre Zahlungsprofile konnten nicht automatisch erstellt werden. Möchten Sie jetzt zu den Einstellungen gehen, um die Zahlungsmethoden manuell einzurichten?'
+        );
+        if (setupPayment) {
+          router.push(`/dashboard/company/${companyUid}/settings`);
+        }
+        return;
       }
-      return;
     }
 
     // Prüfe ob Adressdaten vorhanden sind
