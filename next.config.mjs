@@ -1,6 +1,171 @@
 import path from 'path';
 import os from 'os';
 
+// Professionelle CSP-Konfiguration für Taskilo
+const FIREBASE_DOMAINS = [
+  'https://*.firebase.com',
+  'https://*.firebaseapp.com', 
+  'https://*.web.app',
+  'https://*.firebasedatabase.app',
+  'https://*.firebaseio.com',
+  'https://*.googleapis.com',
+  'https://*.googleusercontent.com',
+  'https://identitytoolkit.googleapis.com',
+  'https://securetoken.googleapis.com',
+  'https://firestore.googleapis.com',
+  'https://firebasestorage.googleapis.com',
+  'https://storage.googleapis.com',
+];
+
+const GOOGLE_ANALYTICS_DOMAINS = [
+  'https://*.google.com',
+  'https://*.google.de', 
+  'https://*.googletagmanager.com',
+  'https://*.google-analytics.com',
+  'https://*.googleadservices.com',
+  'https://*.googlesyndication.com',
+  'https://*.doubleclick.net',
+  'https://*.gstatic.com',
+  'https://*.ggpht.com',
+];
+
+const PAYMENT_DOMAINS = [
+  'https://js.stripe.com',
+  'https://checkout.stripe.com',
+  'https://api.stripe.com',
+  'https://hooks.stripe.com',
+  'https://connect.stripe.com',
+];
+
+const CDN_DOMAINS = [
+  'https://cdn.jsdelivr.net',
+  'https://unpkg.com',
+  'https://cdnjs.cloudflare.com',
+  'https://cdn.skypack.dev',
+  'https://esm.sh',
+];
+
+const EXTERNAL_APIS = [
+  'https://connect.facebook.net',
+  'https://va.vercel-scripts.com',
+  'https://*.vercel.app',
+  'https://images.unsplash.com',
+  'https://avatars.githubusercontent.com',
+];
+
+const DEV_DOMAINS = process.env.NODE_ENV === 'development' ? [
+  'http://localhost:*',
+  'http://127.0.0.1:*',
+  'ws://localhost:*',
+  'wss://localhost:*',
+] : [];
+
+const ALL_SCRIPT_SOURCES = [
+  "'self'",
+  "'unsafe-inline'",
+  "'unsafe-eval'",
+  "'unsafe-hashes'",
+  'blob:',
+  'data:',
+  "'wasm-unsafe-eval'",
+  ...FIREBASE_DOMAINS,
+  ...GOOGLE_ANALYTICS_DOMAINS,
+  ...PAYMENT_DOMAINS,
+  ...CDN_DOMAINS,
+  ...EXTERNAL_APIS,
+  ...DEV_DOMAINS,
+];
+
+const CSP_CONFIG = {
+  'default-src': ["'self'"],
+  'script-src': ALL_SCRIPT_SOURCES,
+  'script-src-elem': ALL_SCRIPT_SOURCES,
+  'style-src': [
+    "'self'",
+    "'unsafe-inline'",
+    'data:',
+    ...GOOGLE_ANALYTICS_DOMAINS,
+    ...CDN_DOMAINS,
+    ...DEV_DOMAINS,
+  ],
+  'img-src': [
+    "'self'",
+    'data:',
+    'blob:',
+    'https:',
+    ...FIREBASE_DOMAINS,
+    ...GOOGLE_ANALYTICS_DOMAINS,
+    ...EXTERNAL_APIS,
+    ...DEV_DOMAINS,
+  ],
+  'connect-src': [
+    "'self'",
+    'blob:',
+    'data:',
+    'wss:',
+    'ws:',
+    ...FIREBASE_DOMAINS,
+    ...GOOGLE_ANALYTICS_DOMAINS,
+    ...PAYMENT_DOMAINS,
+    ...EXTERNAL_APIS,
+    'wss://*.firebaseio.com',
+    'wss://*.web.app',
+    ...DEV_DOMAINS,
+  ],
+  'frame-src': [
+    "'self'",
+    ...PAYMENT_DOMAINS,
+    'https://*.google.com',
+    'https://*.youtube.com',
+    ...DEV_DOMAINS,
+  ],
+  'font-src': [
+    "'self'",
+    'data:',
+    'https://fonts.googleapis.com',
+    'https://fonts.gstatic.com',
+    ...CDN_DOMAINS,
+    ...DEV_DOMAINS,
+  ],
+  'media-src': [
+    "'self'",
+    'blob:',
+    'data:',
+    'https:',
+    ...FIREBASE_DOMAINS,
+    'https://*.youtube.com',
+    'https://*.ytimg.com',
+    'https://*.googlevideo.com',
+    ...DEV_DOMAINS,
+  ],
+  'object-src': ["'none'"],
+  'frame-ancestors': ["'none'"],
+  'child-src': [
+    "'self'",
+    'blob:',
+    ...PAYMENT_DOMAINS,
+    ...DEV_DOMAINS,
+  ],
+  'worker-src': [
+    "'self'",
+    'blob:',
+    ...FIREBASE_DOMAINS,
+    ...DEV_DOMAINS,
+  ],
+  'manifest-src': ["'self'"],
+  'base-uri': ["'self'"],
+  'form-action': [
+    "'self'",
+    ...PAYMENT_DOMAINS,
+  ],
+};
+
+function generateCSPString(config) {
+  return Object.entries(config)
+    .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
+    .join('; ');
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Build Performance Optimizations
@@ -75,12 +240,10 @@ const nextConfig = {
             key: 'X-DNS-Prefetch-Control',
             value: 'on',
           },
-          // CSP für XSS-Schutz (Lighthouse-Anforderung) - EXTREM PERMISSIV für GTM
+          // CSP für XSS-Schutz - NETWORK ERROR FIXES
           {
             key: 'Content-Security-Policy',
-            value: process.env.NODE_ENV === 'development' 
-              ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' http://localhost:* https://*.google.com https://*.google.de https://*.googleapis.com https://*.googletagmanager.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://*.gstatic.com https://*.ggpht.com https://*.googleusercontent.com https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://js.stripe.com https://checkout.stripe.com https://connect.facebook.net https://va.vercel-scripts.com https://*.vercel.app https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://cdn.skypack.dev https://esm.sh https://*.firebaseapp.com https://*.web.app blob: data: 'wasm-unsafe-eval' *; script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' http://localhost:* https://*.google.com https://*.google.de https://*.googleapis.com https://*.googletagmanager.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://*.gstatic.com https://*.ggpht.com https://*.googleusercontent.com https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://js.stripe.com https://checkout.stripe.com https://connect.facebook.net https://va.vercel-scripts.com https://*.vercel.app https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://cdn.skypack.dev https://esm.sh https://*.firebaseapp.com https://*.web.app blob: data: *; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' data: blob: https: http://localhost:*; connect-src 'self' http://localhost:* https://*.google.com https://*.google-analytics.com https://*.doubleclick.net https://*.googleapis.com https://api.stripe.com https://checkout.stripe.com https://firestore.googleapis.com https://*.cloudfunctions.net wss://*.firebasedatabase.app ws://localhost:*; frame-src 'self' https://*.google.com https://js.stripe.com https://checkout.stripe.com https://*.firebasedatabase.app https://*.firebaseapp.com https://*.web.app; object-src 'none'; base-uri 'self'; worker-src 'self' blob:; child-src 'self' blob:"
-              : "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' https://*.google.com https://*.google.de https://*.googleapis.com https://*.googletagmanager.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://*.gstatic.com https://*.ggpht.com https://*.googleusercontent.com https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://js.stripe.com https://checkout.stripe.com https://connect.facebook.net https://va.vercel-scripts.com https://*.vercel.app https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://cdn.skypack.dev https://esm.sh https://*.firebaseapp.com https://*.web.app blob: data: 'wasm-unsafe-eval' *; script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' https://*.google.com https://*.google.de https://*.googleapis.com https://*.googletagmanager.com https://*.google-analytics.com https://*.googleadservices.com https://*.googlesyndication.com https://*.doubleclick.net https://*.gstatic.com https://*.ggpht.com https://*.googleusercontent.com https://*.youtube.com https://*.ytimg.com https://*.googlevideo.com https://js.stripe.com https://checkout.stripe.com https://connect.facebook.net https://va.vercel-scripts.com https://*.vercel.app https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://cdn.skypack.dev https://esm.sh https://*.firebaseapp.com https://*.web.app blob: data: *; style-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; font-src 'self' https://*.gstatic.com https://*.googleapis.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.google.com https://*.google-analytics.com https://*.doubleclick.net https://*.googleapis.com https://api.stripe.com https://checkout.stripe.com https://firestore.googleapis.com https://*.cloudfunctions.net wss://*.firebasedatabase.app; frame-src 'self' https://*.google.com https://js.stripe.com https://checkout.stripe.com https://*.firebasedatabase.app https://*.firebaseapp.com https://*.web.app; object-src 'none'; base-uri 'self'; worker-src 'self' blob:; child-src 'self' blob:",
+            value: generateCSPString(CSP_CONFIG),
           },
           // COOP für Origin-Isolation (Lighthouse-Anforderung)
           {
