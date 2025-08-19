@@ -44,74 +44,103 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.log('[Incoming Quotes API] Company found:', companyData?.companyName);
 
     // Query for incoming quote requests where this company is the provider
-    console.log('[Incoming Quotes API] Querying quotes for provider:', uid);
+    console.log('[Incoming Quotes API] Querying requests for provider:', uid);
+
+    // First, let's check what collections exist
+    const allRequestsSnapshot = await db.collection('requests').limit(5).get();
+    console.log('[Incoming Quotes API] Total requests in collection:', allRequestsSnapshot.size);
+
+    if (allRequestsSnapshot.size > 0) {
+      allRequestsSnapshot.docs.forEach((doc, index) => {
+        console.log(`[Incoming Quotes API] Sample request ${index + 1}:`, {
+          id: doc.id,
+          data: doc.data(),
+        });
+      });
+    }
+
+    // Query requests collection for incoming quote requests
     const quotesSnapshot = await db
-      .collection('quotes')
+      .collection('requests')
       .where('providerUid', '==', uid)
       .orderBy('createdAt', 'desc')
       .get();
 
-    console.log('[Incoming Quotes API] Found quotes:', quotesSnapshot.size);
+    console.log('[Incoming Quotes API] Found requests with providerUid:', quotesSnapshot.size);
+
+    // Try alternative query patterns for requests
+    const altQuotes1 = await db.collection('requests').where('providerId', '==', uid).get();
+    console.log('[Incoming Quotes API] Found requests with providerId:', altQuotes1.size);
+
+    const altQuotes2 = await db.collection('requests').where('companyId', '==', uid).get();
+    console.log('[Incoming Quotes API] Found requests with companyId:', altQuotes2.size);
+
+    const altQuotes3 = await db.collection('requests').where('serviceProviderId', '==', uid).get();
+    console.log('[Incoming Quotes API] Found requests with serviceProviderId:', altQuotes3.size);
 
     const quotes = [];
 
     for (const doc of quotesSnapshot.docs) {
-      const quoteData = doc.data();
-      console.log('[Incoming Quotes API] Processing quote:', doc.id, 'with data:', {
-        customerUid: quoteData.customerUid,
-        customerCompanyUid: quoteData.customerCompanyUid,
-        title: quoteData.title,
-        status: quoteData.status,
+      const requestData = doc.data();
+      console.log('[Incoming Quotes API] Processing request:', doc.id, 'with data:', {
+        customerUid: requestData.customerUid,
+        userUid: requestData.userUid,
+        customerId: requestData.customerId,
+        title: requestData.title,
+        status: requestData.status,
+        description: requestData.description,
+        category: requestData.category,
+        subcategory: requestData.subcategory,
       });
 
       // Get customer information (can be user or company)
       let customerInfo = null;
 
-      if (quoteData.customerCompanyUid) {
-        // B2B request - get company data
-        console.log(
-          '[Incoming Quotes API] Getting B2B customer data for:',
-          quoteData.customerCompanyUid
-        );
-        const customerCompanyDoc = await db
-          .collection('companies')
-          .doc(quoteData.customerCompanyUid)
-          .get();
+      // Check different possible customer uid field names
+      const customerUid = requestData.customerUid || requestData.userUid || requestData.customerId;
 
-        if (customerCompanyDoc.exists) {
-          const customerCompanyData = customerCompanyDoc.data();
-          customerInfo = {
-            name: customerCompanyData?.companyName || 'Unbekanntes Unternehmen',
-            type: 'company',
-            email: customerCompanyData?.email,
-            avatar: customerCompanyData?.logoUrl,
-            uid: quoteData.customerCompanyUid,
-          };
-        }
-      } else if (quoteData.customerUid) {
-        // B2C request - get user data
-        console.log('[Incoming Quotes API] Getting B2C customer data for:', quoteData.customerUid);
-        const customerDoc = await db.collection('users').doc(quoteData.customerUid).get();
+      if (customerUid) {
+        console.log('[Incoming Quotes API] Getting customer data for:', customerUid);
+
+        // First try to get user data
+        const customerDoc = await db.collection('users').doc(customerUid).get();
 
         if (customerDoc.exists) {
           const customerData = customerDoc.data();
           customerInfo = {
             name:
               `${customerData?.firstName || ''} ${customerData?.lastName || ''}`.trim() ||
+              customerData?.displayName ||
               'Unbekannter Kunde',
             type: 'user',
             email: customerData?.email,
             avatar: customerData?.photoURL,
-            uid: quoteData.customerUid,
+            uid: customerUid,
           };
+        } else {
+          // If not found in users, try companies
+          const companyDoc = await db.collection('companies').doc(customerUid).get();
+          if (companyDoc.exists) {
+            const companyData = companyDoc.data();
+            customerInfo = {
+              name: companyData?.companyName || 'Unbekanntes Unternehmen',
+              type: 'company',
+              email: companyData?.email,
+              avatar: companyData?.logoUrl,
+              uid: customerUid,
+            };
+          }
         }
       }
 
       quotes.push({
         id: doc.id,
-        ...quoteData,
+        ...requestData,
         customer: customerInfo,
-        createdAt: quoteData.createdAt?.toDate?.() || new Date(quoteData.createdAt),
+        createdAt: requestData.createdAt?.toDate?.() || new Date(requestData.createdAt),
+        // Map request fields to quote fields for consistency
+        title: requestData.title || requestData.description || 'Anfrage',
+        status: requestData.status || 'pending',
       });
     }
 
