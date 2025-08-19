@@ -29,8 +29,8 @@ const PopupModal: React.FC<PopupModalProps> = ({ isOpen, onClose, steps }) => {
   if (!isOpen) return null;
 
   return (
-    // Overlay für den Hintergrund des Modals (mit Weichzeichner)
-    <div className="fixed inset-0 bg-trasparent bg-opacity-30 backdrop-blur-md flex justify-center items-center z-50 p-4">
+    // Overlay für den Hintergrund des Modals (mit Weichzeichner und komplett transparent)
+    <div className="fixed inset-0 bg-transparent backdrop-blur-md flex justify-center items-center z-50 p-4">
       <div className="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-sm border border-gray-200 relative">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Registrierung abschließen</h2>

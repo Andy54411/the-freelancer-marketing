@@ -97,7 +97,7 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-md flex justify-center items-center z-50">
+    <div className="fixed inset-0 bg-transparent backdrop-blur-md flex justify-center items-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-xl w-full shadow-lg overflow-auto max-h-[90vh]">
         <h2 className="text-xl font-semibold mb-4">Bitte vervollständige dein Profil</h2>
         <p className="mb-4 text-[#14ad9f] font-medium">Folgende Bereiche fehlen:</p>

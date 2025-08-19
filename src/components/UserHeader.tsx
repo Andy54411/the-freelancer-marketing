@@ -43,6 +43,7 @@ import {
   User as FiUser,
   Package as FiPackage,
   Info as FiInfo,
+  FileText as FiFileText,
 } from 'lucide-react';
 import { useAuth, HeaderChatPreview } from '@/contexts/AuthContext'; // HeaderChatPreview aus dem Context importieren
 import { OverdueInvoicesAlert } from '@/components/finance/OverdueInvoicesAlert';
@@ -735,12 +736,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             Meine Aufträge
                           </Link>
                           <Link
-                            href={`/dashboard/user/${currentUser.uid}/orders/overview`}
+                            href={`/dashboard/user/${currentUser.uid}/quotes`}
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsProfileDropdownOpen(false)}
                           >
-                            <FiInbox className="inline mr-2" />
-                            Aufträge
+                            <FiFileText className="inline mr-2" />
+                            Meine Angebote
                           </Link>
                           <Link
                             href="#"

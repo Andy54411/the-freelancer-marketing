@@ -6,13 +6,13 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
-  
+
   experimental: {
     turbo: false,
     optimizeCss: true,
     optimizePackageImports: [
-      'react-icons', 
-      'lucide-react', 
+      'react-icons',
+      'lucide-react',
       '@radix-ui/react-icons',
       '@tabler/icons-react',
       '@radix-ui/react-dialog',
@@ -87,7 +87,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  
+
   eslint: {
     ignoreDuringBuilds: true,
   },

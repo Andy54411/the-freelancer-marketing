@@ -576,7 +576,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       {/* Manager Data Modal */}
       {showManagerModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+        <div className="fixed inset-0 bg-transparent backdrop-blur-md flex items-center justify-center z-[9999] p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[75vh] overflow-hidden flex flex-col mt-12">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex justify-between items-center">

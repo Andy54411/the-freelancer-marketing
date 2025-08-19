@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import QuoteResponseForm from '@/components/quotes/QuoteResponseForm';
 import {
   ArrowLeft as FiArrowLeft,
   User as FiUser,
@@ -13,36 +12,35 @@ import {
   AlertCircle as FiAlertCircle,
   Check as FiCheck,
   X as FiX,
-  Send as FiSend,
   Loader2 as FiLoader,
   Download as FiDownload,
   Calendar as FiCalendar,
   Euro as FiEuro,
   MapPin as FiMapPin,
-  Phone as FiPhone,
-  Mail as FiMail,
+  Building as FiBuilding,
+  Star as FiStar,
 } from 'lucide-react';
 import Link from 'next/link';
 
 interface QuoteRequest {
   id: string;
-  service?: string; // Legacy field
-  projectTitle?: string; // New field
-  description?: string; // Legacy field
-  projectDescription?: string; // New field
+  service?: string;
+  projectTitle?: string;
+  description?: string;
+  projectDescription?: string;
   urgency: 'niedrig' | 'mittel' | 'hoch' | 'sofort' | 'normal';
   budget?: string;
-  budgetRange?: string; // New field
+  budgetRange?: string;
   timeline?: string;
-  estimatedDuration?: string; // New field
+  estimatedDuration?: string;
   location?: string;
-  postalCode?: string; // New field
+  postalCode?: string;
   customerName: string;
   customerEmail?: string;
   customerPhone?: string;
-  requesterName?: string; // Legacy field
+  requesterName?: string;
   requestDate?: string;
-  createdAt?: any; // Firebase timestamp
+  createdAt?: any;
   status: 'pending' | 'received' | 'responded' | 'accepted' | 'declined' | 'expired';
   providerId: string;
   customerUid?: string;
@@ -68,25 +66,37 @@ interface QuoteRequest {
       unit: string;
     }>;
     additionalNotes?: string;
-    respondedAt: string;
+    respondedAt?: string;
   };
+  // Provider information (to be fetched separately)
+  providerName?: string;
+  providerCompany?: string;
+  providerRating?: number;
+  providerProfileImage?: string;
 }
 
-export default function QuoteDetailPage() {
+export default function CustomerQuoteDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
   const [quote, setQuote] = useState<QuoteRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [responding, setResponding] = useState(false);
-  const [showResponseForm, setShowResponseForm] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const [declining, setDeclining] = useState(false);
 
   const uid = params?.uid as string;
-  const quoteId = params?.quoteId as string; // Korrigiert: quoteId statt orderId
+  const quoteId = params?.quoteId as string;
 
   useEffect(() => {
     if (!user || !uid || !quoteId) return;
+
+    // Sicherheitsüberprüfung
+    if (user.uid !== uid) {
+      setError('Zugriff verweigert. Sie sind nicht berechtigt, dieses Angebot einzusehen.');
+      setLoading(false);
+      return;
+    }
 
     fetchQuoteDetails();
   }, [user, uid, quoteId]);
@@ -110,14 +120,17 @@ export default function QuoteDetailPage() {
     }
   };
 
-  const handleResponse = async (action: 'accept' | 'decline') => {
+  const handleQuoteAction = async (action: 'accept' | 'decline') => {
     if (!quote) return;
 
+    const setLoadingState = action === 'accept' ? setAccepting : setDeclining;
+
     try {
-      setResponding(true);
+      setLoadingState(true);
       const payload = {
         quoteId: quote.id,
         action,
+        customerAction: true, // Flag to indicate customer action
       };
 
       const response = await fetch('/api/quotes/respond', {
@@ -132,49 +145,24 @@ export default function QuoteDetailPage() {
 
       if (result.success) {
         await fetchQuoteDetails();
+        // Redirect to success page or show success message
+        if (action === 'accept') {
+          router.push(`/dashboard/user/${uid}/quotes?accepted=${quote.id}`);
+        }
       } else {
-        setError(result.error || 'Fehler beim Bearbeiten der Angebotsanfrage');
+        setError(
+          result.error ||
+            `Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots`
+        );
       }
     } catch (err) {
-      console.error('Fehler beim Bearbeiten der Angebotsanfrage:', err);
-      setError('Fehler beim Bearbeiten der Angebotsanfrage');
+      console.error(
+        `Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots:`,
+        err
+      );
+      setError(`Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots`);
     } finally {
-      setResponding(false);
-    }
-  };
-
-  const handleQuoteSubmit = async (responseData: any) => {
-    if (!quote) return;
-
-    try {
-      setResponding(true);
-      const payload = {
-        quoteId: quote.id,
-        action: 'respond',
-        response: responseData,
-      };
-
-      const response = await fetch('/api/quotes/respond', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        await fetchQuoteDetails();
-        setShowResponseForm(false);
-      } else {
-        setError(result.error || 'Fehler beim Senden des Angebots');
-      }
-    } catch (err) {
-      console.error('Fehler beim Senden des Angebots:', err);
-      setError('Fehler beim Senden des Angebots');
-    } finally {
-      setResponding(false);
+      setLoadingState(false);
     }
   };
 
@@ -184,6 +172,7 @@ export default function QuoteDetailPage() {
       case 'received':
         return 'text-blue-600 bg-blue-100';
       case 'responded':
+        return 'text-[#14ad9f] bg-green-100';
       case 'accepted':
         return 'text-green-600 bg-green-100';
       case 'declined':
@@ -197,11 +186,11 @@ export default function QuoteDetailPage() {
   const getStatusText = (status: QuoteRequest['status']) => {
     switch (status) {
       case 'pending':
-        return 'Ausstehend';
+        return 'Wartend';
       case 'received':
         return 'Erhalten';
       case 'responded':
-        return 'Beantwortet';
+        return 'Angebot erhalten';
       case 'accepted':
         return 'Angenommen';
       case 'declined':
@@ -228,6 +217,14 @@ export default function QuoteDetailPage() {
     }
   };
 
+  const calculateTotalPrice = () => {
+    if (!quote?.response?.serviceItems) return quote?.response?.estimatedPrice || 0;
+
+    return quote.response.serviceItems.reduce((total, item) => {
+      return total + item.quantity * item.unitPrice;
+    }, 0);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -245,7 +242,7 @@ export default function QuoteDetailPage() {
           <p className="mt-1 text-sm text-gray-500">{error}</p>
           <div className="mt-6">
             <Link
-              href={`/dashboard/company/${uid}/orders/overview`}
+              href={`/dashboard/user/${uid}/quotes`}
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
             >
               <FiArrowLeft className="-ml-1 mr-2 h-4 w-4" />
@@ -262,7 +259,7 @@ export default function QuoteDetailPage() {
       {/* Header */}
       <div className="mb-8">
         <Link
-          href={`/dashboard/company/${uid}/orders/overview`}
+          href={`/dashboard/user/${uid}/quotes`}
           className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
         >
           <FiArrowLeft className="mr-1 h-4 w-4" />
@@ -270,7 +267,7 @@ export default function QuoteDetailPage() {
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Angebotsanfrage Details</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Angebotsdetails</h1>
             <p className="mt-1 text-sm text-gray-500">ID: {quote.id}</p>
           </div>
           <div className="flex items-center space-x-3">
@@ -293,7 +290,7 @@ export default function QuoteDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Service Information */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Service Details</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Ihre Anfrage</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Service</label>
@@ -317,7 +314,7 @@ export default function QuoteDetailPage() {
               </div>
               {(quote.budget || quote.budgetRange) && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Budget</label>
+                  <label className="block text-sm font-medium text-gray-700">Ihr Budget</label>
                   <p className="mt-1 text-sm text-gray-900">{quote.budget || quote.budgetRange}</p>
                 </div>
               )}
@@ -362,42 +359,15 @@ export default function QuoteDetailPage() {
             </div>
           </div>
 
-          {/* Anhänge */}
-          {quote.attachments && quote.attachments.length > 0 && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Anhänge</h2>
-              <div className="space-y-2">
-                {quote.attachments.map((attachment, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 border rounded-lg"
-                  >
-                    <div className="flex items-center">
-                      <FiFileText className="mr-2 h-5 w-5 text-gray-400" />
-                      <span className="text-sm text-gray-900">{attachment.name}</span>
-                    </div>
-                    <a
-                      href={attachment.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-sm text-[#14ad9f] hover:text-[#129488]"
-                    >
-                      <FiDownload className="mr-1 h-4 w-4" />
-                      Download
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Response Section */}
+          {/* Angebotene Lösung (wenn vorhanden) */}
           {quote.response && (
             <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Ihre Antwort</h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Erhaltenes Angebot</h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Nachricht</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Nachricht vom Anbieter
+                  </label>
                   <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
                     {quote.response.message}
                   </p>
@@ -460,11 +430,9 @@ export default function QuoteDetailPage() {
                               Gesamtsumme:
                             </td>
                             <td className="px-4 py-3 text-sm font-bold text-white">
-                              {quote.response.serviceItems
-                                .reduce((total, item) => total + item.quantity * item.unitPrice, 0)
-                                .toLocaleString('de-DE', {
-                                  minimumFractionDigits: 2,
-                                })}{' '}
+                              {calculateTotalPrice().toLocaleString('de-DE', {
+                                minimumFractionDigits: 2,
+                              })}{' '}
                               €
                             </td>
                           </tr>
@@ -474,22 +442,19 @@ export default function QuoteDetailPage() {
                   </div>
                 )}
 
-                {/* Legacy estimated price display (if no service items) */}
-                {quote.response.estimatedPrice &&
-                  (!quote.response.serviceItems || quote.response.serviceItems.length === 0) && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Geschätzter Preis
-                      </label>
-                      <p className="mt-1 text-sm text-gray-900 flex items-center">
-                        <FiEuro className="mr-1 h-4 w-4 text-gray-400" />
-                        {quote.response.estimatedPrice.toLocaleString('de-DE', {
-                          minimumFractionDigits: 2,
-                        })}{' '}
-                        €
-                      </p>
-                    </div>
-                  )}
+                {quote.response.estimatedPrice && !quote.response.serviceItems && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Geschätzter Preis
+                    </label>
+                    <p className="mt-1 text-2xl font-bold text-[#14ad9f]">
+                      {quote.response.estimatedPrice.toLocaleString('de-DE', {
+                        minimumFractionDigits: 2,
+                      })}{' '}
+                      €
+                    </p>
+                  </div>
+                )}
 
                 {quote.response.estimatedDuration && (
                   <div>
@@ -512,7 +477,7 @@ export default function QuoteDetailPage() {
                 {quote.response.additionalNotes && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Zusätzliche Notizen
+                      Zusätzliche Notizen vom Anbieter
                     </label>
                     <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
                       {quote.response.additionalNotes}
@@ -521,7 +486,9 @@ export default function QuoteDetailPage() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Beantwortet am</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Angebot erhalten am
+                  </label>
                   <p className="mt-1 text-sm text-gray-500">
                     {new Date(quote.response.respondedAt).toLocaleString('de-DE')}
                   </p>
@@ -530,101 +497,99 @@ export default function QuoteDetailPage() {
             </div>
           )}
 
-          {/* Response Form */}
-          {!quote.response && (quote.status === 'pending' || quote.status === 'received') && (
-            <>
-              {!showResponseForm ? (
-                <div className="bg-white shadow rounded-lg p-6">
-                  <h2 className="text-lg font-medium text-gray-900 mb-4">Auf Anfrage antworten</h2>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setShowResponseForm(true)}
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
-                    >
-                      <FiSend className="mr-2 h-4 w-4" />
-                      Angebot erstellen
-                    </button>
-                    <button
-                      onClick={() => handleResponse('decline')}
-                      disabled={responding}
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
-                    >
-                      {responding ? (
-                        <FiLoader className="animate-spin mr-2 h-4 w-4" />
-                      ) : (
-                        <FiX className="mr-2 h-4 w-4" />
-                      )}
-                      Ablehnen
-                    </button>
+          {/* Action Buttons für Angebot */}
+          {quote.response && quote.status === 'responded' && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Angebot bewerten</h2>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => handleQuoteAction('accept')}
+                  disabled={accepting || declining}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
+                >
+                  {accepting ? (
+                    <FiLoader className="animate-spin mr-2 h-4 w-4" />
+                  ) : (
+                    <FiCheck className="mr-2 h-4 w-4" />
+                  )}
+                  Angebot annehmen
+                </button>
+                <button
+                  onClick={() => handleQuoteAction('decline')}
+                  disabled={accepting || declining}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
+                >
+                  {declining ? (
+                    <FiLoader className="animate-spin mr-2 h-4 w-4" />
+                  ) : (
+                    <FiX className="mr-2 h-4 w-4" />
+                  )}
+                  Ablehnen
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Erfolgsnachricht bei angenommenem Angebot */}
+          {quote.status === 'accepted' && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="flex">
+                <FiCheck className="h-5 w-5 text-green-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-green-800">
+                    Angebot erfolgreich angenommen!
+                  </h3>
+                  <div className="mt-2 text-sm text-green-700">
+                    <p>
+                      Sie haben das Angebot angenommen. Der Anbieter wird sich in Kürze bei Ihnen
+                      melden, um die Details zu besprechen.
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <QuoteResponseForm
-                  onSubmit={handleQuoteSubmit}
-                  onCancel={() => setShowResponseForm(false)}
-                  loading={responding}
-                />
-              )}
-            </>
+              </div>
+            </div>
           )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Kundeninformationen */}
+          {/* Anbieter-Informationen */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Kundeninformationen</h2>
-
-            {/* Kontaktdaten sind nur sichtbar wenn ein Angebot abgegeben wurde und der Auftrag angenommen wurde */}
-            {quote.response && quote.status === 'accepted' ? (
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <FiUser className="mr-2 h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-900">
-                    {quote.customerName || quote.requesterName}
-                  </span>
-                </div>
-                {quote.customerEmail && (
-                  <div className="flex items-center">
-                    <FiMail className="mr-2 h-5 w-5 text-gray-400" />
-                    <a
-                      href={`mailto:${quote.customerEmail}`}
-                      className="text-sm text-[#14ad9f] hover:text-[#129488]"
-                    >
-                      {quote.customerEmail}
-                    </a>
-                  </div>
-                )}
-                {quote.customerPhone && (
-                  <div className="flex items-center">
-                    <FiPhone className="mr-2 h-5 w-5 text-gray-400" />
-                    <a
-                      href={`tel:${quote.customerPhone}`}
-                      className="text-sm text-[#14ad9f] hover:text-[#129488]"
-                    >
-                      {quote.customerPhone}
-                    </a>
-                  </div>
-                )}
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Anbieter</h2>
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                <FiUser className="h-6 w-6 text-gray-600" />
               </div>
-            ) : (
-              <div className="text-center py-6">
-                <FiUser className="mx-auto h-12 w-12 text-gray-300" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Kontaktdaten gesperrt</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {!quote.response
-                    ? 'Geben Sie zuerst ein Angebot ab, um die Kundenkontaktdaten zu sehen.'
-                    : quote.status !== 'accepted'
-                      ? 'Die Kontaktdaten werden sichtbar, sobald der Kunde Ihr Angebot annimmt.'
-                      : 'Kontaktdaten sind verfügbar.'}
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {quote.providerCompany || 'Anbieter'}
                 </p>
-                <div className="mt-3">
-                  <span className="text-xs font-medium text-gray-900">
-                    Kunde: {quote.customerName || quote.requesterName}
+                <div className="flex items-center">
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <FiStar
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < (quote.providerRating || 0)
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="ml-1 text-sm text-gray-500">
+                    ({quote.providerRating || 'Keine Bewertungen'})
                   </span>
                 </div>
               </div>
-            )}
+            </div>
+            <Link
+              href={`/provider/${quote.providerId}`}
+              className="inline-flex items-center text-sm text-[#14ad9f] hover:text-[#129488]"
+            >
+              <FiBuilding className="mr-1 h-4 w-4" />
+              Anbieterprofil anzeigen
+            </Link>
           </div>
 
           {/* Zeitinformationen */}
@@ -644,7 +609,9 @@ export default function QuoteDetailPage() {
               </div>
               {quote.response?.respondedAt && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Beantwortet am</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Angebot erhalten am
+                  </label>
                   <p className="mt-1 text-sm text-gray-900 flex items-center">
                     <FiClock className="mr-2 h-4 w-4 text-gray-400" />
                     {new Date(quote.response.respondedAt).toLocaleString('de-DE')}
@@ -655,7 +622,7 @@ export default function QuoteDetailPage() {
           </div>
 
           {/* Quick Actions */}
-          {quote.customerUid && quote.response && quote.status === 'accepted' && (
+          {quote.status === 'accepted' && (
             <div className="bg-white shadow rounded-lg p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">Aktionen</h2>
               <div className="space-y-3">
@@ -664,11 +631,11 @@ export default function QuoteDetailPage() {
                   Nachricht senden
                 </button>
                 <Link
-                  href={`/profile/${quote.customerUid}`}
+                  href={`/dashboard/user/${uid}/orders`}
                   className="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
                 >
-                  <FiUser className="mr-2 h-4 w-4" />
-                  Kundenprofil anzeigen
+                  <FiFileText className="mr-2 h-4 w-4" />
+                  Zu Aufträgen
                 </Link>
               </div>
             </div>

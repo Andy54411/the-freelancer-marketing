@@ -22,6 +22,7 @@ import {
   Shield as FiShield,
   Building2 as FiBuilding2,
   Folder as FiFolder,
+  FileText as FiFileText,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -65,6 +66,12 @@ const navigationItems: NavigationItem[] = [
       { label: 'Abgeschlossen', value: 'orders-completed', href: 'orders/completed' },
       { label: 'Storniert', value: 'orders-cancelled', href: 'orders/cancelled' },
     ],
+  },
+  {
+    label: 'Angebots-Anfragen',
+    icon: FiFileText,
+    value: 'quotes',
+    subItems: [{ label: 'Eingehend', value: 'quotes-incoming', href: 'quotes/incoming' }],
   },
   {
     label: 'Posteingang',

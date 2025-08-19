@@ -92,7 +92,7 @@ export default function CSPMonitor() {
 
       {/* Debug Panel */}
       {isVisible && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-transparent backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
             <div className="bg-red-500 text-white p-4 flex justify-between items-center">
               <h2 className="text-lg font-semibold">CSP Violations Monitor (Ctrl+Shift+C)</h2>

@@ -1110,7 +1110,7 @@ export default function ProfilePage() {
 
           {/* Create Order Modal */}
           {isCreateOrderModalOpen && currentUser && userProfile && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-start justify-center p-4 overflow-y-auto">
+            <div className="fixed inset-0 bg-transparent backdrop-blur-md z-50 flex items-start justify-center p-4 overflow-y-auto">
               <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8 max-h-[calc(100vh-4rem)] flex flex-col">
                 {/* Fixed Header */}
                 <div className="flex items-center justify-between p-6 border-b bg-white rounded-t-lg flex-shrink-0 sticky top-0 z-10">

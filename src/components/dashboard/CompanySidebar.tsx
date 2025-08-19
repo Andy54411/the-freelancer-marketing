@@ -23,6 +23,7 @@ import {
   Calculator as FiCalculator,
   BarChart3 as FiBarChart3,
   CalendarDays as FiCalendarDays,
+  FileText as FiFileText,
   Folder as FiFolder,
   HelpCircle as FiHelpCircle,
 } from 'lucide-react';
@@ -67,6 +68,12 @@ const navigationItems: NavigationItem[] = [
       { label: 'Abgeschlossen', value: 'orders-completed', href: 'orders/completed' },
       { label: 'Storniert', value: 'orders-cancelled', href: 'orders/cancelled' },
     ],
+  },
+  {
+    label: 'Angebots-Anfragen',
+    icon: FiFileText,
+    value: 'quotes',
+    subItems: [{ label: 'Eingehend', value: 'quotes-incoming', href: 'quotes/incoming' }],
   },
   {
     label: 'Posteingang',

@@ -17,10 +17,10 @@ const Modal: React.FC<ModalProps> = ({ onClose, children, title }) => {
   };
 
   return (
-    // Der Overlay: Füllt den ganzen Bildschirm, hat einen halb-transparenten
+    // Der Overlay: Füllt den ganzen Bildschirm, hat einen komplett transparenten
     // Hintergrund und den gewünschten "Blur"-Effekt.
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-transparent bg-opacity-50 backdrop-blur-sm p-4" // p-4 hinzugefügt für etwas Abstand zum Rand
+      className="fixed inset-0 z-50 flex items-center justify-center bg-transparent backdrop-blur-md p-4" // p-4 hinzugefügt für etwas Abstand zum Rand
       onClick={onClose}
     >
       {/* Der eigentliche Modal-Container: Weiße Karte mit Schatten und abgerundeten Ecken */}
