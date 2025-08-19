@@ -61,7 +61,7 @@ export default function IncomingQuotesPage() {
   // Safe params access
   const uid = params?.uid as string;
 
-  // Lade eingehende Angebots-Anfragen
+  // Lade eingehende Angebots-Anfragen mit verbesserter Fehlerbehandlung
   const fetchIncomingQuotes = async () => {
     try {
       if (!firebaseUser || !uid) return;
@@ -77,12 +77,24 @@ export default function IncomingQuotesPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setQuotes(data.quotes || []);
+        // Validiere und bereinige die Daten
+        const validQuotes = Array.isArray(data.quotes)
+          ? data.quotes.filter(
+              quote =>
+                quote &&
+                typeof quote === 'object' &&
+                quote.customer &&
+                typeof quote.customer === 'object'
+            )
+          : [];
+        setQuotes(validQuotes);
       } else {
         console.error('Fehler beim Laden der Angebots-Anfragen');
+        setQuotes([]);
       }
     } catch (error) {
       console.error('Fehler beim Laden der Angebots-Anfragen:', error);
+      setQuotes([]);
     } finally {
       setLoading(false);
     }
@@ -94,24 +106,31 @@ export default function IncomingQuotesPage() {
     }
   }, [firebaseUser, uid]);
 
-  // Filter Angebots-Anfragen
+  // Filter Angebots-Anfragen mit umfassenden Null-Checks
   const filteredQuotes = quotes.filter(quote => {
-    // Null-Checks hinzufügen
-    if (!quote || !quote.customer) return false;
+    // Robuste Null-Checks für alle Properties
+    if (!quote) return false;
+    if (typeof quote !== 'object') return false;
+    if (!quote.customer) return false;
+    if (typeof quote.customer !== 'object') return false;
+
+    // Sichere String-Extraktion mit Fallbacks
+    const title = quote.title || '';
+    const customerName = quote.customer.name || '';
+    const serviceCategory = quote.serviceCategory || '';
+    const status = quote.status || '';
+    const customerType = quote.customer.type || '';
 
     const matchesSearch =
-      (quote.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (quote.customer.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (quote.serviceCategory || '').toLowerCase().includes(searchTerm.toLowerCase());
+      title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      serviceCategory.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = filterStatus === 'all' || quote.status === filterStatus;
-    const matchesType =
-      filterType === 'all' || (quote.customer.type && quote.customer.type === filterType);
+    const matchesStatus = filterStatus === 'all' || status === filterStatus;
+    const matchesType = filterType === 'all' || customerType === filterType;
 
     return matchesSearch && matchesStatus && matchesType;
-  });
-
-  // Format Datum
+  }); // Format Datum
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('de-DE', {
       day: '2-digit',
