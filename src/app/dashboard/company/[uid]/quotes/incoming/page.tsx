@@ -58,15 +58,18 @@ export default function IncomingQuotesPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
 
+  // Safe params access
+  const uid = params?.uid as string;
+
   // Lade eingehende Angebots-Anfragen
   const fetchIncomingQuotes = async () => {
     try {
-      if (!firebaseUser) return;
+      if (!firebaseUser || !uid) return;
 
       const token = await firebaseUser.getIdToken();
       if (!token) return;
 
-      const response = await fetch(`/api/company/${params.uid}/quotes/incoming`, {
+      const response = await fetch(`/api/company/${uid}/quotes/incoming`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -86,20 +89,24 @@ export default function IncomingQuotesPage() {
   };
 
   useEffect(() => {
-    if (firebaseUser && params.uid) {
+    if (firebaseUser && uid) {
       fetchIncomingQuotes();
     }
-  }, [firebaseUser, params.uid]);
+  }, [firebaseUser, uid]);
 
   // Filter Angebots-Anfragen
   const filteredQuotes = quotes.filter(quote => {
+    // Null-Checks hinzufügen
+    if (!quote || !quote.customer) return false;
+
     const matchesSearch =
-      quote.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.serviceCategory.toLowerCase().includes(searchTerm.toLowerCase());
+      (quote.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quote.customer.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quote.serviceCategory || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = filterStatus === 'all' || quote.status === filterStatus;
-    const matchesType = filterType === 'all' || quote.customer.type === filterType;
+    const matchesType =
+      filterType === 'all' || (quote.customer.type && quote.customer.type === filterType);
 
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -370,9 +377,7 @@ export default function IncomingQuotesPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           onClick={() =>
-                            router.push(
-                              `/dashboard/company/${params.uid}/quotes/incoming/${quote.id}`
-                            )
+                            router.push(`/dashboard/company/${uid}/quotes/incoming/${quote.id}`)
                           }
                           className="text-[#14ad9f] hover:text-[#129488] font-medium"
                         >

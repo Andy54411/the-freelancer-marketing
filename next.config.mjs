@@ -8,7 +8,6 @@ const nextConfig = {
   generateEtags: true,
 
   experimental: {
-    turbo: false,
     optimizeCss: true,
     optimizePackageImports: [
       'react-icons',
