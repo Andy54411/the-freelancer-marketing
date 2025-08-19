@@ -15,6 +15,8 @@ const FIREBASE_DOMAINS = [
   'https://firestore.googleapis.com',
   'https://firebasestorage.googleapis.com',
   'https://storage.googleapis.com',
+  'https://*.cloudfunctions.net',
+  'https://europe-west1-tilvo-f142f.cloudfunctions.net',
 ];
 
 const GOOGLE_ANALYTICS_DOMAINS = [
