@@ -15,9 +15,8 @@ export async function GET(request: NextRequest, { params }: { params: { provider
 
     // Abrufen aller Angebotsanfragen für diesen Anbieter
     const quoteRequestsSnapshot = await db
-      .collection('quote_requests')
+      .collection('quotes')
       .where('providerId', '==', providerId)
-      .orderBy('requestDate', 'desc')
       .get();
 
     const quoteRequests = quoteRequestsSnapshot.docs.map(doc => ({

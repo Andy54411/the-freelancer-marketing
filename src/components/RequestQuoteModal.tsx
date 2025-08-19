@@ -184,7 +184,7 @@ export default function RequestQuoteModal({
         await onSubmit(formData);
       } else {
         // Fallback: Standard-Anfrage über API
-        const response = await fetch('/api/quotes/request', {
+        const response = await fetch('/api/quotes/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

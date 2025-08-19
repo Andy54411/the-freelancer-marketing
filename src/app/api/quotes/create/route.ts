@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { db } from '@/firebase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,13 +15,13 @@ export async function POST(request: NextRequest) {
     // Eindeutige Quote-ID generieren
     const quoteId = `quote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Quote-Anfrage in Firestore speichern
+    // Quote-Anfrage in Firestore speichern (Firebase Admin)
     const quoteRequest = {
       id: quoteId,
       providerId,
       status: 'pending', // pending, reviewed, quoted, accepted, declined
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
 
       // Projektdaten
       projectTitle: quoteData.projectTitle,
@@ -47,45 +46,8 @@ export async function POST(request: NextRequest) {
       platform: 'taskilo',
     };
 
-    // In quotes Collection speichern
-    await setDoc(doc(db, 'quotes', quoteId), quoteRequest);
-
-    // Notification für Provider erstellen
-    const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const notification = {
-      id: notificationId,
-      userId: providerId,
-      type: 'quote_request',
-      title: 'Neue Angebots-Anfrage',
-      message: `${quoteData.customerName} hat ein Angebot für "${quoteData.projectTitle}" angefragt.`,
-      data: {
-        quoteId,
-        projectTitle: quoteData.projectTitle,
-        customerName: quoteData.customerName,
-        budgetRange: quoteData.budgetRange,
-        urgency: quoteData.urgency,
-      },
-      read: false,
-      createdAt: serverTimestamp(),
-    };
-
-    await setDoc(doc(db, 'notifications', notificationId), notification);
-
-    // Optional: E-Mail-Benachrichtigung an Provider
-    try {
-      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/notifications/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'quote_request',
-          providerId,
-          quoteData,
-        }),
-      });
-    } catch (emailError) {
-      console.warn('E-Mail-Benachrichtigung fehlgeschlagen:', emailError);
-      // Fehler nicht weiterwerfen, da die Hauptfunktion erfolgreich war
-    }
+    // In quotes Collection speichern mit Firebase Admin
+    await db.collection('quotes').doc(quoteId).set(quoteRequest);
 
     return NextResponse.json({
       success: true,
