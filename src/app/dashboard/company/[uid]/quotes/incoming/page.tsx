@@ -13,6 +13,10 @@ import {
   Building as FiBuilding,
   User as FiUser,
   FileText as FiFileText,
+  CheckCircle as FiCheckCircle,
+  XCircle as FiXCircle,
+  Eye as FiEye,
+  ArrowLeft as FiArrowLeft,
   Calendar as FiCalendar,
   AlertCircle as FiAlertCircle,
 } from 'lucide-react';
@@ -121,6 +125,17 @@ export default function IncomingQuotesPage() {
     }
   }, [firebaseUser, uid]);
 
+  // Berechne den tatsächlichen Status für eine Quote
+  const getActualStatus = (quote: any) => {
+    // Der Status wurde bereits in der API korrekt berechnet
+    return quote.status;
+  };
+
+  // Filtere Quotes basierend auf tatsächlichem Status
+  const getQuotesByStatus = (targetStatus: string) => {
+    return quotes.filter(q => getActualStatus(q) === targetStatus);
+  };
+
   // Filter Angebots-Anfragen mit umfassenden Null-Checks
   const filteredQuotes = quotes.filter(quote => {
     // Robuste Null-Checks für alle Properties
@@ -133,7 +148,7 @@ export default function IncomingQuotesPage() {
     const title = quote.title || '';
     const customerName = quote.customer.name || '';
     const serviceCategory = quote.serviceCategory || '';
-    const status = quote.status || '';
+    const actualStatus = getActualStatus(quote); // Verwende tatsächlichen Status
     const customerType = quote.customer.type || '';
 
     const matchesSearch =
@@ -141,21 +156,33 @@ export default function IncomingQuotesPage() {
       customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       serviceCategory.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = filterStatus === 'all' || status === filterStatus;
+    const matchesStatus = filterStatus === 'all' || actualStatus === filterStatus;
     const matchesType = filterType === 'all' || customerType === filterType;
 
     return matchesSearch && matchesStatus && matchesType;
   });
 
   // Format Datum
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
+  const formatDate = (date: Date | string | number | undefined | null) => {
+    if (!date) return 'Unbekannt';
+
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) {
+        return 'Unbekannt';
+      }
+
+      return new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Error formatting date:', date, error);
+      return 'Unbekannt';
+    }
   };
 
   // Format Budget
@@ -173,6 +200,35 @@ export default function IncomingQuotesPage() {
 
   // Status Badge Component
   const getStatusBadge = (status: string, hasResponse?: boolean) => {
+    // Wenn der Status bereits accepted oder declined ist, zeige das an
+    if (status === 'accepted' || status === 'declined') {
+      const statusStyles = {
+        accepted: 'bg-green-100 text-green-800 border-green-200',
+        declined: 'bg-red-100 text-red-800 border-red-200',
+      };
+
+      const statusLabels = {
+        accepted: 'Angenommen',
+        declined: 'Abgelehnt',
+      };
+
+      const statusIcons = {
+        accepted: FiCheckCircle,
+        declined: FiXCircle,
+      };
+
+      const StatusIcon = statusIcons[status];
+
+      return (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[status]}`}
+        >
+          <StatusIcon className="mr-1 h-3 w-3" />
+          {statusLabels[status]}
+        </span>
+      );
+    }
+
     // If there's a response, show as "responded" regardless of stored status
     if (hasResponse) {
       return (
@@ -186,22 +242,16 @@ export default function IncomingQuotesPage() {
     const statusStyles = {
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       responded: 'bg-blue-100 text-blue-800 border-blue-200',
-      accepted: 'bg-green-100 text-green-800 border-green-200',
-      declined: 'bg-red-100 text-red-800 border-red-200',
     };
 
     const statusLabels = {
       pending: 'Wartend',
       responded: 'Beantwortet',
-      accepted: 'Angenommen',
-      declined: 'Abgelehnt',
     };
 
     const statusIcons = {
       pending: FiClock,
       responded: FiFileText,
-      accepted: FiFileText,
-      declined: FiAlertCircle,
     };
 
     const StatusIcon = statusIcons[status] || FiClock;
@@ -291,7 +341,7 @@ export default function IncomingQuotesPage() {
         </div>
 
         {/* Statistiken */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -300,7 +350,7 @@ export default function IncomingQuotesPage() {
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-500">Wartend</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {quotes.filter(q => q.status === 'pending').length}
+                  {getQuotesByStatus('pending').length}
                 </p>
               </div>
             </div>
@@ -314,7 +364,35 @@ export default function IncomingQuotesPage() {
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-500">Beantwortet</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {quotes.filter(q => q.status === 'responded').length}
+                  {getQuotesByStatus('responded').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <FiCheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">Angenommen</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {getQuotesByStatus('accepted').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <FiXCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm font-medium text-gray-500">Abgelehnt</p>
+                <p className="text-lg font-semibold text-gray-900">
+                  {getQuotesByStatus('declined').length}
                 </p>
               </div>
             </div>
@@ -432,7 +510,7 @@ export default function IncomingQuotesPage() {
                         {formatBudget(quote.budgetRange || quote.budget)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(quote.status, quote.hasResponse)}
+                        {getStatusBadge(getActualStatus(quote), quote.hasResponse)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(quote.createdAt)}

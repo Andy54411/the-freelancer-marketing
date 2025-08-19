@@ -123,6 +123,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: doc.id,
         ...quoteData,
         provider: providerInfo,
+        contactExchange: quoteData.contactExchange || null, // Explizit hinzufügen
+        customerDecision: quoteData.customerDecision || null, // Explizit hinzufügen
         createdAt: quoteData.createdAt?.toDate?.() || new Date(quoteData.createdAt),
         // Map quote fields to expected structure
         title: quoteData.projectTitle || quoteData.projectDescription || 'Angebot',

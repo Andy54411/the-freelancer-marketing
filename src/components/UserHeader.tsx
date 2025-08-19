@@ -114,12 +114,13 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
     console.log(`[UserHeader] Subscribing to notifications for user: ${uid}`);
 
-    // KORREKTUR: Explizite where-Klausel hinzufügen, um den Firestore-Sicherheitsregeln zu entsprechen
+    // Ändere Query um nur ungelesene Benachrichtigungen zu holen
     const notificationsQuery = query(
       collection(db, 'notifications'),
       where('userId', '==', uid), // WICHTIG: Diese where-Klausel ist für die Firestore-Regel erforderlich
+      where('isRead', '==', false), // Nur ungelesene Benachrichtigungen
       orderBy('createdAt', 'desc'), // Index ist jetzt verfügbar
-      limit(10) // Die 10 neuesten Benachrichtigungen
+      limit(10) // Die 10 neuesten ungelesenen Benachrichtigungen
     );
 
     let isSubscriptionActive = true; // Flag to prevent processing after unmount
@@ -130,7 +131,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         if (!isSubscriptionActive) return; // Prevent processing if component unmounted
 
         console.log(
-          `[UserHeader] Benachrichtigungen erfolgreich geladen für User: ${uid}, Anzahl: ${snapshot.size}`
+          `[UserHeader] Ungelesene Benachrichtigungen geladen für User: ${uid}, Anzahl: ${snapshot.size}`
         );
         const fetchedNotifications = snapshot.docs.map(
           doc =>
@@ -140,9 +141,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             }) as NotificationPreview
         );
 
-        const unreadCount = fetchedNotifications.filter(n => !n.isRead).length;
+        // Da wir nur ungelesene Benachrichtigungen laden, ist die Anzahl gleich der Gesamtanzahl
         setNotifications(fetchedNotifications);
-        setUnreadNotificationsCount(unreadCount);
+        setUnreadNotificationsCount(fetchedNotifications.length);
       },
       error => {
         if (!isSubscriptionActive) return; // Prevent processing if component unmounted
@@ -371,15 +372,74 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     window.dispatchEvent(new CustomEvent('openChatbot'));
   };
 
-  // NEU: Funktion zum Markieren einer Benachrichtigung als gelesen
+  // NEU: Funktion zum Markieren einer Benachrichtigung als gelesen über API
   const handleNotificationClick = async (notificationId: string) => {
     setIsNotificationDropdownOpen(false); // Dropdown schließen
-    const notificationRef = doc(db, 'notifications', notificationId);
+
     try {
-      // Wir müssen nicht auf das Ergebnis warten, die UI wird durch den Listener aktualisiert
-      await updateDoc(notificationRef, { isRead: true });
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('Benutzer nicht authentifiziert');
+        return;
+      }
+
+      const token = await user.getIdToken();
+
+      const response = await fetch('/api/notifications/mark-read', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ notificationId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Markieren der Benachrichtigung');
+      }
+
+      console.log(`✅ Benachrichtigung ${notificationId} als gelesen markiert`);
     } catch (error) {
-      console.error('Fehler beim Aktualisieren der Benachrichtigung:', error);
+      console.error('Fehler beim Markieren der Benachrichtigung als gelesen:', error);
+      // Fallback zur direkten Firebase-Methode
+      try {
+        const notificationRef = doc(db, 'notifications', notificationId);
+        await updateDoc(notificationRef, { isRead: true });
+      } catch (fallbackError) {
+        console.error('Auch Fallback-Methode fehlgeschlagen:', fallbackError);
+      }
+    }
+  };
+
+  // NEU: Funktion zum Markieren aller Benachrichtigungen als gelesen
+  const handleMarkAllAsRead = async () => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('Benutzer nicht authentifiziert');
+        return;
+      }
+
+      const token = await user.getIdToken();
+
+      const response = await fetch('/api/notifications/mark-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler beim Markieren aller Benachrichtigungen');
+      }
+
+      const result = await response.json();
+      console.log(`✅ ${result.marked} Benachrichtigungen als gelesen markiert`);
+    } catch (error) {
+      console.error('Fehler beim Markieren aller Benachrichtigungen als gelesen:', error);
     }
   };
 
@@ -496,8 +556,16 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                 )}
                 {isNotificationDropdownOpen && currentUser && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
-                    <div className="p-3 border-b">
+                    <div className="p-3 border-b flex items-center justify-between">
                       <h4 className="font-semibold text-gray-800">Benachrichtigungen</h4>
+                      {unreadNotificationsCount > 0 && (
+                        <button
+                          onClick={handleMarkAllAsRead}
+                          className="text-xs text-[#14ad9f] hover:text-[#129488] font-medium"
+                        >
+                          Alle als gelesen markieren
+                        </button>
+                      )}
                     </div>
 
                     {/* Überfällige Rechnungen Alert für Company-Benutzer */}
@@ -520,7 +588,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             <Link
                               href={notification.link || '#'}
                               onClick={() => handleNotificationClick(notification.id)}
-                              className={`block p-3 hover:bg-gray-100 ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                              className="block p-3 hover:bg-gray-100 bg-blue-50"
                             >
                               <div className="flex items-start gap-3">
                                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
@@ -536,9 +604,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                   )}
                                 </div>
                                 <div className="flex-1 overflow-hidden">
-                                  <p
-                                    className={`text-sm ${!notification.isRead ? 'text-gray-900 font-medium' : 'text-gray-600'}`}
-                                  >
+                                  <p className="text-sm text-gray-900 font-medium">
                                     {notification.message}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-1">

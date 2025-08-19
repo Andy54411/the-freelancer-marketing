@@ -58,6 +58,32 @@ interface ReceivedQuoteDetail {
     additionalNotes: string;
     respondedAt: string;
   };
+  contactExchange?: {
+    exchangedAt: Date;
+    customerData: {
+      name: string;
+      email: string;
+      phone?: string;
+      address?: string;
+      postalCode?: string;
+      city?: string;
+      country?: string;
+      type: 'company' | 'individual';
+      uid: string;
+    };
+    providerData: {
+      name: string;
+      email: string;
+      phone?: string;
+      address?: string;
+      postalCode?: string;
+      city?: string;
+      country?: string;
+      type: 'company' | 'individual';
+      uid: string;
+    };
+    status: 'exchanged';
+  };
   responseDate?: Date;
   createdAt: Date;
 }
@@ -587,6 +613,134 @@ export default function ReceivedQuoteDetailPage() {
                     Angebot abgelehnt
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Kontaktdaten-Austausch für angenommene Angebote */}
+          {quote.status === 'accepted' && quote.contactExchange && (
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <FiUser className="mr-2 h-5 w-5 text-[#14ad9f]" />
+                Kontaktdaten ausgetauscht
+              </h3>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Anbieter Kontaktdaten */}
+                  <div className="bg-white rounded-lg p-4 border border-green-100">
+                    <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                      <FiBuilding className="mr-2 h-4 w-4 text-[#14ad9f]" />
+                      Anbieter Kontaktdaten
+                    </h4>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">Name:</span>
+                        <p className="text-sm text-gray-900">
+                          {quote.contactExchange.providerData.name}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">E-Mail:</span>
+                        <p className="text-sm text-gray-900">
+                          <a
+                            href={`mailto:${quote.contactExchange.providerData.email}`}
+                            className="text-[#14ad9f] hover:text-[#129488]"
+                          >
+                            {quote.contactExchange.providerData.email}
+                          </a>
+                        </p>
+                      </div>
+                      {quote.contactExchange.providerData.phone && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">Telefon:</span>
+                          <p className="text-sm text-gray-900">
+                            <a
+                              href={`tel:${quote.contactExchange.providerData.phone}`}
+                              className="text-[#14ad9f] hover:text-[#129488]"
+                            >
+                              {quote.contactExchange.providerData.phone}
+                            </a>
+                          </p>
+                        </div>
+                      )}
+                      {quote.contactExchange.providerData.address && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">Adresse:</span>
+                          <p className="text-sm text-gray-900">
+                            {quote.contactExchange.providerData.address}
+                          </p>
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">Typ:</span>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
+                            quote.contactExchange.providerData.type === 'company'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {quote.contactExchange.providerData.type === 'company'
+                            ? 'Unternehmen'
+                            : 'Einzelperson'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ihre Kontaktdaten (für Transparenz) */}
+                  <div className="bg-white rounded-lg p-4 border border-green-100">
+                    <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                      <FiUser className="mr-2 h-4 w-4 text-[#14ad9f]" />
+                      Ihre freigegebenen Kontaktdaten
+                    </h4>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">Name:</span>
+                        <p className="text-sm text-gray-900">
+                          {quote.contactExchange.customerData.name}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">E-Mail:</span>
+                        <p className="text-sm text-gray-900">
+                          {quote.contactExchange.customerData.email}
+                        </p>
+                      </div>
+                      {quote.contactExchange.customerData.phone && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">Telefon:</span>
+                          <p className="text-sm text-gray-900">
+                            {quote.contactExchange.customerData.phone}
+                          </p>
+                        </div>
+                      )}
+                      {quote.contactExchange.customerData.address && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">Adresse:</span>
+                          <p className="text-sm text-gray-900">
+                            {quote.contactExchange.customerData.address}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-green-200">
+                  <p className="text-sm text-green-700 flex items-center">
+                    <FiCheckCircle className="mr-2 h-4 w-4" />
+                    Kontaktdaten wurden am{' '}
+                    {new Date(quote.contactExchange.exchangedAt).toLocaleDateString('de-DE', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}{' '}
+                    automatisch ausgetauscht.
+                  </p>
+                </div>
               </div>
             </div>
           )}

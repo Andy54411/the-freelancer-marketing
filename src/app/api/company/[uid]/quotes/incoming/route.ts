@@ -135,16 +135,27 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           quoteData.response.items ||
           quoteData.response.estimatedDuration);
 
-      // Determine the correct status based on response and current status
+      // Determine the correct status based on response and customer decision
       let finalStatus = quoteData.status || 'pending';
-      if (hasResponse && finalStatus === 'pending') {
+      let customerDecision = null;
+
+      // Check if customer has made a decision (accepted/declined)
+      if (quoteData.customerDecision) {
+        customerDecision = quoteData.customerDecision;
+        finalStatus =
+          quoteData.customerDecision.action || quoteData.customerDecision.status || finalStatus; // 'accepted' or 'declined'
+      } else if (hasResponse && finalStatus === 'pending') {
         finalStatus = 'responded';
       }
 
       quotes.push({
         id: doc.id,
-        ...quoteData,
+        // Spread quoteData but exclude status to avoid duplication
+        ...Object.fromEntries(Object.entries(quoteData).filter(([key]) => key !== 'status')),
         customer: customerInfo,
+        status: finalStatus,
+        customerDecision: customerDecision,
+        contactExchange: quoteData.contactExchange || null,
         createdAt: quoteData.createdAt?.toDate?.() || new Date(quoteData.createdAt),
         // Map quote fields to expected structure
         title: quoteData.projectTitle || quoteData.projectDescription || 'Anfrage',
@@ -159,7 +170,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         preferredStartDate: quoteData.preferredStartDate,
         additionalNotes: quoteData.additionalNotes,
         response: quoteData.response, // Contains the company's response if answered
-        status: finalStatus, // Override with computed status
         hasResponse: hasResponse, // Add explicit flag for frontend
       });
     }

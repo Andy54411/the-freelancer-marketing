@@ -125,14 +125,26 @@ export default function ReceivedQuotesPage() {
   };
 
   // Format Date
-  const formatDate = (date: Date | string) => {
-    return new Intl.DateTimeFormat('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
+  const formatDate = (date: Date | string | number | undefined | null) => {
+    if (!date) return 'Unbekannt';
+
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) {
+        return 'Unbekannt';
+      }
+
+      return new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Error formatting date:', date, error);
+      return 'Unbekannt';
+    }
   };
 
   // Format Budget

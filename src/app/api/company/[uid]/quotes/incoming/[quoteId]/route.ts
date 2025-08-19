@@ -121,6 +121,8 @@ export async function GET(
         id: quoteId,
         ...quoteData,
         customer: customerInfo,
+        contactExchange: quoteData?.contactExchange || null, // Wichtig für ausgetauschte Kontaktdaten
+        customerDecision: quoteData?.customerDecision || null, // Wichtig für Kundenentscheidung
         createdAt: quoteData?.createdAt?.toDate?.() || new Date(quoteData?.createdAt),
         // Map quote fields to expected structure
         title: quoteData?.projectTitle || quoteData?.projectDescription || 'Anfrage',
