@@ -24,6 +24,7 @@ import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 import DirectChatModal from '@/components/DirectChatModal';
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import CreateOrderModal from '@/app/dashboard/user/[uid]/components/CreateOrderModal';
+import RequestQuoteModal from '@/components/RequestQuoteModal';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { UserProfileData } from '@/types/types';
@@ -89,6 +90,7 @@ export default function ProfilePage() {
   const [showChatModal, setShowChatModal] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isCreateOrderModalOpen, setIsCreateOrderModalOpen] = useState(false);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [bookingData, setBookingData] = useState<{
     selection: any;
@@ -918,7 +920,10 @@ export default function ProfilePage() {
 
                     {/* Buttons mit Taskilo-Farben */}
                     <div className="space-y-2 mb-4">
-                      <button className="w-full bg-[#14ad9f] text-white py-2.5 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors text-sm">
+                      <button
+                        onClick={() => setIsQuoteModalOpen(true)}
+                        className="w-full bg-[#14ad9f] text-white py-2.5 px-4 rounded-lg font-medium hover:bg-[#0d8a7a] transition-colors text-sm"
+                      >
                         Angebot anfordern
                       </button>
 
@@ -1036,6 +1041,33 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          {/* Request Quote Modal */}
+          {isQuoteModalOpen && profile && (
+            <RequestQuoteModal
+              isOpen={isQuoteModalOpen}
+              onClose={() => setIsQuoteModalOpen(false)}
+              provider={{
+                id: profile.id,
+                companyName: profile.companyName,
+                displayName: profile.displayName,
+                selectedCategory: profile.selectedCategory,
+                selectedSubcategory: profile.selectedSubcategory,
+                hourlyRate: profile.hourlyRate,
+                profilePictureFirebaseUrl: profile.profilePictureFirebaseUrl,
+                profilePictureURL: profile.profilePictureURL,
+                photoURL: profile.photoURL,
+                description: profile.description,
+                location: profile.city,
+                completedJobs: profile.completedJobs,
+                rating: profile.averageRating,
+                responseTime: profile.responseTime,
+                radiusKm: profile.radiusKm,
+              }}
+              preselectedCategory={profile.selectedCategory}
+              preselectedSubcategory={profile.selectedSubcategory}
+            />
+          )}
 
           {/* Review Management Modal */}
           {showReviewManagement && (
