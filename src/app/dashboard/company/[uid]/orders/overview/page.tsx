@@ -393,8 +393,11 @@ const CompanyOrdersOverviewPage = () => {
             {filteredOrders.map(order => (
               <li key={order.id}>
                 {orderType === 'ANGEBOTSANFRAGEN' ? (
-                  // Spezielle Darstellung für Angebotsanfragen
-                  <div className="block hover:bg-gray-50 px-4 py-4 sm:px-6">
+                  // Spezielle Darstellung für Angebotsanfragen mit Link
+                  <Link
+                    href={`/dashboard/company/${uidFromParams}/orders/quote/${order.id}`}
+                    className="block hover:bg-gray-50 px-4 py-4 sm:px-6"
+                  >
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-[#14ad9f] truncate w-2/3">
                         Angebotsanfrage: {order.service || order.title || 'Unbekannter Service'}
@@ -448,7 +451,7 @@ const CompanyOrdersOverviewPage = () => {
                         <p className="text-sm text-gray-600 line-clamp-2">{order.description}</p>
                       </div>
                     )}
-                  </div>
+                  </Link>
                 ) : (
                   // Original Darstellung für Aufträge
                   <Link

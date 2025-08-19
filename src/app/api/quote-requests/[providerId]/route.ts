@@ -5,9 +5,12 @@ import { db } from '@/firebase/server';
  * API Route zum Abrufen der Angebotsanfragen für einen Anbieter
  * GET /api/quote-requests/[providerId]
  */
-export async function GET(request: NextRequest, { params }: { params: { providerId: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ providerId: string }> }
+) {
   try {
-    const { providerId } = params;
+    const { providerId } = await params;
 
     if (!providerId) {
       return NextResponse.json({ error: 'Provider ID ist erforderlich' }, { status: 400 });
