@@ -73,7 +73,10 @@ const navigationItems: NavigationItem[] = [
     label: 'Angebots-Anfragen',
     icon: FiFileText,
     value: 'quotes',
-    subItems: [{ label: 'Eingehend', value: 'quotes-incoming', href: 'quotes/incoming' }],
+    subItems: [
+      { label: 'Eingehend', value: 'quotes-incoming', href: 'quotes/incoming' },
+      { label: 'Erhaltene Angebote', value: 'quotes-received', href: 'quotes/received' },
+    ],
   },
   {
     label: 'Posteingang',

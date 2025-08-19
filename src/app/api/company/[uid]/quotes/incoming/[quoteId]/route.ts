@@ -39,14 +39,48 @@ export async function GET(
     const quoteData = quoteDoc.data();
 
     // Verify that this quote is for this company
-    if (quoteData?.providerUid !== uid) {
+    if (quoteData?.providerId !== uid && quoteData?.providerUid !== uid) {
+      console.log('[Quote Details API] Quote provider mismatch:', {
+        quoteProviderId: quoteData?.providerId,
+        quoteProviderUid: quoteData?.providerUid,
+        expectedUid: uid,
+      });
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Get customer information
     let customerInfo = null;
 
-    if (quoteData.customerCompanyUid) {
+    // For quotes collection, customer info is stored directly in the quote
+    if (quoteData?.customerEmail && quoteData?.customerName) {
+      // First check if this customer is also a company (user_type: "firma")
+      let isCompanyCustomer = false;
+      let companyName = null;
+
+      // Search for user by email to check user_type
+      const userQuery = await db
+        .collection('users')
+        .where('email', '==', quoteData.customerEmail)
+        .limit(1)
+        .get();
+
+      if (!userQuery.empty) {
+        const userData = userQuery.docs[0].data();
+        if (userData.user_type === 'firma') {
+          isCompanyCustomer = true;
+          companyName = userData.companyName || userData.onboarding?.companyName;
+        }
+      }
+
+      customerInfo = {
+        name: companyName || quoteData.customerName || 'Unbekannter Kunde',
+        type: isCompanyCustomer ? 'company' : 'user',
+        email: quoteData.customerEmail,
+        phone: quoteData.customerPhone,
+        avatar: null, // Not available in quote structure
+        uid: userQuery.empty ? null : userQuery.docs[0].id,
+      };
+    } else if (quoteData.customerCompanyUid) {
       // B2B request - get company data
       const customerCompanyDoc = await db
         .collection('companies')
@@ -87,7 +121,21 @@ export async function GET(
         id: quoteId,
         ...quoteData,
         customer: customerInfo,
-        createdAt: quoteData.createdAt?.toDate?.() || new Date(quoteData.createdAt),
+        createdAt: quoteData?.createdAt?.toDate?.() || new Date(quoteData?.createdAt),
+        // Map quote fields to expected structure
+        title: quoteData?.projectTitle || quoteData?.projectDescription || 'Anfrage',
+        description: quoteData?.projectDescription,
+        category: quoteData?.projectCategory,
+        subcategory: quoteData?.projectSubcategory,
+        budget: quoteData?.budgetRange,
+        budgetRange: quoteData?.budgetRange,
+        location: quoteData?.location,
+        postalCode: quoteData?.postalCode,
+        urgency: quoteData?.urgency,
+        estimatedDuration: quoteData?.estimatedDuration,
+        preferredStartDate: quoteData?.preferredStartDate,
+        additionalNotes: quoteData?.additionalNotes,
+        response: quoteData?.response, // Contains the company's response if answered
       },
     });
   } catch (error) {
@@ -142,7 +190,7 @@ export async function PATCH(
     const quoteData = quoteDoc.data();
 
     // Verify that this quote is for this company
-    if (quoteData?.providerUid !== uid) {
+    if (quoteData?.providerId !== uid && quoteData?.providerUid !== uid) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -32,8 +32,11 @@ interface IncomingQuote {
     max: number;
     currency: string;
   };
+  budgetRange?: string; // String format like "1.000€ - 2.500€"
   deadline?: string;
   location?: string;
+  hasResponse?: boolean; // Flag indicating if the quote has been responded to
+  response?: any; // The actual response object
   customer: {
     name: string;
     type: 'user' | 'company';
@@ -142,7 +145,9 @@ export default function IncomingQuotesPage() {
     const matchesType = filterType === 'all' || customerType === filterType;
 
     return matchesSearch && matchesStatus && matchesType;
-  }); // Format Datum
+  });
+
+  // Format Datum
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('de-DE', {
       day: '2-digit',
@@ -150,17 +155,34 @@ export default function IncomingQuotesPage() {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(new Date(date));
+    }).format(date);
   };
 
   // Format Budget
-  const formatBudget = (budget?: { min: number; max: number; currency: string }) => {
+  const formatBudget = (budget?: { min: number; max: number; currency: string } | string) => {
     if (!budget) return 'Nicht angegeben';
+
+    // Handle string budget (like "1.000€ - 2.500€")
+    if (typeof budget === 'string') {
+      return budget;
+    }
+
+    // Handle object budget
     return `${budget.min.toLocaleString('de-DE')} - ${budget.max.toLocaleString('de-DE')} ${budget.currency}`;
   };
 
-  // Status Badge
-  const getStatusBadge = (status: string) => {
+  // Status Badge Component
+  const getStatusBadge = (status: string, hasResponse?: boolean) => {
+    // If there's a response, show as "responded" regardless of stored status
+    if (hasResponse) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+          <FiFileText className="mr-1 h-3 w-3" />
+          Beantwortet
+        </span>
+      );
+    }
+
     const statusStyles = {
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       responded: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -175,11 +197,21 @@ export default function IncomingQuotesPage() {
       declined: 'Abgelehnt',
     };
 
+    const statusIcons = {
+      pending: FiClock,
+      responded: FiFileText,
+      accepted: FiFileText,
+      declined: FiAlertCircle,
+    };
+
+    const StatusIcon = statusIcons[status] || FiClock;
+
     return (
       <span
-        className={`px-2 py-1 rounded-full text-xs font-medium border ${statusStyles[status as keyof typeof statusStyles] || statusStyles.pending}`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[status] || statusStyles.pending}`}
       >
-        {statusLabels[status as keyof typeof statusLabels] || status}
+        <StatusIcon className="mr-1 h-3 w-3" />
+        {statusLabels[status] || 'Unbekannt'}
       </span>
     );
   };
@@ -397,10 +429,10 @@ export default function IncomingQuotesPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatBudget(quote.budget)}
+                        {formatBudget(quote.budgetRange || quote.budget)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(quote.status)}
+                        {getStatusBadge(quote.status, quote.hasResponse)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(quote.createdAt)}

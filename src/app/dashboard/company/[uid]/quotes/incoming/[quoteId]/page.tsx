@@ -33,6 +33,7 @@ interface QuoteRequest {
     max: number;
     currency: string;
   };
+  budgetRange?: string; // String format like "1.000€ - 2.500€"
   deadline?: string;
   location?: string;
   requirements?: string[];
@@ -100,11 +101,14 @@ export default function IncomingQuoteDetailPage() {
       const token = await firebaseUser.getIdToken();
       if (!token) return;
 
-      const apiResponse = await fetch(`/api/quotes/${params.quoteId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const apiResponse = await fetch(
+        `/api/company/${params.uid}/quotes/incoming/${params.quoteId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (apiResponse.ok) {
         const data = await apiResponse.json();
@@ -243,8 +247,15 @@ export default function IncomingQuoteDetailPage() {
   };
 
   // Format Budget
-  const formatBudget = (budget?: { min: number; max: number; currency: string }) => {
+  const formatBudget = (budget?: { min: number; max: number; currency: string } | string) => {
     if (!budget) return 'Nicht angegeben';
+
+    // Handle string budget (like "1.000€ - 2.500€")
+    if (typeof budget === 'string') {
+      return budget;
+    }
+
+    // Handle object budget
     return `${budget.min.toLocaleString('de-DE')} - ${budget.max.toLocaleString('de-DE')} ${budget.currency}`;
   };
 
@@ -352,7 +363,9 @@ export default function IncomingQuoteDetailPage() {
                     <FiDollarSign className="mr-2 h-4 w-4" />
                     Budget
                   </div>
-                  <p className="text-gray-900 font-medium">{formatBudget(quote.budget)}</p>
+                  <p className="text-gray-900 font-medium">
+                    {formatBudget(quote.budgetRange || quote.budget)}
+                  </p>
                 </div>
 
                 <div>

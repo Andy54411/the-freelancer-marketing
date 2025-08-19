@@ -44,103 +44,123 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.log('[Incoming Quotes API] Company found:', companyData?.companyName);
 
     // Query for incoming quote requests where this company is the provider
-    console.log('[Incoming Quotes API] Querying requests for provider:', uid);
+    console.log('[Incoming Quotes API] Querying quotes for provider:', uid);
 
     // First, let's check what collections exist
-    const allRequestsSnapshot = await db.collection('requests').limit(5).get();
-    console.log('[Incoming Quotes API] Total requests in collection:', allRequestsSnapshot.size);
+    const allQuotesSnapshot = await db.collection('quotes').limit(5).get();
+    console.log('[Incoming Quotes API] Total quotes in collection:', allQuotesSnapshot.size);
 
-    if (allRequestsSnapshot.size > 0) {
-      allRequestsSnapshot.docs.forEach((doc, index) => {
-        console.log(`[Incoming Quotes API] Sample request ${index + 1}:`, {
+    if (allQuotesSnapshot.size > 0) {
+      allQuotesSnapshot.docs.forEach((doc, index) => {
+        console.log(`[Incoming Quotes API] Sample quote ${index + 1}:`, {
           id: doc.id,
           data: doc.data(),
         });
       });
     }
 
-    // Query requests collection for incoming quote requests
+    // Query quotes collection for incoming quote requests using providerId (from database structure)
     const quotesSnapshot = await db
-      .collection('requests')
-      .where('providerUid', '==', uid)
+      .collection('quotes')
+      .where('providerId', '==', uid)
       .orderBy('createdAt', 'desc')
       .get();
 
-    console.log('[Incoming Quotes API] Found requests with providerUid:', quotesSnapshot.size);
+    console.log('[Incoming Quotes API] Found quotes with providerId:', quotesSnapshot.size);
 
-    // Try alternative query patterns for requests
-    const altQuotes1 = await db.collection('requests').where('providerId', '==', uid).get();
-    console.log('[Incoming Quotes API] Found requests with providerId:', altQuotes1.size);
+    // Try alternative query patterns for quotes
+    const altQuotes1 = await db.collection('quotes').where('providerUid', '==', uid).get();
+    console.log('[Incoming Quotes API] Found quotes with providerUid:', altQuotes1.size);
 
-    const altQuotes2 = await db.collection('requests').where('companyId', '==', uid).get();
-    console.log('[Incoming Quotes API] Found requests with companyId:', altQuotes2.size);
+    const altQuotes2 = await db.collection('quotes').where('companyId', '==', uid).get();
+    console.log('[Incoming Quotes API] Found quotes with companyId:', altQuotes2.size);
 
-    const altQuotes3 = await db.collection('requests').where('serviceProviderId', '==', uid).get();
-    console.log('[Incoming Quotes API] Found requests with serviceProviderId:', altQuotes3.size);
+    const altQuotes3 = await db.collection('quotes').where('serviceProviderId', '==', uid).get();
+    console.log('[Incoming Quotes API] Found quotes with serviceProviderId:', altQuotes3.size);
 
     const quotes = [];
 
     for (const doc of quotesSnapshot.docs) {
-      const requestData = doc.data();
-      console.log('[Incoming Quotes API] Processing request:', doc.id, 'with data:', {
-        customerUid: requestData.customerUid,
-        userUid: requestData.userUid,
-        customerId: requestData.customerId,
-        title: requestData.title,
-        status: requestData.status,
-        description: requestData.description,
-        category: requestData.category,
-        subcategory: requestData.subcategory,
+      const quoteData = doc.data();
+      console.log('[Incoming Quotes API] Processing quote:', doc.id, 'with data:', {
+        customerEmail: quoteData.customerEmail,
+        customerName: quoteData.customerName,
+        projectTitle: quoteData.projectTitle,
+        status: quoteData.status,
+        projectDescription: quoteData.projectDescription,
+        projectCategory: quoteData.projectCategory,
+        projectSubcategory: quoteData.projectSubcategory,
+        budgetRange: quoteData.budgetRange,
+        providerId: quoteData.providerId,
       });
 
-      // Get customer information (can be user or company)
+      // For quotes collection, customer info is stored directly in the quote
       let customerInfo = null;
 
-      // Check different possible customer uid field names
-      const customerUid = requestData.customerUid || requestData.userUid || requestData.customerId;
+      if (quoteData.customerEmail && quoteData.customerName) {
+        // First check if this customer is also a company (user_type: "firma")
+        let isCompanyCustomer = false;
+        let companyName = null;
 
-      if (customerUid) {
-        console.log('[Incoming Quotes API] Getting customer data for:', customerUid);
+        // Search for user by email to check user_type
+        const userQuery = await db
+          .collection('users')
+          .where('email', '==', quoteData.customerEmail)
+          .limit(1)
+          .get();
 
-        // First try to get user data
-        const customerDoc = await db.collection('users').doc(customerUid).get();
-
-        if (customerDoc.exists) {
-          const customerData = customerDoc.data();
-          customerInfo = {
-            name:
-              `${customerData?.firstName || ''} ${customerData?.lastName || ''}`.trim() ||
-              customerData?.displayName ||
-              'Unbekannter Kunde',
-            type: 'user',
-            email: customerData?.email,
-            avatar: customerData?.photoURL,
-            uid: customerUid,
-          };
-        } else {
-          // If not found in users, try companies
-          const companyDoc = await db.collection('companies').doc(customerUid).get();
-          if (companyDoc.exists) {
-            const companyData = companyDoc.data();
-            customerInfo = {
-              name: companyData?.companyName || 'Unbekanntes Unternehmen',
-              type: 'company',
-              email: companyData?.email,
-              avatar: companyData?.logoUrl,
-              uid: customerUid,
-            };
+        if (!userQuery.empty) {
+          const userData = userQuery.docs[0].data();
+          if (userData.user_type === 'firma') {
+            isCompanyCustomer = true;
+            companyName = userData.companyName || userData.onboarding?.companyName;
           }
         }
+
+        customerInfo = {
+          name: companyName || quoteData.customerName || 'Unbekannter Kunde',
+          type: isCompanyCustomer ? 'company' : 'user',
+          email: quoteData.customerEmail,
+          phone: quoteData.customerPhone,
+          avatar: null, // Not available in quote structure
+          uid: userQuery.empty ? null : userQuery.docs[0].id,
+        };
+      }
+
+      // Check if this quote has been responded to
+      const hasResponse =
+        quoteData.response &&
+        typeof quoteData.response === 'object' &&
+        (quoteData.response.message ||
+          quoteData.response.items ||
+          quoteData.response.estimatedDuration);
+
+      // Determine the correct status based on response and current status
+      let finalStatus = quoteData.status || 'pending';
+      if (hasResponse && finalStatus === 'pending') {
+        finalStatus = 'responded';
       }
 
       quotes.push({
         id: doc.id,
-        ...requestData,
+        ...quoteData,
         customer: customerInfo,
-        createdAt: requestData.createdAt?.toDate?.() || new Date(requestData.createdAt),
-        // Map request fields to quote fields for consistency
-        title: requestData.title || requestData.description || 'Anfrage',
-        status: requestData.status || 'pending',
+        createdAt: quoteData.createdAt?.toDate?.() || new Date(quoteData.createdAt),
+        // Map quote fields to expected structure
+        title: quoteData.projectTitle || quoteData.projectDescription || 'Anfrage',
+        description: quoteData.projectDescription,
+        category: quoteData.projectCategory,
+        subcategory: quoteData.projectSubcategory,
+        budget: quoteData.budgetRange,
+        location: quoteData.location,
+        postalCode: quoteData.postalCode,
+        urgency: quoteData.urgency,
+        estimatedDuration: quoteData.estimatedDuration,
+        preferredStartDate: quoteData.preferredStartDate,
+        additionalNotes: quoteData.additionalNotes,
+        response: quoteData.response, // Contains the company's response if answered
+        status: finalStatus, // Override with computed status
+        hasResponse: hasResponse, // Add explicit flag for frontend
       });
     }
 
