@@ -118,7 +118,10 @@ export default function InventorySelector({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden">
+      <DialogContent
+        className="w-[95vw] max-w-none max-h-[90vh] overflow-hidden"
+        style={{ minWidth: '1200px', width: '95vw' }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="w-5 h-5 text-[#14ad9f]" />
@@ -169,17 +172,17 @@ export default function InventorySelector({
           {/* Inventar-Tabelle */}
           {!loading && filteredItems.length > 0 && (
             <div className="border rounded-lg overflow-hidden">
-              <div className="max-h-[50vh] overflow-y-auto">
-                <Table>
+              <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
+                <Table className="min-w-[1140px]">
                   <TableHeader className="sticky top-0 bg-gray-50">
                     <TableRow>
-                      <TableHead className="w-[280px]">Artikel</TableHead>
-                      <TableHead className="w-[120px]">SKU</TableHead>
-                      <TableHead className="w-[140px]">Kategorie</TableHead>
-                      <TableHead className="w-[160px]">Verfügbar</TableHead>
-                      <TableHead className="w-[120px]">Preis (€)</TableHead>
-                      <TableHead className="w-[100px]">Menge</TableHead>
-                      <TableHead className="w-[140px]">Aktion</TableHead>
+                      <TableHead className="w-[300px] min-w-[300px]">Artikel</TableHead>
+                      <TableHead className="w-[140px] min-w-[140px]">SKU</TableHead>
+                      <TableHead className="w-[150px] min-w-[150px]">Kategorie</TableHead>
+                      <TableHead className="w-[180px] min-w-[180px]">Verfügbar</TableHead>
+                      <TableHead className="w-[120px] min-w-[120px]">Preis (€)</TableHead>
+                      <TableHead className="w-[100px] min-w-[100px]">Menge</TableHead>
+                      <TableHead className="w-[150px] min-w-[150px]">Aktion</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -229,13 +232,13 @@ export default function InventorySelector({
                                 {availableStock <= 0 && (
                                   <AlertCircle
                                     className="w-3 h-3 text-red-500"
-                                    title="Nicht verfügbar"
+                                    aria-label="Nicht verfügbar"
                                   />
                                 )}
                                 {availableStock > 0 && availableStock <= item.minStock && (
                                   <AlertCircle
                                     className="w-3 h-3 text-orange-500"
-                                    title="Niedriger Lagerbestand"
+                                    aria-label="Niedriger Lagerbestand"
                                   />
                                 )}
                               </div>

@@ -7,7 +7,7 @@ import TimeBasedQuoteForm from './TimeBasedQuoteForm';
 
 interface QuoteFormToggleProps {
   companyId: string;
-  onSubmit: (data: any, isTimeBased: boolean) => Promise<void>;
+  onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -23,7 +23,9 @@ export default function QuoteFormToggle({
   const [activeForm, setActiveForm] = useState<FormType>('standard');
 
   const handleSubmit = async (data: any) => {
-    await onSubmit(data, activeForm === 'timeBased');
+    console.log('🔄 QuoteFormToggle handleSubmit called with:', data);
+    console.log('📋 Form type:', activeForm);
+    await onSubmit(data);
   };
 
   return (

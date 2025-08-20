@@ -49,54 +49,84 @@ export async function POST(
 
     // Get the quote document - first try quotes collection, then requests collection
     let quoteDoc = await db.collection('quotes').doc(quoteId).get();
-    let quoteData = null;
+    let quoteData: any = null;
     let collectionName = 'quotes';
 
-    if (!quoteDoc.exists) {
-      console.log('[Quote Action API] Quote not found in quotes collection, trying requests...');
+    if (quoteDoc.exists) {
+      quoteData = quoteDoc.data();
+    } else {
+      // Try requests collection as fallback
       quoteDoc = await db.collection('requests').doc(quoteId).get();
-      collectionName = 'requests';
+      if (quoteDoc.exists) {
+        quoteData = quoteDoc.data();
+        collectionName = 'requests';
+      }
     }
 
-    if (!quoteDoc.exists) {
-      console.log('[Quote Action API] Quote not found in either collection:', quoteId);
+    if (!quoteData) {
+      console.log('[Quote Action API] Quote not found in either collection');
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    quoteData = quoteDoc.data();
-    console.log('[Quote Action API] Quote found in', collectionName, ':', {
+    console.log('[Quote Action API] Found quote in collection:', collectionName);
+    console.log('[Quote Action API] Quote data:', {
       customerEmail: quoteData.customerEmail,
       providerId: quoteData.providerId || quoteData.providerUid,
       projectTitle: quoteData.projectTitle || quoteData.title,
       status: quoteData.status,
+      paymentStatus: quoteData.payment?.provisionStatus || 'none',
     });
 
-    // Verify this company is the customer for this quote
+    // CHECK: If quote is already accepted and action is accept, verify payment status
+    if (action === 'accept' && quoteData.status === 'accepted') {
+      console.log('[Quote Action API] Quote already accepted - checking payment status');
+
+      const paymentStatus = quoteData.payment?.provisionStatus;
+
+      if (paymentStatus === 'pending') {
+        console.log('[Quote Action API] Provision payment still pending');
+        return NextResponse.json(
+          {
+            error: 'Provision payment required',
+            message: 'Die 5% Provision muss vor dem Kontaktaustausch bezahlt werden',
+            paymentRequired: true,
+            provisionAmount: quoteData.payment?.provisionAmount || 0,
+          },
+          { status: 402 }
+        ); // Payment Required
+      }
+
+      if (paymentStatus !== 'paid') {
+        console.log('[Quote Action API] Invalid payment status:', paymentStatus);
+        return NextResponse.json(
+          {
+            error: 'Payment verification failed',
+            message: 'Zahlungsstatus konnte nicht verifiziert werden',
+          },
+          { status: 400 }
+        );
+      }
+
+      console.log('[Quote Action API] Provision payment verified - allowing contact exchange');
+    }
+
+    // Get user data for contact exchange
     const userDoc = await db.collection('users').doc(uid).get();
     if (!userDoc.exists) {
-      console.log('[Quote Action API] User not found:', uid);
+      console.log('[Quote Action API] User not found');
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const userData = userDoc.data();
-    const customerEmail = quoteData.customerEmail || quoteData.email;
+    console.log('[Quote Action API] User data found for UID:', uid);
 
-    if (userData.email !== customerEmail) {
-      console.log(
-        '[Quote Action API] User email mismatch. User:',
-        userData.email,
-        'Quote:',
-        customerEmail
-      );
-      return NextResponse.json({ error: 'Not authorized for this quote' }, { status: 403 });
-    }
-
-    // Update the quote status in the correct collection
+    // Update quote status
     const newStatus = action === 'accept' ? 'accepted' : 'declined';
+
     const updateData = {
       status: newStatus,
       customerDecision: {
-        action: newStatus,
+        action: action,
         decidedAt: admin.firestore.FieldValue.serverTimestamp(),
         decidedBy: uid,
       },
@@ -111,192 +141,129 @@ export async function POST(
       collectionName
     );
 
-    // If accepted, exchange contact information between both parties
+    // If accepted, set up provision payment requirement (DO NOT exchange contacts yet)
     if (action === 'accept') {
-      console.log('[Quote Action API] Quote accepted - exchanging contact information');
-      console.log('[Quote Action API] Original quote data:', JSON.stringify(quoteData, null, 2));
+      console.log('[Quote Action API] Quote accepted - setting up provision payment requirement');
 
-      try {
-        // Get provider (service provider) information
-        const providerId = quoteData.providerId || quoteData.providerUid;
-        console.log('[Quote Action API] Provider ID:', providerId);
+      const totalAmount = quoteData.response?.totalAmount || 0;
+      const provisionAmount = totalAmount * 0.05; // 5% provision
 
-        if (providerId) {
-          const providerDoc = await db.collection('users').doc(providerId).get();
-          console.log('[Quote Action API] Provider doc exists:', providerDoc.exists);
+      await db
+        .collection(collectionName)
+        .doc(quoteId)
+        .update({
+          payment: {
+            provisionStatus: 'pending',
+            provisionAmount: provisionAmount,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+        });
 
-          if (providerDoc.exists) {
-            const providerData = providerDoc.data();
-            console.log('[Quote Action API] Provider data:', JSON.stringify(providerData, null, 2));
-            console.log(
-              '[Quote Action API] Customer data (userData):',
-              JSON.stringify(userData, null, 2)
-            );
+      console.log('[Quote Action API] Provision payment requirement set:', provisionAmount, '€');
+      console.log(
+        '[Quote Action API] Contact exchange will happen AFTER successful provision payment via payment endpoint'
+      );
+    }
 
-            // Customer contact info to share with provider
-            const customerContactInfo = {
-              name:
-                userData.user_type === 'firma'
-                  ? userData.companyName ||
-                    userData.onboarding?.companyName ||
-                    'Unbekanntes Unternehmen'
-                  : `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-              email: userData.email,
-              phone: userData.phone || userData.onboarding?.phone,
-              address: userData.address || userData.onboarding?.address,
-              postalCode:
-                userData.postalCode ||
-                userData.step1?.personalPostalCode ||
-                userData.step2?.postalCode ||
-                userData.companyPostalCodeForBackend,
-              city:
-                userData.city ||
-                userData.step1?.personalCity ||
-                userData.step2?.city ||
-                userData.companyCityForBackend,
-              country:
-                userData.country ||
-                userData.step1?.personalCountry ||
-                userData.step2?.country ||
-                userData.companyCountryForBackend ||
-                'DE',
-              type: userData.user_type === 'firma' ? 'company' : 'individual',
-              uid: uid,
-            };
+    // If quote was already accepted and payment is verified, allow contact exchange
+    if (
+      action === 'accept' &&
+      quoteData.status === 'accepted' &&
+      quoteData.payment?.provisionStatus === 'paid'
+    ) {
+      console.log('[Quote Action API] Payment verified - exchanging contact information');
 
-            console.log(
-              '[Quote Action API] Customer contact info:',
-              JSON.stringify(customerContactInfo, null, 2)
-            );
+      // Exchange contact information between customer and provider
+      const providerId = quoteData.providerId || quoteData.providerUid;
 
-            // Provider contact info to share with customer
-            const providerContactInfo = {
-              name:
-                providerData.user_type === 'firma'
-                  ? providerData.companyName ||
-                    providerData.onboarding?.companyName ||
-                    'Unbekanntes Unternehmen'
-                  : `${providerData.firstName || ''} ${providerData.lastName || ''}`.trim(),
-              email: providerData.email,
-              phone: providerData.phone || providerData.onboarding?.phone,
-              address: providerData.address || providerData.onboarding?.address,
-              postalCode:
-                providerData.postalCode ||
-                providerData.step1?.personalPostalCode ||
-                providerData.step2?.postalCode ||
-                providerData.companyPostalCodeForBackend,
-              city:
-                providerData.city ||
-                providerData.step1?.personalCity ||
-                providerData.step2?.city ||
-                providerData.companyCityForBackend,
-              country:
-                providerData.country ||
-                providerData.step1?.personalCountry ||
-                providerData.step2?.country ||
-                providerData.companyCountryForBackend ||
-                'DE',
-              type: providerData.user_type === 'firma' ? 'company' : 'individual',
-              uid: providerId,
-            };
+      if (providerId) {
+        // Get provider data
+        const providerDoc = await db.collection('users').doc(providerId).get();
+        if (providerDoc.exists) {
+          const providerData = providerDoc.data();
 
-            console.log(
-              '[Quote Action API] Provider contact info:',
-              JSON.stringify(providerContactInfo, null, 2)
-            );
-
-            // Update quote with shared contact information
-            const contactUpdateData = {
+          // Update quote with contact exchange
+          await db
+            .collection(collectionName)
+            .doc(quoteId)
+            .update({
               contactExchange: {
                 exchangedAt: admin.firestore.FieldValue.serverTimestamp(),
-                customerData: customerContactInfo, // Geändert von customerContact zu customerData
-                providerData: providerContactInfo, // Geändert von providerContact zu providerData
-                status: 'exchanged',
+                customerContact: {
+                  name:
+                    userData?.firstName && userData?.lastName
+                      ? `${userData.firstName} ${userData.lastName}`
+                      : userData?.name || 'Kunde',
+                  email: userData?.email || quoteData.customerEmail,
+                  phone: userData?.phone,
+                },
+                providerContact: {
+                  name:
+                    providerData?.firstName && providerData?.lastName
+                      ? `${providerData.firstName} ${providerData.lastName}`
+                      : providerData?.name || 'Anbieter',
+                  email: providerData?.email,
+                  phone: providerData?.phone,
+                },
               },
-            };
+              status: 'contacts_exchanged',
+            });
 
-            console.log(
-              '[Quote Action API] Contact update data:',
-              JSON.stringify(contactUpdateData, null, 2)
-            );
-
-            await db.collection(collectionName).doc(quoteId).update(contactUpdateData);
-
-            console.log(
-              '[Quote Action API] Contact data successfully exchanged and saved to database'
-            );
-            console.log('[Quote Action API] Contact information exchanged successfully');
-
-            // Optional: Create notifications for both parties
-            const notificationPromises = [];
-
-            // Notification for provider
-            notificationPromises.push(
-              db.collection('notifications').add({
-                userId: providerId,
-                type: 'quote_accepted',
-                title: 'Angebot angenommen!',
-                message: `Ihr Angebot für "${quoteData.projectTitle || quoteData.title}" wurde angenommen. Kontaktdaten wurden freigegeben.`,
-                quoteId: quoteId,
-                customerContact: customerContactInfo,
-                read: false,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              })
-            );
-
-            // Notification for customer
-            notificationPromises.push(
-              db.collection('notifications').add({
-                userId: uid,
-                type: 'contact_exchanged',
-                title: 'Kontaktdaten erhalten',
-                message: `Die Kontaktdaten für Ihr angenommenes Angebot "${quoteData.projectTitle || quoteData.title}" wurden freigegeben.`,
-                quoteId: quoteId,
-                providerContact: providerContactInfo,
-                read: false,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              })
-            );
-
-            await Promise.all(notificationPromises);
-            console.log('[Quote Action API] Notifications sent to both parties');
-          }
+          console.log('[Quote Action API] Contact information exchanged successfully');
         }
-      } catch (contactError) {
-        console.error('[Quote Action API] Error exchanging contact information:', contactError);
-        // Don't fail the main operation if contact exchange fails
       }
     }
 
-    // Send notification to provider about the decision (for both accept/decline)
-    const providerId = quoteData.providerId || quoteData.providerUid;
-    if (providerId) {
-      try {
-        await db.collection('notifications').add({
-          userId: providerId,
-          type: action === 'accept' ? 'quote_accepted' : 'quote_declined',
-          title: action === 'accept' ? 'Angebot angenommen!' : 'Angebot abgelehnt',
-          message: `Ihr Angebot für "${quoteData.projectTitle || quoteData.title}" wurde ${action === 'accept' ? 'angenommen' : 'abgelehnt'}.`,
-          quoteId: quoteId,
-          read: false,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        console.log('[Quote Action API] Decision notification sent to provider');
-      } catch (notificationError) {
-        console.error('[Quote Action API] Error sending notification:', notificationError);
+    console.log('[Quote Action API] Quote action processed successfully');
+
+    // Determine response based on payment status and action
+    let responseData: any = {
+      quoteId,
+      action,
+      status: newStatus,
+    };
+
+    if (action === 'accept') {
+      const paymentStatus = quoteData.payment?.provisionStatus;
+
+      if (paymentStatus === 'paid') {
+        // Payment already completed - contacts exchanged
+        responseData = {
+          ...responseData,
+          contactsExchanged: true,
+          message: 'Angebot angenommen und Kontakte ausgetauscht',
+        };
+      } else {
+        // Payment required before contact exchange
+        responseData = {
+          ...responseData,
+          payment: {
+            provisionRequired: true,
+            provisionAmount: (quoteData.response?.totalAmount || 0) * 0.05,
+            status: 'pending',
+          },
+          message: 'Angebot angenommen - 5% Provision muss vor Kontaktaustausch bezahlt werden',
+        };
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: `Quote ${newStatus} successfully`,
-      quoteId,
-      newStatus,
+      message:
+        action === 'accept'
+          ? quoteData.payment?.provisionStatus === 'paid'
+            ? 'Quote accepted and contacts exchanged successfully'
+            : 'Quote accepted - provision payment required before contact exchange'
+          : `Quote ${action}ed successfully`,
+      data: responseData,
     });
   } catch (error) {
     console.error('[Quote Action API] Error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

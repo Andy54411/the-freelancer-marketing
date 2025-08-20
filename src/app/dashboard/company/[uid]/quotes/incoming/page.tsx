@@ -49,6 +49,14 @@ interface IncomingQuote {
     uid: string;
   };
   createdAt: Date;
+  payment?: {
+    provisionStatus: 'pending' | 'paid' | 'failed';
+    provisionAmount: number;
+    provisionPaymentIntentId?: string;
+    paymentIntentId?: string;
+    createdAt?: string;
+    paidAt?: string;
+  };
   customerType?: string;
   customerUid?: string;
   customerCompanyUid?: string;
@@ -199,32 +207,31 @@ export default function IncomingQuotesPage() {
   };
 
   // Status Badge Component
-  const getStatusBadge = (status: string, hasResponse?: boolean) => {
-    // Wenn der Status bereits accepted oder declined ist, zeige das an
-    if (status === 'accepted' || status === 'declined') {
-      const statusStyles = {
-        accepted: 'bg-green-100 text-green-800 border-green-200',
-        declined: 'bg-red-100 text-red-800 border-red-200',
-      };
+  const getStatusBadge = (status: string, hasResponse?: boolean, paymentStatus?: string) => {
+    // Special handling for accepted status - check payment
+    if (status === 'accepted') {
+      if (paymentStatus === 'paid') {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+            <FiCheckCircle className="mr-1 h-3 w-3" />
+            Angenommen
+          </span>
+        );
+      } else {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+            <FiClock className="mr-1 h-3 w-3" />
+            Zahlung ausstehend
+          </span>
+        );
+      }
+    }
 
-      const statusLabels = {
-        accepted: 'Angenommen',
-        declined: 'Abgelehnt',
-      };
-
-      const statusIcons = {
-        accepted: FiCheckCircle,
-        declined: FiXCircle,
-      };
-
-      const StatusIcon = statusIcons[status];
-
+    if (status === 'declined') {
       return (
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusStyles[status]}`}
-        >
-          <StatusIcon className="mr-1 h-3 w-3" />
-          {statusLabels[status]}
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+          <FiXCircle className="mr-1 h-3 w-3" />
+          Abgelehnt
         </span>
       );
     }
@@ -510,7 +517,11 @@ export default function IncomingQuotesPage() {
                         {formatBudget(quote.budgetRange || quote.budget)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(getActualStatus(quote), quote.hasResponse)}
+                        {getStatusBadge(
+                          getActualStatus(quote),
+                          quote.hasResponse,
+                          quote.payment?.provisionStatus
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(quote.createdAt)}

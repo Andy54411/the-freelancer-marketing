@@ -45,6 +45,14 @@ interface ReceivedQuote {
   response?: any;
   responseDate?: Date;
   createdAt: Date;
+  payment?: {
+    provisionStatus: 'pending' | 'paid' | 'failed';
+    provisionAmount: number;
+    provisionPaymentIntentId?: string;
+    paymentIntentId?: string;
+    createdAt?: string;
+    paidAt?: string;
+  };
 }
 
 export default function ReceivedQuotesPage() {
@@ -61,7 +69,7 @@ export default function ReceivedQuotesPage() {
   // Lade erhaltene Angebote
   const fetchReceivedQuotes = async () => {
     try {
-      if (!firebaseUser) return;
+      if (!firebaseUser || !params?.uid) return;
 
       console.log('[Frontend] Fetching received quotes for UID:', params.uid);
       const token = await firebaseUser.getIdToken();
@@ -96,10 +104,10 @@ export default function ReceivedQuotesPage() {
   };
 
   useEffect(() => {
-    if (firebaseUser && params.uid) {
+    if (firebaseUser && params?.uid) {
       fetchReceivedQuotes();
     }
-  }, [firebaseUser, params.uid]);
+  }, [firebaseUser, params?.uid]);
 
   // Filter Angebote
   const filteredQuotes = quotes.filter(quote => {
@@ -161,7 +169,7 @@ export default function ReceivedQuotesPage() {
   };
 
   // Status Badge
-  const getStatusBadge = (status: string, hasResponse: boolean) => {
+  const getStatusBadge = (status: string, hasResponse: boolean, paymentStatus?: string) => {
     if (hasResponse) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
@@ -169,6 +177,25 @@ export default function ReceivedQuotesPage() {
           Angebot erhalten
         </span>
       );
+    }
+
+    // Special handling for accepted status - check payment
+    if (status === 'accepted') {
+      if (paymentStatus === 'paid') {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+            <FiCheckCircle className="mr-1 h-3 w-3" />
+            Angenommen
+          </span>
+        );
+      } else {
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+            <FiClock className="mr-1 h-3 w-3" />
+            Wird verarbeitet
+          </span>
+        );
+      }
     }
 
     const statusStyles = {
@@ -407,7 +434,11 @@ export default function ReceivedQuotesPage() {
                       {formatBudget(quote.budgetRange || quote.budget)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(quote.status, quote.hasResponse)}
+                      {getStatusBadge(
+                        quote.status,
+                        quote.hasResponse,
+                        quote.payment?.provisionStatus
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(quote.createdAt)}
@@ -416,7 +447,7 @@ export default function ReceivedQuotesPage() {
                       <button
                         onClick={() =>
                           router.push(
-                            `/dashboard/company/${params.uid}/quotes/received/${quote.id}`
+                            `/dashboard/company/${params?.uid}/quotes/received/${quote.id}`
                           )
                         }
                         className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-[#14ad9f] bg-[#14ad9f]/10 hover:bg-[#14ad9f]/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
