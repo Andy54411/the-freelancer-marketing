@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import QuoteResponseForm from '@/components/quotes/QuoteResponseForm';
+import QuoteFormToggle from '@/components/quotes/QuoteFormToggle';
 import {
   ArrowLeft as FiArrowLeft,
   User as FiUser,
@@ -559,7 +559,7 @@ export default function QuoteDetailPage() {
                   </div>
                 </div>
               ) : (
-                <QuoteResponseForm
+                <QuoteFormToggle
                   onSubmit={handleQuoteSubmit}
                   onCancel={() => setShowResponseForm(false)}
                   loading={responding}

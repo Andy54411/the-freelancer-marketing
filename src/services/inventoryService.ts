@@ -23,6 +23,8 @@ export interface InventoryItem {
   category: string;
   unit: string; // Einheit (Stück, kg, Liter, etc.)
   currentStock: number;
+  reservedStock: number; // Reserviert für offene Angebote
+  availableStock: number; // currentStock - reservedStock
   minStock: number; // Mindestbestand
   maxStock?: number; // Maximalbestand
   purchasePrice: number; // Einkaufspreis
@@ -90,21 +92,33 @@ export interface InventoryCategory {
 
 export class InventoryService {
   /**
-   * Alle Inventar-Artikel eines Unternehmens laden
+   * Alle Inventar-Artikel einer Firma abrufen
    */
   static async getInventoryItems(companyId: string): Promise<InventoryItem[]> {
     try {
+      console.log('InventoryService: Loading items for companyId:', companyId);
+
       const itemsQuery = query(
         collection(db, 'inventory'),
         where('companyId', '==', companyId),
         orderBy('name', 'asc')
       );
 
+      console.log('InventoryService: Executing Firestore query...');
       const querySnapshot = await getDocs(itemsQuery);
       const items: InventoryItem[] = [];
 
+      console.log('InventoryService: Query returned', querySnapshot.size, 'documents');
+
       querySnapshot.forEach(doc => {
+        console.log('InventoryService: Processing doc ID:', doc.id);
+        console.log('InventoryService: Doc data:', doc.data());
+
         const data = doc.data();
+        const currentStock = data.currentStock || 0;
+        const reservedStock = data.reservedStock || 0;
+        const availableStock = currentStock - reservedStock;
+
         const item: InventoryItem = {
           id: doc.id,
           name: data.name || '',
@@ -112,7 +126,9 @@ export class InventoryService {
           sku: data.sku || '',
           category: data.category || 'Allgemein',
           unit: data.unit || 'Stück',
-          currentStock: data.currentStock || 0,
+          currentStock,
+          reservedStock,
+          availableStock,
           minStock: data.minStock || 0,
           maxStock: data.maxStock,
           purchasePrice: data.purchasePrice || 0,
@@ -130,17 +146,74 @@ export class InventoryService {
           dimensions: data.dimensions,
           notes: data.notes,
           // Berechnete Felder
-          stockValue: (data.currentStock || 0) * (data.purchasePrice || 0),
-          isLowStock: (data.currentStock || 0) <= (data.minStock || 0),
-          isOutOfStock: (data.currentStock || 0) === 0,
+          stockValue: currentStock * (data.purchasePrice || 0),
         };
+        console.log('InventoryService: Created item:', item);
         items.push(item);
       });
 
+      console.log('InventoryService: Final items array:', items);
       return items;
     } catch (error) {
-      console.error('Fehler beim Laden der Inventar-Artikel:', error);
+      console.error('InventoryService: Error loading inventory items:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Einzelnen Inventar-Artikel laden
+   */
+  static async getInventoryItem(companyId: string, itemId: string): Promise<InventoryItem | null> {
+    try {
+      const itemRef = doc(db, 'inventory', itemId);
+      const itemSnapshot = await getDocs(
+        query(
+          collection(db, 'inventory'),
+          where('__name__', '==', itemId),
+          where('companyId', '==', companyId)
+        )
+      );
+
+      if (itemSnapshot.empty) {
+        return null;
+      }
+
+      const data = itemSnapshot.docs[0].data();
+      const currentStock = data.currentStock || 0;
+      const reservedStock = data.reservedStock || 0;
+      const availableStock = currentStock - reservedStock;
+
+      return {
+        id: itemSnapshot.docs[0].id,
+        name: data.name || '',
+        description: data.description,
+        sku: data.sku || '',
+        category: data.category || 'Allgemein',
+        unit: data.unit || 'Stück',
+        currentStock,
+        reservedStock,
+        availableStock,
+        minStock: data.minStock || 0,
+        maxStock: data.maxStock,
+        purchasePrice: data.purchasePrice || 0,
+        sellingPrice: data.sellingPrice || 0,
+        supplierName: data.supplierName,
+        supplierContact: data.supplierContact,
+        location: data.location,
+        barcode: data.barcode,
+        image: data.image,
+        status: data.status || 'active',
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+        companyId: data.companyId || companyId,
+        weight: data.weight,
+        dimensions: data.dimensions,
+        notes: data.notes,
+        stockValue: currentStock * (data.purchasePrice || 0),
+      };
+    } catch (error) {
+      console.error('Fehler beim Laden des Inventar-Artikels:', error);
+      return null;
     }
   }
 
@@ -366,6 +439,206 @@ export class InventoryService {
       await deleteDoc(doc(db, 'inventory', itemId));
     } catch (error) {
       console.error('Fehler beim Löschen des Inventar-Artikels:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Artikel für Angebot reservieren
+   */
+  static async reserveItemsForQuote(
+    companyId: string,
+    quoteId: string,
+    items: { itemId: string; quantity: number }[]
+  ): Promise<void> {
+    try {
+      const batch = db.batch ? db.batch() : null;
+
+      for (const item of items) {
+        const itemRef = doc(db, 'inventory', item.itemId);
+        const currentItem = await this.getInventoryItem(companyId, item.itemId);
+
+        if (!currentItem) {
+          throw new Error(`Artikel ${item.itemId} nicht gefunden`);
+        }
+
+        if (currentItem.availableStock < item.quantity) {
+          throw new Error(`Nicht genügend verfügbare Artikel für ${currentItem.name}`);
+        }
+
+        const newReservedStock = (currentItem.reservedStock || 0) + item.quantity;
+        const newAvailableStock = currentItem.currentStock - newReservedStock;
+
+        if (batch) {
+          batch.update(itemRef, {
+            reservedStock: newReservedStock,
+            availableStock: newAvailableStock,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          await updateDoc(itemRef, {
+            reservedStock: newReservedStock,
+            availableStock: newAvailableStock,
+            updatedAt: serverTimestamp(),
+          });
+        }
+
+        // Reservierungs-Log erstellen
+        await addDoc(collection(db, 'stockMovements'), {
+          companyId,
+          itemId: item.itemId,
+          itemName: currentItem.name,
+          type: 'reserve',
+          quantity: item.quantity,
+          reason: `Reserviert für Angebot ${quoteId}`,
+          quoteId,
+          previousStock: currentItem.currentStock,
+          newStock: currentItem.currentStock,
+          reservedStock: newReservedStock,
+          unit: currentItem.unit,
+          createdAt: serverTimestamp(),
+          createdBy: companyId,
+        });
+      }
+
+      if (batch) {
+        await batch.commit();
+      }
+    } catch (error) {
+      console.error('Fehler beim Reservieren der Artikel:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reservierung für abgelehntes Angebot freigeben
+   */
+  static async releaseReservationForQuote(
+    companyId: string,
+    quoteId: string,
+    items: { itemId: string; quantity: number }[]
+  ): Promise<void> {
+    try {
+      const batch = db.batch ? db.batch() : null;
+
+      for (const item of items) {
+        const itemRef = doc(db, 'inventory', item.itemId);
+        const currentItem = await this.getInventoryItem(companyId, item.itemId);
+
+        if (!currentItem) {
+          console.warn(`Artikel ${item.itemId} nicht gefunden für Freigabe`);
+          continue;
+        }
+
+        const newReservedStock = Math.max(0, (currentItem.reservedStock || 0) - item.quantity);
+        const newAvailableStock = currentItem.currentStock - newReservedStock;
+
+        if (batch) {
+          batch.update(itemRef, {
+            reservedStock: newReservedStock,
+            availableStock: newAvailableStock,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          await updateDoc(itemRef, {
+            reservedStock: newReservedStock,
+            availableStock: newAvailableStock,
+            updatedAt: serverTimestamp(),
+          });
+        }
+
+        // Freigabe-Log erstellen
+        await addDoc(collection(db, 'stockMovements'), {
+          companyId,
+          itemId: item.itemId,
+          itemName: currentItem.name,
+          type: 'release',
+          quantity: item.quantity,
+          reason: `Freigegeben - Angebot ${quoteId} abgelehnt`,
+          quoteId,
+          previousStock: currentItem.currentStock,
+          newStock: currentItem.currentStock,
+          reservedStock: newReservedStock,
+          unit: currentItem.unit,
+          createdAt: serverTimestamp(),
+          createdBy: companyId,
+        });
+      }
+
+      if (batch) {
+        await batch.commit();
+      }
+    } catch (error) {
+      console.error('Fehler beim Freigeben der Reservierung:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Reservierte Artikel als verkauft markieren (Angebot angenommen)
+   */
+  static async sellReservedItems(
+    companyId: string,
+    quoteId: string,
+    items: { itemId: string; quantity: number }[]
+  ): Promise<void> {
+    try {
+      const batch = db.batch ? db.batch() : null;
+
+      for (const item of items) {
+        const itemRef = doc(db, 'inventory', item.itemId);
+        const currentItem = await this.getInventoryItem(companyId, item.itemId);
+
+        if (!currentItem) {
+          console.warn(`Artikel ${item.itemId} nicht gefunden für Verkauf`);
+          continue;
+        }
+
+        const newCurrentStock = currentItem.currentStock - item.quantity;
+        const newReservedStock = Math.max(0, (currentItem.reservedStock || 0) - item.quantity);
+        const newAvailableStock = newCurrentStock - newReservedStock;
+
+        if (batch) {
+          batch.update(itemRef, {
+            currentStock: newCurrentStock,
+            reservedStock: newReservedStock,
+            availableStock: newAvailableStock,
+            stockValue: newCurrentStock * currentItem.purchasePrice,
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          await updateDoc(itemRef, {
+            currentStock: newCurrentStock,
+            reservedStock: newReservedStock,
+            availableStock: newAvailableStock,
+            stockValue: newCurrentStock * currentItem.purchasePrice,
+            updatedAt: serverTimestamp(),
+          });
+        }
+
+        // Verkaufs-Log erstellen
+        await addDoc(collection(db, 'stockMovements'), {
+          companyId,
+          itemId: item.itemId,
+          itemName: currentItem.name,
+          type: 'out',
+          quantity: item.quantity,
+          reason: `Verkauft - Angebot ${quoteId} angenommen`,
+          quoteId,
+          previousStock: currentItem.currentStock,
+          newStock: newCurrentStock,
+          reservedStock: newReservedStock,
+          unit: currentItem.unit,
+          createdAt: serverTimestamp(),
+          createdBy: companyId,
+        });
+      }
+
+      if (batch) {
+        await batch.commit();
+      }
+    } catch (error) {
+      console.error('Fehler beim Verkaufen der reservierten Artikel:', error);
       throw error;
     }
   }

@@ -19,6 +19,7 @@ import {
   AlertCircle as FiAlertCircle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import QuoteFormToggle from '@/components/quotes/QuoteFormToggle';
 
 // Interface für Angebots-Anfrage Details
 interface QuoteRequest {
@@ -92,6 +93,12 @@ interface QuoteResponse {
     quantity: number;
     unitPrice: number;
     total: number;
+    // Neue Felder für zeitbasierte Projekte
+    isTimeBasedProject?: boolean;
+    startDate?: string;
+    endDate?: string;
+    hoursPerDay?: number;
+    workingDays?: string[];
   }>;
   totalAmount: number;
   currency: string;
@@ -111,9 +118,9 @@ export default function IncomingQuoteDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showResponseForm, setShowResponseForm] = useState(false);
 
-  // Angebots-Antwort State
+  // Angebots-Antwort State - nur für submitResponse Funktion benötigt
   const [response, setResponse] = useState<QuoteResponse>({
-    serviceItems: [{ title: '', description: '', quantity: 1, unitPrice: 0, total: 0 }],
+    serviceItems: [],
     totalAmount: 0,
     currency: 'EUR',
     timeline: '',
@@ -159,47 +166,6 @@ export default function IncomingQuoteDetailPage() {
       fetchQuoteDetails();
     }
   }, [firebaseUser, params.quoteId]);
-
-  // Service Item hinzufügen
-  const addServiceItem = () => {
-    setResponse(prev => ({
-      ...prev,
-      serviceItems: [
-        ...prev.serviceItems,
-        { title: '', description: '', quantity: 1, unitPrice: 0, total: 0 },
-      ],
-    }));
-  };
-
-  // Service Item entfernen
-  const removeServiceItem = (index: number) => {
-    setResponse(prev => ({
-      ...prev,
-      serviceItems: prev.serviceItems.filter((_, i) => i !== index),
-    }));
-  };
-
-  // Service Item aktualisieren
-  const updateServiceItem = (index: number, field: string, value: any) => {
-    setResponse(prev => {
-      const newItems = [...prev.serviceItems];
-      newItems[index] = { ...newItems[index], [field]: value };
-
-      // Berechne Total für dieses Item
-      if (field === 'quantity' || field === 'unitPrice') {
-        newItems[index].total = newItems[index].quantity * newItems[index].unitPrice;
-      }
-
-      // Berechne Gesamtsumme
-      const totalAmount = newItems.reduce((sum, item) => sum + item.total, 0);
-
-      return {
-        ...prev,
-        serviceItems: newItems,
-        totalAmount,
-      };
-    });
-  };
 
   // Angebot senden
   const submitResponse = async () => {
@@ -756,205 +722,34 @@ export default function IncomingQuoteDetailPage() {
                   </button>
                 </div>
 
-                <div className="space-y-6">
-                  {/* Service Items */}
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-gray-900">Leistungen</h3>
-                      <button
-                        onClick={addServiceItem}
-                        className="bg-[#14ad9f] hover:bg-[#129488] text-white px-3 py-1 rounded text-sm"
-                      >
-                        Position hinzufügen
-                      </button>
-                    </div>
-
-                    <div className="space-y-4">
-                      {response.serviceItems.map((item, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="lg:col-span-2">
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Titel
-                              </label>
-                              <input
-                                type="text"
-                                value={item.title}
-                                onChange={e => updateServiceItem(index, 'title', e.target.value)}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                                placeholder="z.B. Webdesign"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Menge
-                              </label>
-                              <input
-                                type="number"
-                                value={item.quantity}
-                                onChange={e =>
-                                  updateServiceItem(
-                                    index,
-                                    'quantity',
-                                    parseInt(e.target.value) || 0
-                                  )
-                                }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                                min="1"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Einzelpreis (EUR)
-                              </label>
-                              <input
-                                type="number"
-                                value={item.unitPrice}
-                                onChange={e =>
-                                  updateServiceItem(
-                                    index,
-                                    'unitPrice',
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="mt-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Beschreibung
-                            </label>
-                            <textarea
-                              value={item.description}
-                              onChange={e =>
-                                updateServiceItem(index, 'description', e.target.value)
-                              }
-                              rows={2}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                              placeholder="Detaillierte Beschreibung der Leistung"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between mt-4">
-                            <div className="text-sm text-gray-600">
-                              Zwischensumme:{' '}
-                              <span className="font-medium text-white">
-                                {item.total.toLocaleString('de-DE', {
-                                  style: 'currency',
-                                  currency: 'EUR',
-                                })}
-                              </span>
-                            </div>
-                            {response.serviceItems.length > 1 && (
-                              <button
-                                onClick={() => removeServiceItem(index)}
-                                className="text-red-600 hover:text-red-800 text-sm"
-                              >
-                                Entfernen
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                      <div className="flex justify-between items-center">
-                        <span className="text-lg font-medium text-gray-900">Gesamtsumme:</span>
-                        <span className="text-xl font-bold text-white">
-                          {response.totalAmount.toLocaleString('de-DE', {
-                            style: 'currency',
-                            currency: 'EUR',
-                          })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Weitere Angaben */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Zeitrahmen
-                      </label>
-                      <input
-                        type="text"
-                        value={response.timeline}
-                        onChange={e => setResponse(prev => ({ ...prev, timeline: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                        placeholder="z.B. 2-3 Wochen"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Gültig bis
-                      </label>
-                      <input
-                        type="date"
-                        value={response.validUntil}
-                        onChange={e =>
-                          setResponse(prev => ({ ...prev, validUntil: e.target.value }))
-                        }
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Bedingungen
-                    </label>
-                    <textarea
-                      value={response.terms}
-                      onChange={e => setResponse(prev => ({ ...prev, terms: e.target.value }))}
-                      rows={3}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                      placeholder="Zahlungsbedingungen, Garantien, etc."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Zusätzliche Notizen
-                    </label>
-                    <textarea
-                      value={response.notes}
-                      onChange={e => setResponse(prev => ({ ...prev, notes: e.target.value }))}
-                      rows={3}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                      placeholder="Weitere Informationen für den Kunden"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
-                  <button
-                    onClick={() => setShowResponseForm(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                  >
-                    Abbrechen
-                  </button>
-                  <button
-                    onClick={submitResponse}
-                    disabled={
-                      submitting ||
-                      response.serviceItems.some(item => !item.title || item.unitPrice <= 0)
-                    }
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-6 py-2 rounded-lg flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {submitting ? (
-                      <FiLoader className="animate-spin mr-2 h-4 w-4" />
-                    ) : (
-                      <FiSend className="mr-2 h-4 w-4" />
-                    )}
-                    Angebot senden
-                  </button>
-                </div>
+                <QuoteFormToggle
+                  companyId={params.uid}
+                  onSubmit={async data => {
+                    // Konvertiere die FormData in das erwartete Format
+                    const quoteData = {
+                      serviceItems: data.serviceItems.map(item => ({
+                        title: item.description,
+                        description: item.description,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        total: item.quantity * item.unitPrice,
+                      })),
+                      totalAmount: data.serviceItems.reduce(
+                        (sum, item) => sum + item.quantity * item.unitPrice,
+                        0
+                      ),
+                      currency: 'EUR',
+                      timeline: data.estimatedDuration || '',
+                      terms: '',
+                      validUntil: data.availableFrom || '',
+                      notes: data.additionalNotes || '',
+                    };
+                    setResponse(quoteData);
+                    await submitResponse();
+                  }}
+                  onCancel={() => setShowResponseForm(false)}
+                  loading={submitting}
+                />
               </div>
             </div>
           </div>

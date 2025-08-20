@@ -11,11 +11,14 @@ import {
   Plus as FiPlus,
   X as FiX,
 } from 'lucide-react';
+import InventorySelector from './InventorySelector';
+import { InventoryItem, InventoryService } from '@/services/inventoryService';
 
 interface QuoteResponseFormProps {
   onSubmit: (data: QuoteResponseData) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
+  companyId: string; // Neu hinzugefügt für Inventar-Zugriff
 }
 
 interface QuoteResponseData {
@@ -25,6 +28,8 @@ interface QuoteResponseData {
   availableFrom?: string;
   serviceItems: ServiceItem[];
   additionalNotes?: string;
+  reservedInventoryItems?: { itemId: string; quantity: number }[]; // Neu
+  tempQuoteId?: string; // Neu: Temporäre Quote-ID für Reservierung
 }
 
 interface ServiceItem {
@@ -33,12 +38,15 @@ interface ServiceItem {
   quantity: number;
   unitPrice: number;
   unit: string; // 'Stück', 'Stunden', 'Tage', 'Pauschal'
+  inventoryItemId?: string; // Neu: Referenz zum Inventar-Item
+  sku?: string; // Neu: SKU für Inventar-Items
 }
 
 export default function QuoteResponseForm({
   onSubmit,
   onCancel,
   loading = false,
+  companyId,
 }: QuoteResponseFormProps) {
   const [formData, setFormData] = useState<QuoteResponseData>({
     message: '',
@@ -55,6 +63,29 @@ export default function QuoteResponseForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Inventar-Item zu Service-Items hinzufügen
+  const handleAddInventoryItem = (inventoryItem: InventoryItem, quantity: number) => {
+    const newServiceItem: ServiceItem = {
+      id: Date.now().toString(),
+      description: inventoryItem.name,
+      quantity: quantity,
+      unitPrice: inventoryItem.sellingPrice,
+      unit: inventoryItem.unit,
+      inventoryItemId: inventoryItem.id,
+      sku: inventoryItem.sku,
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      serviceItems: [...prev.serviceItems, newServiceItem],
+    }));
+  };
+
+  // Ausgewählte Inventar-Items (für UI-Feedback)
+  const selectedInventoryItems = formData.serviceItems
+    .filter(item => item.inventoryItemId)
+    .map(item => item.inventoryItemId!);
 
   // Funktion zum Prüfen auf verbotene Kontaktdaten
   const containsContactInfo = (text: string): string | null => {
@@ -263,14 +294,37 @@ export default function QuoteResponseForm({
       return;
     }
 
-    // Calculate total estimated price
-    const totalPrice = calculateTotalPrice();
-    const dataToSubmit = {
-      ...formData,
-      estimatedPrice: totalPrice > 0 ? totalPrice : undefined,
-    };
+    // Inventar-Items reservieren
+    const inventoryItems = formData.serviceItems
+      .filter(item => item.inventoryItemId)
+      .map(item => ({
+        itemId: item.inventoryItemId!,
+        quantity: item.quantity,
+      }));
 
-    await onSubmit(dataToSubmit);
+    try {
+      // Erstelle eine temporäre Quote-ID für die Reservierung
+      const tempQuoteId = `temp-${Date.now()}`;
+
+      if (inventoryItems.length > 0 && companyId) {
+        await InventoryService.reserveItemsForQuote(companyId, tempQuoteId, inventoryItems);
+      }
+
+      // Calculate total estimated price
+      const totalPrice = calculateTotalPrice();
+      const dataToSubmit = {
+        ...formData,
+        estimatedPrice: totalPrice > 0 ? totalPrice : undefined,
+        reservedInventoryItems: inventoryItems,
+        tempQuoteId: tempQuoteId, // Für spätere Verknüpfung
+      };
+
+      await onSubmit(dataToSubmit);
+    } catch (error) {
+      console.error('Fehler beim Reservieren der Inventar-Items:', error);
+      // TODO: Benutzer über Fehler informieren
+      alert('Fehler beim Reservieren der Artikel. Bitte versuchen Sie es erneut.');
+    }
   };
 
   const unitOptions = [
@@ -283,12 +337,7 @@ export default function QuoteResponseForm({
   ];
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-medium text-gray-900 mb-6 flex items-center">
-        <FiFileText className="mr-2 h-5 w-5 text-[#14ad9f]" />
-        Auf Anfrage antworten
-      </h2>
-
+    <div>
       {/* Hinweis zum Datenschutz */}
       <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex">
@@ -338,14 +387,21 @@ export default function QuoteResponseForm({
         <div>
           <div className="flex items-center justify-between mb-4">
             <label className="block text-sm font-medium text-gray-700">Leistungspositionen</label>
-            <button
-              type="button"
-              onClick={addServiceItem}
-              className="inline-flex items-center px-3 py-1 border border-[#14ad9f] text-sm font-medium rounded-md text-[#14ad9f] bg-white hover:bg-[#14ad9f] hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] transition-colors"
-            >
-              <FiPlus className="mr-1 h-4 w-4" />
-              Position hinzufügen
-            </button>
+            <div className="flex items-center gap-2">
+              <InventorySelector
+                companyId={companyId}
+                onSelectItem={handleAddInventoryItem}
+                selectedItems={selectedInventoryItems}
+              />
+              <button
+                type="button"
+                onClick={addServiceItem}
+                className="inline-flex items-center px-3 py-1 border border-[#14ad9f] text-sm font-medium rounded-md text-[#14ad9f] bg-white hover:bg-[#14ad9f] hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] transition-colors"
+              >
+                <FiPlus className="mr-1 h-4 w-4" />
+                Position hinzufügen
+              </button>
+            </div>
           </div>
 
           <div className="space-y-4">
