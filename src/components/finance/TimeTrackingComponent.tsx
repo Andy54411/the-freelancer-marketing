@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -27,17 +26,16 @@ import {
   Play,
   Pause,
   Square,
-  Plus,
   Edit3,
   Trash2,
   BarChart3,
   Timer,
   Loader2,
   Calendar,
-  User,
   DollarSign,
   TrendingUp,
   Folder,
+  ClipboardEdit,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -48,6 +46,7 @@ import {
 } from '@/services/timeTrackingService';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { ManualTimeEntry } from './ManualTimeEntry';
 
 // Firebase Project Interface (von ProjectsComponent)
 interface FirebaseProject {
@@ -108,20 +107,9 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
     category: '',
   });
 
-  const [manualEntryForm, setManualEntryForm] = useState({
-    description: '',
-    projectId: '',
-    date: new Date().toISOString().split('T')[0],
-    startTime: '09:00',
-    endTime: '17:00',
-    hourlyRate: 75,
-    billable: true,
-    notes: '',
-  });
-
-  const [showManualEntry, setShowManualEntry] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [report, setReport] = useState<TimeTrackingReport | null>(null);
+  const [timeEntryMode, setTimeEntryMode] = useState<'timer' | 'manual'>('timer');
 
   useEffect(() => {
     loadData();
@@ -252,30 +240,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
     }
   };
 
-  // Neue Funktion zum Behandeln der Projektauswahl bei manueller Zeiterfassung
-  const handleManualProjectSelection = (projectId: string) => {
-    const selectedProject = firebaseProjects.find(p => p.id === projectId);
-
-    if (selectedProject) {
-      // Automatisch Stundensatz aus dem Projekt übernehmen
-      setManualEntryForm(prev => ({
-        ...prev,
-        projectId,
-        hourlyRate: selectedProject.hourlyRate || prev.hourlyRate,
-      }));
-
-      toast.success(
-        `Projekt "${selectedProject.name}" ausgewählt - Stundensatz: ${selectedProject.hourlyRate}€`
-      );
-    } else {
-      // Projekt entfernt
-      setManualEntryForm(prev => ({
-        ...prev,
-        projectId,
-      }));
-    }
-  };
-
   const handleStartTimer = async () => {
     try {
       if (!newEntryForm.description.trim()) {
@@ -283,18 +247,23 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
         return;
       }
 
-      const entryId = await TimeTrackingService.startTimeEntry({
+      // Bereite Daten vor und filtere undefined Werte heraus
+      const entryData: any = {
         companyId,
         userId,
         description: newEntryForm.description,
-        projectId: newEntryForm.projectId || undefined,
-        customerId: newEntryForm.customerId || undefined,
-        customerName: newEntryForm.customerName || undefined,
         hourlyRate: newEntryForm.hourlyRate,
         billable: newEntryForm.billable,
-        category: newEntryForm.category || undefined,
-        startTime: new Date(), // Erforderliches Feld hinzugefügt
-      });
+        startTime: new Date(),
+      };
+
+      // Nur definierte Werte hinzufügen
+      if (newEntryForm.projectId) entryData.projectId = newEntryForm.projectId;
+      if (newEntryForm.customerId) entryData.customerId = newEntryForm.customerId;
+      if (newEntryForm.customerName) entryData.customerName = newEntryForm.customerName;
+      if (newEntryForm.category) entryData.category = newEntryForm.category;
+
+      const entryId = await TimeTrackingService.startTimeEntry(entryData);
 
       toast.success('Zeiterfassung gestartet');
       await loadData();
@@ -343,38 +312,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
     }
   };
 
-  const handleCreateManualEntry = async () => {
-    try {
-      const startDateTime = new Date(`${manualEntryForm.date}T${manualEntryForm.startTime}`);
-      const endDateTime = new Date(`${manualEntryForm.date}T${manualEntryForm.endTime}`);
-
-      if (endDateTime <= startDateTime) {
-        toast.error('Endzeit muss nach der Startzeit liegen');
-        return;
-      }
-
-      await TimeTrackingService.createManualTimeEntry({
-        companyId,
-        userId,
-        description: manualEntryForm.description,
-        projectId: manualEntryForm.projectId || undefined,
-        startTime: startDateTime,
-        endTime: endDateTime,
-        hourlyRate: manualEntryForm.hourlyRate,
-        billable: manualEntryForm.billable,
-        notes: manualEntryForm.notes || undefined,
-      });
-
-      toast.success('Zeiteintrag erfolgreich erstellt');
-      setShowManualEntry(false);
-      resetManualForm();
-      await loadData();
-    } catch (error) {
-      console.error('Fehler beim Erstellen des Zeiteintrags:', error);
-      toast.error('Zeiteintrag konnte nicht erstellt werden');
-    }
-  };
-
   const handleDeleteEntry = async (entryId: string) => {
     try {
       if (!confirm('Möchten Sie diesen Zeiteintrag wirklich löschen?')) {
@@ -409,19 +346,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       console.error('Fehler beim Generieren des Reports:', error);
       toast.error('Report konnte nicht generiert werden');
     }
-  };
-
-  const resetManualForm = () => {
-    setManualEntryForm({
-      description: '',
-      projectId: '',
-      date: new Date().toISOString().split('T')[0],
-      startTime: '09:00',
-      endTime: '17:00',
-      hourlyRate: 75,
-      billable: true,
-      notes: '',
-    });
   };
 
   const formatTime = (seconds: number): string => {
@@ -495,13 +419,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
           <Button variant="outline" onClick={generateReport}>
             <BarChart3 className="h-4 w-4 mr-2" />
             Report
-          </Button>
-          <Button
-            onClick={() => setShowManualEntry(true)}
-            className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Manueller Eintrag
           </Button>
         </div>
       </div>
@@ -591,172 +508,220 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
         </TabsList>
 
         <TabsContent value="timer" className="space-y-4">
-          {/* Timer Widget */}
+          {/* Mode Selection */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Timer className="h-5 w-5 mr-2" />
-                Zeiterfassung
-              </CardTitle>
-              <CardDescription>
-                Starten Sie eine neue Zeiterfassung oder verwalten Sie laufende Timer
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Aktueller Timer */}
-              {runningEntry ? (
-                <div className="text-center p-8 bg-gray-50 rounded-lg">
-                  <div className="text-6xl font-mono font-bold text-[#14ad9f] mb-4">
-                    {formatTime(timerSeconds)}
-                  </div>
-                  <div className="text-lg text-gray-700 mb-2">{runningEntry.description}</div>
-                  {runningEntry.projectName && (
-                    <div className="text-sm text-gray-600 mb-4">
-                      Projekt: {runningEntry.projectName}
-                    </div>
-                  )}
-                  <div className="flex gap-2 justify-center">
-                    {runningEntry.status === 'running' ? (
-                      <>
-                        <Button onClick={handlePauseTimer} variant="outline">
-                          <Pause className="h-4 w-4 mr-2" />
-                          Pausieren
-                        </Button>
-                        <Button onClick={handleStopTimer} variant="destructive">
-                          <Square className="h-4 w-4 mr-2" />
-                          Stoppen
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button
-                          onClick={handleResumeTimer}
-                          className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-                        >
-                          <Play className="h-4 w-4 mr-2" />
-                          Fortsetzen
-                        </Button>
-                        <Button onClick={handleStopTimer} variant="destructive">
-                          <Square className="h-4 w-4 mr-2" />
-                          Stoppen
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Beschreibung *</Label>
-                      <Input
-                        id="description"
-                        value={newEntryForm.description}
-                        onChange={e =>
-                          setNewEntryForm(prev => ({ ...prev, description: e.target.value }))
-                        }
-                        placeholder="Was arbeiten Sie gerade?"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="project">
-                        Projekt wählen (optional)
-                        {newEntryForm.projectId && (
-                          <span className="ml-2 text-sm text-green-600">✓ Ausgewählt</span>
-                        )}
-                      </Label>
-                      <Select value={newEntryForm.projectId} onValueChange={handleProjectSelection}>
-                        <SelectTrigger
-                          className={newEntryForm.projectId ? 'ring-1 ring-green-500' : ''}
-                        >
-                          <SelectValue placeholder="Projekt wählen (optional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {firebaseProjects.map(project => (
-                            <SelectItem key={project.id} value={project.id}>
-                              <div className="flex flex-col">
-                                <span>{project.name}</span>
-                                <span className="text-xs text-gray-500">
-                                  {project.client} • {project.hourlyRate}€/h
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="customerName">Kunde</Label>
-                      <Input
-                        id="customerName"
-                        value={newEntryForm.customerName}
-                        onChange={e =>
-                          setNewEntryForm(prev => ({ ...prev, customerName: e.target.value }))
-                        }
-                        placeholder="Kundenname (optional)"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="hourlyRate">Stundensatz (€)</Label>
-                      <Input
-                        id="hourlyRate"
-                        type="number"
-                        step="0.01"
-                        value={newEntryForm.hourlyRate}
-                        onChange={e =>
-                          setNewEntryForm(prev => ({
-                            ...prev,
-                            hourlyRate: parseFloat(e.target.value) || 0,
-                          }))
-                        }
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Kategorie</Label>
-                      <Input
-                        id="category"
-                        value={newEntryForm.category}
-                        onChange={e =>
-                          setNewEntryForm(prev => ({ ...prev, category: e.target.value }))
-                        }
-                        placeholder="z.B. Entwicklung, Meeting"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="billable"
-                      checked={newEntryForm.billable}
-                      onChange={e =>
-                        setNewEntryForm(prev => ({ ...prev, billable: e.target.checked }))
-                      }
-                      className="w-4 h-4 text-[#14ad9f]"
-                    />
-                    <Label htmlFor="billable">Abrechenbar</Label>
-                  </div>
-
-                  <div className="text-center">
-                    <Button
-                      onClick={handleStartTimer}
-                      disabled={!newEntryForm.description.trim()}
-                      className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white px-8 py-3 text-lg"
-                    >
-                      <Play className="h-5 w-5 mr-2" />
-                      Timer starten
-                    </Button>
-                  </div>
-                </div>
-              )}
+            <CardContent className="p-4">
+              <div className="flex rounded-lg bg-gray-100 p-1">
+                <button
+                  onClick={() => setTimeEntryMode('timer')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    timeEntryMode === 'timer'
+                      ? 'bg-[#14ad9f] text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Timer className="h-4 w-4 inline mr-2" />
+                  Timer
+                </button>
+                <button
+                  onClick={() => setTimeEntryMode('manual')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                    timeEntryMode === 'manual'
+                      ? 'bg-[#14ad9f] text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <ClipboardEdit className="h-4 w-4 inline mr-2" />
+                  Manuell
+                </button>
+              </div>
             </CardContent>
           </Card>
+
+          {timeEntryMode === 'timer' ? (
+            /* Timer Widget */
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Timer className="h-5 w-5 mr-2" />
+                  Zeiterfassung mit Timer
+                </CardTitle>
+                <CardDescription>
+                  Starten Sie eine neue Zeiterfassung oder verwalten Sie laufende Timer
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Aktueller Timer */}
+                {runningEntry ? (
+                  <div className="text-center p-8 bg-gray-50 rounded-lg">
+                    <div className="text-6xl font-mono font-bold text-[#14ad9f] mb-4">
+                      {formatTime(timerSeconds)}
+                    </div>
+                    <div className="text-lg text-gray-700 mb-2">{runningEntry.description}</div>
+                    {runningEntry.projectName && (
+                      <div className="text-sm text-gray-600 mb-4">
+                        Projekt: {runningEntry.projectName}
+                      </div>
+                    )}
+                    <div className="flex gap-2 justify-center">
+                      {runningEntry.status === 'running' ? (
+                        <>
+                          <Button onClick={handlePauseTimer} variant="outline">
+                            <Pause className="h-4 w-4 mr-2" />
+                            Pausieren
+                          </Button>
+                          <Button onClick={handleStopTimer} variant="destructive">
+                            <Square className="h-4 w-4 mr-2" />
+                            Stoppen
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            onClick={handleResumeTimer}
+                            className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Fortsetzen
+                          </Button>
+                          <Button onClick={handleStopTimer} variant="destructive">
+                            <Square className="h-4 w-4 mr-2" />
+                            Stoppen
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Beschreibung *</Label>
+                        <Input
+                          id="description"
+                          value={newEntryForm.description}
+                          onChange={e =>
+                            setNewEntryForm(prev => ({ ...prev, description: e.target.value }))
+                          }
+                          placeholder="Was arbeiten Sie gerade?"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="project">
+                          Projekt wählen (optional)
+                          {newEntryForm.projectId && (
+                            <span className="ml-2 text-sm text-green-600">✓ Ausgewählt</span>
+                          )}
+                        </Label>
+                        <Select
+                          value={newEntryForm.projectId}
+                          onValueChange={handleProjectSelection}
+                        >
+                          <SelectTrigger
+                            className={newEntryForm.projectId ? 'ring-1 ring-green-500' : ''}
+                          >
+                            <SelectValue placeholder="Projekt wählen (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {firebaseProjects.map(project => (
+                              <SelectItem key={project.id} value={project.id}>
+                                <div className="flex flex-col">
+                                  <span>{project.name}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {project.client} • {project.hourlyRate}€/h
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="customerName">Kunde</Label>
+                        <Input
+                          id="customerName"
+                          value={newEntryForm.customerName}
+                          onChange={e =>
+                            setNewEntryForm(prev => ({ ...prev, customerName: e.target.value }))
+                          }
+                          placeholder="Kundenname (optional)"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="hourlyRate">Stundensatz (€)</Label>
+                        <Input
+                          id="hourlyRate"
+                          type="number"
+                          step="0.01"
+                          value={newEntryForm.hourlyRate}
+                          onChange={e =>
+                            setNewEntryForm(prev => ({
+                              ...prev,
+                              hourlyRate: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Kategorie</Label>
+                        <Input
+                          id="category"
+                          value={newEntryForm.category}
+                          onChange={e =>
+                            setNewEntryForm(prev => ({ ...prev, category: e.target.value }))
+                          }
+                          placeholder="z.B. Entwicklung, Meeting"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="billable"
+                        checked={newEntryForm.billable}
+                        onChange={e =>
+                          setNewEntryForm(prev => ({ ...prev, billable: e.target.checked }))
+                        }
+                        className="w-4 h-4 text-[#14ad9f]"
+                      />
+                      <Label htmlFor="billable">Abrechenbar</Label>
+                    </div>
+
+                    <div className="text-center">
+                      <Button
+                        onClick={handleStartTimer}
+                        disabled={!newEntryForm.description.trim()}
+                        className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white px-8 py-3 text-lg"
+                      >
+                        <Play className="h-5 w-5 mr-2" />
+                        Timer starten
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            /* Manual Time Entry */
+            <ManualTimeEntry
+              companyId={companyId}
+              userId={userId}
+              projects={firebaseProjects.map(project => ({
+                id: project.id,
+                name: project.name,
+                client: project.client,
+                hourlyRate: project.hourlyRate,
+              }))}
+              onTimeEntryCreated={loadData}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="entries" className="space-y-4">
@@ -932,155 +897,6 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Manueller Eintrag Modal */}
-      {showManualEntry && (
-        <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Manueller Zeiteintrag</DialogTitle>
-              <DialogDescription>
-                Erstellen Sie einen Zeiteintrag für bereits geleistete Arbeit
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="manual-description">Beschreibung *</Label>
-                <Input
-                  id="manual-description"
-                  value={manualEntryForm.description}
-                  onChange={e =>
-                    setManualEntryForm(prev => ({ ...prev, description: e.target.value }))
-                  }
-                  placeholder="Beschreibung der Tätigkeit"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="manual-date">Datum</Label>
-                  <Input
-                    id="manual-date"
-                    type="date"
-                    value={manualEntryForm.date}
-                    onChange={e => setManualEntryForm(prev => ({ ...prev, date: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="manual-start">Startzeit</Label>
-                  <Input
-                    id="manual-start"
-                    type="time"
-                    value={manualEntryForm.startTime}
-                    onChange={e =>
-                      setManualEntryForm(prev => ({ ...prev, startTime: e.target.value }))
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="manual-end">Endzeit</Label>
-                  <Input
-                    id="manual-end"
-                    type="time"
-                    value={manualEntryForm.endTime}
-                    onChange={e =>
-                      setManualEntryForm(prev => ({ ...prev, endTime: e.target.value }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="manual-project">Projekt wählen (optional)</Label>
-                  <Select
-                    value={manualEntryForm.projectId}
-                    onValueChange={handleManualProjectSelection}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Projekt wählen (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {firebaseProjects.map(project => (
-                        <SelectItem key={project.id} value={project.id}>
-                          <div className="flex flex-col">
-                            <span>{project.name}</span>
-                            <span className="text-xs text-gray-500">
-                              {project.client} • {project.hourlyRate}€/h
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="manual-rate">Stundensatz (€)</Label>
-                  <Input
-                    id="manual-rate"
-                    type="number"
-                    step="0.01"
-                    value={manualEntryForm.hourlyRate}
-                    onChange={e =>
-                      setManualEntryForm(prev => ({
-                        ...prev,
-                        hourlyRate: parseFloat(e.target.value) || 0,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="manual-notes">Notizen</Label>
-                <Textarea
-                  id="manual-notes"
-                  value={manualEntryForm.notes}
-                  onChange={e => setManualEntryForm(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Zusätzliche Notizen (optional)"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="manual-billable"
-                  checked={manualEntryForm.billable}
-                  onChange={e =>
-                    setManualEntryForm(prev => ({ ...prev, billable: e.target.checked }))
-                  }
-                  className="w-4 h-4 text-[#14ad9f]"
-                />
-                <Label htmlFor="manual-billable">Abrechenbar</Label>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCreateManualEntry}
-                  disabled={!manualEntryForm.description.trim()}
-                  className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-                >
-                  Zeiteintrag erstellen
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowManualEntry(false);
-                    resetManualForm();
-                  }}
-                >
-                  Abbrechen
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
 
       {/* Report Modal */}
       {showReport && report && (

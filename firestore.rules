@@ -1397,5 +1397,33 @@ service cloud.firestore {
                        ((resource.data.companyId == request.auth.uid && isCompany()) ||
                         isSupportStaff());
     }
+
+    // === TIME TRACKING SETTINGS COLLECTION ===
+    // Für TimeTrackingService Einstellungen
+    match /timeTrackingSettings/{settingsId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Vereinfacht für bessere Performance
+      allow list: if request.auth != null && 
+                    (isSupportStaff() || isCompany());
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((resource.data.companyId == request.auth.uid && isCompany()) ||
+                        isSupportStaff());
+    }
   }
 }

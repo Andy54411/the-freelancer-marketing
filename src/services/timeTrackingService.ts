@@ -213,6 +213,14 @@ export class TimeTrackingService {
   private static readonly SETTINGS_COLLECTION = 'timeTrackingSettings';
 
   /**
+   * Filtert undefined Werte aus einem Objekt heraus
+   * Firestore unterstützt keine undefined Werte
+   */
+  private static cleanDataForFirestore(data: Record<string, any>): Record<string, any> {
+    return Object.fromEntries(Object.entries(data).filter(([_, value]) => value !== undefined));
+  }
+
+  /**
    * Startet eine neue Zeiterfassung
    */
   static async startTimeEntry(
@@ -222,12 +230,15 @@ export class TimeTrackingService {
       // Zuerst alle laufenden Einträge des Benutzers stoppen
       await this.stopAllRunningEntries(entryData.companyId, entryData.userId);
 
-      const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), {
+      // Filtere undefined Werte heraus, da Firestore diese nicht unterstützt
+      const cleanedData = this.cleanDataForFirestore({
         ...entryData,
         status: 'running',
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
+      const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), cleanedData);
 
       return docRef.id;
     } catch (error) {
@@ -254,13 +265,15 @@ export class TimeTrackingService {
       const billableAmount =
         entry.billable && entry.hourlyRate ? (roundedDuration / 60) * entry.hourlyRate : 0;
 
-      await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), {
+      const updateData = this.cleanDataForFirestore({
         status: 'stopped',
         endTime,
         duration: roundedDuration,
         billableAmount,
         updatedAt: new Date(),
       });
+
+      await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
       console.error('Fehler beim Stoppen der Zeiterfassung:', error);
       throw new Error('Zeiterfassung konnte nicht gestoppt werden');
@@ -272,10 +285,12 @@ export class TimeTrackingService {
    */
   static async pauseTimeEntry(entryId: string): Promise<void> {
     try {
-      await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), {
+      const updateData = this.cleanDataForFirestore({
         status: 'paused',
         updatedAt: new Date(),
       });
+
+      await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
       console.error('Fehler beim Pausieren der Zeiterfassung:', error);
       throw new Error('Zeiterfassung konnte nicht pausiert werden');
@@ -287,10 +302,12 @@ export class TimeTrackingService {
    */
   static async resumeTimeEntry(entryId: string): Promise<void> {
     try {
-      await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), {
+      const updateData = this.cleanDataForFirestore({
         status: 'running',
         updatedAt: new Date(),
       });
+
+      await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
       console.error('Fehler beim Fortsetzen der Zeiterfassung:', error);
       throw new Error('Zeiterfassung konnte nicht fortgesetzt werden');
@@ -334,17 +351,17 @@ export class TimeTrackingService {
       const billableAmount =
         entryData.billable && entryData.hourlyRate ? (duration / 60) * entryData.hourlyRate : 0;
 
-      const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), {
+      // Filtere undefined Werte heraus, da Firestore diese nicht unterstützt
+      const cleanedData = this.cleanDataForFirestore({
         ...entryData,
-        // Filter undefined values to prevent Firebase errors
-        projectId: entryData.projectId || null,
-        notes: entryData.notes || null,
         status: 'stopped',
         duration,
         billableAmount,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
+      const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), cleanedData);
 
       return docRef.id;
     } catch (error) {
@@ -449,10 +466,12 @@ export class TimeTrackingService {
    */
   static async updateTimeEntry(id: string, updates: Partial<TimeEntry>): Promise<void> {
     try {
-      await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, id), {
+      const updateData = this.cleanDataForFirestore({
         ...updates,
         updatedAt: new Date(),
       });
+
+      await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, id), updateData);
     } catch (error) {
       console.error('Fehler beim Aktualisieren des Zeiteintrags:', error);
       throw new Error('Zeiteintrag konnte nicht aktualisiert werden');
@@ -478,11 +497,14 @@ export class TimeTrackingService {
     projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, this.PROJECTS_COLLECTION), {
+      // Filtere undefined Werte heraus, da Firestore diese nicht unterstützt
+      const cleanedData = this.cleanDataForFirestore({
         ...projectData,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
+      const docRef = await addDoc(collection(db, this.PROJECTS_COLLECTION), cleanedData);
 
       return docRef.id;
     } catch (error) {
