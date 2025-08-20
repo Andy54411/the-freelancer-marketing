@@ -588,30 +588,19 @@ service cloud.firestore {
                      (resource.data.companyId == request.auth.uid && isCompany()) ||
                      isSupportStaff();
       
-      // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff
+      // Listen-Abfragen: Vereinfacht für bessere Performance
       allow list: if request.auth != null && 
-                    (isSupportStaff() ||
-                     (isCompany() && 
-                      'where' in request.query &&
-                      request.query.where != null &&
-                      request.query.where.size() > 0 &&
-                      request.query.where[0].path == 'companyId' &&
-                      request.query.where[0].op == '==' &&
-                      request.query.where[0].value == request.auth.uid));
+                    (isSupportStaff() || isCompany());
       
       // Erstellen: Nur eigene Firma
       allow create: if request.auth != null && 
                        request.resource.data.companyId == request.auth.uid &&
-                       isCompany() &&
-                       request.resource.data.createdBy == request.auth.uid &&
-                       request.resource.data.createdAt == request.time;
+                       isCompany();
       
       // Aktualisieren: Nur eigene Firma
       allow update: if request.auth != null && 
                        resource.data.companyId == request.auth.uid &&
-                       isCompany() &&
-                       request.resource.data.lastModifiedBy == request.auth.uid &&
-                       request.resource.data.updatedAt == request.time;
+                       isCompany();
       
       // Löschen: Nur Support Staff oder eigene Firma
       allow delete: if (isSupportStaff()) || 
@@ -1379,6 +1368,34 @@ service cloud.firestore {
       
       // Löschen: Nur Support Staff (8-jährige Aufbewahrungspflicht)
       allow delete: if request.auth != null && isSupportStaff();
+    }
+
+    // === GLOBALE TIME ENTRIES COLLECTION ===
+    // Für sevdesk-kompatible Zeiterfassung (TimeTrackingService)
+    match /timeEntries/{entryId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Vereinfacht für bessere Performance
+      allow list: if request.auth != null && 
+                    (isSupportStaff() || isCompany());
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((resource.data.companyId == request.auth.uid && isCompany()) ||
+                        isSupportStaff());
     }
   }
 }

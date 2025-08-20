@@ -219,18 +219,12 @@ export class TimeTrackingService {
     entryData: Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt' | 'status'>
   ): Promise<string> {
     try {
-      // Andere laufende Einträge stoppen
+      // Zuerst alle laufenden Einträge des Benutzers stoppen
       await this.stopAllRunningEntries(entryData.companyId, entryData.userId);
 
       const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), {
         ...entryData,
-        // Filter undefined values to prevent Firebase errors
-        projectId: entryData.projectId || null,
-        customerId: entryData.customerId || null,
-        customerName: entryData.customerName || null,
-        category: entryData.category || null,
         status: 'running',
-        startTime: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -238,11 +232,9 @@ export class TimeTrackingService {
       return docRef.id;
     } catch (error) {
       console.error('Fehler beim Starten der Zeiterfassung:', error);
-      throw new Error('Zeiterfassung konnte nicht gestartet werden');
+      throw error;
     }
-  }
-
-  /**
+  } /**
    * Stoppt eine laufende Zeiterfassung
    */
   static async stopTimeEntry(entryId: string): Promise<void> {
@@ -511,15 +503,30 @@ export class TimeTrackingService {
       );
 
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        startDate: doc.data().startDate?.toDate(),
-        endDate: doc.data().endDate?.toDate(),
-        deadline: doc.data().deadline?.toDate(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      })) as Project[];
+      return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          startDate: data.startDate?.toDate
+            ? data.startDate.toDate()
+            : data.startDate
+              ? new Date(data.startDate)
+              : undefined,
+          endDate: data.endDate?.toDate
+            ? data.endDate.toDate()
+            : data.endDate
+              ? new Date(data.endDate)
+              : undefined,
+          deadline: data.deadline?.toDate
+            ? data.deadline.toDate()
+            : data.deadline
+              ? new Date(data.deadline)
+              : undefined,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
+        } as Project;
+      });
     } catch (error) {
       console.error('Fehler beim Laden der Projekte:', error);
       throw new Error('Projekte konnten nicht geladen werden');
