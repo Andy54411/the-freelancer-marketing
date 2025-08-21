@@ -314,6 +314,81 @@ export default function CompanyOrderDetailPage() {
     }
   };
 
+  const handleCompleteOrder = async () => {
+    if (!order) return;
+    
+    const confirmation = window.confirm(
+      'Sind Sie sicher, dass Sie diesen Auftrag als erledigt markieren möchten?\n\n' +
+      'Nach der Markierung:\n' +
+      '• Auftrag wird als "PROVIDER_COMPLETED" markiert\n' +
+      '• Kunde muss den Abschluss bestätigen und bewerten\n' +
+      '• Geld wird erst nach Kundenbestätigung freigegeben\n' +
+      '• Der Kunde erhält eine Benachrichtigung'
+    );
+    
+    if (!confirmation) return;
+    
+    setIsActionLoading(true);
+    setActionError(null);
+
+    try {
+      // Debug: Prüfe Auth Status
+      console.log('Debug: Completing order for user:', currentUser);
+
+      if (!currentUser) {
+        throw new Error('Benutzer ist nicht angemeldet');
+      }
+
+      // Debug: Hole ID Token für HTTP Request
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) {
+        throw new Error('Firebase currentUser ist null');
+      }
+
+      const idToken = await firebaseUser.getIdToken();
+      console.log('Debug: Completing order with ID Token');
+
+      // HTTP Request zur completeOrder Function
+      const response = await fetch(
+        'https://europe-west1-tilvo-f142f.cloudfunctions.net/completeOrderHTTP',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ 
+            orderId: order.id,
+            providerId: currentUser.uid,
+            completionNote: 'Auftrag wurde vom Anbieter als abgeschlossen markiert.'
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'HTTP Error beim Abschließen des Auftrags');
+      }
+
+      const result = await response.json();
+      console.log('Complete Order Success:', result);
+
+      // Update local state
+      setOrder(prev => (prev ? { ...prev, status: 'PROVIDER_COMPLETED' } : null));
+      
+      // Success message
+      setSuccessMessage(
+        'Auftrag als erledigt markiert! Der Kunde wurde benachrichtigt und muss jetzt den Abschluss bestätigen und bewerten. Das Geld wird nach der Kundenbestätigung freigegeben.'
+      );
+      
+    } catch (err: any) {
+      console.error('Fehler beim Abschließen des Auftrags:', err);
+      setActionError(err.message || 'Fehler beim Abschließen des Auftrags.');
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const handleRejectOrder = async () => {
     if (!order) return;
     const reason = window.prompt(
@@ -522,10 +597,26 @@ export default function CompanyOrderDetailPage() {
                   <p>
                     <strong>Status:</strong>{' '}
                     <span
-                      className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
+                      className={`font-semibold ${
+                        order.status === 'ABGESCHLOSSEN' ? 'text-green-600' :
+                        order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' || order.status === 'AKTIV' ? 'text-blue-600' : 
+                        'text-yellow-600'
+                      }`}
                     >
-                      {order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
-                        order.status?.replace(/_/g, ' ').slice(1)}
+                      {(() => {
+                        switch(order.status) {
+                          case 'ABGESCHLOSSEN':
+                            return '✅ ABGESCHLOSSEN';
+                          case 'AKTIV':
+                            return '🔄 AKTIV';
+                          case 'zahlung_erhalten_clearing':
+                            return '💰 ZAHLUNG ERHALTEN';
+                          case 'bezahlt':
+                            return '✅ BEZAHLT';
+                          default:
+                            return order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() + order.status?.replace(/_/g, ' ').slice(1);
+                        }
+                      })()}
                     </span>
                   </p>
                   <p>
@@ -657,6 +748,90 @@ export default function CompanyOrderDetailPage() {
                 </div>
               )}
 
+              {/* Auftrag abschließen - Box für aktive Aufträge */}
+              {order.status === 'AKTIV' && isViewerProvider && (
+                <div className="bg-white shadow rounded-lg p-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <FiCheckCircle className="h-6 w-6 text-green-500" aria-hidden="true" />
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Auftrag als erledigt markieren</h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        Haben Sie die Arbeit erfolgreich abgeschlossen? Markieren Sie den Auftrag als erledigt. 
+                        Der Kunde muss dann den Abschluss bestätigen und bewerten, bevor das Geld freigegeben wird.
+                      </p>
+                      <div className="mt-3 p-3 bg-amber-50 rounded-md">
+                        <h4 className="text-sm font-medium text-amber-800">Was passiert beim Markieren:</h4>
+                        <ul className="mt-1 text-sm text-amber-700 list-disc list-inside">
+                          <li>Auftrag wird als "erledigt" markiert</li>
+                          <li>Kunde erhält Benachrichtigung zur Bestätigung</li>
+                          <li>Kunde muss bewerten und Abschluss bestätigen</li>
+                          <li>Geld wird erst nach Kundenbestätigung freigegeben</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-4">
+                    <button
+                      onClick={handleCompleteOrder}
+                      disabled={isActionLoading}
+                      className="inline-flex items-center justify-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isActionLoading ? (
+                        <>
+                          <FiLoader className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                          Wird abgeschlossen...
+                        </>
+                      ) : (
+                        <>
+                          <FiCheckCircle className="-ml-1 mr-2 h-4 w-4" />
+                          Auftrag als erledigt markieren
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {actionError && (
+                    <div className="mt-3 p-3 bg-red-50 rounded-md">
+                      <p className="text-red-600 text-sm font-medium">Fehler:</p>
+                      <p className="text-red-600 text-sm">{actionError}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Warten auf Kundenbestätigung - Box für provider_completed Aufträge */}
+              {order.status === 'PROVIDER_COMPLETED' && isViewerProvider && (
+                <div className="bg-white shadow rounded-lg p-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <FiClock className="h-6 w-6 text-amber-500" aria-hidden="true" />
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Wartet auf Kundenbestätigung</h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        Sie haben den Auftrag als erledigt markiert. Der Kunde wurde benachrichtigt und 
+                        muss jetzt den Abschluss bestätigen und eine Bewertung abgeben.
+                      </p>
+                      <div className="mt-3 p-3 bg-amber-50 rounded-md">
+                        <h4 className="text-sm font-medium text-amber-800">Nächste Schritte:</h4>
+                        <ul className="mt-1 text-sm text-amber-700 list-disc list-inside">
+                          <li>Kunde prüft die erledigte Arbeit</li>
+                          <li>Kunde gibt Bewertung ab (1-5 Sterne + Text)</li>
+                          <li>Kunde bestätigt den Abschluss</li>
+                          <li>Geld wird für Ihre Auszahlung freigegeben</li>
+                        </ul>
+                      </div>
+                      <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                        <p className="text-blue-700 text-sm">
+                          💡 <strong>Tipp:</strong> Die Auszahlung erfolgt automatisch 1-2 Werktage nach der Kundenbestätigung.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Aktions-Box für den Anbieter */}
               {order.status === 'zahlung_erhalten_clearing' && isViewerProvider && (
                 <div className="bg-white shadow rounded-lg p-6">
@@ -690,6 +865,40 @@ export default function CompanyOrderDetailPage() {
                     </button>
                   </div>
                   {actionError && <p className="text-red-600 mt-2 text-sm">{actionError}</p>}
+                </div>
+              )}
+
+              {/* Status-Anzeige für abgeschlossene Aufträge */}
+              {order.status === 'ABGESCHLOSSEN' && (
+                <div className="bg-white shadow rounded-lg p-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <FiCheckCircle className="h-6 w-6 text-green-500" aria-hidden="true" />
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-semibold text-green-800">Auftrag abgeschlossen</h3>
+                      <p className="mt-1 text-sm text-gray-600">
+                        Dieser Auftrag wurde erfolgreich abgeschlossen. Das Geld wurde über unser Treuhand-System freigegeben.
+                      </p>
+                      <div className="mt-3 p-3 bg-green-50 rounded-md">
+                        <h4 className="text-sm font-medium text-green-800">Status-Informationen:</h4>
+                        <ul className="mt-1 text-sm text-green-700 list-disc list-inside">
+                          <li>✅ Auftrag erfolgreich abgeschlossen</li>
+                          <li>✅ Geld für Auszahlungen freigegeben</li>
+                          <li>✅ Kunde wurde benachrichtigt</li>
+                          <li>✅ Bewertungssystem ist aktiviert</li>
+                        </ul>
+                      </div>
+                      {isViewerProvider && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                          <p className="text-sm text-blue-700">
+                            <strong>Auszahlung:</strong> Das Geld wird über unser Treuhand-System automatisch ausgezahlt. 
+                            Standard-Auszahlungszeiten: 1-2 Werktage für SEPA-Überweisungen.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 

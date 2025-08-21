@@ -44,6 +44,13 @@ interface PayoutSummary {
   lastPayout?: Payout;
 }
 
+interface StripeBalance {
+  available: number;
+  pending: number;
+  currency: string;
+  source: string;
+}
+
 export default function PayoutOverviewPage() {
   const params = useParams();
   const router = useRouter();
@@ -52,13 +59,38 @@ export default function PayoutOverviewPage() {
 
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [summary, setSummary] = useState<PayoutSummary | null>(null);
+  const [balance, setBalance] = useState<StripeBalance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+  const [payoutLoading, setPayoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || !uid) return;
     loadPayoutHistory();
+    loadBalance();
   }, [user, uid]);
+
+  const loadBalance = async () => {
+    try {
+      setBalanceLoading(true);
+      
+      const response = await fetch('/api/get-stripe-balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firebaseUserId: uid }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBalance(data);
+      }
+    } catch (err) {
+      console.error('Error loading balance:', err);
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
 
   const loadPayoutHistory = async () => {
     try {
@@ -83,6 +115,63 @@ export default function PayoutOverviewPage() {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestPayout = async () => {
+    if (!balance || balance.available <= 0 || payoutLoading) return;
+
+    const confirmPayout = confirm(
+      `Auszahlung bestätigen
+
+` +
+      `Verfügbares Guthaben: ${formatCurrency(balance.available)}
+
+` +
+      `Das gesamte verfügbare Guthaben wird ausgezahlt.
+` +
+      `Die Auszahlung erfolgt in 1-2 Werktagen.
+
+` +
+      `Möchten Sie fortfahren?`
+    );
+
+    if (!confirmPayout) return;
+
+    try {
+      setPayoutLoading(true);
+
+      const response = await fetch('/api/request-payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firebaseUserId: uid,
+          amount: balance.available,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Auszahlung fehlgeschlagen');
+      }
+
+      const result = await response.json();
+      
+      alert(`Auszahlung erfolgreich!
+
+Payout-ID: ${result.payoutId}
+Betrag: ${formatCurrency(balance.available)}
+
+Die Überweisung erfolgt in 1-2 Werktagen.`);
+      
+      // Reload data
+      await Promise.all([loadPayoutHistory(), loadBalance()]);
+      
+    } catch (err) {
+      console.error('Payout error:', err);
+      alert(`Fehler bei der Auszahlung: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+    } finally {
+      setPayoutLoading(false);
     }
   };
 
@@ -271,6 +360,105 @@ export default function PayoutOverviewPage() {
             </Button>
           </div>
         )}
+
+        {/* Balance Widget - Guthaben & Auszahlung */}
+        <Card className="mb-8 border-2 border-[#14ad9f]/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Euro className="w-5 h-5 text-[#14ad9f]" />
+              Verfügbares Guthaben
+            </CardTitle>
+            <CardDescription>
+              Ihr aktuelles Guthaben und Auszahlungsoptionen
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {balanceLoading ? (
+              <div className="flex items-center gap-2 py-4">
+                <div className="w-4 h-4 animate-spin rounded-full border-2 border-[#14ad9f] border-t-transparent"></div>
+                <span className="text-gray-600">Lade Guthaben...</span>
+              </div>
+            ) : balance ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Available Balance */}
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="text-sm text-green-600 dark:text-green-400 font-medium">
+                      Verfügbar
+                    </div>
+                    <div className={`text-3xl font-bold ${balance.available > 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-500'}`}>
+                      {formatCurrency(balance.available)}
+                    </div>
+                    {balance.available > 0 && (
+                      <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        Sofort auszahlbar
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pending Balance */}
+                  {balance.pending > 0 && (
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <div className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
+                        Ausstehend
+                      </div>
+                      <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-300">
+                        +{formatCurrency(balance.pending)}
+                      </div>
+                      <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                        Nach Order-Bestätigung verfügbar
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Payout Button */}
+                {balance.available > 0 && (
+                  <div className="pt-4">
+                    <Button
+                      onClick={handleRequestPayout}
+                      disabled={payoutLoading}
+                      size="lg"
+                      className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
+                    >
+                      {payoutLoading ? (
+                        <>
+                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
+                          Auszahlung wird bearbeitet...
+                        </>
+                      ) : (
+                        <>
+                          <Euro className="w-4 h-4 mr-2" />
+                          Gesamtes Guthaben auszahlen ({formatCurrency(balance.available)})
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-gray-500 text-center mt-2">
+                      Auszahlungen werden in 1-2 Werktagen bearbeitet
+                    </p>
+                  </div>
+                )}
+
+                {balance.available === 0 && (
+                  <div className="text-center py-6 text-gray-500">
+                    <Euro className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Kein Guthaben verfügbar</p>
+                    <p className="text-xs">Guthaben wird nach abgeschlossenen Aufträgen verfügbar</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                <div className="text-red-600">
+                  Fehler beim Laden des Guthabens
+                </div>
+                <Button onClick={loadBalance} variant="outline" size="sm" className="mt-2">
+                  Erneut versuchen
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Summary Cards */}
         {summary && (

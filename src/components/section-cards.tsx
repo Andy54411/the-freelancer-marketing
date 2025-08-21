@@ -238,69 +238,10 @@ export function SectionCards() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const handleWithdraw = async () => {
-    if (!currentUser || stats.availableBalance <= 0) return;
+    if (!currentUser) return;
 
-    // ⚠️ SICHERHEITSPRÜFUNG: Auszahlung nur möglich wenn alle Aufträge abgeschlossen sind
-    if (stats.hasActiveOrders) {
-      showWarning(
-        'Auszahlung nicht möglich',
-        'Sie haben noch aktive Aufträge, die nicht abgeschlossen sind. Bitte schließen Sie alle Aufträge ab und warten Sie auf die Kundenbestätigung, bevor Sie eine Auszahlung beantragen können. Grund: Platform Hold System - Das Geld wird erst nach Projektabnahme freigegeben.'
-      );
-      return;
-    }
-
-    if (stats.pendingApprovals && stats.pendingApprovals > 0) {
-      showWarning(
-        'Auszahlung nicht möglich',
-        `Sie haben noch ${stats.pendingApprovals} Zeiteinträge, die auf Kundenfreigabe warten. Bitte warten Sie, bis alle zusätzlichen Stunden vom Kunden genehmigt wurden. Grund: Sicherheit - Ungeklärte Beträge können nicht ausgezahlt werden.`
-      );
-      return;
-    }
-
-    const confirmWithdraw = confirm(
-      `✅ Auszahlung bestätigen\n\n` +
-      `Verfügbar: ${formatCurrency(stats.availableBalance)}\n` +
-      `Gebühr: ${formatCurrency(stats.availableBalance * 0.045)}\n` +
-      `Auszahlungsbetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\n` +
-      `✓ Alle Aufträge sind abgeschlossen\n` +
-      `✓ Keine ausstehenden Kundenfreigaben\n\n` +
-      `Möchten Sie fortfahren?`
-    );
-
-    if (!confirmWithdraw) return;
-
-    setIsWithdrawing(true);
-
-    try {
-      const response = await fetch('/api/request-payout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firebaseUserId: currentUser.uid,
-          amount: Math.floor(stats.availableBalance * 100),
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        showSuccess(
-          'Auszahlung erfolgreich beantragt!',
-          `Payout ID: ${result.payoutId}\nBetrag: ${formatCurrency(stats.availableBalance * 0.955)}\n\nDas Geld wird in 1-2 Werktagen auf Ihr Konto überwiesen.`
-        );
-        window.location.reload();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Auszahlung fehlgeschlagen');
-      }
-    } catch (error) {
-      console.error('Payout error:', error);
-      showError(
-        'Auszahlungsfehler',
-        `Fehler bei Auszahlung: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
-      );
-    } finally {
-      setIsWithdrawing(false);
-    }
+    // Navigiere zur Payouts-Seite wo bereits der vollständige Auszahlungsbereich ist
+    window.location.href = `/dashboard/company/${currentUser.uid}/payouts`;
   };
 
   if (loading) {
@@ -332,7 +273,9 @@ export function SectionCards() {
               variant="outline"
               className={`border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[9px] px-1 py-0 font-medium leading-tight ${stats.hasActiveOrders || (stats.pendingApprovals && stats.pendingApprovals > 0)
                   ? 'border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-300'
-                  : ''
+                  : stats.pendingBalance > 0
+                    ? 'border-yellow-300 text-yellow-700 dark:border-yellow-700 dark:text-yellow-300'
+                    : ''
                 }`}
             >
               {stats.hasActiveOrders
@@ -346,36 +289,16 @@ export function SectionCards() {
             <Button
               size="sm"
               onClick={handleWithdraw}
-              disabled={
-                isWithdrawing ||
-                stats.availableBalance <= 0 ||
-                !!stats.hasActiveOrders ||
-                !!(stats.pendingApprovals && stats.pendingApprovals > 0)
-              }
-              className={`w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight ${!!stats.hasActiveOrders || !!(stats.pendingApprovals && stats.pendingApprovals > 0)
-                  ? 'bg-gray-400 hover:bg-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700'
-                } text-white`}
-              title={
-                stats.hasActiveOrders
-                  ? 'Auszahlung blockiert: Aktive Aufträge müssen abgeschlossen werden'
-                  : stats.pendingApprovals && stats.pendingApprovals > 0
-                    ? 'Auszahlung blockiert: Warten auf Kundenfreigaben'
-                    : 'Guthaben auszahlen'
-              }
+              disabled={isWithdrawing}
+              className={`w-full text-[9px] h-5 px-1 font-medium shadow-sm hover:shadow-md transition-all leading-tight bg-[#14ad9f] hover:bg-[#129488] text-white`}
+              title="Zur Auszahlungsseite"
             >
               {isWithdrawing ? (
                 <span>...</span>
-              ) : !!stats.hasActiveOrders ||
-                !!(stats.pendingApprovals && stats.pendingApprovals > 0) ? (
-                <>
-                  <span>🔒</span>
-                  <span>Gesperrt</span>
-                </>
               ) : (
                 <>
                   <IconDownload size={8} className="mr-0.5 flex-shrink-0" />
-                  <span>Auszahlen</span>
+                  <span>Verwalten</span>
                 </>
               )}
             </Button>
