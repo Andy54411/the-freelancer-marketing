@@ -285,7 +285,6 @@ const CompanyOrdersOverviewPage = () => {
                   if (tab === 'ALLE') {
                     if (orderType === 'EINGEGANGEN') return orders.length;
                     if (orderType === 'ERSTELLT') return createdOrders.length;
-                    if (orderType === 'ANGEBOTSANFRAGEN') return quoteRequests.length;
                     return 0;
                   }
 

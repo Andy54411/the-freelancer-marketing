@@ -700,7 +700,7 @@ export default function ReceivedQuoteDetailPage() {
                           <FiCheckCircle className="h-8 w-8 text-green-600 mr-3" />
                           <div className="text-left">
                             <h3 className="text-lg font-medium text-green-800">
-                              Provision bezahlt
+                              Angebot bestätigt
                             </h3>
                             <p className="text-sm text-green-700">
                               Die Kontaktdaten können nun ausgetauscht werden.
@@ -708,7 +708,7 @@ export default function ReceivedQuoteDetailPage() {
                           </div>
                         </div>
                         <p className="text-xs text-gray-500 text-center">
-                          Provision bezahlt am:{' '}
+                          Bestätigt am:{' '}
                           {quote.payment.paidAt
                             ? new Date(quote.payment.paidAt).toLocaleDateString('de-DE')
                             : 'Unbekannt'}
