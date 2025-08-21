@@ -8,6 +8,7 @@ import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react'
 import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import Header from '@/components/Header';
+import ServiceHeader from '@/components/ServiceHeader';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -71,6 +72,42 @@ export default function SubcategoryPage() {
       expectedSlug === decodedSubcategory || expectedSlug === subcategory || urlSlug === subcategory
     );
   });
+
+  // Lade echte Bewertungen für Provider
+  const enrichProvidersWithReviews = async (providers: Provider[]): Promise<Provider[]> => {
+    const enrichedProviders = await Promise.all(
+      providers.map(async provider => {
+        try {
+          // Lade Bewertungen für diesen Provider
+          const reviewsQuery = query(
+            collection(db, 'reviews'),
+            where('providerId', '==', provider.id)
+          );
+          const reviewsSnapshot = await getDocs(reviewsQuery);
+
+          if (reviewsSnapshot.docs.length > 0) {
+            const reviews = reviewsSnapshot.docs.map(doc => doc.data());
+            const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
+            const averageRating = totalRating / reviews.length;
+
+            return {
+              ...provider,
+              rating: averageRating,
+              reviewCount: reviews.length,
+            };
+          }
+
+          // Fallback auf ursprüngliche Daten
+          return provider;
+        } catch (error) {
+          console.error(`[ServicePage] Error loading reviews for provider ${provider.id}:`, error);
+          return provider;
+        }
+      })
+    );
+
+    return enrichedProviders;
+  };
 
   useEffect(() => {
     if (!categoryInfo || !subcategoryName) return;
@@ -185,51 +222,15 @@ export default function SubcategoryPage() {
 
       const allProviders = [...firmProviders, ...userProviders];
 
-      console.log('[ServicePage] All providers:', allProviders.length);
-      console.log('[ServicePage] Firma providers after filter:', firmProviders.length);
+      console.log('[ServicePage] All providers before enrichment:', allProviders.length);
 
-      // Log specifically Mietkoch providers
-      const mietkochers = allProviders.filter(
-        p =>
-          p.companyName?.toLowerCase().includes('mietkoch') ||
-          p.selectedSubcategory?.toLowerCase().includes('mietkoch')
-      );
-      console.log(
-        '[ServicePage] Mietkoch providers found:',
-        mietkochers.map(p => ({
-          name: p.companyName || p.userName,
-          selectedSubcategory: p.selectedSubcategory,
-          selectedCategory: p.selectedCategory,
-          isCompany: p.isCompany,
-        }))
-      );
+      // Anreichern mit echten Bewertungen
+      const enrichedProviders = await enrichProvidersWithReviews(allProviders);
 
-      // Debug logging
-      console.log('[ServicePage] Searching for subcategory:', subcategoryName);
-      console.log('[ServicePage] URL subcategory:', subcategory);
-      console.log('[ServicePage] All providers found:', allProviders.length);
-      console.log(
-        '[ServicePage] Providers with selectedSubcategory:',
-        allProviders.filter(p => p.selectedSubcategory).length
-      );
-
-      // Log all providers with their subcategory data for debugging
-      allProviders.forEach(provider => {
-        if (
-          provider.selectedSubcategory ||
-          provider.companyName?.toLowerCase().includes('mietkoch')
-        ) {
-          console.log('[ServicePage] Provider:', {
-            name: provider.companyName || provider.userName,
-            selectedSubcategory: provider.selectedSubcategory,
-            selectedCategory: provider.selectedCategory,
-            isCompany: provider.isCompany,
-          });
-        }
-      });
+      console.log('[ServicePage] Providers after enrichment:', enrichedProviders.length);
 
       // Filter nach Subcategory - erweiterte und allgemeine Prüfung
-      let filteredProviders = allProviders.filter(provider => {
+      let filteredProviders = enrichedProviders.filter(provider => {
         // Für Firmen: prüfe selectedSubcategory mit verschiedenen Matching-Strategien
         if (provider.isCompany && provider.selectedSubcategory) {
           // Exakte Übereinstimmung
@@ -332,6 +333,15 @@ export default function SubcategoryPage() {
 
   const handleBookNow = (provider: Provider) => {
     console.log('handleBookNow called with provider:', provider);
+
+    // Auth-Check: Wenn nicht eingeloggt, zur Registrierung weiterleiten
+    if (!user) {
+      console.log('User not logged in - redirecting to login page');
+      router.push('/login');
+      return;
+    }
+
+    // Wenn eingeloggt, Modal öffnen
     setSelectedProvider(provider);
     setIsBookingModalOpen(true);
     console.log('Modal state set - isBookingModalOpen:', true);
@@ -463,310 +473,265 @@ export default function SubcategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      {/* Modern Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Breadcrumb Navigation */}
-          <nav className="text-sm text-gray-500 mb-6">
-            <Link href="/" className="hover:text-[#14ad9f] transition-colors">
-              Startseite
-            </Link>
-            <span className="mx-2">/</span>
-            <Link href="/services" className="hover:text-[#14ad9f] transition-colors">
-              Services
-            </Link>
-            <span className="mx-2">/</span>
-            <Link
-              href={`/services/${decodedCategory}`}
-              className="hover:text-[#14ad9f] transition-colors"
-            >
-              {categoryInfo.title}
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="text-gray-900 font-medium">{subcategoryName}</span>
-          </nav>
+    <>
+      {/* Dynamic Gradient Background */}
+      <div className="fixed inset-0 bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 -z-10"></div>
+      <div className="fixed inset-0 bg-black/20 -z-10"></div>
 
-          <div className="flex items-center gap-4 mb-8">
-            <button
-              onClick={() => router.push(`/services/${decodedCategory}`)}
-              className="text-gray-600 hover:text-[#14ad9f] p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">{subcategoryName}</h1>
-              <p className="text-xl text-gray-600 mb-4">
-                {providers.length}{' '}
-                {providers.length === 1 ? 'professioneller Anbieter' : 'professionelle Anbieter'}{' '}
-                für {subcategoryName}
-              </p>
+      <div className="min-h-screen relative z-10">
+        <Header />
 
-              {/* Stats Pills */}
-              <div className="flex flex-wrap gap-3">
-                <div className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm font-medium border border-green-200">
-                  ✓ Sofort verfügbar
-                </div>
-                <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm font-medium border border-blue-200">
-                  ✓ Ab €25/Stunde
-                </div>
-                <div className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm font-medium border border-purple-200">
-                  ✓ Verifizierte Profile
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Filters Section */}
-          <div className="bg-gray-50 rounded-xl p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Anbieter durchsuchen..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] bg-white"
-                />
-              </div>
-
-              {/* Sort Dropdown */}
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value as any)}
-                className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] bg-white"
-              >
-                <option value="rating">Beste Bewertung</option>
-                <option value="reviews">Meiste Bewertungen</option>
-                <option value="price">Preis</option>
-                <option value="newest">Neueste</option>
-              </select>
-
-              {/* Filter Button */}
-              <button className="bg-[#14ad9f] text-white px-6 py-3 rounded-lg hover:bg-[#129488] transition-colors font-medium">
-                Filter anwenden
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Anbieter Liste */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
-          <div className="space-y-6">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse"
-              >
-                <div className="flex items-start gap-6">
-                  <div className="w-20 h-20 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-                  <div className="flex-1 space-y-3">
-                    <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-1/3"></div>
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/4"></div>
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : providers.length === 0 ? (
-          <div className="text-center py-12">
-            <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              Keine Anbieter gefunden
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Derzeit sind keine Anbieter für {subcategoryName} verfügbar.
-            </p>
-            <button
-              onClick={() => router.push(`/dashboard/services/${category}`)}
-              className="text-blue-600 hover:text-blue-700"
-            >
-              Alle {categoryInfo.title} Anbieter anzeigen
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {providers.map(provider => (
-              <div
-                key={provider.id}
-                className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group border border-gray-200 overflow-hidden"
-              >
-                {/* Provider Image & Rating */}
-                <div className="relative group/image">
-                  <img
-                    src={getProfileImage(provider)}
-                    alt={getProviderName(provider)}
-                    className="w-full h-48 object-cover"
-                    onError={e => {
-                      (e.target as HTMLImageElement).src = '/images/default-avatar.png';
-                    }}
-                  />
-
-                  {/* Rating Badge */}
-                  {(provider.rating ?? 0) > 0 && (
-                    <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 shadow-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm font-semibold text-gray-900">
-                          {(provider.rating ?? 0).toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Hover Overlay for Profile View - only on image hover */}
-                  <div
-                    className="absolute inset-0 bg-black bg-opacity-0 group-hover/image:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover/image:opacity-100 cursor-pointer"
-                    onClick={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      router.push(`/profile/${provider.id}`);
-                    }}
-                  >
-                    <button className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium shadow-lg transform translate-y-2 group-hover/image:translate-y-0 transition-transform">
-                      Profil anzeigen
-                    </button>
-                  </div>
-                </div>
-
-                {/* Card Content */}
-                <div className="p-5">
-                  {/* Provider Info */}
-                  <div className="flex items-start gap-3 mb-4">
-                    <img
-                      src={getProfileImage(provider)}
-                      alt={getProviderName(provider)}
-                      className="w-10 h-10 rounded-full object-cover"
-                      onError={e => {
-                        (e.target as HTMLImageElement).src = '/images/default-avatar.png';
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-gray-900 text-base truncate group-hover:text-[#14ad9f] transition-colors">
-                        {getProviderName(provider)}
-                      </h3>
-                      {provider.location && (
-                        <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          <span className="truncate">{provider.location}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Service Title */}
-                  <h4 className="text-gray-900 font-medium text-sm mb-3 line-clamp-2 leading-5">
-                    {provider.bio
-                      ? provider.bio.length > 60
-                        ? `${provider.bio.substring(0, 60)}...`
-                        : provider.bio
-                      : `Professionelle ${subcategoryName} Services`}
-                  </h4>
-
-                  {/* Skills/Tags */}
-                  {provider.skills && provider.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {provider.skills.slice(0, 3).map((skill, index) => (
-                        <span
-                          key={index}
-                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                      {provider.skills.length > 3 && (
-                        <span className="text-xs text-gray-400">+{provider.skills.length - 3}</span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Stats Row */}
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <div className="flex items-center gap-3">
-                      {provider.reviewCount && provider.reviewCount > 0 && (
-                        <span>({provider.reviewCount})</span>
-                      )}
-                      {provider.completedJobs && provider.completedJobs > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Briefcase className="w-3 h-3" />
-                          <span>{provider.completedJobs}</span>
-                        </div>
-                      )}
-                    </div>
-                    {provider.responseTime && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span className="text-xs">{provider.responseTime}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Price & Action */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="text-right">
-                      <span className="text-sm text-gray-500">Ab</span>
-                      <div className="text-lg font-bold text-gray-900">
-                        {provider.hourlyRate
-                          ? `€${provider.hourlyRate}/h`
-                          : provider.priceRange || 'Preis auf Anfrage'}
-                      </div>
-                    </div>
-                    <button
-                      onClick={e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleBookNow(provider);
-                      }}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                      type="button"
-                    >
-                      Jetzt buchen
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Intelligent Booking Modal - Unterscheidet automatisch zwischen B2B und B2C */}
-      {/* B2C: Weiterleitung zu get-started | B2B (Firma): Weiterleitung zu Company Dashboard */}
-      {isBookingModalOpen && selectedProvider && (
-        <ProviderBookingModal
-          isOpen={isBookingModalOpen}
-          onClose={handleCloseBookingModal}
-          provider={selectedProvider}
-          onConfirm={handleBookingConfirm}
+        <ServiceHeader
+          categoryTitle={categoryInfo.title}
+          subcategoryName={subcategoryName}
+          decodedCategory={decodedCategory}
+          providerCount={providers.length}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          showAuthBanner={!user}
+          onLoginClick={() => router.push('/login')}
         />
-      )}
 
-      {/* Debug Info - können Sie später entfernen */}
-      {process.env.NODE_ENV === 'development' && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '10px',
-            right: '10px',
-            background: 'black',
-            color: 'white',
-            padding: '10px',
-            fontSize: '12px',
-            borderRadius: '5px',
-            zIndex: 9999,
-          }}
-        >
-          <div>Selected Provider: {selectedProvider ? 'Yes' : 'No'}</div>
-          <div>Modal Open: {isBookingModalOpen ? 'Yes' : 'No'}</div>
+        {/* Anbieter Liste - mit Gradient Hintergrund */}
+        <div className="relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {loading ? (
+              <div className="space-y-6">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-white/20 p-6 animate-pulse"
+                  >
+                    <div className="flex items-start gap-6">
+                      <div className="w-20 h-20 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                      <div className="flex-1 space-y-3">
+                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-1/3"></div>
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/4"></div>
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : providers.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm p-8 border border-white/20 max-w-md mx-auto">
+                  <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Keine Anbieter gefunden
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Derzeit sind keine Anbieter für {subcategoryName} verfügbar.
+                  </p>
+                  <button
+                    onClick={() => router.push(`/services/${decodedCategory}`)}
+                    className="text-[#14ad9f] hover:text-[#129488] font-medium"
+                  >
+                    Alle {categoryInfo.title} Anbieter anzeigen
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {providers.map(provider => (
+                  <div
+                    key={provider.id}
+                    className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group border border-white/20 overflow-hidden"
+                  >
+                    {/* Provider Image & Rating */}
+                    <div className="relative group/image">
+                      <img
+                        src={getProfileImage(provider)}
+                        alt={getProviderName(provider)}
+                        className="w-full h-48 object-cover"
+                        onError={e => {
+                          (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                        }}
+                      />
+
+                      {/* Rating Badge */}
+                      {(provider.rating ?? 0) > 0 && (
+                        <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 shadow-sm">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                            <span className="text-sm font-semibold text-gray-900">
+                              {(provider.rating ?? 0).toFixed(1)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hover Overlay for Profile View - only on image hover */}
+                      <div
+                        className="absolute inset-0 bg-black bg-opacity-0 group-hover/image:bg-opacity-40 transition-all duration-300 flex items-center justify-center opacity-0 group-hover/image:opacity-100 cursor-pointer"
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+
+                          // Auth-Check für Profil-Ansicht
+                          if (!user) {
+                            console.log(
+                              'User not logged in - redirecting to login page for profile view'
+                            );
+                            router.push('/login');
+                            return;
+                          }
+
+                          router.push(`/profile/${provider.id}`);
+                        }}
+                      >
+                        <button className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium shadow-lg transform translate-y-2 group-hover/image:translate-y-0 transition-transform">
+                          {user ? 'Profil anzeigen' : 'Anmelden für Profil'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="p-5">
+                      {/* Provider Info */}
+                      <div className="flex items-start gap-3 mb-4">
+                        <img
+                          src={getProfileImage(provider)}
+                          alt={getProviderName(provider)}
+                          className="w-10 h-10 rounded-full object-cover"
+                          onError={e => {
+                            (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 text-base truncate group-hover:text-[#14ad9f] transition-colors">
+                            {getProviderName(provider)}
+                          </h3>
+                          {provider.location && (
+                            <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                              <MapPin className="w-3 h-3" />
+                              <span className="truncate">{provider.location}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Service Title */}
+                      <h4 className="text-gray-900 font-medium text-sm mb-3 line-clamp-2 leading-5">
+                        {provider.bio
+                          ? provider.bio.length > 60
+                            ? `${provider.bio.substring(0, 60)}...`
+                            : provider.bio
+                          : `Professionelle ${subcategoryName} Services`}
+                      </h4>
+                      {/* Skills/Tags */}
+                      {provider.skills && provider.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {provider.skills.slice(0, 3).map((skill, index) => (
+                            <span
+                              key={index}
+                              className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {provider.skills.length > 3 && (
+                            <span className="text-xs text-gray-400">
+                              +{provider.skills.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {/* Stats Row - Immer anzeigen mit Fallback-Werten */}
+                      {/* Stats Row - Immer anzeigen, echte Bewertungen oder Fallback */}
+                      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                        <div className="flex items-center gap-3">
+                          {provider.rating && provider.rating > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                              <span>{provider.rating.toFixed(1)}</span>
+                              {provider.reviewCount && provider.reviewCount > 0 && (
+                                <span className="ml-1">({provider.reviewCount})</span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <Star className="w-3 h-3 text-gray-300" />
+                              <span className="text-gray-400">Noch keine Bewertungen</span>
+                            </div>
+                          )}
+                          {provider.completedJobs && provider.completedJobs > 0 && (
+                            <div className="flex items-center gap-1">
+                              <Briefcase className="w-3 h-3" />
+                              <span>{provider.completedJobs} Aufträge</span>
+                            </div>
+                          )}
+                        </div>
+                        {provider.responseTime && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span className="text-xs">Antwort in {provider.responseTime}h</span>
+                          </div>
+                        )}
+                      </div>{' '}
+                      {/* Price & Action */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">
+                            <span className="text-sm text-gray-500 font-normal">Ab </span>
+                            {provider.hourlyRate
+                              ? `€${provider.hourlyRate}/h`
+                              : provider.priceRange || 'Preis auf Anfrage'}
+                          </div>
+                        </div>
+                        <button
+                          onClick={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleBookNow(provider);
+                          }}
+                          className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                          type="button"
+                        >
+                          {user ? 'Jetzt buchen' : 'Registrieren & buchen'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Intelligent Booking Modal - Unterscheidet automatisch zwischen B2B und B2C */}
+          {/* B2C: Weiterleitung zu get-started | B2B (Firma): Weiterleitung zu Company Dashboard */}
+          {isBookingModalOpen && selectedProvider && (
+            <ProviderBookingModal
+              isOpen={isBookingModalOpen}
+              onClose={handleCloseBookingModal}
+              provider={selectedProvider}
+              onConfirm={handleBookingConfirm}
+            />
+          )}
+
+          {/* Debug Info - können Sie später entfernen */}
+          {process.env.NODE_ENV === 'development' && (
+            <div
+              style={{
+                position: 'fixed',
+                bottom: '10px',
+                right: '10px',
+                background: 'black',
+                color: 'white',
+                padding: '10px',
+                fontSize: '12px',
+                borderRadius: '5px',
+                zIndex: 9999,
+              }}
+            >
+              <div>Selected Provider: {selectedProvider ? 'Yes' : 'No'}</div>
+              <div>Modal Open: {isBookingModalOpen ? 'Yes' : 'No'}</div>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

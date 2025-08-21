@@ -35,7 +35,6 @@ export function LoginForm({
   // loading,
   ...props
 }: LoginFormProps) {
-
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
@@ -81,9 +80,7 @@ export function LoginForm({
                 </Button>
               </div>
               <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                <span className="bg-card text-muted-foreground relative z-10 px-2">
-                  oder
-                </span>
+                <span className="bg-card text-muted-foreground relative z-10 px-2">oder</span>
               </div>
               <div className="grid gap-6">
                 <div className="grid gap-3">
@@ -130,10 +127,21 @@ export function LoginForm({
                 </Button>
               </div>
               <div className="text-center text-sm">
-                Noch kein Konto?
-                <a href="/register/company" className="underline underline-offset-4">
-                  Registrieren
-                </a>
+                <p className="mb-3">Noch kein Konto?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <a
+                    href="/register/user"
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium transition-colors text-sm text-center"
+                  >
+                    Privat
+                  </a>
+                  <a
+                    href="/register/company"
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white py-2 px-4 rounded-lg font-medium transition-colors text-sm text-center"
+                  >
+                    Firma
+                  </a>
+                </div>
               </div>
             </div>
           </form>
