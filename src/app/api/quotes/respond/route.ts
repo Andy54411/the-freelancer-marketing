@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
+import { QuoteNotificationService } from '@/lib/quote-notifications';
 
 /**
  * API Route zum Bearbeiten von Angebotsanfragen
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Angebotsanfrage nicht gefunden' }, { status: 404 });
     }
 
+    const quoteData = quoteDoc.data();
+
     const updateData: any = {
       updatedAt: new Date().toISOString(),
     };
@@ -39,6 +42,36 @@ export async function POST(request: NextRequest) {
           ...response,
           respondedAt: new Date().toISOString(),
         };
+
+        // Bell-Notification an Kunden senden (Provider hat geantwortet)
+        if (quoteData?.customerUid) {
+          try {
+            // Provider-Namen abrufen
+            let providerName = 'Anbieter';
+            if (quoteData.providerId) {
+              const providerDoc = await db.collection('companies').doc(quoteData.providerId).get();
+              if (providerDoc.exists) {
+                const providerData = providerDoc.data();
+                providerName = providerData?.companyName || 'Anbieter';
+              }
+            }
+
+            await QuoteNotificationService.createQuoteResponseNotification(
+              quoteId,
+              quoteData.customerUid,
+              {
+                providerName: providerName,
+                subcategory: quoteData.projectSubcategory || quoteData.projectTitle || 'Service',
+                estimatedPrice: response.estimatedPrice,
+                estimatedDuration: response.estimatedDuration,
+              }
+            );
+            console.log(`✅ Quote-Response-Notification gesendet für Quote ${quoteId}`);
+          } catch (notificationError) {
+            console.error('❌ Fehler bei Quote-Response-Notification:', notificationError);
+            // Notification-Fehler sollten den Response nicht blockieren
+          }
+        }
         break;
 
       case 'accept':

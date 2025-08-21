@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { db } from '@/firebase/server';
+import { QuoteNotificationService } from '@/lib/quote-notifications';
 
 // Stripe Initialisierung
 function getStripeInstance() {
@@ -120,6 +121,48 @@ export async function POST(
             'payment.paymentIntentId': paymentIntentId,
             'contactExchange.readyForExchange': true,
           });
+
+          // Bell-Notification für erfolgreichen Kontaktaustausch
+          const providerId = quoteData.providerId || quoteData.providerUid;
+          if (providerId) {
+            try {
+              // Namen für Notification abrufen
+              let customerName = 'Kunde';
+              let providerName = 'Anbieter';
+
+              // Customer Name abrufen
+              const customerDoc = await db.collection('users').doc(companyId).get();
+              if (customerDoc.exists) {
+                const customerData = customerDoc.data();
+                customerName =
+                  customerData?.firstName && customerData?.lastName
+                    ? `${customerData.firstName} ${customerData.lastName}`
+                    : customerData?.name || quoteData.customerName || 'Kunde';
+              }
+
+              // Provider Name abrufen
+              const providerDoc = await db.collection('companies').doc(providerId).get();
+              if (providerDoc.exists) {
+                const providerData = providerDoc.data();
+                providerName = providerData?.companyName || 'Anbieter';
+              }
+
+              await QuoteNotificationService.createContactExchangeNotifications(
+                quoteId,
+                companyId, // Customer UID
+                providerId, // Provider UID
+                {
+                  customerName: customerName,
+                  providerName: providerName,
+                  subcategory: quoteData.projectSubcategory || quoteData.projectTitle || 'Service',
+                }
+              );
+              console.log(`✅ Contact-Exchange-Notifications gesendet für Quote ${quoteId}`);
+            } catch (notificationError) {
+              console.error('❌ Fehler bei Contact-Exchange-Notifications:', notificationError);
+              // Notification-Fehler sollten das Payment nicht rückgängig machen
+            }
+          }
 
           return NextResponse.json({
             success: true,

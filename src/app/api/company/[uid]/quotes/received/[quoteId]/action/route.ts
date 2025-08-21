@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, admin } from '@/firebase/server';
+import { QuoteNotificationService } from '@/lib/quote-notifications';
 
 export async function POST(
   request: NextRequest,
@@ -120,6 +121,26 @@ export async function POST(
     const userData = userDoc.data();
     console.log('[Quote Action API] User data found for UID:', uid);
 
+    // Get provider and customer names for notifications
+    const customerName =
+      userData?.firstName && userData?.lastName
+        ? `${userData.firstName} ${userData.lastName}`
+        : userData?.name || quoteData.customerName || 'Kunde';
+
+    let providerName = 'Anbieter';
+    const providerId = quoteData.providerId || quoteData.providerUid;
+    if (providerId) {
+      try {
+        const providerDoc = await db.collection('companies').doc(providerId).get();
+        if (providerDoc.exists) {
+          const providerData = providerDoc.data();
+          providerName = providerData?.companyName || 'Anbieter';
+        }
+      } catch (error) {
+        console.log('Provider name lookup failed, using default');
+      }
+    }
+
     // Update quote status
     const newStatus = action === 'accept' ? 'accepted' : 'declined';
 
@@ -140,6 +161,30 @@ export async function POST(
       'in collection:',
       collectionName
     );
+
+    // Bell-Notification an Provider senden (Kunde hat entschieden)
+    if (providerId) {
+      try {
+        await QuoteNotificationService.createQuoteStatusNotification(
+          quoteId,
+          providerId,
+          action as 'accepted' | 'declined',
+          {
+            customerName: customerName,
+            providerName: providerName,
+            subcategory: quoteData.projectSubcategory || quoteData.projectTitle || 'Service',
+            estimatedPrice: quoteData.response?.estimatedPrice,
+            isCustomerAction: true, // Flag to indicate this was a customer action
+          }
+        );
+        console.log(
+          `✅ Quote-Status-Notification gesendet für Quote ${quoteId}, Action: ${action}`
+        );
+      } catch (notificationError) {
+        console.error('❌ Fehler bei Quote-Status-Notification:', notificationError);
+        // Notification-Fehler sollten die Aktion nicht blockieren
+      }
+    }
 
     // If accepted, set up provision payment requirement (DO NOT exchange contacts yet)
     if (action === 'accept') {
@@ -163,6 +208,22 @@ export async function POST(
       console.log(
         '[Quote Action API] Contact exchange will happen AFTER successful provision payment via payment endpoint'
       );
+
+      // Bell-Notification für Zahlungsanforderung
+      try {
+        await QuoteNotificationService.createPaymentRequiredNotification(
+          quoteId,
+          uid, // Customer UID
+          {
+            providerName: providerName,
+            subcategory: quoteData.projectSubcategory || quoteData.projectTitle || 'Service',
+            provisionAmount: provisionAmount,
+          }
+        );
+        console.log(`✅ Payment-Required-Notification gesendet für Quote ${quoteId}`);
+      } catch (notificationError) {
+        console.error('❌ Fehler bei Payment-Required-Notification:', notificationError);
+      }
     }
 
     // If quote was already accepted and payment is verified, allow contact exchange

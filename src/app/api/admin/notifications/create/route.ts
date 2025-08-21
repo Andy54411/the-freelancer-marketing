@@ -13,28 +13,62 @@ const db = admin.firestore();
 
 export async function POST(request: NextRequest) {
   try {
-    const { userUid, ticketId, ticketTitle, replyAuthor, testMessage } = await request.json();
+    const requestData = await request.json();
+    const {
+      userUid,
+      userId,
+      ticketId,
+      ticketTitle,
+      replyAuthor,
+      testMessage,
+      type,
+      title,
+      message,
+      quoteId,
+      link,
+      metadata,
+    } = requestData;
 
-    if (!userUid) {
-      return NextResponse.json({ success: false, error: 'userUid erforderlich' }, { status: 400 });
+    const targetUserId = userId || userUid;
+
+    if (!targetUserId) {
+      return NextResponse.json({ success: false, error: 'userId erforderlich' }, { status: 400 });
     }
 
-    console.log(`Erstelle Admin-SDK Notification für User: ${userUid}`);
+    console.log(`Erstelle Admin-SDK Notification für User: ${targetUserId}`);
 
     // Erstelle Notification mit Admin-SDK (umgeht Firestore-Regeln)
-    const notification = {
-      userId: userUid,
-      type: 'support',
-      title: 'Support-Ticket Update',
-      message:
-        testMessage ||
-        `${replyAuthor || 'Support Team'} hat auf Ihr Ticket "${ticketTitle || 'Ihr Support-Ticket'}" geantwortet`,
-      ticketId: ticketId || 'test-ticket',
-      ticketTitle: ticketTitle || 'Support-Ticket',
-      link: `/dashboard/company/${userUid}/support`,
-      isRead: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
+    let notification;
+
+    if (type && title && message) {
+      // Custom Notification (z.B. für Quote-Tests)
+      notification = {
+        userId: targetUserId,
+        type: type,
+        title: title,
+        message: message,
+        quoteId: quoteId,
+        link: link || `/dashboard/company/${targetUserId}`,
+        isRead: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        metadata: metadata || {},
+      };
+    } else {
+      // Support-Ticket Notification (bestehende Logik)
+      notification = {
+        userId: targetUserId,
+        type: 'support',
+        title: 'Support-Ticket Update',
+        message:
+          testMessage ||
+          `${replyAuthor || 'Support Team'} hat auf Ihr Ticket "${ticketTitle || 'Ihr Support-Ticket'}" geantwortet`,
+        ticketId: ticketId || 'test-ticket',
+        ticketTitle: ticketTitle || 'Support-Ticket',
+        link: `/dashboard/company/${targetUserId}/support`,
+        isRead: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+    }
 
     // Verwende Admin-SDK zum Erstellen (umgeht Client-Regeln)
     const docRef = await db.collection('notifications').add(notification);
