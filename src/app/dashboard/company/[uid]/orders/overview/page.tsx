@@ -49,13 +49,13 @@ interface Order {
 }
 
 type OrderStatusFilter = 'ALLE' | 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT';
-type OrderTypeFilter = 'EINGEGANGEN' | 'ERSTELLT' | 'ANGEBOTSANFRAGEN';
+type OrderTypeFilter = 'EINGEGANGEN' | 'ERSTELLT';
 
 const CompanyOrdersOverviewPage = () => {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const uidFromParams = params.uid as string;
+  const uidFromParams = params?.uid as string;
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [createdOrders, setCreatedOrders] = useState<Order[]>([]);
@@ -148,31 +148,9 @@ const CompanyOrdersOverviewPage = () => {
       currentOrders = orders;
     } else if (orderType === 'ERSTELLT') {
       currentOrders = createdOrders;
-    } else if (orderType === 'ANGEBOTSANFRAGEN') {
-      currentOrders = quoteRequests;
     }
 
     if (activeTab === 'ALLE') return currentOrders;
-
-    // Für Angebotsanfragen andere Filter-Logik
-    if (orderType === 'ANGEBOTSANFRAGEN') {
-      if (activeTab === 'AKTIV') {
-        return currentOrders.filter(
-          quote => quote.status === 'pending' || quote.status === 'received'
-        );
-      }
-      if (activeTab === 'ABGESCHLOSSEN') {
-        return currentOrders.filter(
-          quote => quote.status === 'responded' || quote.status === 'accepted'
-        );
-      }
-      if (activeTab === 'STORNIERT') {
-        return currentOrders.filter(
-          quote => quote.status === 'declined' || quote.status === 'expired'
-        );
-      }
-      return currentOrders;
-    }
 
     // Original Filter-Logik für Aufträge
     return currentOrders.filter(order => {
@@ -251,10 +229,10 @@ const CompanyOrdersOverviewPage = () => {
       {' '}
       {/* Füge Padding für den sticky Header hinzu */}
       <h1 className="text-3xl font-semibold text-gray-800 mb-6">Aufträge</h1>
-      {/* Order Type Tabs - Eingegangene vs Erstellte Aufträge vs Angebotsanfragen */}
+      {/* Order Type Tabs - Eingegangene vs Erstellte Aufträge */}
       <div className="mb-4 border-b border-gray-200">
         <nav className="-mb-px flex space-x-8" aria-label="Order Types">
-          {(['EINGEGANGEN', 'ERSTELLT', 'ANGEBOTSANFRAGEN'] as OrderTypeFilter[]).map(type => (
+          {(['EINGEGANGEN', 'ERSTELLT'] as OrderTypeFilter[]).map(type => (
             <button
               key={type}
               onClick={() => setOrderType(type)}
@@ -265,11 +243,7 @@ const CompanyOrdersOverviewPage = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
-              {type === 'EINGEGANGEN'
-                ? 'Eingegangene Aufträge'
-                : type === 'ERSTELLT'
-                  ? 'Erstellte Aufträge'
-                  : 'Angebotsanfragen'}
+              {type === 'EINGEGANGEN' ? 'Eingegangene Aufträge' : 'Erstellte Aufträge'}
               <span
                 className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${
                   orderType === type
@@ -319,41 +293,20 @@ const CompanyOrdersOverviewPage = () => {
                   let currentData: any[] = [];
                   if (orderType === 'EINGEGANGEN') currentData = orders;
                   else if (orderType === 'ERSTELLT') currentData = createdOrders;
-                  else if (orderType === 'ANGEBOTSANFRAGEN') currentData = quoteRequests;
 
-                  if (orderType === 'ANGEBOTSANFRAGEN') {
-                    // Spezifische Filter für Angebotsanfragen
-                    if (tab === 'AKTIV') {
-                      return currentData.filter(
-                        q => q.status === 'pending' || q.status === 'received'
-                      ).length;
-                    }
-                    if (tab === 'ABGESCHLOSSEN') {
-                      return currentData.filter(
-                        q => q.status === 'responded' || q.status === 'accepted'
-                      ).length;
-                    }
-                    if (tab === 'STORNIERT') {
-                      return currentData.filter(
-                        q => q.status === 'declined' || q.status === 'expired'
-                      ).length;
-                    }
-                    return currentData.length;
-                  } else {
-                    // Original Filter für Aufträge
-                    return currentData.filter(o => {
-                      if (tab === 'AKTIV')
-                        return (
-                          o.status === 'AKTIV' ||
-                          o.status === 'IN BEARBEITUNG' ||
-                          o.status === 'FEHLENDE DETAILS' ||
-                          o.status === 'BEZAHLT' ||
-                          o.status === 'ZAHLUNG_ERHALTEN_CLEARING' ||
-                          o.status === 'zahlung_erhalten_clearing'
-                        );
-                      return o.status === tab;
-                    }).length;
-                  }
+                  // Filter für Aufträge
+                  return currentData.filter(o => {
+                    if (tab === 'AKTIV')
+                      return (
+                        o.status === 'AKTIV' ||
+                        o.status === 'IN BEARBEITUNG' ||
+                        o.status === 'FEHLENDE DETAILS' ||
+                        o.status === 'BEZAHLT' ||
+                        o.status === 'ZAHLUNG_ERHALTEN_CLEARING' ||
+                        o.status === 'zahlung_erhalten_clearing'
+                      );
+                    return o.status === tab;
+                  }).length;
                 })()}
               </span>
             </button>
@@ -392,32 +345,25 @@ const CompanyOrdersOverviewPage = () => {
           <ul role="list" className="divide-y divide-gray-200">
             {filteredOrders.map(order => (
               <li key={order.id}>
-                {orderType === 'ANGEBOTSANFRAGEN' ? (
-                  // Spezielle Darstellung für Angebotsanfragen mit Link
-                  <Link
-                    href={`/dashboard/company/${uidFromParams}/orders/quote/${order.id}`}
-                    className="block hover:bg-gray-50 px-4 py-4 sm:px-6"
-                  >
+                {/* Darstellung für Aufträge */}
+                <Link
+                  href={`/dashboard/company/${uidFromParams}/orders/${order.id}`}
+                  className="block hover:bg-gray-50"
+                >
+                  <div className="px-4 py-4 sm:px-6">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-medium text-[#14ad9f] truncate w-2/3">
-                        Angebotsanfrage: {order.service || order.title || 'Unbekannter Service'}
+                        {order.selectedSubcategory}
+                        {order.projectTitle && (
+                          <span className="ml-2 text-gray-600">- {order.projectTitle}</span>
+                        )}
                       </p>
                       <div className="ml-2 flex-shrink-0 flex">
                         <p
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            order.status === 'pending' || order.status === 'received'
-                              ? 'text-blue-600 bg-blue-100'
-                              : order.status === 'responded' || order.status === 'accepted'
-                                ? 'text-green-600 bg-green-100'
-                                : 'text-red-600 bg-red-100'
-                          }`}
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}
                         >
-                          {order.status === 'pending' && 'Ausstehend'}
-                          {order.status === 'received' && 'Erhalten'}
-                          {order.status === 'responded' && 'Beantwortet'}
-                          {order.status === 'accepted' && 'Angenommen'}
-                          {order.status === 'declined' && 'Abgelehnt'}
-                          {order.status === 'expired' && 'Abgelaufen'}
+                          {order.status.replace(/_/g, ' ').charAt(0).toUpperCase() +
+                            order.status.replace(/_/g, ' ').slice(1)}
                         </p>
                       </div>
                     </div>
@@ -425,115 +371,60 @@ const CompanyOrdersOverviewPage = () => {
                       <div className="sm:flex">
                         <p className="flex items-center text-sm text-gray-500">
                           <FiUser className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                          Kunde: {order.customerName || order.requesterName || 'Unbekannt'}
+                          {orderType === 'EINGEGANGEN'
+                            ? order.customerName
+                            : 'Anbieter: ' + (order.providerName || 'Unbekannt')}
                         </p>
-                        {order.urgency && (
-                          <p className="mt-2 flex items-center text-sm text-orange-600 sm:mt-0 sm:ml-6">
-                            <FiClock className="flex-shrink-0 mr-1.5 h-5 w-5 text-orange-400" />
-                            Dringlichkeit: {order.urgency}
+                        {order.projectName && (
+                          <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
+                            <FiFolder className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                            Projekt: {order.projectName}
+                          </p>
+                        )}
+                        {order.paymentType === 'b2b_project' && (
+                          <p className="mt-2 flex items-center text-sm text-blue-600 sm:mt-0 sm:ml-6">
+                            <FiPackage className="flex-shrink-0 mr-1.5 h-5 w-5 text-blue-400" />
+                            B2B-Projekt
                           </p>
                         )}
                       </div>
                       <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
                         <FiClock className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                         <p>
-                          Angefragt am{' '}
-                          <time>
-                            {order.requestDate
-                              ? new Date(order.requestDate).toLocaleDateString('de-DE')
-                              : 'Unbekannt'}
+                          {orderType === 'EINGEGANGEN' ? 'Bestellt' : 'Erstellt'} am{' '}
+                          <time
+                            dateTime={
+                              order.orderDate
+                                ? typeof order.orderDate === 'string'
+                                  ? order.orderDate
+                                  : new Date(order.orderDate._seconds * 1000).toISOString()
+                                : undefined
+                            }
+                          >
+                            {formatOrderDate(order.orderDate)}
                           </time>
                         </p>
                       </div>
                     </div>
-                    {order.description && (
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-600 line-clamp-2">{order.description}</p>
-                      </div>
-                    )}
-                  </Link>
-                ) : (
-                  // Original Darstellung für Aufträge
-                  <Link
-                    href={`/dashboard/company/${uidFromParams}/orders/${order.id}`}
-                    className="block hover:bg-gray-50"
-                  >
-                    <div className="px-4 py-4 sm:px-6">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-[#14ad9f] truncate w-2/3">
-                          {order.selectedSubcategory}
-                          {order.projectTitle && (
-                            <span className="ml-2 text-gray-600">- {order.projectTitle}</span>
-                          )}
-                        </p>
-                        <div className="ml-2 flex-shrink-0 flex">
-                          <p
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}
-                          >
-                            {order.status.replace(/_/g, ' ').charAt(0).toUpperCase() +
-                              order.status.replace(/_/g, ' ').slice(1)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <div className="sm:flex">
-                          <p className="flex items-center text-sm text-gray-500">
-                            <FiUser className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                            {orderType === 'EINGEGANGEN'
-                              ? order.customerName
-                              : 'Anbieter: ' + (order.providerName || 'Unbekannt')}
-                          </p>
-                          {order.projectName && (
-                            <p className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0 sm:ml-6">
-                              <FiFolder className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                              Projekt: {order.projectName}
-                            </p>
-                          )}
-                          {order.paymentType === 'b2b_project' && (
-                            <p className="mt-2 flex items-center text-sm text-blue-600 sm:mt-0 sm:ml-6">
-                              <FiPackage className="flex-shrink-0 mr-1.5 h-5 w-5 text-blue-400" />
-                              B2B-Projekt
-                            </p>
-                          )}
-                        </div>
-                        <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <FiClock className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                          <p>
-                            {orderType === 'EINGEGANGEN' ? 'Bestellt' : 'Erstellt'} am{' '}
-                            <time
-                              dateTime={
-                                order.orderDate
-                                  ? typeof order.orderDate === 'string'
-                                    ? order.orderDate
-                                    : new Date(order.orderDate._seconds * 1000).toISOString()
-                                  : undefined
-                              }
-                            >
-                              {formatOrderDate(order.orderDate)}
-                            </time>
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-2 sm:flex sm:justify-between">
-                        <p className="text-sm text-gray-900 font-semibold">
-                          {formatPrice(order.totalAmountPaidByBuyer, order.currency)}
-                        </p>
-                        <div className="relative">
-                          <button
-                            onClick={e => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              alert(`Aktionen für Auftrag ${order.id}`);
-                            }}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            <FiMoreVertical size={20} />
-                          </button>
-                        </div>
+                    <div className="mt-2 sm:flex sm:justify-between">
+                      <p className="text-sm text-gray-900 font-semibold">
+                        {formatPrice(order.totalAmountPaidByBuyer, order.currency)}
+                      </p>
+                      <div className="relative">
+                        <button
+                          onClick={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            alert(`Aktionen für Auftrag ${order.id}`);
+                          }}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <FiMoreVertical size={20} />
+                        </button>
                       </div>
                     </div>
-                  </Link>
-                )}
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
