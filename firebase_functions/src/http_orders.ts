@@ -139,8 +139,27 @@ export const acceptOrderHTTP = onRequest(
         region: "europe-west1"
     },
     async (request, response) => {
-        // CORS handling
-        response.set('Access-Control-Allow-Origin', 'https://taskilo.de');
+        // CORS handling - dynamisch basierend auf Origin
+        const origin = request.headers.origin;
+        const allowedOrigins = [
+            "http://localhost:3000",
+            "http://localhost:3001", 
+            "http://localhost:3002",
+            "https://tilvo-f142f.web.app",
+            "http://localhost:5002",
+            "https://tasko-rho.vercel.app",
+            "https://tasko-zh8k.vercel.app", 
+            "https://tasko-live.vercel.app",
+            "https://taskilo.de",
+            "http://taskilo.de"
+        ];
+
+        if (origin && allowedOrigins.includes(origin)) {
+            response.set('Access-Control-Allow-Origin', origin);
+        } else {
+            response.set('Access-Control-Allow-Origin', 'https://taskilo.de');
+        }
+        
         response.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
         response.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         response.set('Access-Control-Allow-Credentials', 'true');

@@ -12,9 +12,10 @@ export function suppressStripeAnalyticsErrors() {
     // Globaler Fetch Interceptor für alle Stripe Sentry-Fehler
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
+      const url = args[0]?.toString() || '';
+
       try {
         const response = await originalFetch.apply(window, args);
-        const url = args[0]?.toString() || '';
 
         // Abfangen von Stripe Sentry-Requests und Rate-Limiting-Fehlern
         if (url.includes('errors.stripe.com')) {
@@ -31,7 +32,13 @@ export function suppressStripeAnalyticsErrors() {
         return response;
       } catch (error) {
         const url = args[0]?.toString() || '';
-        if (url.includes('stripe.com') || url.includes('errors.stripe.com')) {
+
+        // Nur Stripe-spezifische Fehler supprimieren, alle anderen durchlassen
+        if (
+          url.includes('stripe.com') ||
+          url.includes('errors.stripe.com') ||
+          url.includes('js.stripe.com')
+        ) {
           // Stripe Analytics/Sentry-Fehler still unterdrücken
           console.log(`🔇 Stripe Network Error suppressed: ${url}`);
           return new Response('{"status": "ok"}', {
@@ -39,6 +46,18 @@ export function suppressStripeAnalyticsErrors() {
             headers: { 'Content-Type': 'application/json' },
           });
         }
+
+        // Cloud Functions und andere wichtige Fehler durchlassen mit besseren Messages
+        if (url.includes('cloudfunctions.net')) {
+          console.error(`🚨 Cloud Function Error:`, {
+            url: url,
+            error: error instanceof Error ? error.message : error,
+            timestamp: new Date().toISOString(),
+          });
+        } else {
+          console.error(`🚨 Network Error (not Stripe):`, url, error);
+        }
+
         throw error;
       }
     };

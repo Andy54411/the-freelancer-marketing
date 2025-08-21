@@ -74,7 +74,7 @@ export default function CompanyOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<'provider' | 'customer' | null>(null); // Track user role for this order
+  const [_userRole, setUserRole] = useState<'provider' | 'customer' | null>(null); // Track user role for this order - currently unused
 
   // Payment Modal States - für HoursBillingOverview
   const [showInlinePayment, setShowInlinePayment] = useState(false);
@@ -298,7 +298,9 @@ export default function CompanyOrderDetailPage() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({
+          error: `HTTP ${response.status}: ${response.statusText}`,
+        }));
         throw new Error(errorData.error || 'HTTP Error');
       }
 
@@ -308,7 +310,21 @@ export default function CompanyOrderDetailPage() {
       setOrder(prev => (prev ? { ...prev, status: 'AKTIV' } : null));
     } catch (err: any) {
       console.error('Fehler beim Annehmen des Auftrags:', err);
-      setActionError(err.message || 'Fehler beim Annehmen des Auftrags.');
+
+      // Bessere Error-Messages für verschiedene Fehlertypen
+      let errorMessage = 'Fehler beim Annehmen des Auftrags.';
+      if (err.message?.includes('Failed to fetch')) {
+        errorMessage =
+          'Netzwerkfehler: Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
+      } else if (err.message?.includes('HTTP 401')) {
+        errorMessage = 'Autorisierungsfehler: Bitte loggen Sie sich erneut ein.';
+      } else if (err.message?.includes('HTTP 404')) {
+        errorMessage = 'Service nicht verfügbar: Bitte kontaktieren Sie den Support.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setActionError(errorMessage);
     } finally {
       setIsActionLoading(false);
     }
@@ -316,18 +332,18 @@ export default function CompanyOrderDetailPage() {
 
   const handleCompleteOrder = async () => {
     if (!order) return;
-    
+
     const confirmation = window.confirm(
       'Sind Sie sicher, dass Sie diesen Auftrag als erledigt markieren möchten?\n\n' +
-      'Nach der Markierung:\n' +
-      '• Auftrag wird als "PROVIDER_COMPLETED" markiert\n' +
-      '• Kunde muss den Abschluss bestätigen und bewerten\n' +
-      '• Geld wird erst nach Kundenbestätigung freigegeben\n' +
-      '• Der Kunde erhält eine Benachrichtigung'
+        'Nach der Markierung:\n' +
+        '• Auftrag wird als "PROVIDER_COMPLETED" markiert\n' +
+        '• Kunde muss den Abschluss bestätigen und bewerten\n' +
+        '• Geld wird erst nach Kundenbestätigung freigegeben\n' +
+        '• Der Kunde erhält eine Benachrichtigung'
     );
-    
+
     if (!confirmation) return;
-    
+
     setIsActionLoading(true);
     setActionError(null);
 
@@ -357,10 +373,10 @@ export default function CompanyOrderDetailPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${idToken}`,
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             orderId: order.id,
             providerId: currentUser.uid,
-            completionNote: 'Auftrag wurde vom Anbieter als abgeschlossen markiert.'
+            completionNote: 'Auftrag wurde vom Anbieter als abgeschlossen markiert.',
           }),
         }
       );
@@ -375,12 +391,11 @@ export default function CompanyOrderDetailPage() {
 
       // Update local state
       setOrder(prev => (prev ? { ...prev, status: 'PROVIDER_COMPLETED' } : null));
-      
+
       // Success message
       setSuccessMessage(
         'Auftrag als erledigt markiert! Der Kunde wurde benachrichtigt und muss jetzt den Abschluss bestätigen und bewerten. Das Geld wird nach der Kundenbestätigung freigegeben.'
       );
-      
     } catch (err: any) {
       console.error('Fehler beim Abschließen des Auftrags:', err);
       setActionError(err.message || 'Fehler beim Abschließen des Auftrags.');
@@ -598,13 +613,17 @@ export default function CompanyOrderDetailPage() {
                     <strong>Status:</strong>{' '}
                     <span
                       className={`font-semibold ${
-                        order.status === 'ABGESCHLOSSEN' ? 'text-green-600' :
-                        order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' || order.status === 'AKTIV' ? 'text-blue-600' : 
-                        'text-yellow-600'
+                        order.status === 'ABGESCHLOSSEN'
+                          ? 'text-green-600'
+                          : order.status === 'bezahlt' ||
+                              order.status === 'zahlung_erhalten_clearing' ||
+                              order.status === 'AKTIV'
+                            ? 'text-blue-600'
+                            : 'text-yellow-600'
                       }`}
                     >
                       {(() => {
-                        switch(order.status) {
+                        switch (order.status) {
                           case 'ABGESCHLOSSEN':
                             return '✅ ABGESCHLOSSEN';
                           case 'AKTIV':
@@ -614,7 +633,10 @@ export default function CompanyOrderDetailPage() {
                           case 'bezahlt':
                             return '✅ BEZAHLT';
                           default:
-                            return order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() + order.status?.replace(/_/g, ' ').slice(1);
+                            return (
+                              order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
+                              order.status?.replace(/_/g, ' ').slice(1)
+                            );
                         }
                       })()}
                     </span>
@@ -756,15 +778,20 @@ export default function CompanyOrderDetailPage() {
                       <FiCheckCircle className="h-6 w-6 text-green-500" aria-hidden="true" />
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Auftrag als erledigt markieren</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Auftrag als erledigt markieren
+                      </h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        Haben Sie die Arbeit erfolgreich abgeschlossen? Markieren Sie den Auftrag als erledigt. 
-                        Der Kunde muss dann den Abschluss bestätigen und bewerten, bevor das Geld freigegeben wird.
+                        Haben Sie die Arbeit erfolgreich abgeschlossen? Markieren Sie den Auftrag
+                        als erledigt. Der Kunde muss dann den Abschluss bestätigen und bewerten,
+                        bevor das Geld freigegeben wird.
                       </p>
                       <div className="mt-3 p-3 bg-amber-50 rounded-md">
-                        <h4 className="text-sm font-medium text-amber-800">Was passiert beim Markieren:</h4>
+                        <h4 className="text-sm font-medium text-amber-800">
+                          Was passiert beim Markieren:
+                        </h4>
                         <ul className="mt-1 text-sm text-amber-700 list-disc list-inside">
-                          <li>Auftrag wird als "erledigt" markiert</li>
+                          <li>Auftrag wird als &ldquo;erledigt&rdquo; markiert</li>
                           <li>Kunde erhält Benachrichtigung zur Bestätigung</li>
                           <li>Kunde muss bewerten und Abschluss bestätigen</li>
                           <li>Geld wird erst nach Kundenbestätigung freigegeben</li>
@@ -808,10 +835,12 @@ export default function CompanyOrderDetailPage() {
                       <FiClock className="h-6 w-6 text-amber-500" aria-hidden="true" />
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Wartet auf Kundenbestätigung</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Wartet auf Kundenbestätigung
+                      </h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        Sie haben den Auftrag als erledigt markiert. Der Kunde wurde benachrichtigt und 
-                        muss jetzt den Abschluss bestätigen und eine Bewertung abgeben.
+                        Sie haben den Auftrag als erledigt markiert. Der Kunde wurde benachrichtigt
+                        und muss jetzt den Abschluss bestätigen und eine Bewertung abgeben.
                       </p>
                       <div className="mt-3 p-3 bg-amber-50 rounded-md">
                         <h4 className="text-sm font-medium text-amber-800">Nächste Schritte:</h4>
@@ -824,7 +853,8 @@ export default function CompanyOrderDetailPage() {
                       </div>
                       <div className="mt-3 p-3 bg-blue-50 rounded-md">
                         <p className="text-blue-700 text-sm">
-                          💡 <strong>Tipp:</strong> Die Auszahlung erfolgt automatisch 1-2 Werktage nach der Kundenbestätigung.
+                          💡 <strong>Tipp:</strong> Die Auszahlung erfolgt automatisch 1-2 Werktage
+                          nach der Kundenbestätigung.
                         </p>
                       </div>
                     </div>
@@ -876,12 +906,17 @@ export default function CompanyOrderDetailPage() {
                       <FiCheckCircle className="h-6 w-6 text-green-500" aria-hidden="true" />
                     </div>
                     <div className="ml-4">
-                      <h3 className="text-lg font-semibold text-green-800">Auftrag abgeschlossen</h3>
+                      <h3 className="text-lg font-semibold text-green-800">
+                        Auftrag abgeschlossen
+                      </h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        Dieser Auftrag wurde erfolgreich abgeschlossen. Das Geld wurde über unser Treuhand-System freigegeben.
+                        Dieser Auftrag wurde erfolgreich abgeschlossen. Das Geld wurde über unser
+                        Treuhand-System freigegeben.
                       </p>
                       <div className="mt-3 p-3 bg-green-50 rounded-md">
-                        <h4 className="text-sm font-medium text-green-800">Status-Informationen:</h4>
+                        <h4 className="text-sm font-medium text-green-800">
+                          Status-Informationen:
+                        </h4>
                         <ul className="mt-1 text-sm text-green-700 list-disc list-inside">
                           <li>✅ Auftrag erfolgreich abgeschlossen</li>
                           <li>✅ Geld für Auszahlungen freigegeben</li>
@@ -892,8 +927,9 @@ export default function CompanyOrderDetailPage() {
                       {isViewerProvider && (
                         <div className="mt-3 p-3 bg-blue-50 rounded-md">
                           <p className="text-sm text-blue-700">
-                            <strong>Auszahlung:</strong> Das Geld wird über unser Treuhand-System automatisch ausgezahlt. 
-                            Standard-Auszahlungszeiten: 1-2 Werktage für SEPA-Überweisungen.
+                            <strong>Auszahlung:</strong> Das Geld wird über unser Treuhand-System
+                            automatisch ausgezahlt. Standard-Auszahlungszeiten: 1-2 Werktage für
+                            SEPA-Überweisungen.
                           </p>
                         </div>
                       )}
