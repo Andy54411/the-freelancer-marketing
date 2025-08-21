@@ -28,20 +28,20 @@ export async function POST(request: NextRequest) {
       // Projektdaten
       projectTitle: quoteData.projectTitle,
       projectDescription: quoteData.projectDescription,
-      projectCategory: quoteData.projectCategory,
-      projectSubcategory: quoteData.projectSubcategory,
-      location: quoteData.location,
-      postalCode: quoteData.postalCode,
-      preferredStartDate: quoteData.preferredStartDate,
-      estimatedDuration: quoteData.estimatedDuration,
+      ...(quoteData.projectCategory && { projectCategory: quoteData.projectCategory }),
+      ...(quoteData.projectSubcategory && { projectSubcategory: quoteData.projectSubcategory }),
+      ...(quoteData.location && { location: quoteData.location }),
+      ...(quoteData.postalCode && { postalCode: quoteData.postalCode }),
+      ...(quoteData.preferredStartDate && { preferredStartDate: quoteData.preferredStartDate }),
+      ...(quoteData.estimatedDuration && { estimatedDuration: quoteData.estimatedDuration }),
       budgetRange: quoteData.budgetRange,
-      urgency: quoteData.urgency,
+      ...(quoteData.urgency && { urgency: quoteData.urgency }),
 
       // Kundendaten
       customerName: quoteData.customerName,
       customerEmail: quoteData.customerEmail,
-      customerPhone: quoteData.customerPhone,
-      additionalNotes: quoteData.additionalNotes,
+      ...(quoteData.customerPhone && { customerPhone: quoteData.customerPhone }),
+      ...(quoteData.additionalNotes && { additionalNotes: quoteData.additionalNotes }),
 
       // Metadaten
       source: 'website',

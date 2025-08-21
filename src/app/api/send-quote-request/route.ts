@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
       projectSubcategory: projectData.subcategory,
       location: projectData.location,
       postalCode: projectData.postalCode,
-      preferredStartDate: projectData.preferredStartDate,
-      estimatedDuration: projectData.estimatedDuration,
+      ...(projectData.preferredStartDate && { preferredStartDate: projectData.preferredStartDate }),
+      ...(projectData.estimatedDuration && { estimatedDuration: projectData.estimatedDuration }),
       budgetRange: projectData.budgetRange,
       urgency: projectData.urgency,
 
