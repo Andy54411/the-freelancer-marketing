@@ -43,7 +43,7 @@ async function handleBalanceRequest(firebaseUserId: string) {
 
   try {
     const result = await Promise.race([
-      executeBalanceCheck(firebaseUserId, cacheKey),
+      executeBalanceCheck(firebaseUserId, cacheKey, request),
       timeoutPromise,
     ]);
 
@@ -67,7 +67,7 @@ async function handleBalanceRequest(firebaseUserId: string) {
   }
 }
 
-async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
+async function executeBalanceCheck(firebaseUserId: string, cacheKey: string, request: NextRequest) {
   // Fast Firebase lookup with timeout
   const firebaseTimeout = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error('Firebase timeout')), 6000);
@@ -131,6 +131,7 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
     pending: balance.pending?.[0]?.amount || 0,
     currency: balance.available?.[0]?.currency || 'eur',
     source: 'stripe_api',
+    stripeAccountId: request.nextUrl.searchParams.get('includeAccountId') ? stripeAccountId : undefined,
   };
 
   // Cache successful result
