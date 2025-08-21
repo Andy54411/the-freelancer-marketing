@@ -195,17 +195,18 @@ export async function POST(request: NextRequest) {
     // Company erhält den Betrag minus Plattformgebühr
     const companyAmount = totalAmount - platformFee;
 
-    // PLATFORM HOLD SYSTEM: Echtes Escrow-System
-    // Geld wird SOFORT eingezogen und auf unserem Platform Account gehalten
-    // Transfer an Provider erfolgt erst nach Projektabschluss via separaten API-Call
+    // IMPROVED SYSTEM: Direct Transfer mit Platform Fee
+    // Kunde zahlt Gesamtbetrag, Provider erhält sofort den Betrag minus Platform Fee
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmount,
       currency: 'eur',
       customer: customerStripeId,
-      // KRITISCH: KEIN transfer_data und KEINE application_fee_amount!
-      // Geld bleibt komplett auf Platform Account bis zur manuellen Transfer-Freigabe
+      application_fee_amount: platformFee, // Platform behält nur die Gebühr
+      transfer_data: {
+        destination: providerStripeAccountId, // Provider erhält Geld sofort
+      },
       confirm: false,
-      capture_method: 'automatic', // Sofortige Einziehung = sicheres Geld
+      capture_method: 'automatic',
       setup_future_usage: 'off_session',
       automatic_payment_methods: {
         enabled: true,
@@ -213,9 +214,9 @@ export async function POST(request: NextRequest) {
       },
       metadata: {
         orderId,
-        type: 'additional_hours_platform_hold',
+        type: 'additional_hours_direct_transfer', // Neuer Typ für direkten Transfer
         entryIds: approvedEntryIds.join(','),
-        providerStripeAccountId, // Für späteren Transfer
+        providerStripeAccountId,
         totalHours: approvedEntries
           .reduce((sum: number, entry: { hours: number }) => sum + entry.hours, 0)
           .toString(),
@@ -223,9 +224,9 @@ export async function POST(request: NextRequest) {
         additionalAmount: totalAmount.toString(),
         platformFee: platformFee.toString(),
         companyReceives: companyAmount.toString(),
-        platformHoldEnabled: 'true',
+        transferType: 'direct', // Kennzeichnet direkten Transfer
       },
-      description: `Zusätzliche Arbeitsstunden (Platform Hold) für Auftrag ${orderId}`,
+      description: `Zusätzliche Arbeitsstunden für Auftrag ${orderId} - Direktüberweisung`,
     });
 
     console.log(
@@ -240,10 +241,13 @@ export async function POST(request: NextRequest) {
       customerPays: totalAmount, // Kunde zahlt vollen Betrag
       companyReceives: companyAmount, // Company erhält Betrag minus Plattformgebühr
       platformFee: platformFee,
-      additionalHours: approvedEntries.reduce((sum: number, entry: { hours: number }) => sum + entry.hours, 0),
-      platformHoldEnabled: true,
+      additionalHours: approvedEntries.reduce(
+        (sum: number, entry: { hours: number }) => sum + entry.hours,
+        0
+      ),
+      transferType: 'direct', // Direkter Transfer statt Platform Hold
       message:
-        'Platform Hold PaymentIntent für zusätzliche Stunden erfolgreich erstellt. Geld wird nach Projektabschluss übertragen.',
+        'PaymentIntent für zusätzliche Stunden erfolgreich erstellt. Provider erhält Geld automatisch nach Zahlung.',
     });
   } catch (error: unknown) {
     let errorMessage =

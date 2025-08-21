@@ -88,7 +88,11 @@ export async function POST(req: NextRequest) {
         const paymentType = chargeSucceeded.metadata?.type || chargeSucceeded.metadata?.paymentType;
 
         // Handle additional hours payments
-        if (paymentType === 'additional_hours_platform_hold') {
+        // Handle additional hours payments (both platform_hold and direct_transfer)
+        if (
+          paymentType === 'additional_hours_platform_hold' ||
+          paymentType === 'additional_hours_direct_transfer'
+        ) {
           console.log(
             `[WEBHOOK LOG] Processing additional hours payment (charge): ${chargeSucceeded.id}`
           );
@@ -210,10 +214,13 @@ export async function POST(req: NextRequest) {
         const paymentType =
           paymentIntentSucceeded.metadata?.type || paymentIntentSucceeded.metadata?.paymentType;
 
-        // Handle additional hours payments
-        if (paymentType === 'additional_hours_platform_hold') {
+        // Handle additional hours payments (both platform_hold and direct_transfer)
+        if (
+          paymentType === 'additional_hours_platform_hold' ||
+          paymentType === 'additional_hours_direct_transfer'
+        ) {
           console.log(
-            `[WEBHOOK LOG] Processing additional hours payment: ${paymentIntentSucceeded.id}`
+            `[WEBHOOK LOG] Processing additional hours payment (${paymentType}): ${paymentIntentSucceeded.id}`
           );
 
           const orderId = paymentIntentSucceeded.metadata?.orderId;
@@ -340,116 +347,124 @@ export async function POST(req: NextRequest) {
               }
             });
 
-            // NEU: Transfer money to Connect account (AFTER the transaction)
-            const providerStripeAccountId =
-              paymentIntentSucceeded.metadata?.providerStripeAccountId;
-            const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
-
-            console.log(
-              `[WEBHOOK DEBUG] Transfer data check: providerStripeAccountId=${providerStripeAccountId}, companyReceives=${companyReceives}`
-            );
-
-            if (providerStripeAccountId && companyReceives) {
-              const transferAmount = parseInt(companyReceives, 10);
+            // Only do manual transfer for platform_hold payments
+            // direct_transfer payments get money automatically via transfer_data
+            if (paymentType === 'additional_hours_platform_hold') {
+              // NEU: Transfer money to Connect account (AFTER the transaction)
+              const providerStripeAccountId =
+                paymentIntentSucceeded.metadata?.providerStripeAccountId;
+              const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
 
               console.log(
-                `[WEBHOOK LOG] Creating transfer to Connect account ${providerStripeAccountId}: ${transferAmount} cents for order ${orderId}`
+                `[WEBHOOK DEBUG] Platform Hold Transfer check: providerStripeAccountId=${providerStripeAccountId}, companyReceives=${companyReceives}`
               );
 
-              try {
-                // Prüfe erst, ob das Connect-Konto existiert und empfangsfähig ist
-                const connectAccount = await stripe.accounts.retrieve(providerStripeAccountId);
-                console.log(
-                  `[WEBHOOK DEBUG] Connect account status: ${connectAccount.charges_enabled}, payouts_enabled: ${connectAccount.payouts_enabled}`
-                );
-
-                if (!connectAccount.charges_enabled) {
-                  console.error(
-                    `[WEBHOOK ERROR] Connect account ${providerStripeAccountId} is not charges_enabled`
-                  );
-                  // Trotzdem weitermachen, aber warnen
-                }
-
-                const transfer = await stripe.transfers.create({
-                  amount: transferAmount,
-                  currency: 'eur',
-                  destination: providerStripeAccountId,
-                  description: `Zusätzliche Arbeitsstunden für Auftrag ${orderId}`,
-                  metadata: {
-                    type: 'additional_hours_platform_hold',
-                    orderId: orderId,
-                    paymentIntentId: paymentIntentSucceeded.id,
-                    entryIds: entryIds,
-                    originalEventId: event.id,
-                  },
-                });
+              if (providerStripeAccountId && companyReceives) {
+                const transferAmount = parseInt(companyReceives, 10);
 
                 console.log(
-                  `[WEBHOOK SUCCESS] Transfer created successfully: ${transfer.id} - ${transferAmount} cents to ${providerStripeAccountId} for order ${orderId}`
+                  `[WEBHOOK LOG] Creating platform hold transfer to Connect account ${providerStripeAccountId}: ${transferAmount} cents for order ${orderId}`
                 );
 
-                // Update company document with transfer info
-                const companyRef = db
-                  .collection('companies')
-                  .where('anbieterStripeAccountId', '==', providerStripeAccountId)
-                  .limit(1);
-                const companySnapshot = await companyRef.get();
-
-                if (!companySnapshot.empty) {
-                  const companyDoc = companySnapshot.docs[0];
-                  await companyDoc.ref.update({
-                    lastTransferId: transfer.id,
-                    lastTransferAt: admin.firestore.FieldValue.serverTimestamp(),
-                    lastTransferAmount: transferAmount,
-                    lastTransferOrderId: orderId,
-                  });
-                  console.log(
-                    `[WEBHOOK LOG] Company document updated with transfer info: ${transfer.id}`
-                  );
-                } else {
-                  console.error(
-                    `[WEBHOOK ERROR] No company found with anbieterStripeAccountId: ${providerStripeAccountId}`
-                  );
-                }
-              } catch (transferError: unknown) {
-                let transferErrorMessage = 'Unbekannter Transfer-Fehler';
-                if (transferError instanceof Error) {
-                  transferErrorMessage = transferError.message;
-                }
-                const errorKey = `transfer_error_${orderId}_${Date.now()}`;
-                if (shouldLogError(errorKey)) {
-                  console.error(
-                    `[WEBHOOK ERROR] Transfer failed for order ${orderId} to account ${providerStripeAccountId}:`,
-                    transferError
-                  );
-                  console.error(
-                    `[WEBHOOK ERROR] Transfer details: amount=${transferAmount}, currency=eur, destination=${providerStripeAccountId}`
-                  );
-                }
-                // Continue processing even if transfer fails - important for webhook reliability
-                // Aber versuche einen Retry-Mechanismus zu implementieren
                 try {
-                  // Speichere failed transfer für später retry
-                  await db.collection('failedTransfers').add({
-                    orderId: orderId,
-                    paymentIntentId: paymentIntentSucceeded.id,
-                    providerStripeAccountId: providerStripeAccountId,
-                    amount: transferAmount,
-                    error: transferErrorMessage,
-                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                    retryCount: 0,
-                    status: 'pending_retry',
-                  });
+                  // Prüfe erst, ob das Connect-Konto existiert und empfangsfähig ist
+                  const connectAccount = await stripe.accounts.retrieve(providerStripeAccountId);
                   console.log(
-                    `[WEBHOOK LOG] Failed transfer saved for retry: order ${orderId}, amount ${transferAmount}`
+                    `[WEBHOOK DEBUG] Connect account status: ${connectAccount.charges_enabled}, payouts_enabled: ${connectAccount.payouts_enabled}`
                   );
-                } catch (saveError) {
-                  console.error(`[WEBHOOK ERROR] Failed to save failed transfer:`, saveError);
+
+                  if (!connectAccount.charges_enabled) {
+                    console.error(
+                      `[WEBHOOK ERROR] Connect account ${providerStripeAccountId} is not charges_enabled`
+                    );
+                    // Trotzdem weitermachen, aber warnen
+                  }
+
+                  const transfer = await stripe.transfers.create({
+                    amount: transferAmount,
+                    currency: 'eur',
+                    destination: providerStripeAccountId,
+                    description: `Zusätzliche Arbeitsstunden (Platform Hold Release) für Auftrag ${orderId}`,
+                    metadata: {
+                      type: 'additional_hours_platform_hold_release',
+                      orderId: orderId,
+                      paymentIntentId: paymentIntentSucceeded.id,
+                      entryIds: entryIds,
+                      originalEventId: event.id,
+                    },
+                  });
+
+                  console.log(
+                    `[WEBHOOK SUCCESS] Platform Hold transfer created: ${transfer.id} - ${transferAmount} cents to ${providerStripeAccountId} for order ${orderId}`
+                  );
+
+                  // Update company document with transfer info
+                  const companyRef = db
+                    .collection('companies')
+                    .where('anbieterStripeAccountId', '==', providerStripeAccountId)
+                    .limit(1);
+                  const companySnapshot = await companyRef.get();
+
+                  if (!companySnapshot.empty) {
+                    const companyDoc = companySnapshot.docs[0];
+                    await companyDoc.ref.update({
+                      lastTransferId: transfer.id,
+                      lastTransferAt: admin.firestore.FieldValue.serverTimestamp(),
+                      lastTransferAmount: transferAmount,
+                      lastTransferOrderId: orderId,
+                    });
+                    console.log(
+                      `[WEBHOOK LOG] Company document updated with transfer info: ${transfer.id}`
+                    );
+                  } else {
+                    console.error(
+                      `[WEBHOOK ERROR] No company found with anbieterStripeAccountId: ${providerStripeAccountId}`
+                    );
+                  }
+                } catch (transferError: unknown) {
+                  let transferErrorMessage = 'Unbekannter Transfer-Fehler';
+                  if (transferError instanceof Error) {
+                    transferErrorMessage = transferError.message;
+                  }
+                  const errorKey = `transfer_error_${orderId}_${Date.now()}`;
+                  if (shouldLogError(errorKey)) {
+                    console.error(
+                      `[WEBHOOK ERROR] Platform hold transfer failed for order ${orderId} to account ${providerStripeAccountId}:`,
+                      transferError
+                    );
+                    console.error(
+                      `[WEBHOOK ERROR] Transfer details: amount=${transferAmount}, currency=eur, destination=${providerStripeAccountId}`
+                    );
+                  }
+                  // Continue processing even if transfer fails - important for webhook reliability
+                  // Aber versuche einen Retry-Mechanismus zu implementieren
+                  try {
+                    // Speichere failed transfer für später retry
+                    await db.collection('failedTransfers').add({
+                      orderId: orderId,
+                      paymentIntentId: paymentIntentSucceeded.id,
+                      providerStripeAccountId: providerStripeAccountId,
+                      amount: transferAmount,
+                      error: transferErrorMessage,
+                      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                      retryCount: 0,
+                      status: 'pending_retry',
+                    });
+                    console.log(
+                      `[WEBHOOK LOG] Failed transfer saved for retry: order ${orderId}, amount ${transferAmount}`
+                    );
+                  } catch (saveError) {
+                    console.error(`[WEBHOOK ERROR] Failed to save failed transfer:`, saveError);
+                  }
                 }
+              } else {
+                console.error(
+                  `[WEBHOOK ERROR] Missing platform hold transfer data for additional hours payment ${paymentIntentSucceeded.id}: providerStripeAccountId=${providerStripeAccountId}, companyReceives=${companyReceives}`
+                );
               }
-            } else {
-              console.error(
-                `[WEBHOOK ERROR] Missing transfer data for additional hours payment ${paymentIntentSucceeded.id}: providerStripeAccountId=${providerStripeAccountId}, companyReceives=${companyReceives}`
+            } else if (paymentType === 'additional_hours_direct_transfer') {
+              console.log(
+                `[WEBHOOK LOG] Direct transfer payment detected - no manual transfer needed: ${paymentIntentSucceeded.id}`
               );
             }
 
@@ -515,15 +530,11 @@ export async function POST(req: NextRequest) {
             const auftragCollectionRef = db.collection('auftraege');
 
             // Definiere Variablen außerhalb der Transaction
-            let orderId: string;
-            let totalAmountCents: number;
+            const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const totalAmountCents = paymentIntentSucceeded.amount;
 
             await db.runTransaction(async transaction => {
-              // Generiere eine eindeutige Auftrags-ID
-              orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
               // Berechne B2B-spezifische Daten
-              totalAmountCents = paymentIntentSucceeded.amount;
               const platformFeeAmount = paymentIntentSucceeded.application_fee_amount || 0;
               const providerReceives = totalAmountCents - platformFeeAmount;
 
@@ -685,8 +696,8 @@ export async function POST(req: NextRequest) {
           const auftragCollectionRef = db.collection('auftraege');
 
           // Definiere Variablen außerhalb der Transaction für Notifications
-          let newOrderId: string;
-          let orderData: any;
+          let newOrderId: string = '';
+          let orderData: any = null;
 
           await db.runTransaction(async transaction => {
             const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
@@ -797,28 +808,37 @@ export async function POST(req: NextRequest) {
           });
 
           // 🔔 BELL NOTIFICATION: Regular Order erfolgreich erstellt
-          try {
-            const orderNotificationData = {
-              customerName: orderData.customerName || 'Kunde',
-              providerName: orderData.providerName || 'Anbieter',
-              subcategory: orderData.selectedSubcategory || 'Service',
-              category: orderData.selectedCategory || 'Dienstleistung',
-              amount: orderData.totalAmountPaidByBuyer || 0,
-              dateFrom: orderData.jobDateFrom || new Date().toISOString().split('T')[0],
-              dateTo: orderData.jobDateTo,
-            };
+          if (newOrderId && orderData) {
+            try {
+              const orderNotificationData = {
+                customerName: orderData.customerName || 'Kunde',
+                providerName: orderData.providerName || 'Anbieter',
+                subcategory: orderData.selectedSubcategory || 'Service',
+                category: orderData.selectedCategory || 'Dienstleistung',
+                amount: orderData.totalAmountPaidByBuyer || 0,
+                dateFrom: orderData.jobDateFrom || new Date().toISOString().split('T')[0],
+                dateTo: orderData.jobDateTo,
+              };
 
-            await OrderNotificationService.createNewOrderNotifications(
-              newOrderId,
-              firebaseUserId, // Customer ID
-              orderData.selectedAnbieterId, // Provider ID
-              orderNotificationData
-            );
+              await OrderNotificationService.createNewOrderNotifications(
+                newOrderId,
+                firebaseUserId, // Customer ID
+                orderData.selectedAnbieterId, // Provider ID
+                orderNotificationData
+              );
+              console.log(
+                `[WEBHOOK LOG] Regular Order Notifications gesendet für Order ${newOrderId}`
+              );
+            } catch (notificationError) {
+              console.error(
+                '[WEBHOOK ERROR] Regular Order Notification failed:',
+                notificationError
+              );
+            }
+          } else {
             console.log(
-              `[WEBHOOK LOG] Regular Order Notifications gesendet für Order ${newOrderId}`
+              '[WEBHOOK LOG] Order creation was skipped or failed - no notifications sent'
             );
-          } catch (notificationError) {
-            console.error('[WEBHOOK ERROR] Regular Order Notification failed:', notificationError);
           }
 
           console.log(
