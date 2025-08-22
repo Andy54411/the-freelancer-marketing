@@ -9,25 +9,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
-    // For local development, skip token verification
-    const isLocalDevelopment = process.env.NODE_ENV === 'development';
-    let userId = '8WACaOZv3EYwaxksJoYx7R8dgLK2'; // Default for local testing
+    // Verify authentication - required for all environments
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - Missing token' }, { status: 401 });
+    }
 
-    if (!isLocalDevelopment) {
-      // Verify authentication in production
-      const authHeader = request.headers.get('Authorization');
-      if (!authHeader?.startsWith('Bearer ')) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    const idToken = authHeader.substring(7);
+    let userId: string;
 
-      const idToken = authHeader.substring(7);
-      try {
-        const decodedToken = await auth.verifyIdToken(idToken);
-        userId = decodedToken.uid;
-      } catch (authError) {
-        console.error('Token verification failed:', authError);
-        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-      }
+    try {
+      const decodedToken = await auth.verifyIdToken(idToken);
+      userId = decodedToken.uid;
+    } catch (authError) {
+      console.error('Token verification failed:', authError);
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     // First check if user has access to this order
@@ -40,7 +36,12 @@ export async function POST(request: NextRequest) {
     const orderData = orderDoc.data();
 
     // Check if user has permission to view this order's chat
-    if (orderData?.kundeId !== userId && orderData?.selectedAnbieterId !== userId) {
+    // Support both legacy field names and new field names
+    const isCustomer = orderData?.kundeId === userId || orderData?.customerFirebaseUid === userId;
+    const isProvider =
+      orderData?.selectedAnbieterId === userId || orderData?.providerFirebaseUid === userId;
+
+    if (!isCustomer && !isProvider) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -52,10 +53,15 @@ export async function POST(request: NextRequest) {
       .orderBy('timestamp', 'asc')
       .get();
 
-    const messages = messagesSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const messages = messagesSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Convert Firestore timestamp to ISO string for JSON serialization
+        timestamp: data.timestamp?.toDate ? data.timestamp.toDate().toISOString() : data.timestamp,
+      };
+    });
 
     return NextResponse.json({
       success: true,

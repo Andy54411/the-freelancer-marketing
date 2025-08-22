@@ -43,9 +43,28 @@ interface ChatComponentProps {
 }
 
 // NEUE HILFSFUNKTION: Formatiert den Zeitstempel für eine bessere Lesbarkeit
-const formatMessageTimestamp = (timestamp: Timestamp | undefined): string => {
+const formatMessageTimestamp = (timestamp: any): string => {
   if (!timestamp) return '';
-  const date = timestamp.toDate();
+
+  let date: Date;
+
+  // Handle different timestamp formats
+  if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+    // Firestore Timestamp object
+    date = timestamp.toDate();
+  } else if (timestamp.seconds) {
+    // Firestore Timestamp-like object with seconds
+    date = new Date(timestamp.seconds * 1000);
+  } else if (timestamp instanceof Date) {
+    // Regular Date object
+    date = timestamp;
+  } else if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+    // String or number timestamp
+    date = new Date(timestamp);
+  } else {
+    return '';
+  }
+
   const now = new Date();
 
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
