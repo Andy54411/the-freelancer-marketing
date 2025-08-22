@@ -120,14 +120,30 @@ export default function UserDashboardPage() {
       setLoadingOrders(true);
       setOrdersError(null);
       const ordersCollectionRef = collection(db, 'auftraege');
-      const q = query(
+
+      // Zwei separate Abfragen für beide möglichen User-ID Felder
+      const q1 = query(
+        ordersCollectionRef,
+        where('customerFirebaseUid', '==', user.uid),
+        orderBy('paidAt', 'desc')
+      );
+
+      const q2 = query(
         ordersCollectionRef,
         where('kundeId', '==', user.uid),
         orderBy('paidAt', 'desc')
       );
 
-      const querySnapshot = await getDocs(q);
-      const ordersData = querySnapshot.docs.map(doc => {
+      // Beide Abfragen parallel ausführen
+      const [querySnapshot1, querySnapshot2] = await Promise.all([getDocs(q1), getDocs(q2)]);
+
+      // Ergebnisse kombinieren und Duplikate entfernen
+      const allOrderDocs = new Map();
+      [...querySnapshot1.docs, ...querySnapshot2.docs].forEach(doc => {
+        allOrderDocs.set(doc.id, doc);
+      });
+
+      const ordersData = Array.from(allOrderDocs.values()).map(doc => {
         const data = doc.data() as any; // Temporär any verwenden für Debugging
         console.log('Order data from Firestore:', data); // Debug-Log hinzufügen
 
@@ -589,11 +605,12 @@ export default function UserDashboardPage() {
                                 </p>
                                 <div className="mt-1">
                                   <span
-                                    className={`px-2 py-0.5 rounded-full text-xs font-semibold inline-block ${order.status === 'bezahlt' ||
-                                        order.status === 'Zahlung_erhalten_clearing'
+                                    className={`px-2 py-0.5 rounded-full text-xs font-semibold inline-block ${
+                                      order.status === 'bezahlt' ||
+                                      order.status === 'Zahlung_erhalten_clearing'
                                         ? 'bg-green-100 text-green-800'
                                         : 'bg-yellow-100 text-yellow-800'
-                                      }`}
+                                    }`}
                                   >
                                     {order.status.replace(/_/g, ' ').charAt(0).toUpperCase() +
                                       order.status.replace(/_/g, ' ').slice(1)}
@@ -608,10 +625,11 @@ export default function UserDashboardPage() {
                     {/* Always show "Neuen Auftrag erstellen" button */}
                     <button
                       onClick={handleCreateNewOrder}
-                      className={`mt-4 flex items-center justify-center w-full px-4 py-2 rounded-md transition-colors text-sm ${userOrders.length === 0
+                      className={`mt-4 flex items-center justify-center w-full px-4 py-2 rounded-md transition-colors text-sm ${
+                        userOrders.length === 0
                           ? 'bg-[#14ad9f] text-white hover:bg-[#129a8f]' // Primary style if no orders
                           : 'border border-gray-300 text-gray-700 hover:bg-gray-100' // Secondary style if orders exist
-                        }`}
+                      }`}
                     >
                       <FiPlusCircle className="mr-2" /> Neuen Auftrag erstellen
                     </button>
@@ -658,7 +676,6 @@ export default function UserDashboardPage() {
                 <div className="mt-12">
                   <FaqSection />
                 </div>
-
                 {/* TimeTracking Overview Section */}
                 {currentUser && (
                   <div className="mt-12">
@@ -671,13 +688,10 @@ export default function UserDashboardPage() {
                     />
                   </div>
                 )}
-
                 {/* Billing History Section */}
                 {currentUser && (
                   <div className="mt-12">
-                    <BillingHistory
-                      customerId={currentUser.uid}
-                    />
+                    <BillingHistory customerId={currentUser.uid} />
                   </div>
                 )}
               </div>{' '}

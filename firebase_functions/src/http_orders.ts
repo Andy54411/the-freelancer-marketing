@@ -370,7 +370,7 @@ export const getUserOrdersHTTP = onRequest(
             ordersQuery = ordersQuery.orderBy('createdAt', 'desc').limit(limit);
 
             if (lastOrderId) {
-                const lastOrderDoc = await db.collection('orders').doc(lastOrderId).get();
+                const lastOrderDoc = await db.collection('auftraege').doc(lastOrderId).get();
                 if (lastOrderDoc.exists) {
                     ordersQuery = ordersQuery.startAfter(lastOrderDoc);
                 }

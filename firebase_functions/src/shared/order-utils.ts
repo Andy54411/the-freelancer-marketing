@@ -45,7 +45,7 @@ export async function getOrderData(
     logError: (message: string, ...args: any[]) => void = console.error
 ): Promise<OrderData | null> {
     try {
-        const orderDoc = await db.collection('orders').doc(orderId).get();
+        const orderDoc = await db.collection('auftraege').doc(orderId).get();
         if (!orderDoc.exists) {
             logError(`Auftrag ${orderId} nicht gefunden`);
             return null;

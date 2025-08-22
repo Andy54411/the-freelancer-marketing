@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../firebase/server';
+import { auth, db } from '../../../firebase/server';
 
 export async function POST(request: Request) {
   try {
@@ -18,15 +18,81 @@ export async function POST(request: Request) {
       );
     }
 
-    // Für den Test nehmen wir die bekannte User ID
-    const userId = '8WACaOZv3EYwaxksJoYx7R8dgLK2';
+    // Token verifizieren und echte User ID extrahieren
+    const idToken = authHeader.replace('Bearer ', '');
+    let userId: string;
+
+    try {
+      const decodedToken = await auth.verifyIdToken(idToken);
+      userId = decodedToken.uid;
+    } catch (error) {
+      console.error('[getUserOrdersHTTP] Token verification failed:', error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid token',
+        },
+        { status: 401 }
+      );
+    }
 
     console.log('[getUserOrdersHTTP] Suche Orders für User:', userId, 'Type:', userType);
 
-    // Query je nach userType
+    // Query je nach userType mit mehreren möglichen Feldern
     let query;
     if (userType === 'customer') {
-      query = db.collection('auftraege').where('kundeId', '==', userId);
+      // Suche sowohl in kundeId als auch customerFirebaseUid
+      console.log('[getUserOrdersHTTP] Suche Kunden-Orders...');
+      const kundeIdQuery = db.collection('auftraege').where('kundeId', '==', userId);
+      const customerUidQuery = db
+        .collection('auftraege')
+        .where('customerFirebaseUid', '==', userId);
+
+      // Führe beide Queries aus
+      const [kundeIdSnapshot, customerUidSnapshot] = await Promise.all([
+        kundeIdQuery.get(),
+        customerUidQuery.get(),
+      ]);
+
+      const orders: any[] = [];
+      const seenOrderIds = new Set();
+
+      // Sammle Orders aus beiden Queries (vermeide Duplikate)
+      kundeIdSnapshot.forEach(doc => {
+        if (!seenOrderIds.has(doc.id)) {
+          orders.push({
+            id: doc.id,
+            ...doc.data(),
+          });
+          seenOrderIds.add(doc.id);
+        }
+      });
+
+      customerUidSnapshot.forEach(doc => {
+        if (!seenOrderIds.has(doc.id)) {
+          orders.push({
+            id: doc.id,
+            ...doc.data(),
+          });
+          seenOrderIds.add(doc.id);
+        }
+      });
+
+      console.log('[getUserOrdersHTTP] Gefunden:', orders.length, 'Orders für Customer');
+      console.log(
+        '[getUserOrdersHTTP] Orders:',
+        orders.map(o => ({
+          id: o.id,
+          kundeId: o.kundeId,
+          customerFirebaseUid: o.customerFirebaseUid,
+        }))
+      );
+
+      return NextResponse.json({
+        success: true,
+        orders,
+        count: orders.length,
+      });
     } else {
       query = db.collection('auftraege').where('selectedAnbieterId', '==', userId);
     }
