@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiClock, FiCheckCircle, FiAlertCircle, FiCalendar, FiInfo, FiCheck } from 'react-icons/fi';
 import { TimeTracker } from '@/lib/timeTracker';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TimeEntry {
   id: string;
@@ -40,6 +41,7 @@ export default function HoursBillingOverview({
   className = '',
   onPaymentRequest,
 }: HoursBillingOverviewProps) {
+  const { firebaseUser: currentUser } = useAuth();
   const [data, setData] = useState<HoursOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +55,27 @@ export default function HoursBillingOverview({
       setLoading(true);
       setError(null);
 
-      // Import TimeTracker dynamisch
-      const { TimeTracker } = await import('@/lib/timeTracker');
-      const orderDetails = await TimeTracker.getOrderDetails(orderId);
+      // Use existing getSingleOrder API instead of direct Firebase access
+      const response = await fetch('/api/getSingleOrder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await currentUser?.getIdToken()}`
+        },
+        body: JSON.stringify({ orderId })
+      });
 
-      if (!orderDetails) {
+      if (!response.ok) {
+        throw new Error('Failed to fetch order data');
+      }
+
+      const result = await response.json();
+      
+      if (!result.success || !result.order) {
         throw new Error('Auftragsdaten nicht gefunden');
       }
 
+      const orderDetails = result.order;
       const timeTracking = orderDetails.timeTracking;
       const hoursData: HoursOverviewData = {
         originalPlannedHours: timeTracking?.originalPlannedHours || 24,
@@ -80,7 +95,7 @@ export default function HoursBillingOverview({
     } finally {
       setLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, currentUser]);
 
   // Funktion zur Freigabe von geloggten zusätzlichen Stunden
   const handleApproveLoggedHours = async () => {

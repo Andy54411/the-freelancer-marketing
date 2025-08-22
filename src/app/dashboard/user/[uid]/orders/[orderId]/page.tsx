@@ -3,10 +3,11 @@
 
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
 import { useAuth, UserProfile } from '@/contexts/AuthContext';
-import { db, functions, auth } from '@/firebase/clients';
+import { functions } from '@/firebase/clients';
 import { httpsCallable } from 'firebase/functions';
+import { getSingleOrder } from '@/app/api/getSingleOrder';
+import { getOrderParticipantDetails } from '@/app/api/getOrderParticipantDetails';
 
 // Icons für UI
 import {
@@ -64,7 +65,7 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
   const orderId = typeof params?.orderId === 'string' ? params.orderId : '';
-  const { user: currentUser, loading: authLoading } = useAuth(); // KORREKTUR: useAuth Hook korrekt verwenden
+  const { user: currentUser, loading: authLoading, firebaseUser } = useAuth(); // KORREKTUR: useAuth Hook korrekt verwenden mit firebaseUser
 
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(true);
@@ -123,28 +124,24 @@ export default function OrderDetailPage() {
       setLoadingOrder(true);
       setError(null);
       try {
-        const orderDocRef = doc(db, 'auftraege', orderId);
-        const orderDocSnap = await getDoc(orderDocRef);
-
-        if (!orderDocSnap.exists()) {
-          throw new Error('Auftrag nicht gefunden.');
+        // Get ID token for authentication
+        const idToken = await firebaseUser?.getIdToken();
+        if (!idToken) {
+          throw new Error('No authentication token available');
         }
 
-        const data = orderDocSnap.data();
+        // Use the new API instead of direct Firestore access
+        const data = await getSingleOrder(orderId, idToken);
+
         if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
           throw new Error('Keine Berechtigung für diesen Auftrag.');
         }
 
-        const getOrderParticipantDetails = httpsCallable<
-          { orderId: string },
-          { provider: ParticipantDetails; customer: ParticipantDetails }
-        >(functions, 'getOrderParticipantDetails');
-
-        const result = await getOrderParticipantDetails({ orderId });
-        const { provider: providerDetails, customer: customerDetails } = result.data;
+        // Use the new API instead of Cloud Function
+        const { provider: providerDetails, customer: customerDetails } = await getOrderParticipantDetails(orderId, idToken);
 
         const orderData: OrderData = {
-          id: orderDocSnap.id,
+          id: data.id,
           serviceTitle: data.selectedSubcategory || 'Dienstleistung',
           providerId: data.selectedAnbieterId,
           providerName: providerDetails.name,
@@ -193,7 +190,6 @@ export default function OrderDetailPage() {
     setError(null);
     try {
       // Debug: Auth Status prüfen
-      const firebaseUser = auth.currentUser;
       if (!firebaseUser) {
         throw new Error('Benutzer ist nicht angemeldet');
       }

@@ -93,8 +93,10 @@ export class UserPresenceService {
       }
     };
 
-    // Vereinfachte beforeunload-Behandlung ohne API-Call
+    // TEMPORÄR DEAKTIVIERT: Vereinfachte beforeunload-Behandlung ohne API-Call
     const handleBeforeUnload = () => {
+      console.log('[UserPresence] beforeunload triggered - TEMPORARILY DISABLED for debugging');
+      /*
       if (this.userId) {
         try {
           // Nur sendBeacon für einfache Offline-Markierung
@@ -106,6 +108,7 @@ export class UserPresenceService {
           console.debug('[UserPresence] Beacon failed (normal on some browsers)');
         }
       }
+      */
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);

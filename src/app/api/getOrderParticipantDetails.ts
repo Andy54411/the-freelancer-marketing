@@ -1,20 +1,13 @@
-// src/api/getUserOrders.ts
-import { FIREBASE_FUNCTIONS_BASE_URL } from '@/lib/constants';
+// src/api/getOrderParticipantDetails.ts
 
-export const getUserOrders = async (
-  userId: string,
-  idToken: string,
-  userType: 'customer' | 'provider' = 'customer',
-  limit = 20,
-  lastOrderId?: string
-) => {
+export const getOrderParticipantDetails = async (orderId: string, idToken: string) => {
   // Use local API route in development, Cloud Function in production
   const isLocalDevelopment = process.env.NODE_ENV === 'development' || 
                            typeof window !== 'undefined' && window.location.hostname === 'localhost';
   
   const apiUrl = isLocalDevelopment 
-    ? '/api/getUserOrdersHTTP'
-    : `${FIREBASE_FUNCTIONS_BASE_URL}/getUserOrdersHTTP`;
+    ? '/api/getOrderParticipantDetails'
+    : `${process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL}/getOrderParticipantDetails`;
 
   const response = await fetch(apiUrl, {
     method: 'POST',
@@ -22,7 +15,7 @@ export const getUserOrders = async (
       'Content-Type': 'application/json',
       Authorization: `Bearer ${idToken}`,
     },
-    body: JSON.stringify({ userType, limit, lastOrderId }),
+    body: JSON.stringify({ orderId }),
   });
 
   if (!response.ok) {
@@ -31,5 +24,5 @@ export const getUserOrders = async (
   }
 
   const data = await response.json();
-  return data.orders;
+  return { provider: data.provider, customer: data.customer };
 };

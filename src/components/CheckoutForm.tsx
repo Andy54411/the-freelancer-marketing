@@ -199,7 +199,12 @@ export const StripeCardCheckout = ({
       className="space-y-6 p-4 border rounded-lg shadow-sm bg-white"
     >
       <h3 className="text-lg font-semibold mb-4">Zahlung</h3>
-      {/* AddressElement sammelt die Rechnungsadresse */}
+      
+      {/* PaymentElement sammelt die Zahlungsdaten */}
+      <PaymentElement 
+        id="payment-element" 
+        options={paymentElementOptions} 
+      />
 
       <button
         type="submit"

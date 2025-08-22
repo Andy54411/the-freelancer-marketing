@@ -1,23 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
-import { db, auth } from '@/firebase/clients'; // Firestore- und Auth-Instanzen
+import { auth } from '@/firebase/clients'; // Only auth needed for current user
 import {
-  collection,
-  query,
-  orderBy,
-  limit,
-  onSnapshot,
-  where,
   addDoc,
   serverTimestamp,
-  QueryDocumentSnapshot,
   Timestamp,
   doc,
   updateDoc,
   getDoc,
   setDoc,
+  collection
 } from 'firebase/firestore';
+import { db } from '@/firebase/clients'; // Still needed for sending messages
 import { useAuth } from '@/contexts/AuthContext';
 import { Send as FiSend, Loader2 as FiLoader } from 'lucide-react';
 import { Badge } from '@/components/ui/badge'; // Badge für Statusanzeige importieren
@@ -82,6 +77,7 @@ const formatStatus = (status: string | null | undefined): string => {
 const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, orderStatus }) => {
   const authContext = useAuth();
   const currentUser = authContext?.user || null;
+  const firebaseUser = authContext?.firebaseUser || null;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
@@ -129,10 +125,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     }
   }, [currentUser]);
 
-  // Echtzeit-Nachrichten laden
+  // Load chat messages using API instead of direct Firebase access
   useEffect(() => {
-    // The listener only depends on the user's UID and the order ID.
-    // We can set it up as soon as these are available and handle loading states separately.
     if (!currentUser?.uid || !orderId) {
       return;
     }
@@ -140,50 +134,51 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     setChatLoading(true);
     setChatError(null);
 
-    console.log(`[ChatComponent] Attaching snapshot listener for orderId: ${orderId}`);
-
-    const messagesCollectionRef = collection(db, 'auftraege', orderId, 'nachrichten');
-    // KORREKTUR: Füge eine where-Klausel hinzu, die der Sicherheitsregel entspricht.
-    // Dies ist entscheidend für 'list'-Operationen, wenn die Regel auf Feldern im Dokument basiert.
-    const q = query(
-      messagesCollectionRef,
-      where('chatUsers', 'array-contains', currentUser.uid), // <-- DIESE ZEILE IST NEU
-      orderBy('timestamp', 'asc'),
-      limit(50)
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      snapshot => {
-        const fetchedMessages: ChatMessage[] = [];
-        snapshot.forEach((doc: QueryDocumentSnapshot) => {
-          const data = doc.data();
-          fetchedMessages.push({
-            id: doc.id,
-            senderId: data.senderId,
-            senderName: data.senderName,
-            senderType: data.senderType,
-            text: data.text,
-            timestamp: data.timestamp as Timestamp,
-          });
+    const loadChatMessages = async () => {
+      try {
+        const response = await fetch('/api/getOrderChat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await firebaseUser?.getIdToken()}`
+          },
+          body: JSON.stringify({ orderId })
         });
-        setMessages(fetchedMessages);
-        setChatLoading(false);
-      },
-      error => {
-        console.error(
-          `[ChatComponent] Fehler beim Laden der Chat-Nachrichten für orderId: ${orderId}`,
-          error
-        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch chat messages');
+        }
+
+        const result = await response.json();
+        
+        if (result.success && result.messages) {
+          const fetchedMessages: ChatMessage[] = result.messages.map((msg: any) => ({
+            id: msg.id,
+            senderId: msg.senderId,
+            senderName: msg.senderName,
+            senderType: msg.senderType,
+            text: msg.text,
+            timestamp: msg.timestamp
+          }));
+          setMessages(fetchedMessages);
+        }
+      } catch (error) {
+        console.error(`[ChatComponent] Fehler beim Laden der Chat-Nachrichten für orderId: ${orderId}`, error);
         setChatError('Fehler beim Laden der Nachrichten');
+      } finally {
         setChatLoading(false);
       }
-    );
+    };
+
+    loadChatMessages();
+    
+    // Set up polling for new messages every 5 seconds
+    const pollInterval = setInterval(loadChatMessages, 5000);
 
     return () => {
-      unsubscribe();
+      clearInterval(pollInterval);
     };
-  }, [currentUser?.uid, orderId]); // participants is stable and doesn't need to be a dependency
+  }, [currentUser?.uid, orderId]);
 
   // Nachricht senden
   const handleSendMessage = async (e: FormEvent) => {

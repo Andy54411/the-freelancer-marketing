@@ -1,6 +1,7 @@
 ---
 applyTo: '**'
 ---
+prüfe vorher welche datein vorhanden sind bevor du datein erstellst 
 - kaputte oder koruppte deiten werden repariert nicht neu erstellt oder komplett neu geschrieben 
 # STRICT AI-Workflow Instructions for Taskilo Project - COPILOT COMPLIANCE REQUIRED
 

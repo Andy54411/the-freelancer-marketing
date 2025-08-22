@@ -74,12 +74,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log('AuthContext: Setting up onAuthStateChanged listener');
     const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
+      console.log('AuthContext: onAuthStateChanged triggered with user:', fbUser?.uid || 'null');
       try {
         if (fbUser) {
           // Token aktualisieren, um die neuesten Claims zu erhalten.
           const idTokenResult = await fbUser.getIdTokenResult(true);
           setFirebaseUser(fbUser);
+          console.log('AuthContext: Set firebaseUser to:', fbUser.uid);
 
           // Debug: Claims loggen
           console.log('AuthContext: Custom Claims:', idTokenResult.claims);
@@ -154,6 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             userPresence.initializePresence(fbUser.uid).catch(console.error);
           }
         } else {
+          console.log('AuthContext: No user found, setting user and firebaseUser to null');
           setUser(null);
           setFirebaseUser(null);
 
@@ -168,6 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         setFirebaseUser(null);
       } finally {
+        console.log('AuthContext: Setting loading to false');
         setLoading(false);
       }
     });
