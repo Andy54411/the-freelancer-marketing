@@ -10,14 +10,17 @@ export async function POST(req: NextRequest) {
     console.log('[TEST JOB CONVERSION] Testing job conversion for:', {
       paymentIntentId,
       tempJobDraftId,
-      firebaseUserId
+      firebaseUserId,
     });
 
     if (!tempJobDraftId || !firebaseUserId) {
-      return NextResponse.json({
-        success: false,
-        error: 'tempJobDraftId und firebaseUserId sind erforderlich'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'tempJobDraftId und firebaseUserId sind erforderlich',
+        },
+        { status: 400 }
+      );
     }
 
     // Prüfe ob der temporäre Job-Entwurf existiert
@@ -28,17 +31,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: false,
         error: `Temporärer Job-Entwurf ${tempJobDraftId} nicht gefunden`,
-        availableDrafts: await getAllTempDrafts()
+        availableDrafts: await getAllTempDrafts(),
       });
     }
 
     const tempJobDraftData = tempJobDraftSnapshot.data()!;
-    
+
     if (tempJobDraftData.status === 'converted') {
       return NextResponse.json({
         success: false,
         error: 'Job-Entwurf wurde bereits konvertiert',
-        jobDraftData: tempJobDraftData
+        jobDraftData: tempJobDraftData,
       });
     }
 
@@ -50,17 +53,17 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
       updatedAt: new Date(),
       orderId: `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      paymentIntentId: paymentIntentId || 'test_payment_intent'
+      paymentIntentId: paymentIntentId || 'test_payment_intent',
     };
-    
-    // Füge zur orders Collection hinzu
-    const orderRef = await db.collection('orders').add(orderData);
-    
+
+    // Füge zur auftraege Collection hinzu
+    const orderRef = await db.collection('auftraege').add(orderData);
+
     // Markiere tempJobDraft als konvertiert (lösche nicht, für Debug-Zwecke)
     await tempJobDraftRef.update({
       status: 'converted',
       convertedAt: new Date(),
-      convertedToOrderId: orderRef.id
+      convertedToOrderId: orderRef.id,
     });
 
     return NextResponse.json({
@@ -68,28 +71,31 @@ export async function POST(req: NextRequest) {
       message: 'Job erfolgreich konvertiert zu Order',
       orderId: orderRef.id,
       orderData,
-      tempJobDraftId: tempJobDraftId
+      tempJobDraftId: tempJobDraftId,
     });
-
   } catch (error) {
     console.error('[TEST JOB CONVERSION] Fehler:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unbekannter Fehler'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      },
+      { status: 500 }
+    );
   }
 }
 
 async function getAllTempDrafts() {
   try {
-    const snapshot = await db.collection('temporaryJobDrafts')
+    const snapshot = await db
+      .collection('temporaryJobDrafts')
       .orderBy('createdAt', 'desc')
       .limit(10)
       .get();
-    
+
     return snapshot.docs.map(doc => ({
       id: doc.id,
-      data: doc.data()
+      data: doc.data(),
     }));
   } catch (error) {
     console.error('Fehler beim Laden der temporären Job-Entwürfe:', error);

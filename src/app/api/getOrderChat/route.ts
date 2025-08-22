@@ -4,7 +4,7 @@ import { auth, db } from '@/firebase/server';
 export async function POST(request: NextRequest) {
   try {
     const { orderId } = await request.json();
-    
+
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     // For local development, skip token verification
     const isLocalDevelopment = process.env.NODE_ENV === 'development';
     let userId = '8WACaOZv3EYwaxksJoYx7R8dgLK2'; // Default for local testing
-    
+
     if (!isLocalDevelopment) {
       // Verify authentication in production
       const authHeader = request.headers.get('Authorization');
@@ -31,14 +31,14 @@ export async function POST(request: NextRequest) {
     }
 
     // First check if user has access to this order
-    const orderDoc = await db.collection('orders').doc(orderId).get();
-    
+    const orderDoc = await db.collection('auftraege').doc(orderId).get();
+
     if (!orderDoc.exists) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     const orderData = orderDoc.data();
-    
+
     // Check if user has permission to view this order's chat
     if (orderData?.kundeId !== userId && orderData?.selectedAnbieterId !== userId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -54,19 +54,15 @@ export async function POST(request: NextRequest) {
 
     const messages = messagesSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
 
-    return NextResponse.json({ 
-      success: true, 
-      messages 
+    return NextResponse.json({
+      success: true,
+      messages,
     });
-
   } catch (error) {
     console.error('Error fetching chat messages:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

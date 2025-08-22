@@ -4,14 +4,14 @@ import { auth, db } from '@/firebase/server';
 export async function POST(request: NextRequest) {
   try {
     const { orderId } = await request.json();
-    
+
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
     // For local development, skip token verification
     const isLocalDevelopment = process.env.NODE_ENV === 'development';
-    
+
     if (!isLocalDevelopment) {
       // Verify authentication in production
       const authHeader = request.headers.get('Authorization');
@@ -29,26 +29,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the order from Firestore
-    const orderDoc = await db.collection('orders').doc(orderId).get();
-    
+    const orderDoc = await db.collection('auftraege').doc(orderId).get();
+
     if (!orderDoc.exists) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     const orderData = orderDoc.data();
-    
+
     // Get provider details
-    let provider = {
+    const provider = {
       id: orderData?.selectedAnbieterId || '',
       name: orderData?.providerName || 'Unbekannter Anbieter',
-      avatarUrl: null
+      avatarUrl: null,
     };
 
     // Get customer details
-    let customer = {
+    const customer = {
       id: orderData?.kundeId || '',
-      name: `${orderData?.customerFirstName || ''} ${orderData?.customerLastName || ''}`.trim() || 'Unbekannter Kunde',
-      avatarUrl: null
+      name:
+        `${orderData?.customerFirstName || ''} ${orderData?.customerLastName || ''}`.trim() ||
+        'Unbekannter Kunde',
+      avatarUrl: null,
     };
 
     // Try to get additional details from users collections if needed
@@ -75,17 +77,13 @@ export async function POST(request: NextRequest) {
       // Continue with basic info from order
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       provider,
-      customer
+      customer,
     });
-
   } catch (error) {
     console.error('Error fetching order participant details:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
