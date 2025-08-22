@@ -59,10 +59,11 @@ service cloud.firestore {
       // ERWEITERT: Öffentlicher Lesezugriff für Dienstleister-Profile (Service-Discovery)
       // KORRIGIERT: Zusätzlicher Zugriff für Chat-Funktionalität - Benutzer können Profile 
       // von Chat-Partnern lesen, mit denen sie in aktiven Chats sind
-      allow get: if (request.auth != null && request.auth.uid == userId) || 
-                    isSupportStaff() || 
-                    (resource != null && resource.data.user_type == 'firma') ||
-                    (request.auth != null); // Erlaubt authentifizierten Benutzern, andere Profile zu lesen
+      // FIXED: Vereinfachte Regel - User kann eigenes Dokument lesen
+      // ERWEITERT: Öffentlicher Lesezugriff für grundlegende Profildaten (Service-Discovery)
+      allow get: if request.auth != null && 
+                    (request.auth.uid == userId || 
+                     true); // Authentifizierte Benutzer können alle Profile für Service-Discovery lesen
       
       // ERWEITERT: Öffentlicher Lesezugriff für Service-Discovery und Chat-Funktionen
       // Erlaubt öffentlichen Zugriff auf Freelancer- und Firmen-Profile für Service-Discovery
@@ -185,6 +186,11 @@ service cloud.firestore {
                          ) ||
                          (
                            request.query.where[0].path == 'customerFirebaseUid' &&
+                           request.query.where[0].op == '==' &&
+                           request.query.where[0].value == request.auth.uid
+                         ) ||
+                         (
+                           request.query.where[0].path == 'kundeId' &&
                            request.query.where[0].op == '==' &&
                            request.query.where[0].value == request.auth.uid
                          )

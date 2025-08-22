@@ -171,39 +171,29 @@ export default function UserDashboardPage() {
 
       const providerNameCache = new Map<string, string>();
 
-      // 2. Efficiently fetch all required provider names in batches
+      // 2. Fetch provider names individually from users collection
       if (providerIdsToFetch.length > 0) {
-        const CHUNK_SIZE = 30; // Firestore 'in' query limit
-        for (let i = 0; i < providerIdsToFetch.length; i += CHUNK_SIZE) {
-          const chunk = providerIdsToFetch.slice(i, i + CHUNK_SIZE);
+        await Promise.all(
+          providerIdsToFetch.map(async providerId => {
+            try {
+              const userDocRef = doc(db, 'users', providerId);
+              const userDocSnap = await getDoc(userDocRef);
 
-          // First, try to get names from the 'companies' collection
-          const companiesQuery = query(
-            collection(db, 'companies'),
-            where(documentId(), 'in', chunk)
-          );
-          const companiesSnapshot = await getDocs(companiesQuery);
-          companiesSnapshot.forEach(doc => {
-            providerNameCache.set(doc.id, doc.data().companyName || 'Unbekannter Anbieter');
-          });
-
-          // For any IDs not found in 'companies', look them up in 'users'
-          const remainingIds = chunk.filter(id => !providerNameCache.has(id));
-          if (remainingIds.length > 0) {
-            const usersQuery = query(
-              collection(db, 'users'),
-              where(documentId(), 'in', remainingIds)
-            );
-            const usersSnapshot = await getDocs(usersQuery);
-            usersSnapshot.forEach(doc => {
-              const userData = doc.data();
-              const name =
-                `${userData.firstName || ''} ${userData.lastName || ''}`.trim() ||
-                'Unbekannter Anbieter';
-              providerNameCache.set(doc.id, name);
-            });
-          }
-        }
+              if (userDocSnap.exists()) {
+                const userData = userDocSnap.data();
+                // Use companyName for Firma users, or firstName/lastName for individual users
+                const name =
+                  userData.companyName ||
+                  `${userData.firstName || ''} ${userData.lastName || ''}`.trim() ||
+                  'Unbekannter Anbieter';
+                providerNameCache.set(providerId, name);
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch provider ${providerId}:`, error);
+              providerNameCache.set(providerId, 'Unbekannter Anbieter');
+            }
+          })
+        );
       }
 
       // 3. Map over the original orders data and populate the provider names

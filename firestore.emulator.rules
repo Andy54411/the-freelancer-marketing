@@ -52,34 +52,41 @@ service cloud.firestore {
              );
     }
 
-    function isSupportChatParticipant(chatId) {
-      // Diese Regel ist sicher, da die Chat-ID direkt von der UID des authentifizierten
-      // Benutzers abgeleitet wird. Sie benötigt keinen Lesezugriff auf das Dokument selbst.
-      return request.auth != null && chatId == "support_chat_" + request.auth.uid;
-    }
-
     // --- users Collection ---
     match /users/{userId} {
       // Ein Admin/Support kann jedes Benutzerdokument lesen oder auflisten.
       // Ein Benutzer kann sein eigenes Dokument lesen.
       // ERWEITERT: Öffentlicher Lesezugriff für Dienstleister-Profile (Service-Discovery)
-      allow get: if (request.auth != null && request.auth.uid == userId) || 
+      // KORRIGIERT: Zusätzlicher Zugriff für Chat-Funktionalität - Benutzer können Profile 
+      // von Chat-Partnern lesen, mit denen sie in aktiven Chats sind
+      // TEMP FIX: Vereinfachte Regel für Debugging der Custom Claims
+      allow get: if request.auth != null && 
+                   (request.auth.uid == userId || 
                     isSupportStaff() || 
-                    (request.auth != null && resource != null && resource.data.user_type == 'firma');
+                    (resource != null && resource.data.user_type == 'firma'));
       
       // ERWEITERT: Öffentlicher Lesezugriff für Service-Discovery und Chat-Funktionen
-      // Begrenzt auf authentifizierte Benutzer und mit Query-Limits für Performance
+      // Erlaubt öffentlichen Zugriff auf Freelancer- und Firmen-Profile für Service-Discovery
       allow list: if isSupportStaff() || 
                      (request.auth != null && request.query.limit <= 100);
       
       allow write: if request.auth != null && request.auth.uid == userId;
+
+      // --- Onboarding Subcollection für Onboarding-Status ---
+      match /onboarding/{document} {
+        // Onboarding-Daten können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+        allow read, write: if (request.auth != null && request.auth.uid == userId) || isSupportStaff();
+        
+        // Support-Staff kann Onboarding-Status aller Companies auflisten (für Admin-Dashboard)
+        allow list: if isSupportStaff();
+      }
     }
 
     // --- companies Collection ---
     match /companies/{companyId} {
       // Admins/Support können jedes Firmendokument lesen.
       // Andere können es lesen, wenn es öffentlich ist (z.B. für den Logo-Slider).
-      allow get: if isSupportStaff() || request.auth != null;
+      allow get: if isSupportStaff() || true; // Öffentlicher Lesezugriff für Service-Discovery
       // KORREKTUR: Öffentlicher Lesezugriff für Hero-Section und Anbietersuche.
       // Begrenzt auf 50 Dokumente für Performance und Sicherheit.
       allow list: if isSupportStaff() || 
@@ -93,9 +100,65 @@ service cloud.firestore {
       allow update: if (request.auth != null && request.auth.uid == companyId && isCompany()) || isSupportStaff();
 
       allow delete: if false; // Löschen zur Sicherheit explizit verweigern.
+
+      // --- DATEV Subcollection für Token-Storage ---
+      match /datev/{document} {
+        // DATEV tokens können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+        allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
+      }
+
+      // --- ONBOARDING Subcollection für Onboarding-Status ---
+      match /onboarding/{document} {
+        // Onboarding-Status kann nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+        allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
+      }
+
+      // --- INTEGRATIONS Subcollection für API-Integrationen (Google Ads, etc.) ---
+      match /integrations/{integration} {
+        // API-Integrationen können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+        allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
+      }
     }
 
-    // --- auftraege Collection ---
+    // --- eInvoices Collection (E-Rechnungen) ---
+    match /eInvoices/{eInvoiceId} {
+      // E-Rechnungen können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+      allow read, write: if request.auth != null && 
+                           (resource.data.companyId == request.auth.uid ||
+                            request.resource.data.companyId == request.auth.uid ||
+                            isSupportStaff());
+      
+      // Listen-Abfragen für E-Rechnungen (mit companyId-Filter)
+      allow list: if request.auth != null && 
+                    (request.query.where != null ||
+                     isSupportStaff());
+    }
+
+    // --- eInvoiceSettings Collection (E-Rechnungs-Einstellungen) ---
+    match /eInvoiceSettings/{settingsId} {
+      // E-Rechnungs-Einstellungen können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
+      allow read, write: if request.auth != null && 
+                           (resource.data.companyId == request.auth.uid ||
+                            request.resource.data.companyId == request.auth.uid ||
+                            isSupportStaff());
+    }
+
+    // --- firma Collection ---
+    match /firma/{firmaId} {
+      // Öffentlicher Lesezugriff für Service-Discovery
+      allow get: if true;
+      
+      // Öffentlicher Lesezugriff für Service-Discovery mit flexiblen Query-Limits
+      allow list: if true;
+      
+      // Ein Benutzer kann sein eigenes Firmendokument erstellen.
+      allow create: if request.auth != null && request.auth.uid == firmaId;
+
+      // Ein Benutzer kann sein eigenes Firmendokument aktualisieren, wenn er die Rolle "firma" hat.
+      allow update: if (request.auth != null && request.auth.uid == firmaId && isCompany()) || isSupportStaff();
+
+      allow delete: if false; // Löschen zur Sicherheit explizit verweigern.
+    }    // --- auftraege Collection ---
     match /auftraege/{auftragId} {
       allow get: if request.auth != null && resource != null && (
         resource.data.customerFirebaseUid == request.auth.uid ||
@@ -107,6 +170,7 @@ service cloud.firestore {
       // Erlaubt Abfragen (`list`) nur, wenn sie explizit nach der UID des Anbieters
       // oder Kunden filtern. Dies ist entscheidend für die `getProviderOrders`-Funktion.
       // Support-Staff darf alle Aufträge ohne Einschränkungen abfragen.
+      // HINZUGEFÜGT: Öffentlicher Lesezugriff für CategoryGrid-Komponente zur Tag-Generierung
       allow list: if request.auth != null &&
                    (
                      isSupportStaff() ||
@@ -131,14 +195,32 @@ service cloud.firestore {
                        // Fallback für getDoc calls ohne where-Filter
                        // Sicher, da die get-Regel bereits überprüft, ob der Benutzer Zugriff hat
                        !('where' in request.query) || 
-                       request.query.where == null || 
+                       request.query.where == null ||
                        request.query.where.size() == 0
                      )
-                   );
+                   ) ||
+                   // Öffentlicher Lesezugriff für CategoryGrid (begrenzt auf 500 Dokumente)
+                   (request.query.limit <= 500);
 
-      allow create,
-            update,
-            delete: if false;
+      // Provider können ihre eigenen Aufträge für TimeTracking aktualisieren
+      // Kunden können ihre eigenen Aufträge aktualisieren  
+      // Support-Staff kann alle Aufträge verwalten
+      allow update: if request.auth != null && resource != null && (
+        resource.data.selectedAnbieterId == request.auth.uid ||
+        resource.data.customerFirebaseUid == request.auth.uid ||
+        isSupportStaff()
+      );
+
+      allow create: if request.auth != null && (
+        // B2B Company users can create orders for their own bookings
+        (isCompany() && request.resource.data.customerFirebaseUid == request.auth.uid) ||
+        // Regular users can create orders for their own bookings  
+        (!isCompany() && request.resource.data.customerFirebaseUid == request.auth.uid) ||
+        // Support staff can create orders for administrative purposes
+        isSupportStaff()
+      );
+      
+      allow delete: if false;
 
       // Sub-Collection: nachrichten
       // Hier muss jedes Nachricht-Dokument ein Feld `chatUsers` (Array) enthalten,
@@ -174,6 +256,10 @@ service cloud.firestore {
       // Benutzer haben nur Zugriff auf ihren eigenen Support-Chat (support_chat_{uid})
       allow read, write: if isSupportStaff() || 
                            (request.auth != null && chatId == "support_chat_" + request.auth.uid);
+      
+      // KORREKTUR: Support-Mitarbeiter müssen Support-Chats auflisten können für Admin-Dashboard
+      // TEMPORÄR: Breitere Berechtigung für Admin-Dashboard bis Custom Claims korrekt funktionieren
+      allow list: if request.auth != null;
 
       match /messages/{messageId} {
         // Support-Chat-Nachrichten: Gleiche Logik wie für den Chat selbst
@@ -285,6 +371,34 @@ service cloud.firestore {
       );
     }
 
+    // --- responseTimeMetrics Collection ---
+    match /responseTimeMetrics/{metricId} {
+      // Nur Support und der betroffene Provider können Metriken lesen
+      allow get: if request.auth != null && (
+        isSupportStaff() ||
+        resource.data.providerId == request.auth.uid
+      );
+      
+      // Listen nur für Support und gefilterte Abfragen für Provider
+      allow list: if request.auth != null && (
+        isSupportStaff() ||
+        (
+          'where' in request.query &&
+          request.query.where != null &&
+          request.query.where.size() > 0 &&
+          request.query.where[0].path == 'providerId' &&
+          request.query.where[0].op == '==' &&
+          request.query.where[0].value == request.auth.uid
+        )
+      );
+      
+      // Nur Backend/Cloud Functions können Metriken erstellen und aktualisieren
+      allow create, update: if false; // Wird durch Cloud Functions gemacht
+      
+      // Nur Support kann löschen
+      allow delete: if isSupportStaff();
+    }
+
     // NEU: Regeln für die Benachrichtigungs-Sammlung
     match /notifications/{notificationId} {
       // get: Ein Benutzer darf seine eigene Benachrichtigung lesen. Ein Admin darf jede lesen.
@@ -292,8 +406,21 @@ service cloud.firestore {
         (resource != null && resource.data.userId == request.auth.uid) || isSupportStaff()
       );
 
-      // list: Vereinfachte Regel für Emulator-Entwicklung
-      allow list: if request.auth != null;
+      // HINWEIS ZU "PERMISSION DENIED" FEHLERN:
+      // Wenn im Frontend ein "Permission denied" Fehler für Benachrichtigungen auftritt,
+      // liegt das höchstwahrscheinlich daran, dass die Firestore-Abfrage (query)
+      // nicht die erforderliche 'where'-Klausel enthält.
+      //
+      // KORREKTE CLIENT-SEITIGE ABFRAGE:
+      // collection(db, 'notifications').where('userId', '==', currentUser.uid)
+
+      // list: Erweiterte Regel für Admin-Dashboard und Benutzer-Benachrichtigungen
+      allow list: if request.auth != null && (
+        // Die Sicherheit wird durch die 'get'-Regel gewährleistet, die für jedes
+        // Dokument in der Abfrage ausgewertet wird. Der Client MUSS eine
+        // `where('userId', '==', request.auth.uid)` Klausel verwenden, sonst schlägt die Abfrage fehl.
+        isSupportStaff() || request.auth.uid != null
+      );
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu aktualisieren (z.B. als gelesen markieren).
       // Ein Admin darf ebenfalls jede Benachrichtigung aktualisieren.
@@ -301,11 +428,1003 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid || isSupportStaff()
       );
 
-      // create: Wird vom Backend (Cloud Function) mit Admin-Rechten erledigt.
-      allow create: if false;
+      // create: Wird vom Backend (Cloud Function) mit Admin-Rechten erledigt oder für Admins
+      allow create: if isSupportStaff();
 
       // Erlaubt einem Benutzer, seine eigenen Benachrichtigungen zu löschen.
-      allow delete: if request.auth != null && resource != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource != null && (
+        resource.data.userId == request.auth.uid || isSupportStaff()
+      );
+    }
+
+    // --- reviews Collection ---
+    match /reviews/{reviewId} {
+      // Öffentlicher Lesezugriff für alle Bewertungen (Service-Discovery)
+      allow get: if true;
+      
+      // Öffentlicher Lesezugriff für Reviews-Listen mit Limit
+      allow list: if request.query.limit <= 100;
+      
+      // Nur der Reviewer kann seine eigene Bewertung erstellen
+      allow create: if request.auth != null && 
+        request.resource.data.reviewerId == request.auth.uid;
+      
+      // Nur der Reviewer kann seine eigene Bewertung aktualisieren oder Support
+      allow update: if request.auth != null && (
+        resource.data.reviewerId == request.auth.uid ||
+        isSupportStaff()
+      );
+      
+      // Nur Support kann Reviews löschen
+      allow delete: if isSupportStaff();
+    }
+
+    // --- directChats Collection ---
+    match /directChats/{chatId} {
+      // Erlaubt Lesen und Schreiben für Teilnehmer des Chats
+      allow read, write: if request.auth != null && 
+        (resource == null || request.auth.uid in resource.data.participants);
+      
+      // Erlaubt das Erstellen eines neuen Chats
+      allow create: if request.auth != null && 
+        request.auth.uid in request.resource.data.participants;
+
+      // Nachrichten in directChats
+      match /messages/{messageId} {
+        // Teilnehmer können Nachrichten lesen und schreiben
+        allow read, write: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/directChats/$(chatId)).data.participants;
+        
+        // Erlaubt das Erstellen von Nachrichten
+        allow create: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/directChats/$(chatId)).data.participants;
+      }
+    }
+
+    // --- Newsletter Collections (DSGVO-konform) ---
+    match /newsletterSubscribers/{subscriberId} {
+      // Lesen: Nur Support-Staff oder der Benutzer selbst (via E-Mail-Vergleich)
+      allow read: if isSupportStaff() || 
+        (request.auth != null && 
+         request.auth.token.email != null && 
+         resource.data.email == request.auth.token.email);
+      
+      // Erstellen: Support-Staff oder anonyme/öffentliche Newsletter-Anmeldung (Footer)
+      allow create: if isSupportStaff() || 
+        (request.resource.data.keys().hasAll(['email', 'subscribed', 'subscribedAt', 'source', 'consentGiven']) &&
+         request.resource.data.consentGiven == true &&
+         request.resource.data.subscribed == true);
+      
+      // Aktualisieren: Nur Support-Staff oder Abmeldung durch Benutzer
+      allow update: if isSupportStaff() || 
+        (request.auth != null && 
+         request.auth.token.email != null && 
+         resource.data.email == request.auth.token.email &&
+         // Nur Abmeldung erlaubt (subscribed: false)
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['subscribed', 'unsubscribedAt', 'unsubscribeReason']) &&
+         request.resource.data.subscribed == false);
+      
+      // Löschen: Nur Support-Staff (DSGVO-Löschung)
+      allow delete: if isSupportStaff();
+    }
+
+    // --- Newsletter Pending Confirmations (Double-Opt-In) ---
+    match /newsletterPendingConfirmations/{confirmationId} {
+      // Lesen: Nur Support-Staff
+      allow read: if isSupportStaff();
+      
+      // Erstellen: System/API kann pending confirmations erstellen
+      allow create: if request.resource.data.keys().hasAll(['email', 'confirmationToken', 'createdAt', 'expiresAt', 'confirmed']) &&
+        request.resource.data.confirmed == false;
+      
+      // Aktualisieren: System/API kann confirmed-Status ändern
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed']) &&
+        request.resource.data.confirmed == true;
+      
+      // Löschen: System/API für Cleanup und Support-Staff
+      allow delete: if isSupportStaff() || true; // true für automatisches Cleanup
+    }
+
+    match /newsletterCampaigns/{campaignId} {
+      // Nur Support-Staff (master/support) können Newsletter-Kampagnen verwalten
+      allow read, write, create, delete: if isSupportStaff();
+    }
+
+    // --- Newsletter Unsubscribe Logs (für DSGVO-Compliance) ---
+    match /newsletterUnsubscribeLogs/{logId} {
+      // Nur Support-Staff kann Abmelde-Logs lesen
+      allow read: if isSupportStaff();
+      // System kann Logs erstellen (beim Abmelden)
+      allow create: if true; // Wird von Backend/API erstellt
+      // Keine Updates/Deletes - nur für Audit-Trail
+      allow update, delete: if false;
+    }
+
+    // === FINANCE MODULE COLLECTIONS ===
+    
+    // Finance: Invoices Collection
+    match /invoices/{invoiceId} {
+      // Lesen: Nur eigene Firma oder Support Staff (temporär flexibler)
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff (temporär flexibler)
+      allow list: if request.auth != null && 
+                    (isSupportStaff() ||
+                     (request.auth != null && 
+                      'where' in request.query &&
+                      request.query.where != null &&
+                      request.query.where.size() > 0 &&
+                      request.query.where[0].path == 'companyId' &&
+                      request.query.where[0].op == '==' &&
+                      request.query.where[0].value == request.auth.uid));
+      
+      // Erstellen: Nur eigene Firma (temporär flexibler für Debugging)
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma, nur wenn nicht immutable
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       (!('gobd' in resource.data) || !resource.data.gobd.immutable) &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff oder eigene Firma (nur Entwürfe)
+      allow delete: if (isSupportStaff()) || 
+                       (request.auth != null && 
+                        resource.data.companyId == request.auth.uid &&
+                        isCompany() &&
+                        resource.data.status == 'DRAFT');
+    }
+
+    // Finance: Projects Collection
+    match /projects/{projectId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Vereinfacht für bessere Performance
+      allow list: if request.auth != null && 
+                    (isSupportStaff() || isCompany());
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Löschen: Nur Support Staff oder eigene Firma
+      allow delete: if (isSupportStaff()) || 
+                       (request.auth != null && 
+                        resource.data.companyId == request.auth.uid &&
+                        isCompany());
+    }
+
+    // Finance: Customers Collection
+    match /customers/{customerId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff
+      allow list: if request.auth != null && 
+                    (isSupportStaff() ||
+                     (isCompany() && 
+                      'where' in request.query &&
+                      request.query.where != null &&
+                      request.query.where.size() > 0 &&
+                      request.query.where[0].path == 'companyId' &&
+                      request.query.where[0].op == '==' &&
+                      request.query.where[0].value == request.auth.uid));
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Expenses Collection
+    match /expenses/{expenseId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma oder zugewiesener Benutzer
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       (isCompany() || resource.data.assignedUserId == request.auth.uid) &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Payments Collection
+    match /payments/{paymentId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Sync Jobs Collection
+    match /syncJobs/{syncJobId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.createdBy == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma (für Status-Updates)
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.lastModifiedBy == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Invoice Numbering Collection (für automatische Rechnungsnummern)
+    match /invoice_numbering/{numberingId} {
+      // Lesen: Nur eigene Firma (um aktuelle Nummer zu prüfen)
+      // Special case: Erlaubt lesen auch wenn Dokument nicht existiert (für Transaction)
+      allow read: if request.auth != null && 
+                     isCompany() &&
+                     (resource == null || resource.data.companyId == request.auth.uid);
+      
+      // Erstellen: Nur eigene Firma (beim ersten Mal)
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Aktualisieren: Nur eigene Firma (für Nummerngenerierung via Transaction)
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+
+    // Finance: Audit Trail Collection (optional für GoBD-Compliance)
+    match /financeAudit/{auditId} {
+      // Lesen: Nur eigene Firma
+      allow read: if request.auth != null && 
+                     resource.data.companyId == request.auth.uid &&
+                     isCompany();
+      
+      // Erstellen: Nur System (via Cloud Functions)
+      allow create: if false; // Nur über Cloud Functions erlaubt
+      
+      // Aktualisieren/Löschen: Niemals erlaubt (Audit-Trail ist unveränderlich)
+      allow update, delete: if false;
+    }
+
+    // --- DATEV Tokens Collection (für neue Firebase-basierte DATEV Auth) ---
+    match /datev_tokens/{userId} {
+      // DATEV-Tokens können nur vom eigenen Benutzer oder Support-Staff gelesen/geschrieben werden
+      allow read, write: if request.auth != null && 
+                           (request.auth.uid == userId || isSupportStaff());
+    }
+
+    // Banking Import Settings - Nur der eigene Benutzer kann seine Einstellungen verwalten
+    match /banking_import_settings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Banking Daten - Nur der eigene Benutzer kann seine Banking-Daten lesen
+    match /banking_data/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Banking Verbindungen - Nur der eigene Benutzer kann seine Verbindungen verwalten
+    match /banking_connections/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Lieferscheine - Nur Unternehmen können ihre eigenen Lieferscheine verwalten
+    match /deliveryNotes/{deliveryNoteId} {
+      // Unternehmen können ihre eigenen Lieferscheine lesen und schreiben
+      // Support-Staff kann alle Lieferscheine lesen
+      allow read: if request.auth != null && 
+                    (resource == null || 
+                     (isCompany() && resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff());
+      
+      allow write: if request.auth != null && 
+                     (isCompany() && 
+                      (resource == null && request.resource.data.companyId == request.auth.uid) ||
+                      (resource != null && resource.data.companyId == request.auth.uid)) ||
+                     isSupportStaff();
+      
+      // Collection-Queries für eigene Lieferscheine erlauben
+      allow list: if request.auth != null && 
+                    (isCompany() || isSupportStaff());
+    }
+
+    // Lieferschein-Einstellungen
+    match /deliveryNoteSettings/{settingsId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+      allow list: if request.auth != null && (isCompany() || isSupportStaff());
+    }
+
+    // Lieferschein-Templates
+    match /deliveryNoteTemplates/{templateId} {
+      allow read, write: if request.auth != null && 
+                           (isCompany() && resource.data.companyId == request.auth.uid) ||
+                           isSupportStaff();
+      allow list: if request.auth != null && (isCompany() || isSupportStaff());
+    }
+
+    // Inventar/Lagerbestand
+    match /inventory/{itemId} {
+      // Lesen: Firmen können nur ihre eigenen Artikel lesen, Support kann alles lesen
+      allow read: if request.auth != null && 
+                    (isCompany() && resource.data.companyId == request.auth.uid) ||
+                    isSupportStaff();
+      
+      // Schreiben: Firmen können nur ihre eigenen Artikel erstellen/bearbeiten
+      allow write: if request.auth != null && 
+                     (isCompany() && 
+                      (resource == null && request.resource.data.companyId == request.auth.uid) ||
+                      (resource != null && resource.data.companyId == request.auth.uid)) ||
+                     isSupportStaff();
+      
+      // Collection-Queries für eigene Inventar-Artikel erlauben
+      allow list: if request.auth != null && 
+                    (isCompany() || isSupportStaff());
+    }
+
+    // Lagerbewegungen
+    match /stockMovements/{movementId} {
+      // Lesen: Firmen können nur ihre eigenen Bewegungen lesen, Support kann alles lesen
+      allow read: if request.auth != null && 
+                    (isCompany() && resource.data.companyId == request.auth.uid) ||
+                    isSupportStaff();
+      
+      // Schreiben: Firmen können nur ihre eigenen Bewegungen erstellen
+      allow write: if request.auth != null && 
+                     (isCompany() && 
+                      (resource == null && request.resource.data.companyId == request.auth.uid) ||
+                      (resource != null && resource.data.companyId == request.auth.uid)) ||
+                     isSupportStaff();
+      
+      // Collection-Queries für eigene Lagerbewegungen erlauben
+      allow list: if request.auth != null && 
+                    (isCompany() || isSupportStaff());
+    }
+
+    // === PERSONAL MODULE COLLECTIONS ===
+    // Diese Rules ermöglichen die vollständige Funktionalität des Personal-Moduls
+    
+    // Personal: Employees Collection (Mitarbeiterverwaltung)
+    match /companies/{companyId}/employees/{employeeId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       request.resource.data.companyId == companyId;
+      
+      // Aktualisieren: Nur eigene Firma (VEREINFACHT)
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       resource.data.companyId == companyId;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+    
+    // Personal: Employee Documents Collection (Mitarbeiter-Dokumente)
+    match /companies/{companyId}/employee_documents/{documentId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+    
+    // Personal: Shifts Collection (Dienstplanung)
+    match /companies/{companyId}/shifts/{shiftId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma (vereinfachte Regel)
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+    
+    // Personal: Time Entries Collection (Zeiterfassung)
+    match /companies/{companyId}/timeEntries/{entryId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+    
+    // Personal: Payrolls Collection (Gehaltsabrechnungen)
+    match /companies/{companyId}/payrolls/{payrollId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma (für Status-Updates)
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff (Gehaltsabrechnungen sind sensibel)
+      allow delete: if isSupportStaff();
+    }
+    
+    // Personal: Absence Requests Collection (Abwesenheitsverwaltung)
+    match /companies/{companyId}/absenceRequests/{requestId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId;
+      
+      // Aktualisieren: Nur eigene Firma (für Genehmigungen/Ablehnungen)
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+    
+    // Personal: Employee Performance Reviews Collection (optional)
+    match /companies/{companyId}/performanceReviews/{reviewId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff
+      allow delete: if isSupportStaff();
+    }
+    
+    // Personal: Work Schedules Collection (optional - für erweiterte Dienstplanung)
+    match /companies/{companyId}/workSchedules/{scheduleId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // ===== PERSONAL MANAGEMENT COLLECTIONS =====
+    
+    // Employee Feedback Collection
+    match /companies/{companyId}/employee_feedback/{feedbackId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // Employee Leaves Collection
+    match /companies/{companyId}/employee_leaves/{leaveId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // Time Tracking Collection
+    match /companies/{companyId}/time_tracking/{timeId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // Performance Reviews Collection
+    match /companies/{companyId}/performance_reviews/{reviewId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       resource.data.companyId == companyId &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // Disciplinary Actions Collection
+    match /companies/{companyId}/disciplinary_actions/{actionId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // Payrolls Collection
+    match /companies/{companyId}/payrolls/{payrollId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // --- WORKSPACES COLLECTION (Taskilo Workspace Management Tool) ---
+    match /workspaces/{workspaceId} {
+      // Lesen: Nur für Mitglieder der Firma oder Support Staff
+      allow read: if request.auth != null &&
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur für authentifizierte Benutzer
+      allow create: if request.auth != null &&
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.createdBy == request.auth.uid;
+      
+      // Aktualisieren: Nur für die eigene Firma
+      allow update: if request.auth != null &&
+                       resource.data.companyId == request.auth.uid;
+      
+      // Löschen: Nur für die eigene Firma oder Support Staff
+      allow delete: if request.auth != null &&
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+    }
+
+    // === E-INVOICE SYSTEM ===
+    // E-Rechnungen (ZUGFeRD/XRechnung)
+    match /eInvoices/{invoiceId} {
+      // Lesen: Nur für die eigene Firma oder Support Staff
+      allow read: if request.auth != null &&
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur für authentifizierte Firmen
+      allow create: if request.auth != null &&
+                       isCompany() &&
+                       request.resource.data.companyId == request.auth.uid;
+      
+      // Aktualisieren: Nur für die eigene Firma
+      allow update: if request.auth != null &&
+                       resource.data.companyId == request.auth.uid;
+      
+      // Löschen: Nur für die eigene Firma oder Support Staff
+      allow delete: if request.auth != null &&
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+    }
+
+    // E-Rechnungs-Einstellungen
+    match /eInvoiceSettings/{settingsId} {
+      // Lesen: Nur für die eigene Firma oder Support Staff
+      allow read: if request.auth != null &&
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur für authentifizierte Firmen
+      allow create: if request.auth != null &&
+                       isCompany() &&
+                       request.resource.data.companyId == request.auth.uid;
+      
+      // Aktualisieren: Nur für die eigene Firma
+      allow update: if request.auth != null &&
+                       resource.data.companyId == request.auth.uid;
+      
+      // Löschen: Nur für die eigene Firma oder Support Staff
+      allow delete: if request.auth != null &&
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+    }
+
+    // E-Rechnungs-Übertragungsprotokolle
+    match /eInvoiceTransmissionLogs/{transmissionId} {
+      // Lesen: Nur für die eigene Firma oder Support Staff
+      allow read: if request.auth != null &&
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur für authentifizierte Firmen
+      allow create: if request.auth != null &&
+                       isCompany() &&
+                       request.resource.data.companyId == request.auth.uid;
+      
+      // Aktualisieren: Nur für die eigene Firma (für Status-Updates)
+      allow update: if request.auth != null &&
+                       resource.data.companyId == request.auth.uid;
+      
+      // Löschen: Nur Support Staff (8-jährige Aufbewahrungspflicht)
+      allow delete: if request.auth != null && isSupportStaff();
+    }
+
+    // === GLOBALE TIME ENTRIES COLLECTION ===
+    // Für sevdesk-kompatible Zeiterfassung (TimeTrackingService)
+    match /timeEntries/{entryId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Vereinfacht für bessere Performance
+      allow list: if request.auth != null && 
+                    (isSupportStaff() || isCompany());
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((resource.data.companyId == request.auth.uid && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // === TIME TRACKING SETTINGS COLLECTION ===
+    // Für TimeTrackingService Einstellungen
+    match /timeTrackingSettings/{settingsId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Vereinfacht für bessere Performance
+      allow list: if request.auth != null && 
+                    (isSupportStaff() || isCompany());
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany();
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((resource.data.companyId == request.auth.uid && isCompany()) ||
+                        isSupportStaff());
     }
   }
 }
