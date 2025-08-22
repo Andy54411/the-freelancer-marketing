@@ -1,16 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef, FormEvent } from 'react';
-import { auth } from '@/firebase/clients'; // Only auth needed for current user
 import {
   addDoc,
   serverTimestamp,
   Timestamp,
   doc,
-  updateDoc,
   getDoc,
   setDoc,
-  collection
+  collection,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients'; // Still needed for sending messages
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,9 +43,7 @@ interface ChatComponentProps {
 }
 
 // NEUE HILFSFUNKTION: Formatiert den Zeitstempel für eine bessere Lesbarkeit
-const formatMessageTimestamp = (
-  timestamp: Timestamp | undefined
-): string => {
+const formatMessageTimestamp = (timestamp: Timestamp | undefined): string => {
   if (!timestamp) return '';
   const date = timestamp.toDate();
   const now = new Date();
@@ -140,9 +136,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${await firebaseUser?.getIdToken()}`
+            Authorization: `Bearer ${await firebaseUser?.getIdToken()}`,
           },
-          body: JSON.stringify({ orderId })
+          body: JSON.stringify({ orderId }),
         });
 
         if (!response.ok) {
@@ -150,7 +146,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
         }
 
         const result = await response.json();
-        
+
         if (result.success && result.messages) {
           const fetchedMessages: ChatMessage[] = result.messages.map((msg: any) => ({
             id: msg.id,
@@ -158,12 +154,15 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
             senderName: msg.senderName,
             senderType: msg.senderType,
             text: msg.text,
-            timestamp: msg.timestamp
+            timestamp: msg.timestamp,
           }));
           setMessages(fetchedMessages);
         }
       } catch (error) {
-        console.error(`[ChatComponent] Fehler beim Laden der Chat-Nachrichten für orderId: ${orderId}`, error);
+        console.error(
+          `[ChatComponent] Fehler beim Laden der Chat-Nachrichten für orderId: ${orderId}`,
+          error
+        );
         setChatError('Fehler beim Laden der Nachrichten');
       } finally {
         setChatLoading(false);
@@ -171,14 +170,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     };
 
     loadChatMessages();
-    
+
     // Set up polling for new messages every 5 seconds
     const pollInterval = setInterval(loadChatMessages, 5000);
 
     return () => {
       clearInterval(pollInterval);
     };
-  }, [currentUser?.uid, orderId]);
+  }, [currentUser?.uid, orderId, firebaseUser]);
 
   // Nachricht senden
   const handleSendMessage = async (e: FormEvent) => {
@@ -293,7 +292,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
   // Zeige Fehler, wenn kein Benutzer angemeldet ist oder Profil nicht geladen werden konnte
   if (!currentUser || !loggedInUserProfile) {
     return (
-      <div className="text-center p-4 text-gray-600">{chatError || 'Fehler beim Laden des Profils'}</div>
+      <div className="text-center p-4 text-gray-600">
+        {chatError || 'Fehler beim Laden des Profils'}
+      </div>
     );
   }
 
@@ -302,9 +303,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       <div className="p-4 border-b border-gray-200">
         {/* Header mit Auftrags-ID und Status-Badge */}
         <div className="flex justify-between items-center gap-4">
-          <h3 className="text-lg font-semibold text-gray-800 truncate">
-            Chat: {orderId}
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-800 truncate">Chat: {orderId}</h3>
           {/* Zeige den Status-Badge nur an, wenn ein Status übergeben wurde */}
           {orderStatus && (
             <Badge variant="outline" className="flex-shrink-0">
@@ -323,17 +322,14 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
               className={`flex ${msg.senderId === currentUser.uid ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[70%] p-3 rounded-lg ${msg.senderId === currentUser.uid
-                  ? 'bg-[#14ad9f] text-white'
-                  : 'bg-gray-200 text-gray-800'
-                  }`}
+                className={`max-w-[70%] p-3 rounded-lg ${
+                  msg.senderId === currentUser.uid
+                    ? 'bg-[#14ad9f] text-white'
+                    : 'bg-gray-200 text-gray-800'
+                }`}
               >
                 <p className="text-xs font-semibold mb-1">
-                  {msg.senderName} (
-                  {msg.senderType === 'kunde'
-                    ? 'Kunde'
-                    : 'Anbieter'}
-                  )
+                  {msg.senderName} ({msg.senderType === 'kunde' ? 'Kunde' : 'Anbieter'})
                 </p>
                 <p className="text-sm break-words">{msg.text}</p>
                 <p className="text-right text-xs mt-1 opacity-75">
