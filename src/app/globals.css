@@ -79,9 +79,11 @@
 }
 
 .dark {
-  --background: oklch(0.147 0.004 49.25); /* Tailwind's gray-800 */
+  --background: oklch(0.147 0.004 49.25);
+  /* Tailwind's gray-800 */
   --foreground: oklch(0.985 0.001 106.423);
-  --card: oklch(0.216 0.006 56.043); /* dunkleres Panel */
+  --card: oklch(0.216 0.006 56.043);
+  /* dunkleres Panel */
   --card-foreground: oklch(0.985 0.001 106.423);
   --popover: oklch(0.216 0.006 56.043);
   --popover-foreground: oklch(0.985 0.001 106.423);
@@ -95,7 +97,8 @@
   --accent-foreground: oklch(0.985 0.001 106.423);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%); /* Tailwind's gray-700 */
+  --input: oklch(1 0 0 / 15%);
+  /* Tailwind's gray-700 */
   --ring: oklch(0.553 0.013 58.071);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -117,6 +120,7 @@
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -132,6 +136,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground transition-colors duration-300;
   }
@@ -195,7 +200,8 @@
     input,
     textarea,
     select {
-      font-size: 16px !important; /* Prevents zoom on iOS */
+      font-size: 16px !important;
+      /* Prevents zoom on iOS */
     }
 
     /* Improved touch target spacing */
