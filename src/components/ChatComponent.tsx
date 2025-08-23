@@ -104,10 +104,10 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scrollen zum Ende des Chats bei neuen Nachrichten
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  // Auto-Scroll deaktiviert um störendes Verhalten zu vermeiden
+  // useEffect(() => {
+  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // }, [messages]);
 
   // Laden des Benutzerprofils, sobald currentUser verfügbar ist
   useEffect(() => {

@@ -79,6 +79,29 @@ export default function OrderDetailPage() {
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentHours, setPaymentHours] = useState(0);
 
+  // Verhindere Auto-Scroll der ChatComponent
+  useEffect(() => {
+    // Speichere die aktuelle Scroll-Position
+    const currentScrollY = window.scrollY;
+
+    // Verhindere Auto-Scroll
+    const preventScroll = () => {
+      window.scrollTo(0, currentScrollY);
+    };
+
+    // Überwache Scroll-Änderungen für die ersten 2 Sekunden nach dem Laden
+    const timer = setTimeout(() => {
+      window.removeEventListener('scroll', preventScroll);
+    }, 2000);
+
+    window.addEventListener('scroll', preventScroll);
+
+    return () => {
+      window.removeEventListener('scroll', preventScroll);
+      clearTimeout(timer);
+    };
+  }, [orderId]); // Läuft neu, wenn sich die orderId ändert
+
   useEffect(() => {
     // Warten, bis der Auth-Status endgültig geklärt ist.
     if (authLoading) {
@@ -138,7 +161,8 @@ export default function OrderDetailPage() {
         }
 
         // Use the new API instead of Cloud Function
-        const { provider: providerDetails, customer: customerDetails } = await getOrderParticipantDetails(orderId, idToken);
+        const { provider: providerDetails, customer: customerDetails } =
+          await getOrderParticipantDetails(orderId, idToken);
 
         const orderData: OrderData = {
           id: data.id,
@@ -402,8 +426,8 @@ export default function OrderDetailPage() {
 
   if (overallLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
+      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
+        <FiLoader className="animate-spin text-4xl text-white mr-3" />
         {authLoading ? 'Authentifizierung wird geprüft...' : 'Lade Auftragsdetails...'}
       </div>
     );
@@ -411,9 +435,9 @@ export default function OrderDetailPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen p-4 text-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex flex-col justify-center items-center p-4 text-center">
         <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-md"
+          className="bg-white/90 border border-white/20 text-red-700 px-4 py-3 rounded relative max-w-md"
           role="alert"
         >
           <FiAlertCircle size={24} className="inline mr-2" />
@@ -429,8 +453,8 @@ export default function OrderDetailPage() {
 
   if (!order || !currentUser) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <FiAlertCircle className="text-4xl text-gray-400 mr-3" />
+      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
+        <FiAlertCircle className="text-4xl text-white mr-3" />
         Fehler: Auftrag konnte nicht angezeigt werden oder Sie sind nicht angemeldet.
       </div>
     );
@@ -441,198 +465,208 @@ export default function OrderDetailPage() {
   const isViewerCustomer = currentUser.uid === order.customerId;
   const cardUser = isViewerCustomer
     ? {
-      id: order.providerId,
-      name: order.providerName,
-      avatarUrl: order.providerAvatarUrl,
-      role: 'provider' as const,
-    }
+        id: order.providerId,
+        name: order.providerName,
+        avatarUrl: order.providerAvatarUrl,
+        role: 'provider' as const,
+      }
     : {
-      id: order.customerId,
-      name: order.customerName,
-      avatarUrl: order.customerAvatarUrl,
-      role: 'customer' as const,
-    };
+        id: order.customerId,
+        name: order.customerName,
+        avatarUrl: order.customerAvatarUrl,
+        role: 'customer' as const,
+      };
 
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center min-h-screen">
-          <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" /> Lade
-          Benutzeroberfläche...
+        <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex justify-center items-center">
+          <FiLoader className="animate-spin text-4xl text-white mr-3" /> Lade Benutzeroberfläche...
         </div>
       }
     >
-      <main className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <button
-            onClick={() => router.back()}
-            className="text-[#14ad9f] hover:underline flex items-center gap-2 mb-4"
-          >
-            <FiArrowLeft /> Zurück zur Übersicht
-          </button>
+      <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+        <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+        <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
+          <div className="max-w-7xl mx-auto">
+            <button
+              onClick={() => router.back()}
+              className="text-white hover:text-white/80 flex items-center gap-2 mb-4 transition-colors"
+            >
+              <FiArrowLeft /> Zurück zur Übersicht
+            </button>
 
-          <h1 className="text-3xl font-semibold text-gray-800 mb-6">Auftrag #{orderId}</h1>
+            <h1 className="text-3xl font-semibold text-white mb-6">Auftrag #{orderId}</h1>
 
-          {/* Success Message */}
-          {successMessage && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-              <div className="flex items-center">
-                <FiCheckCircle className="mr-2" />
-                {successMessage}
+            {/* Success Message */}
+            {successMessage && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+                <div className="flex items-center">
+                  <FiCheckCircle className="mr-2" />
+                  {successMessage}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Layout mit Sidebar */}
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Hauptinhalt - Links */}
-            <div className="flex-1 space-y-6">
-              {/* Auftragsdetails anzeigen */}
-              <div className="bg-white shadow rounded-lg p-6">
-                <h2 className="text-2xl font-semibold text-gray-700 mb-4">Details zum Auftrag</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
-                  <p>
-                    <strong>Status:</strong>{' '}
-                    <span
-                      className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
+            {/* Layout mit Sidebar */}
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Hauptinhalt - Links */}
+              <div className="flex-1 space-y-6">
+                {/* Auftragsdetails anzeigen */}
+                <div className="bg-white shadow rounded-lg p-6">
+                  <h2 className="text-2xl font-semibold text-gray-700 mb-4">Details zum Auftrag</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                    <p>
+                      <strong>Status:</strong>{' '}
+                      <span
+                        className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
+                      >
+                        {order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
+                          order.status?.replace(/_/g, ' ').slice(1)}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Kategorie:</strong> {order.selectedCategory || 'N/A'} /{' '}
+                      {order.selectedSubcategory || 'N/A'}
+                    </p>
+                    <p>
+                      <strong>Dauer:</strong>{' '}
+                      {(() => {
+                        // Berechne korrekte Stunden basierend auf Datum
+                        if (
+                          order.jobDateFrom &&
+                          order.jobDateTo &&
+                          order.jobDateFrom !== order.jobDateTo
+                        ) {
+                          const startDate = new Date(order.jobDateFrom);
+                          const endDate = new Date(order.jobDateTo);
+                          const totalDays =
+                            Math.ceil(
+                              (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+                            ) + 1;
+                          const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
+                          const totalHours = totalDays * hoursPerDay;
+                          return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
+                        } else {
+                          const hours =
+                            order.jobTotalCalculatedHours || order.jobDurationString || 'N/A';
+                          return `${hours} Stunden`;
+                        }
+                      })()}
+                    </p>
+                    <p>
+                      <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
+                    </p>
+                    <p>
+                      <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
+                      {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
+                        ? `- ${order.jobDateTo}`
+                        : ''}
+                    </p>
+                    <p>
+                      <strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}
+                    </p>
+                    <p className="col-span-full">
+                      <strong>Beschreibung:</strong>{' '}
+                      {order.beschreibung || 'Keine Beschreibung vorhanden.'}
+                    </p>
+
+                    {/* NEU: Beispiel für den "Annehmen"-Button (anzuwenden auf der Company-Seite) */}
+                    {currentUser.uid === order.providerId &&
+                      order.status === 'zahlung_erhalten_clearing' && (
+                        <div className="md:col-span-2 mt-4">
+                          <button
+                            onClick={handleAcceptOrder}
+                            disabled={isUpdating}
+                            className="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 disabled:bg-gray-400"
+                          >
+                            {isUpdating ? 'Wird angenommen...' : 'Auftrag annehmen'}
+                          </button>
+                        </div>
+                      )}
+                  </div>
+                </div>
+
+                {/* Stunden-Abrechnungsübersicht für Kunden */}
+                {currentUser.uid === order.customerId && (
+                  <HoursBillingOverview
+                    orderId={orderId}
+                    className=""
+                    onPaymentRequest={handleOpenPayment}
+                  />
+                )}
+
+                {/* Chat-Bereich */}
+                <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">
+                  <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
+                    <FiMessageSquare className="mr-2" /> Chat zum Auftrag
+                  </h2>
+                  {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(
+                    order.status
+                  ) ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg p-4">
+                      <FiSlash className="text-4xl text-gray-400 mb-3" />
+                      <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
+                      <p className="text-gray-500 text-sm">
+                        {order.status === 'zahlung_erhalten_clearing'
+                          ? 'Der Chat wird aktiviert, sobald der Anbieter den Auftrag angenommen hat.'
+                          : 'Für diesen Auftrag ist der Chat nicht mehr verfügbar.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div
+                      className="flex-1 min-h-0 max-h-96 overflow-y-auto"
+                      style={{ scrollBehavior: 'auto' }}
                     >
-                      {order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
-                        order.status?.replace(/_/g, ' ').slice(1)}
-                    </span>
-                  </p>
-                  <p>
-                    <strong>Kategorie:</strong> {order.selectedCategory || 'N/A'} /{' '}
-                    {order.selectedSubcategory || 'N/A'}
-                  </p>
-                  <p>
-                    <strong>Dauer:</strong>{' '}
-                    {(() => {
-                      // Berechne korrekte Stunden basierend auf Datum
-                      if (
-                        order.jobDateFrom &&
-                        order.jobDateTo &&
-                        order.jobDateFrom !== order.jobDateTo
-                      ) {
-                        const startDate = new Date(order.jobDateFrom);
-                        const endDate = new Date(order.jobDateTo);
-                        const totalDays =
-                          Math.ceil(
-                            (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
-                          ) + 1;
-                        const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
-                        const totalHours = totalDays * hoursPerDay;
-                        return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
-                      } else {
-                        const hours =
-                          order.jobTotalCalculatedHours || order.jobDurationString || 'N/A';
-                        return `${hours} Stunden`;
-                      }
-                    })()}
-                  </p>
-                  <p>
-                    <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
-                  </p>
-                  <p>
-                    <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
-                    {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
-                      ? `- ${order.jobDateTo}`
-                      : ''}
-                  </p>
-                  <p>
-                    <strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}
-                  </p>
-                  <p className="col-span-full">
-                    <strong>Beschreibung:</strong>{' '}
-                    {order.beschreibung || 'Keine Beschreibung vorhanden.'}
-                  </p>
-
-                  {/* NEU: Beispiel für den "Annehmen"-Button (anzuwenden auf der Company-Seite) */}
-                  {currentUser.uid === order.providerId &&
-                    order.status === 'zahlung_erhalten_clearing' && (
-                      <div className="md:col-span-2 mt-4">
-                        <button
-                          onClick={handleAcceptOrder}
-                          disabled={isUpdating}
-                          className="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 disabled:bg-gray-400"
-                        >
-                          {isUpdating ? 'Wird angenommen...' : 'Auftrag annehmen'}
-                        </button>
+                      <div className="h-full" onScroll={e => e.stopPropagation()}>
+                        <ChatComponent
+                          orderId={orderId}
+                          participants={{
+                            customerId: order.customerId,
+                            providerId: order.providerId,
+                          }}
+                        />
                       </div>
-                    )}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Stunden-Abrechnungsübersicht für Kunden */}
-              {currentUser.uid === order.customerId && (
-                <HoursBillingOverview
-                  orderId={orderId}
-                  className=""
-                  onPaymentRequest={handleOpenPayment}
-                />
-              )}
-
-              {/* Chat-Bereich */}
-              <div className="bg-white shadow rounded-lg p-6 h-[600px] flex flex-col">
-                <h2 className="text-2xl font-semibold text-gray-700 mb-4 flex items-center">
-                  <FiMessageSquare className="mr-2" /> Chat zum Auftrag
-                </h2>
-                {['abgelehnt_vom_anbieter', 'STORNIERT', 'zahlung_erhalten_clearing'].includes(
-                  order.status
-                ) ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center bg-gray-50 rounded-lg p-4">
-                    <FiSlash className="text-4xl text-gray-400 mb-3" />
-                    <h3 className="text-lg font-semibold text-gray-700">Chat deaktiviert</h3>
-                    <p className="text-gray-500 text-sm">
-                      {order.status === 'zahlung_erhalten_clearing'
-                        ? 'Der Chat wird aktiviert, sobald der Anbieter den Auftrag angenommen hat.'
-                        : 'Für diesen Auftrag ist der Chat nicht mehr verfügbar.'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex-1 min-h-0">
-                    <ChatComponent
-                      orderId={orderId}
-                      participants={{ customerId: order.customerId, providerId: order.providerId }}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Rechte Sidebar - UserInfoCard */}
-            <div className="w-full lg:w-80 lg:flex-shrink-0">
-              <div className="lg:sticky lg:top-6">
-                <UserInfoCard
-                  userId={cardUser.id}
-                  userName={cardUser.name}
-                  userAvatarUrl={cardUser.avatarUrl}
-                  userRole={cardUser.role}
-                />
+              {/* Rechte Sidebar - UserInfoCard */}
+              <div className="w-full lg:w-80 lg:flex-shrink-0">
+                <div className="lg:sticky lg:top-6">
+                  <UserInfoCard
+                    userId={cardUser.id}
+                    userName={cardUser.name}
+                    userAvatarUrl={cardUser.avatarUrl}
+                    userRole={cardUser.role}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Payment Modal */}
-        {showInlinePayment && paymentClientSecret && (
-          <InlinePaymentComponent
-            clientSecret={paymentClientSecret}
-            orderId={orderId}
-            totalAmount={paymentAmount}
-            totalHours={paymentHours}
-            customerId={order?.customerId}
-            isOpen={showInlinePayment}
-            onClose={handlePaymentCancel}
-            onSuccess={(paymentIntentId: string) => {
-              console.log('Payment successful:', paymentIntentId);
-              handlePaymentSuccess();
-            }}
-            onError={(error: string) => {
-              console.error('Payment error:', error);
-              handlePaymentCancel();
-            }}
-          />
-        )}
+          {/* Payment Modal */}
+          {showInlinePayment && paymentClientSecret && (
+            <InlinePaymentComponent
+              clientSecret={paymentClientSecret}
+              orderId={orderId}
+              totalAmount={paymentAmount}
+              totalHours={paymentHours}
+              customerId={order?.customerId}
+              isOpen={showInlinePayment}
+              onClose={handlePaymentCancel}
+              onSuccess={(paymentIntentId: string) => {
+                console.log('Payment successful:', paymentIntentId);
+                handlePaymentSuccess();
+              }}
+              onError={(error: string) => {
+                console.error('Payment error:', error);
+                handlePaymentCancel();
+              }}
+            />
+          )}
+        </div>
       </main>
     </Suspense>
   );
