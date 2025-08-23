@@ -794,6 +794,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             Dashboard
                           </Link>
                           <Link
+                            href={`/dashboard/user/${currentUser.uid}/projects`}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setIsProfileDropdownOpen(false)}
+                          >
+                            <FiPackage className="inline mr-2" />
+                            Meine Projekte
+                          </Link>
+                          <Link
                             href={`/dashboard/user/${currentUser.uid}/orders/overview`}
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsProfileDropdownOpen(false)}
@@ -810,7 +818,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             Meine Angebote
                           </Link>
                           <Link
-                            href="#"
+                            href={currentUser ? `/dashboard/user/${currentUid}/projects/create` : '/login'}
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsProfileDropdownOpen(false)}
                           >

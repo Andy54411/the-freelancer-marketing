@@ -2,9 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
-import { DashboardNavbar } from '../components/DashboardNavbar';
 import {
   PlusCircle,
   FolderOpen,
@@ -148,238 +145,194 @@ const ProjectsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <ProtectedRoute>
-        <SidebarVisibilityProvider>
-          <div className="min-h-screen bg-gray-50">
-            <DashboardNavbar currentUid={uid} />
-            <div className="flex items-center justify-center pt-20">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#14ad9f] mx-auto"></div>
-                <p className="mt-4 text-gray-600">Lade Projekte...</p>
-              </div>
-            </div>
+      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative z-10 flex items-center justify-center pt-32">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+            <p className="mt-4 text-white">Lade Projekte...</p>
           </div>
-        </SidebarVisibilityProvider>
-      </ProtectedRoute>
+        </div>
+      </div>
     );
   }
 
   return (
-    <ProtectedRoute>
-      <SidebarVisibilityProvider>
-        <div className="min-h-screen bg-gray-50">
-          <DashboardNavbar currentUid={uid} />
-          <div className="pt-20 p-6">
-            {/* Header */}
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <Brain className="h-7 w-7 text-[#14ad9f]" />
-                  KI-Project Manager
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  Verwalte deine Projekte intelligent mit KI-Unterstützung
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setShowAssistant(true)}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  <Gemini className="h-4 w-4" />
-                  KI-Assistent
-                </Button>
-                <Button
-                  onClick={handleNewProject}
-                  className="flex items-center gap-2 bg-[#14ad9f] hover:bg-[#0f8a7e]"
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  Neues Projekt
-                </Button>
-              </div>
-            </div>
-
-            {/* Statistiken */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Gesamt</p>
-                      <p className="text-2xl font-bold">{projects.length}</p>
-                    </div>
-                    <FolderOpen className="h-8 w-8 text-gray-400" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Aktiv</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {projects.filter(p => p.status === 'active').length}
-                      </p>
-                    </div>
-                    <PlayCircle className="h-8 w-8 text-green-400" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Planung</p>
-                      <p className="text-2xl font-bold text-blue-600">
-                        {projects.filter(p => p.status === 'planning').length}
-                      </p>
-                    </div>
-                    <Clock className="h-8 w-8 text-blue-400" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Abgeschlossen</p>
-                      <p className="text-2xl font-bold text-gray-600">
-                        {projects.filter(p => p.status === 'completed').length}
-                      </p>
-                    </div>
-                    <CheckCircle2 className="h-8 w-8 text-gray-400" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Projekt-Liste */}
-            {projects.length === 0 ? (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <Brain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Noch keine Projekte vorhanden
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Starte dein erstes Projekt mit KI-Unterstützung und lass dir bei der Planung
-                    helfen!
-                  </p>
-                  <div className="flex justify-center gap-3">
-                    <Button
-                      onClick={() => setShowAssistant(true)}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      KI-Projektideen
-                    </Button>
-                    <Button
-                      onClick={handleNewProject}
-                      className="flex items-center gap-2 bg-[#14ad9f] hover:bg-[#0f8a7e]"
-                    >
-                      <PlusCircle className="h-4 w-4" />
-                      Projekt erstellen
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {projects.map(project => {
-                  const progress = calculateProgress(project.tasks);
-                  return (
-                    <Card
-                      key={project.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                    >
-                      <CardHeader className="pb-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(project.status)}
-                            <CardTitle className="text-lg">{project.title}</CardTitle>
-                          </div>
-                          <div className="flex gap-1">
-                            <Badge className={getStatusColor(project.status)}>
-                              {project.status}
-                            </Badge>
-                            <Badge className={getPriorityColor(project.priority)}>
-                              {project.priority}
-                            </Badge>
-                          </div>
-                        </div>
-                        <CardDescription className="line-clamp-2">
-                          {project.description}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {/* Fortschritt */}
-                          <div>
-                            <div className="flex justify-between text-sm mb-1">
-                              <span>Fortschritt</span>
-                              <span>{progress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className="bg-[#14ad9f] h-2 rounded-full transition-all"
-                                style={{ width: `${progress}%` }}
-                              ></div>
-                            </div>
-                          </div>
-
-                          {/* Aufgaben */}
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Target className="h-4 w-4" />
-                            <span>{project.tasks.length} Aufgaben</span>
-                            {project.tasks.filter(t => t.status === 'completed').length > 0 && (
-                              <span>
-                                · {project.tasks.filter(t => t.status === 'completed').length}{' '}
-                                erledigt
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Kategorie */}
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Badge variant="secondary">{project.category}</Badge>
-                            {project.estimatedBudget && (
-                              <span className="text-green-600 font-medium">
-                                €{project.estimatedBudget.toLocaleString()}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* KI-Vorschläge */}
-                          {project.aiSuggestions && project.aiSuggestions.length > 0 && (
-                            <div className="mt-3 p-2 bg-blue-50 rounded-lg">
-                              <div className="flex items-center gap-1 text-xs font-medium text-blue-800 mb-1">
-                                <Sparkles className="h-3 w-3" />
-                                KI-Vorschlag
-                              </div>
-                              <p className="text-xs text-blue-700 line-clamp-2">
-                                {project.aiSuggestions[0]}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Letzte Aktualisierung */}
-                          <div className="flex items-center gap-2 text-xs text-gray-500 pt-2 border-t">
-                            <Calendar className="h-3 w-3" />
-                            <span>
-                              Zuletzt bearbeitet: {project.updatedAt.toLocaleDateString('de-DE')}
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+      <div className="absolute inset-0 bg-black/20"></div>
+      <div className="relative z-10 pt-20 pb-12 px-4 lg:px-6">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Brain className="h-7 w-7 text-white" />
+              KI-Project Manager
+            </h1>
+            <p className="text-white/80 mt-1">
+              Verwalte deine Projekte intelligent mit KI-Unterstützung
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setShowAssistant(true)}
+              variant="outline"
+              className="flex items-center gap-2 bg-white/10 text-white border-white/20 hover:bg-white/20"
+            >
+              <Gemini className="h-4 w-4" />
+              KI-Assistent
+            </Button>
+            <Button
+              onClick={handleNewProject}
+              className="flex items-center gap-2 bg-white/90 hover:bg-white text-[#14ad9f] hover:text-[#14ad9f]"
+            >
+              <PlusCircle className="h-4 w-4" />
+              Neues Projekt
+            </Button>
           </div>
         </div>
+
+        {/* Statistiken */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Gesamt</p>
+                  <p className="text-2xl font-bold">{projects.length}</p>
+                </div>
+                <FolderOpen className="h-8 w-8 text-[#14ad9f]" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Aktiv</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {projects.filter(p => p.status === 'active').length}
+                  </p>
+                </div>
+                <PlayCircle className="h-8 w-8 text-green-400" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Planung</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {projects.filter(p => p.status === 'planning').length}
+                  </p>
+                </div>
+                <Clock className="h-8 w-8 text-blue-400" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Abgeschlossen</p>
+                  <p className="text-2xl font-bold text-gray-600">
+                    {projects.filter(p => p.status === 'completed').length}
+                  </p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+            {/* Projekt-Liste */}
+        {projects.length === 0 ? (
+          <Card className="text-center py-12 bg-white/95 backdrop-blur-sm border-white/20">
+            <CardContent>
+              <FolderOpen className="h-16 w-16 text-[#14ad9f] mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Noch keine Projekte
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Starte dein erstes Projekt und nutze die KI-Unterstützung für optimale Ergebnisse.
+              </p>
+              <Button
+                onClick={handleNewProject}
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              >
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Erstes Projekt erstellen
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6">
+            {projects.map((project, index) => {
+              const statusIcon = getStatusIcon(project.status);
+              const priorityColor = getPriorityColor(project.priority);
+              
+              return (
+                <Card key={project.id} className="bg-white/95 backdrop-blur-sm border-white/20">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          {statusIcon}
+                          <CardTitle className="text-lg">{project.title}</CardTitle>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant="outline" 
+                          className={`${priorityColor} border-current`}
+                        >
+                          {project.priority === 'low' ? 'Niedrig' : 
+                           project.priority === 'medium' ? 'Mittel' : 'Hoch'}
+                        </Badge>
+                        <Badge variant="secondary">
+                          {project.status === 'planning' ? 'Planung' :
+                           project.status === 'active' ? 'Aktiv' :
+                           project.status === 'paused' ? 'Pausiert' : 'Abgeschlossen'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <CardDescription className="text-sm text-gray-600">
+                      {project.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          {project.timeline || 'Kein Zeitrahmen'}
+                        </span>
+                        {project.estimatedBudget && (
+                          <span className="flex items-center gap-1">
+                            <Target className="h-4 w-4" />
+                            {project.estimatedBudget.toLocaleString('de-DE', {
+                              style: 'currency',
+                              currency: 'EUR'
+                            })}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          {project.tasks.length} Aufgaben
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span>
+                          Zuletzt bearbeitet: {project.updatedAt.toLocaleDateString('de-DE')}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         {/* KI-Assistent Modal */}
         {showAssistant && (
@@ -389,8 +342,8 @@ const ProjectsPage: React.FC = () => {
             userId={uid}
           />
         )}
-      </SidebarVisibilityProvider>
-    </ProtectedRoute>
+      </div>
+    </div>
   );
 };
 

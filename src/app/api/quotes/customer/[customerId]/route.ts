@@ -11,29 +11,51 @@ export async function GET(
 ) {
   try {
     const { customerId } = await params;
+    console.log('📋 [Quotes API] Fetching quotes for customer:', customerId);
 
     if (!customerId) {
+      console.error('❌ [Quotes API] Customer ID ist leer oder undefined');
       return NextResponse.json({ error: 'Customer ID ist erforderlich' }, { status: 400 });
     }
 
-    // Abrufen aller Angebotsanfragen für diesen Kunden
+    console.log('🔍 [Quotes API] Querying Firestore collection "quotes"...');
+    
+    // Abrufen aller Angebotsanfragen für diesen Kunden (ohne orderBy um Index-Probleme zu vermeiden)
     const quotesSnapshot = await db
       .collection('quotes')
       .where('customerUid', '==', customerId)
-      .orderBy('createdAt', 'desc')
       .get();
 
-    const quotes = quotesSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    console.log('📊 [Quotes API] Query executed, found documents:', quotesSnapshot.size);
+
+    const quotes = quotesSnapshot.docs.map(doc => {
+      const data = doc.data();
+      console.log('📄 [Quotes API] Document data:', { id: doc.id, data });
+      return {
+        id: doc.id,
+        ...data,
+      };
+    });
+
+    // Sortiere die Ergebnisse in JavaScript statt in Firestore
+    quotes.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
+      const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+      return bTime.getTime() - aTime.getTime();
+    });
+
+    console.log('✅ [Quotes API] Successfully returning', quotes.length, 'quotes');
 
     return NextResponse.json({
       success: true,
       quotes,
     });
   } catch (error) {
-    console.error('Fehler beim Abrufen der Kundenangebote:', error);
+    console.error('💥 [Quotes API] Detailed error information:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      error: error
+    });
     return NextResponse.json({ error: 'Fehler beim Abrufen der Angebote' }, { status: 500 });
   }
 }

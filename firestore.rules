@@ -589,24 +589,28 @@ service cloud.firestore {
 
     // Finance: Projects Collection
     match /projects/{projectId} {
-      // Lesen: Nur eigene Firma oder Support Staff
+      // Lesen: Eigene Firma, eigene User-Projekte oder Support Staff
       allow read: if request.auth != null && 
-                     (resource.data.companyId == request.auth.uid && isCompany()) ||
-                     isSupportStaff();
+                     ((resource.data.companyId == request.auth.uid && isCompany()) ||
+                      (resource.data.customerId == request.auth.uid) ||
+                      (resource.data.userId == request.auth.uid) ||
+                      isSupportStaff());
       
-      // Listen-Abfragen: Vereinfacht für bessere Performance
+      // Listen-Abfragen: Für Firmen, User und Support Staff
       allow list: if request.auth != null && 
-                    (isSupportStaff() || isCompany());
+                    (isSupportStaff() || isCompany() || request.auth != null);
       
-      // Erstellen: Nur eigene Firma
+      // Erstellen: Firmen oder User können Projekte erstellen
       allow create: if request.auth != null && 
-                       request.resource.data.companyId == request.auth.uid &&
-                       isCompany();
+                       ((request.resource.data.companyId == request.auth.uid && isCompany()) ||
+                        (request.resource.data.customerId == request.auth.uid) ||
+                        (request.resource.data.userId == request.auth.uid));
       
-      // Aktualisieren: Nur eigene Firma
+      // Aktualisieren: Nur eigene Firma oder eigene User-Projekte
       allow update: if request.auth != null && 
-                       resource.data.companyId == request.auth.uid &&
-                       isCompany();
+                       ((resource.data.companyId == request.auth.uid && isCompany()) ||
+                        (resource.data.customerId == request.auth.uid) ||
+                        (resource.data.userId == request.auth.uid));
       
       // Löschen: Nur Support Staff oder eigene Firma
       allow delete: if (isSupportStaff()) || 

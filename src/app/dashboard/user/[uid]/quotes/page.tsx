@@ -92,17 +92,38 @@ export default function CustomerQuotesOverviewPage() {
   const fetchQuotes = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/quotes/customer/${uid}`);
+      setError(null);
+      
+      console.log('Fetching quotes for user:', uid);
+      
+      // Korrigierter API-Pfad
+      const response = await fetch(`/api/quotes/customer/${uid}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+
       const result = await response.json();
+      console.log('API Result:', result);
 
       if (result.success) {
         setQuotes(result.quotes || []);
+        console.log('Quotes loaded:', result.quotes?.length || 0);
       } else {
         setError(result.error || 'Fehler beim Laden der Angebote');
       }
     } catch (err) {
       console.error('Fehler beim Laden der Angebote:', err);
-      setError('Fehler beim Laden der Angebote');
+      setError(`Fehler beim Laden der Angebote: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);
     }
@@ -196,27 +217,32 @@ export default function CustomerQuotesOverviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <FiLoader className="animate-spin h-8 w-8 text-[#14ad9f]" />
+      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 flex items-center justify-center">
+        <FiLoader className="animate-spin h-8 w-8 text-white" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
-          <FiAlertCircle className="mx-auto h-12 w-12 text-red-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Fehler</h3>
-          <p className="mt-1 text-sm text-gray-500">{error}</p>
-          <div className="mt-6">
-            <Link
-              href={`/dashboard/user/${uid}`}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
-            >
-              <FiArrowLeft className="-ml-1 mr-2 h-4 w-4" />
-              Zurück zum Dashboard
-            </Link>
+      <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+        <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+        <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center">
+              <FiAlertCircle className="mx-auto h-12 w-12 text-white/80" />
+              <h3 className="mt-2 text-sm font-medium text-white">Fehler</h3>
+              <p className="mt-1 text-sm text-white/80">{error}</p>
+              <div className="mt-6">
+                <Link
+                  href={`/dashboard/user/${uid}`}
+                  className="inline-flex items-center px-4 py-2 border border-white/30 shadow-sm text-sm font-medium rounded-md text-white bg-white/20 hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-all"
+                >
+                  <FiArrowLeft className="-ml-1 mr-2 h-4 w-4" />
+                  Zurück zum Dashboard
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -224,20 +250,23 @@ export default function CustomerQuotesOverviewPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+      <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
+        <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <Link
           href={`/dashboard/user/${uid}`}
-          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
+          className="inline-flex items-center text-sm text-white/80 hover:text-white mb-4 transition-colors"
         >
           <FiArrowLeft className="mr-1 h-4 w-4" />
           Zurück zum Dashboard
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Meine Angebotsanfragen</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-white">Meine Angebotsanfragen</h1>
+            <p className="mt-1 text-sm text-white/80">
               Verwalten Sie Ihre Angebotsanfragen und eingegangene Angebote
             </p>
           </div>
@@ -246,7 +275,7 @@ export default function CustomerQuotesOverviewPage() {
 
       {/* Tab Navigation */}
       <div className="mb-6">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-white/30">
           <nav className="-mb-px flex space-x-8">
             {[
               { key: 'ALLE', label: 'Alle', count: quotes.length },
@@ -260,14 +289,14 @@ export default function CustomerQuotesOverviewPage() {
                 onClick={() => setActiveTab(tab.key as any)}
                 className={`${
                   activeTab === tab.key
-                    ? 'border-[#14ad9f] text-[#14ad9f]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center`}
+                    ? 'border-white text-white'
+                    : 'border-transparent text-white/70 hover:text-white hover:border-white/50'
+                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center transition-colors`}
               >
                 {tab.label}
                 <span
                   className={`ml-2 py-0.5 px-2 rounded-full text-xs font-medium ${
-                    activeTab === tab.key ? 'bg-[#14ad9f] text-white' : 'bg-gray-100 text-gray-900'
+                    activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-white/10 text-white/80'
                   }`}
                 >
                   {tab.count}
@@ -281,20 +310,20 @@ export default function CustomerQuotesOverviewPage() {
       {/* Content */}
       {filteredQuotes.length === 0 ? (
         <div className="text-center py-12">
-          <FiFileText className="mx-auto h-12 w-12 text-gray-300" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">Keine Angebotsanfragen</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <FiFileText className="mx-auto h-12 w-12 text-white/60" />
+          <h3 className="mt-2 text-sm font-medium text-white">Keine Angebotsanfragen</h3>
+          <p className="mt-1 text-sm text-white/80">
             Sie haben noch keine Angebotsanfragen gestellt.
           </p>
         </div>
       ) : (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <div className="bg-white/95 shadow-2xl overflow-hidden sm:rounded-lg border border-white/20">
           <ul role="list" className="divide-y divide-gray-200">
             {filteredQuotes.map(quote => (
               <li key={quote.id}>
                 <Link
                   href={`/dashboard/user/${uid}/quotes/${quote.id}`}
-                  className="block hover:bg-gray-50 px-4 py-4 sm:px-6"
+                  className="block hover:bg-gray-50/80 px-4 py-4 sm:px-6 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -366,6 +395,8 @@ export default function CustomerQuotesOverviewPage() {
           </ul>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }

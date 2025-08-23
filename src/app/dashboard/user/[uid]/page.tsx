@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import ProtectedRoute from '@/components/auth/ProtectedRoute'; // Import ProtectedRoute
-import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import {
   doc,
   getDoc,
@@ -518,242 +516,235 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <SidebarVisibilityProvider>
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
-          <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
-          <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
-            <div className="max-w-6xl mx-auto space-y-6">
-              <WelcomeBox
-                firstname={typeof userProfile.firstName === 'string' ? userProfile.firstName : ''}
-                profilePictureUrl={
-                  (typeof userProfile.profilePictureURL === 'string'
-                    ? userProfile.profilePictureURL
-                    : null) ||
-                  (typeof userProfile.profilePictureFirebaseUrl === 'string'
-                    ? userProfile.profilePictureFirebaseUrl
-                    : null)
-                }
-                onProfilePictureClick={() => setShowUploadModal(true)}
-              />
-              {/* VERBESSERTE GRID-LAYOUT mit Taskilo-Design */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Hauptbereich: Meine Aufträge - nimmt 2/3 des Platzes ein */}
-                <div className="lg:col-span-2">
-                  <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300 h-fit">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-2xl font-bold bg-gradient-to-r from-[#14ad9f] to-teal-600 bg-clip-text text-transparent flex items-center">
-                        <FiMessageSquare className="mr-3 text-[#14ad9f]" />
-                        Meine Aufträge
-                      </h2>
-                      <div className="px-3 py-1 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white text-sm font-medium rounded-full">
-                        {userOrders.length} {userOrders.length === 1 ? 'Auftrag' : 'Aufträge'}
-                      </div>
-                    </div>
-
-                    {loadingOrders ? (
-                      <div className="flex justify-center items-center py-8">
-                        <FiLoader className="animate-spin text-4xl text-[#14ad9f]" />
-                        <span className="ml-3 text-gray-600 text-lg">Lade Aufträge...</span>
-                      </div>
-                    ) : ordersError ? (
-                      <div className="text-center p-6 text-red-600 bg-red-50 rounded-xl border border-red-200">
-                        <FiAlertCircle className="mx-auto h-8 w-8 mb-3" />
-                        <p className="font-medium">{ordersError}</p>
-                      </div>
-                    ) : userOrders.length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
-                          <FiMessageSquare className="w-8 h-8 text-white" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                          Noch keine Aufträge
-                        </h3>
-                        <p className="text-gray-500 mb-6 text-sm">
-                          Erstellen Sie Ihren ersten Auftrag und entdecken Sie die besten Services.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                        {userOrders.map(order => (
-                          <div
-                            key={order.id}
-                            className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-[#14ad9f]/30"
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h3 className="font-bold text-lg text-gray-800">
-                                    {order.selectedSubcategory}
-                                  </h3>
-                                  <span className="text-xs bg-[#14ad9f]/10 text-[#14ad9f] px-2 py-1 rounded-full font-medium">
-                                    Service
-                                  </span>
-                                </div>
-                                {order.providerName && (
-                                  <p className="text-sm text-gray-600 mb-1 flex items-center">
-                                    <span className="w-2 h-2 bg-[#14ad9f] rounded-full mr-2"></span>
-                                    Anbieter: {order.providerName}
-                                  </p>
-                                )}
-                                <p className="text-sm text-gray-600 flex items-center">
-                                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                  {order.jobDateFrom
-                                    ? `${new Date(order.jobDateFrom).toLocaleDateString('de-DE', {
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric',
-                                      })} um ${order.jobTimePreference || '09:00'} Uhr`
-                                    : 'Datum noch nicht festgelegt'}
-                                </p>
-                              </div>
-
-                              <div className="text-right ml-4">
-                                <div className="text-xl font-bold text-gray-800 mb-1">
-                                  {order.totalPriceInCents && !isNaN(order.totalPriceInCents)
-                                    ? (order.totalPriceInCents / 100).toLocaleString('de-DE', {
-                                        style: 'currency',
-                                        currency: 'EUR',
-                                      })
-                                    : '0,00 €'}
-                                </div>
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                    order.status === 'bezahlt' ||
-                                    order.status === 'zahlung_erhalten_clearing'
-                                      ? 'bg-green-100 text-green-800 border border-green-200'
-                                      : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                  }`}
-                                >
-                                  {order.status
-                                    .replace(/_/g, ' ')
-                                    .replace(/\b\w/g, l => l.toUpperCase())}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 mt-6">
-                      <button
-                        onClick={handleCreateNewOrder}
-                        className="flex-1 flex items-center justify-center px-4 py-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
-                      >
-                        <FiPlusCircle className="mr-2 w-4 h-4" />
-                        Neuen Auftrag erstellen
-                      </button>
-
-                      {userOrders.length > 0 && (
-                        <button
-                          onClick={() =>
-                            router.push(`/dashboard/user/${currentUser?.uid}/orders/overview`)
-                          }
-                          className="flex items-center justify-center px-4 py-3 bg-white border-2 border-[#14ad9f] text-[#14ad9f] rounded-xl hover:bg-[#14ad9f] hover:text-white transition-all duration-300 font-semibold"
-                        >
-                          <FiMessageSquare className="mr-2 w-4 h-4" />
-                          Alle anzeigen
-                        </button>
-                      )}
-                    </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+      <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+      <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <WelcomeBox
+            firstname={typeof userProfile.firstName === 'string' ? userProfile.firstName : ''}
+            profilePictureUrl={
+              (typeof userProfile.profilePictureURL === 'string'
+                ? userProfile.profilePictureURL
+                : null) ||
+              (typeof userProfile.profilePictureFirebaseUrl === 'string'
+                ? userProfile.profilePictureFirebaseUrl
+                : null)
+            }
+            onProfilePictureClick={() => setShowUploadModal(true)}
+          />
+          {/* VERBESSERTE GRID-LAYOUT mit Taskilo-Design */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Hauptbereich: Meine Aufträge - nimmt 2/3 des Platzes ein */}
+            <div className="lg:col-span-2">
+              <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300 h-fit">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-[#14ad9f] to-teal-600 bg-clip-text text-transparent flex items-center">
+                    <FiMessageSquare className="mr-3 text-[#14ad9f]" />
+                    Meine Aufträge
+                  </h2>
+                  <div className="px-3 py-1 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white text-sm font-medium rounded-full">
+                    {userOrders.length} {userOrders.length === 1 ? 'Auftrag' : 'Aufträge'}
                   </div>
                 </div>
 
-                {/* Seitenleiste: Support & Schnellzugriff */}
-                <div className="space-y-4">
-                  {/* Support Card */}
-                  <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
-                    <div className="text-center">
-                      <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
-                        <FiHelpCircle className="w-6 h-6 text-white" />
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-800 mb-2">Hilfe & Support</h3>
-                      <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                        Benötigen Sie Hilfe? Unser Support-Team ist 24/7 für Sie da.
-                      </p>
-                      <button
-                        onClick={handleOpenSupportChat}
-                        className="w-full px-3 py-2 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl text-sm"
-                      >
-                        Support kontaktieren
-                      </button>
-                    </div>
+                {loadingOrders ? (
+                  <div className="flex justify-center items-center py-8">
+                    <FiLoader className="animate-spin text-4xl text-[#14ad9f]" />
+                    <span className="ml-3 text-gray-600 text-lg">Lade Aufträge...</span>
                   </div>
-
-                  {/* Quick Stats Card */}
-                  <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
-                    <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-                      <span className="w-3 h-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full mr-2"></span>
-                      Übersicht
+                ) : ordersError ? (
+                  <div className="text-center p-6 text-red-600 bg-red-50 rounded-xl border border-red-200">
+                    <FiAlertCircle className="mx-auto h-8 w-8 mb-3" />
+                    <p className="font-medium">{ordersError}</p>
+                  </div>
+                ) : userOrders.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
+                      <FiMessageSquare className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                      Noch keine Aufträge
                     </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                        <span className="text-sm font-medium text-gray-700">Aktive Aufträge</span>
-                        <span className="text-lg font-bold text-green-600">
-                          {
-                            userOrders.filter(
-                              order =>
-                                order.status === 'zahlung_erhalten_clearing' ||
-                                order.status === 'bezahlt' ||
-                                order.status === 'in_bearbeitung' ||
-                                order.status === 'angenommen'
-                            ).length
-                          }
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
-                        <span className="text-sm font-medium text-gray-700">Gesamt investiert</span>
-                        <span className="text-lg font-bold text-blue-600">
-                          {(
-                            userOrders.reduce(
-                              (total, order) => total + (order.totalPriceInCents || 0),
-                              0
-                            ) / 100
-                          ).toLocaleString('de-DE', {
-                            style: 'currency',
-                            currency: 'EUR',
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
-                      </div>
-                    </div>
+                    <p className="text-gray-500 mb-6 text-sm">
+                      Erstellen Sie Ihren ersten Auftrag und entdecken Sie die besten Services.
+                    </p>
                   </div>
+                ) : (
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                    {userOrders.map(order => (
+                      <div
+                        key={order.id}
+                        className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-[#14ad9f]/30"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h3 className="font-bold text-lg text-gray-800">
+                                {order.selectedSubcategory}
+                              </h3>
+                              <span className="text-xs bg-[#14ad9f]/10 text-[#14ad9f] px-2 py-1 rounded-full font-medium">
+                                Service
+                              </span>
+                            </div>
+                            {order.providerName && (
+                              <p className="text-sm text-gray-600 mb-1 flex items-center">
+                                <span className="w-2 h-2 bg-[#14ad9f] rounded-full mr-2"></span>
+                                Anbieter: {order.providerName}
+                              </p>
+                            )}
+                            <p className="text-sm text-gray-600 flex items-center">
+                              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                              {order.jobDateFrom
+                                ? `${new Date(order.jobDateFrom).toLocaleDateString('de-DE', {
+                                  day: 'numeric',
+                                  month: 'long',
+                                  year: 'numeric',
+                                })} um ${order.jobTimePreference || '09:00'} Uhr`
+                                : 'Datum noch nicht festgelegt'}
+                            </p>
+                          </div>
+
+                          <div className="text-right ml-4">
+                            <div className="text-xl font-bold text-gray-800 mb-1">
+                              {order.totalPriceInCents && !isNaN(order.totalPriceInCents)
+                                ? (order.totalPriceInCents / 100).toLocaleString('de-DE', {
+                                  style: 'currency',
+                                  currency: 'EUR',
+                                })
+                                : '0,00 €'}
+                            </div>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${order.status === 'bezahlt' ||
+                                  order.status === 'zahlung_erhalten_clearing'
+                                  ? 'bg-green-100 text-green-800 border border-green-200'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}
+                            >
+                              {order.status
+                                .replace(/_/g, ' ')
+                                .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    onClick={handleCreateNewOrder}
+                    className="flex-1 flex items-center justify-center px-4 py-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl"
+                  >
+                    <FiPlusCircle className="mr-2 w-4 h-4" />
+                    Neuen Auftrag erstellen
+                  </button>
+
+                  {userOrders.length > 0 && (
+                    <button
+                      onClick={() =>
+                        router.push(`/dashboard/user/${currentUser?.uid}/orders/overview`)
+                      }
+                      className="flex items-center justify-center px-4 py-3 bg-white border-2 border-[#14ad9f] text-[#14ad9f] rounded-xl hover:bg-[#14ad9f] hover:text-white transition-all duration-300 font-semibold"
+                    >
+                      <FiMessageSquare className="mr-2 w-4 h-4" />
+                      Alle anzeigen
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Seitenleiste: Support & Schnellzugriff */}
+            <div className="space-y-4">
+              {/* Support Card */}
+              <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
+                <div className="text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full flex items-center justify-center">
+                    <FiHelpCircle className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">Hilfe & Support</h3>
+                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+                    Benötigen Sie Hilfe? Unser Support-Team ist 24/7 für Sie da.
+                  </p>
+                  <button
+                    onClick={handleOpenSupportChat}
+                    className="w-full px-3 py-2 bg-gradient-to-r from-[#14ad9f] to-teal-600 text-white rounded-xl hover:from-[#129a8f] hover:to-teal-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl text-sm"
+                  >
+                    Support kontaktieren
+                  </button>
                 </div>
               </div>
 
-              {/* Kombinierter Bereich für TimeTracking und Billing - über FAQ */}
-              {currentUser && (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* TimeTracking Overview - Kompakter */}
-                  <div className="bg-white/90 backdrop-blur-sm border border-white/15 shadow-lg rounded-xl p-4 hover:shadow-xl transition-all duration-300">
-                    <TimeTrackingOverview
-                      customerId={currentUser.uid}
-                      onRequestsUpdated={() => {
-                        console.log('Time tracking requests updated');
-                      }}
-                    />
+              {/* Quick Stats Card */}
+              <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-4 hover:shadow-3xl transition-all duration-300 h-fit">
+                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                  <span className="w-3 h-3 bg-gradient-to-r from-[#14ad9f] to-teal-600 rounded-full mr-2"></span>
+                  Übersicht
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                    <span className="text-sm font-medium text-gray-700">Aktive Aufträge</span>
+                    <span className="text-lg font-bold text-green-600">
+                      {
+                        userOrders.filter(
+                          order =>
+                            order.status === 'zahlung_erhalten_clearing' ||
+                            order.status === 'bezahlt' ||
+                            order.status === 'in_bearbeitung' ||
+                            order.status === 'angenommen'
+                        ).length
+                      }
+                    </span>
                   </div>
-
-                  {/* Billing History - Kompakter */}
-                  <div className="bg-white/90 backdrop-blur-sm border border-white/15 shadow-lg rounded-xl p-4 hover:shadow-xl transition-all duration-300">
-                    <BillingHistory customerId={currentUser.uid} />
+                  <div className="flex justify-between items-center p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+                    <span className="text-sm font-medium text-gray-700">Gesamt investiert</span>
+                    <span className="text-lg font-bold text-blue-600">
+                      {(
+                        userOrders.reduce(
+                          (total, order) => total + (order.totalPriceInCents || 0),
+                          0
+                        ) / 100
+                      ).toLocaleString('de-DE', {
+                        style: 'currency',
+                        currency: 'EUR',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
                   </div>
                 </div>
-              )}
-
-              {/* FAQ Section - Kompakter */}
-              <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300">
-                <FaqSection />
               </div>
             </div>
           </div>
+          {/* Kombinierter Bereich für TimeTracking und Billing - über FAQ */}
+          {currentUser && (
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* TimeTracking Overview - Kompakter */}
+              <div className="bg-white/90 backdrop-blur-sm border border-white/15 shadow-lg rounded-xl p-4 hover:shadow-xl transition-all duration-300">
+                <TimeTrackingOverview
+                  customerId={currentUser.uid}
+                  onRequestsUpdated={() => {
+                    console.log('Time tracking requests updated');
+                  }}
+                />
+              </div>
+
+              {/* Billing History - Kompakter */}
+              <div className="bg-white/90 backdrop-blur-sm border border-white/15 shadow-lg rounded-xl p-4 hover:shadow-xl transition-all duration-300">
+                <BillingHistory customerId={currentUser.uid} />
+              </div>
+            </div>
+          )}
+
+          {/* FAQ Section - Kompakter */}
+          <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300">
+            <FaqSection />
+          </div>
         </div>
 
-        {/* Modals außerhalb des main-Bereichs */}
-        {/* Modal für Profilbild-Upload */}
+        {/* Modals */}
         {showUploadModal && currentUser && (
           <ProfilePictureUploadModal
             currentUser={currentUser}
@@ -775,7 +766,6 @@ export default function UserDashboardPage() {
         {/* Modal für Support Chat */}
         {showSupportChatModal && currentUser && userProfile && (
           <Modal onClose={() => setShowSupportChatModal(false)} title="Support">
-            {/* KORREKTUR: Die Props 'currentUser' und 'userProfile' wurden entfernt, da die Komponente sie jetzt intern über den AuthContext bezieht. */}
             <SupportChatInterface onClose={() => setShowSupportChatModal(false)} />
           </Modal>
         )}
@@ -791,7 +781,7 @@ export default function UserDashboardPage() {
               >
                 <AddPaymentMethodForm
                   onSuccess={handlePaymentMethodAdded}
-                  onError={(msg: string) => setSetupIntentError(msg)} // Typ für msg hinzugefügt
+                  onError={(msg: string) => setSetupIntentError(msg)}
                   clientSecret={clientSecretForSetupIntent}
                 />
               </Elements>
@@ -822,14 +812,14 @@ export default function UserDashboardPage() {
         {currentUser?.uid && (
           <TaskiloProjectAssistant
             userId={currentUser.uid}
-            onOrderCreate={orderData => {
+            onOrderCreate={(orderData) => {
               toast.success('Auftrag erfolgreich erstellt!');
               // Optional: Refresh der Seite oder Navigation
               window.location.reload();
             }}
           />
         )}
-      </ProtectedRoute>
-    </SidebarVisibilityProvider>
+      </div>
+    </div>
   );
 }
