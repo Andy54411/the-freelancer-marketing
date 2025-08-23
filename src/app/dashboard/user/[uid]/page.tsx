@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/auth/ProtectedRoute'; // Import ProtectedRoute
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
@@ -475,21 +475,9 @@ export default function UserDashboardPage() {
     }
   }, [currentUser, loadInitialDashboardData]);
 
-  // CSS-Fix für weißen Rand - NACH allen anderen Hooks
-  useEffect(() => {
-    // Nur body margin/padding entfernen, KEIN Gradient auf body
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-
-    return () => {
-      document.body.style.margin = '';
-      document.body.style.padding = '';
-    };
-  }, []);
-
   if (loading || loadingOrders) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
           <FiLoader className="animate-spin text-6xl text-white mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-2">Lade Dashboard...</h2>
@@ -501,8 +489,8 @@ export default function UserDashboardPage() {
 
   if (error || ordersError) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 p-4">
-        <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-8 max-w-md text-center">
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-8 max-w-md text-center mx-4">
           <FiAlertCircle size={48} className="mx-auto text-red-500 mb-4" />
           <h3 className="text-xl font-bold text-gray-800 mb-2">Fehler aufgetreten</h3>
           <p className="text-gray-600 mb-6">{error || ordersError}</p>
@@ -532,15 +520,9 @@ export default function UserDashboardPage() {
   return (
     <SidebarVisibilityProvider>
       <ProtectedRoute>
-        <main className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 p-4 lg:p-6">
-          <Suspense
-            fallback={
-              <div className="flex justify-center items-center min-h-screen">
-                <FiLoader className="animate-spin text-4xl text-white mr-3" />
-                <span className="text-white text-lg">Lade Benutzeroberfläche...</span>
-              </div>
-            }
-          >
+        <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative -m-4 lg:-m-6 -mt-16">
+          <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
+          <div className="relative z-10 pt-20 px-4 lg:px-6 pb-6">
             <div className="max-w-6xl mx-auto space-y-6">
               <WelcomeBox
                 firstname={typeof userProfile.firstName === 'string' ? userProfile.firstName : ''}
@@ -761,8 +743,8 @@ export default function UserDashboardPage() {
                 </div>
               )}
             </div>
-          </Suspense>
-        </main>
+          </div>
+        </div>
 
         {/* Modals außerhalb des main-Bereichs */}
         {/* Modal für Profilbild-Upload */}
