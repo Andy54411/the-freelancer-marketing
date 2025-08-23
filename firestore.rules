@@ -1435,5 +1435,31 @@ service cloud.firestore {
                        ((resource.data.companyId == request.auth.uid && isCompany()) ||
                         isSupportStaff());
     }
+
+    // Quotes Collection - für User-Projekte
+    match /quotes/{quoteId} {
+      // Lesen: Eigene Quotes als Kunde oder Provider
+      allow read: if request.auth != null && 
+                     (resource.data.customerData.uid == request.auth.uid ||
+                      resource.data.providerId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Listen: Für eigene Quotes
+      allow list: if request.auth != null && 
+                    (isSupportStaff() || request.auth != null);
+      
+      // Erstellen: Firmen können Quotes erstellen
+      allow create: if request.auth != null && 
+                       (isCompany() || isSupportStaff());
+      
+      // Aktualisieren: Eigene Quotes oder Support Staff
+      allow update: if request.auth != null && 
+                       (resource.data.customerData.uid == request.auth.uid ||
+                        resource.data.providerId == request.auth.uid ||
+                        isSupportStaff());
+      
+      // Löschen: Nur Support Staff
+      allow delete: if request.auth != null && isSupportStaff();
+    }
   }
 }

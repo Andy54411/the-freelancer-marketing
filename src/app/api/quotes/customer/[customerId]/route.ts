@@ -38,9 +38,9 @@ export async function GET(
     });
 
     // Sortiere die Ergebnisse in JavaScript statt in Firestore
-    quotes.sort((a: any, b: any) => {
-      const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt) || new Date(0);
-      const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt) || new Date(0);
+    quotes.sort((a: { createdAt?: { toDate?: () => Date } | Date }, b: { createdAt?: { toDate?: () => Date } | Date }) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt as Date) || new Date(0);
+      const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt as Date) || new Date(0);
       return bTime.getTime() - aTime.getTime();
     });
 

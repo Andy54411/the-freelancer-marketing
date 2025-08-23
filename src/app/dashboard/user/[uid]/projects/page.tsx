@@ -9,7 +9,6 @@ import {
   Clock,
   Users,
   Target,
-  Sparkles,
   Brain,
   CheckCircle2,
   AlertCircle,
@@ -19,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { db } from '@/firebase/clients';
-import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Gemini } from '@/components/logos';
@@ -62,30 +61,58 @@ const ProjectsPage: React.FC = () => {
   useEffect(() => {
     if (!uid || !user) return;
 
-    const projectsRef = collection(db, 'projects');
-    const q = query(projectsRef, where('userId', '==', uid), orderBy('updatedAt', 'desc'));
+    console.log('🔍 Suche Projekte für User:', { uid, userUid: user.uid });
 
-    const unsubscribe = onSnapshot(
-      q,
-      snapshot => {
-        const projectsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        })) as Project[];
+    // Verwende quotes Collection als "Projekte" da dort die echten Projekte sind
+    const loadUserProjects = async () => {
+      try {
+        // Lade quotes für den User (das sind die echten Projekte)
+        const quotesRef = collection(db, 'quotes');
+        const quotesQuery = query(quotesRef, where('customerData.uid', '==', uid));
+        const quotesSnapshot = await getDocs(quotesQuery);
+        
+        console.log('📦 quotes Collection (User Projekte):', quotesSnapshot.docs.length, 'Dokumente');
+        
+        const userProjects: Project[] = quotesSnapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log('📄 Quote als Projekt:', {
+            id: doc.id,
+            projectTitle: data.projectTitle,
+            status: data.status,
+            customerData: data.customerData,
+            response: data.response
+          });
 
-        setProjects(projectsData);
+          return {
+            id: doc.id,
+            title: data.projectTitle || 'Unbenanntes Projekt',
+            description: data.projectDescription || data.additionalNotes || '',
+            status: data.status === 'accepted' ? 'active' : 
+                   data.status === 'responded' ? 'planning' :
+                   data.status === 'exchanged' ? 'completed' : 'planning',
+            priority: data.urgency === 'hoch' ? 'high' : 
+                     data.urgency === 'mittel' ? 'medium' : 'low',
+            category: data.projectCategory || '',
+            estimatedBudget: data.response?.estimatedPrice || 0,
+            timeline: data.estimatedDuration || '',
+            tasks: [],
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt ? new Date(data.updatedAt) : data.createdAt?.toDate() || new Date(),
+          };
+        });
+
+        console.log('✅ Finale User-Projekte (von quotes):', userProjects.length);
+        setProjects(userProjects);
         setLoading(false);
-      },
-      error => {
-        console.error('Fehler beim Laden der Projekte:', error);
+
+      } catch (error) {
+        console.error('❌ Fehler beim Laden der Projekte:', error);
         toast.error('Fehler beim Laden der Projekte');
         setLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribe();
+    loadUserProjects();
   }, [uid, user]);
 
   const handleNewProject = () => {
@@ -109,21 +136,6 @@ const ProjectsPage: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: Project['status']) => {
-    switch (status) {
-      case 'planning':
-        return 'bg-blue-100 text-blue-800';
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'paused':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getPriorityColor = (priority: Project['priority']) => {
     switch (priority) {
       case 'high':
@@ -135,12 +147,6 @@ const ProjectsPage: React.FC = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const calculateProgress = (tasks: Task[]) => {
-    if (tasks.length === 0) return 0;
-    const completedTasks = tasks.filter(task => task.status === 'completed').length;
-    return Math.round((completedTasks / tasks.length) * 100);
   };
 
   if (loading) {
@@ -267,7 +273,7 @@ const ProjectsPage: React.FC = () => {
           </Card>
         ) : (
           <div className="grid gap-6">
-            {projects.map((project, index) => {
+            {projects.map((project) => {
               const statusIcon = getStatusIcon(project.status);
               const priorityColor = getPriorityColor(project.priority);
               

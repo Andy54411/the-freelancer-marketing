@@ -13,7 +13,6 @@ import {
   where,
   getDocs,
   orderBy,
-  documentId,
 } from 'firebase/firestore';
 import {
   db,
@@ -45,7 +44,6 @@ import { SavedPaymentMethod, SavedAddress, UserProfileData, OrderListItem } from
 import FaqSection from './components/FaqSection'; // FAQ Sektion importieren
 import TimeTrackingOverview from '@/components/TimeTrackingOverview';
 import BillingHistory from '@/components/BillingHistory';
-import { DashboardCard } from './components/DashboardCard';
 
 import { stripePromise } from '@/lib/stripe';
 
@@ -83,8 +81,8 @@ export default function UserDashboardPage() {
   // const [activeView, setActiveView] = useState<"dashboard" | "settings">("dashboard"); // Nicht mehr benötigt, da Header die Navigation übernimmt
 
   const [clientSecretForSetupIntent, setClientSecretForSetupIntent] = useState<string | null>(null);
-  const [loadingSetupIntent, setLoadingSetupIntent] = useState(false);
-  const [setupIntentError, setSetupIntentError] = useState<string | null>(null);
+  const [_loadingSetupIntent, setLoadingSetupIntent] = useState(false);
+  const [_setupIntentError, setSetupIntentError] = useState<string | null>(null);
 
   const [userOrders, setUserOrders] = useState<OrderListItem[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -272,7 +270,7 @@ export default function UserDashboardPage() {
     setShowUploadModal(false);
   };
 
-  const handleOpenAddPaymentMethodModal = async () => {
+  const _handleOpenAddPaymentMethodModal = async () => {
     if (!currentUser || !userProfile?.stripeCustomerId) {
       setError(
         'Nutzer nicht authentifiziert oder Stripe Customer ID fehlt. Bitte versuchen Sie, die Seite neu zu laden.'
@@ -320,7 +318,7 @@ export default function UserDashboardPage() {
     }
   };
 
-  const handleRemovePaymentMethod = async (paymentMethodId: string) => {
+  const _handleRemovePaymentMethod = async (paymentMethodId: string) => {
     if (!currentUser) return;
     if (confirm('Sind Sie sicher, dass Sie diese Zahlungsmethode entfernen möchten?')) {
       try {
@@ -416,7 +414,7 @@ export default function UserDashboardPage() {
     }
   };
 
-  const handleDeleteAddress = async (addressId: string) => {
+  const _handleDeleteAddress = async (addressId: string) => {
     if (!currentUser || !userProfile) return;
     if (confirm('Sind Sie sicher, dass Sie diese Adresse entfernen möchten?')) {
       try {
@@ -445,7 +443,7 @@ export default function UserDashboardPage() {
     }
   };
 
-  const handleLogout = async () => {
+  const _handleLogout = async () => {
     try {
       await signOut(auth);
       router.replace('/login');

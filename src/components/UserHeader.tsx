@@ -33,8 +33,6 @@ import {
   ChevronDown as FiChevronDown,
   Grid as FiGrid,
   Briefcase as FiBriefcase,
-  Users as FiUsers,
-  Award as FiAward,
   Settings as FiSettings,
   LogOut as FiLogOut,
   FilePlus as FiFilePlus,
@@ -45,7 +43,7 @@ import {
   Info as FiInfo,
   FileText as FiFileText,
 } from 'lucide-react';
-import { useAuth, HeaderChatPreview } from '@/contexts/AuthContext'; // HeaderChatPreview aus dem Context importieren
+import { useAuth } from '@/contexts/AuthContext';
 import { OverdueInvoicesAlert } from '@/components/finance/OverdueInvoicesAlert';
 const auth = getAuth(app);
 

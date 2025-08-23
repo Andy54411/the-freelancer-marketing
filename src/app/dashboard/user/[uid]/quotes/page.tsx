@@ -1,22 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   ArrowLeft as FiArrowLeft,
   Clock as FiClock,
-  MessageSquare as FiMessageSquare,
   FileText as FiFileText,
   AlertCircle as FiAlertCircle,
-  Check as FiCheck,
-  X as FiX,
   Eye as FiEye,
   Loader2 as FiLoader,
   Euro as FiEuro,
-  Calendar as FiCalendar,
   Building as FiBuilding,
-  User as FiUser,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,7 +33,7 @@ interface QuoteRequest {
   customerPhone?: string;
   requesterName?: string;
   requestDate?: string;
-  createdAt?: any;
+  createdAt?: Date;
   status: 'pending' | 'received' | 'responded' | 'accepted' | 'declined' | 'expired';
   providerId: string;
   customerUid?: string;
@@ -64,7 +59,6 @@ interface QuoteRequest {
 }
 
 export default function CustomerQuotesOverviewPage() {
-  const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
   const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
@@ -76,20 +70,7 @@ export default function CustomerQuotesOverviewPage() {
 
   const uid = params?.uid as string;
 
-  useEffect(() => {
-    if (!user || !uid) return;
-
-    // Sicherheitsüberprüfung
-    if (user.uid !== uid) {
-      setError('Zugriff verweigert. Sie sind nicht berechtigt, diese Angebote einzusehen.');
-      setLoading(false);
-      return;
-    }
-
-    fetchQuotes();
-  }, [user, uid]);
-
-  const fetchQuotes = async () => {
+  const fetchQuotes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -127,7 +108,20 @@ export default function CustomerQuotesOverviewPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [uid]);
+
+  useEffect(() => {
+    if (!user || !uid) return;
+
+    // Sicherheitsüberprüfung
+    if (user.uid !== uid) {
+      setError('Zugriff verweigert. Sie sind nicht berechtigt, diese Angebote einzusehen.');
+      setLoading(false);
+      return;
+    }
+
+    fetchQuotes();
+  }, [user, uid, fetchQuotes]);
 
   const filteredQuotes = useMemo(() => {
     if (activeTab === 'ALLE') return quotes;
@@ -286,7 +280,7 @@ export default function CustomerQuotesOverviewPage() {
             ].map(tab => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key as any)}
+                onClick={() => setActiveTab(tab.key as 'ALLE' | 'WARTEND' | 'ANGEBOTE' | 'ANGENOMMEN' | 'ABGELEHNT')}
                 className={`${
                   activeTab === tab.key
                     ? 'border-white text-white'

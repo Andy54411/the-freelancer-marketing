@@ -6,20 +6,17 @@ import { categories } from '@/lib/categoriesData'; // Import zentrale Kategorien
 import {
   PlusCircle,
   Upload,
-  MapPin,
-  Calendar,
   Euro,
   Users,
   Clock,
   FileText,
-  Tag,
   ArrowLeft,
   Sparkles,
   Target,
   CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -52,10 +49,6 @@ export default function CreateProjectRequestPage() {
   const { user } = useAuth();
   const uid = params?.uid as string;
 
-  if (!uid) {
-    return <div>Ungültige Benutzer-ID</div>;
-  }
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ProjectRequest>({
@@ -80,9 +73,13 @@ export default function CreateProjectRequestPage() {
     };
   }, []);
 
+  if (!uid) {
+    return <div>Ungültige Benutzer-ID</div>;
+  }
+
   const selectedCategory = categories.find(cat => cat.title === formData.category);
 
-  const handleInputChange = (field: keyof ProjectRequest, value: any) => {
+  const handleInputChange = (field: keyof ProjectRequest, value: string | boolean | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
