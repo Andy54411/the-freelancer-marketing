@@ -696,7 +696,9 @@ export default function UserDashboardPage() {
                             userOrders.filter(
                               order =>
                                 order.status === 'zahlung_erhalten_clearing' ||
-                                order.status === 'bezahlt'
+                                order.status === 'bezahlt' ||
+                                order.status === 'in_bearbeitung' ||
+                                order.status === 'angenommen'
                             ).length
                           }
                         </span>
@@ -704,44 +706,48 @@ export default function UserDashboardPage() {
                       <div className="flex justify-between items-center p-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
                         <span className="text-sm font-medium text-gray-700">Gesamt investiert</span>
                         <span className="text-lg font-bold text-blue-600">
-                          {userOrders
-                            .reduce((total, order) => total + (order.totalPriceInCents || 0), 0)
-                            .toLocaleString('de-DE', {
-                              style: 'currency',
-                              currency: 'EUR',
-                              minimumFractionDigits: 0,
-                              maximumFractionDigits: 0,
-                            })
-                            .replace(',', '.')}
+                          {(
+                            userOrders.reduce(
+                              (total, order) => total + (order.totalPriceInCents || 0),
+                              0
+                            ) / 100
+                          ).toLocaleString('de-DE', {
+                            style: 'currency',
+                            currency: 'EUR',
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Kombinierter Bereich für TimeTracking und Billing - über FAQ */}
+              {currentUser && (
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* TimeTracking Overview - Kompakter */}
+                  <div className="bg-white/90 backdrop-blur-sm border border-white/15 shadow-lg rounded-xl p-4 hover:shadow-xl transition-all duration-300">
+                    <TimeTrackingOverview
+                      customerId={currentUser.uid}
+                      onRequestsUpdated={() => {
+                        console.log('Time tracking requests updated');
+                      }}
+                    />
+                  </div>
+
+                  {/* Billing History - Kompakter */}
+                  <div className="bg-white/90 backdrop-blur-sm border border-white/15 shadow-lg rounded-xl p-4 hover:shadow-xl transition-all duration-300">
+                    <BillingHistory customerId={currentUser.uid} />
+                  </div>
+                </div>
+              )}
+
               {/* FAQ Section - Kompakter */}
               <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300">
                 <FaqSection />
               </div>
-
-              {/* TimeTracking Overview Section - Kompakter */}
-              {currentUser && (
-                <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300">
-                  <TimeTrackingOverview
-                    customerId={currentUser.uid}
-                    onRequestsUpdated={() => {
-                      console.log('Time tracking requests updated');
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Billing History Section - Kompakter */}
-              {currentUser && (
-                <div className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-2xl rounded-2xl p-6 hover:shadow-3xl transition-all duration-300">
-                  <BillingHistory customerId={currentUser.uid} />
-                </div>
-              )}
             </div>
           </div>
         </div>
