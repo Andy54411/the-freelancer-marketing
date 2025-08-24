@@ -449,30 +449,34 @@ export async function PATCH(
       kundeId: projectData.customerUid,
 
       // Provider info
-      selectedAnbieterId: acceptedProposal.companyUid,
+      selectedAnbieterId: acceptedProposal.companyUid || '',
       providerName: acceptedProposal.companyName || '',
       anbieterStripeAccountId: acceptedProposal.companyStripeAccountId || '',
 
       // Project info
       selectedCategory: projectData.category || projectData.serviceCategory || '',
       selectedSubcategory: projectData.subcategory || projectData.serviceSubcategory || '',
-      projectName: projectData.title,
-      projectTitle: projectData.title,
-      description: projectData.description,
+      projectName: projectData.title || '',
+      projectTitle: projectData.title || '',
+      description: projectData.description || '',
 
       // Payment info
-      totalAmountPaidByBuyer: acceptedProposal.totalAmount * 100, // Convert to cents
-      originalJobPriceInCents: acceptedProposal.totalAmount * 100,
-      applicationFeeAmountFromStripe: Math.round(acceptedProposal.totalAmount * 100 * 0.035),
-      sellerCommissionInCents: Math.round(acceptedProposal.totalAmount * 100 * 0.035),
+      totalAmountPaidByBuyer: (acceptedProposal.totalAmount || acceptedProposal.price || 0) * 100, // Convert to cents
+      originalJobPriceInCents: (acceptedProposal.totalAmount || acceptedProposal.price || 0) * 100,
+      applicationFeeAmountFromStripe: Math.round(
+        (acceptedProposal.totalAmount || acceptedProposal.price || 0) * 100 * 0.035
+      ),
+      sellerCommissionInCents: Math.round(
+        (acceptedProposal.totalAmount || acceptedProposal.price || 0) * 100 * 0.035
+      ),
       paymentIntentId: paymentIntentId,
       paidAt: new Date(),
 
       // Location info
       jobCountry: projectData.location?.country || 'DE',
-      jobCity: projectData.location?.city || null,
-      jobPostalCode: projectData.location?.postalCode || null,
-      jobStreet: projectData.location?.street || null,
+      jobCity: projectData.location?.city || '',
+      jobPostalCode: projectData.location?.postalCode || '',
+      jobStreet: projectData.location?.street || '',
 
       // Dates
       jobDateFrom: projectData.startDate || new Date().toISOString().split('T')[0],
