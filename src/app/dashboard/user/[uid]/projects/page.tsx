@@ -37,7 +37,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { db } from '@/firebase/clients';
-import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Gemini } from '@/components/logos';
@@ -90,29 +90,29 @@ const ProjectsPage: React.FC = () => {
     projectTitle: '',
   });
 
-  // Lade Projekte aus Firestore
+  // Lade Projekte aus Firestore mit Realtime Updates
   useEffect(() => {
     if (!uid || !user) return;
 
-    console.log('🔍 Suche Projekte für User:', { uid, userUid: user.uid });
+    console.log('🔍 Suche Projekte für User (Realtime):', { uid, userUid: user.uid });
 
     // Verwende project_requests Collection als "Projekte" da dort die echten Projekte sind
-    const loadUserProjects = async () => {
-      try {
-        // Lade project_requests für den User
-        const projectRequestsRef = collection(db, 'project_requests');
-        const projectRequestsQuery = query(projectRequestsRef, where('customerUid', '==', uid));
-        const projectRequestsSnapshot = await getDocs(projectRequestsQuery);
+    const projectRequestsRef = collection(db, 'project_requests');
+    const projectRequestsQuery = query(projectRequestsRef, where('customerUid', '==', uid));
 
+    // Realtime Subscription für sofortige Updates
+    const unsubscribe = onSnapshot(
+      projectRequestsQuery,
+      snapshot => {
         console.log(
-          '📦 project_requests Collection (User Projekte):',
-          projectRequestsSnapshot.docs.length,
+          '� Realtime Update - project_requests Collection (User Projekte):',
+          snapshot.docs.length,
           'Dokumente'
         );
 
-        const userProjects: Project[] = projectRequestsSnapshot.docs.map(doc => {
+        const userProjects: Project[] = snapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('📄 Project Request als Projekt:', {
+          console.log('📄 Project Request als Projekt (Realtime):', {
             id: doc.id,
             title: data.title,
             status: data.status,
@@ -151,17 +151,19 @@ const ProjectsPage: React.FC = () => {
           };
         });
 
-        console.log('✅ Finale User-Projekte (von project_requests):', userProjects.length);
+        console.log('✅ Finale User-Projekte (Realtime):', userProjects.length);
         setProjects(userProjects);
         setLoading(false);
-      } catch (error) {
-        console.error('❌ Fehler beim Laden der Projekte:', error);
+      },
+      error => {
+        console.error('❌ Fehler beim Realtime-Laden der Projekte:', error);
         toast.error('Fehler beim Laden der Projekte');
         setLoading(false);
       }
-    };
+    );
 
-    loadUserProjects();
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, [uid, user]);
 
   const handleNewProject = () => {
@@ -476,7 +478,13 @@ const ProjectsPage: React.FC = () => {
                           )}
                           <span className="flex items-center gap-1">
                             <Users className="h-4 w-4" />
-                            {project.proposals?.length || 0} Angebote
+                            {project.proposals?.filter(
+                              proposal =>
+                                proposal.status !== 'declined' &&
+                                proposal.status !== 'withdrawn' &&
+                                proposal.status !== 'cancelled'
+                            ).length || 0}{' '}
+                            Angebote
                           </span>
                         </div>
                         <div className="text-right">

@@ -72,6 +72,7 @@ interface ProjectRequest {
 interface Proposal {
   id: string;
   providerId: string;
+  companyUid?: string; // Für Company proposals
   providerName: string;
   providerEmail: string;
   providerPhone?: string;
@@ -83,7 +84,7 @@ interface Proposal {
   proposedTimeline: string;
   availability: string;
   submittedAt: Date;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'declined' | 'withdrawn' | 'cancelled';
   totalAmount?: number;
   timeline?: string;
   serviceItems?: any[];
@@ -675,16 +676,35 @@ const ProjectDetailPage: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MessageSquare className="h-5 w-5" />
-                    Eingegangene Angebote ({project.proposals.length})
+                    Eingegangene Angebote (
+                    {
+                      project.proposals.filter(
+                        proposal =>
+                          proposal.status !== 'declined' &&
+                          proposal.status !== 'withdrawn' &&
+                          proposal.status !== 'cancelled'
+                      ).length
+                    }
+                    )
                   </CardTitle>
-                  {project.proposals.length === 0 && (
+                  {project.proposals.filter(
+                    proposal =>
+                      proposal.status !== 'declined' &&
+                      proposal.status !== 'withdrawn' &&
+                      proposal.status !== 'cancelled'
+                  ).length === 0 && (
                     <CardDescription>
                       Noch keine Angebote eingegangen. Ihr Projekt ist öffentlich sichtbar.
                     </CardDescription>
                   )}
                 </CardHeader>
                 <CardContent>
-                  {project.proposals.length === 0 ? (
+                  {project.proposals.filter(
+                    proposal =>
+                      proposal.status !== 'declined' &&
+                      proposal.status !== 'withdrawn' &&
+                      proposal.status !== 'cancelled'
+                  ).length === 0 ? (
                     <div className="text-center py-8">
                       <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">Noch keine Angebote eingegangen</p>
@@ -694,173 +714,182 @@ const ProjectDetailPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {project.proposals.map((proposal, index) => (
-                        <div
-                          key={proposal.id || proposal.companyUid || index}
-                          className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={proposal.providerAvatar} />
-                                <AvatarFallback>
-                                  {(proposal.providerName || 'A').charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <h4 className="font-semibold text-gray-900">
-                                  {proposal.providerName || 'Anbieter'}
-                                </h4>
-                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                  {proposal.providerRating !== undefined &&
-                                    proposal.providerRating !== null && (
-                                      <div className="flex items-center gap-1">
-                                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                        <span>{proposal.providerRating.toFixed(1)}</span>
-                                        {proposal.providerReviewCount > 0 && (
-                                          <span>({proposal.providerReviewCount} Bewertungen)</span>
-                                        )}
-                                        {proposal.providerReviewCount === 0 && (
-                                          <span>(Keine Bewertungen)</span>
-                                        )}
-                                      </div>
-                                    )}
-                                  {(proposal.providerRating === undefined ||
-                                    proposal.providerRating === null) && (
-                                    <span className="text-gray-500">Noch keine Bewertungen</span>
-                                  )}
-                                </div>
-                                {/* Zusätzliche Company-Informationen */}
-                                {(proposal.companyIndustry || proposal.companyLocation) && (
-                                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                                    {proposal.companyIndustry && (
-                                      <span>{proposal.companyIndustry}</span>
-                                    )}
-                                    {proposal.companyIndustry && proposal.companyLocation && (
-                                      <span>•</span>
-                                    )}
-                                    {proposal.companyLocation && (
-                                      <span>{proposal.companyLocation}</span>
+                      {project.proposals
+                        .filter(
+                          proposal =>
+                            proposal.status !== 'declined' &&
+                            proposal.status !== 'withdrawn' &&
+                            proposal.status !== 'cancelled'
+                        )
+                        .map((proposal, index) => (
+                          <div
+                            key={proposal.id || proposal.companyUid || index}
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarImage src={proposal.providerAvatar} />
+                                  <AvatarFallback>
+                                    {(proposal.providerName || 'A').charAt(0).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <h4 className="font-semibold text-gray-900">
+                                    {proposal.providerName || 'Anbieter'}
+                                  </h4>
+                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    {proposal.providerRating !== undefined &&
+                                      proposal.providerRating !== null && (
+                                        <div className="flex items-center gap-1">
+                                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                          <span>{proposal.providerRating.toFixed(1)}</span>
+                                          {(proposal.providerReviewCount ?? 0) > 0 && (
+                                            <span>
+                                              ({proposal.providerReviewCount} Bewertungen)
+                                            </span>
+                                          )}
+                                          {(proposal.providerReviewCount ?? 0) === 0 && (
+                                            <span>(Keine Bewertungen)</span>
+                                          )}
+                                        </div>
+                                      )}
+                                    {(proposal.providerRating === undefined ||
+                                      proposal.providerRating === null) && (
+                                      <span className="text-gray-500">Noch keine Bewertungen</span>
                                     )}
                                   </div>
-                                )}
+                                  {/* Zusätzliche Company-Informationen */}
+                                  {(proposal.companyIndustry || proposal.companyLocation) && (
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                      {proposal.companyIndustry && (
+                                        <span>{proposal.companyIndustry}</span>
+                                      )}
+                                      {proposal.companyIndustry && proposal.companyLocation && (
+                                        <span>•</span>
+                                      )}
+                                      {proposal.companyLocation && (
+                                        <span>{proposal.companyLocation}</span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {getProposalStatusIcon(proposal.status)}
+                                <span className="text-sm font-medium">
+                                  {proposal.status === 'accepted'
+                                    ? 'Angenommen'
+                                    : proposal.status === 'rejected'
+                                      ? 'Abgelehnt'
+                                      : 'Ausstehend'}
+                                </span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {getProposalStatusIcon(proposal.status)}
-                              <span className="text-sm font-medium">
-                                {proposal.status === 'accepted'
-                                  ? 'Angenommen'
-                                  : proposal.status === 'rejected'
-                                    ? 'Abgelehnt'
-                                    : 'Ausstehend'}
-                              </span>
-                            </div>
-                          </div>
 
-                          <p className="text-gray-700 mb-4">{proposal.message}</p>
+                            <p className="text-gray-700 mb-4">{proposal.message}</p>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Euro className="h-4 w-4 text-gray-500" />
-                              <span className="font-semibold">
-                                {(
-                                  proposal.proposedPrice ||
-                                  proposal.totalAmount ||
-                                  0
-                                ).toLocaleString('de-DE', {
-                                  style: 'currency',
-                                  currency: 'EUR',
-                                })}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Clock className="h-4 w-4 text-gray-500" />
-                              <span>
-                                {proposal.proposedTimeline ||
-                                  proposal.timeline ||
-                                  'Nicht angegeben'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Calendar className="h-4 w-4 text-gray-500" />
-                              <span>{proposal.availability}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              {/* Kontaktdaten werden nur nach Annahme des Angebots angezeigt */}
-                              {proposal.status === 'accepted' && proposal.providerEmail && (
-                                <div className="flex items-center gap-1">
-                                  <Mail className="h-4 w-4" />
-                                  <span>{proposal.providerEmail}</span>
-                                </div>
-                              )}
-                              {proposal.status === 'accepted' && proposal.providerPhone && (
-                                <div className="flex items-center gap-1">
-                                  <Phone className="h-4 w-4" />
-                                  <span>{proposal.providerPhone}</span>
-                                </div>
-                              )}
-                              {proposal.status !== 'accepted' && (
-                                <span className="text-sm text-gray-500">
-                                  Kontaktdaten verfügbar nach Annahme des Angebots
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                              <div className="flex items-center gap-2 text-sm">
+                                <Euro className="h-4 w-4 text-gray-500" />
+                                <span className="font-semibold">
+                                  {(
+                                    proposal.proposedPrice ||
+                                    proposal.totalAmount ||
+                                    0
+                                  ).toLocaleString('de-DE', {
+                                    style: 'currency',
+                                    currency: 'EUR',
+                                  })}
                                 </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Clock className="h-4 w-4 text-gray-500" />
+                                <span>
+                                  {proposal.proposedTimeline ||
+                                    proposal.timeline ||
+                                    'Nicht angegeben'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Calendar className="h-4 w-4 text-gray-500" />
+                                <span>{proposal.availability}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                                {/* Kontaktdaten werden nur nach Annahme des Angebots angezeigt */}
+                                {proposal.status === 'accepted' && proposal.providerEmail && (
+                                  <div className="flex items-center gap-1">
+                                    <Mail className="h-4 w-4" />
+                                    <span>{proposal.providerEmail}</span>
+                                  </div>
+                                )}
+                                {proposal.status === 'accepted' && proposal.providerPhone && (
+                                  <div className="flex items-center gap-1">
+                                    <Phone className="h-4 w-4" />
+                                    <span>{proposal.providerPhone}</span>
+                                  </div>
+                                )}
+                                {proposal.status !== 'accepted' && (
+                                  <span className="text-sm text-gray-500">
+                                    Kontaktdaten verfügbar nach Annahme des Angebots
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                Eingegangen am{' '}
+                                {proposal.submittedAt
+                                  ? new Date(proposal.submittedAt).toLocaleDateString('de-DE')
+                                  : 'Unbekannt'}
+                              </p>
+                            </div>
+
+                            <div className="flex gap-2 mt-4">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/user/${uid}/quotes/received/${project.id}?proposalId=${proposal.id}`
+                                  )
+                                }
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Angebot anschauen
+                              </Button>
+
+                              {proposal.status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                    onClick={() => {
+                                      // TODO: Angebot annehmen
+                                      toast.success('Funktion wird noch implementiert');
+                                    }}
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                                    Annehmen
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      // TODO: Angebot ablehnen
+                                      toast.success('Funktion wird noch implementiert');
+                                    }}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    Ablehnen
+                                  </Button>
+                                </>
                               )}
                             </div>
-                            <p className="text-xs text-gray-500">
-                              Eingegangen am{' '}
-                              {proposal.submittedAt
-                                ? new Date(proposal.submittedAt).toLocaleDateString('de-DE')
-                                : 'Unbekannt'}
-                            </p>
                           </div>
-
-                          <div className="flex gap-2 mt-4">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1"
-                              onClick={() =>
-                                router.push(
-                                  `/dashboard/user/${uid}/quotes/received/${project.id}?proposalId=${proposal.id}`
-                                )
-                              }
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Angebot anschauen
-                            </Button>
-
-                            {proposal.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                                  onClick={() => {
-                                    // TODO: Angebot annehmen
-                                    toast.success('Funktion wird noch implementiert');
-                                  }}
-                                >
-                                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                                  Annehmen
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    // TODO: Angebot ablehnen
-                                    toast.success('Funktion wird noch implementiert');
-                                  }}
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Ablehnen
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   )}
                 </CardContent>
@@ -965,7 +994,17 @@ const ProjectDetailPage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-gray-500" />
                       <span>
-                        {project.location || 'Nicht angegeben'}
+                        {(() => {
+                          const location = project.location as any;
+                          if (typeof location === 'object' && location?.address) {
+                            return location.address;
+                          } else if (typeof location === 'object' && location?.type === 'tbd') {
+                            return 'Wird noch festgelegt';
+                          } else if (typeof location === 'string') {
+                            return location;
+                          }
+                          return 'Nicht angegeben';
+                        })()}
                         {project.isRemote && ' (Remote möglich)'}
                       </span>
                     </div>
@@ -998,7 +1037,16 @@ const ProjectDetailPage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Angebote</span>
-                    <span className="font-semibold">{project.proposals.length}</span>
+                    <span className="font-semibold">
+                      {
+                        project.proposals.filter(
+                          proposal =>
+                            proposal.status !== 'declined' &&
+                            proposal.status !== 'withdrawn' &&
+                            proposal.status !== 'cancelled'
+                        ).length
+                      }
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Zuletzt aktualisiert</span>
