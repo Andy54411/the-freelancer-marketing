@@ -49,6 +49,13 @@ if (!admin.apps.length) {
         console.log(
           '[Firebase Server] ✅ GOOGLE_APPLICATION_CREDENTIALS als JSON erfolgreich geladen.'
         );
+
+        // WICHTIG: Entferne die Umgebungsvariable nach dem Parsen, um zu verhindern,
+        // dass Firebase sie automatisch als Dateipfad verwendet
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+        console.log(
+          '[Firebase Server] 🔒 GOOGLE_APPLICATION_CREDENTIALS Umgebungsvariable entfernt.'
+        );
       } catch (jsonError: any) {
         console.warn(
           '[Firebase Server] ⚠️ GOOGLE_APPLICATION_CREDENTIALS JSON-Parse fehlgeschlagen:',
@@ -61,29 +68,12 @@ if (!admin.apps.length) {
       }
     }
 
-    // 3. Letzter Fallback: NUR für lokale Entwicklung
-    if (!credentialSet && process.env.NODE_ENV === 'development') {
-      try {
-        console.log(
-          '[Firebase Server] Letzter Fallback: Application Default Credentials (nur Development)...'
-        );
-        options.credential = admin.credential.applicationDefault();
-        credentialSet = true;
-        console.log(
-          '[Firebase Server] ✅ Application Default Credentials (Fallback) erfolgreich geladen.'
-        );
-      } catch (credentialError: any) {
-        console.error(
-          '[Firebase Server] ❌ Alle Credential-Strategien fehlgeschlagen:',
-          credentialError.message
-        );
-      }
-    }
-
+    // WICHTIG: Wenn keine Credentials gesetzt sind, FEHLER werfen (nie applicationDefault verwenden)
     if (!credentialSet) {
-      throw new Error(
-        'Firebase Credentials nicht verfügbar - FIREBASE_SERVICE_ACCOUNT_KEY oder GOOGLE_APPLICATION_CREDENTIALS erforderlich.'
-      );
+      const errorMsg =
+        'Firebase Credentials nicht verfügbar - FIREBASE_SERVICE_ACCOUNT_KEY oder GOOGLE_APPLICATION_CREDENTIALS als JSON-String erforderlich.';
+      console.error('[Firebase Server] ❌', errorMsg);
+      throw new Error(errorMsg);
     }
 
     admin.initializeApp(options);
