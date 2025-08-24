@@ -28,6 +28,8 @@ import ChatComponent from '@/components/ChatComponent';
 import InlinePaymentComponent from '@/components/InlinePaymentComponent';
 // Stunden-Übersicht Komponente
 import HoursBillingOverview from '@/components/HoursBillingOverview';
+// Order Completion Komponente
+import OrderCompletionModal from '@/components/orders/OrderCompletionModal';
 
 interface ParticipantDetails {
   id: string;
@@ -58,6 +60,11 @@ interface OrderData {
   jobDateFrom?: string; // Datum
   jobDateTo?: string; // Datum
   jobTimePreference?: string; // Uhrzeit
+  // Felder für Order Completion System
+  totalAmountPaidByBuyer?: number; // Gesamtbetrag den Kunde gezahlt hat
+  companyNetAmount?: number; // Netto-Betrag für das Unternehmen
+  platformFeeAmount?: number; // Platform-Gebühr
+  companyStripeAccountId?: string; // Stripe Connect Account des Unternehmens
   // Fügen Sie hier alle relevanten Felder aus Ihrem Auftragsdokument hinzu
 }
 
@@ -78,6 +85,9 @@ export default function OrderDetailPage() {
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentHours, setPaymentHours] = useState(0);
+
+  // Order Completion Modal States
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   // Verhindere Auto-Scroll der ChatComponent
   useEffect(() => {
@@ -137,6 +147,19 @@ export default function OrderDetailPage() {
       timestamp: new Date().toISOString(),
     });
   }, [showInlinePayment, paymentClientSecret, paymentAmount, paymentHours]);
+
+  // Order Completion Handlers
+  const handleCompleteOrder = () => {
+    setShowCompletionModal(true);
+  };
+
+  const handleOrderCompleted = () => {
+    // Reload order data after completion
+    fetchOrder();
+    setSuccessMessage(
+      'Auftrag erfolgreich abgeschlossen! Das Geld wurde an den Anbieter ausgezahlt.'
+    );
+  };
 
   // NEU: Die Logik zum Laden des Auftrags in eine useCallback-Funktion extrahiert,
   // damit wir sie nach einer Aktion erneut aufrufen können.
@@ -584,6 +607,23 @@ export default function OrderDetailPage() {
                           </button>
                         </div>
                       )}
+
+                    {/* Order Completion Button für Kunden */}
+                    {currentUser.uid === order.customerId && order.status === 'accepted' && (
+                      <div className="md:col-span-2 mt-4">
+                        <button
+                          onClick={handleCompleteOrder}
+                          className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2"
+                        >
+                          <FiCheckCircle className="h-5 w-5" />
+                          Auftrag als erledigt markieren
+                        </button>
+                        <p className="text-sm text-gray-600 mt-2 text-center">
+                          Durch das Abschließen wird das Geld automatisch an den Anbieter
+                          ausgezahlt.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -664,6 +704,27 @@ export default function OrderDetailPage() {
                 console.error('Payment error:', error);
                 handlePaymentCancel();
               }}
+            />
+          )}
+
+          {/* Order Completion Modal */}
+          {order && (
+            <OrderCompletionModal
+              isOpen={showCompletionModal}
+              onClose={() => setShowCompletionModal(false)}
+              order={{
+                id: order.id,
+                title: order.serviceTitle,
+                description: order.beschreibung || '',
+                selectedAnbieterId: order.providerId,
+                companyName: order.providerName,
+                totalAmountPaidByBuyer: order.priceInCents,
+                companyNetAmount: Math.round(order.priceInCents * 0.955), // 95.5% nach 4.5% Platform Fee (wie in der Dokumentation)
+                platformFeeAmount: Math.round(order.priceInCents * 0.045), // 4.5% Platform Fee (Standard)
+                status: order.status,
+              }}
+              userId={currentUser?.uid || ''}
+              onOrderCompleted={handleOrderCompleted}
             />
           )}
         </div>
