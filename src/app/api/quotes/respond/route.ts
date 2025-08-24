@@ -133,13 +133,20 @@ export async function POST(request: NextRequest) {
 
             // Email Notification an Customer
             try {
+              console.log('🔍 Starting email notification process...');
+
               // Customer Email aus User-Daten holen
               const userDoc = await db.collection('users').doc(quoteData.customerUid).get();
+              console.log('📧 User doc exists:', userDoc.exists);
+
               if (userDoc.exists) {
                 const userData = userDoc.data();
                 const customerEmail = userData?.email;
+                console.log('📧 Customer email found:', customerEmail ? 'Yes' : 'No');
 
                 if (customerEmail) {
+                  console.log('📧 Attempting to send email to:', customerEmail);
+
                   // Import Email Service
                   const { emailService } = await import('@/lib/resend-email-service');
 
@@ -150,6 +157,8 @@ export async function POST(request: NextRequest) {
                     response.totalAmount || 0
                   );
 
+                  console.log('📧 Email result:', emailResult);
+
                   if (emailResult.success) {
                     console.log(`✅ Neues-Angebot-Email gesendet an ${customerEmail}`);
                   } else {
@@ -158,7 +167,14 @@ export async function POST(request: NextRequest) {
                       emailResult.error
                     );
                   }
+                } else {
+                  console.warn('⚠️ Keine E-Mail-Adresse für Customer gefunden');
                 }
+              } else {
+                console.warn(
+                  '⚠️ User-Dokument nicht gefunden für customerUid:',
+                  quoteData.customerUid
+                );
               }
             } catch (emailError) {
               console.error('❌ Fehler bei Neues-Angebot-Email:', emailError);

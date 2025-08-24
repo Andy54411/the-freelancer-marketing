@@ -318,6 +318,13 @@ export class ResendEmailService {
     proposalAmount: number
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
+      console.log('📧 sendNewProposalEmail called with:', {
+        customerEmail,
+        projectTitle,
+        providerName,
+        proposalAmount,
+      });
+
       const emailHtml = `
         <!DOCTYPE html>
         <html>
@@ -373,13 +380,17 @@ export class ResendEmailService {
         </html>
       `;
 
-      return await this.sendEmail({
+      console.log('📧 Calling sendEmail...');
+      const result = await this.sendEmail({
         to: [customerEmail],
         from: 'noreply@taskilo.de',
         subject: `💼 Neues Angebot für "${projectTitle}" erhalten`,
         htmlContent: emailHtml,
         textContent: `Neues Angebot erhalten!\n\nProjekt: ${projectTitle}\nAnbieter: ${providerName}\nPreis: ${proposalAmount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}\n\nSchauen Sie sich das Angebot in Ihrem Dashboard an: https://taskilo.de/dashboard`,
       });
+
+      console.log('📧 sendEmail result:', result);
+      return result;
     } catch (error) {
       console.error('Fehler beim Senden der Neues-Angebot-Email:', error);
       return {

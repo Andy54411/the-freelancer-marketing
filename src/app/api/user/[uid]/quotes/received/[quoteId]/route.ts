@@ -93,6 +93,11 @@ export async function GET(
         enhancedProposals.push({
           ...proposal,
           ...companyInfo,
+          submittedAt: proposal.submittedAt?.toDate
+            ? proposal.submittedAt.toDate().toISOString()
+            : proposal.submittedAt
+              ? new Date(proposal.submittedAt).toISOString()
+              : new Date().toISOString(),
         });
       }
     }
@@ -125,7 +130,11 @@ export async function GET(
       location: projectData?.location || null,
       proposals: enhancedProposals,
       status: projectData?.status || 'open',
-      createdAt: projectData?.createdAt || new Date().toISOString(),
+      createdAt: projectData?.createdAt?.toDate
+        ? projectData.createdAt.toDate().toISOString()
+        : projectData?.createdAt
+          ? new Date(projectData.createdAt).toISOString()
+          : new Date().toISOString(),
       customerUid: projectData?.customerUid,
     };
 
