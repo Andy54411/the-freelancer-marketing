@@ -23,32 +23,63 @@ export async function GET(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-      console.error('Auth-Fehler:', authError);
+      console.error('[User Quote Detail API] Auth-Fehler:', authError);
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
+    console.log('[User Quote Detail API] Request for user:', uid, 'quote:', quoteId);
+
     // Check if user is authorized to access this quote
     if (decodedToken.uid !== uid) {
+      console.log('[User Quote Detail API] User not authorized:', decodedToken.uid, 'vs', uid);
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
     // Get the project request
+    console.log('[User Quote Detail API] Looking for project in project_requests:', quoteId);
     const projectRef = db.collection('project_requests').doc(quoteId);
     const projectDoc = await projectRef.get();
 
     if (!projectDoc.exists) {
-      return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 });
+      console.log('[User Quote Detail API] Project not found in project_requests:', quoteId);
+      // Check if it might be in the quotes collection instead
+      const quoteRef = db.collection('quotes').doc(quoteId);
+      const quoteDoc = await quoteRef.get();
+
+      if (!quoteDoc.exists) {
+        console.log('[User Quote Detail API] Quote also not found in quotes collection:', quoteId);
+        return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 });
+      } else {
+        console.log('[User Quote Detail API] Found in quotes collection instead');
+        // TODO: Handle quotes collection format
+        return NextResponse.json(
+          { error: 'Quote in falscher Collection gefunden - Development needed' },
+          { status: 500 }
+        );
+      }
     }
 
     const projectData = projectDoc.data();
+    console.log('[User Quote Detail API] Project data found:', {
+      id: projectDoc.id,
+      customerUid: projectData?.customerUid,
+      title: projectData?.title,
+      proposals: projectData?.proposals?.length || 0,
+    });
 
     // Check if user owns this project
     if (projectData?.customerUid !== uid) {
+      console.log(
+        '[User Quote Detail API] User does not own project:',
+        projectData?.customerUid,
+        'vs',
+        uid
+      );
       return NextResponse.json({ error: 'Keine Berechtigung für dieses Projekt' }, { status: 403 });
     }
 
     // Enhance proposals with company information
-    const enhancedProposals = [];
+    const enhancedProposals: any[] = [];
     if (projectData?.proposals) {
       for (const proposal of projectData.proposals) {
         // Get company information

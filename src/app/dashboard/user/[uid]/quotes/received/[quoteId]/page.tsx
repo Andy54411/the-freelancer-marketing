@@ -16,7 +16,9 @@ import {
   FiUser,
   FiMail,
   FiPhone,
+  FiCreditCard,
 } from 'react-icons/fi';
+import QuotePaymentModal from '@/components/quotes/QuotePaymentModal';
 
 interface Proposal {
   companyUid: string;
@@ -24,6 +26,7 @@ interface Proposal {
   companyEmail?: string;
   companyPhone?: string;
   companyLogo?: string;
+  companyStripeAccountId?: string;
   message: string;
   serviceItems: Array<{
     title: string;
@@ -69,6 +72,10 @@ export default function CustomerQuoteDetailsPage({
   const [processing, setProcessing] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<string | null>(null);
 
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentProposal, setPaymentProposal] = useState<Proposal | null>(null);
+
   const router = useRouter();
   const { firebaseUser } = useAuth();
 
@@ -92,6 +99,8 @@ export default function CustomerQuoteDetailsPage({
     try {
       if (!firebaseUser) return;
 
+      console.log('[Frontend] Fetching quote details for:', { uid, quoteId });
+
       const token = await firebaseUser.getIdToken();
       const response = await fetch(`/api/user/${uid}/quotes/received/${quoteId}`, {
         headers: {
@@ -99,14 +108,22 @@ export default function CustomerQuoteDetailsPage({
         },
       });
 
+      console.log('[Frontend] Quote details API response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('[Frontend] Quote details loaded successfully:', data);
         setQuote(data.quote);
       } else {
-        console.error('Fehler beim Laden der Quote-Details');
+        const errorData = await response.json();
+        console.error(
+          '[Frontend] Fehler beim Laden der Quote-Details:',
+          response.status,
+          errorData
+        );
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Quote-Details:', error);
+      console.error('[Frontend] Fehler beim Laden der Quote-Details:', error);
     } finally {
       setLoading(false);
     }
@@ -118,6 +135,22 @@ export default function CustomerQuoteDetailsPage({
 
       if (!firebaseUser) return;
 
+      if (action === 'accept') {
+        // Find the proposal to accept
+        const proposal = quote?.proposals?.find(p => p.companyUid === proposalId);
+        if (!proposal) {
+          alert('Angebot nicht gefunden');
+          return;
+        }
+
+        // Open payment modal instead of directly accepting
+        setPaymentProposal(proposal);
+        setShowPaymentModal(true);
+        setProcessing(false);
+        return;
+      }
+
+      // Handle decline action as before
       const token = await firebaseUser.getIdToken();
       const response = await fetch(`/api/user/${uid}/quotes/received/${quoteId}/respond`, {
         method: 'POST',
@@ -135,9 +168,7 @@ export default function CustomerQuoteDetailsPage({
         // Refresh quote details
         await fetchQuoteDetails();
 
-        if (action === 'accept') {
-          alert('Angebot erfolgreich angenommen!');
-        } else {
+        if (action === 'decline') {
           alert('Angebot abgelehnt.');
         }
       } else {
@@ -150,6 +181,61 @@ export default function CustomerQuoteDetailsPage({
     } finally {
       setProcessing(false);
     }
+  };
+
+  // Payment Handler Functions
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
+    try {
+      if (!firebaseUser || !paymentProposal) return;
+
+      // Call API to complete the quote → order migration
+      const token = await firebaseUser.getIdToken();
+      const response = await fetch(`/api/user/${uid}/quotes/received/${quoteId}/payment`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentIntentId,
+          proposalId: paymentProposal.companyUid,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Quote → Order migration successful:', data);
+
+        setShowPaymentModal(false);
+        setPaymentProposal(null);
+
+        // Refresh quote details to show new status
+        await fetchQuoteDetails();
+
+        alert(`Zahlung erfolgreich! Auftrag wurde erstellt: ${data.orderId}`);
+
+        // Redirect to orders page
+        router.push(`/dashboard/user/${uid}/orders`);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Fehler bei der Auftragsverarbeitung');
+      }
+    } catch (error) {
+      console.error('❌ Payment success handling failed:', error);
+      handlePaymentError(error instanceof Error ? error.message : 'Unbekannter Fehler');
+    }
+  };
+
+  const handlePaymentError = (error: string) => {
+    console.error('❌ Payment error:', error);
+    alert(`Zahlungsfehler: ${error}`);
+    setShowPaymentModal(false);
+    setPaymentProposal(null);
+  };
+
+  const handlePaymentModalClose = () => {
+    setShowPaymentModal(false);
+    setPaymentProposal(null);
   };
 
   const formatDate = (dateString: string | any) => {
@@ -293,7 +379,9 @@ export default function CustomerQuoteDetailsPage({
                       Standort
                     </div>
                     <p className="text-gray-900 font-medium">
-                      {quote.location.address || quote.location}
+                      {typeof quote.location === 'string'
+                        ? quote.location
+                        : quote.location.address || 'Standort angegeben'}
                     </p>
                   </div>
                 )}
@@ -469,8 +557,8 @@ export default function CustomerQuoteDetailsPage({
                             disabled={processing}
                             className="flex-1 bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg flex items-center justify-center disabled:opacity-50"
                           >
-                            <FiCheck className="mr-2 h-4 w-4" />
-                            Angebot annehmen
+                            <FiCreditCard className="mr-2 h-4 w-4" />
+                            Angebot bezahlen
                           </button>
                           <button
                             onClick={() => handleProposalAction(proposal.companyUid, 'decline')}
@@ -498,6 +586,26 @@ export default function CustomerQuoteDetailsPage({
           </div>
         </div>
       </div>
+
+      {/* Quote Payment Modal */}
+      {showPaymentModal && paymentProposal && quote && (
+        <QuotePaymentModal
+          isOpen={showPaymentModal}
+          onClose={handlePaymentModalClose}
+          onSuccess={handlePaymentSuccess}
+          onError={handlePaymentError}
+          quoteId={quoteId}
+          proposalId={paymentProposal.companyUid}
+          quoteTitle={quote.title}
+          quoteDescription={quote.description}
+          proposalAmount={paymentProposal.totalAmount}
+          proposalCurrency={paymentProposal.currency}
+          companyName={paymentProposal.companyName || 'Unbekanntes Unternehmen'}
+          companyStripeAccountId={paymentProposal.companyStripeAccountId || ''}
+          customerFirebaseId={uid}
+          customerStripeId={undefined} // Will be created if needed
+        />
+      )}
     </div>
   );
 }

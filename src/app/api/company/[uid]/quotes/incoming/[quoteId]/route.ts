@@ -40,7 +40,7 @@ export async function GET(
     const projectData = projectDoc.data();
 
     // Get customer information based on customerUid
-    let customerInfo = null;
+    let customerInfo: any = null;
 
     if (projectData?.customerUid) {
       try {
@@ -49,30 +49,34 @@ export async function GET(
 
         if (userDoc.exists) {
           const userData = userDoc.data();
-          customerInfo = {
-            name:
-              userData.companyName ||
-              userData.firstName + ' ' + userData.lastName ||
-              'Unbekannter Kunde',
-            type: userData.user_type === 'firma' ? 'company' : 'user',
-            email: userData.email,
-            phone: userData.phone,
-            avatar: userData.avatar || null,
-            uid: userDoc.id,
-          };
+          if (userData) {
+            customerInfo = {
+              name:
+                userData.companyName ||
+                userData.firstName + ' ' + userData.lastName ||
+                'Unbekannter Kunde',
+              type: userData.user_type === 'firma' ? 'company' : 'user',
+              email: userData.email,
+              phone: userData.phone,
+              avatar: userData.avatar || null,
+              uid: userDoc.id,
+            };
+          }
         } else {
           // Try companies collection if not found in users
           const companyDoc = await db.collection('companies').doc(projectData.customerUid).get();
           if (companyDoc.exists) {
             const companyData = companyDoc.data();
-            customerInfo = {
-              name: companyData.companyName || 'Unbekanntes Unternehmen',
-              type: 'company',
-              email: companyData.email,
-              phone: companyData.phone,
-              avatar: companyData.logo || null,
-              uid: companyDoc.id,
-            };
+            if (companyData) {
+              customerInfo = {
+                name: companyData.companyName || 'Unbekanntes Unternehmen',
+                type: 'company',
+                email: companyData.email,
+                phone: companyData.phone,
+                avatar: companyData.logo || null,
+                uid: companyDoc.id,
+              };
+            }
           }
         }
       } catch (error) {
@@ -96,7 +100,7 @@ export async function GET(
     }
 
     // Build budget information from various budget fields
-    let budgetInfo = null;
+    let budgetInfo: any = null;
     let budgetRangeText = 'Nicht angegeben';
 
     if (projectData?.budgetAmount && projectData.budgetAmount > 0) {
@@ -261,19 +265,21 @@ export async function PATCH(
 
       // Send Bell-Notification to customer about new proposal
       try {
-        await ProjectNotificationService.createNewProposalNotification(
-          quoteId, // projectId
-          projectData.customerUid, // customerUid
-          uid, // companyUid
-          {
-            customerName: projectData.customerName || 'Kunde',
-            companyName: companyData?.companyName || 'Unbekanntes Unternehmen',
-            subcategory: projectData.subcategory || projectData.title || 'Projekt',
-            proposedPrice: proposal.estimatedPrice,
-            proposedTimeline: proposal.timeline,
-            message: proposal.message,
-          }
-        );
+        if (projectData) {
+          await ProjectNotificationService.createNewProposalNotification(
+            quoteId, // projectId
+            projectData.customerUid, // customerUid
+            uid, // companyUid
+            {
+              customerName: projectData.customerName || 'Kunde',
+              companyName: companyData?.companyName || 'Unbekanntes Unternehmen',
+              subcategory: projectData.subcategory || projectData.title || 'Projekt',
+              proposedPrice: proposal.estimatedPrice,
+              proposedTimeline: proposal.timeline,
+              message: proposal.message,
+            }
+          );
+        }
         console.log(`✅ Bell-Notification gesendet für neues Angebot: Projekt ${quoteId}`);
       } catch (notificationError) {
         console.error('❌ Fehler beim Senden der Bell-Notification:', notificationError);
