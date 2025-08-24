@@ -78,7 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Get all active project requests
       projectRequestsSnapshot = await db
         .collection('project_requests')
-        .where('status', 'in', ['open', 'responded', 'accepted', 'active'])
+        .where('status', 'in', ['open', 'responded', 'accepted', 'active', 'payment_pending'])
         .get();
 
       console.log(
@@ -197,7 +197,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             }
           } else {
             // Customer not found in users collection
-            console.log('[Incoming Quotes API] Customer not found in users collection:', projectData.customerUid);
+            console.log(
+              '[Incoming Quotes API] Customer not found in users collection:',
+              projectData.customerUid
+            );
           }
         } catch (error) {
           console.error('[Incoming Quotes API] Error fetching customer data:', error);

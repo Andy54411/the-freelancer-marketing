@@ -80,8 +80,20 @@ export async function GET(
 
     // Enhance proposals with company information
     const enhancedProposals: any[] = [];
+    console.log(
+      '[User Quote Detail API] Processing proposals:',
+      projectData?.proposals?.length || 0
+    );
+
     if (projectData?.proposals) {
-      for (const proposal of projectData.proposals) {
+      for (let i = 0; i < projectData.proposals.length; i++) {
+        const proposal = projectData.proposals[i];
+        console.log(`[User Quote Detail API] Processing proposal ${i + 1}:`, {
+          companyUid: proposal.companyUid,
+          status: proposal.status,
+          price: proposal.price,
+        });
+
         // Get company information
         let companyInfo = {
           companyName: 'Unbekanntes Unternehmen',
@@ -91,34 +103,32 @@ export async function GET(
         };
 
         try {
-          // First try users collection
+          // Try users collection for company data
+          console.log(`[User Quote Detail API] Looking up company: ${proposal.companyUid}`);
           const companyDoc = await db.collection('users').doc(proposal.companyUid).get();
           if (companyDoc.exists) {
             const companyData = companyDoc.data();
+            console.log(`[User Quote Detail API] Found company data:`, {
+              companyName: companyData?.companyName,
+              firstName: companyData?.firstName,
+              lastName: companyData?.lastName,
+              email: companyData?.email,
+            });
             companyInfo = {
-              companyName: companyData?.companyName || 'Unbekanntes Unternehmen',
+              companyName:
+                companyData?.companyName ||
+                (companyData?.firstName && companyData?.lastName
+                  ? `${companyData.firstName} ${companyData.lastName}`
+                  : 'Unbekanntes Unternehmen'),
               companyEmail: companyData?.email || null,
               companyPhone: companyData?.phone || null,
-              companyLogo: companyData?.logo || null,
+              companyLogo: companyData?.logo || companyData?.avatar || null,
             };
           } else {
-            // Try users collection
-            const userDoc = await db.collection('users').doc(proposal.companyUid).get();
-            if (userDoc.exists) {
-              const userData = userDoc.data();
-              companyInfo = {
-                companyName:
-                  userData?.companyName ||
-                  userData?.firstName + ' ' + userData?.lastName ||
-                  'Unbekanntes Unternehmen',
-                companyEmail: userData?.email || null,
-                companyPhone: userData?.phone || null,
-                companyLogo: userData?.avatar || null,
-              };
-            }
+            console.log(`[User Quote Detail API] Company not found: ${proposal.companyUid}`);
           }
         } catch (error) {
-          console.error('Fehler beim Laden der Company-Daten:', error);
+          console.error('❌ [User Quote Detail API] Fehler beim Laden der Company-Daten:', error);
         }
 
         enhancedProposals.push({
@@ -130,8 +140,15 @@ export async function GET(
               ? new Date(proposal.submittedAt).toISOString()
               : new Date().toISOString(),
         });
+
+        console.log(`[User Quote Detail API] Enhanced proposal ${i + 1}:`, {
+          companyName: companyInfo.companyName,
+          status: proposal.status,
+        });
       }
     }
+
+    console.log(`[User Quote Detail API] Total enhanced proposals: ${enhancedProposals.length}`);
 
     // Build budget information
     let budgetRangeText = 'Nicht angegeben';
@@ -174,7 +191,9 @@ export async function GET(
       quote,
     });
   } catch (error) {
-    console.error('Fehler beim Laden der Quote-Details:', error);
+    console.error('❌ [User Quote Detail API] Fehler beim Laden der Quote-Details:', error);
+    console.error('❌ [User Quote Detail API] Error stack:', error.stack);
+    console.error('❌ [User Quote Detail API] Error message:', error.message);
     return NextResponse.json({ error: 'Fehler beim Laden der Quote-Details' }, { status: 500 });
   }
 }

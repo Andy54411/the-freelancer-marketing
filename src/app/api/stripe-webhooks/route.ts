@@ -673,6 +673,187 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Check if this is a quote payment based on metadata
+        const quotePaymentType = paymentIntentSucceeded.metadata?.type;
+
+        if (quotePaymentType === 'quote_payment') {
+          console.log(`[WEBHOOK LOG] Processing quote payment: ${paymentIntentSucceeded.id}`);
+
+          // Quote payment - delegate to the existing API route
+          const quoteId = paymentIntentSucceeded.metadata?.quote_id;
+          const proposalId = paymentIntentSucceeded.metadata?.proposal_id;
+          const customerUid = paymentIntentSucceeded.metadata?.customerUid;
+
+          if (!quoteId || !proposalId || !customerUid) {
+            console.error(
+              `[WEBHOOK ERROR] Quote payment missing metadata: quoteId=${quoteId}, proposalId=${proposalId}, customerUid=${customerUid}`
+            );
+            return NextResponse.json({
+              received: true,
+              message: 'Quote payment metadata incomplete.',
+            });
+          }
+
+          try {
+            // Handle quote -> order conversion directly in webhook
+            const projectRef = db.collection('project_requests').doc(quoteId);
+            const projectDoc = await projectRef.get();
+
+            if (!projectDoc.exists) {
+              throw new Error(`Quote ${quoteId} not found`);
+            }
+
+            const projectData = projectDoc.data();
+
+            if (!projectData) {
+              throw new Error(`Quote ${quoteId} has no data`);
+            }
+
+            // Find the proposal
+            const proposals = projectData?.proposals || [];
+            let proposal: any = null;
+
+            if (Array.isArray(proposals)) {
+              proposal = proposals.find((p: any) => p.companyUid === proposalId);
+            } else if (typeof proposals === 'object' && proposals !== null) {
+              // Handle object structure
+              proposal = Object.values(proposals).find(
+                (p: any) =>
+                  p.companyUid === proposalId || p.paymentIntentId === paymentIntentSucceeded.id
+              );
+            }
+
+            if (!proposal) {
+              throw new Error(`Proposal ${proposalId} not found`);
+            }
+
+            // Generate unique order ID
+            const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            // Create order in auftraege collection
+            const orderData = {
+              id: orderId,
+              customerFirebaseUid: projectData.customerUid,
+              customerEmail: projectData.customerEmail || '',
+              customerFirstName: projectData.customerName?.split(' ')[0] || '',
+              customerLastName: projectData.customerName?.split(' ').slice(1).join(' ') || '',
+              customerType: 'private',
+              kundeId: projectData.customerUid,
+              selectedAnbieterId: proposal.companyUid,
+              providerName: proposal.companyName || '',
+              anbieterStripeAccountId: proposal.companyStripeAccountId || '',
+              selectedCategory: projectData.category || projectData.serviceCategory || '',
+              selectedSubcategory: projectData.subcategory || projectData.serviceSubcategory || '',
+              projectName: projectData.title,
+              projectTitle: projectData.title,
+              description: projectData.description,
+              totalAmountPaidByBuyer: proposal.totalAmount * 100,
+              originalJobPriceInCents: proposal.totalAmount * 100,
+              applicationFeeAmountFromStripe: Math.round(proposal.totalAmount * 100 * 0.035),
+              sellerCommissionInCents: Math.round(proposal.totalAmount * 100 * 0.035),
+              paymentIntentId: paymentIntentSucceeded.id,
+              paidAt: new Date(),
+              jobCountry: projectData.location?.country || 'DE',
+              jobCity: projectData.location?.city || null,
+              jobPostalCode: projectData.location?.postalCode || null,
+              jobStreet: projectData.location?.street || null,
+              jobDateFrom: projectData.startDate || new Date().toISOString().split('T')[0],
+              jobDateTo: projectData.endDate || new Date().toISOString().split('T')[0],
+              jobTimePreference: projectData.timePreference || '09:00',
+              status: 'AKTIV',
+              createdAt: new Date(),
+              lastUpdated: new Date(),
+              orderDate: new Date(),
+              currency: proposal.currency || 'EUR',
+              jobDurationString: proposal.timeline || '',
+              subcategoryFormData: projectData.subcategoryFormData || {},
+              originalQuoteId: quoteId,
+              originalProposalId: proposalId,
+              approvalRequests: [],
+              timeTracking: {
+                isActive: false,
+                status: 'inactive',
+                hourlyRate: Math.round((proposal.totalAmount * 100) / 8),
+                originalPlannedHours: 8,
+                timeEntries: [],
+              },
+            };
+
+            // Save order
+            await db.collection('auftraege').doc(orderId).set(orderData);
+
+            // Update quote status
+            const updatedProposals = Array.isArray(proposals) ? [...proposals] : { ...proposals };
+
+            if (Array.isArray(updatedProposals)) {
+              updatedProposals.forEach((p, index) => {
+                if (p.companyUid === proposalId) {
+                  p.status = 'accepted';
+                  p.acceptedAt = new Date().toISOString();
+                  p.paidAt = new Date().toISOString();
+                  p.paymentIntentId = paymentIntentSucceeded.id;
+                  p.orderId = orderId;
+                } else if (p.status === 'pending') {
+                  p.status = 'declined';
+                  p.declinedAt = new Date().toISOString();
+                  p.declineReason = 'Ein anderes Angebot wurde angenommen und bezahlt';
+                }
+              });
+            } else {
+              Object.keys(updatedProposals).forEach(key => {
+                const p = updatedProposals[key];
+                if (
+                  p.companyUid === proposalId ||
+                  p.paymentIntentId === paymentIntentSucceeded.id
+                ) {
+                  updatedProposals[key] = {
+                    ...p,
+                    status: 'accepted',
+                    acceptedAt: new Date().toISOString(),
+                    paidAt: new Date().toISOString(),
+                    paymentIntentId: paymentIntentSucceeded.id,
+                    orderId: orderId,
+                    companyUid: proposalId,
+                  };
+                } else if (p.status === 'pending') {
+                  updatedProposals[key] = {
+                    ...p,
+                    status: 'declined',
+                    declinedAt: new Date().toISOString(),
+                    declineReason: 'Ein anderes Angebot wurde angenommen und bezahlt',
+                  };
+                }
+              });
+            }
+
+            await projectRef.update({
+              proposals: updatedProposals,
+              status: 'accepted',
+              acceptedProposal: proposalId,
+              acceptedAt: new Date().toISOString(),
+              paidAt: new Date().toISOString(),
+              paymentIntentId: paymentIntentSucceeded.id,
+              orderId: orderId,
+              updatedAt: new Date().toISOString(),
+            });
+
+            console.log(
+              `[WEBHOOK LOG] Quote payment processed successfully for quote ${quoteId}, created order ${orderId}`
+            );
+
+            return NextResponse.json({
+              received: true,
+              message: `Quote payment processed for quote ${quoteId}, order ${orderId} created`,
+            });
+          } catch (error) {
+            console.error(`[WEBHOOK ERROR] Quote payment processing failed:`, error);
+            return NextResponse.json({
+              received: true,
+              message: 'Quote payment processing failed.',
+            });
+          }
+        }
+
         // Handle regular order payments
         const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
         const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;

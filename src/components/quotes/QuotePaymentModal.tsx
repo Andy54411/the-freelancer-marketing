@@ -13,6 +13,7 @@ import {
   FiUser,
   FiDollarSign,
 } from 'react-icons/fi';
+import { useAuth } from '@/contexts/AuthContext';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -28,7 +29,6 @@ interface QuotePaymentModalProps {
   proposalAmount: number;
   proposalCurrency: string;
   companyName: string;
-  companyStripeAccountId: string;
   customerFirebaseId: string;
   customerStripeId?: string;
 }
@@ -151,27 +151,17 @@ function CheckoutForm({
         </div>
       </div>
 
-      {/* Payment Breakdown */}
+      {/* Payment Amount */}
       <div className="bg-gray-50 rounded-lg p-4">
         <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
           <FiDollarSign className="mr-2" size={16} />
-          Zahlungsübersicht
+          Zahlungsbetrag
         </h4>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Angebotspreis:</span>
-            <span className="font-medium">€{(paymentDetails.amount / 100).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Plattformgebühr (3,5%):</span>
-            <span className="text-red-600">-€{(paymentDetails.platformFee / 100).toFixed(2)}</span>
-          </div>
-          <div className="border-t border-gray-200 pt-2 flex justify-between font-semibold">
-            <span className="text-gray-900">Anbieter erhält:</span>
-            <span className="text-green-600">
-              €{(paymentDetails.companyReceives / 100).toFixed(2)}
-            </span>
-          </div>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Gesamtbetrag:</span>
+          <span className="text-2xl font-bold text-[#14ad9f]">
+            €{(paymentDetails.amount / 100).toFixed(2)}
+          </span>
         </div>
       </div>
 
@@ -259,10 +249,10 @@ export default function QuotePaymentModal({
   proposalAmount,
   proposalCurrency = 'eur',
   companyName,
-  companyStripeAccountId,
   customerFirebaseId,
   customerStripeId,
 }: QuotePaymentModalProps) {
+  const { firebaseUser } = useAuth();
   const [clientSecret, setClientSecret] = useState<string>('');
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
@@ -280,12 +270,18 @@ export default function QuotePaymentModal({
     setError('');
 
     try {
+      if (!firebaseUser) {
+        throw new Error('Benutzer nicht authentifiziert');
+      }
+
+      const token = await firebaseUser.getIdToken();
+
       console.log('🚀 Creating Quote Payment Intent:', {
         quoteId,
         proposalId,
         quoteTitle,
         proposalAmount,
-        companyStripeAccountId,
+        companyName,
       });
 
       const response = await fetch(
@@ -294,6 +290,7 @@ export default function QuotePaymentModal({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             proposalId,
@@ -301,7 +298,6 @@ export default function QuotePaymentModal({
             quoteDescription,
             amount: proposalAmount,
             currency: proposalCurrency,
-            companyStripeAccountId,
             companyName,
             customerFirebaseId,
             customerStripeId,

@@ -601,7 +601,6 @@ export default function CustomerQuoteDetailsPage({
           proposalAmount={paymentProposal.totalAmount}
           proposalCurrency={paymentProposal.currency}
           companyName={paymentProposal.companyName || 'Unbekanntes Unternehmen'}
-          companyStripeAccountId={paymentProposal.companyStripeAccountId || ''}
           customerFirebaseId={uid}
           customerStripeId={undefined} // Will be created if needed
         />
