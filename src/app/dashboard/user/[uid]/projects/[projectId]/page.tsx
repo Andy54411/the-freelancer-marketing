@@ -44,7 +44,13 @@ interface ProjectRequest {
   isActive: boolean;
   urgency: 'low' | 'medium' | 'high';
   requiredSkills: string[];
-  status: 'open' | 'in_progress' | 'completed' | 'cancelled' | 'directly_assigned';
+  status:
+    | 'open'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled'
+    | 'directly_assigned'
+    | 'payment_pending';
   customerUid: string;
   customerEmail: string;
   proposals: Proposal[];
@@ -160,6 +166,17 @@ const ProjectDetailPage: React.FC = () => {
           // Falls proposals als Objekt gespeichert sind, konvertiere zu Array
           proposalsToProcess = Object.values(data.proposals);
           console.log('🔄 Converted proposals object to array:', proposalsToProcess);
+
+          // Filtere nur echte Proposals (nicht payment_pending Einträge)
+          proposalsToProcess = proposalsToProcess.filter(
+            proposal =>
+              proposal &&
+              typeof proposal === 'object' &&
+              proposal.status !== 'payment_pending' &&
+              !proposal.paymentIntentId &&
+              (proposal.providerId || proposal.companyUid || proposal.providerName)
+          );
+          console.log('🔍 Filtered real proposals:', proposalsToProcess);
         } else {
           proposalsToProcess = [];
           console.log('⚠️ No proposals found or invalid format');
@@ -171,18 +188,28 @@ const ProjectDetailPage: React.FC = () => {
           id: projectDocSnap.id,
           title: data.title || 'Unbenanntes Projekt',
           description: data.description || '',
-          category: data.category || '',
-          subcategory: data.subcategory || '',
-          budgetAmount: data.budgetAmount,
+          category: data.category || data.serviceCategory || '',
+          subcategory: data.subcategory || data.serviceSubcategory || '',
+          budgetAmount: data.budgetAmount || data.budget,
           maxBudget: data.maxBudget,
           budgetType: data.budgetType || 'negotiable',
-          timeline: data.timeline || '',
+          timeline: data.timeline || data.timeframe || '',
           startDate: data.startDate || undefined,
           endDate: data.endDate || undefined,
           preferredDate: data.preferredDate || undefined,
-          location: data.location || '',
+          location: (() => {
+            const location = data.location;
+            if (typeof location === 'object' && location?.type === 'tbd') {
+              return 'Wird noch festgelegt';
+            } else if (typeof location === 'object' && location?.address) {
+              return location.address;
+            } else if (typeof location === 'string') {
+              return location;
+            }
+            return 'Nicht angegeben';
+          })(),
           isRemote: data.isRemote || false,
-          isActive: data.isActive || true,
+          isActive: data.isActive !== false, // Default true
           urgency: data.urgency || 'medium',
           requiredSkills: data.requiredSkills || [],
           status: data.status || 'open',
@@ -199,8 +226,12 @@ const ProjectDetailPage: React.FC = () => {
           subcategoryData: data.subcategoryData || {},
           // Neue Felder für direkte Zuweisung
           selectedProviders: data.selectedProviders || [],
-          hasSelectedProviders: data.hasSelectedProviders || false,
-          isDirectAssignment: data.isDirectAssignment || false,
+          hasSelectedProviders:
+            data.hasSelectedProviders ||
+            (data.selectedProviders && data.selectedProviders.length > 0),
+          isDirectAssignment:
+            data.isDirectAssignment ||
+            (data.selectedProviders && data.selectedProviders.length > 0),
           isPublic: data.isPublic !== false, // Default true wenn nicht explizit false
         };
 
@@ -411,6 +442,10 @@ const ProjectDetailPage: React.FC = () => {
     switch (status) {
       case 'open':
         return 'bg-green-100 text-green-800';
+      case 'payment_pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'directly_assigned':
+        return 'bg-purple-100 text-purple-800';
       case 'in_progress':
         return 'bg-blue-100 text-blue-800';
       case 'completed':
@@ -518,7 +553,13 @@ const ProjectDetailPage: React.FC = () => {
                   ? 'In Bearbeitung'
                   : project.status === 'completed'
                     ? 'Abgeschlossen'
-                    : 'Abgebrochen'}
+                    : project.status === 'cancelled'
+                      ? 'Abgebrochen'
+                      : project.status === 'payment_pending'
+                        ? 'Zahlung ausstehend'
+                        : project.status === 'directly_assigned'
+                          ? 'Direkt zugewiesen'
+                          : 'Unbekannt'}
             </Badge>
             <Badge className={`${getUrgencyColor(project.urgency)} border-current`}>
               {project.urgency === 'high'
