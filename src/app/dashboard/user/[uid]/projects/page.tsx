@@ -37,16 +37,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { db } from '@/firebase/clients';
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  orderBy,
-  getDocs,
-  doc,
-  deleteDoc,
-} from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Gemini } from '@/components/logos';
@@ -151,8 +142,12 @@ const ProjectsPage: React.FC = () => {
             preferredDate: data.preferredDate || undefined,
             tasks: [],
             proposals: data.proposals || [],
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
+            createdAt: data.createdAt?.toDate
+              ? data.createdAt.toDate()
+              : new Date(data.createdAt || Date.now()),
+            updatedAt: data.updatedAt?.toDate
+              ? data.updatedAt.toDate()
+              : new Date(data.updatedAt || data.createdAt || Date.now()),
           };
         });
 
@@ -516,9 +511,9 @@ const ProjectsPage: React.FC = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Projekt löschen</AlertDialogTitle>
               <AlertDialogDescription>
-                Sind Sie sicher, dass Sie das Projekt "{deleteDialog.projectTitle}" löschen möchten?
-                Diese Aktion kann nicht rückgängig gemacht werden. Alle Angebote und Daten zu diesem
-                Projekt gehen verloren.
+                Sind Sie sicher, dass Sie das Projekt &quot;{deleteDialog.projectTitle}&quot;
+                dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden. Alle
+                Angebote und Daten zu diesem Projekt gehen verloren.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

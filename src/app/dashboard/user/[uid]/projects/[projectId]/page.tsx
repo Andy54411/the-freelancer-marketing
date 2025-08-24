@@ -8,8 +8,6 @@ import {
   Clock,
   Euro,
   MapPin,
-  User,
-  Building,
   Star,
   MessageSquare,
   CheckCircle2,
@@ -17,13 +15,14 @@ import {
   AlertCircle,
   Phone,
   Mail,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { db } from '@/firebase/clients';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -85,6 +84,15 @@ interface Proposal {
   availability: string;
   submittedAt: Date;
   status: 'pending' | 'accepted' | 'rejected';
+  totalAmount?: number;
+  timeline?: string;
+  serviceItems?: any[];
+  // Zusätzliche Company-Informationen
+  companyDescription?: string;
+  companyIndustry?: string;
+  companyExperience?: string;
+  companySkills?: string[];
+  companyLocation?: string;
 }
 
 const ProjectDetailPage: React.FC = () => {
@@ -150,11 +158,147 @@ const ProjectDetailPage: React.FC = () => {
           customerUid: data.customerUid || '',
           customerEmail: data.customerEmail || '',
           proposals: data.proposals || [],
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate
+            ? data.createdAt.toDate()
+            : new Date(data.createdAt || Date.now()),
+          updatedAt: data.updatedAt?.toDate
+            ? data.updatedAt.toDate()
+            : new Date(data.updatedAt || data.createdAt || Date.now()),
           viewCount: data.viewCount || 0,
           subcategoryData: data.subcategoryData || {},
         };
+
+        // Erweitere Proposals mit Company-Daten
+        const enhancedProposals = await Promise.all(
+          (data.proposals || []).map(async (proposal: any) => {
+            try {
+              // Sichere providerId Behandlung
+              const providerId =
+                proposal.providerId || proposal.companyId || proposal.companyUid || proposal.uid;
+
+              if (!providerId) {
+                console.warn('Proposal ohne providerId gefunden:', proposal);
+                return {
+                  id: proposal.id || `unknown_${Date.now()}`,
+                  providerId: 'unknown',
+                  providerName: proposal.providerName || 'Unbekannt',
+                  providerEmail: proposal.providerEmail || '',
+                  providerPhone: proposal.providerPhone || '',
+                  providerAvatar: proposal.providerAvatar || '',
+                  providerRating: proposal.providerRating || 0,
+                  providerReviewCount: proposal.providerReviewCount || 0,
+                  message: proposal.message || 'Keine Nachricht',
+                  proposedPrice: proposal.proposedPrice || proposal.totalAmount || 0,
+                  proposedTimeline:
+                    proposal.proposedTimeline || proposal.timeline || 'Nicht angegeben',
+                  availability: proposal.availability || 'Nicht angegeben',
+                  submittedAt: proposal.submittedAt?.toDate
+                    ? proposal.submittedAt.toDate()
+                    : proposal.submittedAt
+                      ? new Date(proposal.submittedAt)
+                      : new Date(),
+                  status: proposal.status || 'pending',
+                  totalAmount: proposal.totalAmount || proposal.proposedPrice || 0,
+                  timeline: proposal.timeline || proposal.proposedTimeline || 'Nicht angegeben',
+                  serviceItems: proposal.serviceItems || [],
+                };
+              }
+
+              // Lade Company-Daten
+              const companyDocRef = doc(db, 'companies', providerId);
+              const companyDoc = await getDoc(companyDocRef);
+              const companyData = companyDoc.exists() ? companyDoc.data() : {};
+
+              const enhancedProposal = {
+                id: proposal.id || `${providerId}_${Date.now()}`,
+                providerId: providerId,
+                providerName:
+                  companyData.companyName ||
+                  companyData.businessName ||
+                  proposal.providerName ||
+                  'Unbekannt',
+                providerEmail: companyData.email || proposal.providerEmail || '',
+                providerPhone: companyData.phone || proposal.providerPhone || '',
+                providerAvatar:
+                  companyData.profilePictureURL ||
+                  companyData.companyLogo ||
+                  companyData.logoUrl ||
+                  companyData.avatar ||
+                  companyData.profileImage ||
+                  proposal.providerAvatar ||
+                  '',
+                providerRating: companyData.averageRating || proposal.providerRating || 0,
+                providerReviewCount: companyData.reviewCount || proposal.providerReviewCount || 0,
+                message: proposal.message || 'Keine Nachricht',
+                proposedPrice: proposal.proposedPrice || proposal.totalAmount || 0,
+                proposedTimeline:
+                  proposal.proposedTimeline ||
+                  proposal.timeline ||
+                  proposal.estimatedDuration ||
+                  (proposal.serviceItems && proposal.serviceItems.length > 0
+                    ? 'Nach Vereinbarung'
+                    : 'Flexibel'),
+                availability:
+                  proposal.availability ||
+                  proposal.availableFrom ||
+                  (companyData.responseTime
+                    ? `Antwort innerhalb ${companyData.responseTime}h`
+                    : 'Sofort verfügbar'),
+                submittedAt: proposal.submittedAt?.toDate
+                  ? proposal.submittedAt.toDate()
+                  : proposal.submittedAt
+                    ? new Date(proposal.submittedAt)
+                    : new Date(),
+                status: proposal.status || 'pending',
+                totalAmount: proposal.totalAmount || proposal.proposedPrice || 0,
+                timeline: proposal.timeline || proposal.proposedTimeline || 'Flexibel',
+                serviceItems: proposal.serviceItems || [],
+                // Zusätzliche Company-Informationen
+                companyDescription: companyData.publicDescription || companyData.description || '',
+                companyIndustry: companyData.industry || companyData.selectedCategory || '',
+                companyExperience: companyData.yearsOfExperience || '',
+                companySkills: companyData.skills || [],
+                companyLocation: companyData.city || companyData.location || '',
+              };
+              return enhancedProposal;
+            } catch (error) {
+              console.error('Fehler beim Laden der Company-Daten für Proposal:', error);
+              // Fallback für defekte Proposals
+              const fallbackProviderId =
+                proposal.providerId ||
+                proposal.companyId ||
+                proposal.companyUid ||
+                proposal.uid ||
+                'unknown';
+              return {
+                id: proposal.id || `${fallbackProviderId}_${Date.now()}`,
+                providerId: fallbackProviderId,
+                providerName: proposal.providerName || 'Unbekannt',
+                providerEmail: proposal.providerEmail || '',
+                providerPhone: proposal.providerPhone || '',
+                providerAvatar: proposal.providerAvatar || '',
+                providerRating: proposal.providerRating || 0,
+                providerReviewCount: proposal.providerReviewCount || 0,
+                message: proposal.message || 'Keine Nachricht',
+                proposedPrice: proposal.proposedPrice || proposal.totalAmount || 0,
+                proposedTimeline:
+                  proposal.proposedTimeline || proposal.timeline || 'Nicht angegeben',
+                availability: proposal.availability || 'Nicht angegeben',
+                submittedAt: proposal.submittedAt?.toDate
+                  ? proposal.submittedAt.toDate()
+                  : proposal.submittedAt
+                    ? new Date(proposal.submittedAt)
+                    : new Date(),
+                status: proposal.status || 'pending',
+                totalAmount: proposal.totalAmount || proposal.proposedPrice || 0,
+                timeline: proposal.timeline || proposal.proposedTimeline || 'Nicht angegeben',
+                serviceItems: proposal.serviceItems || [],
+              };
+            }
+          })
+        );
+
+        projectData.proposals = enhancedProposals;
 
         setProject(projectData);
         setLoading(false);
@@ -168,6 +312,51 @@ const ProjectDetailPage: React.FC = () => {
 
     loadProjectDetails();
   }, [uid, user, projectId]);
+
+  // Realtime-Listener für Live-Updates der Statistiken
+  useEffect(() => {
+    if (!projectId) return;
+
+    console.log('🔴 Setting up realtime listener for project statistics...');
+
+    const projectDocRef = doc(db, 'project_requests', projectId);
+    const unsubscribe = onSnapshot(
+      projectDocRef,
+      docSnapshot => {
+        if (docSnapshot.exists()) {
+          const updatedData = docSnapshot.data();
+          console.log('📊 Realtime update received:', {
+            viewCount: updatedData.viewCount,
+            proposalsCount: updatedData.proposals?.length || 0,
+          });
+
+          // Aktualisiere NUR viewCount und updatedAt
+          // Lasse proposals völlig unberührt (behält enhancedProposals)
+          setProject(prev => {
+            if (!prev) return prev;
+
+            return {
+              ...prev,
+              viewCount: updatedData.viewCount || 0,
+              updatedAt: updatedData.updatedAt?.toDate
+                ? updatedData.updatedAt.toDate()
+                : new Date(updatedData.updatedAt || Date.now()),
+              // proposals bleiben unverändert (enhancedProposals bleiben erhalten)
+            };
+          });
+        }
+      },
+      error => {
+        console.error('❌ Realtime listener error:', error);
+      }
+    );
+
+    // Cleanup function
+    return () => {
+      console.log('🟡 Cleaning up realtime listener...');
+      unsubscribe();
+    };
+  }, [projectId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -505,9 +694,9 @@ const ProjectDetailPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {project.proposals.map(proposal => (
+                      {project.proposals.map((proposal, index) => (
                         <div
-                          key={proposal.id}
+                          key={proposal.id || proposal.companyUid || index}
                           className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                         >
                           <div className="flex items-start justify-between mb-3">
@@ -515,24 +704,46 @@ const ProjectDetailPage: React.FC = () => {
                               <Avatar className="h-10 w-10">
                                 <AvatarImage src={proposal.providerAvatar} />
                                 <AvatarFallback>
-                                  {proposal.providerName.charAt(0).toUpperCase()}
+                                  {(proposal.providerName || 'A').charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
                                 <h4 className="font-semibold text-gray-900">
-                                  {proposal.providerName}
+                                  {proposal.providerName || 'Anbieter'}
                                 </h4>
                                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                                  {proposal.providerRating && (
-                                    <div className="flex items-center gap-1">
-                                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                      <span>{proposal.providerRating.toFixed(1)}</span>
-                                      {proposal.providerReviewCount && (
-                                        <span>({proposal.providerReviewCount} Bewertungen)</span>
-                                      )}
-                                    </div>
+                                  {proposal.providerRating !== undefined &&
+                                    proposal.providerRating !== null && (
+                                      <div className="flex items-center gap-1">
+                                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                        <span>{proposal.providerRating.toFixed(1)}</span>
+                                        {proposal.providerReviewCount > 0 && (
+                                          <span>({proposal.providerReviewCount} Bewertungen)</span>
+                                        )}
+                                        {proposal.providerReviewCount === 0 && (
+                                          <span>(Keine Bewertungen)</span>
+                                        )}
+                                      </div>
+                                    )}
+                                  {(proposal.providerRating === undefined ||
+                                    proposal.providerRating === null) && (
+                                    <span className="text-gray-500">Noch keine Bewertungen</span>
                                   )}
                                 </div>
+                                {/* Zusätzliche Company-Informationen */}
+                                {(proposal.companyIndustry || proposal.companyLocation) && (
+                                  <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                    {proposal.companyIndustry && (
+                                      <span>{proposal.companyIndustry}</span>
+                                    )}
+                                    {proposal.companyIndustry && proposal.companyLocation && (
+                                      <span>•</span>
+                                    )}
+                                    {proposal.companyLocation && (
+                                      <span>{proposal.companyLocation}</span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -553,7 +764,11 @@ const ProjectDetailPage: React.FC = () => {
                             <div className="flex items-center gap-2 text-sm">
                               <Euro className="h-4 w-4 text-gray-500" />
                               <span className="font-semibold">
-                                {proposal.proposedPrice.toLocaleString('de-DE', {
+                                {(
+                                  proposal.proposedPrice ||
+                                  proposal.totalAmount ||
+                                  0
+                                ).toLocaleString('de-DE', {
                                   style: 'currency',
                                   currency: 'EUR',
                                 })}
@@ -561,7 +776,11 @@ const ProjectDetailPage: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <Clock className="h-4 w-4 text-gray-500" />
-                              <span>{proposal.proposedTimeline}</span>
+                              <span>
+                                {proposal.proposedTimeline ||
+                                  proposal.timeline ||
+                                  'Nicht angegeben'}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
                               <Calendar className="h-4 w-4 text-gray-500" />
@@ -571,50 +790,75 @@ const ProjectDetailPage: React.FC = () => {
 
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4 text-sm text-gray-600">
-                              {proposal.providerEmail && (
+                              {/* Kontaktdaten werden nur nach Annahme des Angebots angezeigt */}
+                              {proposal.status === 'accepted' && proposal.providerEmail && (
                                 <div className="flex items-center gap-1">
                                   <Mail className="h-4 w-4" />
                                   <span>{proposal.providerEmail}</span>
                                 </div>
                               )}
-                              {proposal.providerPhone && (
+                              {proposal.status === 'accepted' && proposal.providerPhone && (
                                 <div className="flex items-center gap-1">
                                   <Phone className="h-4 w-4" />
                                   <span>{proposal.providerPhone}</span>
                                 </div>
                               )}
+                              {proposal.status !== 'accepted' && (
+                                <span className="text-sm text-gray-500">
+                                  Kontaktdaten verfügbar nach Annahme des Angebots
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs text-gray-500">
-                              Eingegangen am {proposal.submittedAt.toLocaleDateString('de-DE')}
+                              Eingegangen am{' '}
+                              {proposal.submittedAt
+                                ? new Date(proposal.submittedAt).toLocaleDateString('de-DE')
+                                : 'Unbekannt'}
                             </p>
                           </div>
 
-                          {proposal.status === 'pending' && (
-                            <div className="flex gap-2 mt-4">
-                              <Button
-                                size="sm"
-                                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                                onClick={() => {
-                                  // TODO: Angebot annehmen
-                                  toast.success('Funktion wird noch implementiert');
-                                }}
-                              >
-                                <CheckCircle2 className="h-4 w-4 mr-2" />
-                                Annehmen
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  // TODO: Angebot ablehnen
-                                  toast.success('Funktion wird noch implementiert');
-                                }}
-                              >
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Ablehnen
-                              </Button>
-                            </div>
-                          )}
+                          <div className="flex gap-2 mt-4">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() =>
+                                router.push(
+                                  `/dashboard/user/${uid}/quotes/received/${project.id}?proposalId=${proposal.id}`
+                                )
+                              }
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Angebot anschauen
+                            </Button>
+
+                            {proposal.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                                  onClick={() => {
+                                    // TODO: Angebot annehmen
+                                    toast.success('Funktion wird noch implementiert');
+                                  }}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                                  Annehmen
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    // TODO: Angebot ablehnen
+                                    toast.success('Funktion wird noch implementiert');
+                                  }}
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Ablehnen
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

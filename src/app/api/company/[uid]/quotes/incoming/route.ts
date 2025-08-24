@@ -65,17 +65,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    // Query for open project requests that match the company's subcategory
+    // Query for project requests that match the company's subcategory
     console.log(
       '[Incoming Quotes API] Querying project_requests for subcategory:',
       selectedSubcategory
     );
 
-    // Get project requests that match the company's subcategory and are open for bidding
+    // Get project requests that match the company's subcategory
+    // Include multiple statuses so companies can see all relevant requests:
+    // - 'open': Available for bidding
+    // - 'responded': They can bid or see their existing bid
+    // - 'accepted': If they won the project
     const projectRequestsSnapshot = await db
       .collection('project_requests')
-      .where('status', '==', 'open')
       .where('serviceSubcategory', '==', selectedSubcategory)
+      .where('status', 'in', ['open', 'responded', 'accepted'])
       .orderBy('createdAt', 'desc')
       .get();
 

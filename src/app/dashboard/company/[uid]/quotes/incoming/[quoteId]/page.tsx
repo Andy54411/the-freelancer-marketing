@@ -169,6 +169,28 @@ export default function QuoteResponsePage({
       : resolvedParams.quoteId;
   };
 
+  // View-Count erhöhen
+  const incrementViewCount = async (quoteId: string, token: string) => {
+    try {
+      const response = await fetch(`/api/quotes/${quoteId}/view`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`✅ View-Count erhöht:`, data);
+      } else {
+        console.warn('⚠️ View-Count konnte nicht erhöht werden');
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Erhöhen des View-Counts:', error);
+    }
+  };
+
   // Lade Angebots-Anfrage Details
   const fetchQuoteDetails = async () => {
     try {
@@ -189,6 +211,9 @@ export default function QuoteResponsePage({
       if (apiResponse.ok) {
         const data = await apiResponse.json();
         setQuote(data.quote);
+
+        // View-Count erhöhen (nach erfolgreichem Laden)
+        await incrementViewCount(quoteId, token);
       } else {
         console.error('Fehler beim Laden der Angebots-Anfrage');
         router.push(`/dashboard/company/${companyId}/quotes/incoming`);
@@ -225,28 +250,56 @@ export default function QuoteResponsePage({
       }
 
       const quoteId = getQuoteId();
+      const requestPayload = {
+        quoteId: quoteId,
+        action: 'respond',
+        response: dataToSend,
+      };
+
+      console.log('Sende Quote Response:', {
+        url: '/api/quotes/respond',
+        payload: requestPayload,
+        hasToken: !!token,
+      });
+
       const apiResponse = await fetch(`/api/quotes/respond`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          quoteId: quoteId,
-          action: 'respond',
-          response: dataToSend,
-        }),
+        body: JSON.stringify(requestPayload),
       });
 
+      console.log('API Response Status:', apiResponse.status);
+
       if (apiResponse.ok) {
+        const responseData = await apiResponse.json();
+        console.log('Antwort erfolgreich gesendet:', responseData);
         const companyId = getCompanyId();
         router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       } else {
-        const errorData = await apiResponse.json();
-        console.error('Fehler beim Senden der Antwort:', errorData);
+        const errorText = await apiResponse.text();
+        console.error('API Fehler Details:', {
+          status: apiResponse.status,
+          statusText: apiResponse.statusText,
+          url: apiResponse.url,
+          errorText: errorText,
+        });
+
+        try {
+          const errorData = JSON.parse(errorText);
+          console.error('Parsed Error Data:', errorData);
+        } catch (parseError) {
+          console.error('Error Response ist kein JSON:', errorText);
+        }
       }
     } catch (error) {
-      console.error('Fehler beim Senden der Antwort:', error);
+      console.error('Network/Parse Fehler beim Senden der Antwort:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     } finally {
       setSubmitting(false);
     }
@@ -504,6 +557,34 @@ export default function QuoteResponsePage({
                   <FiX className="mr-2 h-4 w-4" />
                   Ablehnen
                 </button>
+              </div>
+            )}
+
+            {quote.status === 'responded' && (
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  Angebot abgegeben
+                </div>
+                <button
+                  onClick={declineQuote}
+                  disabled={submitting}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center"
+                >
+                  <FiX className="mr-2 h-4 w-4" />
+                  Zurückziehen
+                </button>
+              </div>
+            )}
+
+            {quote.status === 'accepted' && (
+              <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                ✅ Angebot angenommen
+              </div>
+            )}
+
+            {quote.status === 'declined' && (
+              <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                ❌ Angebot abgelehnt
               </div>
             )}
           </div>
