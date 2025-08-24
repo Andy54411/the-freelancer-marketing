@@ -154,16 +154,42 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
       }
 
+      // Build budget information
+      let budgetInfo = null;
+      let budgetRangeText = 'Nicht angegeben';
+
+      if (projectData.budgetAmount && projectData.budgetAmount > 0) {
+        budgetInfo = {
+          amount: projectData.budgetAmount,
+          max: projectData.maxBudget || projectData.budgetAmount,
+          currency: 'EUR',
+          type: projectData.budgetType || 'project',
+        };
+
+        if (projectData.maxBudget && projectData.maxBudget !== projectData.budgetAmount) {
+          budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} - ${projectData.maxBudget.toLocaleString('de-DE')} €`;
+        } else {
+          budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} €`;
+        }
+      } else if (projectData.budget) {
+        // Fallback to old budget structure
+        budgetInfo = projectData.budget;
+        budgetRangeText = projectData.budget;
+      }
+
       quotes.push({
         id: doc.id,
         title: projectData.title || 'Ohne Titel',
         description: projectData.description || '',
         serviceCategory: projectData.serviceCategory || '',
         serviceSubcategory: projectData.serviceSubcategory || '',
-        projectType: projectData.projectType || 'fixed',
+        projectType: projectData.projectType || 'project',
         status: finalStatus,
-        budget: projectData.budget,
-        budgetRange: projectData.budget,
+        budget: budgetInfo,
+        budgetRange: budgetRangeText,
+        timeline: projectData.timeline,
+        startDate: projectData.startDate,
+        endDate: projectData.endDate,
         location: projectData.location,
         postalCode: projectData.postalCode,
         urgency: projectData.urgency,
@@ -171,9 +197,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         preferredStartDate: projectData.preferredStartDate,
         additionalNotes: projectData.additionalNotes,
         customer: customerInfo || {
-          name: 'Unbekannter Kunde',
-          type: 'user',
-          email: null,
+          name: projectData.customerName || 'Unbekannter Kunde',
+          type: projectData.customerType || 'user',
+          email: projectData.customerEmail || null,
           phone: null,
           avatar: null,
           uid: projectData.customerUid,

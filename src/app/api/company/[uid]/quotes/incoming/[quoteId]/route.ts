@@ -95,6 +95,29 @@ export async function GET(
       }
     }
 
+    // Build budget information from various budget fields
+    let budgetInfo = null;
+    let budgetRangeText = 'Nicht angegeben';
+
+    if (projectData?.budgetAmount && projectData.budgetAmount > 0) {
+      budgetInfo = {
+        amount: projectData.budgetAmount,
+        max: projectData.maxBudget || projectData.budgetAmount,
+        currency: 'EUR',
+        type: projectData.budgetType || 'project',
+      };
+
+      if (projectData.maxBudget && projectData.maxBudget !== projectData.budgetAmount) {
+        budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} - ${projectData.maxBudget.toLocaleString('de-DE')} €`;
+      } else {
+        budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} €`;
+      }
+    } else if (projectData?.budget) {
+      // Fallback to old budget structure
+      budgetInfo = projectData.budget;
+      budgetRangeText = projectData.budget;
+    }
+
     return NextResponse.json({
       success: true,
       quote: {
@@ -103,20 +126,40 @@ export async function GET(
         description: projectData?.description || '',
         serviceCategory: projectData?.serviceCategory || '',
         serviceSubcategory: projectData?.serviceSubcategory || '',
-        projectType: projectData?.projectType || 'fixed',
+        projectType: projectData?.projectType || 'project',
         status: finalStatus,
-        budget: projectData?.budget,
-        budgetRange: projectData?.budget,
+        budget: budgetInfo,
+        budgetRange: budgetRangeText,
+        timeline: projectData?.timeline,
+        startDate: projectData?.startDate,
+        endDate: projectData?.endDate,
         location: projectData?.location,
         postalCode: projectData?.postalCode,
         urgency: projectData?.urgency,
         estimatedDuration: projectData?.estimatedDuration,
         preferredStartDate: projectData?.preferredStartDate,
         additionalNotes: projectData?.additionalNotes,
+        // Additional project details
+        isRemote: projectData?.isRemote || false,
+        requiredSkills: projectData?.requiredSkills || [],
+        subcategoryData: projectData?.subcategoryData || null,
+        // Rich service details for display
+        serviceDetails: {
+          guestCount: projectData?.subcategoryData?.guestCount,
+          duration: projectData?.subcategoryData?.duration,
+          cuisine: projectData?.subcategoryData?.cuisine,
+          accommodation: projectData?.subcategoryData?.accommodation,
+          kitchenEquipment: projectData?.subcategoryData?.kitchenEquipment,
+          serviceType: projectData?.subcategoryData?.serviceType,
+          eventType: projectData?.subcategoryData?.eventType,
+          timeframe: projectData?.subcategoryData?.timeframe,
+          dietaryRestrictions: projectData?.subcategoryData?.dietaryRestrictions || [],
+          cuisineType: projectData?.subcategoryData?.cuisineType || [],
+        },
         customer: customerInfo || {
-          name: 'Unbekannter Kunde',
-          type: 'user',
-          email: null,
+          name: projectData?.customerName || 'Unbekannter Kunde',
+          type: projectData?.customerType || 'user',
+          email: projectData?.customerEmail || null,
           phone: null,
           avatar: null,
           uid: projectData?.customerUid,

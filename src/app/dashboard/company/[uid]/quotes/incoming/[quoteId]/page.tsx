@@ -38,8 +38,27 @@ interface QuoteRequest {
     currency: string;
   };
   budgetRange?: string; // String format like "1.000€ - 2.500€"
+  timeline?: string;
+  startDate?: string;
+  endDate?: string;
   deadline?: string;
   location?: string;
+  urgency?: string;
+  isRemote?: boolean;
+  requiredSkills?: string[];
+  subcategoryData?: any;
+  serviceDetails?: {
+    guestCount?: string;
+    duration?: string;
+    cuisine?: string;
+    accommodation?: string;
+    kitchenEquipment?: string;
+    serviceType?: string;
+    eventType?: string;
+    timeframe?: string;
+    dietaryRestrictions?: string[];
+    cuisineType?: string[];
+  };
   requirements?: string[];
   attachments?: Array<{
     name: string;
@@ -539,6 +558,60 @@ export default function QuoteResponsePage({
                   </p>
                 </div>
 
+                {quote.timeline && (
+                  <div>
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <FiCalendar className="mr-2 h-4 w-4" />
+                      Zeitrahmen
+                    </div>
+                    <p className="text-gray-900 font-medium">{quote.timeline}</p>
+                  </div>
+                )}
+
+                {(quote.startDate || quote.endDate) && (
+                  <div>
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <FiCalendar className="mr-2 h-4 w-4" />
+                      Zeitplan
+                    </div>
+                    <p className="text-gray-900 font-medium">
+                      {quote.startDate && quote.endDate
+                        ? `${new Date(quote.startDate).toLocaleDateString('de-DE')} - ${new Date(quote.endDate).toLocaleDateString('de-DE')}`
+                        : quote.startDate
+                          ? `Ab ${new Date(quote.startDate).toLocaleDateString('de-DE')}`
+                          : quote.endDate
+                            ? `Bis ${new Date(quote.endDate).toLocaleDateString('de-DE')}`
+                            : 'Nicht angegeben'}
+                    </p>
+                  </div>
+                )}
+
+                {quote.urgency && (
+                  <div>
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <FiClock className="mr-2 h-4 w-4" />
+                      Priorität
+                    </div>
+                    <p className="text-gray-900 font-medium">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          quote.urgency === 'high'
+                            ? 'bg-red-100 text-red-800'
+                            : quote.urgency === 'medium'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-green-100 text-green-800'
+                        }`}
+                      >
+                        {quote.urgency === 'high'
+                          ? 'Dringend'
+                          : quote.urgency === 'medium'
+                            ? 'Normal'
+                            : 'Niedrig'}
+                      </span>
+                    </p>
+                  </div>
+                )}
+
                 {quote.deadline && (
                   <div>
                     <div className="flex items-center text-gray-600 mb-2">
@@ -558,7 +631,156 @@ export default function QuoteResponsePage({
                     <p className="text-gray-900 font-medium">{quote.location}</p>
                   </div>
                 )}
+
+                {quote.isRemote !== undefined && (
+                  <div>
+                    <div className="flex items-center text-gray-600 mb-2">
+                      <FiMapPin className="mr-2 h-4 w-4" />
+                      Arbeitsweise
+                    </div>
+                    <p className="text-gray-900 font-medium">
+                      {quote.isRemote ? 'Remote möglich' : 'Vor Ort erforderlich'}
+                    </p>
+                  </div>
+                )}
               </div>
+
+              {/* Service-spezifische Details für Mietkoch */}
+              {quote.serviceDetails && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-md font-semibold text-gray-900 mb-4">Service-Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {quote.serviceDetails.guestCount && (
+                      <div>
+                        <div className="text-gray-600 mb-1">Gästeanzahl</div>
+                        <p className="text-gray-900 font-medium">
+                          {quote.serviceDetails.guestCount} Personen
+                        </p>
+                      </div>
+                    )}
+
+                    {quote.serviceDetails.duration && (
+                      <div>
+                        <div className="text-gray-600 mb-1">Dauer</div>
+                        <p className="text-gray-900 font-medium">
+                          {quote.serviceDetails.duration === 'halbtag'
+                            ? 'Halbtag'
+                            : quote.serviceDetails.duration === 'ganztag'
+                              ? 'Ganztag'
+                              : quote.serviceDetails.duration}
+                        </p>
+                      </div>
+                    )}
+
+                    {quote.serviceDetails.cuisine && (
+                      <div>
+                        <div className="text-gray-600 mb-1">Küche</div>
+                        <p className="text-gray-900 font-medium">{quote.serviceDetails.cuisine}</p>
+                      </div>
+                    )}
+
+                    {quote.serviceDetails.accommodation && (
+                      <div>
+                        <div className="text-gray-600 mb-1">Übernachtung</div>
+                        <p className="text-gray-900 font-medium">
+                          {quote.serviceDetails.accommodation === 'mit_übernachtung'
+                            ? 'Mit Übernachtung'
+                            : quote.serviceDetails.accommodation === 'ohne_übernachtung'
+                              ? 'Ohne Übernachtung'
+                              : quote.serviceDetails.accommodation}
+                        </p>
+                      </div>
+                    )}
+
+                    {quote.serviceDetails.kitchenEquipment && (
+                      <div>
+                        <div className="text-gray-600 mb-1">Küchenausstattung</div>
+                        <p className="text-gray-900 font-medium">
+                          {quote.serviceDetails.kitchenEquipment === 'vorhanden'
+                            ? 'Vorhanden'
+                            : quote.serviceDetails.kitchenEquipment === 'nicht_vorhanden'
+                              ? 'Nicht vorhanden'
+                              : quote.serviceDetails.kitchenEquipment}
+                        </p>
+                      </div>
+                    )}
+
+                    {quote.serviceDetails.serviceType && (
+                      <div>
+                        <div className="text-gray-600 mb-1">Service-Typ</div>
+                        <p className="text-gray-900 font-medium">
+                          {quote.serviceDetails.serviceType === 'hotel'
+                            ? 'Hotel'
+                            : quote.serviceDetails.serviceType === 'privat'
+                              ? 'Privat'
+                              : quote.serviceDetails.serviceType}
+                        </p>
+                      </div>
+                    )}
+
+                    {quote.serviceDetails.eventType && (
+                      <div>
+                        <div className="text-gray-600 mb-1">Event-Typ</div>
+                        <p className="text-gray-900 font-medium">
+                          {quote.serviceDetails.eventType}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {quote.serviceDetails.cuisineType &&
+                    quote.serviceDetails.cuisineType.length > 0 && (
+                      <div className="mt-4">
+                        <div className="text-gray-600 mb-2">Küchen-Arten</div>
+                        <div className="flex flex-wrap gap-2">
+                          {quote.serviceDetails.cuisineType.map((cuisine, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            >
+                              {cuisine}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {quote.serviceDetails.dietaryRestrictions &&
+                    quote.serviceDetails.dietaryRestrictions.length > 0 && (
+                      <div className="mt-4">
+                        <div className="text-gray-600 mb-2">Diät-Beschränkungen</div>
+                        <div className="flex flex-wrap gap-2">
+                          {quote.serviceDetails.dietaryRestrictions.map((restriction, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800"
+                            >
+                              {restriction}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {quote.requiredSkills && quote.requiredSkills.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-md font-semibold text-gray-900 mb-3">
+                    Benötigte Fähigkeiten
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {quote.requiredSkills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#14ad9f] bg-opacity-10 text-[#14ad9f]"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Anlagen */}
