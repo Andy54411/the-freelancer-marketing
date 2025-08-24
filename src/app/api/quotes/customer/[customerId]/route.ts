@@ -19,7 +19,7 @@ export async function GET(
     }
 
     console.log('🔍 [Quotes API] Querying Firestore collection "quotes"...');
-    
+
     // Abrufen aller Angebotsanfragen für diesen Kunden (ohne orderBy um Index-Probleme zu vermeiden)
     const quotesSnapshot = await db
       .collection('quotes')
@@ -37,24 +37,68 @@ export async function GET(
       };
     });
 
-    // Sortiere die Ergebnisse in JavaScript statt in Firestore
-    quotes.sort((a: { createdAt?: { toDate?: () => Date } | Date }, b: { createdAt?: { toDate?: () => Date } | Date }) => {
-      const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt as Date) || new Date(0);
-      const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt as Date) || new Date(0);
-      return bTime.getTime() - aTime.getTime();
+    // Filter out quotes with withdrawn/declined proposals or inactive status
+    const activeQuotes = quotes.filter(quote => {
+      // Skip quotes that are explicitly withdrawn or declined at quote level
+      if (
+        quote.status === 'declined' ||
+        quote.status === 'withdrawn' ||
+        quote.status === 'cancelled'
+      ) {
+        console.log(`🚫 [Quotes API] Filtering out quote ${quote.id} with status: ${quote.status}`);
+        return false;
+      }
+
+      // If quote has proposals, check if at least one is still active
+      if (quote.proposals && Array.isArray(quote.proposals)) {
+        const activeProposals = quote.proposals.filter(
+          proposal =>
+            proposal.status !== 'declined' &&
+            proposal.status !== 'withdrawn' &&
+            proposal.status !== 'cancelled'
+        );
+
+        if (activeProposals.length === 0) {
+          console.log(
+            `🚫 [Quotes API] Filtering out quote ${quote.id} - all proposals are inactive`
+          );
+          return false;
+        }
+      }
+
+      return true;
     });
 
-    console.log('✅ [Quotes API] Successfully returning', quotes.length, 'quotes');
+    console.log(
+      `✅ [Quotes API] Filtered quotes: ${quotes.length} -> ${activeQuotes.length} active quotes`
+    );
+
+    // Use activeQuotes instead of quotes
+    const finalQuotes = activeQuotes;
+
+    // Sortiere die Ergebnisse in JavaScript statt in Firestore
+    finalQuotes.sort(
+      (
+        a: { createdAt?: { toDate?: () => Date } | Date },
+        b: { createdAt?: { toDate?: () => Date } | Date }
+      ) => {
+        const aTime = a.createdAt?.toDate?.() || new Date(a.createdAt as Date) || new Date(0);
+        const bTime = b.createdAt?.toDate?.() || new Date(b.createdAt as Date) || new Date(0);
+        return bTime.getTime() - aTime.getTime();
+      }
+    );
+
+    console.log('✅ [Quotes API] Successfully returning', finalQuotes.length, 'quotes');
 
     return NextResponse.json({
       success: true,
-      quotes,
+      quotes: finalQuotes,
     });
   } catch (error) {
     console.error('💥 [Quotes API] Detailed error information:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      error: error
+      error: error,
     });
     return NextResponse.json({ error: 'Fehler beim Abrufen der Angebote' }, { status: 500 });
   }

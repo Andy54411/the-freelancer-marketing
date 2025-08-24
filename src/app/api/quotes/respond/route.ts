@@ -194,6 +194,26 @@ export async function POST(request: NextRequest) {
       case 'decline':
         updateData.status = 'declined';
         updateData.declinedAt = new Date().toISOString();
+
+        // Finde und aktualisiere das entsprechende Proposal im proposals Array
+        const existingProposalsForDecline = quoteData?.proposals || [];
+        const updatedProposalsForDecline = existingProposalsForDecline.map((proposal: any) => {
+          // Finde das Proposal von der aktuellen Company
+          if (
+            proposal.providerId === decodedToken.uid ||
+            proposal.companyId === decodedToken.uid ||
+            proposal.companyUid === decodedToken.uid
+          ) {
+            return {
+              ...proposal,
+              status: 'declined',
+              declinedAt: new Date().toISOString(),
+            };
+          }
+          return proposal;
+        });
+
+        updateData.proposals = updatedProposalsForDecline;
         break;
 
       default:
