@@ -138,12 +138,34 @@ const ProjectDetailPage: React.FC = () => {
 
         const data = projectDocSnap.data();
 
+        // Debug: Logge die rohen Daten um zu verstehen was geladen wird
+        console.log('🔍 Raw project data:', data);
+        console.log('🔍 Proposals type:', typeof data?.proposals);
+        console.log('🔍 Proposals value:', data?.proposals);
+        console.log('🔍 Is proposals array?', Array.isArray(data?.proposals));
+
         // Prüfe ob der User der Eigentümer ist
         if (data.customerUid !== uid) {
           setError('Zugriff verweigert. Sie sind nicht der Eigentümer dieses Projekts.');
           setLoading(false);
           return;
         }
+
+        // Verarbeite Proposals zuerst
+        let proposalsToProcess: any[] = [];
+
+        if (Array.isArray(data.proposals)) {
+          proposalsToProcess = data.proposals;
+        } else if (data.proposals && typeof data.proposals === 'object') {
+          // Falls proposals als Objekt gespeichert sind, konvertiere zu Array
+          proposalsToProcess = Object.values(data.proposals);
+          console.log('🔄 Converted proposals object to array:', proposalsToProcess);
+        } else {
+          proposalsToProcess = [];
+          console.log('⚠️ No proposals found or invalid format');
+        }
+
+        console.log('📝 Processing proposals:', proposalsToProcess);
 
         const projectData: ProjectRequest = {
           id: projectDocSnap.id,
@@ -166,7 +188,7 @@ const ProjectDetailPage: React.FC = () => {
           status: data.status || 'open',
           customerUid: data.customerUid || '',
           customerEmail: data.customerEmail || '',
-          proposals: data.proposals || [],
+          proposals: proposalsToProcess, // Verwende die verarbeiteten Proposals
           createdAt: data.createdAt?.toDate
             ? data.createdAt.toDate()
             : new Date(data.createdAt || Date.now()),
@@ -183,8 +205,10 @@ const ProjectDetailPage: React.FC = () => {
         };
 
         // Erweitere Proposals mit Company-Daten
+        console.log('📝 Processing proposals:', proposalsToProcess);
+
         const enhancedProposals = await Promise.all(
-          (data.proposals || []).map(async (proposal: any) => {
+          proposalsToProcess.map(async (proposal: any) => {
             try {
               // Sichere providerId Behandlung
               const providerId =
@@ -218,10 +242,12 @@ const ProjectDetailPage: React.FC = () => {
                 };
               }
 
-              // Lade Company-Daten
-              const companyDocRef = doc(db, 'companies', providerId);
+              // Lade Company-Daten aus der users collection (nach Migration)
+              const companyDocRef = doc(db, 'users', providerId);
               const companyDoc = await getDoc(companyDocRef);
               const companyData = companyDoc.exists() ? companyDoc.data() : {};
+
+              console.log('🏢 Company data loaded for providerId:', providerId, companyData);
 
               const enhancedProposal = {
                 id: proposal.id || `${providerId}_${Date.now()}`,
@@ -229,20 +255,29 @@ const ProjectDetailPage: React.FC = () => {
                 providerName:
                   companyData.companyName ||
                   companyData.businessName ||
+                  companyData.displayName ||
+                  companyData.name ||
                   proposal.providerName ||
                   'Unbekannt',
                 providerEmail: companyData.email || proposal.providerEmail || '',
-                providerPhone: companyData.phone || proposal.providerPhone || '',
+                providerPhone:
+                  companyData.phone || companyData.phoneNumber || proposal.providerPhone || '',
                 providerAvatar:
                   companyData.profilePictureURL ||
                   companyData.companyLogo ||
                   companyData.logoUrl ||
                   companyData.avatar ||
                   companyData.profileImage ||
+                  companyData.photoURL ||
                   proposal.providerAvatar ||
                   '',
-                providerRating: companyData.averageRating || proposal.providerRating || 0,
-                providerReviewCount: companyData.reviewCount || proposal.providerReviewCount || 0,
+                providerRating:
+                  companyData.averageRating || companyData.rating || proposal.providerRating || 0,
+                providerReviewCount:
+                  companyData.reviewCount ||
+                  companyData.totalReviews ||
+                  proposal.providerReviewCount ||
+                  0,
                 message: proposal.message || 'Keine Nachricht',
                 proposedPrice: proposal.proposedPrice || proposal.totalAmount || 0,
                 proposedTimeline:
