@@ -119,7 +119,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         projectData.selectedProviders.length > 0
       ) {
         const isDirectlySelected = projectData.selectedProviders.some(
-          (provider: any) => provider.uid === uid || provider.companyUid === uid
+          (provider: any) =>
+            provider.uid === uid || provider.companyUid === uid || provider.id === uid
         );
         if (isDirectlySelected) {
           isRelevantForCompany = true;

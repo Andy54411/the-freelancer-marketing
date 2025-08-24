@@ -42,7 +42,7 @@ interface QuoteRequest {
   startDate?: string;
   endDate?: string;
   deadline?: string;
-  location?: string;
+  location?: string | { type?: string; address?: string; coordinates?: any };
   urgency?: string;
   isRemote?: boolean;
   requiredSkills?: string[];
@@ -202,25 +202,42 @@ export default function QuoteResponsePage({
       const companyId = getCompanyId();
       const quoteId = getQuoteId();
 
+      console.log('🔍 Fetching quote details:', { companyId, quoteId });
+
       const apiResponse = await fetch(`/api/company/${companyId}/quotes/incoming/${quoteId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      console.log('📡 API Response status:', apiResponse.status);
+
       if (apiResponse.ok) {
         const data = await apiResponse.json();
+        console.log('✅ Quote data received:', data);
         setQuote(data.quote);
 
         // View-Count erhöhen (nach erfolgreichem Laden)
         await incrementViewCount(quoteId, token);
       } else {
-        console.error('Fehler beim Laden der Angebots-Anfrage');
-        router.push(`/dashboard/company/${companyId}/quotes/incoming`);
+        const errorData = await apiResponse.json().catch(() => ({}));
+        console.error('❌ Fehler beim Laden der Angebots-Anfrage:', {
+          status: apiResponse.status,
+          statusText: apiResponse.statusText,
+          error: errorData,
+        });
+
+        if (apiResponse.status === 404) {
+          console.error('📋 Quote nicht gefunden - ID:', quoteId);
+        }
+
+        // Nicht automatisch weiterleiten, sondern Fehler anzeigen
+        // router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Angebots-Anfrage:', error);
-      router.push(`/dashboard/company/${getCompanyId()}/quotes/incoming`);
+      console.error('💥 Fehler beim Laden der Angebots-Anfrage:', error);
+      // Nicht automatisch weiterleiten bei Fehlern
+      // router.push(`/dashboard/company/${getCompanyId()}/quotes/incoming`);
     } finally {
       setLoading(false);
     }
@@ -498,6 +515,7 @@ export default function QuoteResponsePage({
   }
 
   if (!quote) {
+    const quoteId = getQuoteId();
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -505,9 +523,10 @@ export default function QuoteResponsePage({
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Angebots-Anfrage nicht gefunden
           </h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-2">
             Die angeforderte Angebots-Anfrage konnte nicht gefunden werden.
           </p>
+          <p className="text-gray-500 text-sm mb-4">Quote-ID: {quoteId}</p>
           <button
             onClick={() => router.push(`/dashboard/company/${getCompanyId()}/quotes/incoming`)}
             className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg"
@@ -709,7 +728,11 @@ export default function QuoteResponsePage({
                       <FiMapPin className="mr-2 h-4 w-4" />
                       Standort
                     </div>
-                    <p className="text-gray-900 font-medium">{quote.location}</p>
+                    <p className="text-gray-900 font-medium">
+                      {typeof quote.location === 'string'
+                        ? quote.location
+                        : quote.location.address || 'Standort angegeben'}
+                    </p>
                   </div>
                 )}
 

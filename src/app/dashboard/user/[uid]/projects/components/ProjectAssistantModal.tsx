@@ -471,7 +471,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         isDirectAssignment: providersToUse.length > 0,
       });
 
-      const response = await fetch('/api/ai-project-creation', {
+      const response = await fetch('/api/project-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
