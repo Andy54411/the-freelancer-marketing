@@ -42,6 +42,7 @@ interface ProjectRequest {
   preferredDate?: string;
   location: string;
   isRemote: boolean;
+  isActive: boolean;
   urgency: 'low' | 'medium' | 'high';
   requiredSkills: string[];
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
@@ -51,6 +52,22 @@ interface ProjectRequest {
   createdAt: Date;
   updatedAt: Date;
   viewCount: number;
+  subcategoryData?: {
+    accommodation?: string;
+    cuisine?: string;
+    cuisineType?: string[];
+    dietaryRestrictions?: string[];
+    duration?: string;
+    eventType?: string;
+    guestCount?: string;
+    kitchenEquipment?: string;
+    projectDescription?: string;
+    serviceType?: string;
+    subcategory?: string;
+    timeframe?: string;
+    timeline?: string;
+    [key: string]: any; // Für weitere dynamische Felder
+  };
 }
 
 interface Proposal {
@@ -126,6 +143,7 @@ const ProjectDetailPage: React.FC = () => {
           preferredDate: data.preferredDate || undefined,
           location: data.location || '',
           isRemote: data.isRemote || false,
+          isActive: data.isActive || true,
           urgency: data.urgency || 'medium',
           requiredSkills: data.requiredSkills || [],
           status: data.status || 'open',
@@ -135,6 +153,7 @@ const ProjectDetailPage: React.FC = () => {
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           viewCount: data.viewCount || 0,
+          subcategoryData: data.subcategoryData || {},
         };
 
         setProject(projectData);
@@ -300,6 +319,168 @@ const ProjectDetailPage: React.FC = () => {
                 </CardContent>
               </Card>
 
+              {/* Service-Details */}
+              {project.subcategoryData && Object.keys(project.subcategoryData).length > 0 && (
+                <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                  <CardHeader>
+                    <CardTitle>Service-Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Grundinformationen */}
+                      {(project.subcategoryData.serviceType ||
+                        project.subcategoryData.eventType ||
+                        project.subcategoryData.guestCount ||
+                        project.subcategoryData.duration) && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-900 text-sm uppercase tracking-wide border-b pb-2">
+                            Grundinformationen
+                          </h4>
+
+                          {project.subcategoryData.serviceType && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-gray-600">Service-Typ</span>
+                              <Badge variant="outline" className="text-[#14ad9f] border-[#14ad9f]">
+                                {project.subcategoryData.serviceType === 'hotel'
+                                  ? 'Hotel'
+                                  : project.subcategoryData.serviceType === 'private'
+                                    ? 'Privat'
+                                    : project.subcategoryData.serviceType}
+                              </Badge>
+                            </div>
+                          )}
+
+                          {project.subcategoryData.eventType && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-gray-600">Event-Typ</span>
+                              <span className="font-medium text-gray-900">
+                                {project.subcategoryData.eventType}
+                              </span>
+                            </div>
+                          )}
+
+                          {project.subcategoryData.guestCount && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-gray-600">Anzahl Gäste</span>
+                              <span className="font-medium text-gray-900">
+                                {project.subcategoryData.guestCount}
+                              </span>
+                            </div>
+                          )}
+
+                          {project.subcategoryData.duration && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-gray-600">Dauer</span>
+                              <span className="font-medium text-gray-900">
+                                {project.subcategoryData.duration === 'halbtag'
+                                  ? 'Halbtag'
+                                  : project.subcategoryData.duration === 'ganztag'
+                                    ? 'Ganztag'
+                                    : project.subcategoryData.duration}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Spezifische Anforderungen */}
+                      {(project.subcategoryData.cuisine ||
+                        project.subcategoryData.cuisineType ||
+                        project.subcategoryData.dietaryRestrictions ||
+                        project.subcategoryData.kitchenEquipment ||
+                        project.subcategoryData.accommodation) && (
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-gray-900 text-sm uppercase tracking-wide border-b pb-2">
+                            Spezifische Anforderungen
+                          </h4>
+
+                          {project.subcategoryData.cuisine && (
+                            <div className="py-2">
+                              <span className="text-gray-600 block mb-1">Küche</span>
+                              <span className="font-medium text-gray-900">
+                                {project.subcategoryData.cuisine === 'deutsch'
+                                  ? 'Deutsche Küche'
+                                  : project.subcategoryData.cuisine}
+                              </span>
+                            </div>
+                          )}
+
+                          {project.subcategoryData.cuisineType &&
+                            project.subcategoryData.cuisineType.length > 0 && (
+                              <div className="py-2">
+                                <span className="text-gray-600 block mb-2">Küchen-Arten</span>
+                                <div className="flex flex-wrap gap-1">
+                                  {project.subcategoryData.cuisineType.map((cuisine, index) => (
+                                    <Badge key={index} variant="secondary" className="text-xs">
+                                      {cuisine === 'deutsch' ? 'Deutsche Küche' : cuisine}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                          {project.subcategoryData.dietaryRestrictions &&
+                            project.subcategoryData.dietaryRestrictions.length > 0 && (
+                              <div className="py-2">
+                                <span className="text-gray-600 block mb-2">
+                                  Diätetische Einschränkungen
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {project.subcategoryData.dietaryRestrictions.map(
+                                    (restriction, index) => (
+                                      <Badge key={index} variant="outline" className="text-xs">
+                                        {restriction}
+                                      </Badge>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                          {project.subcategoryData.kitchenEquipment && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-gray-600">Küchenausstattung</span>
+                              <span className="font-medium text-gray-900">
+                                {project.subcategoryData.kitchenEquipment === 'vorhanden'
+                                  ? 'Vorhanden'
+                                  : project.subcategoryData.kitchenEquipment === 'nicht_vorhanden'
+                                    ? 'Nicht vorhanden'
+                                    : project.subcategoryData.kitchenEquipment}
+                              </span>
+                            </div>
+                          )}
+
+                          {project.subcategoryData.accommodation && (
+                            <div className="flex justify-between items-center py-2">
+                              <span className="text-gray-600">Unterkunft</span>
+                              <span className="font-medium text-gray-900">
+                                {project.subcategoryData.accommodation === 'mit_übernachtung'
+                                  ? 'Mit Übernachtung'
+                                  : project.subcategoryData.accommodation === 'ohne_übernachtung'
+                                    ? 'Ohne Übernachtung'
+                                    : project.subcategoryData.accommodation}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Zusätzliche Projektbeschreibung */}
+                    {project.subcategoryData.projectDescription && (
+                      <div className="mt-6 pt-6 border-t">
+                        <h4 className="font-semibold text-gray-900 mb-3">
+                          Zusätzliche Projektbeschreibung
+                        </h4>
+                        <p className="text-gray-700 leading-relaxed">
+                          {project.subcategoryData.projectDescription}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Angebote */}
               <Card className="bg-white/95 backdrop-blur-sm border-white/20">
                 <CardHeader>
@@ -450,31 +631,36 @@ const ProjectDetailPage: React.FC = () => {
                   <CardTitle>Projektinformationen</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Budget</h4>
-                    <div className="text-2xl font-bold text-[#14ad9f]">
-                      {project.budgetAmount
-                        ? `${project.budgetAmount.toLocaleString('de-DE', {
-                            style: 'currency',
-                            currency: 'EUR',
-                          })}${project.budgetType === 'hourly' ? '/h' : ''}`
-                        : project.maxBudget
-                          ? `Bis zu ${project.maxBudget.toLocaleString('de-DE', {
+                  {/* Budget - nur anzeigen wenn tatsächlich ein Budget angegeben ist */}
+                  {(project.budgetAmount ||
+                    project.maxBudget ||
+                    project.budgetType === 'negotiable') && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-2">Budget</h4>
+                      <div className="text-2xl font-bold text-[#14ad9f]">
+                        {project.budgetAmount
+                          ? `${project.budgetAmount.toLocaleString('de-DE', {
                               style: 'currency',
                               currency: 'EUR',
-                            })}`
-                          : 'Verhandelbar'}
-                    </div>
-                    {(project.budgetAmount || project.maxBudget) && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {project.budgetType === 'fixed'
-                          ? 'Festpreis'
-                          : project.budgetType === 'hourly'
-                            ? 'Stundensatz'
+                            })}${project.budgetType === 'hourly' ? '/h' : ''}`
+                          : project.maxBudget
+                            ? `Bis zu ${project.maxBudget.toLocaleString('de-DE', {
+                                style: 'currency',
+                                currency: 'EUR',
+                              })}`
                             : 'Verhandelbar'}
-                      </p>
-                    )}
-                  </div>
+                      </div>
+                      {(project.budgetAmount || project.maxBudget) && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {project.budgetType === 'fixed'
+                            ? 'Festpreis'
+                            : project.budgetType === 'hourly'
+                              ? 'Stundensatz'
+                              : 'Verhandelbar'}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-2">Zeitrahmen</h4>
