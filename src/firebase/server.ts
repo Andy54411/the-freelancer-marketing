@@ -2,6 +2,7 @@ import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { AppOptions } from 'firebase-admin/app';
+import { readFileSync } from 'fs';
 
 if (!admin.apps.length) {
   try {
@@ -41,23 +42,42 @@ if (!admin.apps.length) {
       }
     }
 
-    // 2. Fallback: Verwende die ursprünglich gespeicherte GOOGLE_APPLICATION_CREDENTIALS als JSON-String
+    // 2. Fallback: Verwende die ursprünglich gespeicherte GOOGLE_APPLICATION_CREDENTIALS als JSON-String ODER Dateipfad
     if (originalGoogleAppCredentials && !credentialSet) {
       try {
         console.log(
-          '[Firebase Server] Verwende ursprünglich gespeicherte GOOGLE_APPLICATION_CREDENTIALS als JSON-String...'
+          '[Firebase Server] Verwende ursprünglich gespeicherte GOOGLE_APPLICATION_CREDENTIALS...'
         );
-        // Bereinige escaped newlines und parse als JSON
-        const cleanedJson = originalGoogleAppCredentials.replace(/\\n/g, '\n');
-        const serviceAccount = JSON.parse(cleanedJson);
-        options.credential = admin.credential.cert(serviceAccount);
-        credentialSet = true;
-        console.log(
-          '[Firebase Server] ✅ GOOGLE_APPLICATION_CREDENTIALS als JSON erfolgreich geladen.'
-        );
+
+        // Prüfe ob es ein Dateipfad ist (beginnt mit / oder enthält .json)
+        if (
+          originalGoogleAppCredentials.startsWith('/') ||
+          originalGoogleAppCredentials.includes('.json')
+        ) {
+          console.log(
+            '[Firebase Server] GOOGLE_APPLICATION_CREDENTIALS ist ein Dateipfad:',
+            originalGoogleAppCredentials
+          );
+          // Lade JSON aus Datei
+          const serviceAccountJson = readFileSync(originalGoogleAppCredentials, 'utf8');
+          const serviceAccount = JSON.parse(serviceAccountJson);
+          options.credential = admin.credential.cert(serviceAccount);
+          credentialSet = true;
+          console.log('[Firebase Server] ✅ Service Account aus Datei erfolgreich geladen.');
+        } else {
+          // Behandle als JSON-String (für Vercel)
+          console.log('[Firebase Server] GOOGLE_APPLICATION_CREDENTIALS ist JSON-String');
+          const cleanedJson = originalGoogleAppCredentials.replace(/\\n/g, '\n');
+          const serviceAccount = JSON.parse(cleanedJson);
+          options.credential = admin.credential.cert(serviceAccount);
+          credentialSet = true;
+          console.log(
+            '[Firebase Server] ✅ GOOGLE_APPLICATION_CREDENTIALS als JSON erfolgreich geladen.'
+          );
+        }
       } catch (jsonError: any) {
         console.warn(
-          '[Firebase Server] ⚠️ GOOGLE_APPLICATION_CREDENTIALS JSON-Parse fehlgeschlagen:',
+          '[Firebase Server] ⚠️ GOOGLE_APPLICATION_CREDENTIALS Parse fehlgeschlagen:',
           jsonError.message
         );
         console.warn(
