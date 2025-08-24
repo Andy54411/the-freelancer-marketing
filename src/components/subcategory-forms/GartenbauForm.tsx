@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect } from 'react';
 import { GartenData } from '@/types/subcategory-forms';
 import {
@@ -15,9 +16,15 @@ interface GartenbauFormProps {
   data: GartenData;
   onDataChange: (data: GartenData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const GartenbauForm: React.FC<GartenbauFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const GartenbauForm: React.FC<GartenbauFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<GartenData>(data);
 
   const serviceTypeOptions = [
@@ -222,7 +229,12 @@ const GartenbauForm: React.FC<GartenbauFormProps> = ({ data, onDataChange, onVal
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Gartenbau" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Gartenbau"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
 };

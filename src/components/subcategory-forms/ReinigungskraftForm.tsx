@@ -17,7 +17,11 @@ interface ReinigungskraftFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<ReinigungskraftData>(data);
 
   const serviceTypeOptions = [
@@ -70,12 +74,7 @@ const ReinigungskraftForm: React.FC<ReinigungskraftFormProps> = ({ data, onDataC
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.frequency &&
-      formData.areaSize &&
-      formData.urgency
-    );
+    return !!(formData.serviceType && formData.frequency && formData.areaSize && formData.urgency);
   };
 
   return (

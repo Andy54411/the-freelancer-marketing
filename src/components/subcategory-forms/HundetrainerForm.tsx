@@ -431,6 +431,6 @@ const HundetrainerForm: React.FC<HundetrainerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Hundetrainer" formData={formData} />
     </div>
   );
-}
+};
 
 export default HundetrainerForm;

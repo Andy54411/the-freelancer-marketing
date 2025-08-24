@@ -1089,6 +1089,6 @@ const UmzugshelferForm: React.FC<UmzugshelferFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Umzugshelfer" formData={formData} />
     </div>
   );
-}
+};
 
 export default UmzugshelferForm;

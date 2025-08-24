@@ -132,9 +132,13 @@ const SicherheitsdienstForm: React.FC<SicherheitsdienstFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Sicherheitsdienst" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Sicherheitsdienst"
+        formData={formData}
+      />
     </div>
   );
-}
+};
 
 export default SicherheitsdienstForm;

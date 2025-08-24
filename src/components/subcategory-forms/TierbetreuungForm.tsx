@@ -465,6 +465,6 @@ const TierbetreuungForm: React.FC<TierbetreuungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Tierbetreuung" formData={formData} />
     </div>
   );
-}
+};
 
 export default TierbetreuungForm;

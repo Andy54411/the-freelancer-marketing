@@ -17,12 +17,14 @@ interface FitnessTrainingFormProps {
   data: FitnessTrainingData;
   onDataChange: (data: FitnessTrainingData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
 const FitnessTrainingForm: React.FC<FitnessTrainingFormProps> = ({
   data,
   onDataChange,
   onValidationChange,
+  hideSubmitButton = false,
 }) => {
   const handleFieldChange = (field: keyof FitnessTrainingData, value: any) => {
     onDataChange({
@@ -175,9 +177,14 @@ const FitnessTrainingForm: React.FC<FitnessTrainingFormProps> = ({
         </CardContent>
       </Card>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="FitnessTraining" formData={data} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="FitnessTraining"
+        formData={data}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
-}
+};
 
 export default FitnessTrainingForm;

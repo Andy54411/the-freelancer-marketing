@@ -136,9 +136,13 @@ const ErnährungsberatungForm: React.FC<ErnährungsberatungFormProps> = ({
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Ernährungsberatung" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Ernährungsberatung"
+        formData={formData}
+      />
     </div>
   );
-}
+};
 
 export default ErnährungsberatungForm;

@@ -91,12 +91,14 @@ interface SubcategoryFormManagerProps {
   subcategory: string;
   onDataChange: (data: SubcategoryData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean; // Versteckt den Submit-Button für Dashboard-Verwendung
 }
 
 const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   subcategory,
   onDataChange,
   onValidationChange,
+  hideSubmitButton = false,
 }) => {
   const [formData, setFormData] = useState<SubcategoryData | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -1087,7 +1089,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
 
     // Keine zentrale Validierung mehr - alle Formulare verwenden lokale Validierung
     onDataChange(formData);
-  }, [formData, onDataChange]);
+  }, [formData]); // onDataChange entfernt um Endlosschleife zu vermeiden
 
   const handleDataChange = (newData: SubcategoryData) => {
     setFormData(newData);
@@ -1322,6 +1324,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             data={formData as any}
             onDataChange={handleDataChange as any}
             onValidationChange={() => {}}
+            hideSubmitButton={hideSubmitButton}
           />
         );
       case 'FitnessTraining':
@@ -1330,6 +1333,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             data={formData as any}
             onDataChange={handleDataChange as any}
             onValidationChange={() => {}}
+            hideSubmitButton={hideSubmitButton}
           />
         );
       case 'Bodenreinigung':
@@ -1530,6 +1534,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             data={formData as any}
             onDataChange={handleDataChange}
             onValidationChange={() => {}}
+            hideSubmitButton={hideSubmitButton}
           />
         );
       case 'Grafiker':
@@ -1752,6 +1757,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             data={formData as any}
             onDataChange={handleDataChange}
             onValidationChange={() => {}}
+            hideSubmitButton={hideSubmitButton}
           />
         );
       case 'Coaching':
@@ -2035,6 +2041,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
             data={formData as any}
             onDataChange={handleDataChange as any}
             onValidationChange={() => {}}
+            hideSubmitButton={hideSubmitButton}
           />
         );
       case 'Logistik':

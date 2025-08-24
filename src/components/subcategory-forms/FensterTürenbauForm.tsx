@@ -17,7 +17,11 @@ interface FensterTürenbauFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<FensterTürenbauData>(data);
 
   const serviceTypeOptions = [
@@ -241,7 +245,11 @@ const FensterTürenbauForm: React.FC<FensterTürenbauFormProps> = ({ data, onDat
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Fenster- und Türenbau" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Fenster- und Türenbau"
+        formData={formData}
+      />
     </div>
   );
 };

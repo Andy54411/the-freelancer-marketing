@@ -6,9 +6,15 @@ interface MietkochFormProps {
   data: MietkochData;
   onDataChange: (data: MietkochData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const MietkochForm: React.FC<MietkochFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<MietkochData>(data);
 
   const serviceTypeOptions = [
@@ -126,9 +132,14 @@ const MietkochForm: React.FC<MietkochFormProps> = ({ data, onDataChange, onValid
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Mietkoch" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Mietkoch"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
-}
+};
 
 export default MietkochForm;

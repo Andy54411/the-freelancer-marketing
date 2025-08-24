@@ -17,7 +17,11 @@ interface HaushaltshilfeFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const HaushaltshilfeForm: React.FC<HaushaltshilfeFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const HaushaltshilfeForm: React.FC<HaushaltshilfeFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<HaushaltshilfeData>(data);
 
   const serviceTypeOptions = [
@@ -72,12 +76,7 @@ const HaushaltshilfeForm: React.FC<HaushaltshilfeFormProps> = ({ data, onDataCha
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.frequency &&
-      formData.houseSize &&
-      formData.urgency
-    );
+    return !!(formData.serviceType && formData.frequency && formData.houseSize && formData.urgency);
   };
 
   return (

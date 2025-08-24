@@ -15,9 +15,15 @@ interface SteuerberatungFormProps {
   data: SteuerberatungData;
   onDataChange: (data: SteuerberatungData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<SteuerberatungData>(data);
 
   const serviceTypeOptions = [
@@ -63,20 +69,12 @@ const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({ data, onDataCha
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.clientType &&
-      formData.urgency
-    );
+    const isValid = !!(formData.serviceType && formData.clientType && formData.urgency);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.clientType &&
-      formData.urgency
-    );
+    return !!(formData.serviceType && formData.clientType && formData.urgency);
   };
 
   return (
@@ -221,7 +219,12 @@ const SteuerberatungForm: React.FC<SteuerberatungFormProps> = ({ data, onDataCha
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Steuerberatung" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Steuerberatung"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
 };

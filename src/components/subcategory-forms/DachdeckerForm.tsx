@@ -17,7 +17,11 @@ interface DachdeckerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const DachdeckerForm: React.FC<DachdeckerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const DachdeckerForm: React.FC<DachdeckerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<DachdeckerData>(data);
 
   const serviceTypeOptions = [

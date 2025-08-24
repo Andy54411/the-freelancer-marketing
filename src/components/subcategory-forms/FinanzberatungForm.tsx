@@ -17,7 +17,11 @@ interface FinanzberatungFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const FinanzberatungForm: React.FC<FinanzberatungFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<FinanzberatungData>(data);
 
   const serviceTypeOptions = [

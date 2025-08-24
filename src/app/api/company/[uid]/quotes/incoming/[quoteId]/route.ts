@@ -28,90 +28,68 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get the quote document
-    const quoteRef = db.collection('quotes').doc(quoteId);
-    const quoteDoc = await quoteRef.get();
+    // Get the project request document from project_requests collection
+    const projectRef = db.collection('project_requests').doc(quoteId);
+    const projectDoc = await projectRef.get();
 
-    if (!quoteDoc.exists) {
-      return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
+    if (!projectDoc.exists) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const quoteData = quoteDoc.data();
+    const projectData = projectDoc.data();
 
-    // Verify that this quote is for this company
-    if (quoteData?.providerId !== uid && quoteData?.providerUid !== uid) {
-      console.log('[Quote Details API] Quote provider mismatch:', {
-        quoteProviderId: quoteData?.providerId,
-        quoteProviderUid: quoteData?.providerUid,
-        expectedUid: uid,
-      });
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Get customer information
+    // Get customer information based on customerUid
     let customerInfo = null;
-
-    // For quotes collection, customer info is stored directly in the quote
-    if (quoteData?.customerEmail && quoteData?.customerName) {
-      // First check if this customer is also a company (user_type: "firma")
-      let isCompanyCustomer = false;
-      let companyName = null;
-
-      // Search for user by email to check user_type
-      const userQuery = await db
-        .collection('users')
-        .where('email', '==', quoteData.customerEmail)
-        .limit(1)
-        .get();
-
-      if (!userQuery.empty) {
-        const userData = userQuery.docs[0].data();
-        if (userData.user_type === 'firma') {
-          isCompanyCustomer = true;
-          companyName = userData.companyName || userData.onboarding?.companyName;
+    
+    if (projectData?.customerUid) {
+      try {
+        // First try to get from users collection
+        const userDoc = await db.collection('users').doc(projectData.customerUid).get();
+        
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          customerInfo = {
+            name: userData.companyName || userData.firstName + ' ' + userData.lastName || 'Unbekannter Kunde',
+            type: userData.user_type === 'firma' ? 'company' : 'user',
+            email: userData.email,
+            phone: userData.phone,
+            avatar: userData.avatar || null,
+            uid: userDoc.id,
+          };
+        } else {
+          // Try companies collection if not found in users
+          const companyDoc = await db.collection('companies').doc(projectData.customerUid).get();
+          if (companyDoc.exists) {
+            const companyData = companyDoc.data();
+            customerInfo = {
+              name: companyData.companyName || 'Unbekanntes Unternehmen',
+              type: 'company',
+              email: companyData.email,
+              phone: companyData.phone,
+              avatar: companyData.logo || null,
+              uid: companyDoc.id,
+            };
+          }
         }
+      } catch (error) {
+        console.error('[Project Details API] Error fetching customer data:', error);
       }
+    }
 
-      customerInfo = {
-        name: companyName || quoteData.customerName || 'Unbekannter Kunde',
-        type: isCompanyCustomer ? 'company' : 'user',
-        email: quoteData.customerEmail,
-        phone: quoteData.customerPhone,
-        avatar: null, // Not available in quote structure
-        uid: userQuery.empty ? null : userQuery.docs[0].id,
-      };
-    } else if (quoteData.customerCompanyUid) {
-      // B2B request - get company data
-      const customerCompanyDoc = await db
-        .collection('companies')
-        .doc(quoteData.customerCompanyUid)
-        .get();
+    // Find the company's proposal if it exists
+    const companyProposal = projectData?.proposals?.find(
+      proposal => proposal.companyUid === uid
+    );
 
-      if (customerCompanyDoc.exists) {
-        const customerCompanyData = customerCompanyDoc.data();
-        customerInfo = {
-          name: customerCompanyData?.companyName || 'Unbekanntes Unternehmen',
-          type: 'company',
-          email: customerCompanyData?.email,
-          avatar: customerCompanyData?.logoUrl,
-          uid: quoteData.customerCompanyUid,
-        };
-      }
-    } else if (quoteData.customerUid) {
-      // B2C request - get user data
-      const customerDoc = await db.collection('users').doc(quoteData.customerUid).get();
-
-      if (customerDoc.exists) {
-        const customerData = customerDoc.data();
-        customerInfo = {
-          name:
-            `${customerData?.firstName || ''} ${customerData?.lastName || ''}`.trim() ||
-            'Unbekannter Kunde',
-          type: 'user',
-          email: customerData?.email,
-          avatar: customerData?.avatar,
-          uid: quoteData.customerUid,
-        };
+    // Determine status based on company's proposal
+    let finalStatus = 'pending';
+    if (companyProposal) {
+      if (companyProposal.status === 'accepted') {
+        finalStatus = 'accepted';
+      } else if (companyProposal.status === 'declined') {
+        finalStatus = 'declined';
+      } else {
+        finalStatus = 'responded';
       }
     }
 
@@ -119,25 +97,34 @@ export async function GET(
       success: true,
       quote: {
         id: quoteId,
-        ...quoteData,
-        customer: customerInfo,
-        contactExchange: quoteData?.contactExchange || null, // Wichtig für ausgetauschte Kontaktdaten
-        customerDecision: quoteData?.customerDecision || null, // Wichtig für Kundenentscheidung
-        createdAt: quoteData?.createdAt?.toDate?.() || new Date(quoteData?.createdAt),
-        // Map quote fields to expected structure
-        title: quoteData?.projectTitle || quoteData?.projectDescription || 'Anfrage',
-        description: quoteData?.projectDescription,
-        category: quoteData?.projectCategory,
-        subcategory: quoteData?.projectSubcategory,
-        budget: quoteData?.budgetRange,
-        budgetRange: quoteData?.budgetRange,
-        location: quoteData?.location,
-        postalCode: quoteData?.postalCode,
-        urgency: quoteData?.urgency,
-        estimatedDuration: quoteData?.estimatedDuration,
-        preferredStartDate: quoteData?.preferredStartDate,
-        additionalNotes: quoteData?.additionalNotes,
-        response: quoteData?.response, // Contains the company's response if answered
+        title: projectData?.title || 'Ohne Titel',
+        description: projectData?.description || '',
+        serviceCategory: projectData?.serviceCategory || '',
+        serviceSubcategory: projectData?.serviceSubcategory || '',
+        projectType: projectData?.projectType || 'fixed',
+        status: finalStatus,
+        budget: projectData?.budget,
+        budgetRange: projectData?.budget,
+        location: projectData?.location,
+        postalCode: projectData?.postalCode,
+        urgency: projectData?.urgency,
+        estimatedDuration: projectData?.estimatedDuration,
+        preferredStartDate: projectData?.preferredStartDate,
+        additionalNotes: projectData?.additionalNotes,
+        customer: customerInfo || {
+          name: 'Unbekannter Kunde',
+          type: 'user',
+          email: null,
+          phone: null,
+          avatar: null,
+          uid: projectData?.customerUid,
+        },
+        createdAt: projectData?.createdAt?.toDate?.() || new Date(projectData?.createdAt),
+        proposals: projectData?.proposals || [],
+        companyProposal: companyProposal,
+        hasResponse: !!companyProposal,
+        customerUid: projectData?.customerUid,
+        customerCompanyUid: projectData?.customerCompanyUid,
       },
     });
   } catch (error) {
@@ -175,39 +162,74 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { action, message } = body;
+    const { action, message, proposal } = body;
 
-    if (!action || !['accept', 'decline'].includes(action)) {
+    if (!action || !['accept', 'decline', 'submit_proposal'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    // Get the quote document
-    const quoteRef = db.collection('quotes').doc(quoteId);
-    const quoteDoc = await quoteRef.get();
+    // Get the project request document
+    const projectRef = db.collection('project_requests').doc(quoteId);
+    const projectDoc = await projectRef.get();
 
-    if (!quoteDoc.exists) {
-      return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
+    if (!projectDoc.exists) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    const quoteData = quoteDoc.data();
+    const projectData = projectDoc.data();
 
-    // Verify that this quote is for this company
-    if (quoteData?.providerId !== uid && quoteData?.providerUid !== uid) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (action === 'submit_proposal') {
+      // Submit a new proposal for this project
+      if (!proposal) {
+        return NextResponse.json({ error: 'Proposal data required' }, { status: 400 });
+      }
+
+      // Get company information
+      const companyDoc = await db.collection('companies').doc(uid).get();
+      const companyData = companyDoc.exists ? companyDoc.data() : {};
+
+      const newProposal = {
+        companyUid: uid,
+        companyName: companyData?.companyName || 'Unbekanntes Unternehmen',
+        companyLogo: companyData?.logo || null,
+        ...proposal,
+        submittedAt: new Date(),
+        status: 'pending',
+      };
+
+      // Add proposal to the project
+      const currentProposals = projectData?.proposals || [];
+      const existingProposalIndex = currentProposals.findIndex(p => p.companyUid === uid);
+      
+      if (existingProposalIndex >= 0) {
+        // Update existing proposal
+        currentProposals[existingProposalIndex] = newProposal;
+      } else {
+        // Add new proposal
+        currentProposals.push(newProposal);
+      }
+
+      await projectRef.update({
+        proposals: currentProposals,
+        lastUpdated: new Date(),
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Proposal submitted successfully',
+        proposal: newProposal,
+      });
     }
 
-    // Update the quote status
-    await quoteRef.update({
-      status: action === 'accept' ? 'accepted' : 'declined',
-      providerResponse: message || '',
-      respondedAt: new Date(),
-      lastUpdated: new Date(),
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: `Quote ${action === 'accept' ? 'accepted' : 'declined'} successfully`,
-    });
+    // Handle accept/decline actions (for when customer decides on proposals)
+    if (action === 'accept' || action === 'decline') {
+      // This would be used when the customer accepts/declines a proposal
+      // For now, just return success
+      return NextResponse.json({
+        success: true,
+        message: `Action ${action} recorded`,
+      });
+    }
   } catch (error) {
     console.error('Error updating quote:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

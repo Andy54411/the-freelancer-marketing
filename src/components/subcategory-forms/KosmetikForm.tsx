@@ -133,6 +133,6 @@ const KosmetikForm: React.FC<KosmetikFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Kosmetik" formData={formData} />
     </div>
   );
-}
+};
 
 export default KosmetikForm;

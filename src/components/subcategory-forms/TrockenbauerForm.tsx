@@ -17,7 +17,11 @@ interface TrockenbauerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<TrockenbauerData>(data);
 
   const serviceTypeOptions = [
@@ -76,12 +80,7 @@ const TrockenbauerForm: React.FC<TrockenbauerFormProps> = ({ data, onDataChange,
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.area &&
-      formData.projectSize &&
-      formData.urgency
-    );
+    return !!(formData.serviceType && formData.area && formData.projectSize && formData.urgency);
   };
 
   return (

@@ -104,6 +104,6 @@ const MontageserviceForm: React.FC<MontageserviceFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Montageservice" formData={formData} />
     </div>
   );
-}
+};
 
 export default MontageserviceForm;

@@ -17,7 +17,11 @@ interface HandwerkerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const HandwerkerForm: React.FC<HandwerkerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const HandwerkerForm: React.FC<HandwerkerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<HandwerkerData>(data);
 
   const serviceTypeOptions = [

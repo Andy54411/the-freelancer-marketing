@@ -355,6 +355,6 @@ const MaurerForm: React.FC<MaurerFormProps> = ({ data, onDataChange, onValidatio
       <FormSubmitButton isValid={isFormValid()} subcategory="Maurer" formData={formData} />
     </div>
   );
-}
+};
 
 export default MaurerForm;

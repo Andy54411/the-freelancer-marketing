@@ -232,6 +232,6 @@ const BodenlegerForm: React.FC<BodenlegerFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Bodenleger" formData={formData} />
     </div>
   );
-}
+};
 
 export default BodenlegerForm;

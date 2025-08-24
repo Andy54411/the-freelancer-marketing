@@ -332,9 +332,13 @@ const MarketingberaterForm: React.FC<MarketingberaterFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Marketingberater" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Marketingberater"
+        formData={formData}
+      />
     </div>
   );
-}
+};
 
 export default MarketingberaterForm;

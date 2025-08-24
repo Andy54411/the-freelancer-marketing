@@ -14,9 +14,15 @@ interface HeizungFormProps {
   data: HeizungData;
   onDataChange: (data: HeizungData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const HeizungForm: React.FC<HeizungFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const HeizungForm: React.FC<HeizungFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<HeizungData>(data);
 
   const serviceTypeOptions = [
@@ -212,9 +218,14 @@ const HeizungForm: React.FC<HeizungFormProps> = ({ data, onDataChange, onValidat
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Heizung" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Heizung"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
-}
+};
 
 export default HeizungForm;

@@ -235,9 +235,13 @@ const TransportdienstleistungenForm: React.FC<TransportdienstleistungenFormProps
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Transportdienstleistungen" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Transportdienstleistungen"
+        formData={formData}
+      />
     </div>
   );
-}
+};
 
 export default TransportdienstleistungenForm;

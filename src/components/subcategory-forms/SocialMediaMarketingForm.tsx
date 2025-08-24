@@ -17,7 +17,11 @@ interface SocialMediaMarketingFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SocialMediaMarketingForm: React.FC<SocialMediaMarketingFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SocialMediaMarketingForm: React.FC<SocialMediaMarketingFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<SocialMediaMarketingData>(data);
 
   const serviceTypeOptions = [
@@ -260,7 +264,11 @@ const SocialMediaMarketingForm: React.FC<SocialMediaMarketingFormProps> = ({ dat
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Social Media Marketing" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Social Media Marketing"
+        formData={formData}
+      />
     </div>
   );
 };

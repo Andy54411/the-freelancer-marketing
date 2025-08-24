@@ -17,7 +17,11 @@ interface VersicherungsberatungFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<VersicherungsberatungData>(data);
 
   const serviceTypeOptions = [
@@ -71,20 +75,12 @@ const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({ d
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.clientType &&
-      formData.urgency
-    );
+    const isValid = !!(formData.serviceType && formData.clientType && formData.urgency);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.clientType &&
-      formData.urgency
-    );
+    return !!(formData.serviceType && formData.clientType && formData.urgency);
   };
 
   return (
@@ -310,7 +306,11 @@ const VersicherungsberatungForm: React.FC<VersicherungsberatungFormProps> = ({ d
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Versicherungsberatung" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Versicherungsberatung"
+        formData={formData}
+      />
     </div>
   );
 };

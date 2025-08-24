@@ -17,7 +17,11 @@ interface FliesenlegerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const FliesenlegerForm: React.FC<FliesenlegerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<FliesenlegerData>(data);
 
   const serviceTypeOptions = [

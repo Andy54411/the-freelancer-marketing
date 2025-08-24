@@ -43,134 +43,146 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const companyData = companyDoc.data();
     console.log('[Incoming Quotes API] Company found:', companyData?.companyName);
 
-    // Query for incoming quote requests where this company is the provider
-    console.log('[Incoming Quotes API] Querying quotes for provider:', uid);
+    // Get company's service subcategory to filter relevant projects
+    const companyUserDoc = await db.collection('users').doc(uid).get();
+    if (!companyUserDoc.exists) {
+      console.log('[Incoming Quotes API] Company user data not found:', uid);
+      return NextResponse.json({ error: 'Company user data not found' }, { status: 404 });
+    }
 
-    // First, let's check what collections exist
-    const allQuotesSnapshot = await db.collection('quotes').limit(5).get();
-    console.log('[Incoming Quotes API] Total quotes in collection:', allQuotesSnapshot.size);
+    const companyUserData = companyUserDoc.data();
+    const selectedSubcategory =
+      companyUserData?.onboarding?.selectedSubcategory || companyUserData?.selectedSubcategory;
 
-    if (allQuotesSnapshot.size > 0) {
-      allQuotesSnapshot.docs.forEach((doc, index) => {
-        console.log(`[Incoming Quotes API] Sample quote ${index + 1}:`, {
-          id: doc.id,
-          data: doc.data(),
-        });
+    console.log('[Incoming Quotes API] Company subcategory:', selectedSubcategory);
+
+    if (!selectedSubcategory) {
+      console.log('[Incoming Quotes API] Company has no selected subcategory');
+      return NextResponse.json({
+        success: true,
+        quotes: [],
+        message: 'Keine Subkategorie definiert',
       });
     }
 
-    // Query quotes collection for incoming quote requests using providerId (from database structure)
-    const quotesSnapshot = await db
-      .collection('quotes')
-      .where('providerId', '==', uid)
+    // Query for open project requests that match the company's subcategory
+    console.log(
+      '[Incoming Quotes API] Querying project_requests for subcategory:',
+      selectedSubcategory
+    );
+
+    // Get project requests that match the company's subcategory and are open for bidding
+    const projectRequestsSnapshot = await db
+      .collection('project_requests')
+      .where('status', '==', 'open')
+      .where('serviceSubcategory', '==', selectedSubcategory)
       .orderBy('createdAt', 'desc')
       .get();
 
-    console.log('[Incoming Quotes API] Found quotes with providerId:', quotesSnapshot.size);
-
-    // Try alternative query patterns for quotes
-    const altQuotes1 = await db.collection('quotes').where('providerUid', '==', uid).get();
-    console.log('[Incoming Quotes API] Found quotes with providerUid:', altQuotes1.size);
-
-    const altQuotes2 = await db.collection('quotes').where('companyId', '==', uid).get();
-    console.log('[Incoming Quotes API] Found quotes with companyId:', altQuotes2.size);
-
-    const altQuotes3 = await db.collection('quotes').where('serviceProviderId', '==', uid).get();
-    console.log('[Incoming Quotes API] Found quotes with serviceProviderId:', altQuotes3.size);
+    console.log(
+      '[Incoming Quotes API] Found matching project requests:',
+      projectRequestsSnapshot.size
+    );
 
     const quotes = [];
 
-    for (const doc of quotesSnapshot.docs) {
-      const quoteData = doc.data();
-      console.log('[Incoming Quotes API] Processing quote:', doc.id, 'with data:', {
-        customerEmail: quoteData.customerEmail,
-        customerName: quoteData.customerName,
-        projectTitle: quoteData.projectTitle,
-        status: quoteData.status,
-        projectDescription: quoteData.projectDescription,
-        projectCategory: quoteData.projectCategory,
-        projectSubcategory: quoteData.projectSubcategory,
-        budgetRange: quoteData.budgetRange,
-        providerId: quoteData.providerId,
-      });
+    for (const doc of projectRequestsSnapshot.docs) {
+      const projectData = doc.data();
+      console.log(
+        '[Incoming Quotes API] Processing project:',
+        doc.id,
+        'with subcategory:',
+        projectData.serviceSubcategory
+      );
 
-      // For quotes collection, customer info is stored directly in the quote
+      // Get customer information based on customerUid
       let customerInfo = null;
 
-      if (quoteData.customerEmail && quoteData.customerName) {
-        // First check if this customer is also a company (user_type: "firma")
-        let isCompanyCustomer = false;
-        let companyName = null;
+      if (projectData.customerUid) {
+        try {
+          // First try to get from users collection
+          const userDoc = await db.collection('users').doc(projectData.customerUid).get();
 
-        // Search for user by email to check user_type
-        const userQuery = await db
-          .collection('users')
-          .where('email', '==', quoteData.customerEmail)
-          .limit(1)
-          .get();
-
-        if (!userQuery.empty) {
-          const userData = userQuery.docs[0].data();
-          if (userData.user_type === 'firma') {
-            isCompanyCustomer = true;
-            companyName = userData.companyName || userData.onboarding?.companyName;
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            customerInfo = {
+              name:
+                userData.companyName ||
+                userData.firstName + ' ' + userData.lastName ||
+                'Unbekannter Kunde',
+              type: userData.user_type === 'firma' ? 'company' : 'user',
+              email: userData.email,
+              phone: userData.phone,
+              avatar: userData.avatar || null,
+              uid: userDoc.id,
+            };
+          } else {
+            // Try companies collection if not found in users
+            const companyDoc = await db.collection('companies').doc(projectData.customerUid).get();
+            if (companyDoc.exists) {
+              const companyData = companyDoc.data();
+              customerInfo = {
+                name: companyData.companyName || 'Unbekanntes Unternehmen',
+                type: 'company',
+                email: companyData.email,
+                phone: companyData.phone,
+                avatar: companyData.logo || null,
+                uid: companyDoc.id,
+              };
+            }
           }
+        } catch (error) {
+          console.error('[Incoming Quotes API] Error fetching customer data:', error);
         }
-
-        customerInfo = {
-          name: companyName || quoteData.customerName || 'Unbekannter Kunde',
-          type: isCompanyCustomer ? 'company' : 'user',
-          email: quoteData.customerEmail,
-          phone: quoteData.customerPhone,
-          avatar: null, // Not available in quote structure
-          uid: userQuery.empty ? null : userQuery.docs[0].id,
-        };
       }
 
-      // Check if this quote has been responded to
+      // Check if this company has already submitted a proposal
       const hasResponse =
-        quoteData.response &&
-        typeof quoteData.response === 'object' &&
-        (quoteData.response.message ||
-          quoteData.response.items ||
-          quoteData.response.estimatedDuration);
+        projectData.proposals &&
+        projectData.proposals.some(proposal => proposal.companyUid === uid);
 
-      // Determine the correct status based on response and customer decision
-      let finalStatus = quoteData.status || 'pending';
-      let customerDecision = null;
-
-      // Check if customer has made a decision (accepted/declined)
-      if (quoteData.customerDecision) {
-        customerDecision = quoteData.customerDecision;
-        finalStatus =
-          quoteData.customerDecision.action || quoteData.customerDecision.status || finalStatus; // 'accepted' or 'declined'
-      } else if (hasResponse && finalStatus === 'pending') {
-        finalStatus = 'responded';
+      // Determine status based on proposals
+      let finalStatus = 'pending';
+      if (hasResponse) {
+        const companyProposal = projectData.proposals.find(p => p.companyUid === uid);
+        if (companyProposal?.status === 'accepted') {
+          finalStatus = 'accepted';
+        } else if (companyProposal?.status === 'declined') {
+          finalStatus = 'declined';
+        } else {
+          finalStatus = 'responded';
+        }
       }
 
       quotes.push({
         id: doc.id,
-        // Spread quoteData but exclude status to avoid duplication
-        ...Object.fromEntries(Object.entries(quoteData).filter(([key]) => key !== 'status')),
-        customer: customerInfo,
+        title: projectData.title || 'Ohne Titel',
+        description: projectData.description || '',
+        serviceCategory: projectData.serviceCategory || '',
+        serviceSubcategory: projectData.serviceSubcategory || '',
+        projectType: projectData.projectType || 'fixed',
         status: finalStatus,
-        customerDecision: customerDecision,
-        contactExchange: quoteData.contactExchange || null,
-        createdAt: quoteData.createdAt?.toDate?.() || new Date(quoteData.createdAt),
-        // Map quote fields to expected structure
-        title: quoteData.projectTitle || quoteData.projectDescription || 'Anfrage',
-        description: quoteData.projectDescription,
-        category: quoteData.projectCategory,
-        subcategory: quoteData.projectSubcategory,
-        budget: quoteData.budgetRange,
-        location: quoteData.location,
-        postalCode: quoteData.postalCode,
-        urgency: quoteData.urgency,
-        estimatedDuration: quoteData.estimatedDuration,
-        preferredStartDate: quoteData.preferredStartDate,
-        additionalNotes: quoteData.additionalNotes,
-        response: quoteData.response, // Contains the company's response if answered
-        hasResponse: hasResponse, // Add explicit flag for frontend
+        budget: projectData.budget,
+        budgetRange: projectData.budget,
+        location: projectData.location,
+        postalCode: projectData.postalCode,
+        urgency: projectData.urgency,
+        estimatedDuration: projectData.estimatedDuration,
+        preferredStartDate: projectData.preferredStartDate,
+        additionalNotes: projectData.additionalNotes,
+        customer: customerInfo || {
+          name: 'Unbekannter Kunde',
+          type: 'user',
+          email: null,
+          phone: null,
+          avatar: null,
+          uid: projectData.customerUid,
+        },
+        createdAt: projectData.createdAt?.toDate?.() || new Date(projectData.createdAt),
+        hasResponse: hasResponse,
+        proposals: projectData.proposals || [],
+        customerUid: projectData.customerUid,
+        customerCompanyUid: projectData.customerCompanyUid,
       });
     }
 

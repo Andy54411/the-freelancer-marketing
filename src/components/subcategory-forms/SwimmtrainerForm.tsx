@@ -17,7 +17,11 @@ interface SwimmtrainerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SwimmtrainerForm: React.FC<SwimmtrainerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SwimmtrainerForm: React.FC<SwimmtrainerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<SwimmtrainerData>(data);
 
   const trainingTypeOptions = [

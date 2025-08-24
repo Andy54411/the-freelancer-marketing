@@ -6,9 +6,15 @@ interface FotografFormProps {
   data: FotografData;
   onDataChange: (data: FotografData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const FotografForm: React.FC<FotografFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const FotografForm: React.FC<FotografFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<FotografData>(data);
 
   const shootingTypeOptions = [
@@ -132,9 +138,14 @@ const FotografForm: React.FC<FotografFormProps> = ({ data, onDataChange, onValid
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Fotograf" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Fotograf"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
-}
+};
 
 export default FotografForm;

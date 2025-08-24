@@ -17,7 +17,11 @@ interface RechtsberatungFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<RechtsberatungData>(data);
 
   const legalAreaOptions = [
@@ -82,12 +86,7 @@ const RechtsberatungForm: React.FC<RechtsberatungFormProps> = ({ data, onDataCha
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.legalArea &&
-      formData.clientType &&
-      formData.urgency &&
-      formData.legalIssue
-    );
+    return !!(formData.legalArea && formData.clientType && formData.urgency && formData.legalIssue);
   };
 
   return (

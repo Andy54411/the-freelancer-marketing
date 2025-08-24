@@ -17,7 +17,11 @@ interface FensterputzerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const FensterputzerForm: React.FC<FensterputzerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const FensterputzerForm: React.FC<FensterputzerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<FensterputzerData>(data);
 
   const serviceTypeOptions = [

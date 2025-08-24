@@ -17,7 +17,11 @@ interface LagerlogistikFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const LagerlogistikForm: React.FC<LagerlogistikFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const LagerlogistikForm: React.FC<LagerlogistikFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<LagerlogistikData>(data);
 
   const serviceTypeOptions = [
@@ -207,7 +211,11 @@ const LagerlogistikForm: React.FC<LagerlogistikFormProps> = ({ data, onDataChang
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Lager & Logistik" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Lager & Logistik"
+        formData={formData}
+      />
     </div>
   );
 };

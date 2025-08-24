@@ -144,6 +144,6 @@ const VideografForm: React.FC<VideografFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Videograf" formData={formData} />
     </div>
   );
-}
+};
 
 export default VideografForm;

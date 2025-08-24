@@ -17,7 +17,11 @@ interface ÜbersetzerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const ÜbersetzerForm: React.FC<ÜbersetzerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const ÜbersetzerForm: React.FC<ÜbersetzerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<ÜbersetzerData>(data);
 
   const serviceTypeOptions = [

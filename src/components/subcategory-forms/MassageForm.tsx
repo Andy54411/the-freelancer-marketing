@@ -6,9 +6,15 @@ interface MassageFormProps {
   data: MassageData;
   onDataChange: (data: MassageData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const MassageForm: React.FC<MassageFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const MassageForm: React.FC<MassageFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<MassageData>(data);
 
   const serviceTypeOptions = [
@@ -127,9 +133,14 @@ const MassageForm: React.FC<MassageFormProps> = ({ data, onDataChange, onValidat
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Massage" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Massage"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
-}
+};
 
 export default MassageForm;

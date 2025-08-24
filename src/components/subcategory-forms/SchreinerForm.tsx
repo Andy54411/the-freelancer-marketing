@@ -17,7 +17,11 @@ interface SchreinerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SchreinerForm: React.FC<SchreinerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SchreinerForm: React.FC<SchreinerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<SchreinerData>(data);
 
   const serviceTypeOptions = [

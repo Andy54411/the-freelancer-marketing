@@ -17,7 +17,11 @@ interface SchlosserFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SchlosserForm: React.FC<SchlosserFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SchlosserForm: React.FC<SchlosserFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<SchlosserData>(data);
 
   const serviceTypeOptions = [
@@ -56,20 +60,12 @@ const SchlosserForm: React.FC<SchlosserFormProps> = ({ data, onDataChange, onVal
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.urgency &&
-      formData.problemDescription
-    );
+    const isValid = !!(formData.serviceType && formData.urgency && formData.problemDescription);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.urgency &&
-      formData.problemDescription
-    );
+    return !!(formData.serviceType && formData.urgency && formData.problemDescription);
   };
 
   return (

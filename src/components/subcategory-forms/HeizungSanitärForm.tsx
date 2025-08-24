@@ -17,7 +17,11 @@ interface HeizungSanitärFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const HeizungSanitärForm: React.FC<HeizungSanitärFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const HeizungSanitärForm: React.FC<HeizungSanitärFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<HeizungSanitärData>(data);
 
   const serviceTypeOptions = [
@@ -55,20 +59,12 @@ const HeizungSanitärForm: React.FC<HeizungSanitärFormProps> = ({ data, onDataC
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.urgency &&
-      formData.problemDescription
-    );
+    const isValid = !!(formData.serviceType && formData.urgency && formData.problemDescription);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.urgency &&
-      formData.problemDescription
-    );
+    return !!(formData.serviceType && formData.urgency && formData.problemDescription);
   };
 
   return (
@@ -159,7 +155,11 @@ const HeizungSanitärForm: React.FC<HeizungSanitärFormProps> = ({ data, onDataC
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Heizung & Sanitär" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Heizung & Sanitär"
+        formData={formData}
+      />
     </div>
   );
 };

@@ -17,7 +17,11 @@ interface HausmeisterFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const HausmeisterForm: React.FC<HausmeisterFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const HausmeisterForm: React.FC<HausmeisterFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<HausmeisterData>(data);
 
   const serviceTypeOptions = [
@@ -258,7 +262,10 @@ const HausmeisterForm: React.FC<HausmeisterFormProps> = ({ data, onDataChange, o
               value={formData.toolsAndEquipment || ''}
               onChange={value => handleInputChange('toolsAndEquipment', value)}
               options={[
-                { value: 'hausmeister_mitbringen', label: 'Hausmeister bringt eigene Werkzeuge mit' },
+                {
+                  value: 'hausmeister_mitbringen',
+                  label: 'Hausmeister bringt eigene Werkzeuge mit',
+                },
                 { value: 'gestellt', label: 'Werkzeuge werden gestellt' },
                 { value: 'teilweise', label: 'Teilweise gestellt, teilweise eigene' },
                 { value: 'nach_absprache', label: 'Nach Absprache' },

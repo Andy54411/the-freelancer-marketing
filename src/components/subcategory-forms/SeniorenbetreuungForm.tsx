@@ -17,7 +17,11 @@ interface SeniorenbetreuungFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SeniorenbetreuungForm: React.FC<SeniorenbetreuungFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SeniorenbetreuungForm: React.FC<SeniorenbetreuungFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<SeniorenbetreuungData>(data);
 
   const serviceTypeOptions = [
@@ -53,20 +57,12 @@ const SeniorenbetreuungForm: React.FC<SeniorenbetreuungFormProps> = ({ data, onD
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.careTime &&
-      formData.urgency
-    );
+    const isValid = !!(formData.serviceType && formData.careTime && formData.urgency);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.careTime &&
-      formData.urgency
-    );
+    return !!(formData.serviceType && formData.careTime && formData.urgency);
   };
 
   return (
@@ -212,7 +208,11 @@ const SeniorenbetreuungForm: React.FC<SeniorenbetreuungFormProps> = ({ data, onD
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Seniorenbetreuung" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Seniorenbetreuung"
+        formData={formData}
+      />
     </div>
   );
 };

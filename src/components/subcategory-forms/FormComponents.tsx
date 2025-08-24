@@ -179,6 +179,7 @@ export interface FormSubmitButtonProps {
   loadingText?: string;
   buttonText?: string;
   formData?: any; // Optional: Formulardaten für Beschreibungsextraktion
+  hideSubmitButton?: boolean; // Versteckt den Submit-Button für Dashboard-Verwendung
 }
 
 export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
@@ -187,6 +188,7 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
   loadingText = 'Wird verarbeitet...',
   buttonText = 'Weiter zur Adresseingabe',
   formData,
+  hideSubmitButton = false,
 }) => {
   const router = useRouter();
   const { setDescription, setSubcategoryData } = useRegistration();
@@ -237,8 +239,11 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
 
   return (
     <div className="space-y-6 mt-8">
+      {/* Wenn hideSubmitButton true ist, zeige nichts an */}
+      {hideSubmitButton && <div />}
+
       {/* Validierungsanzeige */}
-      {!isValid && (
+      {!hideSubmitButton && !isValid && (
         <div className="text-center">
           <div className="inline-flex items-center py-3 px-5 bg-gradient-to-r from-teal-50 to-cyan-50 border border-[#14ad9f]/20 rounded-xl shadow-sm">
             <svg
@@ -263,7 +268,7 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
       )}
 
       {/* Submit Button - wird NUR angezeigt wenn das Formular vollständig ausgefüllt ist */}
-      {isValid && (
+      {!hideSubmitButton && isValid && (
         <div className="text-center">
           <button
             className="bg-[#14ad9f] hover:bg-teal-700 text-white font-medium py-3 px-6 rounded-lg shadow transition-colors duration-200"

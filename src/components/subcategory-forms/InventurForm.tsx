@@ -26,9 +26,15 @@ interface InventurFormProps {
   data: InventurData;
   onDataChange: (data: InventurData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const InventurForm: React.FC<InventurFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const InventurForm: React.FC<InventurFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<InventurData>(data);
 
   const inventoryTypeOptions = [
@@ -215,9 +221,14 @@ const InventurForm: React.FC<InventurFormProps> = ({ data, onDataChange, onValid
         />
       </FormField>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Inventur" formData={data} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Inventur"
+        formData={data}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
-}
+};
 
 export default InventurForm;

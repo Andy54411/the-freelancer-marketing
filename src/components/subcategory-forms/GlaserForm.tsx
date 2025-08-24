@@ -15,9 +15,15 @@ interface GlaserFormProps {
   data: GlaserData;
   onDataChange: (data: GlaserData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const GlaserForm: React.FC<GlaserFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<GlaserData>(data);
 
   const serviceTypeOptions = [
@@ -163,7 +169,12 @@ const GlaserForm: React.FC<GlaserFormProps> = ({ data, onDataChange, onValidatio
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Glaser" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Glaser"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
 };

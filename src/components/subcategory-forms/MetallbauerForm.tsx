@@ -17,7 +17,11 @@ interface MetallbauerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const MetallbauerForm: React.FC<MetallbauerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const MetallbauerForm: React.FC<MetallbauerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<MetallbauerData>(data);
 
   const serviceTypeOptions = [

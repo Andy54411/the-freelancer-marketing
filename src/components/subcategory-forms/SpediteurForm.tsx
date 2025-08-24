@@ -17,7 +17,11 @@ interface SpediteurFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SpediteurForm: React.FC<SpediteurFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SpediteurForm: React.FC<SpediteurFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<SpediteurData>(data);
 
   const serviceTypeOptions = [

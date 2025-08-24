@@ -9,7 +9,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 export async function POST(request: NextRequest) {
   try {
     console.log('📝 [Project Requests API] Creating new project request...');
-    
+
     const body = await request.json();
     console.log('📋 [Project Requests API] Request body:', body);
 
@@ -32,11 +32,14 @@ export async function POST(request: NextRequest) {
       budgetAmount: body.budgetAmount || null,
       maxBudget: body.maxBudget || null,
       timeline: body.timeline || '',
+      startDate: body.startDate || null,
+      endDate: body.endDate || null,
+      preferredDate: body.preferredDate || null,
       location: body.location || '',
       isRemote: body.isRemote || false,
       requiredSkills: body.requiredSkills || [],
       urgency: body.urgency || 'medium',
-      projectSize: body.projectSize || 'medium',
+      subcategoryData: body.subcategoryData || null,
       customerUid: body.customerUid,
       customerEmail: body.customerEmail || '',
       status: 'open',
@@ -48,10 +51,10 @@ export async function POST(request: NextRequest) {
     };
 
     console.log('💾 [Project Requests API] Saving to Firestore...');
-    
+
     // Speichere in Firestore
     const docRef = await db.collection('project_requests').add(projectRequestData);
-    
+
     console.log('✅ [Project Requests API] Project request created with ID:', docRef.id);
 
     return NextResponse.json({
@@ -59,14 +62,13 @@ export async function POST(request: NextRequest) {
       id: docRef.id,
       message: 'Projektanfrage erfolgreich erstellt',
     });
-
   } catch (error) {
     console.error('💥 [Project Requests API] Detailed error:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      error: error
+      error: error,
     });
-    
+
     return NextResponse.json(
       { error: 'Fehler beim Erstellen der Projektanfrage' },
       { status: 500 }
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     console.log('📋 [Project Requests API] Fetching project requests...');
-    
+
     const { searchParams } = new URL(request.url);
     const customerUid = searchParams.get('customerUid');
     const status = searchParams.get('status');
@@ -110,7 +112,7 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 [Project Requests API] Executing query...');
     const snapshot = await query.get();
-    
+
     console.log('📊 [Project Requests API] Found', snapshot.size, 'project requests');
 
     const projectRequests = snapshot.docs.map(doc => ({
@@ -125,13 +127,9 @@ export async function GET(request: NextRequest) {
       projectRequests,
       total: snapshot.size,
     });
-
   } catch (error) {
     console.error('💥 [Project Requests API] Error fetching project requests:', error);
-    
-    return NextResponse.json(
-      { error: 'Fehler beim Abrufen der Projektanfragen' },
-      { status: 500 }
-    );
+
+    return NextResponse.json({ error: 'Fehler beim Abrufen der Projektanfragen' }, { status: 500 });
   }
 }

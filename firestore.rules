@@ -1461,5 +1461,32 @@ service cloud.firestore {
       // Löschen: Nur Support Staff
       allow delete: if request.auth != null && isSupportStaff();
     }
+
+    // Project Requests Collection - für User-Projekte
+    match /project_requests/{projectRequestId} {
+      // Lesen: Eigene Project Requests als Kunde
+      allow read: if request.auth != null && 
+                     (resource.data.customerUid == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Listen: Für eigene Project Requests
+      allow list: if request.auth != null && 
+                    (isSupportStaff() || request.auth != null);
+      
+      // Erstellen: User können Project Requests erstellen
+      allow create: if request.auth != null && 
+                       (request.resource.data.customerUid == request.auth.uid ||
+                        isSupportStaff());
+      
+      // Aktualisieren: Eigene Project Requests oder Support Staff
+      allow update: if request.auth != null && 
+                       (resource.data.customerUid == request.auth.uid ||
+                        isSupportStaff());
+      
+      // Löschen: Eigene Project Requests oder Support Staff
+      allow delete: if request.auth != null && 
+                       (resource.data.customerUid == request.auth.uid ||
+                        isSupportStaff());
+    }
   }
 }

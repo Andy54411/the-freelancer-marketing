@@ -15,9 +15,15 @@ interface BuchhaltungFormProps {
   data: BuchhaltungData;
   onDataChange: (data: BuchhaltungData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const BuchhaltungForm: React.FC<BuchhaltungFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const BuchhaltungForm: React.FC<BuchhaltungFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+  hideSubmitButton = false,
+}) => {
   const [formData, setFormData] = useState<BuchhaltungData>(data);
 
   const serviceTypeOptions = [
@@ -278,7 +284,12 @@ const BuchhaltungForm: React.FC<BuchhaltungFormProps> = ({ data, onDataChange, o
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Buchhaltung" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Buchhaltung"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
 };

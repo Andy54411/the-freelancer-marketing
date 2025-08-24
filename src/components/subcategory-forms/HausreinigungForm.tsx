@@ -107,6 +107,6 @@ const HausreinigungForm: React.FC<HausreinigungFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Hausreinigung" formData={formData} />
     </div>
   );
-}
+};
 
 export default HausreinigungForm;

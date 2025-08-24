@@ -17,7 +17,11 @@ interface GebäudereinigerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const GebäudereinigerForm: React.FC<GebäudereinigerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const GebäudereinigerForm: React.FC<GebäudereinigerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<ReinigungskraftData>(data);
 
   const serviceTypeOptions = [

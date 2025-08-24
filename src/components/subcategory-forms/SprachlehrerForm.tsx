@@ -17,7 +17,11 @@ interface SprachlehrerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SprachlehrerForm: React.FC<SprachlehrerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SprachlehrerForm: React.FC<SprachlehrerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<SprachlehrerData>(data);
 
   const languageOptions = [

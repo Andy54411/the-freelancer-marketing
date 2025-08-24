@@ -184,6 +184,6 @@ const KlempnerForm: React.FC<KlempnerFormProps> = ({ data, onDataChange, onValid
       <FormSubmitButton isValid={isFormValid()} subcategory="Klempner" formData={formData} />
     </div>
   );
-}
+};
 
 export default KlempnerForm;

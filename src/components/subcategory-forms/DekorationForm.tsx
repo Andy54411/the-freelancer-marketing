@@ -6,12 +6,14 @@ interface DekorationFormProps {
   data: DekorationData;
   onDataChange: (data: DekorationData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
 const DekorationForm: React.FC<DekorationFormProps> = ({
   data,
   onDataChange,
   onValidationChange,
+  hideSubmitButton = false,
 }) => {
   const [formData, setFormData] = useState<DekorationData>(data);
 
@@ -132,9 +134,14 @@ const DekorationForm: React.FC<DekorationFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Dekoration" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Dekoration"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
-}
+};
 
 export default DekorationForm;

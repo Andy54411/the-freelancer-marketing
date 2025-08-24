@@ -17,7 +17,11 @@ interface ContentMarketingFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<ContentMarketingData>(data);
 
   const serviceTypeOptions = [
@@ -219,7 +223,11 @@ const ContentMarketingForm: React.FC<ContentMarketingFormProps> = ({ data, onDat
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Content Marketing" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Content Marketing"
+        formData={formData}
+      />
     </div>
   );
 };

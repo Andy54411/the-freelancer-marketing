@@ -17,7 +17,11 @@ interface KinderbetreuungFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const KinderbetreuungForm: React.FC<KinderbetreuungFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const KinderbetreuungForm: React.FC<KinderbetreuungFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<KinderbetreuungData>(data);
 
   const serviceTypeOptions = [
@@ -70,12 +74,7 @@ const KinderbetreuungForm: React.FC<KinderbetreuungFormProps> = ({ data, onDataC
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.ageGroup &&
-      formData.frequency &&
-      formData.urgency
-    );
+    return !!(formData.serviceType && formData.ageGroup && formData.frequency && formData.urgency);
   };
 
   return (

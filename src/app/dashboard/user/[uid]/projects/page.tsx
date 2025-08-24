@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   PlusCircle,
   FolderOpen,
@@ -13,12 +14,39 @@ import {
   CheckCircle2,
   AlertCircle,
   PlayCircle,
+  Trash2,
+  MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { db } from '@/firebase/clients';
-import { collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  getDocs,
+  doc,
+  deleteDoc,
+} from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Gemini } from '@/components/logos';
@@ -33,8 +61,12 @@ interface Project {
   category: string;
   estimatedBudget?: number;
   timeline?: string;
+  startDate?: string;
+  endDate?: string;
+  preferredDate?: string;
   aiSuggestions?: string[];
   tasks: Task[];
+  proposals?: any[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,11 +83,21 @@ interface Task {
 
 const ProjectsPage: React.FC = () => {
   const params = useParams();
+  const router = useRouter();
   const uid = params?.uid as string;
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    projectId: string;
+    projectTitle: string;
+  }>({
+    isOpen: false,
+    projectId: '',
+    projectTitle: '',
+  });
 
   // Lade Projekte aus Firestore
   useEffect(() => {
@@ -63,48 +105,60 @@ const ProjectsPage: React.FC = () => {
 
     console.log('🔍 Suche Projekte für User:', { uid, userUid: user.uid });
 
-    // Verwende quotes Collection als "Projekte" da dort die echten Projekte sind
+    // Verwende project_requests Collection als "Projekte" da dort die echten Projekte sind
     const loadUserProjects = async () => {
       try {
-        // Lade quotes für den User (das sind die echten Projekte)
-        const quotesRef = collection(db, 'quotes');
-        const quotesQuery = query(quotesRef, where('customerData.uid', '==', uid));
-        const quotesSnapshot = await getDocs(quotesQuery);
-        
-        console.log('📦 quotes Collection (User Projekte):', quotesSnapshot.docs.length, 'Dokumente');
-        
-        const userProjects: Project[] = quotesSnapshot.docs.map(doc => {
+        // Lade project_requests für den User
+        const projectRequestsRef = collection(db, 'project_requests');
+        const projectRequestsQuery = query(projectRequestsRef, where('customerUid', '==', uid));
+        const projectRequestsSnapshot = await getDocs(projectRequestsQuery);
+
+        console.log(
+          '📦 project_requests Collection (User Projekte):',
+          projectRequestsSnapshot.docs.length,
+          'Dokumente'
+        );
+
+        const userProjects: Project[] = projectRequestsSnapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('📄 Quote als Projekt:', {
+          console.log('📄 Project Request als Projekt:', {
             id: doc.id,
-            projectTitle: data.projectTitle,
+            title: data.title,
             status: data.status,
-            customerData: data.customerData,
-            response: data.response
+            customerUid: data.customerUid,
+            category: data.category,
           });
 
           return {
             id: doc.id,
-            title: data.projectTitle || 'Unbenanntes Projekt',
-            description: data.projectDescription || data.additionalNotes || '',
-            status: data.status === 'accepted' ? 'active' : 
-                   data.status === 'responded' ? 'planning' :
-                   data.status === 'exchanged' ? 'completed' : 'planning',
-            priority: data.urgency === 'hoch' ? 'high' : 
-                     data.urgency === 'mittel' ? 'medium' : 'low',
-            category: data.projectCategory || '',
-            estimatedBudget: data.response?.estimatedPrice || 0,
-            timeline: data.estimatedDuration || '',
+            title: data.title || 'Unbenanntes Projekt',
+            description: data.description || '',
+            status:
+              data.status === 'completed'
+                ? 'completed'
+                : data.status === 'in_progress'
+                  ? 'active'
+                  : data.status === 'cancelled'
+                    ? 'paused'
+                    : 'planning',
+            priority:
+              data.urgency === 'high' ? 'high' : data.urgency === 'medium' ? 'medium' : 'low',
+            category: data.category || '',
+            estimatedBudget: data.budgetAmount || data.maxBudget || 0,
+            timeline: data.timeline || '',
+            startDate: data.startDate || undefined,
+            endDate: data.endDate || undefined,
+            preferredDate: data.preferredDate || undefined,
             tasks: [],
+            proposals: data.proposals || [],
             createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt ? new Date(data.updatedAt) : data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || data.createdAt?.toDate() || new Date(),
           };
         });
 
-        console.log('✅ Finale User-Projekte (von quotes):', userProjects.length);
+        console.log('✅ Finale User-Projekte (von project_requests):', userProjects.length);
         setProjects(userProjects);
         setLoading(false);
-
       } catch (error) {
         console.error('❌ Fehler beim Laden der Projekte:', error);
         toast.error('Fehler beim Laden der Projekte');
@@ -116,8 +170,46 @@ const ProjectsPage: React.FC = () => {
   }, [uid, user]);
 
   const handleNewProject = () => {
-    toast.info('Neues Projekt wird vorbereitet...', {
-      description: 'Diese Funktion wird demnächst verfügbar sein!',
+    router.push(`/dashboard/user/${uid}/projects/create`);
+  };
+
+  const handleDeleteProject = (projectId: string, projectTitle: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      projectId,
+      projectTitle,
+    });
+  };
+
+  const confirmDeleteProject = async () => {
+    try {
+      const { projectId } = deleteDialog;
+
+      // Lösche das Projekt aus der project_requests Collection
+      await deleteDoc(doc(db, 'project_requests', projectId));
+
+      // Entferne das Projekt aus dem lokalen State
+      setProjects(prevProjects => prevProjects.filter(project => project.id !== projectId));
+
+      toast.success('Projekt erfolgreich gelöscht');
+
+      // Dialog schließen
+      setDeleteDialog({
+        isOpen: false,
+        projectId: '',
+        projectTitle: '',
+      });
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen des Projekts:', error);
+      toast.error('Fehler beim Löschen des Projekts');
+    }
+  };
+
+  const cancelDeleteProject = () => {
+    setDeleteDialog({
+      isOpen: false,
+      projectId: '',
+      projectTitle: '',
     });
   };
 
@@ -251,14 +343,12 @@ const ProjectsPage: React.FC = () => {
           </Card>
         </div>
 
-            {/* Projekt-Liste */}
+        {/* Projekt-Liste */}
         {projects.length === 0 ? (
           <Card className="text-center py-12 bg-white/95 backdrop-blur-sm border-white/20">
             <CardContent>
               <FolderOpen className="h-16 w-16 text-[#14ad9f] mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Noch keine Projekte
-              </h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Noch keine Projekte</h3>
               <p className="text-gray-600 mb-6">
                 Starte dein erstes Projekt und nutze die KI-Unterstützung für optimale Ergebnisse.
               </p>
@@ -273,67 +363,135 @@ const ProjectsPage: React.FC = () => {
           </Card>
         ) : (
           <div className="grid gap-6">
-            {projects.map((project) => {
+            {projects.map(project => {
               const statusIcon = getStatusIcon(project.status);
               const priorityColor = getPriorityColor(project.priority);
-              
+
               return (
-                <Card key={project.id} className="bg-white/95 backdrop-blur-sm border-white/20">
+                <Card
+                  key={project.id}
+                  className="bg-white/95 backdrop-blur-sm border-white/20 hover:shadow-lg transition-shadow"
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          {statusIcon}
-                          <CardTitle className="text-lg">{project.title}</CardTitle>
+                      <Link
+                        href={`/dashboard/user/${uid}/projects/${project.id}`}
+                        className="flex-1"
+                      >
+                        <div className="flex items-center gap-3 cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            {statusIcon}
+                            <CardTitle className="text-lg hover:text-[#14ad9f] transition-colors">
+                              {project.title}
+                            </CardTitle>
+                          </div>
                         </div>
-                      </div>
+                      </Link>
                       <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="outline" 
-                          className={`${priorityColor} border-current`}
-                        >
-                          {project.priority === 'low' ? 'Niedrig' : 
-                           project.priority === 'medium' ? 'Mittel' : 'Hoch'}
+                        <Badge variant="outline" className={`${priorityColor} border-current`}>
+                          {project.priority === 'low'
+                            ? 'Niedrig'
+                            : project.priority === 'medium'
+                              ? 'Mittel'
+                              : 'Hoch'}
                         </Badge>
                         <Badge variant="secondary">
-                          {project.status === 'planning' ? 'Planung' :
-                           project.status === 'active' ? 'Aktiv' :
-                           project.status === 'paused' ? 'Pausiert' : 'Abgeschlossen'}
+                          {project.status === 'planning'
+                            ? 'Planung'
+                            : project.status === 'active'
+                              ? 'Aktiv'
+                              : project.status === 'paused'
+                                ? 'Pausiert'
+                                : 'Abgeschlossen'}
                         </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 hover:bg-gray-100"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.preventDefault();
+                                handleDeleteProject(project.id, project.title);
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Projekt löschen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
-                    <CardDescription className="text-sm text-gray-600">
-                      {project.description}
-                    </CardDescription>
+                    <Link href={`/dashboard/user/${uid}/projects/${project.id}`}>
+                      <CardDescription className="text-sm text-gray-600 cursor-pointer hover:text-gray-800 transition-colors">
+                        {project.description}
+                      </CardDescription>
+                    </Link>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                      <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {project.timeline || 'Kein Zeitrahmen'}
-                        </span>
-                        {project.estimatedBudget && (
+                  <Link href={`/dashboard/user/${uid}/projects/${project.id}`}>
+                    <CardContent className="cursor-pointer hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <div className="flex items-center gap-4 flex-wrap">
                           <span className="flex items-center gap-1">
-                            <Target className="h-4 w-4" />
-                            {project.estimatedBudget.toLocaleString('de-DE', {
-                              style: 'currency',
-                              currency: 'EUR'
-                            })}
+                            <Calendar className="h-4 w-4" />
+                            {(() => {
+                              if (project.startDate && project.endDate) {
+                                const startDate = new Date(project.startDate).toLocaleDateString(
+                                  'de-DE'
+                                );
+                                const endDate = new Date(project.endDate).toLocaleDateString(
+                                  'de-DE'
+                                );
+                                return `${startDate} - ${endDate}`;
+                              } else if (project.startDate) {
+                                const startDate = new Date(project.startDate).toLocaleDateString(
+                                  'de-DE'
+                                );
+                                return `Start: ${startDate}`;
+                              } else if (project.endDate) {
+                                const endDate = new Date(project.endDate).toLocaleDateString(
+                                  'de-DE'
+                                );
+                                return `Ende: ${endDate}`;
+                              } else if (project.preferredDate) {
+                                const preferredDate = new Date(
+                                  project.preferredDate
+                                ).toLocaleDateString('de-DE');
+                                return `Wunschtermin: ${preferredDate}`;
+                              } else {
+                                return project.timeline || 'Kein Zeitrahmen';
+                              }
+                            })()}
                           </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          {project.tasks.length} Aufgaben
-                        </span>
+                          {project.estimatedBudget && (
+                            <span className="flex items-center gap-1">
+                              <Target className="h-4 w-4" />
+                              {project.estimatedBudget.toLocaleString('de-DE', {
+                                style: 'currency',
+                                currency: 'EUR',
+                              })}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            {project.proposals?.length || 0} Angebote
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span>
+                            Zuletzt bearbeitet: {project.updatedAt.toLocaleDateString('de-DE')}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span>
-                          Zuletzt bearbeitet: {project.updatedAt.toLocaleDateString('de-DE')}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  </Link>
                 </Card>
               );
             })}
@@ -348,6 +506,33 @@ const ProjectsPage: React.FC = () => {
             userId={uid}
           />
         )}
+
+        {/* Lösch-Bestätigungsdialog */}
+        <AlertDialog
+          open={deleteDialog.isOpen}
+          onOpenChange={open => !open && cancelDeleteProject()}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Projekt löschen</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sind Sie sicher, dass Sie das Projekt "{deleteDialog.projectTitle}" löschen möchten?
+                Diese Aktion kann nicht rückgängig gemacht werden. Alle Angebote und Daten zu diesem
+                Projekt gehen verloren.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={cancelDeleteProject}>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteProject}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Projekt löschen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

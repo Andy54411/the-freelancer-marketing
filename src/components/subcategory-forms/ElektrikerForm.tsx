@@ -17,7 +17,11 @@ interface ElektrikerFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const ElektrikerForm: React.FC<ElektrikerFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const ElektrikerForm: React.FC<ElektrikerFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<ElektrikerData>(data);
 
   const serviceTypeOptions = [

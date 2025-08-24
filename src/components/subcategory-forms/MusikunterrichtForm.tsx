@@ -277,6 +277,6 @@ const MusikunterrichtForm: React.FC<MusikunterrichtFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Musikunterricht" formData={data} />
     </div>
   );
-}
+};
 
 export default MusikunterrichtForm;

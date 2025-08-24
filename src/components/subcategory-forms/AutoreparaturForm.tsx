@@ -219,6 +219,6 @@ const AutoreparaturForm: React.FC<AutoreparaturFormProps> = ({
       <FormSubmitButton isValid={isFormValid()} subcategory="Autoreparatur" formData={formData} />
     </div>
   );
-}
+};
 
 export default AutoreparaturForm;

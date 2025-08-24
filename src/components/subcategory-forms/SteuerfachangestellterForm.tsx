@@ -17,7 +17,11 @@ interface SteuerfachangestellterFormProps {
   onValidationChange: (isValid: boolean) => void;
 }
 
-const SteuerfachangestellterForm: React.FC<SteuerfachangestellterFormProps> = ({ data, onDataChange, onValidationChange }) => {
+const SteuerfachangestellterForm: React.FC<SteuerfachangestellterFormProps> = ({
+  data,
+  onDataChange,
+  onValidationChange,
+}) => {
   const [formData, setFormData] = useState<SteuerfachangestellterData>(data);
 
   const serviceTypeOptions = [
@@ -65,20 +69,12 @@ const SteuerfachangestellterForm: React.FC<SteuerfachangestellterFormProps> = ({
   };
 
   useEffect(() => {
-    const isValid = !!(
-      formData.serviceType &&
-      formData.clientType &&
-      formData.urgency
-    );
+    const isValid = !!(formData.serviceType && formData.clientType && formData.urgency);
     onValidationChange(isValid);
   }, [formData, onValidationChange]);
 
   const isFormValid = () => {
-    return !!(
-      formData.serviceType &&
-      formData.clientType &&
-      formData.urgency
-    );
+    return !!(formData.serviceType && formData.clientType && formData.urgency);
   };
 
   return (
@@ -309,7 +305,11 @@ const SteuerfachangestellterForm: React.FC<SteuerfachangestellterFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Steuerfachangestellte/r" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Steuerfachangestellte/r"
+        formData={formData}
+      />
     </div>
   );
 };
