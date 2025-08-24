@@ -5,46 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import type { ServiceAccount } from 'firebase-admin';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
-// Firebase Admin initialisieren
-if (!getApps().length) {
-  try {
-    // Versuche die service-account.json zu lesen
-    const serviceAccountPath = join(process.cwd(), 'firebase_functions', 'service-account.json');
-    const serviceAccountData = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
-
-    initializeApp({
-      credential: cert(serviceAccountData as ServiceAccount),
-    });
-  } catch (error) {
-    console.error('Failed to initialize Firebase Admin:', error);
-    // Fallback mit Umgebungsvariablen (falls im Production-Environment)
-    if (
-      process.env.FIREBASE_PROJECT_ID &&
-      process.env.FIREBASE_PRIVATE_KEY &&
-      process.env.FIREBASE_CLIENT_EMAIL
-    ) {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        } as ServiceAccount),
-      });
-    } else {
-      throw new Error(
-        'Firebase Admin initialization failed: No service account or environment variables found'
-      );
-    }
-  }
-}
-
-const db = getFirestore();
+import { db } from '@/firebase/server';
 
 export async function PATCH(request: NextRequest) {
   try {

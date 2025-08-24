@@ -5,6 +5,14 @@ import { AppOptions } from 'firebase-admin/app';
 
 if (!admin.apps.length) {
   try {
+    // WICHTIG: Entferne GOOGLE_APPLICATION_CREDENTIALS sofort, um zu verhindern,
+    // dass Firebase es automatisch als Dateipfad interpretiert
+    const originalGoogleAppCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (originalGoogleAppCredentials) {
+      delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      console.log('[Firebase Server] 🔒 GOOGLE_APPLICATION_CREDENTIALS präventiv entfernt.');
+    }
+
     const options: AppOptions = {
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f',
       storageBucket: 'tilvo-f142f.firebasestorage.app',
@@ -13,10 +21,10 @@ if (!admin.apps.length) {
         'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     };
 
-    // ROBUST CREDENTIAL HANDLING für Vercel und lokale Entwicklung
+    // VERCEL OPTIMIERTE CREDENTIAL HANDLING
     let credentialSet = false;
 
-    // 1. Versuche zuerst FIREBASE_SERVICE_ACCOUNT_KEY (für Vercel optimiert)
+    // 1. Priorität: FIREBASE_SERVICE_ACCOUNT_KEY (für Vercel)
     const firebaseServiceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (firebaseServiceAccountKey && !credentialSet) {
       try {
@@ -33,28 +41,19 @@ if (!admin.apps.length) {
       }
     }
 
-    // 2. Fallback: GOOGLE_APPLICATION_CREDENTIALS als JSON-String (für Vercel)
-    const googleAppCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (googleAppCredentials && !credentialSet) {
-      // NIEMALS als Dateipfad verwenden in Vercel/Lambda - immer als JSON parsen
+    // 2. Fallback: Verwende die ursprünglich gespeicherte GOOGLE_APPLICATION_CREDENTIALS als JSON-String
+    if (originalGoogleAppCredentials && !credentialSet) {
       try {
         console.log(
-          '[Firebase Server] GOOGLE_APPLICATION_CREDENTIALS als JSON-String verarbeiten (Vercel-Modus)...'
+          '[Firebase Server] Verwende ursprünglich gespeicherte GOOGLE_APPLICATION_CREDENTIALS als JSON-String...'
         );
         // Bereinige escaped newlines und parse als JSON
-        const cleanedJson = googleAppCredentials.replace(/\\n/g, '\n');
+        const cleanedJson = originalGoogleAppCredentials.replace(/\\n/g, '\n');
         const serviceAccount = JSON.parse(cleanedJson);
         options.credential = admin.credential.cert(serviceAccount);
         credentialSet = true;
         console.log(
           '[Firebase Server] ✅ GOOGLE_APPLICATION_CREDENTIALS als JSON erfolgreich geladen.'
-        );
-
-        // WICHTIG: Entferne die Umgebungsvariable nach dem Parsen, um zu verhindern,
-        // dass Firebase sie automatisch als Dateipfad verwendet
-        delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
-        console.log(
-          '[Firebase Server] 🔒 GOOGLE_APPLICATION_CREDENTIALS Umgebungsvariable entfernt.'
         );
       } catch (jsonError: any) {
         console.warn(
@@ -63,7 +62,7 @@ if (!admin.apps.length) {
         );
         console.warn(
           '[Firebase Server] ⚠️ Credentials Inhalt (erste 100 Zeichen):',
-          googleAppCredentials.substring(0, 100)
+          originalGoogleAppCredentials.substring(0, 100)
         );
       }
     }

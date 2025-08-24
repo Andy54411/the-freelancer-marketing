@@ -1,16 +1,9 @@
 // Notification Service for Company Support Tickets
-import admin from 'firebase-admin';
+import { ResendEmailService } from './resend-email-service';
+import { admin } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Initialize Firebase Admin if not already done
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-    });
-  } catch (error) {
-    console.log('Firebase admin already initialized or error:', error);
-  }
-}
+// Firebase Admin is already initialized in @/firebase/server
+// No need to initialize here
 
 const db = admin.firestore();
 

@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import admin from 'firebase-admin';
+import { db } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Firebase Admin SDK initialisieren
-if (!admin.apps.length) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const serviceAccount = require('@/../firebase_functions/service-account.json');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-    });
-  } catch (error) {
-    console.error('Firebase Admin initialization error:', error);
-  }
-}
-
-const db = admin.firestore();
+// Use centralized Firebase setup instead of separate initialization
 
 export async function GET(request: NextRequest) {
   try {

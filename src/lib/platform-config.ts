@@ -1,44 +1,7 @@
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { admin, db } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Firebase Admin Setup
-let db: any = null;
-
-try {
-  // Nur initialisieren wenn Service Account verfügbar ist
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-
-  if (serviceAccountKey && serviceAccountKey !== 'undefined') {
-    if (!getApps().length) {
-      let projectId = process.env.FIREBASE_PROJECT_ID;
-
-      const serviceAccount = JSON.parse(serviceAccountKey);
-
-      if (!projectId && serviceAccount.project_id) {
-        projectId = serviceAccount.project_id;
-      }
-
-      if (serviceAccount.project_id && projectId) {
-        initializeApp({
-          credential: cert(serviceAccount),
-          projectId: projectId,
-        });
-        db = getFirestore();
-        console.log('[Firebase Init] Successfully initialized');
-      } else {
-        console.log('[Firebase Init] Missing project ID');
-      }
-    } else {
-      db = getFirestore();
-      console.log('[Firebase Init] Using existing app');
-    }
-  } else {
-    console.log('[Firebase Init] Missing service account key');
-  }
-} catch (error) {
-  console.log('[Firebase Init] Error during initialization:', error);
-  db = null;
-}
+// Firebase Admin is already initialized in @/firebase/server
+// No need to initialize here - use centralized setup
 
 export interface PlatformFeeConfig {
   id: string;

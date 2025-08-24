@@ -1,15 +1,9 @@
 // Firebase Admin SDK basierte Notification-Erstellung (umgeht Client-Regeln)
 import { NextRequest, NextResponse } from 'next/server';
-import admin from 'firebase-admin';
+import { admin, db } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Initialisiere Firebase Admin SDK falls noch nicht geschehen
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-  });
-}
-
-const db = admin.firestore();
+// Firebase Admin is already initialized in @/firebase/server
+// No need to initialize here
 
 export async function POST(request: NextRequest) {
   try {

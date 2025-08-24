@@ -1,18 +1,9 @@
 // Project Request Notification Service für Angebote zu Projekten
-import admin from 'firebase-admin';
+import { ResendEmailService } from './resend-email-service';
+import { admin, db } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Initialize Firebase Admin if not already done
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-    });
-  } catch (error) {
-    console.log('Firebase admin already initialized or error:', error);
-  }
-}
-
-const db = admin.firestore();
+// Firebase Admin is already initialized in @/firebase/server
+// No need to initialize here
 
 export interface ProjectNotification {
   id?: string;
