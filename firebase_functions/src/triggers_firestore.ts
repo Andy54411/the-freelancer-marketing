@@ -153,7 +153,7 @@ export const createUserProfile = onDocumentCreated("users/{userId}", async (even
     loggerV2.info(`[createUserProfile] Schreibe companyData-Objekt für ${userId}:`, JSON.stringify(finalCompanyData, null, 2));
 
     try {
-      await db.collection("companies").doc(userId).set(finalCompanyData, { merge: true });
+      await db.collection("users").doc(userId).set(finalCompanyData, { merge: true });
       loggerV2.info(`[createUserProfile] Company-Dokument für ${userId} erstellt/gemerged.`);
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -227,7 +227,7 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
       stripeDetailsSubmitted: userData.stripeDetailsSubmitted ?? false,
     };
 
-    const companyDocBefore = await db.collection("companies").doc(userId).get();
+    const companyDocBefore = await db.collection("users").doc(userId).get();
     if (companyDocBefore.exists && companyDocBefore.data()?.createdAt) {
       companyDataUpdate.createdAt = companyDocBefore.data()?.createdAt;
     } else if (userData.createdAt) {
@@ -242,7 +242,7 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
     loggerV2.info(`[updateUserProfile] Schreibe companyDataUpdate-Objekt für ${userId}:`, JSON.stringify(finalCompanyDataUpdate, null, 2));
 
     try {
-      await db.collection("companies").doc(userId).set(finalCompanyDataUpdate, { merge: true });
+      await db.collection("users").doc(userId).set(finalCompanyDataUpdate, { merge: true });
       loggerV2.info(`[updateUserProfile] Company-Dokument für ${userId} aktualisiert.`);
     } catch (error: unknown) {
       if (error instanceof Error) {

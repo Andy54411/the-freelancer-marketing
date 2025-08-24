@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
 
               if (providerStripeAccountId && companyReceives) {
                 const companyRef = db
-                  .collection('companies')
+                  .collection('users')
                   .where('anbieterStripeAccountId', '==', providerStripeAccountId)
                   .limit(1);
                 const companySnapshot = await companyRef.get();
@@ -400,7 +400,7 @@ export async function POST(req: NextRequest) {
 
                   // Update company document with transfer info
                   const companyRef = db
-                    .collection('companies')
+                    .collection('users')
                     .where('anbieterStripeAccountId', '==', providerStripeAccountId)
                     .limit(1);
                   const companySnapshot = await companyRef.get();

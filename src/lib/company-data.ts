@@ -7,7 +7,7 @@ export interface CompanyData {
 
 export async function getAllCompanies() {
   try {
-    const companiesSnapshot = await db.collection('companies').get();
+    const companiesSnapshot = await db.collection('users').get();
     const companies = companiesSnapshot.docs.map((doc: admin.firestore.QueryDocumentSnapshot) => ({
       id: doc.id,
       ...doc.data(),
@@ -26,7 +26,7 @@ export async function getAllCompanies() {
 
 export async function getCompanyData(id: string): Promise<CompanyData | null> {
   const userDocRef = db.collection('users').doc(id);
-  const companyDocRef = db.collection('companies').doc(id);
+  const companyDocRef = db.collection('users').doc(id);
 
   const [userDoc, companyDoc] = await Promise.all([userDocRef.get(), companyDocRef.get()]);
 

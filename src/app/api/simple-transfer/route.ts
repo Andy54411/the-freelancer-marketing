@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
       console.log('[SIMPLE-TRANSFER] Found in users:', stripeAccountId);
     }
 
-    // Fallback: companies collection
-    if (!stripeAccountId) {
-      const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
+        // Fallback: users collection
+    if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
+      const companyDoc = await db.collection('users').doc(firebaseUserId).get();
       if (companyDoc.exists) {
         const companyData = companyDoc.data();
         stripeAccountId = companyData?.stripeAccountId;

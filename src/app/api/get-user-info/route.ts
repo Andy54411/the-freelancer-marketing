@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Auch companies collection checken
     let companyData: any = null;
     try {
-      const companiesQuery = await db.collection('companies')
+      const companiesQuery = await db.collection('users')
         .where('ownerUserId', '==', firebaseUserId)
         .limit(1)
         .get();

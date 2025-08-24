@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Provider ID nicht gefunden.' }, { status: 404 });
     }
 
-    const providerDoc = await db.collection('companies').doc(providerId).get();
+    const providerDoc = await db.collection('users').doc(providerId).get();
     if (!providerDoc.exists) {
       return NextResponse.json({ error: 'Provider nicht gefunden.' }, { status: 404 });
     }

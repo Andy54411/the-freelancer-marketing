@@ -91,8 +91,8 @@ export async function GET(
         };
 
         try {
-          // First try companies collection
-          const companyDoc = await db.collection('companies').doc(proposal.companyUid).get();
+          // First try users collection
+          const companyDoc = await db.collection('users').doc(proposal.companyUid).get();
           if (companyDoc.exists) {
             const companyData = companyDoc.data();
             companyInfo = {

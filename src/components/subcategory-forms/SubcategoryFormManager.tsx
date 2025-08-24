@@ -89,6 +89,7 @@ import UebersetzerForm from './ÜbersetzerForm';
 
 interface SubcategoryFormManagerProps {
   subcategory: string;
+  data?: SubcategoryData | null; // Initial data for the form
   onDataChange: (data: SubcategoryData) => void;
   onValidationChange: (isValid: boolean) => void;
   hideSubmitButton?: boolean; // Versteckt den Submit-Button für Dashboard-Verwendung
@@ -96,6 +97,7 @@ interface SubcategoryFormManagerProps {
 
 const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   subcategory,
+  data,
   onDataChange,
   onValidationChange,
   hideSubmitButton = false,
@@ -108,6 +110,11 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   // Initialisiere Formulardaten basierend auf Unterkategorie
   useEffect(() => {
     const initializeFormData = (): SubcategoryData => {
+      // Use provided data if available
+      if (data) {
+        return data;
+      }
+      
       switch (subcategory) {
         case 'Maler & Lackierer':
           return {
@@ -1081,7 +1088,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
 
     const initialData = initializeFormData();
     setFormData(initialData);
-  }, [subcategory]);
+  }, [subcategory, data]);
 
   // Nur Datenweiterleitung - Validierung kommt aus den lokalen Formularen
   useEffect(() => {

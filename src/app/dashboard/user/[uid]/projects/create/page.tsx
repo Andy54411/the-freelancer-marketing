@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import SubcategoryFormManager from '@/components/subcategory-forms/SubcategoryFormManager';
-import { SubcategoryData } from '@/types/subcategoryData';
+import { BaseSubcategoryData as SubcategoryData } from '@/types/subcategory-forms';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -53,6 +53,8 @@ interface ProjectRequest {
   attachments: File[];
   urgency: 'low' | 'medium' | 'high';
   subcategoryData?: any; // Spezifische Unterkategorie-Daten
+  budget?: number; // Legacy field support
+  projectSize?: string; // Project size field
 }
 
 export default function CreateProjectRequestPage() {
@@ -83,6 +85,17 @@ export default function CreateProjectRequestPage() {
     subcategoryData: null,
   });
 
+  const handleSubcategoryDataChange = useCallback((data: SubcategoryData) => {
+    setFormData(prev => ({
+      ...prev,
+      subcategoryData: data,
+    }));
+  }, []);
+
+  const handleSubcategoryValidationChange = useCallback((isValid: boolean) => {
+    setSubcategoryFormValid(isValid);
+  }, []);
+
   // Gradient Hintergrund Effect
   useEffect(() => {
     return () => {
@@ -95,6 +108,7 @@ export default function CreateProjectRequestPage() {
     switch (subcategory) {
       case 'Mietkoch':
         return {
+          subcategory: 'Mietkoch',
           kochAnlass: '',
           anzahlPersonen: 1,
           menuWuensche: '',
@@ -108,6 +122,7 @@ export default function CreateProjectRequestPage() {
         };
       case 'Webentwicklung':
         return {
+          subcategory: 'Webentwicklung',
           projektTyp: '',
           technologien: [],
           designVorhanden: false,
@@ -123,6 +138,7 @@ export default function CreateProjectRequestPage() {
         };
       case 'Catering':
         return {
+          subcategory: 'Catering',
           veranstaltungsTyp: '',
           anzahlGaeste: 1,
           veranstaltungsort: '',
@@ -138,6 +154,7 @@ export default function CreateProjectRequestPage() {
         };
       case 'Elektriker':
         return {
+          subcategory: 'Elektriker',
           arbeitsTyp: '',
           raumAnzahl: 1,
           notfall: false,
@@ -151,7 +168,9 @@ export default function CreateProjectRequestPage() {
           dokumentation: false,
         };
       default:
-        return {};
+        return {
+          subcategory: '',
+        };
     }
   };
 
@@ -177,7 +196,7 @@ export default function CreateProjectRequestPage() {
 
   const selectedCategory = categories.find(cat => cat.title === formData.category);
 
-  const handleInputChange = (field: keyof ProjectRequest, value: string | boolean | string[]) => {
+  const handleInputChange = (field: keyof ProjectRequest, value: string | boolean | string[] | number | undefined | File[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -209,17 +228,6 @@ export default function CreateProjectRequestPage() {
       }));
     }
   };
-
-  const handleSubcategoryDataChange = useCallback((data: SubcategoryData) => {
-    setFormData(prev => ({
-      ...prev,
-      subcategoryData: data,
-    }));
-  }, []);
-
-  const handleSubcategoryValidationChange = useCallback((isValid: boolean) => {
-    setSubcategoryFormValid(isValid);
-  }, []);
 
   const handleSubmit = async () => {
     if (!user || !uid) {
@@ -958,7 +966,7 @@ export default function CreateProjectRequestPage() {
                   {currentStep < 3 ? (
                     <Button
                       onClick={nextStep}
-                      disabled={currentStep === 2 && formData.subcategory && !subcategoryFormValid}
+                      disabled={!!(currentStep === 2 && formData.subcategory && !subcategoryFormValid)}
                       className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                     >
                       Weiter

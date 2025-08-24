@@ -113,7 +113,7 @@ export const searchAvailableProviders = onCall({
     }
 
     const db = getDb();
-    const providersSnapshot = await db.collection("companies")
+    const providersSnapshot = await db.collection("users")
         .where("selectedSubcategory", "==", subcategory)
         .where("stripeChargesEnabled", "==", true) // Nur Anbieter mit aktivierten Zahlungen
         .where("stripePayoutsEnabled", "==", true) // und aktivierten Auszahlungen

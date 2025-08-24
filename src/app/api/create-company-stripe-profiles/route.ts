@@ -185,11 +185,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
         updateData.stripeAccountId = results.stripeAccountId;
       }
 
-      // Update sowohl users als auch companies collection
-      await Promise.all([
-        db.collection('users').doc(uid).update(updateData),
-        db.collection('companies').doc(uid).update(updateData),
-      ]);
+      // Update users collection
+      await db.collection('users').doc(uid).update(updateData);
 
       console.log('[✅ 3/3] Firestore erfolgreich aktualisiert für UID:', uid);
     } catch (firestoreError) {

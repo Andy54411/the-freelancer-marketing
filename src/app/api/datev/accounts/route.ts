@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       console.log('[DATEV Accounts] No cookie token, checking Firestore for company:', companyId);
       try {
         const tokenDoc = await db
-          .collection('companies')
+          .collection('users')
           .doc(companyId)
           .collection('datev')
           .doc('tokens')

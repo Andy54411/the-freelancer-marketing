@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     // Hole Google Ads Konfiguration aus Firestore
     const googleAdsSnap = await db
-      .collection('companies')
+      .collection('users')
       .doc(companyId)
       .collection('integrations')
       .doc('googleAds')
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
               ? 'Average'
               : 'Needs Improvement',
 
-      recommendedActions: [],
+      recommendedActions: [] as string[],
 
       insights: {
         topPerformingDay: analytics.daily.reduce(

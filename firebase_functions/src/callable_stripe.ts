@@ -908,7 +908,7 @@ export const updateStripeCompanyDetails = onCall(
       }
 
       await userDocRef.update({ stripeAccountError: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() });
-      const companyDocRef = db.collection("companies").doc(userId);
+      const companyDocRef = db.collection("users").doc(userId);
       if ((await companyDocRef.get()).exists) {
         await companyDocRef.set({ stripeAccountError: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       }
@@ -955,7 +955,7 @@ export const updateStripeCompanyDetails = onCall(
       try {
         const userDocForError = db.collection("users").doc(userId);
         await userDocForError.update({ stripeAccountError: error.message || 'Unbekannter Stripe-Fehler', updatedAt: FieldValue.serverTimestamp() });
-        const companyDocRefForError = db.collection("companies").doc(userId);
+        const companyDocRefForError = db.collection("users").doc(userId);
         if ((await companyDocRefForError.get()).exists) {
           await companyDocRefForError.set({ stripeAccountError: error.message || 'Unbekannter Stripe-Fehler', updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         }

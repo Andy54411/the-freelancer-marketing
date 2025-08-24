@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         const providerId = orderData?.providerId;
         
         if (providerId) {
-          const providerDoc = await db.collection('companies').doc(providerId).get();
+          const providerDoc = await db.collection('users').doc(providerId).get();
           if (providerDoc.exists) {
             const providerData = providerDoc.data();
             providerInfo = {
@@ -47,24 +47,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Wenn firebaseUserId gegeben, hole Provider direkt
+    // Wenn firebaseUserId gegeben, hole Provider direkt aus users collection
     if (!providerInfo && firebaseUserId) {
-      const companiesQuery = await db.collection('companies')
-        .where('ownerUserId', '==', firebaseUserId)
-        .limit(1)
-        .get();
+      const userDoc = await db.collection('users').doc(firebaseUserId).get();
       
-      if (!companiesQuery.empty) {
-        const companyDoc = companiesQuery.docs[0];
-        const companyData = companyDoc.data();
-        
-        providerInfo = {
-          providerId: companyDoc.id,
-          stripeAccountId: companyData?.stripeAccountId,
-          companyName: companyData?.companyName || companyData?.name,
-          ownerUserId: companyData?.ownerUserId,
-          email: companyData?.email
-        };
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        if (userData && userData.user_type === 'firma') {
+          providerInfo = {
+            providerId: userDoc.id,
+            stripeAccountId: userData?.stripeAccountId,
+            companyName: userData?.companyName || userData?.name,
+            ownerUserId: userData?.uid,
+            email: userData?.email
+          };
+        }
       }
     }
 

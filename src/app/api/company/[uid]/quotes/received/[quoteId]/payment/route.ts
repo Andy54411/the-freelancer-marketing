@@ -141,7 +141,7 @@ export async function POST(
               }
 
               // Provider Name abrufen
-              const providerDoc = await db.collection('companies').doc(providerId).get();
+              const providerDoc = await db.collection('users').doc(providerId).get();
               if (providerDoc.exists) {
                 const providerData = providerDoc.data();
                 providerName = providerData?.companyName || 'Anbieter';

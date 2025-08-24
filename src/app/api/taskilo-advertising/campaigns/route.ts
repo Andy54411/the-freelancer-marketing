@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Hole Google Ads Konfiguration aus Firestore
     const googleAdsSnap = await db
-      .collection('companies')
+      .collection('users')
       .doc(companyId)
       .collection('integrations')
       .doc('googleAds')
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       else if (performanceScore >= 60) status = 'good';
       else if (performanceScore >= 40) status = 'average';
 
-      const recommendations = [];
+      const recommendations: string[] = [];
       if (ctr < 2) recommendations.push('Improve ad copy for better click-through rate');
       if (roas < 2) recommendations.push('Optimize keywords and targeting');
       if (conversions === 0) recommendations.push('Set up conversion tracking');
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     // Hole Google Ads Konfiguration
     const googleAdsSnap = await db
-      .collection('companies')
+      .collection('users')
       .doc(companyId)
       .collection('integrations')
       .doc('googleAds')
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
       campaignData
     );
 
-    if (!createResponse.success) {
+    if (!createResponse.success || !createResponse.data) {
       return NextResponse.json(
         {
           error: 'Fehler beim Erstellen der Kampagne',
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
 
     // Speichere Metadaten in Firestore
     await db
-      .collection('companies')
+      .collection('users')
       .doc(companyId)
       .collection('taskiloAdvertising')
       .doc('campaigns')

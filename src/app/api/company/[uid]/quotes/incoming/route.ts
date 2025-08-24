@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Get company data to verify it exists and get additional info
     console.log('[Incoming Quotes API] Getting company data for:', uid);
-    const companyDoc = await db.collection('companies').doc(uid).get();
+    const companyDoc = await db.collection('users').doc(uid).get();
     if (!companyDoc.exists) {
       console.log('[Incoming Quotes API] Company not found:', uid);
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
@@ -196,21 +196,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               };
             }
           } else {
-            // Try companies collection if not found in users
-            const companyDoc = await db.collection('companies').doc(projectData.customerUid).get();
-            if (companyDoc.exists) {
-              const companyData = companyDoc.data();
-              if (companyData) {
-                customerInfo = {
-                  name: companyData.companyName || 'Unbekanntes Unternehmen',
-                  type: 'company',
-                  email: companyData.email,
-                  phone: companyData.phone,
-                  avatar: companyData.logo || null,
-                  uid: companyDoc.id,
-                };
-              }
-            }
+            // Customer not found in users collection
+            console.log('[Incoming Quotes API] Customer not found in users collection:', projectData.customerUid);
           }
         } catch (error) {
           console.error('[Incoming Quotes API] Error fetching customer data:', error);

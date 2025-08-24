@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Check if tokens exist in Firestore
     const tokenDoc = await db
-      .collection('companies')
+      .collection('users')
       .doc(companyId)
       .collection('datev')
       .doc('tokens')
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const isExpired = now > expiresAt;
 
     // Check company connection status
-    const companyDoc = await db.collection('companies').doc(companyId).get();
+    const companyDoc = await db.collection('users').doc(companyId).get();
     const companyData = companyDoc.data();
     const datevStatus = companyData?.datev || {};
 

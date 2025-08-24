@@ -63,36 +63,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fallback: Suche in companies Collection
-    if (!stripeAccountId) {
-      const companyDocRef = db.collection('companies').doc(firebaseUserId);
+    // Fallback: Suche in users Collection
+    if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
+      const companyDocRef = db.collection('users').doc(firebaseUserId);
       const companyDoc = await companyDocRef.get();
-
       if (companyDoc.exists) {
-        userData = companyDoc.data();
-        stripeAccountId = userData?.stripeAccountId;
+        const companyData = companyDoc.data();
+        stripeAccountId = companyData?.stripeAccountId;
         console.log(
-          '[API /request-payout] Found user in companies collection with stripeAccountId:',
+          '[API /request-payout] Found user in users collection with stripeAccountId:',
           stripeAccountId
         );
       }
-    }
-
-    if (!userData) {
-      console.error('[API /request-payout] Benutzer nicht gefunden in Firestore.', {
-        firebaseUserId,
-      });
-      return NextResponse.json({ error: 'Benutzer nicht gefunden.' }, { status: 404 });
-    }
-
-    if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
-      console.error('[API /request-payout] Keine gültige Stripe Account ID gefunden.', {
-        stripeAccountId,
-      });
-      return NextResponse.json(
-        { error: 'Keine gültige Stripe Account ID gefunden.' },
-        { status: 400 }
-      );
     }
 
     console.log(
@@ -118,7 +100,14 @@ export async function POST(request: NextRequest) {
     );
 
     // Prüfe verfügbares Guthaben vor Auszahlung
-    const balance = await stripe.balance.retrieve({
+    if (!stripeAccountId) {
+      return NextResponse.json(
+        { error: 'Kein Stripe Account verfügbar' },
+        { status: 400 }
+      );
+    }
+
+    const balance = await stripe.balance.retrieve(undefined, {
       stripeAccount: stripeAccountId,
     });
 
@@ -153,7 +142,7 @@ export async function POST(request: NextRequest) {
         },
       },
       {
-        stripeAccount: stripeAccountId,
+        stripeAccount: stripeAccountId || undefined,
       }
     );
 

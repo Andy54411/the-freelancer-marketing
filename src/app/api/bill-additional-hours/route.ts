@@ -103,15 +103,15 @@ export async function POST(request: NextRequest) {
               fallbackStripeAccountId
             );
 
-            // Migriere die ID zur companies collection (Server-Side)
+            // Migriere die ID zur users collection (Server-Side)
             try {
-              await db.collection('companies').doc(orderData.selectedAnbieterId).update({
+              await db.collection('users').doc(orderData.selectedAnbieterId).update({
                 stripeConnectAccountId: fallbackStripeAccountId,
                 migratedFromUsers: true,
                 migratedAt: new Date(),
               });
               console.log(
-                '[API /bill-additional-hours] Successfully migrated Stripe Account ID to companies collection'
+                '[API /bill-additional-hours] Successfully migrated Stripe Account ID to users collection'
               );
             } catch (migrationError) {
               console.warn(

@@ -40,6 +40,10 @@ export async function POST(request: NextRequest) {
 
     const quoteData = quoteDoc.data();
 
+    if (!quoteData) {
+      return NextResponse.json({ error: 'Angebotsanfrage-Daten nicht verfügbar' }, { status: 404 });
+    }
+
     console.log('🔍 Debug Quote Data:', {
       quoteId,
       userUid: decodedToken.uid,
@@ -112,7 +116,7 @@ export async function POST(request: NextRequest) {
           try {
             // Provider-Namen aus der aktuellen Company holen
             let providerName = 'Anbieter';
-            const companyDoc = await db.collection('companies').doc(decodedToken.uid).get();
+            const companyDoc = await db.collection('users').doc(decodedToken.uid).get();
             if (companyDoc.exists) {
               const companyData = companyDoc.data();
               providerName = companyData?.companyName || 'Anbieter';

@@ -131,7 +131,7 @@ export async function POST(
     const providerId = quoteData.providerId || quoteData.providerUid;
     if (providerId) {
       try {
-        const providerDoc = await db.collection('companies').doc(providerId).get();
+        const providerDoc = await db.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           const providerData = providerDoc.data();
           providerName = providerData?.companyName || 'Anbieter';

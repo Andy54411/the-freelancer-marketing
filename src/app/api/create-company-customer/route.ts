@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     // Aktualisiere Firestore mit der neuen Customer ID
     try {
-      const userDocRef = db.collection('companies').doc(uid);
+      const userDocRef = db.collection('users').doc(uid);
       await userDocRef.update({
         stripeCustomerId: customer.id,
         customerCreatedAt: new Date(),

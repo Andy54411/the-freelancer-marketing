@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Get company data to verify it exists and get email for customer lookup
     console.log('[Received Quotes API] Getting company data for:', uid);
-    const companyDoc = await db.collection('companies').doc(uid).get();
+    const companyDoc = await db.collection('users').doc(uid).get();
     if (!companyDoc.exists) {
       console.log('[Received Quotes API] Company not found:', uid);
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
@@ -70,7 +70,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     console.log('[Received Quotes API] Found quotes with customerEmail:', quotesSnapshot.size);
 
-    const quotes = [];
+    // Define quote type
+    type QuoteWithProvider = {
+      id: string;
+      provider: {
+        name: string;
+        type: 'company' | 'user';
+        email: string;
+        avatar: string | null;
+        uid: string;
+      } | null;
+      [key: string]: any; // Allow any additional properties from quoteData
+    };
+
+    const quotes: QuoteWithProvider[] = [];
 
     for (const doc of quotesSnapshot.docs) {
       const quoteData = doc.data();
@@ -83,7 +96,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
 
       // Get provider information (who sent the quote)
-      let providerInfo = null;
+      let providerInfo: {
+        name: string;
+        type: 'company' | 'user';
+        email: string;
+        avatar: string | null;
+        uid: string;
+      } | null = null;
 
       if (quoteData.providerId) {
         console.log('[Received Quotes API] Getting provider data for:', quoteData.providerId);
@@ -92,7 +111,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const providerUserDoc = await db.collection('users').doc(quoteData.providerId).get();
         if (providerUserDoc.exists) {
           const providerUserData = providerUserDoc.data();
-          if (providerUserData.user_type === 'firma') {
+          if (providerUserData && providerUserData.user_type === 'firma') {
             // It's a company
             providerInfo = {
               name:
@@ -100,19 +119,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 providerUserData.onboarding?.companyName ||
                 'Unbekanntes Unternehmen',
               type: 'company',
-              email: providerUserData.email,
-              avatar: providerUserData.profilePictureURL || providerUserData.companyLogo,
+              email: providerUserData.email || '',
+              avatar: providerUserData.profilePictureURL || providerUserData.companyLogo || null,
               uid: quoteData.providerId,
             };
-          } else {
+          } else if (providerUserData) {
             // It's an individual
             providerInfo = {
               name:
                 `${providerUserData.firstName || ''} ${providerUserData.lastName || ''}`.trim() ||
                 'Unbekannter Anbieter',
               type: 'user',
-              email: providerUserData.email,
-              avatar: providerUserData.photoURL || providerUserData.profilePictureURL,
+              email: providerUserData.email || '',
+              avatar: providerUserData.photoURL || providerUserData.profilePictureURL || null,
               uid: quoteData.providerId,
             };
           }

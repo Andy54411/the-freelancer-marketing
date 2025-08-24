@@ -72,9 +72,9 @@ export class ProjectEmailNotificationService {
         .where('selectedSubcategory', '==', projectData.subcategory)
         .get();
 
-      // 2. Finde alle Unternehmen in der companies Collection mit der entsprechenden Subcategory
+      // 2. Finde alle Unternehmen in der users Collection mit der entsprechenden Subcategory
       const companiesQuery = await db
-        .collection('companies')
+        .collection('users')
         .where('selectedSubcategory', '==', projectData.subcategory)
         .get();
 
@@ -115,7 +115,7 @@ export class ProjectEmailNotificationService {
         }
       });
 
-      // Aus companies Collection
+      // Aus users Collection
       companiesQuery.docs.forEach(doc => {
         const data = doc.data();
         if (data.email && data.companyName) {
@@ -123,7 +123,7 @@ export class ProjectEmailNotificationService {
             email: data.email,
             companyName: data.companyName,
             id: doc.id,
-            source: 'companies',
+            source: 'users',
           });
         }
       });

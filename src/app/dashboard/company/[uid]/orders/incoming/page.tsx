@@ -13,11 +13,14 @@ import {
   Loader2 as FiLoader,
   Folder as FiFolder,
   User as FiUser,
+  CheckCircle2,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
+import OrderCompletionModal from '@/components/orders/OrderCompletionModal';
+import { toast } from 'sonner';
 
 // Interface für Auftragsdaten
 interface Order {
@@ -27,7 +30,9 @@ interface Order {
   customerAvatarUrl?: string;
   projectName?: string;
   projectTitle?: string;
+  title?: string; // Added for compatibility with OrderCompletionModal
   providerName?: string;
+  companyName?: string; // Added for compatibility with OrderCompletionModal
   orderedBy: string;
   orderDate?: { _seconds: number; _nanoseconds: number } | string;
   totalAmountPaidByBuyer: number;
@@ -46,6 +51,10 @@ interface Order {
   currency?: string;
   paymentType?: string;
   customerType?: string;
+  // Additional properties for OrderCompletionModal
+  totalAmount?: number;
+  platformFee?: number;
+  payoutAmount?: number;
 }
 
 type OrderStatusFilter = 'ALLE' | 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT';
@@ -54,13 +63,17 @@ const IncomingOrdersPage = () => {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  const uidFromParams = params.uid as string;
+  const uidFromParams = params?.uid as string;
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<OrderStatusFilter>('ALLE');
   const [searchTerm, setSearchTerm] = useState('');
+  const [completionModal, setCompletionModal] = useState<{
+    isOpen: boolean;
+    order?: Order;
+  }>({ isOpen: false });
 
   useEffect(() => {
     if (!user) {
@@ -195,6 +208,69 @@ const IncomingOrdersPage = () => {
       default:
         return status;
     }
+  };
+
+  // Order Completion Logic
+  const handleCompleteOrder = (order: Order) => {
+    const totalAmount = order.totalAmountPaidByBuyer;
+    const platformFee = Math.round(totalAmount * 0.035); // 3.5%
+    const payoutAmount = totalAmount - platformFee;
+
+    setCompletionModal({
+      isOpen: true,
+      order: {
+        ...order, // Spread all existing order properties
+        title: order.projectTitle || order.projectName || 'Unbenannter Auftrag',
+        companyName: order.providerName || 'Ihr Unternehmen',
+        totalAmount,
+        platformFee,
+        payoutAmount,
+      },
+    });
+  };
+
+  const completeOrder = async (feedback: string) => {
+    if (!completionModal.order) return;
+
+    try {
+      const response = await fetch(`/api/orders/${completionModal.order.id}/complete`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ feedback }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Abschließen des Auftrags');
+      }
+
+      // Update local orders state
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === completionModal.order!.id
+            ? { ...order, status: 'ABGESCHLOSSEN' }
+            : order
+        )
+      );
+
+      toast.success('Auftrag erfolgreich abgeschlossen! Geld wird zur Auszahlung freigegeben.');
+    } catch (error: any) {
+      console.error('Error completing order:', error);
+      toast.error(error.message || 'Fehler beim Abschließen des Auftrags');
+      throw error;
+    }
+  };
+
+  const canCompleteOrder = (order: Order) => {
+    return (
+      order.status === 'ZAHLUNG_ERHALTEN_CLEARING' ||
+      order.status === 'zahlung_erhalten_clearing' ||
+      order.status === 'BEZAHLT' ||
+      order.status === 'IN BEARBEITUNG'
+    );
   };
 
   if (isLoading) {

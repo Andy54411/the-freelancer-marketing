@@ -60,7 +60,7 @@ export class DatevApiClient {
       console.log('[DatevApiClient] Checking Firestore for company:', companyId);
       try {
         const tokenDoc = await db
-          .collection('companies')
+          .collection('users')
           .doc(companyId)
           .collection('datev')
           .doc('tokens')

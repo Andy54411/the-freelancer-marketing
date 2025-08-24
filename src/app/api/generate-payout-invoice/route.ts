@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (!stripeAccountId) {
-        const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
+        const companyDoc = await db.collection('users').doc(firebaseUserId).get();
         if (companyDoc.exists) {
           const companyDocData = companyDoc.data() as {
             stripeAccountId?: string;

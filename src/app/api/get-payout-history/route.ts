@@ -34,14 +34,6 @@ export async function POST(request: NextRequest) {
       stripeAccountId = (userDoc.data() as any)?.stripeAccountId;
     }
 
-    // Fallback to companies collection
-    if (!stripeAccountId) {
-      const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
-      if (companyDoc.exists) {
-        stripeAccountId = (companyDoc.data() as any)?.stripeAccountId;
-      }
-    }
-
     if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
       console.error('[API /get-payout-history] No valid Stripe account found');
       return NextResponse.json({ error: 'Kein gültiges Stripe-Konto gefunden.' }, { status: 404 });

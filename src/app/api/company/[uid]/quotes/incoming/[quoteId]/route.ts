@@ -63,21 +63,8 @@ export async function GET(
             };
           }
         } else {
-          // Try companies collection if not found in users
-          const companyDoc = await db.collection('companies').doc(projectData.customerUid).get();
-          if (companyDoc.exists) {
-            const companyData = companyDoc.data();
-            if (companyData) {
-              customerInfo = {
-                name: companyData.companyName || 'Unbekanntes Unternehmen',
-                type: 'company',
-                email: companyData.email,
-                phone: companyData.phone,
-                avatar: companyData.logo || null,
-                uid: companyDoc.id,
-              };
-            }
-          }
+          // Customer not found in users collection
+          console.log('[Project Details API] Customer not found in users collection:', projectData.customerUid);
         }
       } catch (error) {
         console.error('[Project Details API] Error fetching customer data:', error);
@@ -234,7 +221,7 @@ export async function PATCH(
       }
 
       // Get company information
-      const companyDoc = await db.collection('companies').doc(uid).get();
+      const companyDoc = await db.collection('users').doc(uid).get();
       const companyData = companyDoc.exists ? companyDoc.data() : {};
 
       const newProposal = {

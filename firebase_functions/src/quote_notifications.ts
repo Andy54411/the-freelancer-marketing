@@ -59,7 +59,7 @@ export const onQuoteCreated = onDocumentCreated('quotes/{quoteId}', async (event
     // Get provider name
     let providerName = 'Anbieter';
     try {
-      const providerDoc = await db.collection('companies').doc(providerId).get();
+      const providerDoc = await db.collection('users').doc(providerId).get();
       if (providerDoc.exists) {
         const providerData = providerDoc.data();
         providerName = providerData?.companyName || 'Anbieter';
@@ -165,7 +165,7 @@ export const onQuoteStatusChanged = onDocumentUpdated('quotes/{quoteId}', async 
     let providerName = 'Anbieter';
     
     try {
-      const providerDoc = await db.collection('companies').doc(providerId).get();
+      const providerDoc = await db.collection('users').doc(providerId).get();
       if (providerDoc.exists) {
         const providerData = providerDoc.data();
         providerName = providerData?.companyName || 'Anbieter';

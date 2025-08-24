@@ -200,7 +200,7 @@ export const createTemporaryJobDraft = onCall(
         throw new HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
       }
 
-      const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
+      const anbieterCompanyDoc = await db.collection('users').doc(jobDetails.selectedAnbieterId).get();
 
       const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : anbieterUserDoc.data();
       providerName = getUserDisplayName(companyData, getUserDisplayName(anbieterData, UNKNOWN_PROVIDER_NAME));
@@ -440,7 +440,7 @@ export const deleteCompanyAccount = onCall(
     try {
       logger.info(`[Action] Admin ${adminUid} startet Löschvorgang für Firma ${companyId}.`);
 
-      const companyRef = db.collection("companies").doc(companyId);
+      const companyRef = db.collection("users").doc(companyId);
       const companyDoc = await companyRef.get();
 
       if (!companyDoc.exists) {
@@ -516,7 +516,7 @@ export const syncSpecificCompanyToUser = onCall(
     const db = getDb();
     try {
       // Get company data
-      const companyDoc = await db.collection("companies").doc(companyId).get();
+      const companyDoc = await db.collection("users").doc(companyId).get();
       if (!companyDoc.exists) {
         throw new HttpsError("not-found", `Company with ID ${companyId} not found.`);
       }
@@ -646,7 +646,7 @@ export const syncSpecificUserToCompany = onCall(
       }
 
       // Check if corresponding company document exists
-      const companyDocRef = db.collection("companies").doc(userId);
+      const companyDocRef = db.collection("users").doc(userId);
       const companyDoc = await companyDocRef.get();
 
       // Debug logging for description
@@ -788,7 +788,7 @@ export const updateCompanyStatus = onCall(
       const batch = db.batch();
 
       const userRef = db.collection('users').doc(companyId);
-      const companyRef = db.collection('companies').doc(companyId);
+      const companyRef = db.collection('users').doc(companyId);
 
       batch.update(userRef, {
         status: status,
@@ -879,7 +879,7 @@ export const searchProvidersBySubcategory = onCall(
       // Search in companies collection
       try {
         const companiesQuery = await db
-          .collection('companies')
+          .collection('users')
           .where('selectedSubcategory', '==', subcategory)
           .get();
 

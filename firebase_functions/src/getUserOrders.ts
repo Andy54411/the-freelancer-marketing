@@ -128,7 +128,7 @@ export const getUserOrders = onRequest(
                 
                 if (data.selectedAnbieterId && !providerName) {
                     try {
-                        const providerDoc = await db.collection('companies').doc(data.selectedAnbieterId).get();
+                        const providerDoc = await db.collection('users').doc(data.selectedAnbieterId).get();
                         if (providerDoc.exists) {
                             const providerData = providerDoc.data();
                             providerName = providerData?.companyName || providerData?.firstName + ' ' + providerData?.lastName || 'Unbekannter Anbieter';
