@@ -436,7 +436,7 @@ const ProjectsPage: React.FC = () => {
                       <Badge variant="outline" className="border-[#14ad9f] text-[#14ad9f]">
                         {group.projects.length} Projekte
                       </Badge>
-                      <span className="text-sm text-gray-600">{group.totalBudget}€</span>
+                      {/* Budget komplett entfernt - verursacht 0-Anzeige */}
                     </div>
                   </div>
                 </CardHeader>
@@ -527,21 +527,16 @@ const ProjectsPage: React.FC = () => {
                                     {project.createdAt.toLocaleDateString('de-DE')}
                                   </span>
                                 </div>
-                                {project.estimatedBudget && (
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-sm text-gray-600">Budget:</span>
-                                    <span className="text-sm text-gray-600">
-                                      {project.estimatedBudget}€
-                                    </span>
-                                  </div>
-                                )}
+                                {/* Budget komplett entfernt - verursacht 0-Anzeige */}
                               </div>
-                              <Link
-                                href={`/dashboard/user/${uid}/projects/${project.id}`}
-                                className="text-[#14ad9f] hover:text-[#129488] font-medium text-sm"
-                              >
-                                Details ansehen →
-                              </Link>
+                              <div className="flex items-center gap-2">
+                                <Link
+                                  href={`/dashboard/user/${uid}/projects/${project.id}`}
+                                  className="text-[#14ad9f] hover:text-[#129488] font-medium text-sm"
+                                >
+                                  Details ansehen →
+                                </Link>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -637,21 +632,23 @@ const ProjectsPage: React.FC = () => {
                               {project.createdAt.toLocaleDateString('de-DE')}
                             </span>
                           </div>
-                          {project.estimatedBudget && (
+                          {project.estimatedBudget && Number(project.estimatedBudget) > 0 && (
                             <div className="flex items-center gap-1">
                               <span className="text-sm text-gray-600">Budget:</span>
                               <span className="text-sm text-gray-600">
-                                {project.estimatedBudget}€
+                                {Number(project.estimatedBudget)}€
                               </span>
                             </div>
                           )}
                         </div>
-                        <Link
-                          href={`/dashboard/user/${uid}/projects/${project.id}`}
-                          className="text-[#14ad9f] hover:text-[#129488] font-medium text-sm"
-                        >
-                          Details ansehen →
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/dashboard/user/${uid}/projects/${project.id}`}
+                            className="text-[#14ad9f] hover:text-[#129488] font-medium text-sm"
+                          >
+                            Details ansehen →
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </CardContent>

@@ -65,42 +65,114 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    // Query for project requests that match the company's subcategory
+    // Query for project requests
     console.log(
       '[Incoming Quotes API] Querying project_requests for subcategory:',
       selectedSubcategory
     );
 
-    // Get project requests that match the company's subcategory
-    // Include multiple statuses so companies can see all relevant requests:
-    // - 'open': Available for bidding
-    // - 'responded': They can bid or see their existing bid
-    // - 'accepted': If they won the project
-    const projectRequestsSnapshot = await db
-      .collection('project_requests')
-      .where('serviceSubcategory', '==', selectedSubcategory)
-      .where('status', 'in', ['open', 'responded', 'accepted'])
-      .orderBy('createdAt', 'desc')
-      .get();
+    // Get ALL project requests first, then filter in memory
+    // This avoids Firestore index issues and gives us more flexibility
+    let projectRequestsSnapshot;
+    try {
+      // Get all active project requests
+      projectRequestsSnapshot = await db
+        .collection('project_requests')
+        .where('status', 'in', ['open', 'responded', 'accepted', 'active'])
+        .get();
 
-    console.log(
-      '[Incoming Quotes API] Found matching project requests:',
-      projectRequestsSnapshot.size
-    );
+      console.log(
+        '[Incoming Quotes API] Found total project requests:',
+        projectRequestsSnapshot.size
+      );
+    } catch (error) {
+      console.log('[Incoming Quotes API] Error getting project requests:', error);
+      // Ultra-simple fallback - get all project_requests
+      projectRequestsSnapshot = await db.collection('project_requests').get();
+      console.log('[Incoming Quotes API] Fallback query found:', projectRequestsSnapshot.size);
+    }
 
-    const quotes = [];
+    const quotes: any[] = [];
 
     for (const doc of projectRequestsSnapshot.docs) {
       const projectData = doc.data();
       console.log(
         '[Incoming Quotes API] Processing project:',
         doc.id,
-        'with subcategory:',
-        projectData.serviceSubcategory
+        '- subcategory:',
+        projectData.subcategory,
+        '- serviceSubcategory:',
+        projectData.serviceSubcategory,
+        '- status:',
+        projectData.status,
+        '- selectedProviders:',
+        projectData.selectedProviders?.length || 0
       );
 
+      // Check if this request is relevant for this company
+      let isRelevantForCompany = false;
+
+      // Case 1: Direct assignment - company is specifically selected
+      if (
+        projectData.selectedProviders &&
+        Array.isArray(projectData.selectedProviders) &&
+        projectData.selectedProviders.length > 0
+      ) {
+        const isDirectlySelected = projectData.selectedProviders.some(
+          (provider: any) => provider.uid === uid || provider.companyUid === uid
+        );
+        if (isDirectlySelected) {
+          isRelevantForCompany = true;
+          console.log(
+            '[Incoming Quotes API] Project',
+            doc.id,
+            'is DIRECT assignment for this company'
+          );
+        } else {
+          console.log(
+            '[Incoming Quotes API] Project',
+            doc.id,
+            'is DIRECT assignment but NOT for this company'
+          );
+        }
+      }
+      // Case 2: Public request - no specific companies selected, match by subcategory
+      else {
+        const projectSubcategory = projectData.serviceSubcategory || projectData.subcategory;
+        const subcategoryMatches = projectSubcategory === selectedSubcategory;
+
+        if (subcategoryMatches) {
+          isRelevantForCompany = true;
+          console.log(
+            '[Incoming Quotes API] Project',
+            doc.id,
+            'is PUBLIC for subcategory:',
+            projectSubcategory
+          );
+        } else {
+          console.log(
+            '[Incoming Quotes API] Project',
+            doc.id,
+            'is PUBLIC but wrong subcategory:',
+            projectSubcategory,
+            'vs',
+            selectedSubcategory
+          );
+        }
+      }
+
+      // Skip if not relevant for this company
+      if (!isRelevantForCompany) {
+        console.log(
+          '[Incoming Quotes API] Skipping project',
+          doc.id,
+          '- not relevant for this company'
+        );
+        continue;
+      }
+
       // Get customer information based on customerUid
-      let customerInfo = null;
+      let customerInfo: any = null;
 
       if (projectData.customerUid) {
         try {
@@ -109,30 +181,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
           if (userDoc.exists) {
             const userData = userDoc.data();
-            customerInfo = {
-              name:
-                userData.companyName ||
-                userData.firstName + ' ' + userData.lastName ||
-                'Unbekannter Kunde',
-              type: userData.user_type === 'firma' ? 'company' : 'user',
-              email: userData.email,
-              phone: userData.phone,
-              avatar: userData.avatar || null,
-              uid: userDoc.id,
-            };
+            if (userData) {
+              customerInfo = {
+                name:
+                  userData.companyName ||
+                  userData.firstName + ' ' + userData.lastName ||
+                  'Unbekannter Kunde',
+                type: userData.user_type === 'firma' ? 'company' : 'user',
+                email: userData.email,
+                phone: userData.phone,
+                avatar: userData.avatar || null,
+                uid: userDoc.id,
+              };
+            }
           } else {
             // Try companies collection if not found in users
             const companyDoc = await db.collection('companies').doc(projectData.customerUid).get();
             if (companyDoc.exists) {
               const companyData = companyDoc.data();
-              customerInfo = {
-                name: companyData.companyName || 'Unbekanntes Unternehmen',
-                type: 'company',
-                email: companyData.email,
-                phone: companyData.phone,
-                avatar: companyData.logo || null,
-                uid: companyDoc.id,
-              };
+              if (companyData) {
+                customerInfo = {
+                  name: companyData.companyName || 'Unbekanntes Unternehmen',
+                  type: 'company',
+                  email: companyData.email,
+                  phone: companyData.phone,
+                  avatar: companyData.logo || null,
+                  uid: companyDoc.id,
+                };
+              }
             }
           }
         } catch (error) {
@@ -159,7 +235,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       // Build budget information
-      let budgetInfo = null;
+      let budgetInfo: any = null;
       let budgetRangeText = 'Nicht angegeben';
 
       if (projectData.budgetAmount && projectData.budgetAmount > 0) {

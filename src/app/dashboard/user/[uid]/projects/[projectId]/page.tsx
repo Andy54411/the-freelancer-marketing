@@ -52,7 +52,10 @@ interface ProjectRequest {
   updatedAt: Date;
   viewCount: number;
   // Felder für direkte Zuweisung
-  selectedProviders?: string[];
+  selectedProviders?: (
+    | string
+    | { companyName?: string; name?: string; id: string; priceRange?: string; rating?: number }
+  )[];
   hasSelectedProviders?: boolean;
   isDirectAssignment?: boolean;
   isPublic?: boolean;
@@ -1067,11 +1070,39 @@ const ProjectDetailPage: React.FC = () => {
                             Zugewiesene Anbieter:
                           </p>
                           <div className="flex flex-wrap gap-1">
-                            {project.selectedProviders.map((providerId, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {providerId}
-                              </Badge>
-                            ))}
+                            {project.selectedProviders.map((provider, index) => {
+                              console.log('🔍 Provider Debug:', provider, typeof provider);
+
+                              // Wenn es ein String ist
+                              if (typeof provider === 'string') {
+                                return (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {provider}
+                                  </Badge>
+                                );
+                              }
+
+                              // Wenn es ein Objekt ist
+                              if (typeof provider === 'object' && provider !== null) {
+                                const displayName =
+                                  provider.companyName ||
+                                  provider.name ||
+                                  provider.id ||
+                                  'Unbekannter Anbieter';
+                                return (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {displayName}
+                                  </Badge>
+                                );
+                              }
+
+                              // Fallback für andere Typen
+                              return (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  Anbieter {index + 1}
+                                </Badge>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
