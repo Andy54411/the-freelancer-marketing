@@ -44,13 +44,18 @@ interface ProjectRequest {
   isActive: boolean;
   urgency: 'low' | 'medium' | 'high';
   requiredSkills: string[];
-  status: 'open' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'open' | 'in_progress' | 'completed' | 'cancelled' | 'directly_assigned';
   customerUid: string;
   customerEmail: string;
   proposals: Proposal[];
   createdAt: Date;
   updatedAt: Date;
   viewCount: number;
+  // Felder für direkte Zuweisung
+  selectedProviders?: string[];
+  hasSelectedProviders?: boolean;
+  isDirectAssignment?: boolean;
+  isPublic?: boolean;
   subcategoryData?: {
     accommodation?: string;
     cuisine?: string;
@@ -167,6 +172,11 @@ const ProjectDetailPage: React.FC = () => {
             : new Date(data.updatedAt || data.createdAt || Date.now()),
           viewCount: data.viewCount || 0,
           subcategoryData: data.subcategoryData || {},
+          // Neue Felder für direkte Zuweisung
+          selectedProviders: data.selectedProviders || [],
+          hasSelectedProviders: data.hasSelectedProviders || false,
+          isDirectAssignment: data.isDirectAssignment || false,
+          isPublic: data.isPublic !== false, // Default true wenn nicht explizit false
         };
 
         // Erweitere Proposals mit Company-Daten
@@ -708,9 +718,15 @@ const ProjectDetailPage: React.FC = () => {
                     <div className="text-center py-8">
                       <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">Noch keine Angebote eingegangen</p>
-                      <p className="text-sm text-gray-400 mt-2">
-                        Ihr Projekt ist öffentlich sichtbar und Anbieter können Angebote abgeben.
-                      </p>
+                      {project.hasSelectedProviders || project.isDirectAssignment ? (
+                        <p className="text-sm text-gray-400 mt-2">
+                          Ihr Projekt wurde direkt an ausgewählte Anbieter zugewiesen.
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-400 mt-2">
+                          Ihr Projekt ist öffentlich sichtbar und Anbieter können Angebote abgeben.
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -1024,6 +1040,65 @@ const ProjectDetailPage: React.FC = () => {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Zuweisung-Informationen */}
+              {project.hasSelectedProviders || project.isDirectAssignment ? (
+                <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#14ad9f]">Direkte Zuweisung</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            Projekt wurde direkt zugewiesen
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            Nur die ausgewählten Anbieter können dieses Projekt sehen und Angebote
+                            abgeben.
+                          </p>
+                        </div>
+                      </div>
+                      {project.selectedProviders && project.selectedProviders.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p className="text-xs font-medium text-gray-700 mb-2">
+                            Zugewiesene Anbieter:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {project.selectedProviders.map((providerId, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {providerId}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                  <CardHeader>
+                    <CardTitle className="text-[#14ad9f]">Öffentliches Projekt</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-start gap-2">
+                      <Eye className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Für alle Anbieter sichtbar
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Alle registrierten Anbieter können dieses Projekt sehen und Angebote
+                          abgeben.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Statistiken */}
               <Card className="bg-white/95 backdrop-blur-sm border-white/20">

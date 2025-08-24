@@ -8,17 +8,16 @@ import {
   FolderOpen,
   Calendar,
   Clock,
-  Users,
-  Target,
   Brain,
   CheckCircle2,
-  AlertCircle,
   PlayCircle,
+  ChevronDown,
+  ChevronRight,
   Trash2,
   MoreVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -37,7 +36,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { db } from '@/firebase/clients';
-import { collection, query, where, getDocs, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Gemini } from '@/components/logos';
@@ -48,28 +47,36 @@ interface Project {
   title: string;
   description: string;
   status: 'planning' | 'active' | 'paused' | 'completed';
-  priority: 'low' | 'medium' | 'high';
   category: string;
-  estimatedBudget?: number;
-  timeline?: string;
-  startDate?: string;
-  endDate?: string;
-  preferredDate?: string;
-  aiSuggestions?: string[];
-  tasks: Task[];
-  proposals?: any[];
+  timeline: string;
+  estimatedBudget: number;
+  priority: 'low' | 'medium' | 'high';
   createdAt: Date;
   updatedAt: Date;
+  customerUid: string;
+  userUid?: string;
+  proposalsCount?: number;
+  viewCount?: number;
+  isPartOfBundle?: boolean;
+  bundleId?: string;
+  parentBundle?: string;
+  // Felder für direkte Zuweisung
+  selectedProviders?: string[];
+  hasSelectedProviders?: boolean;
+  isDirectAssignment?: boolean;
+  isPublic?: boolean;
 }
 
-interface Task {
+interface ProjectGroup {
   id: string;
   title: string;
-  description?: string;
-  status: 'todo' | 'in-progress' | 'completed';
-  assignedTo?: string;
-  dueDate?: Date;
-  estimatedHours?: number;
+  description: string;
+  category: string;
+  mainProject: Project;
+  subProjects: Project[];
+  totalBudget: number;
+  createdAt: Date;
+  projects: Project[]; // Alle Projekte in der Gruppe
 }
 
 const ProjectsPage: React.FC = () => {
@@ -78,8 +85,10 @@ const ProjectsPage: React.FC = () => {
   const uid = params?.uid as string;
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectGroups, setProjectGroups] = useState<ProjectGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     projectId: string;
@@ -89,6 +98,61 @@ const ProjectsPage: React.FC = () => {
     projectId: '',
     projectTitle: '',
   });
+
+  // Toggle-Funktion für Accordion
+  const toggleGroupExpansion = (groupId: string) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  };
+
+  // Funktion zum Gruppieren von Projekten nach ähnlichen Titeln
+  const groupProjectsByTheme = (projects: Project[]): ProjectGroup[] => {
+    const groups: { [key: string]: Project[] } = {};
+
+    projects.forEach(project => {
+      // Extrahiere das Hauptthema aus dem Titel (z.B. "Familienfeier" aus "Familienfeier Transport")
+      const titleWords = project.title.split(' ');
+      let theme = titleWords[0]; // Erstes Wort als Basis
+
+      // Suche nach gemeinsamen Themen
+      if (titleWords.length > 1) {
+        const commonThemes = ['Familienfeier', 'Hochzeit', 'Geburtstag', 'Firmenevent', 'Party'];
+        const foundTheme = commonThemes.find(t => project.title.includes(t));
+        if (foundTheme) {
+          theme = foundTheme;
+        }
+      }
+
+      if (!groups[theme]) {
+        groups[theme] = [];
+      }
+      groups[theme].push(project);
+    });
+
+    // Konvertiere in ProjectGroup Array, aber nur für Gruppen mit mehr als 1 Projekt
+    return Object.entries(groups)
+      .filter(([_, projects]) => projects.length > 1)
+      .map(([theme, groupedProjects]) => {
+        const totalBudget = groupedProjects.reduce((sum, p) => sum + (p.estimatedBudget || 0), 0);
+        const oldestProject = groupedProjects.reduce((oldest, p) =>
+          p.createdAt < oldest.createdAt ? p : oldest
+        );
+
+        return {
+          id: `group-${theme}`,
+          title: `${theme} Projekt-Bundle`,
+          description: `${groupedProjects.length} zusammenhängende Projekte für ${theme}`,
+          category: groupedProjects[0].category,
+          mainProject: groupedProjects[0],
+          subProjects: groupedProjects.slice(1),
+          projects: groupedProjects, // Alle Projekte in der Gruppe
+          totalBudget,
+          createdAt: oldestProject.createdAt,
+        };
+      });
+  };
 
   // Lade Projekte aus Firestore mit Realtime Updates
   useEffect(() => {
@@ -131,28 +195,45 @@ const ProjectsPage: React.FC = () => {
                   ? 'active'
                   : data.status === 'cancelled'
                     ? 'paused'
-                    : 'planning',
+                    : data.status === 'directly_assigned'
+                      ? 'active' // Direkt zugewiesene Projekte als aktiv anzeigen
+                      : data.status === 'active'
+                        ? 'active'
+                        : 'planning',
             priority:
               data.urgency === 'high' ? 'high' : data.urgency === 'medium' ? 'medium' : 'low',
             category: data.category || '',
             estimatedBudget: data.budgetAmount || data.maxBudget || 0,
             timeline: data.timeline || '',
-            startDate: data.startDate || undefined,
-            endDate: data.endDate || undefined,
-            preferredDate: data.preferredDate || undefined,
-            tasks: [],
-            proposals: data.proposals || [],
             createdAt: data.createdAt?.toDate
               ? data.createdAt.toDate()
               : new Date(data.createdAt || Date.now()),
             updatedAt: data.updatedAt?.toDate
               ? data.updatedAt.toDate()
               : new Date(data.updatedAt || data.createdAt || Date.now()),
+            customerUid: data.customerUid || uid,
+            userUid: data.userUid,
+            proposalsCount: data.proposalsCount || 0,
+            viewCount: data.viewCount || 0,
+            isPartOfBundle: data.isPartOfBundle || false,
+            bundleId: data.bundleId,
+            parentBundle: data.parentBundle,
+            // Neue Felder für direkte Zuweisung
+            selectedProviders: data.selectedProviders || [],
+            hasSelectedProviders: data.hasSelectedProviders || false,
+            isDirectAssignment: data.isDirectAssignment || false,
+            isPublic: data.isPublic !== false, // Default true wenn nicht explizit false
           };
         });
 
         console.log('✅ Finale User-Projekte (Realtime):', userProjects.length);
         setProjects(userProjects);
+
+        // Gruppiere Projekte automatisch
+        const groups = groupProjectsByTheme(userProjects);
+        setProjectGroups(groups);
+        console.log('📦 Projektgruppen erstellt:', groups.length, 'Gruppen');
+
         setLoading(false);
       },
       error => {
@@ -208,34 +289,6 @@ const ProjectsPage: React.FC = () => {
       projectId: '',
       projectTitle: '',
     });
-  };
-
-  const getStatusIcon = (status: Project['status']) => {
-    switch (status) {
-      case 'planning':
-        return <Clock className="h-4 w-4" />;
-      case 'active':
-        return <PlayCircle className="h-4 w-4" />;
-      case 'paused':
-        return <AlertCircle className="h-4 w-4" />;
-      case 'completed':
-        return <CheckCircle2 className="h-4 w-4" />;
-      default:
-        return <FolderOpen className="h-4 w-4" />;
-    }
-  };
-
-  const getPriorityColor = (priority: Project['priority']) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-orange-100 text-orange-800';
-      case 'low':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
   };
 
   if (loading) {
@@ -360,183 +413,282 @@ const ProjectsPage: React.FC = () => {
           </Card>
         ) : (
           <div className="grid gap-6">
-            {projects.map(project => {
-              const statusIcon = getStatusIcon(project.status);
-              const priorityColor = getPriorityColor(project.priority);
+            {/* Gruppierte Projekte als Accordions */}
+            {projectGroups.map(group => (
+              <Card key={group.id} className="bg-white/95 backdrop-blur-sm border-white/20">
+                <CardHeader
+                  className="cursor-pointer hover:bg-gray-50/50 transition-colors"
+                  onClick={() => toggleGroupExpansion(group.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {expandedGroups[group.id] ? (
+                        <ChevronDown className="h-5 w-5 text-[#14ad9f]" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-[#14ad9f]" />
+                      )}
+                      <div>
+                        <CardTitle className="text-lg text-[#14ad9f]">{group.title}</CardTitle>
+                        <p className="text-sm text-gray-600">{group.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-[#14ad9f] text-[#14ad9f]">
+                        {group.projects.length} Projekte
+                      </Badge>
+                      <span className="text-sm text-gray-600">{group.totalBudget}€</span>
+                    </div>
+                  </div>
+                </CardHeader>
 
-              return (
+                {expandedGroups[group.id] && (
+                  <CardContent className="pt-0">
+                    <div className="space-y-4">
+                      {group.projects.map(project => (
+                        <Card
+                          key={project.id}
+                          className="border-l-4 border-l-[#14ad9f] bg-gray-50/30"
+                        >
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3">
+                                  <Badge
+                                    variant="outline"
+                                    className="border-[#14ad9f] text-[#14ad9f]"
+                                  >
+                                    {project.category || 'Projekt'}
+                                  </Badge>
+                                </div>
+                                <CardTitle className="text-base text-[#14ad9f] mt-2">
+                                  {project.title}
+                                </CardTitle>
+                                <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <div className="flex items-center gap-2">
+                                  <Badge
+                                    variant={
+                                      project.status === 'completed'
+                                        ? 'default'
+                                        : project.status === 'active'
+                                          ? 'secondary'
+                                          : 'outline'
+                                    }
+                                    className={
+                                      project.status === 'completed'
+                                        ? 'bg-green-500 text-white'
+                                        : project.status === 'active'
+                                          ? 'bg-[#14ad9f] text-white'
+                                          : 'border-[#14ad9f] text-[#14ad9f]'
+                                    }
+                                  >
+                                    {project.status === 'planning'
+                                      ? 'Planung'
+                                      : project.status === 'active'
+                                        ? 'Aktiv'
+                                        : project.status === 'completed'
+                                          ? 'Abgeschlossen'
+                                          : project.status === 'paused'
+                                            ? 'Pausiert'
+                                            : project.status}
+                                  </Badge>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleDeleteProject(project.id, project.title)
+                                        }
+                                        className="text-red-600 focus:text-red-600"
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Löschen
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {project.createdAt.toLocaleDateString('de-DE')}
+                                </p>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4 text-gray-500" />
+                                  <span className="text-sm text-gray-600">
+                                    {project.createdAt.toLocaleDateString('de-DE')}
+                                  </span>
+                                </div>
+                                {project.estimatedBudget && (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-sm text-gray-600">Budget:</span>
+                                    <span className="text-sm text-gray-600">
+                                      {project.estimatedBudget}€
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <Link
+                                href={`/dashboard/user/${uid}/projects/${project.id}`}
+                                className="text-[#14ad9f] hover:text-[#129488] font-medium text-sm"
+                              >
+                                Details ansehen →
+                              </Link>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            ))}
+
+            {/* Einzelne Projekte die nicht gruppiert sind */}
+            {projects
+              .filter(
+                project =>
+                  !projectGroups.some(group => group.projects.some(p => p.id === project.id))
+              )
+              .map(project => (
                 <Card
                   key={project.id}
-                  className="bg-white/95 backdrop-blur-sm border-white/20 hover:shadow-lg transition-shadow"
+                  className="bg-white/95 backdrop-blur-sm border-white/20 hover:shadow-lg transition-shadow border-l-4 border-l-[#14ad9f]"
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
-                      <Link
-                        href={`/dashboard/user/${uid}/projects/${project.id}`}
-                        className="flex-1"
-                      >
-                        <div className="flex items-center gap-3 cursor-pointer">
-                          <div className="flex items-center gap-2">
-                            {statusIcon}
-                            <CardTitle className="text-lg hover:text-[#14ad9f] transition-colors">
-                              {project.title}
-                            </CardTitle>
-                          </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="border-[#14ad9f] text-[#14ad9f]">
+                            {project.category || 'Projekt'}
+                          </Badge>
                         </div>
-                      </Link>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`${priorityColor} border-current`}>
-                          {project.priority === 'low'
-                            ? 'Niedrig'
-                            : project.priority === 'medium'
-                              ? 'Mittel'
-                              : 'Hoch'}
-                        </Badge>
-                        <Badge variant="secondary">
-                          {project.status === 'planning'
-                            ? 'Planung'
-                            : project.status === 'active'
-                              ? 'Aktiv'
-                              : project.status === 'paused'
-                                ? 'Pausiert'
-                                : 'Abgeschlossen'}
-                        </Badge>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 hover:bg-gray-100"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={e => {
-                                e.preventDefault();
-                                handleDeleteProject(project.id, project.title);
-                              }}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Projekt löschen
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <CardTitle className="text-lg text-[#14ad9f] mt-2">
+                          {project.title}
+                        </CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={
+                              project.status === 'completed'
+                                ? 'default'
+                                : project.status === 'active'
+                                  ? 'secondary'
+                                  : 'outline'
+                            }
+                            className={
+                              project.status === 'completed'
+                                ? 'bg-green-500 text-white'
+                                : project.status === 'active'
+                                  ? 'bg-[#14ad9f] text-white'
+                                  : 'border-[#14ad9f] text-[#14ad9f]'
+                            }
+                          >
+                            {project.status === 'planning'
+                              ? 'Planung'
+                              : project.status === 'active'
+                                ? 'Aktiv'
+                                : project.status === 'completed'
+                                  ? 'Abgeschlossen'
+                                  : project.status === 'paused'
+                                    ? 'Pausiert'
+                                    : project.status}
+                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteProject(project.id, project.title)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Löschen
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {project.createdAt.toLocaleDateString('de-DE')}
+                        </p>
                       </div>
                     </div>
-                    <Link href={`/dashboard/user/${uid}/projects/${project.id}`}>
-                      <CardDescription className="text-sm text-gray-600 cursor-pointer hover:text-gray-800 transition-colors">
-                        {project.description}
-                      </CardDescription>
-                    </Link>
                   </CardHeader>
-                  <Link href={`/dashboard/user/${uid}/projects/${project.id}`}>
-                    <CardContent className="cursor-pointer hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <div className="flex items-center gap-4 flex-wrap">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            {(() => {
-                              if (project.startDate && project.endDate) {
-                                const startDate = new Date(project.startDate).toLocaleDateString(
-                                  'de-DE'
-                                );
-                                const endDate = new Date(project.endDate).toLocaleDateString(
-                                  'de-DE'
-                                );
-                                return `${startDate} - ${endDate}`;
-                              } else if (project.startDate) {
-                                const startDate = new Date(project.startDate).toLocaleDateString(
-                                  'de-DE'
-                                );
-                                return `Start: ${startDate}`;
-                              } else if (project.endDate) {
-                                const endDate = new Date(project.endDate).toLocaleDateString(
-                                  'de-DE'
-                                );
-                                return `Ende: ${endDate}`;
-                              } else if (project.preferredDate) {
-                                const preferredDate = new Date(
-                                  project.preferredDate
-                                ).toLocaleDateString('de-DE');
-                                return `Wunschtermin: ${preferredDate}`;
-                              } else {
-                                return project.timeline || 'Kein Zeitrahmen';
-                              }
-                            })()}
-                          </span>
-                          {project.estimatedBudget && (
-                            <span className="flex items-center gap-1">
-                              <Target className="h-4 w-4" />
-                              {project.estimatedBudget.toLocaleString('de-DE', {
-                                style: 'currency',
-                                currency: 'EUR',
-                              })}
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-gray-600">
+                              {project.createdAt.toLocaleDateString('de-DE')}
                             </span>
+                          </div>
+                          {project.estimatedBudget && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm text-gray-600">Budget:</span>
+                              <span className="text-sm text-gray-600">
+                                {project.estimatedBudget}€
+                              </span>
+                            </div>
                           )}
-                          <span className="flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            {project.proposals?.filter(
-                              proposal =>
-                                proposal.status !== 'declined' &&
-                                proposal.status !== 'withdrawn' &&
-                                proposal.status !== 'cancelled'
-                            ).length || 0}{' '}
-                            Angebote
-                          </span>
                         </div>
-                        <div className="text-right">
-                          <span>
-                            Zuletzt bearbeitet: {project.updatedAt.toLocaleDateString('de-DE')}
-                          </span>
-                        </div>
+                        <Link
+                          href={`/dashboard/user/${uid}/projects/${project.id}`}
+                          className="text-[#14ad9f] hover:text-[#129488] font-medium text-sm"
+                        >
+                          Details ansehen →
+                        </Link>
                       </div>
-                    </CardContent>
-                  </Link>
+                    </div>
+                  </CardContent>
                 </Card>
-              );
-            })}
+              ))}
           </div>
         )}
-
-        {/* KI-Assistent Modal */}
-        {showAssistant && (
-          <ProjectAssistantModal
-            isOpen={showAssistant}
-            onClose={() => setShowAssistant(false)}
-            userId={uid}
-          />
-        )}
-
-        {/* Lösch-Bestätigungsdialog */}
-        <AlertDialog
-          open={deleteDialog.isOpen}
-          onOpenChange={open => !open && cancelDeleteProject()}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Projekt löschen</AlertDialogTitle>
-              <AlertDialogDescription>
-                Sind Sie sicher, dass Sie das Projekt &quot;{deleteDialog.projectTitle}&quot;
-                dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden. Alle
-                Angebote und Daten zu diesem Projekt gehen verloren.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={cancelDeleteProject}>Abbrechen</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmDeleteProject}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Projekt löschen
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
+
+      {/* Project Assistant Modal */}
+      <ProjectAssistantModal
+        isOpen={showAssistant}
+        onClose={() => setShowAssistant(false)}
+        userId={uid}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.isOpen} onOpenChange={cancelDeleteProject}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Projekt löschen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sind Sie sicher, dass Sie das Projekt &quot;{deleteDialog.projectTitle}&quot; löschen
+              möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteProject}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProject}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

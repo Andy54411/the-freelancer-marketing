@@ -214,22 +214,55 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
 
   // Dienstleister für ein Projekt auswählen/abwählen
   const toggleProviderSelection = (projectIndex: number, provider: ProviderRecommendation) => {
+    console.log('[ProjectAssistant] toggleProviderSelection called with:', {
+      projectIndex,
+      providerId: provider.id,
+      providerName: provider.companyName || provider.name,
+    });
+
     setSelectedProviders(prev => {
       const currentProviders = prev[projectIndex] || [];
       const isSelected = currentProviders.some(p => p.id === provider.id);
 
+      console.log('[ProjectAssistant] Current selectedProviders state:', {
+        currentProviders: currentProviders.map(p => ({ id: p.id, name: p.companyName || p.name })),
+        isSelected,
+        allSelectedProviders: Object.keys(prev).reduce((acc, key) => {
+          acc[key] = prev[parseInt(key)].map(p => ({ id: p.id, name: p.companyName || p.name }));
+          return acc;
+        }, {} as any),
+      });
+
       if (isSelected) {
         // Dienstleister entfernen
-        return {
+        const newState = {
           ...prev,
           [projectIndex]: currentProviders.filter(p => p.id !== provider.id),
         };
+        console.log('[ProjectAssistant] Provider removed, new state:', {
+          projectIndex,
+          removedProvider: { id: provider.id, name: provider.companyName || provider.name },
+          remainingProviders: newState[projectIndex].map(p => ({
+            id: p.id,
+            name: p.companyName || p.name,
+          })),
+        });
+        return newState;
       } else {
         // Dienstleister hinzufügen
-        return {
+        const newState = {
           ...prev,
           [projectIndex]: [...currentProviders, provider],
         };
+        console.log('[ProjectAssistant] Provider selection toggled successfully:', {
+          projectIndex,
+          addedProvider: { id: provider.id, name: provider.companyName || provider.name },
+          allProviders: newState[projectIndex].map(p => ({
+            id: p.id,
+            name: p.companyName || p.name,
+          })),
+        });
+        return newState;
       }
     });
   };
@@ -261,12 +294,20 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
       // Sammle alle Projekte mit ausgewählten Services
       projectIdeas.forEach((idea, index) => {
         const services = getSelectedServices(index);
+        const providers = selectedProviders[index] || [];
+
+        console.log(`🔍 DEBUG Projekt ${index} (${idea.title}):`, {
+          services: services.length,
+          providers: providers.length,
+          providerNames: providers.map(p => p.companyName || p.name),
+        });
+
         if (services.length > 0) {
           projectsToCreate.push({
             idea,
             index,
             selectedServices: services,
-            selectedProviders: selectedProviders[index] || [],
+            selectedProviders: providers,
           });
         }
       });
@@ -279,8 +320,19 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
 
       console.log('🚀 Erstelle mehrere Projekte:', projectsToCreate);
 
+      // Erstelle Bundle-Daten für übergeordnete Organisation
+      const bundleData = {
+        title: `${projectDescription} - Projekt-Gruppe`,
+        description: `Automatisch erstellte Projekt-Gruppe für: ${projectDescription}`,
+        originalPrompt: projectDescription,
+        projectCount: projectsToCreate.length,
+        totalBudget: projectsToCreate.reduce((sum, p) => sum + (p.idea.estimatedBudget || 0), 0),
+        category: projectsToCreate[0]?.idea.category || 'Allgemein',
+      };
+
       let successCount = 0;
       let errorCount = 0;
+      let createdBundleId: string | null = null;
 
       // Erstelle alle Projekte nacheinander
       for (const { idea, selectedServices, selectedProviders } of projectsToCreate) {
@@ -299,13 +351,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
             location: '', // ProjectIdea hat keine location
             specialRequirements: '', // ProjectIdea hat keine specialRequirements
             deliverables: [], // ProjectIdea hat keine deliverables
-            selectedProviders:
-              selectedProviders?.map(p => ({
-                id: p.id,
-                companyName: p.companyName || p.name,
-                rating: p.rating,
-                priceRange: p.priceRange,
-              })) || [],
           };
 
           console.log(`📤 Erstelle Projekt ${successCount + 1}:`, projectData);
@@ -318,6 +363,15 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
             body: JSON.stringify({
               userId,
               projectData,
+              selectedProviders:
+                selectedProviders?.map(p => ({
+                  id: p.id,
+                  companyName: p.companyName || p.name,
+                  rating: p.rating,
+                  priceRange: p.priceRange,
+                })) || [],
+              bundleData: successCount === 0 ? bundleData : null, // Nur beim ersten Projekt Bundle erstellen
+              existingBundleId: createdBundleId, // Verwende Bundle-ID für nachfolgende Projekte
             }),
           });
 
@@ -326,6 +380,12 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
           if (result.success) {
             successCount++;
             console.log(`✅ Projekt ${successCount} erfolgreich erstellt:`, result.project.title);
+
+            // Speichere Bundle-ID vom ersten Projekt für nachfolgende Projekte
+            if (successCount === 1 && result.bundleId) {
+              createdBundleId = result.bundleId;
+              console.log('📦 Bundle-ID gespeichert für nachfolgende Projekte:', createdBundleId);
+            }
           } else {
             errorCount++;
             console.error(`❌ Fehler bei Projekt ${idea.title}:`, result.error);
@@ -371,12 +431,17 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
       const servicesToUse =
         projectIndex !== undefined ? getSelectedServices(projectIndex) : idea.services;
 
+      // Verwende ausgewählte Provider falls verfügbar
+      const providersToUse = projectIndex !== undefined ? getSelectedProviders(projectIndex) : [];
+
       console.log('🔍 Creating project with:', {
         title: idea.title,
         projectIndex,
         originalServices: idea.services,
         selectedServices: servicesToUse,
         allSelectedServices: selectedServices,
+        selectedProviders: providersToUse,
+        hasProviders: providersToUse.length > 0,
       });
 
       if (servicesToUse.length === 0) {
@@ -400,7 +465,11 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         deliverables: [], // ProjectIdea hat keine deliverables
       };
 
-      console.log('📤 Sending project data:', projectData);
+      console.log('📤 Sending project data:', {
+        projectData,
+        selectedProviders: providersToUse,
+        isDirectAssignment: providersToUse.length > 0,
+      });
 
       const response = await fetch('/api/ai-project-creation', {
         method: 'POST',
@@ -410,6 +479,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         body: JSON.stringify({
           userId,
           projectData,
+          selectedProviders: projectIndex !== undefined ? getSelectedProviders(projectIndex) : [],
         }),
       });
 
@@ -479,9 +549,18 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
     setSelectedProject(project);
     setLoading(true);
 
+    console.log('🔍 DEBUG findProviders called:', {
+      projectTitle: project.title,
+      projectIndex,
+      showProviderSelectionBefore: showProviderSelection,
+    });
+
     // Wenn projectIndex gegeben ist, zeige Dienstleister-Auswahl für dieses spezifische Projekt
     if (projectIndex !== undefined) {
       setShowProviderSelection(projectIndex);
+      console.log('✅ showProviderSelection gesetzt auf:', projectIndex);
+    } else {
+      console.log('❌ projectIndex ist undefined - showProviderSelection bleibt null!');
     }
 
     try {
@@ -508,10 +587,8 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
       if (result.success && Array.isArray(result.data)) {
         setProviderRecommendations(result.data);
 
-        // Wenn nicht für spezifisches Projekt, wechsle zum Providers Tab
-        if (projectIndex === undefined) {
-          setActiveTab('providers');
-        }
+        // Wechsle immer zum Providers Tab um die gefundenen Dienstleister anzuzeigen
+        setActiveTab('providers');
 
         toast.success('Passende Dienstleister gefunden!');
       } else {
@@ -870,7 +947,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => findProviders(idea)}
+                              onClick={() => findProviders(idea, index)}
                               className="w-full"
                             >
                               Dienstleister finden
@@ -918,29 +995,52 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                             {projectsWithSelectedServices.map((idea, i) => {
                               const projectIndex = projectIdeas.indexOf(idea);
                               const selectedServices = getSelectedServices(projectIndex);
+                              const selectedProvidersForProject =
+                                getSelectedProviders(projectIndex);
                               return (
                                 <div
                                   key={i}
-                                  className="bg-white bg-opacity-15 backdrop-blur-sm rounded-lg p-4"
+                                  className="bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-4 border border-white border-opacity-30"
                                 >
                                   <div className="text-left">
-                                    <h5 className="font-semibold text-white mb-2 flex items-center gap-2">
-                                      <Target className="h-4 w-4" />
+                                    <h5 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                      <Target className="h-4 w-4 text-[#14ad9f]" />
                                       {idea.title}
                                     </h5>
-                                    <div className="flex items-center gap-2 text-xs opacity-90 mb-2">
-                                      <Badge className="bg-white bg-opacity-20 text-white border-0">
+                                    <div className="flex items-center gap-2 text-xs mb-2">
+                                      <Badge className="bg-[#14ad9f] text-white border-0">
                                         {idea.category}
                                       </Badge>
-                                      <span>€{idea.estimatedBudget}</span>
-                                      <span>{idea.timeline}</span>
+                                      <span className="text-gray-700 font-medium">
+                                        €{idea.estimatedBudget}
+                                      </span>
+                                      <span className="text-gray-700">{idea.timeline}</span>
                                     </div>
-                                    <div className="text-xs">
-                                      <span className="opacity-90">Services: </span>
-                                      <span className="font-medium">
+                                    <div className="text-xs mb-2">
+                                      <span className="text-gray-600">Services: </span>
+                                      <span className="font-medium text-gray-800">
                                         {selectedServices.join(', ')}
                                       </span>
                                     </div>
+                                    {/* Ausgewählte Dienstleister anzeigen */}
+                                    {selectedProvidersForProject.length > 0 && (
+                                      <div className="text-xs">
+                                        <span className="text-gray-600">Dienstleister: </span>
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                          {selectedProvidersForProject.map(
+                                            (provider, providerIndex) => (
+                                              <Badge
+                                                key={providerIndex}
+                                                variant="outline"
+                                                className="text-xs bg-green-50 text-green-700 border-green-200"
+                                              >
+                                                ✓ {provider.companyName || provider.name}
+                                              </Badge>
+                                            )
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -1255,8 +1355,18 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                                         : 'bg-[#14ad9f] hover:bg-[#129488] text-white'
                                     }`}
                                     onClick={() => {
+                                      console.log('🔍 DEBUG Button-Click:', {
+                                        showProviderSelection,
+                                        providerId: provider.id,
+                                        providerName: provider.companyName || provider.name,
+                                      });
+
                                       if (showProviderSelection !== null) {
                                         toggleProviderSelection(showProviderSelection, provider);
+                                      } else {
+                                        console.log(
+                                          '❌ showProviderSelection ist null - Button funktioniert nicht!'
+                                        );
                                       }
                                     }}
                                   >
