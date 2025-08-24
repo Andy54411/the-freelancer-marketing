@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
       description: body.description,
       category: body.category,
       subcategory: body.subcategory || '',
+      serviceCategory: body.category, // Für die Quotes-Abfrage
+      serviceSubcategory: body.subcategory || '', // Für die Quotes-Abfrage
       budgetType: body.budgetType || 'negotiable',
       budgetAmount: body.budgetAmount || null,
       maxBudget: body.maxBudget || null,

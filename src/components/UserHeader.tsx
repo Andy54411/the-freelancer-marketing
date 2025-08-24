@@ -50,7 +50,17 @@ const auth = getAuth(app);
 // NEU: Interface für Benachrichtigungen
 interface NotificationPreview {
   id: string;
-  type: 'order' | 'support' | 'system' | 'update';
+  type:
+    | 'order'
+    | 'support'
+    | 'system'
+    | 'update'
+    | 'new_proposal'
+    | 'proposal_accepted'
+    | 'proposal_declined'
+    | 'project_created'
+    | 'quote_accepted'
+    | 'contact_exchanged';
   message: string;
   link: string;
   isRead: boolean;
@@ -600,6 +610,24 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                     notification.type === 'update') && (
                                     <FiInfo className="text-gray-600" />
                                   )}
+                                  {notification.type === 'new_proposal' && (
+                                    <FiFileText className="text-blue-600" />
+                                  )}
+                                  {notification.type === 'proposal_accepted' && (
+                                    <FiCheckSquare className="text-green-600" />
+                                  )}
+                                  {notification.type === 'proposal_declined' && (
+                                    <FiUser className="text-red-600" />
+                                  )}
+                                  {notification.type === 'project_created' && (
+                                    <FiBriefcase className="text-[#14ad9f]" />
+                                  )}
+                                  {notification.type === 'quote_accepted' && (
+                                    <FiCheckSquare className="text-green-600" />
+                                  )}
+                                  {notification.type === 'contact_exchanged' && (
+                                    <FiMail className="text-blue-600" />
+                                  )}
                                 </div>
                                 <div className="flex-1 overflow-hidden">
                                   <p className="text-sm text-gray-900 font-medium">
@@ -816,7 +844,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             Meine Angebote
                           </Link>
                           <Link
-                            href={currentUser ? `/dashboard/user/${currentUid}/projects/create` : '/login'}
+                            href={
+                              currentUser
+                                ? `/dashboard/user/${currentUid}/projects/create`
+                                : '/login'
+                            }
                             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={() => setIsProfileDropdownOpen(false)}
                           >

@@ -148,7 +148,7 @@ export class ProjectEmailNotificationService {
 
       // 4. Erstelle E-Mail-Inhalte
       const emails = uniqueCompanies.map(company => ({
-        from: 'noreply@taskilo.de',
+        from: 'hello@send.taskilo.de',
         to: [company.email],
         subject: `🔔 Neue Projektanfrage: ${projectData.subcategory} in ${projectData.location || 'Deutschland'}`,
         htmlContent: this.generateProjectEmailHTML(projectData, company),
@@ -251,10 +251,10 @@ export class ProjectEmailNotificationService {
 
     const urgencyText =
       projectData.urgency === 'high'
-        ? '🔴 Dringend'
+        ? 'Dringend'
         : projectData.urgency === 'medium'
-          ? '🟡 Normal'
-          : '🟢 Niedrig';
+          ? 'Normal'
+          : 'Niedrig';
 
     const dateText =
       projectData.startDate && projectData.endDate
@@ -294,7 +294,7 @@ export class ProjectEmailNotificationService {
       <body>
         <div class="container">
           <div class="header">
-            <div class="logo">📋 Taskilo</div>
+            <div class="logo">Taskilo</div>
             <p class="header-text">Neue Projektanfrage verfügbar!</p>
           </div>
           
@@ -307,57 +307,70 @@ export class ProjectEmailNotificationService {
             
             <div class="info-grid">
               <div class="info-item">
-                <div class="info-label">📂 Kategorie</div>
+                <div class="info-label">Kategorie</div>
                 <div class="info-value">${projectData.category} → ${projectData.subcategory}</div>
               </div>
               
               <div class="info-item">
-                <div class="info-label">💰 Budget</div>
+                <div class="info-label">Budget</div>
                 <div class="info-value">${budgetText}</div>
               </div>
               
               <div class="info-item">
-                <div class="info-label">📍 Standort</div>
+                <div class="info-label">Standort</div>
                 <div class="info-value">${projectData.location || 'Nicht angegeben'}</div>
               </div>
               
               <div class="info-item">
-                <div class="info-label">⏰ Zeitrahmen</div>
+                <div class="info-label">Zeitrahmen</div>
                 <div class="info-value">${dateText}</div>
               </div>
               
               <div class="info-item">
-                <div class="info-label">🎯 Priorität</div>
+                <div class="info-label">Priorität</div>
                 <div class="info-value">${urgencyText}</div>
               </div>
             </div>
             
             <div class="description">
-              <div class="info-label">📝 Projektbeschreibung</div>
+              <div class="info-label">Projektbeschreibung</div>
               <p>${projectData.description}</p>
             </div>
             
             <div style="text-align: center;">
               <a href="https://taskilo.de/dashboard/company/${company.id}/quotes/incoming/${projectData.projectId}" class="cta-button">
-                🎯 Angebot abgeben
+                Angebot abgeben
               </a>
             </div>
             
             <p style="margin-top: 30px; color: #666; font-size: 14px;">
-              ⚡ <strong>Schnell sein lohnt sich!</strong> Frühe Angebote haben oft bessere Erfolgschancen.
+              <strong>Schnell sein lohnt sich!</strong> Frühe Angebote haben oft bessere Erfolgschancen.
             </p>
             
             <p style="color: #666; font-size: 14px;">
-              💡 <strong>Tipp:</strong> Erstellen Sie ein detailliertes Angebot mit transparenter Preisgestaltung und realistischen Zeitplänen.
+              <strong>Tipp:</strong> Erstellen Sie ein detailliertes Angebot mit transparenter Preisgestaltung und realistischen Zeitplänen.
             </p>
           </div>
           
           <div class="footer">
-            <p>Diese E-Mail wurde automatisch von Taskilo generiert.</p>
-            <p>Sie erhalten diese E-Mails, weil Sie sich für die Kategorie "${projectData.subcategory}" registriert haben.</p>
-            <p><a href="https://taskilo.de/dashboard/company/${company.id}/settings">Benachrichtigungseinstellungen verwalten</a></p>
-            <p style="margin-top: 15px;">
-              <a href="https://taskilo.de">Taskilo.de</a> | 
+            <p><strong>Bitte antworten Sie nicht auf diese E-Mail</strong> - wir erhalten Ihre Anfrage nicht.</p>
+            <p>Benötigen Sie Hilfe? Besuchen Sie unser <a href="https://taskilo.de/dashboard/company/${company.id}/support">Support-Center</a>, dort können Sie ein Ticket erstellen.</p>
+            <p><a href="https://taskilo.de/dashboard/company/${company.id}/settings">Präferenzen verwalten</a></p>
+            
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+            
+            <p style="font-size: 12px; color: #888; line-height: 1.5;">
+              Diese E-Mail wurde automatisch von Taskilo generiert.<br>
+              Sie erhalten diese E-Mails, weil Sie sich für die Kategorie "${projectData.subcategory}" registriert haben.
+            </p>
+            
+            <p style="font-size: 11px; color: #888; margin-top: 15px;">
+              <strong>The Freelancer Marketing Ltd.</strong><br>
+              Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2<br>
+              8015, Paphos Cyprus<br>
+              Registrierungsnummer: HE 458650 | VAT: CY60058879W<br>
+              <a href="https://taskilo.de/impressum">Impressum</a> | 
+              <a href="https://taskilo.de/datenschutz">Datenschutz</a> | 
               <a href="mailto:support@taskilo.de">Support</a>
             </p>
           </div>
