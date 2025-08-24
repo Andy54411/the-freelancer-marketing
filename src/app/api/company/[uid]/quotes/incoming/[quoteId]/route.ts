@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, admin } from '@/firebase/server';
+import { ProjectNotificationService } from '@/lib/project-notifications';
 
 export async function GET(
   request: NextRequest,
@@ -40,16 +41,19 @@ export async function GET(
 
     // Get customer information based on customerUid
     let customerInfo = null;
-    
+
     if (projectData?.customerUid) {
       try {
         // First try to get from users collection
         const userDoc = await db.collection('users').doc(projectData.customerUid).get();
-        
+
         if (userDoc.exists) {
           const userData = userDoc.data();
           customerInfo = {
-            name: userData.companyName || userData.firstName + ' ' + userData.lastName || 'Unbekannter Kunde',
+            name:
+              userData.companyName ||
+              userData.firstName + ' ' + userData.lastName ||
+              'Unbekannter Kunde',
             type: userData.user_type === 'firma' ? 'company' : 'user',
             email: userData.email,
             phone: userData.phone,
@@ -77,9 +81,7 @@ export async function GET(
     }
 
     // Find the company's proposal if it exists
-    const companyProposal = projectData?.proposals?.find(
-      proposal => proposal.companyUid === uid
-    );
+    const companyProposal = projectData?.proposals?.find(proposal => proposal.companyUid === uid);
 
     // Determine status based on company's proposal
     let finalStatus = 'pending';
@@ -200,7 +202,7 @@ export async function PATCH(
       // Add proposal to the project
       const currentProposals = projectData?.proposals || [];
       const existingProposalIndex = currentProposals.findIndex(p => p.companyUid === uid);
-      
+
       if (existingProposalIndex >= 0) {
         // Update existing proposal
         currentProposals[existingProposalIndex] = newProposal;
@@ -213,6 +215,27 @@ export async function PATCH(
         proposals: currentProposals,
         lastUpdated: new Date(),
       });
+
+      // Send Bell-Notification to customer about new proposal
+      try {
+        await ProjectNotificationService.createNewProposalNotification(
+          quoteId, // projectId
+          projectData.customerUid, // customerUid
+          uid, // companyUid
+          {
+            customerName: projectData.customerName || 'Kunde',
+            companyName: companyData?.companyName || 'Unbekanntes Unternehmen',
+            subcategory: projectData.subcategory || projectData.title || 'Projekt',
+            proposedPrice: proposal.estimatedPrice,
+            proposedTimeline: proposal.timeline,
+            message: proposal.message,
+          }
+        );
+        console.log(`✅ Bell-Notification gesendet für neues Angebot: Projekt ${quoteId}`);
+      } catch (notificationError) {
+        console.error('❌ Fehler beim Senden der Bell-Notification:', notificationError);
+        // Angebot trotzdem erfolgreich, auch wenn Notification fehlschlägt
+      }
 
       return NextResponse.json({
         success: true,

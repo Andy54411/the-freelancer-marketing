@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
+import { ProjectEmailNotificationService } from '@/lib/project-email-notifications';
 
 /**
  * API Route zum Erstellen einer neuen Projektanfrage
@@ -56,6 +57,54 @@ export async function POST(request: NextRequest) {
     const docRef = await db.collection('project_requests').add(projectRequestData);
 
     console.log('✅ [Project Requests API] Project request created with ID:', docRef.id);
+
+    // Sende E-Mail-Benachrichtigungen an relevante Unternehmen
+    if (body.subcategory) {
+      try {
+        console.log('📧 [Project Requests API] Sending email notifications to companies...');
+
+        const emailService = ProjectEmailNotificationService.getInstance();
+        const emailResult = await emailService.notifyCompaniesAboutNewProject({
+          projectId: docRef.id,
+          title: body.title,
+          description: body.description,
+          category: body.category,
+          subcategory: body.subcategory,
+          customerName: body.customerName,
+          location: body.location,
+          budget:
+            body.budgetAmount || body.maxBudget
+              ? {
+                  amount: body.budgetAmount,
+                  type: body.budgetType,
+                  max: body.maxBudget,
+                }
+              : undefined,
+          timeline: body.timeline,
+          startDate: body.startDate,
+          endDate: body.endDate,
+          urgency: body.urgency,
+          createdAt: new Date(),
+        });
+
+        console.log(
+          `📊 [Project Requests API] E-Mail-Benachrichtigungen: ${emailResult.sentCount} gesendet, ${emailResult.failedCount} fehlgeschlagen`
+        );
+
+        if (emailResult.failedCount > 0) {
+          console.warn(
+            '⚠️ [Project Requests API] Einige E-Mail-Benachrichtigungen fehlgeschlagen:',
+            emailResult.details.filter(d => !d.success).map(d => `${d.email}: ${d.error}`)
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          '❌ [Project Requests API] Fehler beim Senden der E-Mail-Benachrichtigungen:',
+          emailError
+        );
+        // Projekt wurde trotzdem erfolgreich erstellt, auch wenn E-Mails fehlschlagen
+      }
+    }
 
     return NextResponse.json({
       success: true,
