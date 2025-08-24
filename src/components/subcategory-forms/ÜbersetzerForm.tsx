@@ -11,16 +11,18 @@ import {
   FormSubmitButton,
 } from './FormComponents';
 
-interface ÜbersetzerFormProps {
+interface UebersetzerFormProps {
   data: ÜbersetzerData;
   onDataChange: (data: ÜbersetzerData) => void;
   onValidationChange: (isValid: boolean) => void;
+  hideSubmitButton?: boolean;
 }
 
-const ÜbersetzerForm: React.FC<ÜbersetzerFormProps> = ({
+const UebersetzerForm: React.FC<UebersetzerFormProps> = ({
   data,
   onDataChange,
   onValidationChange,
+  hideSubmitButton = false,
 }) => {
   const [formData, setFormData] = useState<ÜbersetzerData>(data);
 
@@ -332,9 +334,14 @@ const ÜbersetzerForm: React.FC<ÜbersetzerFormProps> = ({
         </div>
       </div>
 
-      <FormSubmitButton isValid={isFormValid()} subcategory="Übersetzer" formData={formData} />
+      <FormSubmitButton
+        isValid={isFormValid()}
+        subcategory="Übersetzer"
+        formData={formData}
+        hideSubmitButton={hideSubmitButton}
+      />
     </div>
   );
 };
 
-export default ÜbersetzerForm;
+export default UebersetzerForm;

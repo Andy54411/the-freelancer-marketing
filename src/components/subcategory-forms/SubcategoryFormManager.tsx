@@ -85,7 +85,7 @@ import VersicherungsberatungForm from './VersicherungsberatungForm';
 import VerwaltungForm from './VerwaltungForm';
 import VideografForm from './VideografForm';
 import ZimmererForm from './ZimmererForm';
-import ÜbersetzerForm from './ÜbersetzerForm';
+import UebersetzerForm from './ÜbersetzerForm';
 
 interface SubcategoryFormManagerProps {
   subcategory: string;
@@ -1939,10 +1939,11 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
         );
       case 'Übersetzer':
         return (
-          <ÜbersetzerForm
+          <UebersetzerForm
             data={formData as any}
             onDataChange={handleDataChange}
             onValidationChange={() => {}}
+            hideSubmitButton={hideSubmitButton}
           />
         );
       case 'Ernährungsberatung':
