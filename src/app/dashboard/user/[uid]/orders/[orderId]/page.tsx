@@ -285,8 +285,7 @@ export default function OrderDetailPage() {
       const result = await response.json();
       console.log('Accept Order Success:', result);
 
-      // Nach erfolgreichem Aufruf die Daten neu laden, um einen konsistenten Zustand zu gewährleisten.
-      await fetchOrder();
+      // Real-Time-Listener aktualisiert die Daten automatisch
     } catch (err: any) {
       console.error('Fehler beim Annehmen des Auftrags:', err);
       setError(err.message || 'Ein Fehler ist beim Annehmen des Auftrags aufgetreten.');
@@ -399,9 +398,8 @@ export default function OrderDetailPage() {
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
-      // Reload order data mit Retry-Logik
-      await fetchOrder();
-      console.log('✅ Order data reloaded after payment success');
+      // Real-Time-Listener aktualisiert die Daten automatisch
+      console.log('✅ Order data will be updated via real-time listener');
 
       // Prüfe, ob die Zahlung korrekt verarbeitet wurde
       const { TimeTracker } = await import('@/lib/timeTracker');
@@ -432,12 +430,10 @@ export default function OrderDetailPage() {
           });
 
           if (fixResponse.ok) {
-            console.log('✅ Auto-fix successful! Reloading data...');
+            console.log('✅ Auto-fix successful! Real-time listener will update data...');
             setSuccessMessage('Zahlung erfolgreich! Daten werden automatisch korrigiert...');
 
-            // Warte noch 2 Sekunden und lade dann erneut
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            await fetchOrder();
+            // Real-Time-Listener aktualisiert die Daten automatisch
           }
         } catch (fixError) {
           console.error('❌ Auto-fix failed:', fixError);

@@ -20,12 +20,12 @@ interface OrderData {
   selectedAnbieterId: string;
   status: string;
   stripePaymentIntentId?: string;
-  stripeApplicationFeeId?: string;
+  paymentIntentId?: string;
   totalAmountPaidByBuyer: number;
-  platformFeeAmount: number;
-  companyNetAmount: number;
-  companyStripeAccountId: string;
-  title: string;
+  sellerCommissionInCents?: number;
+  applicationFeeAmountFromStripe?: number;
+  anbieterStripeAccountId: string;
+  projectTitle?: string;
   description: string;
   selectedCategory: string;
   selectedSubcategory: string;
@@ -65,10 +65,12 @@ export async function POST(
       );
     }
 
-    // 3. Prüfe Status - muss "accepted" sein (nach Payment)
-    if (orderData.status !== 'accepted') {
+    // 3. Prüfe Status - muss "PROVIDER_COMPLETED" sein (Provider hat geliefert)
+    if (orderData.status !== 'PROVIDER_COMPLETED') {
       return NextResponse.json(
-        { error: `Order must be in 'accepted' status, current status: ${orderData.status}` },
+        {
+          error: `Order must be in 'PROVIDER_COMPLETED' status, current status: ${orderData.status}`,
+        },
         { status: 400 }
       );
     }
@@ -76,19 +78,26 @@ export async function POST(
     // 4. Stripe Transfer zur Auszahlung an Company
     let transferId: string | undefined;
 
-    if (orderData.stripePaymentIntentId && orderData.companyStripeAccountId) {
+    const paymentIntentId = orderData.stripePaymentIntentId || orderData.paymentIntentId;
+    const platformFee =
+      orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
+    const companyNetAmount = orderData.totalAmountPaidByBuyer - platformFee;
+
+    if (paymentIntentId && orderData.anbieterStripeAccountId) {
       try {
         console.log('💳 Creating Stripe Transfer for order completion:', {
-          amount: orderData.companyNetAmount,
-          destination: orderData.companyStripeAccountId,
-          paymentIntentId: orderData.stripePaymentIntentId,
+          amount: companyNetAmount,
+          destination: orderData.anbieterStripeAccountId,
+          paymentIntentId: paymentIntentId,
+          platformFee: platformFee,
+          totalAmount: orderData.totalAmountPaidByBuyer,
         });
 
         // Transfer des Netto-Betrags an die Company
         const transfer = await stripe.transfers.create({
-          amount: orderData.companyNetAmount, // Betrag ohne Platform Fee
+          amount: companyNetAmount, // Betrag ohne Platform Fee
           currency: 'eur',
-          destination: orderData.companyStripeAccountId,
+          destination: orderData.anbieterStripeAccountId,
           transfer_group: `ORDER_${orderId}`,
           metadata: {
             orderId: orderId,
