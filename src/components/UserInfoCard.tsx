@@ -165,7 +165,18 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
   useEffect(() => {
     if (!userId) return;
 
-    // Initialisiere Presence Listening
+    // Für Firmen: Zeige standardmäßig Offline, da diese meist nicht dauerhaft online sind
+    const isCompanyUser = userRole === 'provider';
+
+    if (isCompanyUser) {
+      // Für Firmen: Setze realistischen Offline-Status
+      setIsOnline(false);
+      setStatus('offline');
+      setLastSeen(null);
+      return; // Früher Ausstieg - keine Realtime-Überwachung für Firmen
+    }
+
+    // Für reguläre Kunden: Verwende Realtime Presence
     const unsubscribe = userPresence.getUserPresence(userId, presence => {
       if (presence) {
         setIsOnline(presence.isOnline);
@@ -180,7 +191,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
 
     // Cleanup function
     return unsubscribe;
-  }, [userId]);
+  }, [userId, userRole]);
 
   // Profile Link Generator
   const profileLink = userRole === 'provider' ? `/anbieter/${userId}` : null;
@@ -294,10 +305,12 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
                 >
                   {userRole === 'provider' ? 'Anbieter' : 'Auftraggeber'}
                 </span>
-                {userRole === 'provider' && reviewCount > 0 && (
+                {userRole === 'provider' && (
                   <div className="flex items-center gap-1">
                     <Star size={14} className="text-yellow-400 fill-current" />
-                    <span className="text-sm text-gray-600">{rating}</span>
+                    <span className="text-sm text-gray-600">
+                      {reviewCount > 0 ? `${rating} (${reviewCount})` : 'Noch keine Bewertungen'}
+                    </span>
                   </div>
                 )}
               </div>

@@ -249,6 +249,97 @@ export const stripeWebhookHandler = onRequest(
                         }
                     }
 
+                    // Check if this is a quote payment
+                    const quoteId = paymentIntentSucceeded.metadata?.quote_id;
+                    const proposalId = paymentIntentSucceeded.metadata?.proposal_id;
+                    
+                    if (quoteId && proposalId) {
+                        logger.info(`[stripeWebhookHandler] Processing quote payment: ${paymentIntentSucceeded.id} for quote ${quoteId}, proposal ${proposalId}`);
+                        
+                        try {
+                            // Get the order that was created for this quote payment
+                            const ordersRef = db.collection('auftraege');
+                            const orderQuery = await ordersRef
+                                .where('originalQuoteId', '==', quoteId)
+                                .where('originalProposalId', '==', proposalId)
+                                .where('paymentIntentId', '==', paymentIntentSucceeded.id)
+                                .limit(1)
+                                .get();
+                            
+                            if (!orderQuery.empty) {
+                                const orderDoc = orderQuery.docs[0];
+                                
+                                logger.info(`[stripeWebhookHandler] Found order ${orderDoc.id} for quote payment`);
+                                
+                                // Get the quote data to extract provider information
+                                const quoteRef = db.collection('project_requests').doc(quoteId);
+                                const quoteDoc = await quoteRef.get();
+                                
+                                if (quoteDoc.exists) {
+                                    const quoteData = quoteDoc.data();
+                                    const proposals = quoteData?.proposals || [];
+                                    
+                                    // Handle different proposal structures (array or object)
+                                    let proposalArray = [];
+                                    if (Array.isArray(proposals)) {
+                                        proposalArray = proposals;
+                                    } else if (typeof proposals === 'object' && proposals !== null) {
+                                        // If proposals is an object, convert to array
+                                        proposalArray = Object.values(proposals);
+                                    }
+                                    
+                                    // Find the specific proposal
+                                    const proposal = proposalArray.find((p: any) => p.companyUid === proposalId);
+                                    
+                                    if (proposal) {
+                                        logger.info(`[stripeWebhookHandler] Found proposal from company ${proposal.companyUid}`);
+                                        
+                                        // Get provider details from users collection
+                                        const providerRef = db.collection('users').doc(proposal.companyUid);
+                                        const providerDoc = await providerRef.get();
+                                        
+                                        let providerName = 'Unbekannter Anbieter';
+                                        let stripeAccountId = '';
+                                        
+                                        if (providerDoc.exists) {
+                                            const providerData = providerDoc.data();
+                                            providerName = providerData?.companyName || 
+                                                         providerData?.displayName || 
+                                                         `${providerData?.firstName || ''} ${providerData?.lastName || ''}`.trim() ||
+                                                         'Unbekannter Anbieter';
+                                            stripeAccountId = providerData?.stripeAccountId || '';
+                                            
+                                            logger.info(`[stripeWebhookHandler] Provider details: name=${providerName}, stripeAccountId=${stripeAccountId}`);
+                                        } else {
+                                            logger.warn(`[stripeWebhookHandler] Provider document not found for ${proposal.companyUid}`);
+                                        }
+                                        
+                                        // Update the order with provider information
+                                        await orderDoc.ref.update({
+                                            selectedAnbieterId: proposal.companyUid,
+                                            providerName: providerName,
+                                            anbieterStripeAccountId: stripeAccountId,
+                                            lastUpdated: FieldValue.serverTimestamp()
+                                        });
+                                        
+                                        logger.info(`[stripeWebhookHandler] Successfully updated order ${orderDoc.id} with provider info: ${providerName}`);
+                                    } else {
+                                        logger.error(`[stripeWebhookHandler] Proposal not found for companyUid ${proposalId} in quote ${quoteId}`);
+                                    }
+                                } else {
+                                    logger.error(`[stripeWebhookHandler] Quote document not found: ${quoteId}`);
+                                }
+                            } else {
+                                logger.warn(`[stripeWebhookHandler] No order found for quote payment ${paymentIntentSucceeded.id}`);
+                            }
+                        } catch (error: any) {
+                            logger.error(`[stripeWebhookHandler] Error processing quote payment ${paymentIntentSucceeded.id}:`, error);
+                        }
+                        
+                        response.status(200).json({ received: true, message: 'Quote payment processed' });
+                        return;
+                    }
+
                     // Handle regular job payments
                     const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
                     const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
