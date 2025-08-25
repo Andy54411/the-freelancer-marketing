@@ -13,42 +13,36 @@ import {
   ArrowLeft,
   FileText,
   Euro,
+  AlertCircle,
+  Banknote,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface Payout {
+interface AvailableOrder {
+  id: string;
+  amount: number;
+  completedAt: any;
+  projectTitle: string;
+}
+
+interface AvailablePayoutData {
+  availableAmount: number;
+  currency: string;
+  orderCount: number;
+  orders: AvailableOrder[];
+}
+
+interface PayoutRequest {
   id: string;
   amount: number;
   currency: string;
-  status: 'pending' | 'in_transit' | 'paid' | 'failed' | 'canceled';
-  created: number;
-  arrival_date?: number;
-  description?: string;
-  failure_message?: string;
-  failure_code?: string;
+  orderCount: number;
+  estimatedArrival: string;
+  status: string;
   method: string;
-  destination: {
-    id: string;
-    last4?: string;
-    bank_name?: string;
-    account_holder_type?: string;
-  };
-}
-
-interface PayoutSummary {
-  totalPayouts: number;
-  totalAmount: number;
-  pendingAmount: number;
-  lastPayout?: Payout;
-}
-
-interface StripeBalance {
-  available: number;
-  pending: number;
-  currency: string;
-  source: string;
 }
 
 export default function PayoutOverviewPage() {
@@ -57,61 +51,35 @@ export default function PayoutOverviewPage() {
   const { user } = useAuth();
   const uid = (params?.uid as string) || '';
 
-  const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [summary, setSummary] = useState<PayoutSummary | null>(null);
-  const [balance, setBalance] = useState<StripeBalance | null>(null);
+  const [availableData, setAvailableData] = useState<AvailablePayoutData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [balanceLoading, setBalanceLoading] = useState(true);
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || !uid) return;
-    loadPayoutHistory();
-    loadBalance();
+    loadAvailablePayouts();
   }, [user, uid]);
 
-  const loadBalance = async () => {
-    try {
-      setBalanceLoading(true);
-      
-      const response = await fetch('/api/get-stripe-balance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseUserId: uid }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setBalance(data);
-      }
-    } catch (err) {
-      console.error('Error loading balance:', err);
-    } finally {
-      setBalanceLoading(false);
-    }
-  };
-
-  const loadPayoutHistory = async () => {
+  const loadAvailablePayouts = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/get-payout-history', {
-        method: 'POST',
+      const response = await fetch(`/api/company/${uid}/payout`, {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firebaseUserId: uid }),
       });
 
       if (!response.ok) {
-        throw new Error('Fehler beim Laden der Auszahlungshistorie');
+        throw new Error('Fehler beim Laden der verfügbaren Auszahlungen');
       }
 
       const data = await response.json();
-      setPayouts(data.payouts || []);
-      setSummary(data.summary || null);
+      setAvailableData(data);
     } catch (err) {
-      console.error('Error loading payout history:', err);
+      console.error('Error loading available payouts:', err);
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
     } finally {
       setLoading(false);
@@ -119,214 +87,101 @@ export default function PayoutOverviewPage() {
   };
 
   const handleRequestPayout = async () => {
-    if (!balance || balance.available <= 0 || payoutLoading) return;
+    if (!availableData || availableData.availableAmount <= 0 || payoutLoading) return;
 
     const confirmPayout = confirm(
-      `Auszahlung bestätigen
-
-` +
-      `Verfügbares Guthaben: ${formatCurrency(balance.available)}
-
-` +
-      `Das gesamte verfügbare Guthaben wird ausgezahlt.
-` +
-      `Die Auszahlung erfolgt in 1-2 Werktagen.
-
-` +
-      `Möchten Sie fortfahren?`
+      `Auszahlung bestätigen\n\n` +
+      `Verfügbarer Betrag: ${formatCurrency(availableData.availableAmount)}\n` +
+      `Anzahl Aufträge: ${availableData.orderCount}\n\n` +
+      `Der Betrag wird in 1-2 Werktagen auf Ihr Bankkonto überwiesen.\n\n` +
+      `Möchten Sie die Auszahlung beantragen?`
     );
 
     if (!confirmPayout) return;
 
     try {
       setPayoutLoading(true);
+      setError(null);
+      setSuccess(null);
 
-      const response = await fetch('/api/request-payout', {
+      const response = await fetch(`/api/company/${uid}/payout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          firebaseUserId: uid,
-          amount: balance.available,
+          description: `Auszahlung für ${availableData.orderCount} abgeschlossene Aufträge`,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Auszahlung fehlgeschlagen');
+        throw new Error(errorData.details || errorData.error || 'Auszahlung fehlgeschlagen');
       }
 
       const result = await response.json();
       
-      alert(`Auszahlung erfolgreich!
+      setSuccess(
+        `Auszahlung erfolgreich beantragt!\n` +
+        `Betrag: ${formatCurrency(result.payout.amount)}\n` +
+        `Voraussichtliche Ankunft: ${result.payout.estimatedArrival}`
+      );
 
-Payout-ID: ${result.payoutId}
-Betrag: ${formatCurrency(balance.available)}
+      // Reload data to show updated state
+      setTimeout(() => {
+        loadAvailablePayouts();
+        setSuccess(null);
+      }, 3000);
 
-Die Überweisung erfolgt in 1-2 Werktagen.`);
-      
-      // Reload data
-      await Promise.all([loadPayoutHistory(), loadBalance()]);
-      
     } catch (err) {
-      console.error('Payout error:', err);
-      alert(`Fehler bei der Auszahlung: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
+      console.error('Payout request error:', err);
+      setError(err instanceof Error ? err.message : 'Auszahlung fehlgeschlagen');
     } finally {
       setPayoutLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = 'EUR') => {
+  const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
-      currency: currency.toUpperCase(),
-    }).format(amount / 100); // Convert from cents
+      currency: 'EUR',
+    }).format(amount);
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString('de-DE', {
+  const formatDate = (dateInput: any): string => {
+    if (!dateInput) return 'Unbekannt';
+    
+    let date: Date;
+    if (dateInput.toDate && typeof dateInput.toDate === 'function') {
+      date = dateInput.toDate();
+    } else if (dateInput instanceof Date) {
+      date = dateInput;
+    } else if (typeof dateInput === 'string' || typeof dateInput === 'number') {
+      date = new Date(dateInput);
+    } else {
+      return 'Unbekannt';
+    }
+
+    return new Intl.DateTimeFormat('de-DE', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
-    });
-  };
-
-  const getStatusBadge = (status: Payout['status']) => {
-    switch (status) {
-      case 'paid':
-        return (
-          <Badge
-            variant="default"
-            className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-          >
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Ausgezahlt
-          </Badge>
-        );
-      case 'in_transit':
-        return (
-          <Badge
-            variant="secondary"
-            className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-          >
-            <Clock className="w-3 h-3 mr-1" />
-            Unterwegs
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge
-            variant="outline"
-            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-          >
-            <Clock className="w-3 h-3 mr-1" />
-            Ausstehend
-          </Badge>
-        );
-      case 'failed':
-        return (
-          <Badge variant="destructive">
-            <XCircle className="w-3 h-3 mr-1" />
-            Fehlgeschlagen
-          </Badge>
-        );
-      case 'canceled':
-        return (
-          <Badge
-            variant="outline"
-            className="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-          >
-            <XCircle className="w-3 h-3 mr-1" />
-            Storniert
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const downloadInvoice = async (payoutId: string) => {
-    try {
-      // Verwende zuerst die einfache HTML-Version
-      const response = await fetch('/api/generate-payout-invoice-simple', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firebaseUserId: uid,
-          payoutId: payoutId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const htmlContent = await response.text();
-
-      // Öffne HTML in neuem Fenster zum Drucken/Speichern
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
-        printWindow.focus();
-
-        // Auto-Print Dialog öffnen
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-
-        // Erfolgsmeldung zeigen
-        console.log('Rechnung erfolgreich geöffnet');
-      } else {
-        // Fallback: HTML in Blob speichern
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `Auszahlung_${payoutId}_${new Date().toISOString().split('T')[0]}.html`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        // Erfolgsmeldung zeigen
-        console.log('Rechnung erfolgreich heruntergeladen');
-      }
-    } catch (err) {
-      console.error('Error downloading invoice:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
-
-      // Zeige eine benutzerfreundlichere Fehlermeldung
-      if (errorMessage.includes('Zahlungsverarbeitung nicht verfügbar')) {
-        alert(
-          'Die Rechnungsgenerierung ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut.'
-        );
-      } else if (errorMessage.includes('Datenbankverbindung nicht verfügbar')) {
-        alert('Verbindungsproblem zur Datenbank. Bitte versuchen Sie es später erneut.');
-      } else {
-        alert(`Fehler beim Erstellen der Rechnung: ${errorMessage}`);
-      }
-    }
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded animate-pulse"></div>
-            <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-48 animate-pulse"></div>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" onClick={() => router.back()}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Auszahlungen</h1>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader className="pb-3">
-                  <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24"></div>
-                  <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-32"></div>
-                </CardHeader>
-              </Card>
-            ))}
+          
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
           </div>
         </div>
       </div>
@@ -334,254 +189,186 @@ Die Überweisung erfolgt in 1-2 Werktagen.`);
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={() => router.push(`/dashboard/company/${uid}/settings`)}
-            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Auszahlungen</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Übersicht über Ihre Auszahlungen und Rechnungen
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" onClick={() => router.back()}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Auszahlungen</h1>
           </div>
         </div>
 
+        {/* Error Alert */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-800 dark:text-red-200">{error}</p>
-            <Button onClick={loadPayoutHistory} variant="outline" size="sm" className="mt-2">
-              Erneut versuchen
-            </Button>
-          </div>
+          <Alert className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {error}
+            </AlertDescription>
+          </Alert>
         )}
 
-        {/* Balance Widget - Guthaben & Auszahlung */}
-        <Card className="mb-8 border-2 border-[#14ad9f]/20">
+        {/* Success Alert */}
+        {success && (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800 whitespace-pre-line">
+              {success}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Available Payout Card */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Euro className="w-5 h-5 text-[#14ad9f]" />
-              Verfügbares Guthaben
+            <CardTitle className="flex items-center space-x-2">
+              <Euro className="h-5 w-5 text-[#14ad9f]" />
+              <span>Verfügbare Auszahlung</span>
             </CardTitle>
             <CardDescription>
-              Ihr aktuelles Guthaben und Auszahlungsoptionen
+              Einnahmen aus abgeschlossenen Aufträgen bereit zur Auszahlung
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {balanceLoading ? (
-              <div className="flex items-center gap-2 py-4">
-                <div className="w-4 h-4 animate-spin rounded-full border-2 border-[#14ad9f] border-t-transparent"></div>
-                <span className="text-gray-600">Lade Guthaben...</span>
-              </div>
-            ) : balance ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Available Balance */}
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <div className="text-sm text-green-600 dark:text-green-400 font-medium">
-                      Verfügbar
+            {availableData && availableData.availableAmount > 0 ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-[#14ad9f]/5 rounded-lg">
+                    <div className="text-2xl font-bold text-[#14ad9f]">
+                      {formatCurrency(availableData.availableAmount)}
                     </div>
-                    <div className={`text-3xl font-bold ${balance.available > 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-500'}`}>
-                      {formatCurrency(balance.available)}
-                    </div>
-                    {balance.available > 0 && (
-                      <div className="text-xs text-green-600 dark:text-green-400 mt-1">
-                        Sofort auszahlbar
-                      </div>
-                    )}
+                    <div className="text-sm text-gray-600">Verfügbarer Betrag</div>
                   </div>
-
-                  {/* Pending Balance */}
-                  {balance.pending > 0 && (
-                    <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                      <div className="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
-                        Ausstehend
-                      </div>
-                      <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-300">
-                        +{formatCurrency(balance.pending)}
-                      </div>
-                      <div className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                        Nach Order-Bestätigung verfügbar
-                      </div>
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {availableData.orderCount}
                     </div>
-                  )}
+                    <div className="text-sm text-gray-600">Abgeschlossene Aufträge</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-lg font-bold text-green-600">
+                      1-2 Werktage
+                    </div>
+                    <div className="text-sm text-gray-600">Auszahlungsdauer</div>
+                  </div>
                 </div>
 
-                {/* Payout Button */}
-                {balance.available > 0 && (
-                  <div className="pt-4">
-                    <Button
-                      onClick={handleRequestPayout}
-                      disabled={payoutLoading}
-                      size="lg"
-                      className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white"
-                    >
-                      {payoutLoading ? (
-                        <>
-                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2"></div>
-                          Auszahlung wird bearbeitet...
-                        </>
-                      ) : (
-                        <>
-                          <Euro className="w-4 h-4 mr-2" />
-                          Gesamtes Guthaben auszahlen ({formatCurrency(balance.available)})
-                        </>
-                      )}
-                    </Button>
-                    <p className="text-xs text-gray-500 text-center mt-2">
-                      Auszahlungen werden in 1-2 Werktagen bearbeitet
-                    </p>
-                  </div>
-                )}
-
-                {balance.available === 0 && (
-                  <div className="text-center py-6 text-gray-500">
-                    <Euro className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Kein Guthaben verfügbar</p>
-                    <p className="text-xs">Guthaben wird nach abgeschlossenen Aufträgen verfügbar</p>
-                  </div>
-                )}
+                <div className="flex justify-center">
+                  <Button
+                    onClick={handleRequestPayout}
+                    disabled={payoutLoading}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-8 py-2"
+                  >
+                    {payoutLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Auszahlung wird beantragt...
+                      </>
+                    ) : (
+                      <>
+                        <Banknote className="h-4 w-4 mr-2" />
+                        Auszahlung beantragen
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             ) : (
-              <div className="text-center py-6 text-gray-500">
-                <div className="text-red-600">
-                  Fehler beim Laden des Guthabens
+              <div className="text-center py-8">
+                <div className="text-gray-400 mb-4">
+                  <Euro className="h-12 w-12 mx-auto" />
                 </div>
-                <Button onClick={loadBalance} variant="outline" size="sm" className="mt-2">
-                  Erneut versuchen
-                </Button>
+                <div className="text-lg font-medium text-gray-600 mb-2">
+                  Keine Auszahlung verfügbar
+                </div>
+                <div className="text-sm text-gray-500">
+                  Schließen Sie Aufträge ab, um Auszahlungen zu erhalten
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Summary Cards */}
-        {summary && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardDescription className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                  <Euro className="w-4 h-4" />
-                  Gesamtauszahlungen
-                </CardDescription>
-                <CardTitle className="text-2xl font-semibold">
-                  {formatCurrency(summary.totalAmount)}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardDescription className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <CheckCircle className="w-4 h-4" />
-                  Anzahl Auszahlungen
-                </CardDescription>
-                <CardTitle className="text-2xl font-semibold">{summary.totalPayouts}</CardTitle>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardDescription className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
-                  <Clock className="w-4 h-4" />
-                  Ausstehend
-                </CardDescription>
-                <CardTitle className="text-2xl font-semibold">
-                  {formatCurrency(summary.pendingAmount)}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-        )}
-
-        {/* Payouts List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              Auszahlungshistorie
-            </CardTitle>
-            <CardDescription>
-              Alle Ihre Auszahlungen mit Status und Download-Möglichkeit für Rechnungen
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {payouts.length === 0 ? (
-              <div className="text-center py-12">
-                <CreditCard className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  Keine Auszahlungen gefunden
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Ihre Auszahlungshistorie wird hier angezeigt, sobald Sie Ihre erste Auszahlung
-                  beantragt haben.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {payouts.map(payout => (
+        {/* Orders Ready for Payout */}
+        {availableData && availableData.orders.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+                <span>Aufträge bereit zur Auszahlung</span>
+              </CardTitle>
+              <CardDescription>
+                Diese abgeschlossenen Aufträge sind für die Auszahlung vorgesehen
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {availableData.orders.map((order) => (
                   <div
-                    key={payout.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    key={order.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-                        <Euro className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">
+                        {order.projectTitle}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {formatCurrency(payout.amount, payout.currency)}
-                          </span>
-                          {getStatusBadge(payout.status)}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {formatDate(payout.created)}
-                          </span>
-                          {payout.arrival_date && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              Erwartet: {formatDate(payout.arrival_date)}
-                            </span>
-                          )}
-                          {payout.destination.bank_name && (
-                            <span>
-                              {payout.destination.bank_name} ****{payout.destination.last4}
-                            </span>
-                          )}
-                        </div>
-                        {payout.failure_message && (
-                          <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                            Fehler: {payout.failure_message}
-                          </p>
-                        )}
+                      <div className="text-sm text-gray-500">
+                        Abgeschlossen am {formatDate(order.completedAt)}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                      {(payout.status === 'paid' || payout.status === 'in_transit') && (
-                        <Button
-                          onClick={() => downloadInvoice(payout.id)}
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center gap-2"
-                        >
-                          <FileText className="w-4 h-4" />
-                          Rechnung
-                        </Button>
-                      )}
+                    <div className="text-right">
+                      <div className="font-medium text-[#14ad9f]">
+                        {formatCurrency(order.amount)}
+                      </div>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        Bereit zur Auszahlung
+                      </Badge>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Info Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              <span>Auszahlungsinformationen</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 text-sm text-gray-600">
+              <div className="flex items-start space-x-2">
+                <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>
+                  Auszahlungen erfolgen automatisch auf Ihr hinterlegtes Bankkonto
+                </span>
+              </div>
+              <div className="flex items-start space-x-2">
+                <Clock className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <span>
+                  Bearbeitungszeit: 1-2 Werktage für SEPA-Überweisungen
+                </span>
+              </div>
+              <div className="flex items-start space-x-2">
+                <CreditCard className="h-4 w-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                <span>
+                  Nur abgeschlossene und bewertete Aufträge sind auszahlungsbereit
+                </span>
+              </div>
+              <div className="flex items-start space-x-2">
+                <Euro className="h-4 w-4 text-[#14ad9f] mt-0.5 flex-shrink-0" />
+                <span>
+                  Platform-Gebühren werden automatisch abgezogen
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

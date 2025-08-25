@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db as adminDb } from '@/firebase/server';
 import Stripe from 'stripe';
+
+// Try to import Firebase Admin, with fallback
+let adminDb: any = null;
+try {
+  const { db } = require('@/firebase/server');
+  adminDb = db;
+} catch (firebaseError) {
+  console.warn('⚠️ Firebase Admin not available, using fallback mode');
+  // Fallback initialization
+  try {
+    const admin = require('firebase-admin');
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(require('../../../../../../firebase_functions/service-account.json')),
+        databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app'
+      });
+    }
+    adminDb = admin.firestore();
+  } catch (fallbackError) {
+    console.error('❌ Firebase Admin initialization failed completely:', fallbackError);
+  }
+}
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -45,6 +66,14 @@ export async function POST(
 
     console.log('📋 Order Completion Request:', { uid, orderId, body });
 
+    // Check if Firebase is available
+    if (!adminDb) {
+      return NextResponse.json(
+        { error: 'Firebase Admin not available' },
+        { status: 500 }
+      );
+    }
+
     // 1. Prüfe ob Order existiert und dem User gehört
     const orderRef = adminDb.collection('auftraege').doc(orderId);
     const orderSnap = await orderRef.get();
@@ -73,74 +102,20 @@ export async function POST(
       );
     }
 
-    // 4. Stripe Transfer zur Auszahlung an Company
-    let transferId: string | undefined;
-
+    // 4. Markiere Geld als verfügbar für Auszahlung (KEINE automatische Auszahlung)
     const paymentIntentId = orderData.paymentIntentId || orderData.stripePaymentIntentId;
     const platformFee =
       orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
     const companyNetAmount = orderData.totalAmountPaidByBuyer - platformFee;
 
-    if (paymentIntentId && orderData.anbieterStripeAccountId) {
-      try {
-        console.log('💳 Creating Stripe Transfer for order completion:', {
-          amount: companyNetAmount,
-          destination: orderData.anbieterStripeAccountId,
-          platformFee: platformFee,
-          totalAmount: orderData.totalAmountPaidByBuyer,
-        });
-
-        // Transfer des Netto-Betrags an die Company
-        // WICHTIG: Transfer direkt von Platform Balance, nicht von Payment Intent
-        const transfer = await stripe.transfers.create({
-          amount: companyNetAmount, // Betrag ohne Platform Fee
-          currency: 'eur',
-          destination: orderData.anbieterStripeAccountId,
-          transfer_group: `ORDER_${orderId}`,
-          description: `Auszahlung für Auftrag ${orderData.projectTitle || orderData.description || orderId}`,
-          metadata: {
-            orderId: orderId,
-            customerUid: uid,
-            companyId: orderData.selectedAnbieterId,
-            completedBy: 'customer',
-            completedAt: new Date().toISOString(),
-            paymentIntentId: paymentIntentId,
-          },
-        });
-
-        transferId = transfer.id;
-        console.log('✅ Stripe Transfer created:', transfer.id);
-        console.log('✅ Transfer amount:', companyNetAmount / 100, '€');
-      } catch (stripeError: any) {
-        console.error('❌ Stripe Transfer failed:', {
-          error: stripeError.message,
-          code: stripeError.code,
-          type: stripeError.type,
-          amount: companyNetAmount,
-          destination: orderData.anbieterStripeAccountId,
-          orderId: orderId,
-        });
-
-        // Prüfe Stripe Balance für bessere Diagnostik
-        try {
-          const balance = await stripe.balance.retrieve();
-          console.log('💰 Platform Balance:', balance.available);
-        } catch (balanceError) {
-          console.log('❌ Could not retrieve balance:', balanceError.message);
-        }
-
-        // Auch bei Stripe-Fehler den Auftrag als completed markieren
-        // Der Transfer kann später manuell nachgeholt werden
-        console.log('⚠️ Continuing with order completion despite Stripe error');
-      }
-    } else {
-      console.log('⚠️ Skipping Stripe Transfer - missing data:', {
-        hasPaymentIntentId: !!paymentIntentId,
-        hasStripeAccountId: !!orderData.anbieterStripeAccountId,
-        paymentIntentId: paymentIntentId,
-        stripeAccountId: orderData.anbieterStripeAccountId,
-      });
-    }
+    console.log('� Order completion - funds marked as available for payout:', {
+      orderId: orderId,
+      totalAmount: orderData.totalAmountPaidByBuyer / 100,
+      platformFee: platformFee / 100,
+      companyNetAmount: companyNetAmount / 100,
+      currency: 'EUR',
+      note: 'Manual payout required from company dashboard'
+    });
 
     // 5. Update Order Status zu "ABGESCHLOSSEN"
     const updateData: any = {
@@ -150,8 +125,7 @@ export async function POST(
       customerRating: body.rating || null,
       customerReview: body.review || '',
       completionNotes: body.completionNotes || '',
-      stripeTransferId: transferId || null,
-      payoutStatus: transferId ? 'transferred' : 'pending',
+      payoutStatus: 'available_for_payout', // Verfügbar für manuelle Auszahlung
       updatedAt: new Date(),
     };
 
@@ -181,9 +155,9 @@ export async function POST(
       success: true,
       message: 'Order completed successfully',
       orderId: orderId,
-      transferId: transferId,
-      payoutStatus: transferId ? 'transferred' : 'pending',
+      payoutStatus: 'available_for_payout',
       payoutAmount: companyNetAmount / 100, // Amount in EUR
+      note: 'Funds available for manual payout from company dashboard',
     });
   } catch (error: any) {
     console.error('❌ Order completion error:', error);
