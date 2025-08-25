@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,14 +33,14 @@ export default function OnboardingStep5() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
   const updateField = (field: keyof Step5Data, value: any) => {
     const updatedData = { ...step5Data, [field]: value };
     setStep5Data(updatedData);
     updateStepData(5, updatedData);
   };
 
-  // Berechne fehlende Felder
   const getMissingFields = () => {
     const missing: string[] = [];
 
@@ -62,14 +62,33 @@ export default function OnboardingStep5() {
     return missing;
   };
 
+  // Online/Offline Status überwachen
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    // Initial check
+    setIsOffline(!navigator.onLine);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const missingFields = getMissingFields();
   const completionPercentage = Math.round(getOverallCompletion());
   const canComplete = missingFields.length === 0 && step5Data.documentsCompleted;
 
   const handleSubmit = async () => {
-    if (!canComplete) return;
+    if (!canComplete || isOffline) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
+
     try {
       // Erst aktuellen Step speichern
       await saveCurrentStep();
@@ -77,7 +96,7 @@ export default function OnboardingStep5() {
       await submitOnboarding();
 
       // CRITICAL FIX: Erfolgreiche Weiterleitung zum Company Dashboard
-      console.log('✅ Onboarding erfolgreich abgeschlossen - Weiterleitung...');
+      console.log('✅ Onboarding erfolgreich abgeschlossen - alle Daten gespeichert');
       setIsCompleted(true);
 
       // Kurze Verzögerung für UI-Feedback
@@ -86,8 +105,22 @@ export default function OnboardingStep5() {
       }, 1500);
     } catch (error) {
       console.error('Fehler beim Abschließen des Onboardings:', error);
-      alert('Fehler beim Abschließen des Onboardings. Bitte versuchen Sie es erneut.');
+
+      // Erweiterte Fehlerbehandlung für Netzwerkprobleme
+      if (error instanceof Error && error.message.includes('network')) {
+        setSubmitError(
+          'Netzwerkfehler: Bitte prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.'
+        );
+      } else if (error instanceof Error && error.message.includes('Firebase')) {
+        setSubmitError(
+          'Verbindungsfehler zum Server. Bitte versuchen Sie es in einem Moment erneut.'
+        );
+      } else {
+        setSubmitError('Unerwarteter Fehler beim Abschließen. Bitte versuchen Sie es erneut.');
+      }
+
       setIsSubmitting(false);
+      setIsCompleted(false);
     }
   };
 
@@ -101,6 +134,38 @@ export default function OnboardingStep5() {
       </div>
 
       <div className="space-y-6">
+        {/* Submit-Fehleranzeige */}
+        {submitError && (
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <div>
+                  <h4 className="font-medium text-red-900">Fehler beim Abschließen</h4>
+                  <p className="text-sm text-red-700">{submitError}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Offline-Warnung */}
+        {isOffline && (
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+                <div>
+                  <h4 className="font-medium text-orange-900">Keine Internetverbindung</h4>
+                  <p className="text-sm text-orange-700">
+                    Bitte stellen Sie eine Internetverbindung her, um das Onboarding abzuschließen.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Fortschrittsanzeige */}
         <Card>
           <CardHeader>
@@ -376,9 +441,9 @@ export default function OnboardingStep5() {
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={!canComplete || isSubmitting}
+          disabled={!canComplete || isSubmitting || isOffline}
           className={`px-8 ${
-            canComplete
+            canComplete && !isOffline
               ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
@@ -388,6 +453,8 @@ export default function OnboardingStep5() {
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               {isCompleted ? 'Erfolgreich! Weiterleitung...' : 'Wird abgeschlossen...'}
             </div>
+          ) : isOffline ? (
+            'Internetverbindung erforderlich'
           ) : (
             'Onboarding abschließen'
           )}
