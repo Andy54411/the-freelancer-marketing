@@ -421,6 +421,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       onboardingUpdates.onboardingCompleted = true;
       onboardingUpdates.onboardingCompletedAt = serverTimestamp();
       onboardingUpdates.onboardingCompletionPercentage = 100;
+      onboardingUpdates.onboardingCurrentStep = 'completed'; // Mark as completed
       onboardingUpdates.profileComplete = true;
       onboardingUpdates.profileStatus = 'pending_review';
 

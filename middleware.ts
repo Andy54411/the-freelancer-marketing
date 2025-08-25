@@ -74,16 +74,18 @@ async function checkCompanyOnboardingStatus(request: NextRequest) {
       );
     }
 
-    // Check if profile is approved (harmonized system)
-    const isApproved = userData.profileStatus === 'approved';
+    // FIXED: Nach Onboarding-Abschluss Zugang erlauben (auch bei pending_review)
+    // Nur bei 'rejected' blockieren
+    const isRejected = userData.profileStatus === 'rejected';
 
-    if (!isApproved) {
-      // Redirect to pending page
+    if (isRejected) {
+      // Redirect to pending page with rejection info
       return NextResponse.redirect(
-        new URL(`/dashboard/company/${companyUid}/onboarding/welcome?status=pending`, request.url)
+        new URL(`/dashboard/company/${companyUid}/onboarding/welcome?status=rejected`, request.url)
       );
     }
 
+    // Allow access for completed onboarding (approved OR pending_review)
     return null; // Continue to dashboard
   } catch (error) {
     console.error('Middleware onboarding check error:', error);
