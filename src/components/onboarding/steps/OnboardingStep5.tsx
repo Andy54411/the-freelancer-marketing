@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useOnboarding } from '@/contexts/OnboardingContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { CheckCircle, FileText, Shield, AlertCircle } from 'lucide-react';
 
 // Harmonisierte Step5Data Interface
@@ -14,6 +15,7 @@ interface Step5Data {
 }
 
 export default function OnboardingStep5() {
+  const { user } = useAuth();
   const {
     stepData,
     updateStepData,
@@ -30,6 +32,7 @@ export default function OnboardingStep5() {
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   const updateField = (field: keyof Step5Data, value: any) => {
     const updatedData = { ...step5Data, [field]: value };
@@ -72,8 +75,18 @@ export default function OnboardingStep5() {
       await saveCurrentStep();
       // Dann Onboarding abschließen
       await submitOnboarding();
+
+      // CRITICAL FIX: Erfolgreiche Weiterleitung zum Company Dashboard
+      console.log('✅ Onboarding erfolgreich abgeschlossen - Weiterleitung...');
+      setIsCompleted(true);
+
+      // Kurze Verzögerung für UI-Feedback
+      setTimeout(() => {
+        window.location.href = `/dashboard/company/${user?.uid}?onboarding=completed`;
+      }, 1500);
     } catch (error) {
       console.error('Fehler beim Abschließen des Onboardings:', error);
+      alert('Fehler beim Abschließen des Onboardings. Bitte versuchen Sie es erneut.');
       setIsSubmitting(false);
     }
   };
@@ -373,7 +386,7 @@ export default function OnboardingStep5() {
           {isSubmitting ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Wird abgeschlossen...
+              {isCompleted ? 'Erfolgreich! Weiterleitung...' : 'Wird abgeschlossen...'}
             </div>
           ) : (
             'Onboarding abschließen'
