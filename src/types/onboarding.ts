@@ -111,12 +111,11 @@ export const stepValidationRules: Record<number, ValidationRule> = {
     },
   },
   3: {
-    // Harmonisierte Step 3: Profil & Service-Details (alle optional für Basis-Onboarding)
+    // Harmonisierte Step 3: Profil & Branding (alle optional für Basis-Onboarding)
     required: [], // Alles optional für erweiterte Profil-Details
     validators: {
-      publicDescription: (value: string) => !value || value.length >= 50, // Wenn gesetzt, mindestens 50 Zeichen
-      instantBooking: (value: boolean) => typeof value === 'boolean',
-      responseTimeGuarantee: (value: number) => !value || (value > 0 && value <= 168), // Max 1 Woche
+      companyLogo: (value: string) => !value || value.length > 0, // Wenn gesetzt, dann gültig
+      profileBannerImage: (value: string) => !value || value.length > 0, // Wenn gesetzt, dann gültig
     },
   },
   4: {
