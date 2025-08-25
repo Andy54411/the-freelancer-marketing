@@ -85,64 +85,65 @@ export interface ValidationRule {
 
 export const stepValidationRules: Record<number, ValidationRule> = {
   1: {
-    // General Settings
-    required: ['companyName', 'businessType', 'address', 'phone', 'email'],
+    // Harmonisierte Step 1: Erweiterte Unternehmensdaten (keine Registration-Duplikate)
+    required: ['businessType', 'employees'],
     validators: {
-      companyName: (value: string) => !!(value && value.length >= 2),
-      email: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
-      phone: (value: string) => !!(value && value.length >= 10),
+      businessType: (value: string) => ['b2b', 'b2c', 'hybrid'].includes(value),
+      employees: (value: string) => !!(value && value.length > 0),
+      website: (value: string) => !value || /^https?:\/\/.+/.test(value), // Optional aber wenn gesetzt, dann URL
     },
     conditional: {
       managerData: (data: any) => {
-        // Manager data is required for certain legal forms
-        const formsWithManager = ['GmbH', 'UG (haftungsbeschränkt)', 'AG', 'KG', 'OHG'];
-        if (formsWithManager.includes(data.legalForm)) {
-          return !!(
-            data.managerData &&
-            data.managerData.firstName &&
-            data.managerData.lastName &&
-            data.managerData.position
-          );
-        }
-        return true; // Not required for other legal forms
+        // Manager data ist nur bei bestimmten Rechtsformen required
+        // Wird nur gesetzt wenn es nicht bereits aus Registration kommt
+        return true; // Für jetzt optional, da es aus Registration kommen könnte
       },
     },
   },
   2: {
-    // Accounting & Banking
-    required: ['kleinunternehmer', 'taxRate', 'iban', 'accountHolder'],
+    // Harmonisierte Step 2: Steuerliche Zusatzeinstellungen (keine Banking-Duplikate)
+    required: ['kleinunternehmer', 'profitMethod', 'priceInput', 'taxRate'],
     validators: {
-      iban: (value: string) =>
-        /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/.test(
-          value?.replace(/\s/g, '') || ''
-        ),
-      accountHolder: (value: string) => !!(value && value.length >= 2),
+      kleinunternehmer: (value: string) => ['ja', 'nein'].includes(value),
+      profitMethod: (value: string) => ['euer', 'bilanz'].includes(value),
+      priceInput: (value: string) => ['brutto', 'netto'].includes(value),
+      taxRate: (value: string) => !!(value && !isNaN(Number(value))),
     },
   },
   3: {
-    // Public Profile
-    required: ['companyLogo', 'publicDescription', 'hourlyRate'],
-    minLength: {
-      publicDescription: 200,
-    },
+    // Harmonisierte Step 3: Profil & Service-Details (alle optional für Basis-Onboarding)
+    required: [], // Alles optional für erweiterte Profil-Details
     validators: {
-      hourlyRate: (value: number) => !!(value && value > 0),
-      publicDescription: (value: string) => !!(value && value.length >= 200),
+      publicDescription: (value: string) => !value || value.length >= 50, // Wenn gesetzt, mindestens 50 Zeichen
+      instantBooking: (value: boolean) => typeof value === 'boolean',
+      responseTimeGuarantee: (value: number) => !value || (value > 0 && value <= 168), // Max 1 Woche
     },
   },
   4: {
-    // Services & Categories
-    required: ['selectedCategory', 'selectedSubcategory'],
+    // Harmonisierte Step 4: Service-Bereich & Verfügbarkeit
+    required: ['availabilityType', 'advanceBookingHours', 'travelCosts', 'maxTravelDistance'],
     validators: {
-      selectedCategory: (value: string) => !!(value && value.length > 0),
-      selectedSubcategory: (value: string) => !!(value && value.length > 0),
+      availabilityType: (value: string) => ['flexible', 'fixed', 'on-demand'].includes(value),
+      advanceBookingHours: (value: number) => !!(value && value > 0 && value <= 720), // Max 30 Tage
+      travelCosts: (value: boolean) => typeof value === 'boolean',
+      maxTravelDistance: (value: number) => !!(value && value > 0 && value <= 500), // Max 500km
+      travelCostPerKm: (value: number) => !value || (value >= 0 && value <= 5), // Optional, aber wenn gesetzt max 5€/km
+    },
+    conditional: {
+      travelCostPerKm: (data: any) => {
+        // Wenn travelCosts aktiviert ist, dann ist travelCostPerKm required
+        if (data.travelCosts === true) {
+          return !!(data.travelCostPerKm && data.travelCostPerKm > 0);
+        }
+        return true; // Nicht required wenn travelCosts false
+      },
     },
   },
   5: {
-    // Verification & Review
-    required: ['finalTermsAccepted'],
+    // Harmonisierte Step 5: Finalisierung
+    required: ['documentsCompleted'],
     validators: {
-      finalTermsAccepted: (value: boolean) => value === true,
+      documentsCompleted: (value: boolean) => value === true,
     },
   },
 };
