@@ -4,27 +4,32 @@ import Stripe from 'stripe';
 // Try to import Firebase Admin, with fallback
 let adminDb: any = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { db } = require('@/firebase/server');
   adminDb = db;
-} catch (firebaseError) {
-
-  // Fallback initialization
+} catch {
+  // Fallback initialization using environment variable
   try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const admin = require('firebase-admin');
     if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert(require('../../../../../../firebase_functions/service-account.json')),
-        databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app'
-      });
+      const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+      if (serviceAccountKey) {
+        const serviceAccount = JSON.parse(serviceAccountKey);
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+          databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+        });
+      }
     }
     adminDb = admin.firestore();
   } catch (fallbackError) {
-
+    console.error('Firebase Admin initialization failed:', fallbackError);
   }
 }
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
 });
 
@@ -66,10 +71,7 @@ export async function POST(
 
     // Check if Firebase is available
     if (!adminDb) {
-      return NextResponse.json(
-        { error: 'Firebase Admin not available' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
     }
 
     // 1. Prüfe ob Order existiert und dem User gehört
@@ -146,7 +148,6 @@ export async function POST(
       note: 'Funds available for manual payout from company dashboard',
     });
   } catch (error: any) {
-
     return NextResponse.json(
       { error: 'Failed to complete order', details: error.message },
       { status: 500 }
@@ -214,7 +215,6 @@ export async function PATCH(
       orderId: orderId,
     });
   } catch (error: any) {
-
     return NextResponse.json(
       { error: 'Failed to update order completion', details: error.message },
       { status: 500 }

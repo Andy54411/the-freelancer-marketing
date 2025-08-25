@@ -476,6 +476,41 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       await updateDoc(doc(db, 'companies', companyId), companyUpdateData);
 
+      // NEU: Integration mit dem neuen Onboarding-Progress-System
+      try {
+        const { completeOnboarding } = await import('@/lib/onboarding-progress');
+        await completeOnboarding(user.uid);
+        console.log('✅ Neues Onboarding-Progress-System aktualisiert');
+      } catch (progressError) {
+        console.error(
+          '⚠️ Warnung: Onboarding-Progress-System konnte nicht aktualisiert werden:',
+          progressError
+        );
+        // Fallback: Direkte Erstellung der Progress-Daten
+        try {
+          const progressRef = doc(db, 'users', user.uid, 'onboarding', 'progress');
+          await setDoc(progressRef, {
+            status: 'completed',
+            completionPercentage: 100,
+            currentStep: 5,
+            stepsCompleted: [1, 2, 3, 4, 5],
+            completedAt: serverTimestamp(),
+            stepCompletions: {
+              step1: 100,
+              step2: 100,
+              step3: 100,
+              step4: 100,
+              step5: 100,
+            },
+            requiresApproval: true,
+            lastActivity: serverTimestamp(),
+          });
+          console.log('✅ Fallback: Progress-Daten direkt erstellt');
+        } catch (fallbackError) {
+          console.error('❌ Fehler beim Erstellen der Progress-Daten:', fallbackError);
+        }
+      }
+
       console.log('✅ Onboarding erfolgreich abgeschlossen - alle Daten gespeichert');
     } catch (error) {
       console.error('❌ Fehler beim Abschließen des Onboardings:', error);

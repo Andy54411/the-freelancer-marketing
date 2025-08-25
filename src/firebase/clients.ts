@@ -56,22 +56,10 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // PERFORMANCE-OPTIMIERUNG: Firestore Settings für bessere Performance
-import {
-  enableNetwork,
-  disableNetwork,
-  enableMultiTabIndexedDbPersistence,
-} from 'firebase/firestore';
+import { enableNetwork, disableNetwork } from 'firebase/firestore';
 
-// Aktiviere Offline-Persistenz und Multi-Tab Support
-if (typeof window !== 'undefined') {
-  enableMultiTabIndexedDbPersistence(db).catch(err => {
-    if (err.code === 'failed-precondition') {
-      console.log('🔥 Firestore: Multi-tab persistence failed - andere Tabs offen');
-    } else if (err.code === 'unimplemented') {
-      console.log('🔥 Firestore: Persistence nicht unterstützt in diesem Browser');
-    }
-  });
-}
+// Hinweis: enableMultiTabIndexedDbPersistence() ist deprecated und wurde entfernt
+// Firebase verwendet automatisch lokalen Cache, wenn verfügbar
 
 const realtimeDb = getDatabase(app); // NEU: Realtime Database
 const storage = getStorage(app);
