@@ -46,6 +46,7 @@ interface CheckoutFormProps {
     quoteTitle: string;
     proposalAmount: number;
     companyName: string;
+    userUid: string;
   };
   paymentDetails: PaymentDetails;
   onSuccess: (paymentIntentId: string) => void;
@@ -98,7 +99,7 @@ function CheckoutForm({
         elements,
         clientSecret,
         confirmParams: {
-          return_url: `${window.location.origin}/dashboard/user/${quoteDetails.quoteId}/orders`,
+          return_url: `${window.location.origin}/dashboard/user/${quoteDetails.userUid}/orders`,
           payment_method_data: {
             billing_details: {
               name: 'Quote Customer', // This will be overridden by billingDetails from API
@@ -400,6 +401,7 @@ export default function QuotePaymentModal({
                   quoteTitle,
                   proposalAmount,
                   companyName,
+                  userUid: firebaseUser?.uid || '',
                 }}
                 paymentDetails={paymentDetails}
                 onSuccess={handleSuccess}
