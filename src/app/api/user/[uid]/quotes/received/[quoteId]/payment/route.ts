@@ -401,19 +401,25 @@ export async function PATCH(
       // If still not found, try to reconstruct from payment intent
       if (!proposal && paymentIntentId) {
         console.log('🔄 [PATCH Payment] Attempting recovery from payment intent metadata');
+
+        // Extract amount from PaymentIntent (convert from cents to euros)
+        const paymentAmountEuros = paymentIntent.amount / 100;
+
         // We'll reconstruct the proposal data from what we know
         proposal = {
           companyUid: proposalId,
           status: 'payment_pending',
           paymentIntentId: paymentIntentId,
-          // These will need to be filled from other sources or defaults
-          companyName: 'Unknown Company',
-          totalAmount: 400, // From the original payment intent
-          currency: 'EUR',
+          // Get the actual amount from PaymentIntent
+          totalAmount: paymentAmountEuros,
+          price: paymentAmountEuros,
+          currency: paymentIntent.currency.toUpperCase(),
+          companyName: paymentIntent.metadata?.company_name || 'Unknown Company',
           timeline: '',
-          description: '',
+          description: paymentIntent.description || '',
         };
         proposalIndex = 0;
+        console.log('✅ [PATCH Payment] Reconstructed proposal with amount:', paymentAmountEuros);
       }
     }
 
@@ -430,7 +436,13 @@ export async function PATCH(
     console.log('✅ [PATCH Payment] Found proposal:', {
       companyUid: acceptedProposal.companyUid,
       price: acceptedProposal.price || acceptedProposal.totalAmount,
+      paymentIntentAmount: paymentIntent.amount / 100, // For debugging
     });
+
+    // Ensure we have a valid amount - fallback to PaymentIntent amount if proposal amount is missing
+    const finalAmount =
+      acceptedProposal.totalAmount || acceptedProposal.price || paymentIntent.amount / 100;
+    console.log('💰 [PATCH Payment] Using final amount:', finalAmount, 'EUR');
 
     // Generate unique order ID
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -461,14 +473,10 @@ export async function PATCH(
       description: projectData.description || '',
 
       // Payment info
-      totalAmountPaidByBuyer: (acceptedProposal.totalAmount || acceptedProposal.price || 0) * 100, // Convert to cents
-      originalJobPriceInCents: (acceptedProposal.totalAmount || acceptedProposal.price || 0) * 100,
-      applicationFeeAmountFromStripe: Math.round(
-        (acceptedProposal.totalAmount || acceptedProposal.price || 0) * 100 * 0.035
-      ),
-      sellerCommissionInCents: Math.round(
-        (acceptedProposal.totalAmount || acceptedProposal.price || 0) * 100 * 0.035
-      ),
+      totalAmountPaidByBuyer: finalAmount * 100, // Convert to cents
+      originalJobPriceInCents: finalAmount * 100,
+      applicationFeeAmountFromStripe: Math.round(finalAmount * 100 * 0.035),
+      sellerCommissionInCents: Math.round(finalAmount * 100 * 0.035),
       paymentIntentId: paymentIntentId,
       paidAt: new Date(),
 
@@ -507,7 +515,7 @@ export async function PATCH(
       timeTracking: {
         isActive: false,
         status: 'inactive',
-        hourlyRate: Math.round((acceptedProposal.totalAmount * 100) / 8), // Assume 8 hours default
+        hourlyRate: Math.round((finalAmount * 100) / 8), // Assume 8 hours default
         originalPlannedHours: 8, // Default
         timeEntries: [],
       },

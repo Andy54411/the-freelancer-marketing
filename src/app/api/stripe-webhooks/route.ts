@@ -730,6 +730,16 @@ export async function POST(req: NextRequest) {
             // Generate unique order ID
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+            // Extract amount from PaymentIntent if proposal amount is missing
+            const proposalAmount = proposal.totalAmount || proposal.price;
+            const finalAmount = proposalAmount || paymentIntentSucceeded.amount / 100;
+
+            console.log('[WEBHOOK] Amount calculation:', {
+              proposalAmount,
+              paymentIntentAmount: paymentIntentSucceeded.amount / 100,
+              finalAmount,
+            });
+
             // Create order in auftraege collection
             const orderData = {
               id: orderId,
@@ -747,14 +757,10 @@ export async function POST(req: NextRequest) {
               projectName: projectData.title || '',
               projectTitle: projectData.title || '',
               description: projectData.description || '',
-              totalAmountPaidByBuyer: (proposal.totalAmount || proposal.price || 0) * 100,
-              originalJobPriceInCents: (proposal.totalAmount || proposal.price || 0) * 100,
-              applicationFeeAmountFromStripe: Math.round(
-                (proposal.totalAmount || proposal.price || 0) * 100 * 0.035
-              ),
-              sellerCommissionInCents: Math.round(
-                (proposal.totalAmount || proposal.price || 0) * 100 * 0.035
-              ),
+              totalAmountPaidByBuyer: finalAmount * 100,
+              originalJobPriceInCents: finalAmount * 100,
+              applicationFeeAmountFromStripe: Math.round(finalAmount * 100 * 0.035),
+              sellerCommissionInCents: Math.round(finalAmount * 100 * 0.035),
               paymentIntentId: paymentIntentSucceeded.id,
               paidAt: new Date(),
               jobCountry: projectData.location?.country || 'DE',
@@ -777,7 +783,7 @@ export async function POST(req: NextRequest) {
               timeTracking: {
                 isActive: false,
                 status: 'inactive',
-                hourlyRate: Math.round(((proposal.totalAmount || proposal.price || 0) * 100) / 8),
+                hourlyRate: Math.round((finalAmount * 100) / 8),
                 originalPlannedHours: 8,
                 timeEntries: [],
               },
