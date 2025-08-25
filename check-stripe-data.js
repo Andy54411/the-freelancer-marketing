@@ -11,7 +11,7 @@ try {
 
 const db = admin.firestore();
 
-async function checkOrder() {
+async function checkStripeData() {
   try {
     const orderRef = db.collection('auftraege').doc('order_1756079151320_sif5hrcdg');
     const orderSnapshot = await orderRef.get();
@@ -22,21 +22,19 @@ async function checkOrder() {
     }
 
     const orderData = orderSnapshot.data();
-    console.log('📋 ORDER DATA:');
-    console.log('Order ID:', orderData.id);
-    console.log('Status:', orderData.status);
-    console.log('Provider ID:', orderData.selectedAnbieterId);
-    console.log('Customer ID:', orderData.customerFirebaseUid);
+    console.log('📋 STRIPE DATA CHECK:');
+    console.log('PaymentIntent ID:', orderData.paymentIntentId || 'MISSING');
+    console.log('Stripe PaymentIntent ID:', orderData.stripePaymentIntentId || 'MISSING');
+    console.log('Anbieter Stripe Account:', orderData.anbieterStripeAccountId || 'MISSING');
+    console.log('Total Amount:', orderData.totalAmountPaidByBuyer);
     console.log(
-      'Created:',
-      orderData.createdAt?.toDate?.()?.toISOString?.() || orderData.createdAt
+      'Platform Fee:',
+      orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe
     );
     console.log(
-      'Last Updated:',
-      orderData.lastUpdated?.toDate?.()?.toISOString?.() || orderData.lastUpdated
+      'Net Amount:',
+      orderData.totalAmountPaidByBuyer - (orderData.sellerCommissionInCents || 1400)
     );
-    console.log('Description:', orderData.description);
-    console.log('Price:', orderData.totalAmountPaidByBuyer || orderData.originalJobPriceInCents);
   } catch (error) {
     console.error('Error:', error.message);
   } finally {
@@ -44,4 +42,4 @@ async function checkOrder() {
   }
 }
 
-checkOrder();
+checkStripeData();
