@@ -104,7 +104,6 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
           setFormData(prev => ({ ...prev, ...stepData[4] }));
         }
       } catch (error) {
-        console.error('Error loading data:', error);
       } finally {
         setLoading(false);
       }
@@ -208,18 +207,19 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.keys(categoriesMap).map(category => (
-            <div
+            <label
               key={category}
-              className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+              className={`block border rounded-lg p-4 cursor-pointer transition-colors ${
                 formData.selectedCategory === category
                   ? 'border-[#14ad9f] bg-[#14ad9f]/5'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => handleCategoryChange(category)}
             >
               <div className="flex items-center">
                 <input
                   type="radio"
+                  name="category"
+                  value={category}
                   checked={formData.selectedCategory === category}
                   onChange={() => handleCategoryChange(category)}
                   className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f]"
@@ -231,7 +231,7 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
                   </div>
                 </div>
               </div>
-            </div>
+            </label>
           ))}
         </div>
       </div>
@@ -241,40 +241,32 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ companyUid }) => {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-4">
             Unterkategorie auswählen *
-            {/* Debug: {formData.selectedCategory} hat {categoriesMap[formData.selectedCategory]?.length || 0} Unterkategorien */}
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {categoriesMap[formData.selectedCategory]?.map(subcategory => {
-              console.log(
-                '🔍 Rendering subcategory:',
-                subcategory,
-                'for category:',
-                formData.selectedCategory
-              );
-              return (
-                <div
-                  key={subcategory}
-                  className={`relative cursor-pointer rounded-lg border p-3 transition-colors ${
-                    formData.selectedSubcategory === subcategory
-                      ? 'border-[#14ad9f] bg-[#14ad9f] bg-opacity-5'
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                  onClick={() => handleChange('selectedSubcategory', subcategory)}
-                >
-                  <div className="flex items-center">
-                    <input
-                      type="radio"
-                      checked={formData.selectedSubcategory === subcategory}
-                      onChange={() => handleChange('selectedSubcategory', subcategory)}
-                      className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f]"
-                    />
-                    <div className="ml-3">
-                      <div className="text-sm font-medium text-gray-900">{subcategory}</div>
-                    </div>
+            {categoriesMap[formData.selectedCategory]?.map(subcategory => (
+              <label
+                key={subcategory}
+                className={`block relative cursor-pointer rounded-lg border p-3 transition-colors ${
+                  formData.selectedSubcategory === subcategory
+                    ? 'border-[#14ad9f] bg-[#14ad9f] bg-opacity-5'
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+              >
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="subcategory"
+                    value={subcategory}
+                    checked={formData.selectedSubcategory === subcategory}
+                    onChange={() => handleChange('selectedSubcategory', subcategory)}
+                    className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f]"
+                  />
+                  <div className="ml-3">
+                    <div className="text-sm font-medium text-gray-900">{subcategory}</div>
                   </div>
                 </div>
-              );
-            })}
+              </label>
+            ))}
           </div>
         </div>
       )}
