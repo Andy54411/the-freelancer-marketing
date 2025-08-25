@@ -3,7 +3,6 @@
 import React from 'react';
 import { OnboardingProvider } from '@/contexts/OnboardingContext';
 import OnboardingRouter from './OnboardingRouter';
-import OnboardingProgressBar from './OnboardingProgressBar';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 
 interface OnboardingContainerProps {
@@ -23,7 +22,7 @@ const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, ini
     goToPreviousStep,
     isSaving,
     lastSaved,
-    onboardingStatus
+    onboardingStatus,
   } = useOnboarding();
 
   return (
@@ -44,7 +43,7 @@ const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, ini
       </div>
 
       {/* Main Content */}
-      <div className={`max-w-7xl mx-auto px-4 py-8 ${currentStep === 5 ? 'pb-8' : 'pb-32'}`}>
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Step Header */}
         <div className="mb-8">
           <div className="text-sm text-gray-600 mb-2">
@@ -57,7 +56,8 @@ const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, ini
             {stepsData.find(s => s.step === currentStep)?.description || ''}
           </p>
           <div className="text-sm text-gray-500 mt-1">
-            Geschätzte Zeit: {stepsData.find(s => s.step === currentStep)?.estimatedTime || '5 Minuten'}
+            Geschätzte Zeit:{' '}
+            {stepsData.find(s => s.step === currentStep)?.estimatedTime || '5 Minuten'}
           </div>
         </div>
 
@@ -66,27 +66,6 @@ const OnboardingContent: React.FC<OnboardingContainerProps> = ({ companyUid, ini
           <OnboardingRouter currentStep={currentStep} companyUid={companyUid} />
         </div>
       </div>
-
-      {/* Progress Footer - Hidden in Step 5 */}
-      {currentStep !== 5 && (
-        <OnboardingProgressBar
-          currentStep={currentStep}
-          totalSteps={totalSteps}
-          completionPercentage={completionPercentage}
-          stepsData={stepsData.map(step => ({
-            step: step.step,
-            title: step.title,
-            isCompleted: step.isCompleted || false,
-            isOptional: !step.isRequired
-          }))}
-          canGoNext={canGoNext()}
-          canGoBack={canGoBack()}
-          onNext={goToNextStep}
-          onBack={goToPreviousStep}
-          isSaving={isSaving}
-          lastSaved={lastSaved}
-        />
-      )}
     </div>
   );
 };

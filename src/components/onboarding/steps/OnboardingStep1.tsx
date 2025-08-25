@@ -25,16 +25,16 @@ interface Step1Data {
 }
 
 const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
-  const { updateStepData, stepData } = useOnboarding();
+  const { updateStepData, stepData, goToNextStep } = useOnboarding();
   const { user } = useAuth();
-  
+
   const [formData, setFormData] = useState<Step1Data>({
     businessType: 'hybrid',
     employees: '',
     website: '',
     description: '',
   });
-  
+
   const [loading, setLoading] = useState(true);
   const [showManagerModal, setShowManagerModal] = useState(false);
   const [managerData, setManagerData] = useState<ManagerData>({
@@ -54,7 +54,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
           // Lade Onboarding-Daten falls vorhanden
           const existingStep1 = userData.step1 || {};
-          
+
           setFormData({
             businessType: existingStep1.businessType || 'hybrid',
             employees: existingStep1.employees || '',
@@ -82,7 +82,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   const handleChange = (field: keyof Step1Data, value: string | ManagerData) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -90,12 +90,12 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   const handleManagerChange = (field: keyof ManagerData, value: string) => {
     const updatedManagerData = {
       ...managerData,
-      [field]: value
+      [field]: value,
     };
     setManagerData(updatedManagerData);
     setFormData(prev => ({
       ...prev,
-      managerData: updatedManagerData
+      managerData: updatedManagerData,
     }));
   };
 
@@ -108,10 +108,10 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   // Validierung
   const validateForm = (): string[] => {
     const missing: string[] = [];
-    
+
     if (!formData.businessType) missing.push('Geschäftsmodell');
     if (!formData.employees) missing.push('Mitarbeiteranzahl');
-    
+
     return missing;
   };
 
@@ -132,6 +132,8 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     }
   };
 
+  const isFormValid = validateForm().length === 0;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -145,9 +147,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Erweiterte Unternehmensdaten
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Erweiterte Unternehmensdaten</h1>
           <p className="text-gray-600">
             Vervollständigen Sie Ihr Firmenprofil mit zusätzlichen Informationen
           </p>
@@ -156,21 +156,30 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
         {/* Main Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="grid gap-8">
-            
             {/* Geschäftsmodell */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">
-                  Geschäftsmodell *
-                </label>
+                <label className="text-lg font-semibold text-gray-900">Geschäftsmodell *</label>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { value: 'b2c', label: 'B2C - Privatkunden', desc: 'Dienstleistungen für Privatpersonen' },
-                  { value: 'b2b', label: 'B2B - Geschäftskunden', desc: 'Dienstleistungen für Unternehmen' },
-                  { value: 'hybrid', label: 'Hybrid - Beides', desc: 'Sowohl Privat- als auch Geschäftskunden' }
-                ].map((option) => (
+                  {
+                    value: 'b2c',
+                    label: 'B2C - Privatkunden',
+                    desc: 'Dienstleistungen für Privatpersonen',
+                  },
+                  {
+                    value: 'b2b',
+                    label: 'B2B - Geschäftskunden',
+                    desc: 'Dienstleistungen für Unternehmen',
+                  },
+                  {
+                    value: 'hybrid',
+                    label: 'Hybrid - Beides',
+                    desc: 'Sowohl Privat- als auch Geschäftskunden',
+                  },
+                ].map(option => (
                   <label
                     key={option.value}
                     className={`cursor-pointer p-4 border-2 rounded-lg transition-all ${
@@ -184,7 +193,9 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                       name="businessType"
                       value={option.value}
                       checked={formData.businessType === option.value}
-                      onChange={(e) => handleChange('businessType', e.target.value as 'b2b' | 'b2c' | 'hybrid')}
+                      onChange={e =>
+                        handleChange('businessType', e.target.value as 'b2b' | 'b2c' | 'hybrid')
+                      }
                       className="sr-only"
                     />
                     <div className="text-center">
@@ -200,13 +211,11 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">
-                  Mitarbeiteranzahl *
-                </label>
+                <label className="text-lg font-semibold text-gray-900">Mitarbeiteranzahl *</label>
               </div>
               <select
                 value={formData.employees}
-                onChange={(e) => handleChange('employees', e.target.value)}
+                onChange={e => handleChange('employees', e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                 required
               >
@@ -225,14 +234,12 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">
-                  Firmenwebsite
-                </label>
+                <label className="text-lg font-semibold text-gray-900">Firmenwebsite</label>
               </div>
               <input
                 type="url"
                 value={formData.website}
-                onChange={(e) => handleChange('website', e.target.value)}
+                onChange={e => handleChange('website', e.target.value)}
                 placeholder="https://ihre-website.de"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               />
@@ -245,13 +252,11 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">
-                  Firmenbeschreibung
-                </label>
+                <label className="text-lg font-semibold text-gray-900">Firmenbeschreibung</label>
               </div>
               <textarea
                 value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
+                onChange={e => handleChange('description', e.target.value)}
                 placeholder="Beschreiben Sie Ihr Unternehmen und Ihre Dienstleistungen..."
                 rows={4}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] resize-none"
@@ -266,7 +271,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
                   <h3 className="text-xl font-bold text-gray-900 mb-4">Manager Zusatzdaten</h3>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -275,7 +280,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                       <input
                         type="text"
                         value={managerData.position}
-                        onChange={(e) => handleManagerChange('position', e.target.value)}
+                        onChange={e => handleManagerChange('position', e.target.value)}
                         placeholder="z.B. Geschäftsführer"
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                         required
@@ -289,7 +294,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                       <input
                         type="text"
                         value={managerData.nationality}
-                        onChange={(e) => handleManagerChange('nationality', e.target.value)}
+                        onChange={e => handleManagerChange('nationality', e.target.value)}
                         placeholder="z.B. deutsch"
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                       />
@@ -318,18 +323,29 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             )}
           </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              Schritt 1 von 5
-            </div>
-            
+          {/* Navigation Buttons */}
+          <div className="flex justify-between pt-6 border-t border-gray-200">
             <button
-              onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-3 bg-[#14ad9f] text-white font-semibold rounded-lg hover:bg-[#129488] transition-colors"
+              type="button"
+              onClick={() => window.history.back()}
+              className="px-6 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Zurück
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await handleNext();
+                if (isFormValid) {
+                  goToNextStep();
+                }
+              }}
+              disabled={!isFormValid}
+              className={`px-6 py-2 text-white rounded-lg transition-colors ${
+                isFormValid ? 'bg-[#14ad9f] hover:bg-[#129488]' : 'bg-gray-300 cursor-not-allowed'
+              }`}
             >
               Weiter
-              <CheckCircle className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -337,8 +353,9 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
         {/* Info Box */}
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>💡 Hinweis:</strong> Grunddaten wie Firmenname, E-Mail und Adresse wurden bereits bei der Registrierung erfasst. 
-            Hier ergänzen Sie nur zusätzliche Informationen für Ihr vollständiges Firmenprofil.
+            <strong>💡 Hinweis:</strong> Grunddaten wie Firmenname, E-Mail und Adresse wurden
+            bereits bei der Registrierung erfasst. Hier ergänzen Sie nur zusätzliche Informationen
+            für Ihr vollständiges Firmenprofil.
           </p>
         </div>
       </div>

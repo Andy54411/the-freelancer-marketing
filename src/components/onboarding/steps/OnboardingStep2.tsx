@@ -20,16 +20,16 @@ interface Step2Data {
 }
 
 const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
-  const { updateStepData, stepData } = useOnboarding();
+  const { updateStepData, stepData, goToPreviousStep, goToNextStep } = useOnboarding();
   const { user } = useAuth();
-  
+
   const [formData, setFormData] = useState<Step2Data>({
     kleinunternehmer: 'nein',
     profitMethod: 'euer',
     priceInput: 'netto',
     taxRate: '19',
   });
-  
+
   const [loading, setLoading] = useState(true);
 
   // Lade vorhandene Daten
@@ -64,21 +64,23 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
   const handleChange = (field: keyof Step2Data, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   // Validierung
   const validateForm = (): string[] => {
     const missing: string[] = [];
-    
+
     if (!formData.kleinunternehmer) missing.push('Kleinunternehmerregelung');
     if (!formData.profitMethod) missing.push('Gewinnermittlungsart');
     if (!formData.priceInput) missing.push('Preiseingabe-Modus');
     if (!formData.taxRate) missing.push('Steuersatz');
-    
+
     return missing;
   };
+
+  const isFormValid = validateForm().length === 0;
 
   // Speichern und weiter
   const handleNext = async () => {
@@ -110,9 +112,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Steuerliche Einstellungen
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Steuerliche Einstellungen</h1>
           <p className="text-gray-600">
             Konfigurieren Sie Ihre grundlegenden steuerlichen Einstellungen
           </p>
@@ -121,7 +121,6 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
         {/* Main Form */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           <div className="grid gap-8">
-            
             {/* Kleinunternehmerregelung */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -135,9 +134,17 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { value: 'ja', label: 'Ja, ich nutze die Kleinunternehmerregelung', desc: 'Keine Umsatzsteuer ausweisen' },
-                  { value: 'nein', label: 'Nein, normale Umsatzsteuerpflicht', desc: 'Umsatzsteuer wird ausgewiesen' }
-                ].map((option) => (
+                  {
+                    value: 'ja',
+                    label: 'Ja, ich nutze die Kleinunternehmerregelung',
+                    desc: 'Keine Umsatzsteuer ausweisen',
+                  },
+                  {
+                    value: 'nein',
+                    label: 'Nein, normale Umsatzsteuerpflicht',
+                    desc: 'Umsatzsteuer wird ausgewiesen',
+                  },
+                ].map(option => (
                   <label
                     key={option.value}
                     className={`cursor-pointer p-4 border-2 rounded-lg transition-all ${
@@ -151,7 +158,9 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                       name="kleinunternehmer"
                       value={option.value}
                       checked={formData.kleinunternehmer === option.value}
-                      onChange={(e) => handleChange('kleinunternehmer', e.target.value as 'ja' | 'nein')}
+                      onChange={e =>
+                        handleChange('kleinunternehmer', e.target.value as 'ja' | 'nein')
+                      }
                       className="sr-only"
                     />
                     <div className="text-center">
@@ -176,9 +185,17 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { value: 'euer', label: 'Einnahmen-Überschuss-Rechnung (EÜR)', desc: 'Vereinfachte Gewinnermittlung' },
-                  { value: 'bilanz', label: 'Bilanzierung', desc: 'Doppelte Buchführung mit Bilanz' }
-                ].map((option) => (
+                  {
+                    value: 'euer',
+                    label: 'Einnahmen-Überschuss-Rechnung (EÜR)',
+                    desc: 'Vereinfachte Gewinnermittlung',
+                  },
+                  {
+                    value: 'bilanz',
+                    label: 'Bilanzierung',
+                    desc: 'Doppelte Buchführung mit Bilanz',
+                  },
+                ].map(option => (
                   <label
                     key={option.value}
                     className={`cursor-pointer p-4 border-2 rounded-lg transition-all ${
@@ -192,7 +209,9 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                       name="profitMethod"
                       value={option.value}
                       checked={formData.profitMethod === option.value}
-                      onChange={(e) => handleChange('profitMethod', e.target.value as 'euer' | 'bilanz')}
+                      onChange={e =>
+                        handleChange('profitMethod', e.target.value as 'euer' | 'bilanz')
+                      }
                       className="sr-only"
                     />
                     <div className="text-center">
@@ -208,9 +227,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Percent className="h-5 w-5 text-[#14ad9f]" />
-                <label className="text-lg font-semibold text-gray-900">
-                  Preiseingabe-Modus *
-                </label>
+                <label className="text-lg font-semibold text-gray-900">Preiseingabe-Modus *</label>
               </div>
               <p className="text-sm text-gray-600 mb-4">
                 Wie möchten Sie Ihre Preise eingeben und anzeigen?
@@ -218,8 +235,12 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   { value: 'netto', label: 'Netto-Preise', desc: 'Preise ohne Umsatzsteuer' },
-                  { value: 'brutto', label: 'Brutto-Preise', desc: 'Preise inklusive Umsatzsteuer' }
-                ].map((option) => (
+                  {
+                    value: 'brutto',
+                    label: 'Brutto-Preise',
+                    desc: 'Preise inklusive Umsatzsteuer',
+                  },
+                ].map(option => (
                   <label
                     key={option.value}
                     className={`cursor-pointer p-4 border-2 rounded-lg transition-all ${
@@ -233,7 +254,9 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
                       name="priceInput"
                       value={option.value}
                       checked={formData.priceInput === option.value}
-                      onChange={(e) => handleChange('priceInput', e.target.value as 'brutto' | 'netto')}
+                      onChange={e =>
+                        handleChange('priceInput', e.target.value as 'brutto' | 'netto')
+                      }
                       className="sr-only"
                     />
                     <div className="text-center">
@@ -255,7 +278,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
               </div>
               <select
                 value={formData.taxRate}
-                onChange={(e) => handleChange('taxRate', e.target.value)}
+                onChange={e => handleChange('taxRate', e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                 required
               >
@@ -269,18 +292,29 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             </div>
           </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              Schritt 2 von 5
-            </div>
-            
+          {/* Navigation Buttons */}
+          <div className="flex justify-between pt-6 border-t border-gray-200">
             <button
-              onClick={handleNext}
-              className="flex items-center gap-2 px-6 py-3 bg-[#14ad9f] text-white font-semibold rounded-lg hover:bg-[#129488] transition-colors"
+              type="button"
+              onClick={() => goToPreviousStep()}
+              className="px-6 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Zurück
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await handleNext();
+                if (isFormValid) {
+                  goToNextStep();
+                }
+              }}
+              disabled={!isFormValid}
+              className={`px-6 py-2 text-white rounded-lg transition-colors ${
+                isFormValid ? 'bg-[#14ad9f] hover:bg-[#129488]' : 'bg-gray-300 cursor-not-allowed'
+              }`}
             >
               Weiter
-              <CheckCircle className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -288,9 +322,10 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
         {/* Info Box */}
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>💡 Hinweis:</strong> Steuernummer und USt-IdNr. wurden bereits bei der Registrierung erfasst. 
-            Bankdaten (IBAN, Kontoinhaber) sind ebenfalls bereits hinterlegt. Hier konfigurieren Sie nur die 
-            grundlegenden steuerlichen Einstellungen für Ihr Geschäft.
+            <strong>💡 Hinweis:</strong> Steuernummer und USt-IdNr. wurden bereits bei der
+            Registrierung erfasst. Bankdaten (IBAN, Kontoinhaber) sind ebenfalls bereits hinterlegt.
+            Hier konfigurieren Sie nur die grundlegenden steuerlichen Einstellungen für Ihr
+            Geschäft.
           </p>
         </div>
       </div>
