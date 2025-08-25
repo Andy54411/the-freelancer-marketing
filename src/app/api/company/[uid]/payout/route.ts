@@ -16,10 +16,7 @@ interface PayoutRequest {
  * POST: Company requests manual payout
  * Validates all completed orders and initiates bank transfer
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { uid: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
     const { uid } = params;
     const body: PayoutRequest = await request.json();
@@ -48,31 +45,32 @@ export async function POST(
 
     completedOrdersSnap.forEach(doc => {
       const orderData = doc.data();
-      const platformFee = orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
+      const platformFee =
+        orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
       const netAmount = orderData.totalAmountPaidByBuyer - platformFee;
-      totalAvailableAmount += netAmount;
+
+      // ✅ ZUSÄTZLICH: Additional Hours berücksichtigen
+      const additionalHoursAmount = orderData.additionalHoursPayoutAmount || 0;
+
+      totalAvailableAmount += netAmount + additionalHoursAmount;
       orderIds.push(doc.id);
     });
 
     // 3. Validiere Auszahlungsbetrag
-    const payoutAmount = body.amount ? Math.min(body.amount * 100, totalAvailableAmount) : totalAvailableAmount;
+    const payoutAmount = body.amount
+      ? Math.min(body.amount * 100, totalAvailableAmount)
+      : totalAvailableAmount;
 
     if (payoutAmount <= 0) {
-      return NextResponse.json(
-        { error: 'No valid amount available for payout' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No valid amount available for payout' }, { status: 400 });
     }
 
     // 4. Hole Company Stripe Account Info aus users collection
     const companyRef = adminDb.collection('users').doc(uid);
     const companySnap = await companyRef.get();
-    
+
     if (!companySnap.exists) {
-      return NextResponse.json(
-        { error: 'Company not found in users collection' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Company not found in users collection' }, { status: 404 });
     }
 
     const companyData = companySnap.data();
@@ -87,23 +85,27 @@ export async function POST(
 
     // 5. Erstelle Stripe Payout (Bank Transfer)
     let stripePayoutId: string | undefined;
-    
+
     try {
-      const payout = await stripe.payouts.create({
-        amount: payoutAmount,
-        currency: 'eur',
-        method: 'standard', // Bank transfer
-        statement_descriptor: 'Taskilo Auszahlung',
-        description: body.description || `Auszahlung für ${orderIds.length} abgeschlossene Aufträge`,
-        metadata: {
-          companyId: uid,
-          orderIds: orderIds.join(','),
-          orderCount: orderIds.length.toString(),
-          requestedAt: new Date().toISOString(),
+      const payout = await stripe.payouts.create(
+        {
+          amount: payoutAmount,
+          currency: 'eur',
+          method: 'standard', // Bank transfer
+          statement_descriptor: 'Taskilo Auszahlung',
+          description:
+            body.description || `Auszahlung für ${orderIds.length} abgeschlossene Aufträge`,
+          metadata: {
+            companyId: uid,
+            orderIds: orderIds.join(','),
+            orderCount: orderIds.length.toString(),
+            requestedAt: new Date().toISOString(),
+          },
         },
-      }, {
-        stripeAccount: stripeAccountId
-      });
+        {
+          stripeAccount: stripeAccountId,
+        }
+      );
 
       stripePayoutId = payout.id;
       console.log('✅ Stripe Payout created:', {
@@ -111,7 +113,7 @@ export async function POST(
         amount: payoutAmount / 100,
         currency: 'EUR',
         estimatedArrival: payout.arrival_date,
-        status: payout.status
+        status: payout.status,
       });
     } catch (stripeError: any) {
       console.error('❌ Stripe Payout failed:', {
@@ -122,10 +124,10 @@ export async function POST(
       });
 
       return NextResponse.json(
-        { 
-          error: 'Payout failed', 
+        {
+          error: 'Payout failed',
           details: stripeError.message,
-          code: stripeError.code 
+          code: stripeError.code,
         },
         { status: 400 }
       );
@@ -133,7 +135,7 @@ export async function POST(
 
     // 6. Update Order Status zu "payout_requested"
     const batch = adminDb.batch();
-    
+
     completedOrdersSnap.forEach(doc => {
       batch.update(doc.ref, {
         payoutStatus: 'payout_requested',
@@ -177,10 +179,9 @@ export async function POST(
         orderCount: orderIds.length,
         estimatedArrival: '1-2 Werktage',
         status: 'requested',
-        method: 'bank_transfer'
-      }
+        method: 'bank_transfer',
+      },
     });
-
   } catch (error: any) {
     console.error('❌ Payout request error:', error);
     return NextResponse.json(
@@ -193,10 +194,7 @@ export async function POST(
 /**
  * GET: Get available payout amount for company
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { uid: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
     const { uid } = params;
 
@@ -214,13 +212,20 @@ export async function GET(
 
     availableOrdersSnap.forEach(doc => {
       const orderData = doc.data();
-      const platformFee = orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
+      const platformFee =
+        orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
       const netAmount = orderData.totalAmountPaidByBuyer - platformFee;
-      
-      totalAvailable += netAmount;
+
+      // ✅ ZUSÄTZLICH: Additional Hours berücksichtigen
+      const additionalHoursAmount = orderData.additionalHoursPayoutAmount || 0;
+      const totalOrderAmount = netAmount + additionalHoursAmount;
+
+      totalAvailable += totalOrderAmount;
       orders.push({
         id: doc.id,
-        amount: netAmount / 100,
+        amount: totalOrderAmount / 100,
+        baseAmount: netAmount / 100,
+        additionalHoursAmount: additionalHoursAmount / 100,
         completedAt: orderData.completedAt,
         projectTitle: orderData.projectTitle || orderData.description,
       });
@@ -232,7 +237,6 @@ export async function GET(
       orderCount: orders.length,
       orders: orders,
     });
-
   } catch (error: any) {
     console.error('❌ Get available payout error:', error);
     return NextResponse.json(

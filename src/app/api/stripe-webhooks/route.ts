@@ -380,25 +380,43 @@ export async function POST(req: NextRequest) {
                     // Trotzdem weitermachen, aber warnen
                   }
 
-                  const transfer = await stripe.transfers.create({
-                    amount: transferAmount,
-                    currency: 'eur',
-                    destination: providerStripeAccountId,
-                    description: `Zusätzliche Arbeitsstunden (Platform Hold Release) für Auftrag ${orderId}`,
-                    metadata: {
-                      type: 'additional_hours_platform_hold_release',
-                      orderId: orderId,
-                      paymentIntentId: paymentIntentSucceeded.id,
-                      entryIds: entryIds,
-                      originalEventId: event.id,
-                    },
-                  });
+                  // ❌ ENTFERNT: Automatischer Transfer für Additional Hours
+                  // const transfer = await stripe.transfers.create({
+                  //   amount: transferAmount,
+                  //   currency: 'eur',
+                  //   destination: providerStripeAccountId,
+                  //   description: `Zusätzliche Arbeitsstunden (Platform Hold Release) für Auftrag ${orderId}`,
+                  //   metadata: {
+                  //     type: 'additional_hours_platform_hold_release',
+                  //     orderId: orderId,
+                  //     paymentIntentId: paymentIntentSucceeded.id,
+                  //     entryIds: entryIds,
+                  //     originalEventId: event.id,
+                  //   },
+                  // });
 
+                  // ✅ KONTROLLIERTE PAYOUTS: Markiere Additional Hours für manuelle Auszahlung
                   console.log(
-                    `[WEBHOOK SUCCESS] Platform Hold transfer created: ${transfer.id} - ${transferAmount} cents to ${providerStripeAccountId} for order ${orderId}`
+                    `[WEBHOOK CONTROLLED] Additional Hours marked for controlled payout: ${transferAmount} cents to ${providerStripeAccountId} for order ${orderId}`
                   );
 
-                  // Update company document with transfer info
+                  // Update Order mit Additional Hours Payout Info
+                  const orderRef = db.collection('auftraege').doc(orderId);
+                  await orderRef.update({
+                    additionalHoursPayoutAmount:
+                      admin.firestore.FieldValue.increment(transferAmount),
+                    payoutStatus: 'available_for_payout', // Markiere für manuelle Auszahlung
+                    additionalHoursEntries: admin.firestore.FieldValue.arrayUnion({
+                      amount: transferAmount,
+                      paymentIntentId: paymentIntentSucceeded.id,
+                      entryIds: entryIds,
+                      processedAt: new Date(),
+                      status: 'available_for_payout',
+                    }),
+                    updatedAt: new Date(),
+                  });
+
+                  // Update company document with controlled payout info
                   const companyRef = db
                     .collection('users')
                     .where('anbieterStripeAccountId', '==', providerStripeAccountId)
@@ -408,13 +426,13 @@ export async function POST(req: NextRequest) {
                   if (!companySnapshot.empty) {
                     const companyDoc = companySnapshot.docs[0];
                     await companyDoc.ref.update({
-                      lastTransferId: transfer.id,
-                      lastTransferAt: admin.firestore.FieldValue.serverTimestamp(),
-                      lastTransferAmount: transferAmount,
-                      lastTransferOrderId: orderId,
+                      lastAdditionalHoursAmount: transferAmount,
+                      lastAdditionalHoursAt: admin.firestore.FieldValue.serverTimestamp(),
+                      lastAdditionalHoursOrderId: orderId,
+                      pendingAdditionalHours: admin.firestore.FieldValue.increment(transferAmount),
                     });
                     console.log(
-                      `[WEBHOOK LOG] Company document updated with transfer info: ${transfer.id}`
+                      `[WEBHOOK LOG] Company document updated with controlled additional hours: ${transferAmount} cents for order ${orderId}`
                     );
                   } else {
                     console.error(

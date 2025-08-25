@@ -180,15 +180,17 @@ export async function POST(
       stripeCustomerId = customer.id;
     }
 
-    // Create PaymentIntent with application fee
+    // Create PaymentIntent with application fee (NO AUTOMATIC TRANSFERS)
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmountCents,
       currency: currency.toLowerCase(),
       customer: stripeCustomerId,
       application_fee_amount: platformFeeCents,
-      transfer_data: {
-        destination: finalCompanyStripeAccountId,
-      },
+      // ❌ ENTFERNT: transfer_data für automatische Transfers
+      // transfer_data: {
+      //   destination: finalCompanyStripeAccountId,
+      // },
+      // ✅ GELD BLEIBT AUF PLATFORM für kontrollierte Auszahlungen
       metadata: {
         type: 'quote_payment',
         quote_id: quoteId,
