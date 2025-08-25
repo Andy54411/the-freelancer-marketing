@@ -22,8 +22,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔍 Getting platform connections for company:', companyId);
-
     const result = await multiPlatformAdvertisingService.getAllPlatformConnections(companyId);
 
     if (result.success) {
@@ -41,7 +39,7 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Platform connections API error:', error);
+
     return NextResponse.json(
       {
         success: false,

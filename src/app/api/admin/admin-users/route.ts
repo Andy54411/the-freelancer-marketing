@@ -51,8 +51,6 @@ export async function GET(request: NextRequest) {
     // TODO: Auth temporär deaktiviert für Testing
     // await verifyAdminAuth();
 
-    console.log('Loading admin users from In-Memory Store');
-
     return NextResponse.json({
       success: true,
       adminUsers: adminUsersStore,
@@ -60,7 +58,7 @@ export async function GET(request: NextRequest) {
       message: 'Admin-Benutzer erfolgreich geladen',
     });
   } catch (error) {
-    console.error('Admin users loading error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Admin-Benutzer',
@@ -116,7 +114,6 @@ export async function POST(request: NextRequest) {
 
     // In In-Memory Store speichern
     adminUsersStore.push(newAdminUser);
-    console.log('Admin user created and stored:', newAdminUser);
 
     // TODO: Send welcome email with login credentials
 
@@ -126,7 +123,7 @@ export async function POST(request: NextRequest) {
       message: `Admin-Benutzer ${name} erfolgreich erstellt`,
     });
   } catch (error) {
-    console.error('Admin user creation error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen des Admin-Benutzers',
@@ -148,8 +145,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Benutzer-ID ist erforderlich' }, { status: 400 });
     }
 
-    console.log(`Updating admin user ${id}:`, Object.keys(updates));
-
     const userIndex = adminUsersStore.findIndex(user => user.id === id);
     if (userIndex === -1) {
       return NextResponse.json({ error: 'Admin-Benutzer nicht gefunden' }, { status: 404 });
@@ -164,7 +159,7 @@ export async function PUT(request: NextRequest) {
       message: 'Admin-Benutzer erfolgreich aktualisiert',
     });
   } catch (error) {
-    console.error('Admin user update error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Aktualisieren des Admin-Benutzers',
@@ -205,14 +200,12 @@ export async function DELETE(request: NextRequest) {
     // Benutzer aus Store entfernen
     adminUsersStore.splice(userIndex, 1);
 
-    console.log(`Admin user ${id} deleted successfully`);
-
     return NextResponse.json({
       success: true,
       message: 'Admin-Benutzer erfolgreich gelöscht',
     });
   } catch (error) {
-    console.error('Admin user deletion error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Löschen des Admin-Benutzers',

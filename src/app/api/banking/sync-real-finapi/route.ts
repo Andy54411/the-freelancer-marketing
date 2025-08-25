@@ -13,8 +13,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🔄 Syncing ALL banking data from finAPI (NO MOCK DATA):', userId);
-
     // Step 1: Try to get bank connections first (for real bank names)
     let bankConnections: any[] = [];
     try {
@@ -29,12 +27,12 @@ export async function POST(request: NextRequest) {
       if (connectionsResponse.ok) {
         const connectionsData = await connectionsResponse.json();
         bankConnections = connectionsData.bankConnections || [];
-        console.log('📊 Real bank connections from finAPI:', bankConnections.length);
+
       } else {
-        console.log('⚠️ Bank connections API failed, will use account data only');
+
       }
     } catch (error) {
-      console.log('⚠️ Bank connections API error, will use account data only');
+
     }
 
     // Step 2: Get ALL accounts from finAPI API (real data only)
@@ -52,8 +50,6 @@ export async function POST(request: NextRequest) {
 
     const accountsData = await accountsResponse.json();
     const accounts = accountsData.accounts || [];
-
-    console.log('📊 Real finAPI accounts retrieved:', accounts.length);
 
     if (accounts.length === 0) {
       return NextResponse.json({
@@ -80,8 +76,6 @@ export async function POST(request: NextRequest) {
       connectionGroups[connectionId].push(account);
     }
 
-    console.log('📊 Connection groups found:', Object.keys(connectionGroups).length);
-
     // Step 3: Create connections using REAL finAPI bank-connections data
     for (const [connectionId, connectionAccounts] of Object.entries(connectionGroups)) {
       const firstAccount = connectionAccounts[0];
@@ -100,14 +94,14 @@ export async function POST(request: NextRequest) {
         bankId = realBankConnection.bank?.id?.toString() || connectionId;
         bankCode = realBankConnection.bank?.blz || '';
         bic = realBankConnection.bank?.bic || '';
-        console.log(`✅ Found real bank connection: ${realBankName} (ID: ${connectionId})`);
+
       } else {
         // Fallback: Use account data (might be generic)
         realBankName = firstAccount.bankName || `finAPI Connection ${connectionId}`;
         bankId = connectionId;
         bankCode = '';
         bic = '';
-        console.log(`⚠️ Using account fallback for connection ${connectionId}: ${realBankName}`);
+
       }
 
       connectionsData[connectionId] = {
@@ -127,9 +121,6 @@ export async function POST(request: NextRequest) {
         loginHint: `Real finAPI data: ${new Date().toLocaleDateString('de-DE')}`,
       };
 
-      console.log(
-        `✅ Connection ${connectionId}: ${realBankName} (${connectionAccounts.length} accounts)`
-      );
     }
 
     // Step 4: Create accounts using REAL finAPI data
@@ -172,8 +163,6 @@ export async function POST(request: NextRequest) {
       currencies: ['EUR'],
     };
 
-    console.log('📊 Real finAPI stats:', stats);
-
     // Step 6: Update Firestore with REAL finAPI data ONLY
     const userDocRef = db.collection('users').doc(userId);
     await userDocRef.update({
@@ -189,8 +178,6 @@ export async function POST(request: NextRequest) {
       'banking.currencies': stats.currencies,
       updatedAt: new Date(),
     });
-
-    console.log('✅ REAL finAPI data synced to Firebase (NO MOCK DATA)');
 
     return NextResponse.json({
       success: true,
@@ -208,7 +195,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Error syncing real finAPI data:', error);
+
     return NextResponse.json(
       {
         error: 'Failed to sync real finAPI data',

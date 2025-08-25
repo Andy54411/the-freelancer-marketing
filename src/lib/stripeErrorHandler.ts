@@ -21,7 +21,7 @@ export function suppressStripeAnalyticsErrors() {
         if (url.includes('errors.stripe.com')) {
           // Erstelle eine erfolgreiche Mock-Response für Sentry-Requests
           if (response.status === 429 || response.status === 400) {
-            console.log(`🔇 Stripe Sentry Error suppressed: ${response.status} ${url}`);
+
             return new Response('{"status": "ok"}', {
               status: 200,
               headers: { 'Content-Type': 'application/json' },
@@ -40,7 +40,7 @@ export function suppressStripeAnalyticsErrors() {
           url.includes('js.stripe.com')
         ) {
           // Stripe Analytics/Sentry-Fehler still unterdrücken
-          console.log(`🔇 Stripe Network Error suppressed: ${url}`);
+
           return new Response('{"status": "ok"}', {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -49,13 +49,9 @@ export function suppressStripeAnalyticsErrors() {
 
         // Cloud Functions und andere wichtige Fehler durchlassen mit besseren Messages
         if (url.includes('cloudfunctions.net')) {
-          console.error(`🚨 Cloud Function Error:`, {
-            url: url,
-            error: error instanceof Error ? error.message : error,
-            timestamp: new Date().toISOString(),
-          });
+
         } else {
-          console.error(`🚨 Network Error (not Stripe):`, url, error);
+
         }
 
         throw error;
@@ -82,7 +78,7 @@ export function suppressStripeAnalyticsErrors() {
           message.includes('sentry_version='))
       ) {
         // Diese Fehler nicht ausgeben, da sie harmlos sind
-        console.log(`🔇 Stripe Console Error suppressed: ${message.slice(0, 100)}...`);
+
         return;
       }
 
@@ -102,10 +98,7 @@ export function suppressStripeAnalyticsErrors() {
         (errorMessage.includes('429') && errorMessage.includes('stripe')) ||
         (errorMessage.includes('400') && errorMessage.includes('stripe'))
       ) {
-        console.log(
-          '🔇 Stripe Unhandled Promise Rejection suppressed:',
-          errorMessage.slice(0, 100)
-        );
+
         event.preventDefault();
       }
     });
@@ -140,12 +133,6 @@ export const getOptimizedStripeElementsOptions = () => {
  */
 export function handleApplePayDomainWarning() {
   if (process.env.NODE_ENV === 'development') {
-    console.info(
-      '%c[INFO] Apple Pay Domain-Warnung kann ignoriert werden',
-      'color: #14ad9f; font-weight: bold;',
-      '\nDiese Warnung erscheint, weil die Domain nicht für Apple Pay registriert ist.',
-      '\nIn der Produktion sollte die Domain bei Stripe registriert werden:',
-      '\nhttps://stripe.com/docs/payments/payment-methods/pmd-registration'
-    );
+
   }
 }

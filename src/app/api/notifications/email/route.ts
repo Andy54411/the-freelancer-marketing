@@ -48,12 +48,12 @@ export async function POST(request: NextRequest) {
             <div class="header">
               <h1>Neue Angebots-Anfrage auf Taskilo</h1>
             </div>
-            
+
             <div class="content">
               <p>Hallo ${providerData.companyName || providerData.displayName},</p>
-              
+
               <p>Sie haben eine neue Angebots-Anfrage auf Taskilo erhalten!</p>
-              
+
               <div class="project-info">
                 <h3>Projektdetails:</h3>
                 <p><strong>Titel:</strong> ${quoteData.projectTitle}</p>
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
                 ${quoteData.budgetRange ? `<p><strong>Budget:</strong> ${quoteData.budgetRange}</p>` : ''}
                 <p><strong>Dringlichkeit:</strong> ${quoteData.urgency}</p>
               </div>
-              
+
               <div class="project-info">
                 <h3>Kundenkontakt:</h3>
                 <p><strong>Name:</strong> ${quoteData.customerName}</p>
@@ -74,16 +74,16 @@ export async function POST(request: NextRequest) {
                 ${quoteData.customerPhone ? `<p><strong>Telefon:</strong> ${quoteData.customerPhone}</p>` : ''}
                 ${quoteData.additionalNotes ? `<p><strong>Zusätzliche Notizen:</strong><br>${quoteData.additionalNotes}</p>` : ''}
               </div>
-              
+
               <p>
                 <a href="https://taskilo.de/dashboard/company/quotes" class="button">
                   Angebot erstellen
                 </a>
               </p>
-              
+
               <p>Loggen Sie sich in Ihr Taskilo-Dashboard ein, um die vollständigen Details anzuzeigen und ein Angebot zu erstellen.</p>
             </div>
-            
+
             <div class="footer">
               <p>Diese E-Mail wurde automatisch von Taskilo gesendet.</p>
               <p>Taskilo - Ihre Plattform für professionelle Dienstleistungen</p>
@@ -124,8 +124,6 @@ Diese E-Mail wurde automatisch von Taskilo gesendet.
 
     // E-Mail über externe Service senden (hier simuliert)
     // In Produktion würde man AWS SES, SendGrid, oder ähnlichen Service verwenden
-    console.log('E-Mail würde gesendet werden an:', emailTemplate.to);
-    console.log('Betreff:', emailTemplate.subject);
 
     // Für jetzt simulieren wir eine erfolgreiche E-Mail
     return NextResponse.json({
@@ -134,7 +132,7 @@ Diese E-Mail wurde automatisch von Taskilo gesendet.
       recipient: providerEmail,
     });
   } catch (error) {
-    console.error('Fehler beim Senden der E-Mail-Benachrichtigung:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Senden der E-Mail-Benachrichtigung' },
       { status: 500 }

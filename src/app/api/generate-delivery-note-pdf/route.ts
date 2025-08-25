@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       await browser.close();
     }
   } catch (error) {
-    console.error('Fehler bei PDF-Generierung:', error);
+
     return NextResponse.json({ error: 'PDF konnte nicht generiert werden' }, { status: 500 });
   }
 }
@@ -81,55 +81,55 @@ function generateDeliveryNoteHTML(deliveryNote: any, template: string): string {
         padding: 0;
         box-sizing: border-box;
       }
-      
+
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         line-height: 1.6;
         color: #333;
         background: #fff;
       }
-      
+
       .header {
         border-bottom: 3px solid #14ad9f;
         padding-bottom: 20px;
         margin-bottom: 30px;
       }
-      
+
       .company-info {
         display: flex;
         justify-content: space-between;
         align-items: start;
       }
-      
+
       .company-details h1 {
         color: #14ad9f;
         font-size: 28px;
         margin-bottom: 10px;
       }
-      
+
       .document-title {
         text-align: right;
       }
-      
+
       .document-title h2 {
         font-size: 36px;
         color: #333;
         margin-bottom: 10px;
       }
-      
+
       .customer-section {
         background: #f8fafc;
         padding: 20px;
         border-radius: 8px;
         margin: 20px 0;
       }
-      
+
       .items-table {
         width: 100%;
         border-collapse: collapse;
         margin: 20px 0;
       }
-      
+
       .items-table th {
         background: #14ad9f;
         color: white;
@@ -137,28 +137,28 @@ function generateDeliveryNoteHTML(deliveryNote: any, template: string): string {
         text-align: left;
         font-weight: 600;
       }
-      
+
       .items-table td {
         padding: 10px 12px;
         border-bottom: 1px solid #eee;
       }
-      
+
       .items-table tr:nth-child(even) {
         background: #f9f9f9;
       }
-      
+
       .totals {
         margin-top: 20px;
         text-align: right;
       }
-      
+
       .total-line {
         display: flex;
         justify-content: space-between;
         padding: 8px 0;
         border-bottom: 1px solid #eee;
       }
-      
+
       .total-final {
         font-size: 18px;
         font-weight: bold;
@@ -167,7 +167,7 @@ function generateDeliveryNoteHTML(deliveryNote: any, template: string): string {
         padding: 12px;
         border-radius: 4px;
       }
-      
+
       .footer {
         margin-top: 40px;
         padding-top: 20px;
@@ -175,7 +175,7 @@ function generateDeliveryNoteHTML(deliveryNote: any, template: string): string {
         font-size: 12px;
         color: #666;
       }
-      
+
       .taskilo-accent {
         color: #14ad9f;
       }

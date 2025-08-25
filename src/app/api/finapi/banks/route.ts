@@ -15,9 +15,6 @@ export async function GET(request: NextRequest) {
     const perPage = parseInt(searchParams.get('perPage') || '20');
     const includeTestBanks = searchParams.get('includeTestBanks') === 'true';
 
-    console.log('🏦 Fetching banks via finAPI SDK Service...');
-    console.log('Search params:', { search, page, perPage, includeTestBanks });
-
     // Get banks directly from finAPI SDK Service - no mock data
     const banks = await finapiService.listBanks(
       search || undefined,
@@ -25,8 +22,6 @@ export async function GET(request: NextRequest) {
       page,
       perPage
     );
-
-    console.log(`✅ Found ${banks.length} banks via SDK`);
 
     // Filter test banks if needed
     let filteredBanks = includeTestBanks
@@ -56,10 +51,6 @@ export async function GET(request: NextRequest) {
       return hasWorkingAIS;
     });
 
-    console.log(
-      `✅ Found ${filteredBanks.length} AIS-compatible banks (filtered from ${banks.length} total)`
-    );
-
     return NextResponse.json({
       success: true,
       data: {
@@ -74,7 +65,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('❌ Banks API error:', error);
+
     return NextResponse.json(
       {
         error: 'Failed to fetch banks',

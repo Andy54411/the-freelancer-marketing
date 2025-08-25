@@ -22,8 +22,6 @@ export async function GET(request: NextRequest) {
   const companyId = searchParams.get('companyId');
   const status = searchParams.get('status') || 'all';
 
-  console.log('🔍 Loading invoices for reconciliation:', { companyId, status });
-
   if (!companyId) {
     return NextResponse.json(
       { success: false, error: 'Company ID ist erforderlich' },
@@ -38,10 +36,6 @@ export async function GET(request: NextRequest) {
       .where('companyId', '==', companyId)
       .orderBy('createdAt', 'desc')
       .get();
-
-    console.log(
-      `📊 Debug: Found ${allInvoicesSnapshot.size} total invoices for companyId: ${companyId}`
-    );
 
     const invoices: InvoiceForReconciliation[] = [];
     const debugInfo: any[] = [];
@@ -76,11 +70,6 @@ export async function GET(request: NextRequest) {
       });
     });
 
-    console.log('📋 Debug Invoice Status Summary:', debugInfo);
-    console.log(
-      `✅ Loading ALL ${invoices.length} invoices from ${allInvoicesSnapshot.size} total (no status filter applied)`
-    );
-
     // Filter nach Status wenn gewünscht
     let filteredInvoices = invoices;
     if (status === 'unreconciled') {
@@ -88,10 +77,6 @@ export async function GET(request: NextRequest) {
     } else if (status === 'reconciled') {
       filteredInvoices = invoices.filter(inv => inv.isReconciled);
     }
-
-    console.log(
-      `✅ Loaded ${filteredInvoices.length} invoices for reconciliation (status: ${status})`
-    );
 
     return NextResponse.json({
       success: true,
@@ -101,7 +86,7 @@ export async function GET(request: NextRequest) {
       reconciled: invoices.filter(inv => inv.isReconciled).length,
     });
   } catch (error: any) {
-    console.error('❌ Error loading invoices for reconciliation:', error);
+
     return NextResponse.json(
       { success: false, error: `Fehler beim Laden der Rechnungen: ${error.message}` },
       { status: 500 }
@@ -114,13 +99,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { invoiceId, transactionId, companyId, action } = body;
-
-    console.log('🔄 Invoice reconciliation action:', {
-      invoiceId,
-      transactionId,
-      companyId,
-      action,
-    });
 
     if (!invoiceId || !companyId) {
       return NextResponse.json(
@@ -148,10 +126,6 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date(),
       });
 
-      console.log(
-        `✅ Invoice ${invoiceId} reconciled with transaction ${transactionId} and marked as PAID`
-      );
-
       return NextResponse.json({
         success: true,
         message: 'Rechnung erfolgreich abgeglichen',
@@ -168,8 +142,6 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date(),
       });
 
-      console.log(`✅ Invoice ${invoiceId} unreconciled and marked as OPEN`);
-
       return NextResponse.json({
         success: true,
         message: 'Abgleich erfolgreich rückgängig gemacht',
@@ -182,7 +154,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Error in invoice reconciliation:', error);
+
     return NextResponse.json(
       { success: false, error: `Fehler beim Abgleich: ${error.message}` },
       { status: 500 }

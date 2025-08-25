@@ -68,7 +68,7 @@ const ProfilePictureUploadModal: React.FC<ProfilePictureUploadModalProps> = ({
       onSuccess(downloadURL);
       onClose();
     } catch (error) {
-      console.error('Error uploading profile picture:', error);
+
       toast.error('Fehler beim Hochladen des Bildes.', { id: toastId });
     } finally {
       setUploading(false);

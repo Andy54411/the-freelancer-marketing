@@ -107,14 +107,12 @@ export function CustomerSelect({
       });
 
       setCustomers(loadedCustomers);
-      console.log(`✅ Loaded ${loadedCustomers.length} customers for company ${companyId}`);
+
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Kunden:', error);
-      console.log(`🔍 Debugging info: Attempting to load customers for companyId: ${companyId}`);
 
       if (error.code === 'permission-denied') {
         toast.error('Keine Berechtigung zum Laden der Kundendaten. Überprüfen Sie Ihre Anmeldung.');
-        console.log('🛡️ Permission denied - check Firestore rules and authentication');
+
       } else {
         toast.error('Fehler beim Laden der Kundendaten');
       }

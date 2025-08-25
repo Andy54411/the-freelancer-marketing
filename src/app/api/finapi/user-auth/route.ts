@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('❌ finAPI User Auth API error:', error);
+
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ finAPI User Auth API GET error:', error);
+
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

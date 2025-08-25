@@ -49,17 +49,13 @@ export async function POST(request: NextRequest, { params }: { params: { quoteId
       updatedAt: new Date().toISOString(),
     });
 
-    console.log(
-      `✅ View-Count für Projekt ${quoteId} erhöht: ${currentViewCount} → ${newViewCount}`
-    );
-
     return NextResponse.json({
       success: true,
       message: 'View erfolgreich gezählt',
       viewCount: newViewCount,
     });
   } catch (error) {
-    console.error('Fehler beim Zählen des Views:', error);
+
     return NextResponse.json({ error: 'Fehler beim Zählen des Views' }, { status: 500 });
   }
 }

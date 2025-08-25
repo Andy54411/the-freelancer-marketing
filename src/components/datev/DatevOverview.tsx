@@ -57,8 +57,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
         return;
       }
 
-      // Load organization - Organizations not needed for Taskilo  
-      console.log('✅ DATEV connection verified via UserInfo API');
+      // Load organization - Organizations not needed for Taskilo
 
       // Load accounts and calculate stats
       const accounts = await DatevService.getAccounts();
@@ -91,7 +90,7 @@ export function DatevOverview({ companyId }: DatevOverviewProps) {
         accountBalance,
       });
     } catch (error) {
-      console.error('Fehler beim Laden der Overview-Daten:', error);
+
       toast.error('Fehler beim Laden der Übersichtsdaten');
     } finally {
       setLoading(false);

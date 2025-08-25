@@ -25,8 +25,6 @@ export async function GET(request: NextRequest) {
       perPage
     );
 
-    console.log('Labels retrieved:', response.labels?.length || 0);
-
     return NextResponse.json({
       success: true,
       data: response.labels,
@@ -39,7 +37,7 @@ export async function GET(request: NextRequest) {
       totalCount: response.labels?.length || 0,
     });
   } catch (error: any) {
-    console.error('finAPI labels error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -115,7 +113,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error: any) {
-    console.error('finAPI labels POST error:', error);
+
     return NextResponse.json(
       {
         success: false,

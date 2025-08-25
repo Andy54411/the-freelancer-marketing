@@ -89,13 +89,11 @@ export default function BankingReconciliationPage() {
   const loadInvoices = async () => {
     setLoadingInvoices(true);
     try {
-      console.log(`� ULTIMATE CACHE BREAK - Loading invoices for companyId: ${uid}`);
 
       // NUCLEAR OPTION: Komplett neue URL mit Random String
       const randomCacheBuster = Math.random().toString(36).substring(7);
       const timestamp = new Date().getTime();
       const apiUrl = `/api/banking/reconciliation/invoices?companyId=${uid}&v=${timestamp}&r=${randomCacheBuster}&force=true`;
-      console.log(`� NUCLEAR CACHE BUST URL: ${apiUrl}`);
 
       // ALLE Cache-Breaking Methoden gleichzeitig
       const response = await fetch(apiUrl, {
@@ -110,52 +108,31 @@ export default function BankingReconciliationPage() {
         },
       });
 
-      console.log(`� NUCLEAR Response Status: ${response.status}`);
-      console.log(`� NUCLEAR Response URL: ${response.url}`);
-      console.log(`🚨 NUCLEAR Response Headers:`, Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.log(`🚨 NUCLEAR Error Response Text:`, errorText.substring(0, 200));
+
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const responseText = await response.text();
-      console.log(`🚨 NUCLEAR Raw Response:`, responseText.substring(0, 200));
 
       const data = JSON.parse(responseText);
-
-      console.log(`🔍 Full API Response:`, data);
-      console.log(`📊 API Success: ${data.success}`);
-      console.log(`📊 Total invoices received: ${data.invoices?.length || 0}`);
 
       if (data.success && data.invoices) {
         // Die API gibt bereits das korrekte Format zurück
         setInvoices(data.invoices);
-        console.log(`✅ Successfully loaded ${data.invoices.length} invoices for reconciliation`);
-        console.log(`📊 Reconciliation Stats:`, {
-          total: data.total,
-          unreconciled: data.unreconciled,
-          reconciled: data.reconciled,
-        });
 
         // Debug: Log each invoice
         data.invoices.forEach((invoice: Invoice, index: number) => {
-          console.log(`📄 Invoice ${index + 1}:`, {
-            id: invoice.id,
-            invoiceNumber: invoice.invoiceNumber,
-            total: invoice.total,
-            status: invoice.status,
-            companyId: invoice.companyId,
-          });
+
         });
       } else {
-        console.error('❌ API Error:', data.error);
+
         setError(data.error || 'Fehler beim Laden der Rechnungen');
         setInvoices([]); // Ensure invoices array is empty on error
       }
     } catch (err: unknown) {
-      console.error('❌ Network/Parse Error loading invoices:', err);
+
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError('Fehler beim Laden der Rechnungen: ' + errorMessage);
       setInvoices([]); // Ensure invoices array is empty on error
@@ -175,13 +152,13 @@ export default function BankingReconciliationPage() {
 
       if (data.success && data.transactions) {
         setTransactions(data.transactions);
-        console.log(`✅ Loaded ${data.transactions.length} transactions for reconciliation`);
+
       } else {
-        console.log('No transactions found or user not connected to finAPI');
+
         setTransactions([]);
       }
     } catch (err: unknown) {
-      console.error('Error loading transactions:', err);
+
       setTransactions([]);
     } finally {
       setLoadingTransactions(false);
@@ -228,7 +205,7 @@ export default function BankingReconciliationPage() {
       const data = await response.json();
 
       if (data.success) {
-        console.log('✅ Successfully reconciled invoice:', invoiceId);
+
         // Refresh data
         await Promise.all([loadInvoices(), loadTransactions()]);
         setSelectedInvoice(null);
@@ -237,7 +214,7 @@ export default function BankingReconciliationPage() {
         setError(data.error || 'Fehler beim Abgleich');
       }
     } catch (err: unknown) {
-      console.error('Error reconciling:', err);
+
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError('Fehler beim Abgleich: ' + errorMessage);
     } finally {
@@ -261,13 +238,13 @@ export default function BankingReconciliationPage() {
       const data = await response.json();
 
       if (data.success) {
-        console.log('✅ Successfully undid reconciliation for invoice:', invoiceId);
+
         await loadInvoices();
       } else {
         setError(data.error || 'Fehler beim Rückgängigmachen');
       }
     } catch (err: unknown) {
-      console.error('Error undoing reconciliation:', err);
+
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError('Fehler beim Rückgängigmachen: ' + errorMessage);
     }
@@ -303,7 +280,7 @@ export default function BankingReconciliationPage() {
   const filteredInvoices = invoices.filter(invoice => {
     // Sicherheitscheck: Invoice muss existieren
     if (!invoice || typeof invoice !== 'object') {
-      console.warn('Invalid invoice object:', invoice);
+
       return false;
     }
 
@@ -323,7 +300,7 @@ export default function BankingReconciliationPage() {
   const filteredTransactions = transactions.filter(transaction => {
     // Sicherheitscheck: Transaction muss existieren
     if (!transaction || typeof transaction !== 'object') {
-      console.warn('Invalid transaction object:', transaction);
+
       return false;
     }
 

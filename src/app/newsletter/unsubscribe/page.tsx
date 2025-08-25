@@ -47,7 +47,7 @@ function UnsubscribeContent() {
         toast.error(result.error || 'Fehler beim Abmelden');
       }
     } catch (error) {
-      console.error('Unsubscribe error:', error);
+
       toast.error('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
     } finally {
       setIsLoading(false);
@@ -90,7 +90,7 @@ function UnsubscribeContent() {
         toast.error(result.error || 'Fehler bei der Datenlöschung');
       }
     } catch (error) {
-      console.error('Data deletion error:', error);
+
       toast.error('Ein Fehler ist aufgetreten. Bitte kontaktieren Sie unseren Support.');
     } finally {
       setIsLoading(false);

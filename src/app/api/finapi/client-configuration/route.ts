@@ -4,10 +4,10 @@ import { finapiService } from '@/lib/finapi-sdk-service';
 
 /**
  * finAPI Client Configuration API
- * 
+ *
  * GET: Get client configuration
  * PATCH: Edit client configuration
- * 
+ *
  * Parameters for client configuration:
  * - userNotificationCallbackUrl: Callback URL for notifications
  * - userSynchronizationCallbackUrl: Callback URL for synchronization
@@ -23,7 +23,6 @@ import { finapiService } from '@/lib/finapi-sdk-service';
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('🔧 Fetching finAPI client configuration...');
 
     // Test credentials first
     const credentialTest = await finapiService.testCredentials();
@@ -54,8 +53,6 @@ export async function GET(req: NextRequest) {
     }
 
     const configData = await response.json();
-    
-    console.log('✅ finAPI client configuration retrieved');
 
     return NextResponse.json({
       success: true,
@@ -77,7 +74,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Error fetching client configuration:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -92,8 +89,6 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const configUpdates = await req.json();
-    
-    console.log('🔧 Updating finAPI client configuration with:', configUpdates);
 
     // Validate configuration parameters
     const allowedUpdates = [
@@ -158,8 +153,6 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updatedConfig = await response.json();
-    
-    console.log('✅ finAPI client configuration updated successfully');
 
     return NextResponse.json({
       success: true,
@@ -172,7 +165,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Error updating client configuration:', error);
+
     return NextResponse.json(
       {
         success: false,

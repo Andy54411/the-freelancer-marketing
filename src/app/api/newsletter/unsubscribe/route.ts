@@ -52,18 +52,12 @@ export async function POST(request: NextRequest) {
       unsubscribeReason: 'user_request',
     });
 
-    console.log('Newsletter-Abmeldung verarbeitet:', {
-      email,
-      timestamp: new Date().toISOString(),
-      subscriberId: subscriberDoc.id,
-    });
-
     return NextResponse.json({
       success: true,
       message: 'Sie wurden erfolgreich vom Newsletter abgemeldet.',
     });
   } catch (error) {
-    console.error('Newsletter Abmelde-Fehler:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler beim Abmelden',
@@ -104,8 +98,6 @@ export async function DELETE(request: NextRequest) {
       });
       await batch.commit();
 
-      console.log('DSGVO Vollständige Datenlöschung für E-Mail:', email);
-
       return NextResponse.json({
         success: true,
         message: `Alle Daten für ${email} wurden DSGVO-konform gelöscht.`,
@@ -120,7 +112,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('DSGVO Löschfehler:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler bei der Datenlöschung',

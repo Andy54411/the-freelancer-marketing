@@ -21,16 +21,15 @@ export class TicketEmailService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
-        console.error('Fehler beim Senden der Ticket-E-Mail:', result.error);
+
         return false;
       }
 
-      console.log('✅ Ticket-Erstellungs-E-Mail gesendet:', result.emailId);
       return true;
     } catch (error) {
-      console.error('Fehler beim Senden der Ticket-E-Mail:', error);
+
       return false;
     }
   }
@@ -53,7 +52,7 @@ export class TicketEmailService {
 
       return response.ok;
     } catch (error) {
-      console.error('Fehler beim Senden der Update-E-Mail:', error);
+
       return false;
     }
   }
@@ -77,7 +76,7 @@ export class TicketEmailService {
 
       return response.ok;
     } catch (error) {
-      console.error('Fehler beim Senden der Kommentar-E-Mail:', error);
+
       return false;
     }
   }
@@ -100,7 +99,7 @@ export class TicketEmailService {
 
       return response.ok;
     } catch (error) {
-      console.error('Fehler beim Senden der Resolved-E-Mail:', error);
+
       return false;
     }
   }
@@ -123,7 +122,7 @@ export class TicketEmailService {
 
       return response.ok;
     } catch (error) {
-      console.error('Fehler beim Senden der Reopened-E-Mail:', error);
+
       return false;
     }
   }
@@ -132,8 +131,8 @@ export class TicketEmailService {
    * Sendet eine E-Mail wenn ein Ticket zugewiesen wird
    */
   static async sendTicketAssignedEmail(
-    ticket: Ticket, 
-    assignedTo: string, 
+    ticket: Ticket,
+    assignedTo: string,
     assignedBy: string
   ): Promise<boolean> {
     try {
@@ -152,7 +151,7 @@ export class TicketEmailService {
 
       return response.ok;
     } catch (error) {
-      console.error('Fehler beim Senden der Assigned-E-Mail:', error);
+
       return false;
     }
   }
@@ -161,7 +160,7 @@ export class TicketEmailService {
    * Sendet mehrere E-Mail-Typen basierend auf Ticket-Änderungen
    */
   static async sendTicketChangeEmails(
-    oldTicket: Ticket | null, 
+    oldTicket: Ticket | null,
     newTicket: Ticket,
     userEmail?: string
   ): Promise<void> {
@@ -176,7 +175,7 @@ export class TicketEmailService {
     // Status-Änderungen
     if (oldTicket.status !== newTicket.status) {
       changes.push(`Status: ${oldTicket.status} → ${newTicket.status}`);
-      
+
       if (newTicket.status === 'resolved') {
         await this.sendTicketResolvedEmail(newTicket);
       } else if (newTicket.status === 'open' && oldTicket.status === 'resolved') {
@@ -190,8 +189,8 @@ export class TicketEmailService {
     if (oldTicket.assignedTo !== newTicket.assignedTo && newTicket.assignedTo) {
       changes.push(`Zugewiesen: ${oldTicket.assignedTo || 'Niemand'} → ${newTicket.assignedTo}`);
       await this.sendTicketAssignedEmail(
-        newTicket, 
-        newTicket.assignedTo, 
+        newTicket,
+        newTicket.assignedTo,
         userEmail || 'System'
       );
     }
@@ -202,14 +201,14 @@ export class TicketEmailService {
     }
 
     // Allgemeine Update-E-Mail senden wenn andere Änderungen vorliegen
-    if (changes.length > 0 && 
-        newTicket.status === oldTicket.status && 
+    if (changes.length > 0 &&
+        newTicket.status === oldTicket.status &&
         oldTicket.assignedTo === newTicket.assignedTo) {
       await this.sendTicketUpdatedEmail(newTicket);
     }
 
     if (changes.length > 0) {
-      console.log(`📧 Ticket ${newTicket.id} Änderungen:`, changes);
+
     }
   }
 }

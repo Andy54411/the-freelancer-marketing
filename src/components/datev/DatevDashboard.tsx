@@ -98,7 +98,7 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
         toast.error('Keine DATEV-Organisationen gefunden');
       }
     } catch (error) {
-      console.error('Fehler beim Laden der DATEV-Daten:', error);
+
       toast.error('Fehler beim Laden der DATEV-Daten');
     } finally {
       setLoading(false);
@@ -111,7 +111,7 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
       await loadDatevData();
       toast.success('DATEV-Daten erfolgreich synchronisiert');
     } catch (error) {
-      console.error('Sync-Fehler:', error);
+
       toast.error('Fehler bei der Synchronisation');
     } finally {
       setSyncing(false);
@@ -135,7 +135,7 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
       await DatevService.importInvoiceToDatev(invoiceData, organization!.id);
       toast.success('Rechnung erfolgreich zu DATEV exportiert');
     } catch (error) {
-      console.error('Export-Fehler:', error);
+
       toast.error('Fehler beim Export zu DATEV');
     }
   };
@@ -154,7 +154,7 @@ export function DatevDashboard({ companyId }: DatevDashboardProps) {
       await DatevService.syncPaymentToDatev(paymentData, organization!.id);
       toast.success('Zahlung erfolgreich synchronisiert');
     } catch (error) {
-      console.error('Sync-Fehler:', error);
+
       toast.error('Fehler bei der Zahlungssynchronisation');
     }
   };

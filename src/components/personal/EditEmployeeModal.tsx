@@ -129,7 +129,7 @@ export function EditEmployeeModal({
       onEmployeeUpdated(updatedEmployee);
       onClose();
     } catch (error) {
-      console.error('Error updating employee:', error);
+
       toast.error('Fehler beim Aktualisieren des Mitarbeiters');
     } finally {
       setLoading(false);

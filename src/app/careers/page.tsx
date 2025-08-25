@@ -10,7 +10,7 @@ export default function CareersPage() {
       <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
       <div className="relative z-10">
         <HeroHeader />
-        
+
         {/* Header */}
         <div className="text-white py-16">
           <div className="max-w-4xl mx-auto px-4">

@@ -81,7 +81,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
           {getStatusBadge()}
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* Progress Bar */}
         <div className="space-y-2">
@@ -89,8 +89,8 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
             <span className="text-gray-600">Fortschritt</span>
             <span className="font-medium text-gray-900">{completionPercentage}%</span>
           </div>
-          <Progress 
-            value={completionPercentage} 
+          <Progress
+            value={completionPercentage}
             className="h-3"
             style={{
               background: '#f3f4f6'
@@ -103,7 +103,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
           <div className="text-sm text-gray-600">
             Nächster Schritt: <span className="font-medium text-gray-900">Schritt {currentStep}</span>
           </div>
-          
+
           <div className="flex gap-2">
             <Link href={`/dashboard/company/${companyUid}/onboarding/welcome`}>
               <Button variant="outline" size="sm">
@@ -126,7 +126,7 @@ const OnboardingBanner: React.FC<OnboardingBannerProps> = ({
               <div>
                 <p className="text-amber-800 font-medium">Wichtiger Hinweis:</p>
                 <p className="text-amber-700 mt-1">
-                  Ein unvollständiges Profil reduziert Ihre Sichtbarkeit für potenzielle Kunden. 
+                  Ein unvollständiges Profil reduziert Ihre Sichtbarkeit für potenzielle Kunden.
                   Vervollständigen Sie alle Schritte, um mehr Aufträge zu erhalten.
                 </p>
               </div>

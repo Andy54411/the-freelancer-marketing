@@ -130,7 +130,6 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('DATEV token debug error:', error);
 
     return NextResponse.json(
       {

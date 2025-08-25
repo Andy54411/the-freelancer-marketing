@@ -348,7 +348,6 @@ export async function migrateLegacyCompanies(): Promise<{
   errors: number;
   total: number;
 }> {
-  console.log('🚀 Starting Legacy Company Migration...');
 
   let successCount = 0;
   let errorCount = 0;
@@ -360,8 +359,6 @@ export async function migrateLegacyCompanies(): Promise<{
 
     const companiesSnapshot = await getDocs(companiesQuery);
     totalCount = companiesSnapshot.docs.length;
-
-    console.log(`📊 Found ${totalCount} companies to migrate`);
 
     for (const companyDoc of companiesSnapshot.docs) {
       try {
@@ -379,33 +376,15 @@ export async function migrateLegacyCompanies(): Promise<{
 
         successCount++;
 
-        console.log(
-          `✅ Migrated: ${companyData.companyName} - ${onboardingProgress.completionPercentage}% complete - Status: ${onboardingProgress.status}`
-        );
-
         // Special log for real example "Mietkoch Andy"
         if (companyData.companyName === 'Mietkoch Andy') {
-          console.log('🎯 REAL EXAMPLE MIGRATED:', {
-            uid: companyData.uid,
-            companyName: companyData.companyName,
-            completionPercentage: onboardingProgress.completionPercentage,
-            status: onboardingProgress.status,
-            stepsCompleted: onboardingProgress.stepsCompleted,
-            hasStripeAccount: !!companyData.step4?.stripeAccountId,
-            hasSkills: companyData.skills?.length || 0,
-            hasCategory: !!companyData.selectedCategory,
-          });
+
         }
       } catch (error) {
         errorCount++;
-        console.error(`❌ Error migrating company ${companyDoc.id}:`, error);
+
       }
     }
-
-    console.log(`🎉 Migration Complete!`);
-    console.log(`✅ Successfully migrated: ${successCount} companies`);
-    console.log(`❌ Errors: ${errorCount} companies`);
-    console.log(`📊 Total processed: ${totalCount} companies`);
 
     return {
       success: successCount,
@@ -413,7 +392,7 @@ export async function migrateLegacyCompanies(): Promise<{
       total: totalCount,
     };
   } catch (error) {
-    console.error('💥 Migration failed:', error);
+
     throw error;
   }
 }
@@ -422,7 +401,6 @@ export async function migrateLegacyCompanies(): Promise<{
  * Migrate a single company by UID (for testing)
  */
 export async function migrateSingleCompany(companyUid: string): Promise<OnboardingProgress> {
-  console.log(`🔄 Migrating single company: ${companyUid}`);
 
   try {
     // This would be replaced with actual Firestore call
@@ -495,15 +473,9 @@ export async function migrateSingleCompany(companyUid: string): Promise<Onboardi
 
     const onboardingProgress = calculateRealCompletion(testCompanyData);
 
-    console.log('🎯 Migration result for Mietkoch Andy:', {
-      completionPercentage: onboardingProgress.completionPercentage,
-      status: onboardingProgress.status,
-      stepsCompleted: onboardingProgress.stepsCompleted,
-    });
-
     return onboardingProgress;
   } catch (error) {
-    console.error(`❌ Error migrating company ${companyUid}:`, error);
+
     throw error;
   }
 }
@@ -662,7 +634,7 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
       onboardingProgress: calculatedProgress,
     };
   } catch (error) {
-    console.error(`❌ Error checking onboarding status for ${companyUid}:`, error);
+
     return {
       needsOnboarding: true,
       completionPercentage: 0,

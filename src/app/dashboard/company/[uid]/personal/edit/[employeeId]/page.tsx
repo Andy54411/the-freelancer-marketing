@@ -34,27 +34,20 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
   const [activeTab, setActiveTab] = useState('basic');
 
   useEffect(() => {
-    console.log('Auth State Debug:', {
-      user: !!user,
-      userId: user?.uid,
-      authLoading,
-      employeeId: resolvedParams.employeeId,
-      timestamp: new Date().toISOString(),
-    });
 
     if (authLoading) {
-      console.log('Auth still loading, waiting...');
+
       return; // Warte auf Auth-Status
     }
 
     if (!user) {
-      console.log('No user found after auth loading, redirecting...');
+
       router.push('/login');
       return;
     }
 
     if (resolvedParams.employeeId) {
-      console.log('Loading employee:', resolvedParams.employeeId);
+
       loadEmployee();
     }
   }, [user, authLoading, resolvedParams.employeeId, router]);
@@ -62,27 +55,21 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
   const loadEmployee = async () => {
     try {
       setLoading(true);
-      console.log(
-        '🔄 Loading employee:',
-        resolvedParams.employeeId,
-        'for company:',
-        resolvedParams.uid
-      );
 
       // Verwende getEmployees und filtere dann nach der spezifischen ID
       const employees = await PersonalService.getEmployees(resolvedParams.uid);
       const employeeData = employees.find(emp => emp.id === resolvedParams.employeeId);
 
       if (employeeData) {
-        console.log('✅ Employee found:', employeeData.firstName, employeeData.lastName);
+
         setEmployee(employeeData);
         setFormData(employeeData);
       } else {
-        console.error('❌ Employee not found with ID:', resolvedParams.employeeId);
+
         toast.error('Mitarbeiter nicht gefunden');
       }
     } catch (error) {
-      console.error('Error loading employee:', error);
+
       toast.error('Fehler beim Laden der Mitarbeiterdaten');
     } finally {
       setLoading(false);
@@ -103,7 +90,7 @@ export default function EditEmployeePage({ params }: EditEmployeePageProps) {
       setIsEditing(false);
       toast.success('Mitarbeiterdaten erfolgreich aktualisiert');
     } catch (error) {
-      console.error('Error updating employee:', error);
+
       toast.error('Fehler beim Speichern der Mitarbeiterdaten');
     }
   };

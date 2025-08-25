@@ -247,9 +247,6 @@ export class TaxService {
 
       // CRITICAL: Check if using mock data for tax calculations
       if (USE_MOCK_DATA) {
-        console.warn(
-          '🚨 TAX SERVICE: Using MOCK DATA for UStVA calculation! This should NEVER happen in production!'
-        );
 
         // Umsätze und Steuern aus Transaktionen berechnen
         // TODO: Integration mit FinanceService für echte Daten
@@ -274,7 +271,7 @@ export class TaxService {
         '🚨 TAX SERVICE: Real UStVA calculation not implemented! Cannot proceed without FinanceService integration.'
       );
     } catch (error) {
-      console.error('Fehler bei UStVA Berechnung:', error);
+
       throw new Error('UStVA konnte nicht berechnet werden');
     }
   }
@@ -290,9 +287,6 @@ export class TaxService {
 
       // CRITICAL: Check if using mock data for tax calculations
       if (USE_MOCK_DATA) {
-        console.warn(
-          '🚨 TAX SERVICE: Using MOCK DATA for EÜR calculation! This should NEVER happen in production!'
-        );
 
         // TODO: Integration mit FinanceService für echte Buchungen
         const mockData = {
@@ -346,7 +340,7 @@ export class TaxService {
         '🚨 TAX SERVICE: Real EÜR calculation not implemented! Cannot proceed without FinanceService integration.'
       );
     } catch (error) {
-      console.error('Fehler bei EÜR Berechnung:', error);
+
       throw new Error('EÜR konnte nicht berechnet werden');
     }
   }
@@ -358,9 +352,6 @@ export class TaxService {
     try {
       // CRITICAL: Check if using mock data for tax calculations
       if (USE_MOCK_DATA) {
-        console.warn(
-          '🚨 TAX SERVICE: Using MOCK DATA for GuV calculation! This should NEVER happen in production!'
-        );
 
         // TODO: Integration mit echten Buchhaltungsdaten
         const mockData = {
@@ -409,7 +400,7 @@ export class TaxService {
         '🚨 TAX SERVICE: Real GuV calculation not implemented! Cannot proceed without accounting system integration.'
       );
     } catch (error) {
-      console.error('Fehler bei GuV Berechnung:', error);
+
       throw new Error('GuV konnte nicht berechnet werden');
     }
   }
@@ -429,9 +420,6 @@ export class TaxService {
 
       // CRITICAL: Check if using mock data for business analysis
       if (USE_MOCK_DATA) {
-        console.warn(
-          '🚨 TAX SERVICE: Using MOCK DATA for BWA calculation! This should NEVER happen in production!'
-        );
 
         // TODO: Integration mit echten Buchhaltungsdaten
         const mockData = {
@@ -468,7 +456,7 @@ export class TaxService {
         '🚨 TAX SERVICE: Real BWA calculation not implemented! Cannot proceed without accounting system integration.'
       );
     } catch (error) {
-      console.error('Fehler bei BWA Berechnung:', error);
+
       throw new Error('BWA konnte nicht berechnet werden');
     }
   }
@@ -488,7 +476,7 @@ export class TaxService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Erstellen des Steuerberichts:', error);
+
       throw new Error('Steuerbericht konnte nicht erstellt werden');
     }
   }
@@ -518,7 +506,7 @@ export class TaxService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as TaxReport[];
     } catch (error) {
-      console.error('Fehler beim Laden der Steuerberichte:', error);
+
       throw new Error('Steuerberichte konnten nicht geladen werden');
     }
   }
@@ -579,7 +567,7 @@ export class TaxService {
 
       return validation;
     } catch (error) {
-      console.error('Fehler bei der Validierung:', error);
+
       return {
         isValid: false,
         errors: ['Validierung fehlgeschlagen'],
@@ -620,11 +608,11 @@ export class TaxService {
             updatedAt: new Date(),
           });
         } catch (error) {
-          console.error('Fehler beim Aktualisieren des ELSTER-Status:', error);
+
         }
       }, 5000);
     } catch (error) {
-      console.error('Fehler bei der ELSTER-Übermittlung:', error);
+
       throw new Error('ELSTER-Übermittlung fehlgeschlagen');
     }
   }
@@ -683,7 +671,7 @@ export class TaxService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       } as TaxSettings;
     } catch (error) {
-      console.error('Fehler beim Laden der Steuereinstellungen:', error);
+
       return null;
     }
   }
@@ -718,7 +706,7 @@ export class TaxService {
         });
       }
     } catch (error) {
-      console.error('Fehler beim Speichern der Steuereinstellungen:', error);
+
       throw new Error('Steuereinstellungen konnten nicht gespeichert werden');
     }
   }
@@ -759,7 +747,7 @@ export class TaxService {
         estimatedTaxLiability,
       };
     } catch (error) {
-      console.error('Fehler beim Laden der Steuerstatistiken:', error);
+
       return {
         openReports: 0,
         submittedReports: 0,

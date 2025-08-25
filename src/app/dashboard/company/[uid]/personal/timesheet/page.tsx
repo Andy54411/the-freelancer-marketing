@@ -76,7 +76,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
         });
         setActiveTimers(activeTimerSet);
       } catch (error) {
-        console.warn('⚠️ Keine Zeiterfassungsdaten gefunden, verwende Mock-Daten');
+
         // Fallback Mock-Daten falls keine Daten vorhanden
         const mockEntries: TimeEntry[] = [
           {
@@ -131,7 +131,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
 
       setSummaries(employeeSummaries);
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Zeiterfassung:', error);
+
       toast.error('Fehler beim Laden der Zeiterfassung');
     } finally {
       setLoading(false);
@@ -148,7 +148,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       // Lade Daten neu
       await loadData();
     } catch (error) {
-      console.error('❌ Fehler beim Starten des Timers:', error);
+
       toast.error('Fehler beim Starten des Timers');
     }
   };
@@ -166,7 +166,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       // Lade Daten neu
       await loadData();
     } catch (error) {
-      console.error('❌ Fehler beim Stoppen des Timers:', error);
+
       toast.error('Fehler beim Stoppen des Timers');
     }
   };
@@ -187,7 +187,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       URL.revokeObjectURL(url);
       toast.success('Zeiterfassung exportiert');
     } catch (error) {
-      console.error('❌ Export-Fehler:', error);
+
       toast.error('Fehler beim Export');
     }
   };
@@ -227,7 +227,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       setTimeEntries(prev => [...prev, createdEntry]);
       toast.success('Zeiteintrag erstellt');
     } catch (error) {
-      console.error('❌ Erstellungsfehler:', error);
+
       toast.error('Fehler beim Erstellen des Zeiteintrags');
     }
   };
@@ -253,7 +253,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       setShowTimeDialog(false);
       toast.success('Zeiteintrag aktualisiert');
     } catch (error) {
-      console.error('❌ Aktualisierungsfehler:', error);
+
       toast.error('Fehler beim Aktualisieren des Zeiteintrags');
     }
   };
@@ -267,7 +267,7 @@ export default function TimesheetPage({ params }: { params: { uid: string } }) {
       setShowTimeDialog(false);
       toast.success('Zeiteintrag gelöscht');
     } catch (error) {
-      console.error('❌ Löschfehler:', error);
+
       toast.error('Fehler beim Löschen des Zeiteintrags');
     }
   };

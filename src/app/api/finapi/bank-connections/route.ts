@@ -14,13 +14,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    console.log(
-      '🏦 Getting bank connections for user:',
-      userId,
-      'with credential type:',
-      credentialType
-    );
-
     // Get finAPI configuration (SAME AS ACCOUNTS API)
     const baseUrl = getFinApiBaseUrl(credentialType);
     const taskiloCredentials = getFinApiCredentials(credentialType);
@@ -28,8 +21,6 @@ export async function GET(request: NextRequest) {
     if (!taskiloCredentials.clientId || !taskiloCredentials.clientSecret) {
       return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
     }
-
-    console.log('🔑 Getting new finAPI client token...');
 
     // Step 1: Get client credentials token (SAME AS ACCOUNTS API)
     const tokenResponse = await fetch(`${baseUrl}/api/v2/oauth/token`, {
@@ -45,12 +36,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      console.error('❌ Client token request failed');
+
       return NextResponse.json({ error: 'Failed to authenticate with finAPI' }, { status: 401 });
     }
 
     const clientTokenData = await tokenResponse.json();
-    console.log('✅ finAPI client token obtained');
 
     // Step 2: Get user access token (EXACT SAME AS ACCOUNTS API)
     const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36);
@@ -71,12 +61,11 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userTokenResponse.ok) {
-      console.error('❌ User token request failed');
+
       return NextResponse.json({ error: 'Failed to get user token' }, { status: 401 });
     }
 
     const userTokenData = await userTokenResponse.json();
-    console.log('✅ finAPI user token obtained');
 
     // Step 3: Get bank connections using user token
     const connectionsResponse = await fetch(`${baseUrl}/api/v2/bankConnections`, {
@@ -88,9 +77,9 @@ export async function GET(request: NextRequest) {
     });
 
     if (!connectionsResponse.ok) {
-      console.error('❌ Bank connections request failed:', connectionsResponse.status);
+
       const errorText = await connectionsResponse.text();
-      console.error('❌ Error details:', errorText);
+
       return NextResponse.json(
         { error: 'Failed to get bank connections' },
         { status: connectionsResponse.status }
@@ -100,13 +89,9 @@ export async function GET(request: NextRequest) {
     const connectionsData = await connectionsResponse.json();
     const bankConnections = connectionsData.connections || [];
 
-    console.log('✅ Real bank connections retrieved:', bankConnections.length);
-
     // Log bank names for debugging
     bankConnections.forEach((conn: any, index: number) => {
-      console.log(
-        `📊 Connection ${index + 1}: ID=${conn.id}, Name="${conn.name}", Bank=${conn.bankId}`
-      );
+
     });
 
     return NextResponse.json({
@@ -118,7 +103,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Error in bank connections API:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

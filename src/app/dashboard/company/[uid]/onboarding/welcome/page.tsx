@@ -28,7 +28,7 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
       try {
         // Prüfe, ob der User Zugriff auf diese Company hat
         const companyDoc = await getDoc(doc(db, 'companies', companyUid));
-        
+
         if (!companyDoc.exists()) {
           router.push('/dashboard');
           return;
@@ -45,7 +45,7 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
 
         setIsAuthorized(true);
       } catch (error) {
-        console.error('Fehler beim Überprüfen der Berechtigung:', error);
+
         router.push('/dashboard');
       } finally {
         setIsLoading(false);
@@ -73,7 +73,7 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <OnboardingWelcome 
+      <OnboardingWelcome
         companyUid={companyUid}
         onStartOnboarding={handleStartOnboarding}
       />

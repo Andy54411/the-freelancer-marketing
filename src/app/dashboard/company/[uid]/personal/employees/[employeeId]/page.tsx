@@ -152,7 +152,7 @@ export default function EmployeeDetailPage({
       setEmployee(employeeData);
       setEditForm(employeeData);
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Mitarbeiterdaten:', error);
+
       toast.error('Fehler beim Laden der Mitarbeiterdaten');
     } finally {
       setLoading(false);
@@ -168,7 +168,7 @@ export default function EmployeeDetailPage({
       setIsEditing(false);
       toast.success('Mitarbeiterdaten aktualisiert');
     } catch (error) {
-      console.error('❌ Fehler beim Speichern:', error);
+
       toast.error('Fehler beim Speichern der Daten');
     }
   };

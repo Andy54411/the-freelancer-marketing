@@ -160,7 +160,7 @@ export function AddEmployeeModal({
         skills: [],
       });
     } catch (error) {
-      console.error('Error adding employee:', error);
+
       toast.error('Fehler beim Hinzufügen des Mitarbeiters');
     } finally {
       setLoading(false);

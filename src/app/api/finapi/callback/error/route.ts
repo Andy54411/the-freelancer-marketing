@@ -7,14 +7,11 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('❌ finAPI Error Callback aufgerufen');
 
     const searchParams = request.nextUrl.searchParams;
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
     const userId = searchParams.get('userId');
-
-    console.log('Error Callback Parameters:', { error, errorDescription, userId });
 
     const errorHtml = `
     <!DOCTYPE html>
@@ -23,7 +20,7 @@ export async function GET(request: NextRequest) {
       <title>Bank-Verbindung fehlgeschlagen</title>
       <meta charset="utf-8">
       <style>
-        body { 
+        body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
           color: white;
@@ -66,7 +63,7 @@ export async function GET(request: NextRequest) {
         <div class="error-icon">⚠️</div>
         <h1>Bank-Verbindung fehlgeschlagen</h1>
         <p>Die Verbindung zu Ihrer Bank konnte nicht hergestellt werden.</p>
-        
+
         ${
           error || errorDescription
             ? `
@@ -78,26 +75,26 @@ export async function GET(request: NextRequest) {
         `
             : ''
         }
-        
+
         <p>Mögliche Ursachen:</p>
         <p>• Falsche Anmeldedaten<br>
         • Bank wird nicht unterstützt<br>
         • Temporäre Verbindungsprobleme</p>
-        
+
         <p>Dieses Fenster schließt sich in <span class="countdown" id="countdown">5</span> Sekunden...</p>
       </div>
-      
+
       <script>
         let seconds = 5;
         const countdownEl = document.getElementById('countdown');
-        
+
         const timer = setInterval(() => {
           seconds--;
           countdownEl.textContent = seconds;
-          
+
           if (seconds <= 0) {
             clearInterval(timer);
-            
+
             // Send error message to parent window
             if (window.opener) {
               window.opener.postMessage({
@@ -106,11 +103,11 @@ export async function GET(request: NextRequest) {
                 errorDescription: '${errorDescription || ''}'
               }, '*');
             }
-            
+
             window.close();
           }
         }, 1000);
-        
+
         // Also try to close immediately if parent exists
         setTimeout(() => {
           if (window.opener) {
@@ -130,7 +127,6 @@ export async function GET(request: NextRequest) {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   } catch (error) {
-    console.error('❌ Callback error handler error:', error);
 
     return new NextResponse(
       '<html><body><h1>Kritischer Fehler</h1><p>Callback-Handler fehlgeschlagen</p><script>window.close();</script></body></html>',

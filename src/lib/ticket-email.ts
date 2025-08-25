@@ -23,7 +23,7 @@ export class TicketEmailService {
   private static getPriorityEmoji(priority: string): string {
     const priorities = {
       low: '🟢',
-      medium: '🟡', 
+      medium: '🟡',
       high: '🟠',
       urgent: '🔴'
     };
@@ -59,11 +59,9 @@ export class TicketEmailService {
   static async sendTicketEmail(options: TicketEmailOptions): Promise<boolean> {
     try {
       const { ticket, recipient, type, comment, assignedBy } = options;
-      
+
       const subject = this.generateSubject(ticket, type);
       const html = this.generateEmailTemplate(ticket, type, comment, assignedBy);
-
-      console.log(`📧 Sende Ticket-E-Mail: ${type} für Ticket ${ticket.id} an ${recipient}`);
 
       const emailResponse = await resend.emails.send({
         from: this.getFromEmail(),
@@ -78,15 +76,14 @@ export class TicketEmailService {
       });
 
       if (emailResponse.error) {
-        console.error('❌ Ticket-E-Mail Fehler:', emailResponse.error);
+
         return false;
       }
 
-      console.log('✅ Ticket-E-Mail erfolgreich gesendet:', emailResponse.data?.id);
       return true;
 
     } catch (error) {
-      console.error('❌ Fehler beim Senden der Ticket-E-Mail:', error);
+
       return false;
     }
   }
@@ -94,7 +91,7 @@ export class TicketEmailService {
   private static generateSubject(ticket: Ticket, type: string): string {
     const priorityEmoji = this.getPriorityEmoji(ticket.priority);
     const categoryEmoji = this.getCategoryEmoji(ticket.category);
-    
+
     const subjects = {
       created: `${priorityEmoji} Neues Ticket erstellt: ${ticket.title} [#${ticket.id}]`,
       updated: `${priorityEmoji} Ticket aktualisiert: ${ticket.title} [#${ticket.id}]`,
@@ -107,18 +104,18 @@ export class TicketEmailService {
   }
 
   private static generateEmailTemplate(
-    ticket: Ticket, 
-    type: string, 
+    ticket: Ticket,
+    type: string,
     comment?: TicketComment,
     assignedBy?: string
   ): string {
     const priorityEmoji = this.getPriorityEmoji(ticket.priority);
     const categoryEmoji = this.getCategoryEmoji(ticket.category);
-    
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://taskilo.de' 
+
+    const baseUrl = process.env.NODE_ENV === 'production'
+      ? 'https://taskilo.de'
       : 'http://localhost:3000';
-    
+
     const ticketUrl = `${baseUrl}/dashboard/admin/tickets?ticket=${ticket.id}`;
 
     return `
@@ -130,7 +127,7 @@ export class TicketEmailService {
         <title>Taskilo Ticket ${type}</title>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        
+
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #14ad9f 0%, #129488 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
           <h1 style="margin: 0; font-size: 24px;">Taskilo Support</h1>
@@ -139,13 +136,13 @@ export class TicketEmailService {
 
         <!-- Content -->
         <div style="background: #f8f9fa; padding: 20px; border: 1px solid #e9ecef;">
-          
+
           <!-- Ticket Info -->
           <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #14ad9f;">
             <h2 style="margin: 0 0 15px 0; color: #14ad9f;">
               ${categoryEmoji} ${ticket.title}
             </h2>
-            
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
               <div>
                 <strong>Ticket-ID:</strong> #${ticket.id}
@@ -198,7 +195,7 @@ export class TicketEmailService {
 
           <!-- Action Button -->
           <div style="text-align: center; margin: 20px 0;">
-            <a href="${ticketUrl}" 
+            <a href="${ticketUrl}"
                style="background: #14ad9f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
               Ticket im Dashboard öffnen
             </a>
@@ -282,7 +279,7 @@ export class TicketEmailService {
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.open;
-    
+
     return `<span style="background: ${config.color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">${config.label}</span>`;
   }
 

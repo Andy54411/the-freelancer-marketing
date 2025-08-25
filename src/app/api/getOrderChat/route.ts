@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
     } catch (authError) {
-      console.error('Token verification failed:', authError);
+
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       messages,
     });
   } catch (error) {
-    console.error('Error fetching chat messages:', error);
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

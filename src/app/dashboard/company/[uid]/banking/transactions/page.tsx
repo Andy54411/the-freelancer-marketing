@@ -82,12 +82,10 @@ export default function TransactionsPage() {
 
     try {
       if (!user?.uid) {
-        console.log('No user found, cannot load transactions');
+
         setTransactions([]);
         return;
       }
-
-      console.log('Loading transactions for user:', user.uid);
 
       // First try to load from enhanced accounts API (includes local storage)
       const accountsResponse = await fetch(
@@ -98,7 +96,7 @@ export default function TransactionsPage() {
         const accountsData = await accountsResponse.json();
         if (accountsData.success && accountsData.accounts) {
           setAccounts(accountsData.accounts);
-          console.log(`Loaded ${accountsData.accounts.length} accounts (${accountsData.source})`);
+
         }
       }
 
@@ -115,10 +113,10 @@ export default function TransactionsPage() {
       const data = await transactionsResponse.json();
 
       if (data.success && data.transactions) {
-        console.log(`Loaded ${data.transactions.length} finAPI transactions`);
+
         setTransactions(data.transactions);
       } else {
-        console.log('No transactions found or user not connected to finAPI');
+
         setTransactions([]);
         // Don't set error for "no user found" message - this is normal
         if (data.message && !data.message.includes('please connect a bank first')) {
@@ -126,7 +124,7 @@ export default function TransactionsPage() {
         }
       }
     } catch (err: any) {
-      console.error('Error loading finAPI data:', err);
+
       setError(err.message || 'Fehler beim Laden der Daten');
       setTransactions([]);
       setAccounts([]);
@@ -170,10 +168,10 @@ export default function TransactionsPage() {
     if (!dateString || dateString === 'null' || dateString === 'undefined') {
       return 'Kein Datum';
     }
-    
+
     // Handle different date formats from finAPI
     let date: Date;
-    
+
     // Check if it's already a valid date string
     if (dateString.includes('-')) {
       date = new Date(dateString);
@@ -189,12 +187,12 @@ export default function TransactionsPage() {
       // Try parsing as-is
       date = new Date(dateString);
     }
-    
+
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date format:', dateString);
+
       return 'Ungültiges Datum';
     }
-    
+
     return date.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',
@@ -226,17 +224,17 @@ export default function TransactionsPage() {
       const transactionDateStr = transaction.bookingDate || transaction.valueDate;
       if (transactionDateStr) {
         const transactionDate = new Date(transactionDateStr);
-        
+
         if (!isNaN(transactionDate.getTime())) {
           const today = new Date();
           const currentYear = today.getFullYear();
-          
+
           if (dateRange === '365') {
             // "Letztes Jahr" = komplettes vorheriges Jahr (z.B. 2024)
             const lastYear = currentYear - 1;
             const yearStart = new Date(lastYear, 0, 1); // 1. Januar des letzten Jahres
             const yearEnd = new Date(lastYear, 11, 31, 23, 59, 59); // 31. Dezember des letzten Jahres
-            
+
             // Debug logging for first transaction
             if (transaction.id === transactions[0]?.id) {
               const debugData = {
@@ -255,17 +253,17 @@ export default function TransactionsPage() {
                   return !isNaN(td.getTime()) && td >= yearStart && td <= yearEnd;
                 }).length
               };
-              console.log('🔍 Date filter debug:', debugData);
+
             }
-            
-            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(yearStart.getTime()) && !isNaN(yearEnd.getTime()) && 
+
+            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(yearStart.getTime()) && !isNaN(yearEnd.getTime()) &&
                               transactionDate >= yearStart && transactionDate <= yearEnd;
           } else if (dateRange === 'custom' && customDate) {
             // Benutzerdefiniertes Datum: Exakt an diesem Tag
             const selectedDate = new Date(customDate);
             const dayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0);
             const dayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59);
-            
+
             // Debug logging for first transaction
             if (transaction.id === transactions[0]?.id) {
               const debugData = {
@@ -274,26 +272,26 @@ export default function TransactionsPage() {
                 dayStart: isNaN(dayStart.getTime()) ? 'Invalid Date' : dayStart.toDateString(),
                 dayEnd: isNaN(dayEnd.getTime()) ? 'Invalid Date' : dayEnd.toDateString(),
                 transactionDate: isNaN(transactionDate.getTime()) ? 'Invalid Date' : transactionDate.toDateString(),
-                isExactDay: !isNaN(transactionDate.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) && 
+                isExactDay: !isNaN(transactionDate.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) &&
                            transactionDate >= dayStart && transactionDate <= dayEnd,
                 totalTransactions: transactions.length,
                 dayTransactions: transactions.filter(t => {
                   const td = new Date(t.bookingDate || t.valueDate);
-                  return !isNaN(td.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) && 
+                  return !isNaN(td.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) &&
                          td >= dayStart && td <= dayEnd;
                 }).length
               };
-              console.log('🔍 Date filter debug:', debugData);
+
             }
-            
-            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) && 
+
+            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) &&
                               transactionDate >= dayStart && transactionDate <= dayEnd;
           } else {
             // Andere Filter: Letzte X Tage vom heutigen Datum
             const days = parseInt(dateRange);
             const cutoffDate = new Date(today);
             cutoffDate.setDate(today.getDate() - days);
-            
+
             // Debug logging for first transaction
             if (transaction.id === transactions[0]?.id) {
               const debugData = {
@@ -308,9 +306,9 @@ export default function TransactionsPage() {
                   return !isNaN(td.getTime()) && !isNaN(cutoffDate.getTime()) && td >= cutoffDate;
                 }).length
               };
-              console.log('🔍 Date filter debug:', debugData);
+
             }
-            
+
             matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(cutoffDate.getTime()) && transactionDate >= cutoffDate;
           }
         }
@@ -372,7 +370,7 @@ export default function TransactionsPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Transaktionen</h1>
             <p className="text-gray-600 mt-1">
-              Übersicht über alle Kontobewegungen 
+              Übersicht über alle Kontobewegungen
               ({filteredTransactions.length} von {transactions.length} angezeigt)
             </p>
           </div>

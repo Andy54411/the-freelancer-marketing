@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log('[DEBUG] Stripe Events werden abgerufen...');
 
     const events = await stripe.events.list({
       limit: 20,
@@ -24,8 +23,6 @@ export async function GET(req: NextRequest) {
         gte: Math.floor(Date.now() / 1000) - 24 * 60 * 60,
       },
     });
-
-    console.log(`[DEBUG] ${events.data.length} payment_intent.succeeded Events gefunden`);
 
     const eventDetails = events.data.map(event => {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
@@ -53,7 +50,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('[DEBUG ERROR]', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Stripe Events',

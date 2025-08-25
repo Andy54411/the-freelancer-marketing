@@ -12,10 +12,9 @@ const stripe = stripeSecret
   : null;
 
 export async function POST(request: NextRequest) {
-  console.log('[API /generate-payout-invoice] POST request received');
 
   if (!stripe) {
-    console.error('[API /generate-payout-invoice] Stripe configuration missing');
+
     return NextResponse.json(
       {
         error: 'Zahlungsverarbeitung nicht verfügbar. Bitte versuchen Sie es später erneut.',
@@ -76,11 +75,10 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (dbError) {
-      console.error('[API /generate-payout-invoice] Database error:', dbError);
+
     }
 
     if (!stripeAccountId) {
-      console.log('[API /generate-payout-invoice] No Stripe account found, creating demo invoice');
 
       // Fallback: Erstelle Demo-Daten wenn kein Stripe-Account verfügbar ist
       stripeAccountId = 'demo_account';
@@ -102,7 +100,6 @@ export async function POST(request: NextRequest) {
         throw new Error('Demo mode');
       }
     } catch (stripeError) {
-      console.log('[API /generate-payout-invoice] Stripe payout not found, creating demo invoice');
 
       // Fallback: Erstelle eine Demo-Rechnung wenn Payout nicht gefunden wird
       payout = {
@@ -201,7 +198,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[API /generate-payout-invoice] Error:', error);
 
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(

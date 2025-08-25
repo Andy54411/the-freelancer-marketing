@@ -9,19 +9,19 @@ async function getPuppeteer() {
   if (!puppeteer && !puppeteerCore) {
     try {
       // Try puppeteer first (includes Chrome)
-      console.log('🔍 Versuche Puppeteer zu laden...');
+
       puppeteer = await import('puppeteer');
-      console.log('✅ Puppeteer erfolgreich geladen');
+
       return puppeteer.default || puppeteer;
     } catch (error) {
-      console.warn('⚠️ Puppeteer nicht verfügbar, versuche puppeteer-core:', error.message);
+
       try {
         // Fallback to puppeteer-core
         puppeteerCore = await import('puppeteer-core');
-        console.log('✅ Puppeteer-core erfolgreich geladen');
+
         return puppeteerCore.default || puppeteerCore;
       } catch (coreError) {
-        console.error('❌ Weder Puppeteer noch Puppeteer-core verfügbar:', coreError.message);
+
         throw new Error('PDF-Engine nicht verfügbar');
       }
     }
@@ -32,8 +32,6 @@ async function getPuppeteer() {
 function getBrowserConfig() {
   const isVercel = process.env.VERCEL === '1';
   const isProduction = process.env.NODE_ENV === 'production';
-
-  console.log('🔧 Umgebung:', { isVercel, isProduction });
 
   if (isVercel || isProduction) {
     // Vercel/Production configuration mit Chrome detection
@@ -95,32 +93,20 @@ export async function POST(request: NextRequest) {
   const isProduction = process.env.NODE_ENV === 'production';
 
   try {
-    console.log('🚀 Starte React-basierte PDF-Generation...', { isVercel, isProduction });
 
     const { invoiceData } = await request.json();
 
     if (!invoiceData || !invoiceData.id) {
-      console.error('❌ Keine gültigen Rechnungsdaten erhalten');
+
       return NextResponse.json({ error: 'Rechnungsdaten oder ID fehlen' }, { status: 400 });
     }
-
-    console.log('📄 Rechnungsdaten erhalten:', {
-      id: invoiceData.id,
-      number: invoiceData.invoiceNumber || invoiceData.number,
-      companyName: invoiceData.companyName,
-      companyId: invoiceData.companyId,
-      template: invoiceData.template,
-    });
 
     // Konstruiere URL zur React-basierten Print-Seite
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de';
     const printUrl = `${baseUrl}/print/invoice/${invoiceData.id}`;
 
-    console.log('🖨️ Navigiere zur React Print-Seite:', printUrl);
-
     // Puppeteer nur in Development versuchen
     if (!isVercel && !isProduction) {
-      console.log('🔍 Versuche Puppeteer für PDF-Generation (Development)...');
 
       try {
         const puppeteerLib = await getPuppeteer();
@@ -146,8 +132,6 @@ export async function POST(request: NextRequest) {
           timeout: 30000,
         });
 
-        console.log('🖨️ Generiere PDF von React-Seite...');
-
         // PDF-Generierung mit professionellen Einstellungen
         const pdfBuffer = await page.pdf({
           format: 'A4',
@@ -165,8 +149,6 @@ export async function POST(request: NextRequest) {
 
         await (browser as any).close();
 
-        console.log('✅ PDF erfolgreich generiert! Größe:', pdfBuffer.length, 'bytes');
-
         return new NextResponse(pdfBuffer, {
           status: 200,
           headers: {
@@ -176,19 +158,18 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (puppeteerError) {
-        console.warn('⚠️ Puppeteer-PDF-Generation fehlgeschlagen:', puppeteerError.message);
+
         if (browser) {
           try {
             await (browser as any).close();
           } catch (closeError) {
-            console.error('❌ Fehler beim Schließen des Browsers:', closeError);
+
           }
         }
       }
     }
 
     // Fallback: Redirect zur Print-Seite für Browser-basierte PDF-Generierung
-    console.log('🔄 Verwende Browser-Fallback - Redirect zur Print-Seite');
 
     return NextResponse.json(
       {
@@ -200,20 +181,14 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('❌ Fehler bei PDF-Generation:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      environment: { isVercel, isProduction },
-    });
 
     // Browser schließen bei Fehler
     if (browser) {
       try {
         await (browser as any).close();
-        console.log('🧹 Browser nach Fehler geschlossen');
+
       } catch (closeError) {
-        console.error('❌ Fehler beim Schließen des Browsers:', closeError.message);
+
       }
     }
 
@@ -237,7 +212,7 @@ export async function POST(request: NextRequest) {
         );
       }
     } catch (fallbackError) {
-      console.error('❌ Auch Fallback-Response fehlgeschlagen:', fallbackError);
+
     }
 
     return NextResponse.json(

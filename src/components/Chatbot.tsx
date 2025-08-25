@@ -85,10 +85,7 @@ const Chatbot = () => {
       const modelMessage: Message = { role: 'model', parts: [{ text: data.text }] };
       setMessages(prev => [...prev, modelMessage]);
     } catch (error) {
-      console.error(
-        'Fehler beim Abrufen der Chat-Antwort:',
-        error instanceof Error ? error.message : String(error)
-      );
+
       const errorMessage: Message = {
         role: 'model',
         parts: [

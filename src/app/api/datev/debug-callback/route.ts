@@ -16,8 +16,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     };
 
-    console.log('🔍 [DATEV Callback Debug] Full callback data:', callbackData);
-
     return NextResponse.json({
       success: true,
       message: 'DATEV callback debug information',
@@ -36,7 +34,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('DATEV callback debug failed:', error);
 
     return NextResponse.json(
       {

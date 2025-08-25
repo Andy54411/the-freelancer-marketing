@@ -3,13 +3,12 @@ import { db, admin } from '@/firebase/server';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;
-  console.log('[Incoming Quotes API] Starting request for company:', uid);
 
   try {
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('[Incoming Quotes API] No auth header found');
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,35 +17,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-      console.log('[Incoming Quotes API] Token verified for user:', decodedToken.uid);
+
     } catch (error) {
-      console.error('[Incoming Quotes API] Error verifying token:', error);
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if the user is authorized to access this company's data
     if (decodedToken.uid !== uid) {
-      console.log('[Incoming Quotes API] User not authorized for this company');
+
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    console.log('[Incoming Quotes API] Auth successful, now querying Firestore');
-
     // Get company data to verify it exists and get additional info
-    console.log('[Incoming Quotes API] Getting company data for:', uid);
+
     const companyDoc = await db.collection('users').doc(uid).get();
     if (!companyDoc.exists) {
-      console.log('[Incoming Quotes API] Company not found:', uid);
+
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
     const companyData = companyDoc.data();
-    console.log('[Incoming Quotes API] Company found:', companyData?.companyName);
 
     // Get company's service subcategory to filter relevant projects
     const companyUserDoc = await db.collection('users').doc(uid).get();
     if (!companyUserDoc.exists) {
-      console.log('[Incoming Quotes API] Company user data not found:', uid);
+
       return NextResponse.json({ error: 'Company user data not found' }, { status: 404 });
     }
 
@@ -54,10 +50,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const selectedSubcategory =
       companyUserData?.onboarding?.selectedSubcategory || companyUserData?.selectedSubcategory;
 
-    console.log('[Incoming Quotes API] Company subcategory:', selectedSubcategory);
-
     if (!selectedSubcategory) {
-      console.log('[Incoming Quotes API] Company has no selected subcategory');
+
       return NextResponse.json({
         success: true,
         quotes: [],
@@ -66,10 +60,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Query for project requests
-    console.log(
-      '[Incoming Quotes API] Querying project_requests for subcategory:',
-      selectedSubcategory
-    );
 
     // Get ALL project requests first, then filter in memory
     // This avoids Firestore index issues and gives us more flexibility
@@ -81,33 +71,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .where('status', 'in', ['open', 'responded', 'accepted', 'active', 'payment_pending'])
         .get();
 
-      console.log(
-        '[Incoming Quotes API] Found total project requests:',
-        projectRequestsSnapshot.size
-      );
     } catch (error) {
-      console.log('[Incoming Quotes API] Error getting project requests:', error);
+
       // Ultra-simple fallback - get all project_requests
       projectRequestsSnapshot = await db.collection('project_requests').get();
-      console.log('[Incoming Quotes API] Fallback query found:', projectRequestsSnapshot.size);
+
     }
 
     const quotes: any[] = [];
 
     for (const doc of projectRequestsSnapshot.docs) {
       const projectData = doc.data();
-      console.log(
-        '[Incoming Quotes API] Processing project:',
-        doc.id,
-        '- subcategory:',
-        projectData.subcategory,
-        '- serviceSubcategory:',
-        projectData.serviceSubcategory,
-        '- status:',
-        projectData.status,
-        '- selectedProviders:',
-        projectData.selectedProviders?.length || 0
-      );
 
       // Check if this request is relevant for this company
       let isRelevantForCompany = false;
@@ -124,17 +98,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         );
         if (isDirectlySelected) {
           isRelevantForCompany = true;
-          console.log(
-            '[Incoming Quotes API] Project',
-            doc.id,
-            'is DIRECT assignment for this company'
-          );
+
         } else {
-          console.log(
-            '[Incoming Quotes API] Project',
-            doc.id,
-            'is DIRECT assignment but NOT for this company'
-          );
+
         }
       }
       // Case 2: Public request - no specific companies selected, match by subcategory
@@ -144,31 +110,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         if (subcategoryMatches) {
           isRelevantForCompany = true;
-          console.log(
-            '[Incoming Quotes API] Project',
-            doc.id,
-            'is PUBLIC for subcategory:',
-            projectSubcategory
-          );
+
         } else {
-          console.log(
-            '[Incoming Quotes API] Project',
-            doc.id,
-            'is PUBLIC but wrong subcategory:',
-            projectSubcategory,
-            'vs',
-            selectedSubcategory
-          );
+
         }
       }
 
       // Skip if not relevant for this company
       if (!isRelevantForCompany) {
-        console.log(
-          '[Incoming Quotes API] Skipping project',
-          doc.id,
-          '- not relevant for this company'
-        );
+
         continue;
       }
 
@@ -197,13 +147,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             }
           } else {
             // Customer not found in users collection
-            console.log(
-              '[Incoming Quotes API] Customer not found in users collection:',
-              projectData.customerUid
-            );
+
           }
         } catch (error) {
-          console.error('[Incoming Quotes API] Error fetching customer data:', error);
+
         }
       }
 
@@ -283,14 +230,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    console.log('[Incoming Quotes API] Returning quotes:', quotes.length);
-
     return NextResponse.json({
       success: true,
       quotes,
     });
   } catch (error) {
-    console.error('[Incoming Quotes API] Error:', error);
+
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

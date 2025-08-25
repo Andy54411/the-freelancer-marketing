@@ -61,8 +61,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Template oder Inhalt erforderlich' }, { status: 400 });
     }
 
-    console.log(`📧 Newsletter-Versand an ${recipients.length} Empfänger...`);
-
     const resend = await getResendClient();
     const results: Array<{
       recipient: string;
@@ -96,7 +94,6 @@ export async function POST(request: NextRequest) {
     }
 
     const successCount = results.filter(r => r.success).length;
-    console.log(`✅ Newsletter versendet: ${successCount}/${recipients.length} erfolgreich`);
 
     return NextResponse.json({
       success: true,
@@ -105,7 +102,7 @@ export async function POST(request: NextRequest) {
       service: 'Resend',
     });
   } catch (error) {
-    console.error('Newsletter Send API Fehler:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -128,7 +125,7 @@ export async function GET(_request: NextRequest) {
       service: 'Resend',
     });
   } catch (error) {
-    console.error('Newsletter Templates API Fehler:', error);
+
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

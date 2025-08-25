@@ -46,25 +46,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(
-      '[DATEV Auth] Starting OAuth flow for company:',
-      companyId,
-      'sandbox client:',
-      sandboxClient
-    );
-
     // Generate a unique client ID for sandbox (e.g., "455148-2")
     const clientId = generateSandboxClientId(sandboxClient);
 
     // Generate the full OAuth URL
     const { authUrl } = generateDatevAuthUrl(companyId);
 
-    console.log('[DATEV Auth] Generated OAuth URL:', authUrl);
-
     // Redirect user to DATEV authorization page
     return NextResponse.redirect(authUrl);
   } catch (error: any) {
-    console.error('[DATEV Auth] Error generating OAuth URL:', error);
+
     return NextResponse.json(
       {
         error: 'oauth_generation_failed',
@@ -88,7 +79,6 @@ export async function POST(request: NextRequest) {
 
     if (authHeader?.startsWith('Bearer ')) {
       // New Firebase-integrated DATEV OAuth Flow
-      console.log('🔐 [DATEV Auth] Initiating Firebase-integrated OAuth flow...');
 
       let firebaseUserId: string;
       try {
@@ -96,7 +86,7 @@ export async function POST(request: NextRequest) {
         const decodedToken = await getAuth().verifyIdToken(token);
         firebaseUserId = decodedToken.uid;
       } catch (authError) {
-        console.error('[DATEV Auth] Firebase token verification failed:', authError);
+
         return NextResponse.json({ error: 'Invalid Firebase token' }, { status: 401 });
       }
 
@@ -118,8 +108,6 @@ export async function POST(request: NextRequest) {
 
       // Initiate OAuth flow
       const authResult = await initiateDatevAuthFlow(firebaseUserId, redirectUri);
-
-      console.log('✅ [DATEV Auth] OAuth flow initiated successfully');
 
       return NextResponse.json({
         success: true,
@@ -170,7 +158,7 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('❌ [DATEV Auth] OAuth failed:', error);
+
     return NextResponse.json({ error: error.message || 'Authentication failed' }, { status: 500 });
   }
 }

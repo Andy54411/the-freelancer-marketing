@@ -54,16 +54,14 @@ export function AdminWorkspaceBoard({
     const loadWorkspaceTasks = async () => {
       if (!selectedWorkspace || !adminId) return;
 
-      console.log('Loading tasks for workspace:', selectedWorkspace.id);
       try {
         const tasks = await adminWorkspaceService.getWorkspaceTasks(selectedWorkspace.id);
-        console.log('Loaded tasks:', tasks);
 
         // Update selectedWorkspace with tasks
         const updatedWorkspace = { ...selectedWorkspace, tasks };
         setSelectedWorkspace(updatedWorkspace);
       } catch (error) {
-        console.error('Error loading workspace tasks:', error);
+
       }
     };
 
@@ -121,12 +119,10 @@ export function AdminWorkspaceBoard({
 
   // Initialize columns with tasks properly distributed
   const getColumnsWithTasks = () => {
-    console.log('getColumnsWithTasks called with selectedWorkspace:', selectedWorkspace);
 
     // FORCE using default columns with workspace tasks for now
     // TODO: Fix backend to properly populate boardColumns.tasks
     const workspaceTasks = (selectedWorkspace?.tasks || []).filter(task => !task.archived);
-    console.log('FORCING default columns with workspace tasks:', workspaceTasks);
 
     return defaultColumns.map(column => ({
       ...column,
@@ -142,10 +138,6 @@ export function AdminWorkspaceBoard({
             (column.id === 'review' && taskStatus === 'review') ||
             (column.id === 'done' && (taskStatus === 'done' || taskStatus === 'completed'));
 
-          console.log(
-            `Task ${task.title} with status ${taskStatus} matches column ${column.id}:`,
-            isMatch
-          );
           return isMatch;
         })
         .sort((a, b) => (a.position || 0) - (b.position || 0)),
@@ -153,7 +145,6 @@ export function AdminWorkspaceBoard({
   };
 
   const columns = getColumnsWithTasks();
-  console.log('Final columns with tasks:', columns);
 
   // Optimistic update for better UX - update local state immediately
   const updateLocalWorkspace = (updates: Partial<AdminWorkspace>) => {
@@ -305,14 +296,9 @@ export function AdminWorkspaceBoard({
 
   const handleTaskCreated = async (taskData: Partial<AdminWorkspaceTask>) => {
     if (!selectedWorkspace || !selectedColumnId) {
-      console.error('Missing selectedWorkspace or selectedColumnId:', {
-        selectedWorkspace,
-        selectedColumnId,
-      });
+
       return;
     }
-
-    console.log('Creating task with data:', taskData);
 
     try {
       // Create task in backend via AdminWorkspaceService
@@ -323,12 +309,9 @@ export function AdminWorkspaceBoard({
         workspaceId: selectedWorkspace.id,
       });
 
-      console.log('Task created successfully:', createdTask);
-
       // Load fresh tasks from backend to ensure UI is up-to-date
       try {
         const freshTasks = await adminWorkspaceService.getWorkspaceTasks(selectedWorkspace.id);
-        console.log('Fresh tasks loaded from backend:', freshTasks);
 
         // Update both boardColumns AND tasks array for complete sync
         const updatedTasks = freshTasks;
@@ -359,7 +342,6 @@ export function AdminWorkspaceBoard({
           tasks: updatedTasks,
         });
       } catch (error) {
-        console.error('Error loading fresh tasks:', error);
 
         // Fallback to local update if backend call fails
         const updatedColumns = columns.map(col => {
@@ -380,9 +362,8 @@ export function AdminWorkspaceBoard({
         });
       }
 
-      console.log('Task successfully created and UI updated:', createdTask);
     } catch (error) {
-      console.error('Error creating task:', error);
+
       alert('Fehler beim Erstellen der Aufgabe: ' + (error as Error).message);
     }
   };
@@ -553,7 +534,7 @@ export function AdminWorkspaceBoard({
         setSelectedTask(null);
       }
     } catch (error) {
-      console.error('Fehler beim Archivieren der Aufgabe:', error);
+
       alert('Fehler beim Archivieren der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -631,7 +612,7 @@ export function AdminWorkspaceBoard({
         archivedTasks: updatedArchivedTasks,
       });
     } catch (error) {
-      console.error('Fehler beim Wiederherstellen der Aufgabe:', error);
+
       alert('Fehler beim Wiederherstellen der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -686,7 +667,7 @@ export function AdminWorkspaceBoard({
         setSelectedTask(null);
       }
     } catch (error) {
-      console.error('Fehler beim endgültigen Löschen der Aufgabe:', error);
+
       alert('Fehler beim Löschen der Aufgabe. Bitte versuche es erneut.');
     }
   };

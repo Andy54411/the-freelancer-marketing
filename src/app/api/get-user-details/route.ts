@@ -10,8 +10,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userIds array required' }, { status: 400 });
     }
 
-    console.log(`🔍 Looking up users:`, userIds);
-
     const userDetails: {
       id: string;
       firstName?: string;
@@ -46,7 +44,7 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch (error) {
-        console.error(`Error fetching user ${userId}:`, error);
+
         userDetails.push({
           id: userId,
           exists: false,
@@ -60,7 +58,7 @@ export async function POST(req: NextRequest) {
       users: userDetails,
     });
   } catch (error: any) {
-    console.error('❌ Error getting user details:', error.message);
+
     return NextResponse.json(
       {
         success: false,

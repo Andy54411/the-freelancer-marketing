@@ -9,7 +9,6 @@ export class TimeTrackingMigration {
    */
   static async fixTimeTrackingForOrder(orderId: string): Promise<void> {
     try {
-      console.log(`🔧 [Migration] Starte TimeTracking-Korrektur für Order: ${orderId}`);
 
       const orderRef = doc(db, 'auftraege', orderId);
       const orderDoc = await getDoc(orderRef);
@@ -21,7 +20,7 @@ export class TimeTrackingMigration {
       const orderData = orderDoc.data();
 
       if (!orderData.timeTracking) {
-        console.log('🔧 [Migration] Kein TimeTracking vorhanden');
+
         return;
       }
 
@@ -40,11 +39,8 @@ export class TimeTrackingMigration {
         const hoursPerDay = parseFloat(String(orderData.jobDurationString || 8));
         correctOriginalPlannedHours = totalDays * hoursPerDay;
 
-        console.log(
-          `🔧 [Migration] Mehrtägiger Auftrag: ${totalDays} Tage × ${hoursPerDay}h = ${correctOriginalPlannedHours}h`
-        );
       } else {
-        console.log(`🔧 [Migration] Eintägiger Auftrag: ${correctOriginalPlannedHours}h`);
+
       }
 
       // 2. Kategorisiere Time Entries neu und korrigiere billableAmount mit Firmen-Stundensatz
@@ -64,9 +60,7 @@ export class TimeTrackingMigration {
           if (companyDoc.exists()) {
             const companyData = companyDoc.data();
             correctHourlyRateInEuros = companyData.hourlyRate || 41;
-            console.log(
-              `🔧 [Migration] Verwende Firmen-Stundensatz (companies): ${correctHourlyRateInEuros}€/h`
-            );
+
           } else {
             // 2. Fallback: Suche in users Collection
             const userRef = doc(db, 'users', providerId);
@@ -75,31 +69,17 @@ export class TimeTrackingMigration {
             if (userDoc.exists()) {
               const userData = userDoc.data();
               correctHourlyRateInEuros = userData.hourlyRate || 41;
-              console.log(
-                `🔧 [Migration] Verwende User-Stundensatz (users fallback): ${correctHourlyRateInEuros}€/h`
-              );
+
             } else {
-              console.log(
-                `🔧 [Migration] Provider nicht gefunden, verwende Fallback: ${correctHourlyRateInEuros}€/h`
-              );
+
             }
           }
         } catch (error) {
-          console.error(`🔧 [Migration] Fehler beim Laden des Providers:`, error);
-          console.log(`🔧 [Migration] Verwende Fallback: ${correctHourlyRateInEuros}€/h`);
+
         }
       }
 
       const correctHourlyRateInCents = Math.round(correctHourlyRateInEuros * 100);
-
-      console.log(`🔧 [Migration] Stundensatz-Korrektur:`);
-      console.log(`  - Provider ID: ${providerId}`);
-      console.log(
-        `  - Company Rate: ${correctHourlyRateInEuros}€/h (${correctHourlyRateInCents} Cents)`
-      );
-      console.log(
-        `  - Stored Rate: ${(orderData.timeTracking.hourlyRate / 100).toFixed(2)}€/h (${orderData.timeTracking.hourlyRate} Cents)`
-      );
 
       const updatedTimeEntries = timeEntries.map((entry, index) => {
         // Berechne, wie viele Stunden als "original" zählen sollen
@@ -130,13 +110,6 @@ export class TimeTrackingMigration {
           // Alle verbleibenden Entries sind "additional" und benötigen korrekte billableAmount
           const correctedBillableAmount = Math.round(entry.hours * correctHourlyRateInCents);
 
-          console.log(
-            `🔧 [Migration] Entry ${index + 1}: Additional mit korrigierter billableAmount`
-          );
-          console.log(
-            `  - ${entry.hours}h × ${correctHourlyRateInCents} Cents = ${correctedBillableAmount} Cents (${(correctedBillableAmount / 100).toFixed(2)}€)`
-          );
-
           return {
             ...entry,
             category: 'additional' as const,
@@ -154,12 +127,6 @@ export class TimeTrackingMigration {
         .filter(e => e.category === 'additional')
         .reduce((sum, e) => sum + e.hours, 0);
 
-      console.log(`🔧 [Migration] Korrektur-Ergebnis:`);
-      console.log(`  - Korrekte geplante Stunden: ${correctOriginalPlannedHours}h`);
-      console.log(`  - Total geloggte Stunden: ${totalLoggedHours}h`);
-      console.log(`  - Original Stunden: ${originalHours}h`);
-      console.log(`  - Zusätzliche Stunden: ${additionalHours}h`);
-
       // 4. Update das TimeTracking mit korrigiertem Stundensatz
       await updateDoc(orderRef, {
         'timeTracking.originalPlannedHours': correctOriginalPlannedHours,
@@ -169,17 +136,12 @@ export class TimeTrackingMigration {
         'timeTracking.lastUpdated': new Date(),
       });
 
-      console.log(`✅ [Migration] TimeTracking erfolgreich korrigiert für Order: ${orderId}`);
-
       // 5. AUTOMATISCHE EINREICHUNG: Reiche zusätzliche Stunden zur Freigabe ein
       const additionalEntries = updatedTimeEntries.filter(
         e => e.category === 'additional' && e.status === 'logged'
       );
 
       if (additionalEntries.length > 0) {
-        console.log(
-          `🚀 [Migration] Reiche ${additionalEntries.length} zusätzliche Stunden automatisch zur Freigabe ein...`
-        );
 
         // Importiere TimeTracker dynamisch um zirkuläre Abhängigkeiten zu vermeiden
         const { TimeTracker } = await import('@/lib/timeTracker');
@@ -191,14 +153,11 @@ export class TimeTrackingMigration {
           `Automatische Einreichung nach TimeTracking-Korrektur: ${additionalHours}h zusätzliche Arbeit über die geplanten ${correctOriginalPlannedHours}h hinaus.`
         );
 
-        console.log(
-          `✅ [Migration] Zusätzliche Stunden automatisch eingereicht. Approval Request ID: ${approvalRequestId}`
-        );
       } else {
-        console.log(`ℹ️ [Migration] Keine zusätzlichen Stunden zum Einreichen vorhanden.`);
+
       }
     } catch (error) {
-      console.error(`❌ [Migration] Fehler bei TimeTracking-Korrektur:`, error);
+
       throw error;
     }
   }
@@ -238,14 +197,12 @@ export class TimeTrackingMigration {
       const needsMigration = timeTracking.originalPlannedHours !== correctOriginalPlannedHours;
 
       if (needsMigration) {
-        console.log(`🔧 [Migration Check] Korrektur nötig für Order ${orderId}:`);
-        console.log(`  - Aktuell: ${timeTracking.originalPlannedHours}h`);
-        console.log(`  - Korrekt: ${correctOriginalPlannedHours}h`);
+
       }
 
       return needsMigration;
     } catch (error) {
-      console.error('❌ [Migration Check] Fehler:', error);
+
       return false;
     }
   }

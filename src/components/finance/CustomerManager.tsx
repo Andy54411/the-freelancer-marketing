@@ -63,14 +63,13 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   // Lade Kundenstatistiken im Hintergrund (ohne DB-Update)
   const loadCustomerStatsInBackground = async (customerList: Customer[]) => {
     try {
-      console.log('🔄 Lade Kundenstatistiken...');
+
       const stats: { [customerId: string]: { totalAmount: number; totalInvoices: number } } = {};
 
       for (const customer of customerList) {
         try {
           const customerStats = await calculateCustomerStats(companyId, customer.name);
           stats[customer.id] = customerStats;
-          console.log(`✅ Statistiken für ${customer.name} geladen:`, customerStats);
 
           // SOFORTIGE UPDATE in der Datenbank für künftige Ladevorgänge
           if (
@@ -80,32 +79,31 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           ) {
             try {
               await updateCustomerStats(customer.id, customerStats, user.uid);
-              console.log(`🔄 DB aktualisiert für ${customer.name}`);
+
             } catch (error) {
-              console.warn(`⚠️ DB-Update fehlgeschlagen für ${customer.name}:`, error);
+
             }
           }
         } catch (error) {
-          console.error(`❌ Fehler beim Laden von ${customer.name}:`, error);
+
           stats[customer.id] = { totalAmount: 0, totalInvoices: 0 };
         }
       }
 
       setCustomerStats(stats);
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Kundenstatistiken:', error);
+
     }
   };
 
   // Aktualisiere Kundenstatistiken im Hintergrund
   const updateCustomerStatsInBackground = async (customerList: Customer[]) => {
     if (!user?.uid) {
-      console.log('⚠️ User not available for stats update, skipping...');
+
       return;
     }
 
     try {
-      console.log('🔄 Aktualisiere Kundenstatistiken im Hintergrund...');
 
       for (const customer of customerList) {
         try {
@@ -117,7 +115,6 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
             stats.totalInvoices !== customer.totalInvoices
           ) {
             await updateCustomerStats(customer.id, stats, user.uid);
-            console.log(`✅ Statistiken für ${customer.name} aktualisiert:`, stats);
 
             // Aktualisiere lokalen State
             setCustomers(prev =>
@@ -129,11 +126,11 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
             );
           }
         } catch (error) {
-          console.error(`❌ Fehler beim Aktualisieren von ${customer.name}:`, error);
+
         }
       }
     } catch (error) {
-      console.error('❌ Fehler beim Aktualisieren der Kundenstatistiken:', error);
+
     }
   };
 
@@ -182,7 +179,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       // Lade die korrekten Statistiken für jeden Kunden
       loadCustomerStatsInBackground(loadedCustomers);
     } catch (error) {
-      console.error('Fehler beim Laden der Kunden:', error);
+
       toast.error('Fehler beim Laden der Kundendaten');
     } finally {
       setLoading(false);
@@ -194,23 +191,15 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ) => {
     try {
-      console.log('🔍 Debug: handleAddCustomer called with:', {
-        customerData: customerData,
-        user: user?.uid,
-        companyId: companyId,
-      });
 
       if (!user) {
-        console.error('❌ User not authenticated');
+
         throw new Error('Benutzer nicht authentifiziert');
       }
 
       // Verify user has permission to add customers to this company
       if (user.uid !== companyId) {
-        console.error('❌ User uid does not match company id:', {
-          userUid: user.uid,
-          companyId: companyId,
-        });
+
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
@@ -245,11 +234,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         updatedAt: serverTimestamp(),
       };
 
-      console.log('📤 Sending to Firestore:', newCustomer);
-
       const docRef = await addDoc(collection(db, 'customers'), newCustomer);
-
-      console.log('✅ Successfully added to Firestore with ID:', docRef.id);
 
       const addedCustomer: Customer = {
         ...customerData,
@@ -263,18 +248,12 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       setCustomers(prev => [addedCustomer, ...prev]);
       setNextCustomerNumber(generateNextCustomerNumber([addedCustomer, ...customers]));
 
-      console.log('🎉 Customer successfully added to state');
       toast.success(`Kunde ${customerData.name} erfolgreich hinzugefügt`);
     } catch (error) {
-      console.error('❌ Fehler beim Hinzufügen des Kunden:', error);
 
       // More detailed error logging
       if (error instanceof Error) {
-        console.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-        });
+
       }
 
       throw error;
@@ -294,24 +273,15 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   // Update customer in Firebase
   const handleUpdateCustomer = async (updatedCustomer: Customer) => {
     try {
-      console.log('🔍 Debug: handleUpdateCustomer called with:', {
-        customerId: updatedCustomer.id,
-        customerData: updatedCustomer,
-        user: user?.uid,
-        companyId: companyId,
-      });
 
       if (!user) {
-        console.error('❌ User not authenticated');
+
         throw new Error('Benutzer nicht authentifiziert');
       }
 
       // Verify user has permission to update customers for this company
       if (user.uid !== companyId) {
-        console.error('❌ User uid does not match company id:', {
-          userUid: user.uid,
-          companyId: companyId,
-        });
+
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
@@ -339,27 +309,17 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       cleanCustomerData.lastModifiedBy = user.uid;
       cleanCustomerData.updatedAt = serverTimestamp();
 
-      console.log('📤 Updating customer in Firestore:', cleanCustomerData);
-
       const customerRef = doc(db, 'customers', updatedCustomer.id);
       await updateDoc(customerRef, cleanCustomerData);
-
-      console.log('✅ Successfully updated customer in Firestore');
 
       // Update local state
       setCustomers(prev => prev.map(c => (c.id === updatedCustomer.id ? updatedCustomer : c)));
 
-      console.log('🎉 Customer successfully updated in state');
     } catch (error) {
-      console.error('❌ Fehler beim Aktualisieren des Kunden:', error);
 
       // More detailed error logging
       if (error instanceof Error) {
-        console.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-        });
+
       }
 
       throw error;

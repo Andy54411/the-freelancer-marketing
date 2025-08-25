@@ -103,7 +103,7 @@ export function AddTaskSlideOver({
 
       onClose();
     } catch (error) {
-      console.error('Error creating task:', error);
+
     } finally {
       setLoading(false);
     }

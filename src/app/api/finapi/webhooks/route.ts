@@ -20,7 +20,6 @@ interface FinAPIWebhookEvent {
  */
 export async function POST(req: NextRequest) {
   try {
-    console.log('finAPI WebHook received');
 
     // Check if this is a Web Form 2.0 callback
     const { searchParams } = new URL(req.url);
@@ -34,12 +33,6 @@ export async function POST(req: NextRequest) {
 
     // Parse webhook payload
     const webhookEvent: FinAPIWebhookEvent = await req.json();
-
-    console.log('WebHook Event:', {
-      type: webhookEvent.type,
-      timestamp: webhookEvent.timestamp,
-      data: webhookEvent.data,
-    });
 
     // Verify webhook signature (in production, you should verify the signature)
     // const signature = req.headers.get('X-finAPI-Signature');
@@ -65,7 +58,7 @@ export async function POST(req: NextRequest) {
         break;
 
       default:
-        console.log('Unhandled webhook event type:', webhookEvent.type);
+
     }
 
     return NextResponse.json({
@@ -74,7 +67,6 @@ export async function POST(req: NextRequest) {
       eventType: webhookEvent.type,
     });
   } catch (error) {
-    console.error('finAPI WebHook error:', error);
 
     return NextResponse.json(
       {
@@ -87,7 +79,6 @@ export async function POST(req: NextRequest) {
 }
 
 async function handleBankConnectionUpdate(event: FinAPIWebhookEvent) {
-  console.log('Handling bank connection update:', event.data);
 
   // In a real implementation, you would:
   // 1. Update your database with new bank connection status
@@ -95,7 +86,6 @@ async function handleBankConnectionUpdate(event: FinAPIWebhookEvent) {
   // 3. Trigger account data refresh if connection is successful
 
   if (event.data.bankConnectionId) {
-    console.log(`Bank connection ${event.data.bankConnectionId} updated`);
 
     // TODO: Update database
     // await updateBankConnectionStatus(event.data.bankConnectionId, event.data.eventType);
@@ -106,7 +96,6 @@ async function handleBankConnectionUpdate(event: FinAPIWebhookEvent) {
 }
 
 async function handleAccountUpdate(event: FinAPIWebhookEvent) {
-  console.log('Handling account update:', event.data);
 
   // In a real implementation, you would:
   // 1. Refresh account data from finAPI
@@ -114,7 +103,6 @@ async function handleAccountUpdate(event: FinAPIWebhookEvent) {
   // 3. Notify the user about balance changes
 
   if (event.data.accountId) {
-    console.log(`Account ${event.data.accountId} updated`);
 
     // TODO: Refresh account data
     // await refreshAccountData(event.data.accountId);
@@ -128,7 +116,6 @@ async function handleAccountUpdate(event: FinAPIWebhookEvent) {
 }
 
 async function handleTransactionUpdate(event: FinAPIWebhookEvent) {
-  console.log('Handling transaction update:', event.data);
 
   // In a real implementation, you would:
   // 1. Fetch new transactions from finAPI
@@ -137,7 +124,6 @@ async function handleTransactionUpdate(event: FinAPIWebhookEvent) {
   // 4. Send notifications for important transactions
 
   if (event.data.transactionId) {
-    console.log(`Transaction ${event.data.transactionId} updated`);
 
     // TODO: Fetch and process new transaction
     // await processNewTransaction(event.data.transactionId);
@@ -151,7 +137,6 @@ async function handleTransactionUpdate(event: FinAPIWebhookEvent) {
 }
 
 async function handleUserUpdate(event: FinAPIWebhookEvent) {
-  console.log('Handling user update:', event.data);
 
   // In a real implementation, you would:
   // 1. Update user preferences
@@ -159,7 +144,6 @@ async function handleUserUpdate(event: FinAPIWebhookEvent) {
   // 3. Update authentication tokens if needed
 
   if (event.data.userId) {
-    console.log(`User ${event.data.userId} updated`);
 
     // TODO: Update user data
     // await updateUserInDatabase(event.data.userId);
@@ -173,43 +157,29 @@ async function handleWebFormCallback(req: NextRequest, type: string, userId: str
   try {
     const webhookData = await req.json();
 
-    console.log('finAPI Web Form 2.0 callback received:', {
-      type,
-      userId,
-      webhookData: JSON.stringify(webhookData, null, 2),
-    });
-
     if (type === 'success') {
       // Bank connection was successful
       const { payload } = webhookData;
-      
+
       if (payload?.bankConnectionId) {
-        console.log('✅ Bank connection successful:', {
-          userId,
-          bankConnectionId: payload.bankConnectionId,
-          accountIds: payload.accountIds,
-        });
 
         // TODO: Store bank connection in Firestore
         // await storeBankConnection(userId, payload.bankConnectionId, payload);
       }
     } else if (type === 'error') {
       // Bank connection failed
-      console.error('❌ Bank connection failed:', {
-        userId,
-        error: webhookData,
-      });
+
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'Web Form callback processed',
       type,
       userId,
     });
 
   } catch (error) {
-    console.error('Web Form callback processing error:', error);
+
     return NextResponse.json(
       { error: 'Web Form callback processing failed' },
       { status: 500 }

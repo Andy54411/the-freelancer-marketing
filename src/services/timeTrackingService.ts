@@ -242,7 +242,7 @@ export class TimeTrackingService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Starten der Zeiterfassung:', error);
+
       throw error;
     }
   } /**
@@ -275,7 +275,7 @@ export class TimeTrackingService {
 
       await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
-      console.error('Fehler beim Stoppen der Zeiterfassung:', error);
+
       throw new Error('Zeiterfassung konnte nicht gestoppt werden');
     }
   }
@@ -292,7 +292,7 @@ export class TimeTrackingService {
 
       await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
-      console.error('Fehler beim Pausieren der Zeiterfassung:', error);
+
       throw new Error('Zeiterfassung konnte nicht pausiert werden');
     }
   }
@@ -309,7 +309,7 @@ export class TimeTrackingService {
 
       await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
-      console.error('Fehler beim Fortsetzen der Zeiterfassung:', error);
+
       throw new Error('Zeiterfassung konnte nicht fortgesetzt werden');
     }
   }
@@ -330,7 +330,7 @@ export class TimeTrackingService {
       const promises = querySnapshot.docs.map(doc => this.stopTimeEntry(doc.id));
       await Promise.all(promises);
     } catch (error) {
-      console.error('Fehler beim Stoppen aller Zeiterfassungen:', error);
+
     }
   }
 
@@ -365,7 +365,7 @@ export class TimeTrackingService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Erstellen des manuellen Zeiteintrags:', error);
+
       throw new Error('Zeiteintrag konnte nicht erstellt werden');
     }
   }
@@ -428,7 +428,7 @@ export class TimeTrackingService {
 
       return entries;
     } catch (error) {
-      console.error('Fehler beim Laden der Zeiteinträge:', error);
+
       throw new Error('Zeiteinträge konnten nicht geladen werden');
     }
   }
@@ -456,7 +456,7 @@ export class TimeTrackingService {
 
       return null;
     } catch (error) {
-      console.error('Fehler beim Laden des Zeiteintrags:', error);
+
       throw new Error('Zeiteintrag konnte nicht geladen werden');
     }
   }
@@ -473,7 +473,7 @@ export class TimeTrackingService {
 
       await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, id), updateData);
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Zeiteintrags:', error);
+
       throw new Error('Zeiteintrag konnte nicht aktualisiert werden');
     }
   }
@@ -485,7 +485,7 @@ export class TimeTrackingService {
     try {
       await deleteDoc(doc(db, this.TIME_ENTRIES_COLLECTION, id));
     } catch (error) {
-      console.error('Fehler beim Löschen des Zeiteintrags:', error);
+
       throw new Error('Zeiteintrag konnte nicht gelöscht werden');
     }
   }
@@ -508,7 +508,7 @@ export class TimeTrackingService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Erstellen des Projekts:', error);
+
       throw new Error('Projekt konnte nicht erstellt werden');
     }
   }
@@ -550,7 +550,7 @@ export class TimeTrackingService {
         } as Project;
       });
     } catch (error) {
-      console.error('Fehler beim Laden der Projekte:', error);
+
       throw new Error('Projekte konnten nicht geladen werden');
     }
   }
@@ -672,7 +672,7 @@ export class TimeTrackingService {
         byDay: Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
       };
     } catch (error) {
-      console.error('Fehler beim Generieren des Reports:', error);
+
       throw new Error('Report konnte nicht generiert werden');
     }
   }
@@ -708,7 +708,7 @@ export class TimeTrackingService {
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as TimeEntry;
     } catch (error) {
-      console.error('Fehler beim Laden der laufenden Zeiterfassung:', error);
+
       return null;
     }
   }
@@ -761,7 +761,7 @@ export class TimeTrackingService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       } as TimeTrackingSettings;
     } catch (error) {
-      console.error('Fehler beim Laden der Einstellungen:', error);
+
       return null;
     }
   }
@@ -805,7 +805,7 @@ export class TimeTrackingService {
         runningTimers: runningEntries.length,
       };
     } catch (error) {
-      console.error('Fehler beim Laden der Statistiken:', error);
+
       return {
         todayHours: 0,
         weekHours: 0,

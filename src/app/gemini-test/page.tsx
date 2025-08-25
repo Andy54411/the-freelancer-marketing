@@ -19,7 +19,7 @@ export default function GeminiTestPage() {
       const data = await response.json();
       setBlogContent(data);
     } catch (error) {
-      console.error('Fehler beim Laden der Blog-Inhalte:', error);
+
     } finally {
       setLoading(false);
     }
@@ -32,7 +32,7 @@ export default function GeminiTestPage() {
       const data = await response.json();
       setSyncData(data);
     } catch (error) {
-      console.error('Fehler beim Synchronisieren:', error);
+
     } finally {
       setLoading(false);
     }

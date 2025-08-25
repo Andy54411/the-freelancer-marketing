@@ -121,7 +121,7 @@ export default function OrderDetailPage() {
 
     // Wenn nach dem Laden kein Benutzer da ist, zum Login weiterleiten.
     if (!currentUser) {
-      console.log('OrderDetailPage: Nicht authentifiziert, leite zu Login weiter.');
+
       const currentPath = window.location.pathname + window.location.search;
       router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
       return;
@@ -151,12 +151,6 @@ export default function OrderDetailPage() {
           }
 
           const data = docSnapshot.data();
-          console.log('🔥 REALTIME: Raw Firestore data:', {
-            orderId,
-            status: data.status,
-            selectedAnbieterId: data.selectedAnbieterId,
-            kundeId: data.kundeId,
-          });
 
           // Check authorization
           if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
@@ -201,21 +195,16 @@ export default function OrderDetailPage() {
           };
 
           setOrder(orderData);
-          console.log('✅ REALTIME: Order data updated:', {
-            orderId,
-            status: orderData.status,
-            rawStatus: data.status,
-            timestamp: new Date().toISOString(),
-          });
+
         } catch (err: any) {
-          console.error('❌ REALTIME: Error processing order update:', err);
+
           setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
         } finally {
           setLoadingOrder(false);
         }
       },
       error => {
-        console.error('❌ REALTIME: Firestore listener error:', error);
+
         setError(`Verbindungsfehler: ${error.message}`);
         setLoadingOrder(false);
       }
@@ -223,20 +212,14 @@ export default function OrderDetailPage() {
 
     // Cleanup function
     return () => {
-      console.log('🔄 REALTIME: Cleaning up order listener');
+
       unsubscribe();
     };
   }, [authLoading, currentUser, orderId, router, firebaseUser]);
 
   // Payment Modal State Monitor
   useEffect(() => {
-    console.log('🔍 PAYMENT STATE CHANGE:', {
-      showInlinePayment,
-      paymentClientSecret: paymentClientSecret ? 'SET' : 'NULL',
-      paymentAmount,
-      paymentHours,
-      timestamp: new Date().toISOString(),
-    });
+
   }, [showInlinePayment, paymentClientSecret, paymentAmount, paymentHours]);
 
   // Order Completion Handlers
@@ -283,11 +266,10 @@ export default function OrderDetailPage() {
       }
 
       const result = await response.json();
-      console.log('Accept Order Success:', result);
 
       // Real-Time-Listener aktualisiert die Daten automatisch
     } catch (err: any) {
-      console.error('Fehler beim Annehmen des Auftrags:', err);
+
       setError(err.message || 'Ein Fehler ist beim Annehmen des Auftrags aufgetreten.');
     } finally {
       setIsUpdating(false);
@@ -296,23 +278,12 @@ export default function OrderDetailPage() {
 
   // Payment Modal Handler - kann von CustomerApprovalInterface aufgerufen werden
   const handlePaymentRequest = (clientSecret: string, amount: number, hours: number) => {
-    console.log('🔄 CRITICAL: Payment request received from CustomerApprovalInterface:', {
-      clientSecret,
-      amount,
-      hours,
-    });
 
     setPaymentClientSecret(clientSecret);
     setPaymentAmount(amount);
     setPaymentHours(hours);
     setShowInlinePayment(true);
 
-    console.log('🔓 CRITICAL: Payment modal state set:', {
-      showInlinePayment: true,
-      paymentClientSecret: clientSecret,
-      paymentAmount: amount,
-      paymentHours: hours,
-    });
   };
 
   // Direct Payment Modal Handler - Echte Billing-Daten verwenden
@@ -320,19 +291,11 @@ export default function OrderDetailPage() {
     if (!orderId) return;
 
     try {
-      console.log('🔄 DIRECT: Starting payment process for order:', orderId);
-
       // Import TimeTracker dynamisch
       const { TimeTracker } = await import('@/lib/timeTracker');
 
       // Stelle echte Stripe-Abrechnung für genehmigte Stunden
       const billingResult = await TimeTracker.billApprovedHours(orderId);
-
-      console.log('✅ DIRECT: Real billing data received:', {
-        paymentIntentId: billingResult.paymentIntentId,
-        customerPays: billingResult.customerPays,
-        clientSecret: billingResult.clientSecret,
-      });
 
       // Berechne echte Payment Hours aus OrderDetails - KORRIGIERT: Suche nach billing_pending Status
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
@@ -347,31 +310,13 @@ export default function OrderDetailPage() {
           })
           ?.reduce((sum: number, e: any) => sum + e.hours, 0) || 0;
 
-      console.log('🔍 DIRECT: Payment hours calculation:', {
-        allAdditionalEntries: orderDetails?.timeTracking?.timeEntries?.filter(
-          (e: any) => e.category === 'additional'
-        ),
-        filteredForPayment: orderDetails?.timeTracking?.timeEntries?.filter((e: any) => {
-          return (
-            e.category === 'additional' &&
-            (e.status === 'customer_approved' || e.status === 'billing_pending')
-          );
-        }),
-        calculatedHours: paymentHours,
-      });
-
       // Setze echte Daten
       setPaymentClientSecret(billingResult.clientSecret);
       setPaymentAmount(billingResult.customerPays);
       setPaymentHours(paymentHours);
       setShowInlinePayment(true);
 
-      console.log('✅ DIRECT: Real payment modal opened with:', {
-        amount: billingResult.customerPays / 100,
-        hours: paymentHours,
-      });
     } catch (error) {
-      console.error('❌ DIRECT: Error creating payment:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
 
       if (
@@ -388,7 +333,6 @@ export default function OrderDetailPage() {
   };
 
   const handlePaymentSuccess = async () => {
-    console.log('✅ Payment successful!');
     setShowInlinePayment(false);
 
     // Success-Nachricht anzeigen
@@ -399,7 +343,6 @@ export default function OrderDetailPage() {
 
     try {
       // Real-Time-Listener aktualisiert die Daten automatisch
-      console.log('✅ Order data will be updated via real-time listener');
 
       // Prüfe, ob die Zahlung korrekt verarbeitet wurde
       const { TimeTracker } = await import('@/lib/timeTracker');
@@ -411,10 +354,6 @@ export default function OrderDetailPage() {
         ) || [];
 
       if (billingPendingEntries.length > 0) {
-        console.log(
-          '🔧 Auto-fixing: Found billing_pending entries after successful payment, triggering automatic fix...'
-        );
-
         // Automatische Reparatur für billing_pending Einträge
         const entryIds = billingPendingEntries.map((e: any) => e.id);
         const paymentIntentId = billingPendingEntries[0].paymentIntentId;
@@ -430,13 +369,11 @@ export default function OrderDetailPage() {
           });
 
           if (fixResponse.ok) {
-            console.log('✅ Auto-fix successful! Real-time listener will update data...');
             setSuccessMessage('Zahlung erfolgreich! Daten werden automatisch korrigiert...');
-
             // Real-Time-Listener aktualisiert die Daten automatisch
           }
         } catch (fixError) {
-          console.error('❌ Auto-fix failed:', fixError);
+          // Fehler beim Fix ignorieren - Real-Time-Listener wird trotzdem funktionieren
         }
       }
 
@@ -445,7 +382,6 @@ export default function OrderDetailPage() {
       // Success-Nachricht nach 5 Sekunden ausblenden
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (error) {
-      console.error('❌ Error reloading order data after payment:', error);
       setSuccessMessage(
         'Zahlung erfolgreich, aber Daten-Update fehlgeschlagen. Seite wird neu geladen...'
       );
@@ -458,7 +394,6 @@ export default function OrderDetailPage() {
   };
 
   const handlePaymentCancel = () => {
-    console.log('❌ Payment cancelled');
     setShowInlinePayment(false);
   };
 
@@ -760,11 +695,11 @@ export default function OrderDetailPage() {
               isOpen={showInlinePayment}
               onClose={handlePaymentCancel}
               onSuccess={(paymentIntentId: string) => {
-                console.log('Payment successful:', paymentIntentId);
+
                 handlePaymentSuccess();
               }}
               onError={(error: string) => {
-                console.error('Payment error:', error);
+
                 handlePaymentCancel();
               }}
             />

@@ -184,10 +184,10 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
             setSelectedSubcategory(providerData.selectedSubcategory);
           }
         } else {
-          console.error('Provider nicht gefunden:', preselectedProviderId);
+
         }
       } catch (error) {
-        console.error('Fehler beim Laden des Providers:', error);
+
       }
     };
 
@@ -214,9 +214,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     async (paymentIntentId: string) => {
       setLoading(true);
       setError(null);
-      console.log(
-        'DEBUG: Zahlung erfolgreich bestätigt. Auftragserstellung wird über Webhook gehandhabt.'
-      );
 
       setLoading(false);
       setCurrentStep('success');
@@ -238,18 +235,17 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     time,
     durationString
   ) => {
-    console.log('DEBUG: Starte handleDateTimeConfirm...');
+
     setError(null);
     setLoading(true);
     setIsDatePickerOpen(false);
 
     try {
-      console.log('DEBUG: Validierung der Eingangsdaten...');
+
       if (!selection || !time || !durationString || !selectedProvider || !selectedSubcategory) {
         throw new Error('Fehler: Unvollständige Angaben. Bitte versuchen Sie es erneut.');
       }
 
-      console.log('DEBUG: Überprüfung der Stripe-IDs...');
       if (!selectedProvider.stripeAccountId) {
         throw new Error(
           'Der ausgewählte Anbieter kann derzeit keine Zahlungen empfangen. Bitte wählen Sie einen anderen Anbieter.'
@@ -258,9 +254,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       // Automatische Erstellung von BEIDEN Stripe-Profilen wenn sie fehlen
       if (!userProfile.stripeCustomerId || !userProfile.stripeAccountId) {
-        console.log('DEBUG: Fehlende Stripe-Profile erkannt, erstelle automatisch...');
-        console.log('DEBUG: Customer ID vorhanden:', !!userProfile.stripeCustomerId);
-        console.log('DEBUG: Account ID vorhanden:', !!userProfile.stripeAccountId);
 
         try {
           const createProfilesResponse = await fetch('/api/create-company-stripe-profiles', {
@@ -282,7 +275,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
           }
 
           const profileData = await createProfilesResponse.json();
-          console.log('✅ Stripe-Profile erfolgreich erstellt:', profileData);
 
           // Update das lokale userProfile mit den neuen IDs
           if (profileData.stripeCustomerId) {
@@ -292,14 +284,13 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
             userProfile.stripeAccountId = profileData.stripeAccountId;
           }
         } catch (profileError) {
-          console.error('❌ Fehler beim Erstellen der Stripe-Profile:', profileError);
+
           throw new Error(
             "Ihre Zahlungsprofile konnten nicht automatisch erstellt werden. Bitte fügen Sie unter 'Einstellungen' eine Zahlungsmethode hinzu, bevor Sie buchen."
           );
         }
       }
 
-      console.log('DEBUG: Datum formatieren und Dauer berechnen...');
       let dateFromFormatted: string,
         dateToFormatted: string,
         calculatedNumberOfDays = 1;
@@ -324,20 +315,11 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       }
 
       // NEUES DEBUGGING FÜR BERECHNUNG
-      console.log(
-        'DEBUG: Buchungscharakteristiken - isDurationPerDay:',
-        currentBookingChars.isDurationPerDay
-      );
-      console.log('DEBUG: Stunden Eingabe (hoursInput):', hoursInput);
-      console.log(
-        'DEBUG: Berechnete Anzahl der Tage (calculatedNumberOfDays):',
-        calculatedNumberOfDays
-      );
 
       const totalHours = currentBookingChars.isDurationPerDay
         ? hoursInput * calculatedNumberOfDays
         : hoursInput;
-      console.log('DEBUG: Gesamtstunden (totalHours) für Preisberechnung:', totalHours);
+
       // ENDE DEBUGGING FÜR BERECHNUNG
 
       const servicePrice = totalHours * hourlyRateNum;
@@ -348,10 +330,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       // NEU: Client-seitige Validierung des Endpreises (Basispreis für den Draft)
       if (totalPriceInCents <= 0) {
-        console.error(
-          'CreateOrderModal: Client-seitige Validierung fehlgeschlagen - totalPriceInCents (als Basispreis verwendet) ist nicht positiv:',
-          totalPriceInCents
-        );
+
         throw new Error(
           'Der berechnete Auftragswert muss positiv sein. Bitte überprüfen Sie Dauer und Stundensatz des Anbieters.'
         );
@@ -359,16 +338,12 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       // Zusätzliche Prüfung für den reinen Dienstleistungspreis, der als Basispreis für den Draft dient
       if (servicePriceInCents <= 0) {
-        console.error(
-          'CreateOrderModal: Client-seitige Validierung fehlgeschlagen - servicePriceInCents (als Basispreis für Draft verwendet) ist nicht positiv:',
-          servicePriceInCents
-        );
+
         throw new Error(
           'Der reine Dienstleistungspreis muss positiv sein. Überprüfen Sie Stundensatz und Dauer.'
         );
       }
 
-      console.log('DEBUG: Adresse finalisieren...');
       const rawFinalAddress =
         useSavedAddress === 'new'
           ? newAddressDetails
@@ -436,16 +411,12 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         },
       };
 
-      console.log('DEBUG: Generiere temporäre Job-Entwurf-ID...');
       const newTempJobDraftId = crypto.randomUUID();
       setTempJobDraftId(newTempJobDraftId); // Speichere im State
       setFinalOrderData(orderDetailsForBackend); // FinalOrderData hier aktualisieren
 
-      console.log('DEBUG: selectedAnbieterId, die an die API gesendet wird:', selectedProvider.id); // Hinzugefügt
-      console.log(
-        'DEBUG: Speichere temporären Job-Entwurf in Firestore (temporaryJobDrafts)...',
-        newTempJobDraftId
-      );
+       // Hinzugefügt
+
       const tempDraftToSave = {
         ...orderDetailsForBackend,
         providerName: selectedProvider.companyName,
@@ -454,17 +425,9 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
-      console.log(
-        'DEBUG: tempDraftToSave.customerFirebaseUid vor setDoc:',
-        tempDraftToSave.customerFirebaseUid
-      );
 
       await setDoc(doc(db, 'temporaryJobDrafts', newTempJobDraftId), tempDraftToSave);
-      console.log(
-        `DEBUG: Temporärer Job-Entwurf ${newTempJobDraftId} erfolgreich in Firestore gespeichert.`
-      );
 
-      console.log('DEBUG: Rufe /api/create-payment-intent auf...');
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -484,18 +447,17 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       const data = await response.json();
       if (!response.ok || data.error) {
-        console.error('API-Antwort Fehler:', data.error);
+
         throw new Error(
           data.error?.message || 'Fehler bei der Kommunikation mit dem Zahlungsserver.'
         );
       }
 
-      console.log("DEBUG: ERFOLG! clientSecret erhalten. Wechsle zu 'payment'.");
       setClientSecret(data.clientSecret);
       setFinalTotalPriceInCents(totalPriceInCents);
       setCurrentStep('payment');
     } catch (err: unknown) {
-      console.error('DEBUG-FAIL: Fehler in handleDateTimeConfirm.', err);
+
       let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
       if (err instanceof Error) {
         errorMessage = err.message;

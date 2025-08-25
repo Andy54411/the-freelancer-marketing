@@ -83,35 +83,27 @@ function decodeUTF8Properly(text: string): string {
 
   // Spezielle Debug-Analyse für problematische Zeichen
   if (text.includes('Match')) {
-    console.log(
-      '🎯 MATCH DEBUG: Original text around "Match":',
-      text.substring(text.indexOf('Match') - 20, text.indexOf('Match') + 20)
-    );
 
     // Zeichen-Code-Analyse
     const matchIndex = text.indexOf('Match');
     if (matchIndex > 0) {
       const beforeChar = text.charAt(matchIndex - 1);
       const afterChar = text.charAt(matchIndex + 5);
-      console.log('🎯 Character before "Match":', beforeChar, 'Code:', beforeChar.charCodeAt(0));
-      console.log('🎯 Character after "Match":', afterChar, 'Code:', afterChar.charCodeAt(0));
+
     }
   }
-
-  console.log('🔍 DEBUG: Original text:', text.substring(0, 200));
 
   try {
     // Schritt 1: HTML-Entitäten dekodieren (z.B. &#252; -> ü)
     let decoded = decode(text);
-    console.log('🔍 DEBUG: After HTML decode:', decoded.substring(0, 200));
 
     // Schritt 2: URL-encoded Zeichen dekodieren (z.B. %C3%BC -> ü)
     try {
       decoded = decodeURIComponent(decoded);
-      console.log('🔍 DEBUG: After URI decode:', decoded.substring(0, 200));
+
     } catch {
       // Wenn URL-decoding fehlschlägt, Original verwenden
-      console.log('🔍 DEBUG: URI decoding failed, using original');
+
     }
 
     // Schritt 3: Quoted-printable dekodieren (z.B. =FC -> ü)
@@ -122,7 +114,6 @@ function decodeUTF8Properly(text: string): string {
         return match;
       }
     });
-    console.log('🔍 DEBUG: After quoted-printable:', decoded.substring(0, 200));
 
     // Schritt 4: Spezielle Newsletter-Kodierungen und häufige Sonderzeichen
     decoded = decoded
@@ -198,36 +189,31 @@ function decodeUTF8Properly(text: string): string {
       .replace(/\s+/g, ' ') // Mehrfache Leerzeichen zu einem
       .trim();
 
-    console.log('🔍 DEBUG: Final result:', decoded.substring(0, 200));
     return decoded;
   } catch (error) {
-    console.warn('🔍 DEBUG: Fehler beim Dekodieren:', error);
+
     return text;
   }
 }
 
 function getCleanTextContent(email: ReceivedEmail): string {
-  console.log('🔍 DEBUG: getCleanTextContent called');
-  console.log('🔍 DEBUG: email.textContent length:', email.textContent?.length || 0);
-  console.log('🔍 DEBUG: email.htmlContent length:', email.htmlContent?.length || 0);
 
   // Erste Priorität: Bereits bereinigte textContent
   if (email.textContent && email.textContent.trim()) {
-    console.log('🔍 DEBUG: Using textContent');
+
     const cleaned = decodeUTF8Properly(email.textContent);
     if (cleaned && cleaned.trim().length > 0) {
       // Jeder vorhandene Inhalt ist gültig, auch kurze Nachrichten wie "Test"
-      console.log('🔍 DEBUG: textContent result length:', cleaned.length);
+
       return cleaned;
     }
   }
 
   // Zweite Priorität: HTML zu sauberem Text konvertieren
   if (email.htmlContent) {
-    console.log('🔍 DEBUG: Using htmlContent');
+
     try {
       const cleanedHtml = decodeUTF8Properly(email.htmlContent);
-      console.log('🔍 DEBUG: cleanedHtml preview:', cleanedHtml.substring(0, 200));
 
       // HTML-zu-Text Konvertierung mit html-to-text
       const textContent = convert(cleanedHtml, {
@@ -242,27 +228,19 @@ function getCleanTextContent(email: ReceivedEmail): string {
         ],
       });
 
-      console.log('🔍 DEBUG: html-to-text result BEFORE cleaning:', textContent.substring(0, 200));
-
       // WICHTIG: Bereinigung NACH html-to-text anwenden!
       const finalCleanedText = decodeUTF8Properly(textContent);
 
-      console.log('🔍 DEBUG: final cleaned result:', finalCleanedText.substring(0, 200));
-
       if (finalCleanedText && finalCleanedText.trim().length > 0) {
         // Jeder vorhandene Inhalt ist gültig
-        console.log(
-          '🔍 DEBUG: Returning final cleaned result, length:',
-          finalCleanedText.trim().length
-        );
+
         return finalCleanedText.trim();
       }
     } catch (error) {
-      console.warn('🔍 DEBUG: Fehler bei HTML-zu-Text Konvertierung:', error);
+
     }
   }
 
-  console.log('🔍 DEBUG: Fallback - no usable content found');
   return 'E-Mail-Inhalt konnte nicht geladen werden.';
 }
 
@@ -281,7 +259,7 @@ function QuickReplyForm({
 
     // Verhindere mehrfache Ausführung
     if (isSending || !message.trim()) {
-      console.log('🚫 Quick reply prevented - already sending or empty message');
+
       return;
     }
 
@@ -293,8 +271,6 @@ function QuickReplyForm({
         message: message.trim(),
         inReplyTo: email.id,
       };
-
-      console.log('📤 Sending quick reply:', quickReplyData);
 
       const response = await fetch('/api/admin/workmail/emails/reply', {
         method: 'POST',
@@ -311,17 +287,16 @@ function QuickReplyForm({
         throw new Error(result.error || 'Failed to send reply');
       }
 
-      console.log('✅ Quick reply sent successfully:', result);
       setMessage('');
       alert('Antwort wurde erfolgreich gesendet!');
 
       // E-Mail-Liste aktualisieren
       if (onEmailSent) {
-        console.log('🔄 Triggering email list refresh...');
+
         onEmailSent();
       }
     } catch (error) {
-      console.error('❌ Error sending quick reply:', error);
+
       alert('Fehler beim Senden der Antwort. Bitte versuchen Sie es erneut.');
     } finally {
       setIsSending(false);
@@ -392,7 +367,6 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
   // HTML-Inhalte für iframe vorbereiten
   const sanitizedHTML = useMemo(() => {
     // KRITISCH: Euro-Symbol-Bereinigung AUCH im HTML-Renderer!
-    console.log('🎯 [HTML RENDERER] Original HTML content preview:', htmlContent.substring(0, 300));
 
     // CHARACTER CODE ANALYZER - Finde die exakten problematischen Zeichen!
     // 🔥 ULTIMATE CHARACTER ANALYZER - FINDET ALLE PROBLEMATISCHEN ZEICHEN
@@ -409,8 +383,6 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
         context: htmlContent.substring(Math.max(0, matchResult.index - 30), matchResult.index + 30),
       });
     }
-
-    console.log('🎯 [MATCH ANALYZER] Found problematic "Match" instances:', matchSearchResults);
 
     // Analysiere ALLE nicht-ASCII Zeichen (erweitert)
     const textToAnalyze = htmlContent.substring(0, 5000); // Mehr Text analysieren
@@ -447,16 +419,6 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
         });
       }
     }
-
-    console.log('🔍 [CHARACTER ANALYZER] Found suspicious characters:', suspiciousChars);
-    console.log(
-      '🔍 [CHARACTER ANALYZER] Character codes found:',
-      suspiciousChars.map(c => `${c.char}(${c.charCode}/${c.unicode})`)
-    );
-    console.log(
-      '🔍 [CHARACTER ANALYZER] First 10 contexts:',
-      suspiciousChars.slice(0, 10).map(c => c.context)
-    );
 
     const cleanedHtml = htmlContent
       // 🔥 ULTIMATE Unicode-Bereinigung - ALLE problematischen Zeichen
@@ -502,13 +464,11 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
       // Fallback: Alle verbliebenen Unicode-Zeichen > 127 (außer deutsche Umlaute)
       .replace(/[^\x00-\x7FäöüÄÖÜß]/g, function (match) {
         const code = match.charCodeAt(0);
-        console.log(`🚨 [FALLBACK CLEANER] Replacing unknown char: ${match} (${code}) with ""`);
+
         if (code >= 8200 && code <= 8300) return '"'; // Smart quotes range
         if (code >= 8000 && code <= 8500) return "'"; // Other punctuation
         return '';
       });
-
-    console.log('🎯 [HTML RENDERER] After Euro cleaning preview:', cleanedHtml.substring(0, 300));
 
     const finalHtml = DOMPurify.sanitize(cleanedHtml, {
       ALLOWED_TAGS: [
@@ -563,8 +523,6 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
       FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover'],
     });
 
-    console.log('🎯 [HTML RENDERER] Final sanitized HTML preview:', finalHtml.substring(0, 300));
-
     return `
       <!DOCTYPE html>
       <html>
@@ -606,25 +564,24 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
                 document.documentElement.offsetHeight
               );
               parent.postMessage({type: 'resize', height: height + 40}, '*');
-              
+
               // Link-Handler für bessere Kompatibilität
               document.addEventListener('click', function(e) {
                 const target = e.target.closest('a');
                 if (target && target.href) {
                   e.preventDefault();
-                  
+
                   // finAPI und andere Newsletter-Links sicher öffnen
                   const url = target.href;
-                  console.log('📧 E-Mail Link clicked:', url);
-                  
+
                   // Message an Parent senden für sicheres Link-Handling
                   parent.postMessage({
-                    type: 'openLink', 
+                    type: 'openLink',
                     url: url,
                     text: target.textContent || target.innerText,
                     isTracking: url.includes('sendibm') || url.includes('tracking') || url.includes('click')
                   }, '*');
-                  
+
                   // Fallback: Direktes Öffnen mit erweiterten Attributen
                   try {
                     const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
@@ -633,7 +590,7 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
                       window.top.open(url, '_blank');
                     }
                   } catch (err) {
-                    console.log('Fallback link handling:', err);
+
                     // Als letzter Ausweg: Message für Parent-handling
                     window.parent.location.href = url;
                   }
@@ -656,12 +613,11 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
         setIframeHeight(Math.max(600, event.data.height));
       } else if (event.data && event.data.type === 'openLink') {
         // Sichere Link-Behandlung für finAPI und andere Newsletter-Links
-        console.log('🔗 Handling email link:', event.data.url);
 
         try {
           // finAPI Tracking-Links und Newsletter-Links sicher öffnen
           if (event.data.isTracking) {
-            console.log('📊 Opening tracking link:', event.data.url);
+
           }
 
           // Link in neuem Tab öffnen mit verbesserter Sicherheit
@@ -669,11 +625,11 @@ function SecureHTMLRenderer({ htmlContent }: { htmlContent: string }) {
 
           if (!newWindow) {
             // Fallback: Browser-native Link-Handling
-            console.warn('⚠️ Popup blocked, using fallback');
+
             window.location.href = event.data.url;
           }
         } catch (error) {
-          console.error('❌ Link opening failed:', error);
+
           // Final fallback: Copy to clipboard
           navigator.clipboard?.writeText(event.data.url).then(() => {
             alert(`Link wurde in die Zwischenablage kopiert: ${event.data.url}`);
@@ -779,7 +735,7 @@ export default function EmailDetailView({
           })) || [],
       };
     } catch (error) {
-      console.error('Modern email processing failed:', error);
+
       return null;
     }
   };
@@ -787,7 +743,6 @@ export default function EmailDetailView({
   // Quoted-Printable Dekodierung für E-Mail-Content
   const decodeQuotedPrintable = (str: string): string => {
     try {
-      console.log('🔧 Quoted-Printable decoding input:', str.substring(0, 200) + '...');
 
       let result = str;
 
@@ -827,10 +782,9 @@ export default function EmailDetailView({
         return String.fromCharCode(charCode);
       });
 
-      console.log('✅ Quoted-Printable decoding output:', result.substring(0, 200) + '...');
       return result;
     } catch (error) {
-      console.error('❌ Quoted-Printable decoding failed:', error);
+
       return str;
     }
   };
@@ -838,7 +792,6 @@ export default function EmailDetailView({
   // Perfekte UTF-8 Dekodierung mit Native Browser APIs
   const decodeUTF8Properly = (content: string): string => {
     try {
-      console.log('🚀 decodeUTF8Properly called with content:', content.substring(0, 200) + '...');
 
       // 1. Quoted-Printable Dekodierung falls nötig (erweiterte Erkennung)
       let result = content;
@@ -851,13 +804,11 @@ export default function EmailDetailView({
         content.includes('=3D') ||
         /=[0-9A-F]{2}/.test(content);
 
-      console.log('🔍 Quoted-Printable detection:', hasQuotedPrintable);
-
       if (hasQuotedPrintable) {
-        console.log('🔧 Applying quoted-printable decoding...');
+
         result = decodeQuotedPrintable(content);
       } else {
-        console.log('❌ No quoted-printable detected, applying basic fixes...');
+
       }
 
       // 2. HTML Entities dekodieren (IMMER anwenden)
@@ -892,8 +843,6 @@ export default function EmailDetailView({
         .replace(/Ã­/g, 'í')
         .replace(/Ã³/g, 'ó')
         .replace(/Ãº/g, 'ú');
-
-      console.log('🔧 After basic UTF-8 fixes:', result.substring(0, 300));
 
       // 4. HTML-Entities und falsche Unicode-Zeichen (finAPI spezifische Probleme)
       const htmlEntityFixes: { [key: string]: string } = {
@@ -940,10 +889,9 @@ export default function EmailDetailView({
         '&#8221;': '"',
       };
 
-      console.log('🔧 Applying HTML entity fixes...');
       for (const [entity, replacement] of Object.entries(htmlEntityFixes)) {
         if (result.includes(entity)) {
-          console.log(`🔧 Replacing "${entity}" with "${replacement}"`);
+
           result = result.replace(
             new RegExp(entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
             replacement
@@ -958,13 +906,12 @@ export default function EmailDetailView({
         const bytes = encoder.encode(result);
         result = decoder.decode(bytes);
       } catch (e) {
-        console.log('TextDecoder fallback used');
+
       }
 
-      console.log('✅ Final decoded result:', result.substring(0, 200) + '...');
       return result;
     } catch (error) {
-      console.error('UTF-8 decoding failed:', error);
+
       return content;
     }
   };
@@ -983,7 +930,6 @@ export default function EmailDetailView({
       } else if (email.rawContent) {
         // Erweiterte HTML-Extraktion aus Raw-E-Mail
         try {
-          console.log('🔍 Processing raw email content for HTML extraction...');
 
           // 1. Spezielle finAPI Newsletter HTML-Extraktion
           const htmlSectionMatch = email.rawContent.match(
@@ -991,7 +937,7 @@ export default function EmailDetailView({
           );
 
           if (htmlSectionMatch) {
-            console.log('✅ Found HTML section in finAPI email');
+
             const htmlSection = htmlSectionMatch[0];
 
             // 2. HTML-Content nach dem ersten Leerblock extrahieren
@@ -1002,7 +948,7 @@ export default function EmailDetailView({
 
               // 3. Quoted-printable dekodieren
               if (htmlSection.includes('quoted-printable')) {
-                console.log('🔧 Decoding quoted-printable HTML...');
+
                 htmlContent = decodeUTF8Properly(htmlContent);
               }
 
@@ -1011,8 +957,6 @@ export default function EmailDetailView({
                 htmlContent.trim().length > 0 &&
                 (htmlContent.includes('<') || htmlContent.includes('&lt;'))
               ) {
-                console.log('🎯 Processing extracted HTML content');
-                console.log('� HTML sample:', htmlContent.substring(0, 300));
 
                 const parsed = await processEmailWithModernAPIs(
                   htmlContent,
@@ -1028,7 +972,7 @@ export default function EmailDetailView({
           // Fallback: Standard HTML-Extraktion
           const htmlMatch = email.rawContent.match(/<html[\s\S]*?<\/html>/i);
           if (htmlMatch) {
-            console.log('🔄 Using fallback HTML extraction');
+
             const htmlContent = htmlMatch[0];
             const parsed = await processEmailWithModernAPIs(htmlContent, email.subject, email.from);
             setParsedEmail(parsed);
@@ -1036,7 +980,7 @@ export default function EmailDetailView({
           }
 
           // Letzter Fallback: Nur Text-Inhalt
-          console.log('⚠️ No HTML found, using text fallback');
+
           const textSectionMatch = email.rawContent.match(
             /Content-Type:\s*text\/plain[\s\S]*?(?=\r?\n---------|\r?\nContent-Type|\r?\n$|$)/i
           );
@@ -1072,7 +1016,7 @@ export default function EmailDetailView({
             });
           }
         } catch (error) {
-          console.error('Raw content processing failed:', error);
+
           // Error-Fallback
           setParsedEmail({
             html: `<div style="color: red; padding: 20px;">Fehler beim Verarbeiten der E-Mail: ${error}</div>`,
@@ -1094,13 +1038,8 @@ export default function EmailDetailView({
   const processedContent = useMemo(() => {
     // Priorität 1: Verwende parsedEmail falls verfügbar - ABER MIT BEREINIGUNG!
     if (parsedEmail) {
-      console.log('�🔥🔥 PARSEEMAIL DEBUG MODE ACTIVATED - VERSION 3 🔥🔥🔥');
-      console.log('DEBUG: parsedEmail object keys:', Object.keys(parsedEmail));
-      console.log('DEBUG: parsedEmail.text exists?', !!parsedEmail.text);
 
       if (parsedEmail.text) {
-        console.log('DEBUG: parsedEmail.text preview:', parsedEmail.text.substring(0, 300));
-        console.log('DEBUG: Euro symbol search in parsedEmail.text...');
 
         // Detaillierte Euro-Symbol-Analyse
         let euroCount = 0;
@@ -1120,18 +1059,14 @@ export default function EmailDetailView({
           }
         }
 
-        console.log('DEBUG: Found', euroCount, 'Euro symbols in parsedEmail.text');
-        console.log('DEBUG: Sample Euro locations:', sampleEuros);
       } else {
-        console.log('DEBUG: parsedEmail.text is NULL/undefined');
+
       }
 
       // WICHTIG: Auch parsedEmail.text muss bereinigt werden!
       const cleanedText = parsedEmail.text
         ? decodeUTF8Properly(parsedEmail.text)
         : getCleanTextContent(email);
-
-      console.log('🎯 parsedEmail.text after cleaning:', cleanedText.substring(0, 200));
 
       return {
         text: cleanedText,
@@ -1141,7 +1076,7 @@ export default function EmailDetailView({
 
     // Priorität 2: Direkte htmlContent Verarbeitung mit verbesserter Bereinigung
     if (email.htmlContent) {
-      console.log('� USING DIRECT HTML CONTENT - VERSION 3 DEBUG 🔥');
+
       const utf8Content = decodeUTF8Properly(email.htmlContent);
 
       const processedHtml = DOMPurify.sanitize(utf8Content, {
@@ -1191,7 +1126,7 @@ export default function EmailDetailView({
 
     // Priorität 3: Direkte textContent verwenden
     if (email.textContent && email.textContent.trim()) {
-      console.log('📧 Using direct textContent:', email.textContent);
+
       return {
         text: email.textContent.trim(),
         html: null,
@@ -1200,7 +1135,7 @@ export default function EmailDetailView({
 
     // Priorität 4: Einfache HTML-zu-Text Konvertierung
     if (email.htmlContent && email.htmlContent.trim()) {
-      console.log('📧 Converting HTML to text');
+
       try {
         const textFromHtml = convert(email.htmlContent, {
           wordwrap: 80,
@@ -1219,14 +1154,12 @@ export default function EmailDetailView({
           };
         }
       } catch (error) {
-        console.warn('HTML conversion failed:', error);
+
       }
     }
 
     // Priorität 5: Fallback - nur wenn wirklich nichts vorhanden ist
-    console.log('⚠️ No usable content found at all');
-    console.log('email.textContent:', email.textContent);
-    console.log('email.htmlContent exists:', !!email.htmlContent);
+
     return {
       text: 'E-Mail-Inhalt konnte nicht geladen werden',
       html: '<div style="padding: 20px; text-align: center; color: #666;">E-Mail-Inhalt konnte nicht geladen werden</div>',
@@ -1434,14 +1367,7 @@ export default function EmailDetailView({
 
       {/* E-Mail-Verlauf Accordion - DEBUG: Temporär immer anzeigen */}
       {(() => {
-        console.log('🔍 [EmailDetailView] Accordion Debug:', {
-          emails: emails?.length || 0,
-          emailsArray: emails,
-          showAccordion: emails && emails.length >= 1, // DEBUG: >= 1 statt > 1
-          currentEmailId: email.id,
-          emailsType: typeof emails,
-          emailsIsArray: Array.isArray(emails),
-        });
+
         return emails && emails.length >= 1 ? ( // DEBUG: >= 1 statt > 1
           <div>
             <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg">

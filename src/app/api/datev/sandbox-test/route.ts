@@ -10,24 +10,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'auth';
 
-    console.log('🧪 DATEV Sandbox Test starting...', { action });
-
     // Get current DATEV configuration
     const config = getDatevConfig();
 
-    console.log('📋 Current DATEV Config:', {
-      clientId: config.clientId,
-      hasClientSecret: !!config.clientSecret,
-      redirectUri: config.redirectUri,
-      baseUrl: config.baseUrl,
-      authUrl: config.authUrl,
-      tokenUrl: config.tokenUrl,
-      scopes: config.scopes,
-    });
-
     // Check if we have sandbox credentials
     const isSandbox = config.clientId === '6111ad8e8cae82d1a805950f2ae4adc4';
-    console.log('🏖️ Is Sandbox:', isSandbox);
 
     if (!config.clientId || !config.clientSecret) {
       return NextResponse.json(
@@ -49,16 +36,8 @@ export async function GET(request: NextRequest) {
         // Generate OAuth URL and redirect to DATEV Sandbox
         const { authUrl, codeVerifier, state, nonce } = generateDatevAuthUrl('test-company-123');
 
-        console.log('🔐 Generated OAuth URL:', {
-          authUrl: authUrl.substring(0, 100) + '...',
-          state,
-          nonce,
-          codeVerifier: codeVerifier.substring(0, 20) + '...',
-        });
-
         // Store PKCE data temporarily (in production, use secure storage)
         // For now, we'll store in the URL state parameter
-        console.log('🚀 Redirecting to DATEV Sandbox OAuth...');
 
         return NextResponse.redirect(authUrl);
 
@@ -171,7 +150,7 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('❌ DATEV Sandbox Test Error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -216,12 +195,6 @@ export async function POST(request: NextRequest) {
     const config = getDatevConfig();
     const body = await request.json();
 
-    console.log('🧪 Testing DATEV API POST:', {
-      endpoint,
-      url: `${config.baseUrl}${endpoint}`,
-      hasBody: !!body,
-    });
-
     const response = await fetch(`${config.baseUrl}${endpoint}`, {
       method: 'POST',
       headers: {
@@ -242,7 +215,7 @@ export async function POST(request: NextRequest) {
       endpoint,
     });
   } catch (error) {
-    console.error('❌ DATEV API POST Error:', error);
+
     return NextResponse.json(
       {
         success: false,

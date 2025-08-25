@@ -43,9 +43,9 @@ class AWSRealtimeService {
       }
 
       const result = await response.json();
-      console.log(`EventBridge event published for workspace ${workspaceId}:`, result);
+
     } catch (error) {
-      console.error('Error publishing EventBridge event:', error);
+
     }
   }
 
@@ -88,7 +88,7 @@ class AWSRealtimeService {
 
     const wsUrl = process.env.NEXT_PUBLIC_AWS_WEBSOCKET_URL;
     if (!wsUrl) {
-      console.warn('WebSocket URL not configured');
+
       return () => {};
     }
 
@@ -97,7 +97,7 @@ class AWSRealtimeService {
       const ws = new WebSocket(fullUrl);
 
       ws.onopen = () => {
-        console.log('AWS WebSocket connected for admin:', adminId);
+
       };
 
       ws.onmessage = event => {
@@ -105,16 +105,16 @@ class AWSRealtimeService {
           const data = JSON.parse(event.data);
           callback(data);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+
         }
       };
 
       ws.onerror = error => {
-        console.error('WebSocket error:', error);
+
       };
 
       ws.onclose = () => {
-        console.log('AWS WebSocket disconnected');
+
       };
 
       // Return unsubscribe function
@@ -122,7 +122,7 @@ class AWSRealtimeService {
         ws.close();
       };
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
+
       return () => {};
     }
   }
@@ -137,14 +137,14 @@ class AWSRealtimeService {
     try {
       await this.publishWorkspaceUpdate(workspaceId, adminId, eventType, data);
     } catch (error) {
-      console.error('Error broadcasting workspace update:', error);
+
     }
   }
 
   // Initialize WebSocket (for compatibility)
   async initializeWebSocket(): Promise<void> {
     // WebSocket initialization is handled in subscribeToWorkspaceEvents
-    console.log('WebSocket initialization called');
+
   }
 }
 

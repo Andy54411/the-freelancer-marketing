@@ -434,7 +434,7 @@ export function WorkspaceBoard({
         setSelectedTask(null);
       }
     } catch (error) {
-      console.error('Fehler beim Archivieren der Aufgabe:', error);
+
       alert('Fehler beim Archivieren der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -515,7 +515,7 @@ export function WorkspaceBoard({
         archivedTasks: updatedArchivedTasks,
       });
     } catch (error) {
-      console.error('Fehler beim Wiederherstellen der Aufgabe:', error);
+
       alert('Fehler beim Wiederherstellen der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -569,7 +569,7 @@ export function WorkspaceBoard({
         setSelectedTask(null);
       }
     } catch (error) {
-      console.error('Fehler beim endgültigen Löschen der Aufgabe:', error);
+
       alert('Fehler beim Löschen der Aufgabe. Bitte versuche es erneut.');
     }
   };

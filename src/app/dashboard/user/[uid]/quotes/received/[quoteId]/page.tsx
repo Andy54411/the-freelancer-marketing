@@ -99,8 +99,6 @@ export default function CustomerQuoteDetailsPage({
     try {
       if (!firebaseUser) return;
 
-      console.log('[Frontend] Fetching quote details for:', { uid, quoteId });
-
       const token = await firebaseUser.getIdToken();
       const response = await fetch(`/api/user/${uid}/quotes/received/${quoteId}`, {
         headers: {
@@ -108,22 +106,16 @@ export default function CustomerQuoteDetailsPage({
         },
       });
 
-      console.log('[Frontend] Quote details API response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('[Frontend] Quote details loaded successfully:', data);
+
         setQuote(data.quote);
       } else {
         const errorData = await response.json();
-        console.error(
-          '[Frontend] Fehler beim Laden der Quote-Details:',
-          response.status,
-          errorData
-        );
+
       }
     } catch (error) {
-      console.error('[Frontend] Fehler beim Laden der Quote-Details:', error);
+
     } finally {
       setLoading(false);
     }
@@ -176,7 +168,7 @@ export default function CustomerQuoteDetailsPage({
         alert(`Fehler: ${errorData.error}`);
       }
     } catch (error) {
-      console.error('Fehler beim Bearbeiten des Angebots:', error);
+
       alert('Ein Fehler ist aufgetreten.');
     } finally {
       setProcessing(false);
@@ -204,7 +196,6 @@ export default function CustomerQuoteDetailsPage({
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Quote → Order migration successful:', data);
 
         setShowPaymentModal(false);
         setPaymentProposal(null);
@@ -221,13 +212,13 @@ export default function CustomerQuoteDetailsPage({
         throw new Error(errorData.error || 'Fehler bei der Auftragsverarbeitung');
       }
     } catch (error) {
-      console.error('❌ Payment success handling failed:', error);
+
       handlePaymentError(error instanceof Error ? error.message : 'Unbekannter Fehler');
     }
   };
 
   const handlePaymentError = (error: string) => {
-    console.error('❌ Payment error:', error);
+
     alert(`Zahlungsfehler: ${error}`);
     setShowPaymentModal(false);
     setPaymentProposal(null);

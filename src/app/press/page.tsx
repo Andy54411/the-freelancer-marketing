@@ -12,7 +12,7 @@ export default function PressPage() {
       <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/20" />
-        
+
         {/* Content */}
         <div className="relative z-10 py-16">
           <div className="max-w-4xl mx-auto px-4">

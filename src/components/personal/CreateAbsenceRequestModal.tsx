@@ -118,7 +118,7 @@ export function CreateAbsenceRequestModal({
         notes: '',
       });
     } catch (error) {
-      console.error('Error creating absence request:', error);
+
       toast.error('Fehler beim Erstellen des Abwesenheitsantrags');
     } finally {
       setLoading(false);

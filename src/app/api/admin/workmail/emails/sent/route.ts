@@ -24,7 +24,6 @@ async function getCachedEmails(
   limit: number
 ): Promise<EmailResult | null> {
   try {
-    console.log('🗄️ [Sent Emails] Checking cache for emails...');
 
     const cacheResponse = await fetch(
       `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/admin/workmail/emails/cache?folder=${folder}&limit=${limit}`,
@@ -39,7 +38,7 @@ async function getCachedEmails(
     if (cacheResponse.ok) {
       const cacheResult = await cacheResponse.json();
       if (cacheResult.success && cacheResult.data?.emails?.length > 0) {
-        console.log('✅ [Sent Emails] Found cached emails:', cacheResult.data.emails.length);
+
         return {
           emails: cacheResult.data.emails,
           totalCount: cacheResult.data.totalCount,
@@ -51,10 +50,9 @@ async function getCachedEmails(
       }
     }
 
-    console.log('⚠️ [Sent Emails] No cached emails found, will use IMAP');
     return null;
   } catch (error) {
-    console.warn('⚠️ [Sent Emails] Cache check failed:', error);
+
     return null;
   }
 }
@@ -62,7 +60,6 @@ async function getCachedEmails(
 // Cache-Sync-Funktion um neue E-Mails zu speichern
 async function syncEmailsToCache(emails: any[], folder: string, adminEmail: string): Promise<void> {
   try {
-    console.log('💾 [Sent Emails] Syncing emails to cache...');
 
     const syncResponse = await fetch(
       `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/admin/workmail/emails/cache`,
@@ -82,16 +79,12 @@ async function syncEmailsToCache(emails: any[], folder: string, adminEmail: stri
 
     if (syncResponse.ok) {
       const syncResult = await syncResponse.json();
-      console.log(
-        '✅ [Sent Emails] Successfully synced to cache:',
-        syncResult.data?.synced || 0,
-        'emails'
-      );
+
     } else {
-      console.warn('⚠️ [Sent Emails] Cache sync failed');
+
     }
   } catch (error) {
-    console.warn('⚠️ [Sent Emails] Cache sync error:', error);
+
   }
 }
 
@@ -130,16 +123,9 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
       },
     };
 
-    console.log('📧 [Sent Emails NEW] Connecting to AWS WorkMail IMAP...', {
-      email: credentials.email,
-      host: imapConfig.host,
-      port: imapConfig.port,
-    });
-
     const imap = new Imap(imapConfig);
 
     imap.once('ready', () => {
-      console.log('✅ [Sent Emails NEW] IMAP connected successfully');
 
       // Versuche verschiedene Sent-Folder Namen
       const sentFolders = ['Sent', 'SENT', 'Sent Items', 'Gesendet', 'Sent Messages'];
@@ -147,31 +133,23 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
       let folderIndex = 0;
       const tryFolder = () => {
         if (folderIndex >= sentFolders.length) {
-          console.error('❌ [Sent Emails NEW] No sent folder found');
+
           imap.end();
           return reject(new Error('Sent folder not found'));
         }
 
         const currentFolder = sentFolders[folderIndex];
-        console.log(`🔍 [Sent Emails NEW] Trying folder: ${currentFolder}`);
 
         imap.openBox(currentFolder, true, (err: any, box: any) => {
           if (err) {
-            console.warn(
-              `⚠️ [Sent Emails NEW] Folder ${currentFolder} not accessible:`,
-              err.message
-            );
+
             folderIndex++;
             tryFolder();
             return;
           }
 
-          console.log(
-            `📬 [Sent Emails NEW] Mailbox opened: ${box.name}, Messages: ${box.messages.total}`
-          );
-
           if (box.messages.total === 0) {
-            console.log('📭 [Sent Emails NEW] No messages found');
+
             imap.end();
             return resolve({
               emails: [],
@@ -189,8 +167,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
 
           // Hole die neuesten E-Mails (wie in der funktionierenden Email API)
           const range = Math.max(1, total - actualLimit + 1) + ':' + total;
-
-          console.log(`📧 [Sent Emails NEW] Fetching messages ${range} from ${currentFolder}`);
 
           const emails: any[] = [];
 
@@ -248,22 +224,14 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                     ?.substring(5) // Entferne "Date:" prefix
                     ?.trim();
 
-                  console.log('📅 [Sent Emails NEW] Date parsing:', dateLine);
-
                   email.timestamp = dateLine
                     ? new Date(dateLine).toISOString()
                     : new Date().toISOString();
 
                   email.receivedAt = email.timestamp; // Für Kompatibilität
 
-                  console.log(
-                    `📧 [Sent Emails NEW] Header processed: ${email.subject} to ${email.to}`
-                  );
                 } else if (info.which === 'TEXT') {
                   // Vollständige Text-Extraktion für Sent Emails
-                  console.log(`📝 [Sent Emails NEW] Processing TEXT body for: ${email.subject}`);
-                  console.log(`📝 [Sent Emails NEW] Buffer length: ${buffer.length}`);
-                  console.log(`📝 [Sent Emails NEW] Buffer preview: ${buffer.substring(0, 200)}`);
 
                   // Direkte TEXT-Extraktion
                   email.textContent = buffer.toString();
@@ -274,17 +242,12 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                     const htmlMatch = buffer.match(/<html[\s\S]*?<\/html>/i);
                     if (htmlMatch) {
                       email.htmlContent = htmlMatch[0];
-                      console.log(
-                        `🎯 [Sent Emails NEW] HTML content extracted for: ${email.subject}`
-                      );
+
                     }
                   }
 
-                  console.log(`📝 [Sent Emails NEW] Full content processed for: ${email.subject}`);
                 } else if (info.which === '') {
                   // Vollständiger E-Mail-Body (falls TEXT nicht funktioniert)
-                  console.log(`📧 [Sent Emails NEW] Processing FULL body for: ${email.subject}`);
-                  console.log(`📧 [Sent Emails NEW] Full buffer length: ${buffer.length}`);
 
                   if (buffer.length > email.textContent?.length || 0) {
                     // Nutze vollständigen Body falls länger als TEXT
@@ -294,7 +257,7 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                     const htmlMatch = buffer.match(/<html[\s\S]*?<\/html>/i);
                     if (htmlMatch) {
                       email.htmlContent = htmlMatch[0];
-                      console.log(`🎯 [Sent Emails NEW] HTML from full body extracted`);
+
                     }
 
                     // Erweiterte Text-Extraktion
@@ -317,9 +280,7 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                       if (textContent.length > 10) {
                         email.textContent = textContent;
                         email.body = textContent;
-                        console.log(
-                          `📝 [Sent Emails NEW] Text extracted from full body: ${textContent.substring(0, 100)}`
-                        );
+
                       }
                     }
                   }
@@ -339,23 +300,18 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
               // Email hinzufügen wenn mindestens Subject vorhanden
               if (email.subject) {
                 emails.push(email);
-                console.log(
-                  `✅ [Sent Emails NEW] Email added to list: ${emails.length} - ${email.subject}`
-                );
+
               }
             });
           });
 
           fetch.once('error', (err: any) => {
-            console.error('❌ [Sent Emails NEW] IMAP fetch error:', err);
+
             imap.end();
             reject(err);
           });
 
           fetch.once('end', () => {
-            console.log(
-              `✅ [Sent Emails NEW] IMAP fetch completed, emails found: ${emails.length}`
-            );
 
             imap.end();
 
@@ -382,7 +338,7 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
     });
 
     imap.once('error', (err: any) => {
-      console.error('❌ [Sent Emails NEW] IMAP connection error:', err);
+
       reject(err);
     });
 
@@ -393,21 +349,18 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
 // GET - Gesendete E-Mails abrufen
 export async function GET(request: NextRequest) {
   try {
-    console.log('🚀 [Sent Emails NEW API] Starting request...');
 
     // URL-Parameter
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const method = searchParams.get('method') || 'imap';
 
-    console.log('📋 [Sent Emails NEW API] Request parameters:', { limit, method });
-
     // JWT Token Verification for Admin Dashboard (Cookie-based)
     const cookies = request.headers.get('cookie');
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-      console.error('❌ [Sent Emails NEW API] Missing admin token cookie');
+
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -417,15 +370,10 @@ export async function GET(request: NextRequest) {
       const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
       const adminEmail = payload.email as string;
 
-      console.log('✅ [Sent Emails NEW API] JWT Cookie verified for admin:', {
-        email: adminEmail,
-        method,
-      });
-
       // Find admin credentials
       const adminConfig = WORKMAIL_ADMIN_MAPPING[adminEmail];
       if (!adminConfig) {
-        console.error('❌ [Sent Emails NEW API] Admin not found in WorkMail mapping:', adminEmail);
+
         return NextResponse.json(
           { error: 'Admin not configured for WorkMail access' },
           { status: 403 }
@@ -433,7 +381,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (!adminConfig.password) {
-        console.error('❌ [Sent Emails NEW API] No password configured for admin:', adminEmail);
+
         return NextResponse.json(
           { error: 'IMAP credentials not configured for this admin' },
           { status: 403 }
@@ -446,29 +394,20 @@ export async function GET(request: NextRequest) {
       const cachedResult = await getCachedEmails(adminEmail, 'sent', limit);
 
       if (cachedResult && method !== 'force-imap') {
-        console.log('⚡ [Sent Emails NEW API] Using cached emails for fast response');
+
         result = cachedResult;
       } else {
         // 2. Falls kein Cache oder force-imap: IMAP verwenden
-        console.log('📧 [Sent Emails NEW API] Using IMAP method for sent email retrieval');
 
         result = await fetchSentEmailsViaIMAP(adminConfig, limit);
 
         // 3. Nach IMAP-Abruf: E-Mails im Cache speichern (async, blockiert Response nicht)
         if (result.emails.length > 0) {
-          console.log('💾 [Sent Emails NEW API] Syncing emails to cache in background...');
           syncEmailsToCache(result.emails, 'sent', adminEmail).catch(err =>
-            console.warn('⚠️ [Sent Emails NEW API] Background cache sync failed:', err)
+            console.error('Cache sync error:', err)
           );
         }
       }
-
-      console.log('📊 [Sent Emails NEW API] Response summary:', {
-        emailCount: result.emails?.length || 0,
-        totalCount: result.totalCount,
-        source: result.source,
-        folder: result.folder,
-      });
 
       return NextResponse.json({
         success: true,
@@ -482,11 +421,11 @@ export async function GET(request: NextRequest) {
         },
       });
     } catch (jwtError) {
-      console.error('❌ [Sent Emails NEW API] JWT verification failed:', jwtError);
+
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-    console.error('❌ [Sent Emails NEW API] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -501,7 +440,6 @@ export async function GET(request: NextRequest) {
 // DELETE - E-Mail endgültig aus Cache löschen
 export async function DELETE(request: NextRequest) {
   try {
-    console.log('🗑️ [Sent Emails DELETE] Starting delete request...');
 
     // URL-Parameter
     const { searchParams } = new URL(request.url);
@@ -512,14 +450,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Email ID is required' }, { status: 400 });
     }
 
-    console.log('📋 [Sent Emails DELETE] Request parameters:', { emailId, folder });
-
     // JWT Token Verification
     const cookies = request.headers.get('cookie');
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-      console.error('❌ [Sent Emails DELETE] Missing admin token cookie');
+
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -528,8 +464,6 @@ export async function DELETE(request: NextRequest) {
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
       const adminEmail = payload.email as string;
-
-      console.log('✅ [Sent Emails DELETE] JWT Cookie verified for admin:', adminEmail);
 
       // Cache-Delete API aufrufen
       const deleteResponse = await fetch(
@@ -544,7 +478,6 @@ export async function DELETE(request: NextRequest) {
 
       if (deleteResponse.ok) {
         const deleteResult = await deleteResponse.json();
-        console.log('✅ [Sent Emails DELETE] Email deleted successfully:', emailId);
 
         return NextResponse.json({
           success: true,
@@ -557,11 +490,11 @@ export async function DELETE(request: NextRequest) {
         throw new Error('Failed to delete email from cache');
       }
     } catch (jwtError) {
-      console.error('❌ [Sent Emails DELETE] JWT verification failed:', jwtError);
+
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-    console.error('❌ [Sent Emails DELETE] Error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

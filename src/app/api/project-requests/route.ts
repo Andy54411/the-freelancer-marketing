@@ -9,10 +9,8 @@ import { ProjectEmailNotificationService } from '@/lib/project-email-notificatio
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('📝 [Project Requests API] Creating new project request...');
 
     const body = await request.json();
-    console.log('📋 [Project Requests API] Request body:', body);
 
     // Support für AI Project Creation Format
     const isAIProjectFormat = body.projectData && body.userId;
@@ -30,7 +28,7 @@ export async function POST(request: NextRequest) {
       subcategory = projectData.category; // AI Format nutzt category als subcategory
 
       if (!projectData.title || !projectData.description || !projectData.category || !customerUid) {
-        console.error('❌ [Project Requests API] Missing required fields in AI format');
+
         return NextResponse.json(
           { error: 'Titel, Beschreibung, Kategorie und Kunde sind erforderlich' },
           { status: 400 }
@@ -75,7 +73,7 @@ export async function POST(request: NextRequest) {
       subcategory = body.subcategory;
 
       if (!body.title || !body.description || !body.category || !customerUid) {
-        console.error('❌ [Project Requests API] Missing required fields in standard format');
+
         return NextResponse.json(
           { error: 'Titel, Beschreibung, Kategorie und Kunde sind erforderlich' },
           { status: 400 }
@@ -113,19 +111,12 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    console.log('💾 [Project Requests API] Saving to Firestore...');
-
     // Speichere in Firestore
     const docRef = await db.collection('project_requests').add(projectRequestData);
-
-    console.log('✅ [Project Requests API] Project request created with ID:', docRef.id);
 
     // ERWEITERTE NOTIFICATION LOGIK: Handle selectedProviders + public notifications
     if (selectedProviders.length > 0) {
       // 1. Direkte Benachrichtigungen an ausgewählte Provider
-      console.log(
-        '🎯 [Project Requests API] Sending direct notifications to selected providers...'
-      );
 
       try {
         const directNotificationPromises = selectedProviders.map(async providerId => {
@@ -145,35 +136,23 @@ export async function POST(request: NextRequest) {
               priority: 'high', // Direkte Zuweisungen haben hohe Priorität
             });
 
-            console.log(
-              `✅ [Project Requests API] Direct notification für Provider ${providerId} erstellt`
-            );
             return { success: true, providerId };
           } catch (error) {
-            console.error(
-              `❌ [Project Requests API] Fehler bei direkter Notification für Provider ${providerId}:`,
-              error
-            );
+
             return { success: false, providerId, error };
           }
         });
 
         await Promise.allSettled(directNotificationPromises);
-        console.log(
-          `🎯 [Project Requests API] Direkte Notifications für ${selectedProviders.length} Provider gesendet`
-        );
+
       } catch (directNotificationError) {
-        console.error(
-          '❌ [Project Requests API] Fehler bei direkten Notifications:',
-          directNotificationError
-        );
+
       }
     }
 
     // 2. Standard E-Mail und Public Notifications (immer ausführen für öffentliche Subcategory)
     if (subcategory) {
       try {
-        console.log('📧 [Project Requests API] Sending email notifications to companies...');
 
         const emailService = ProjectEmailNotificationService.getInstance();
         const emailResult = await emailService.notifyCompaniesAboutNewProject({
@@ -199,21 +178,11 @@ export async function POST(request: NextRequest) {
           createdAt: new Date(),
         });
 
-        console.log(
-          `📊 [Project Requests API] E-Mail-Benachrichtigungen: ${emailResult.sentCount} gesendet, ${emailResult.failedCount} fehlgeschlagen`
-        );
-
         if (emailResult.failedCount > 0) {
-          console.warn(
-            '⚠️ [Project Requests API] Einige E-Mail-Benachrichtigungen fehlgeschlagen:',
-            emailResult.details.filter(d => !d.success).map(d => `${d.email}: ${d.error}`)
-          );
+
         }
 
         // 3. ÖFFENTLICHE FIRESTORE-NOTIFICATIONS: Erstelle Notifications für relevante Unternehmen (zusätzlich zu direkten)
-        console.log(
-          '🔔 [Project Requests API] Creating public Firestore notifications for companies...'
-        );
 
         try {
           // Finde alle Unternehmen mit der entsprechenden Subcategory
@@ -229,9 +198,7 @@ export async function POST(request: NextRequest) {
 
               // Skip falls dieses Unternehmen bereits eine direkte Notification erhalten hat
               if (selectedProviders.length > 0 && selectedProviders.includes(firmDoc.id)) {
-                console.log(
-                  `⚠️ [Project Requests API] Skipping public notification für ${firmDoc.id} - bereits direkt benachrichtigt`
-                );
+
                 return { success: true, companyId: firmDoc.id, skipped: true };
               }
 
@@ -251,15 +218,9 @@ export async function POST(request: NextRequest) {
                 priority: 'medium',
               });
 
-              console.log(
-                `✅ [Project Requests API] Public Firestore-Notification für Company ${firmDoc.id} erstellt`
-              );
               return { success: true, companyId: firmDoc.id };
             } catch (error) {
-              console.error(
-                `❌ [Project Requests API] Fehler beim Erstellen der public Notification für Company ${firmDoc.id}:`,
-                error
-              );
+
               return { success: false, companyId: firmDoc.id, error };
             }
           });
@@ -269,20 +230,11 @@ export async function POST(request: NextRequest) {
             result => result.status === 'fulfilled' && result.value.success && !result.value.skipped
           ).length;
 
-          console.log(
-            `🔔 [Project Requests API] Öffentliche Firestore-Notifications erstellt: ${successfulPublicNotifications} von ${publicNotificationResults.length}`
-          );
         } catch (notificationError) {
-          console.error(
-            '❌ [Project Requests API] Fehler beim Erstellen der öffentlichen Firestore-Notifications:',
-            notificationError
-          );
+
         }
       } catch (emailError) {
-        console.error(
-          '❌ [Project Requests API] Fehler beim Senden der E-Mail-Benachrichtigungen:',
-          emailError
-        );
+
         // Projekt wurde trotzdem erfolgreich erstellt, auch wenn E-Mails fehlschlagen
       }
     }
@@ -293,11 +245,6 @@ export async function POST(request: NextRequest) {
       message: 'Projektanfrage erfolgreich erstellt',
     });
   } catch (error) {
-    console.error('💥 [Project Requests API] Detailed error:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      error: error,
-    });
 
     return NextResponse.json(
       { error: 'Fehler beim Erstellen der Projektanfrage' },
@@ -312,7 +259,6 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('📋 [Project Requests API] Fetching project requests...');
 
     const { searchParams } = new URL(request.url);
     const customerUid = searchParams.get('customerUid');
@@ -340,10 +286,7 @@ export async function GET(request: NextRequest) {
     // Sortierung und Limit
     query = query.orderBy('createdAt', 'desc').limit(limit);
 
-    console.log('🔍 [Project Requests API] Executing query...');
     const snapshot = await query.get();
-
-    console.log('📊 [Project Requests API] Found', snapshot.size, 'project requests');
 
     const projectRequests = snapshot.docs.map(doc => ({
       id: doc.id,
@@ -358,7 +301,6 @@ export async function GET(request: NextRequest) {
       total: snapshot.size,
     });
   } catch (error) {
-    console.error('💥 [Project Requests API] Error fetching project requests:', error);
 
     return NextResponse.json({ error: 'Fehler beim Abrufen der Projektanfragen' }, { status: 500 });
   }

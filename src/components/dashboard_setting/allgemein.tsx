@@ -89,24 +89,6 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
   const { step1, step2, lat, lng, radiusKm } = formData;
 
   // Debug-Ausgaben für Formularwerte
-  console.log('FormData in allgemein.tsx:', {
-    step1: step1,
-    step2: step2,
-    addressFallback: step2.address || step2.street || step1.personalStreet || '',
-    postalCodeFallback: step2.postalCode || step1.personalPostalCode || '',
-    companySuffixFallback: step2.companySuffix || '',
-    industryDebug: {
-      step2Industry: step2.industry,
-      industryValue: step2.industry || '',
-      shouldBeHotelGastronomie: step2.industry === 'Hotel & Gastronomie',
-    },
-    coordinates: {
-      lat: lat,
-      lng: lng,
-      radiusKm: radiusKm,
-      city: step2.city || step1.personalCity || '',
-    },
-  });
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm p-6 space-y-6">

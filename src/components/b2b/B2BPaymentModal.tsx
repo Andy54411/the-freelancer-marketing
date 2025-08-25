@@ -109,7 +109,7 @@ function CheckoutForm({
     event.preventDefault();
 
     if (!stripe || !elements) {
-      console.error('[B2B Payment] Stripe nicht verfügbar');
+
       return;
     }
 
@@ -122,13 +122,11 @@ function CheckoutForm({
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-        console.error('[B2B Payment] Element submission error:', submitError);
+
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
       }
-
-      console.log('[B2B Payment] Elements validation successful, confirming B2B payment...');
 
       // Confirm B2B payment
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
@@ -146,20 +144,20 @@ function CheckoutForm({
       });
 
       if (confirmError) {
-        console.error('[B2B Payment] Fehler bei der Bestätigung:', confirmError);
+
         setMessage(confirmError.message || 'B2B-Zahlung fehlgeschlagen');
         onError(confirmError.message || 'B2B-Zahlung fehlgeschlagen');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('[B2B Payment] PaymentIntent erfolgreich abgeschlossen:', paymentIntent);
+
         setMessage('B2B-Zahlung erfolgreich abgeschlossen!');
         onSuccess(paymentIntent.id);
       } else {
-        console.warn('[B2B Payment] PaymentIntent Status unexpected:', paymentIntent?.status);
+
         setMessage(`B2B-Zahlung Status: ${paymentIntent?.status}`);
         onError(`B2B-Zahlung unvollständig. Status: ${paymentIntent?.status}`);
       }
     } catch (error: any) {
-      console.error('[B2B Payment] Unexpected error:', error);
+
       setMessage('Unerwarteter Fehler bei der B2B-Zahlung');
       onError('Unerwarteter Fehler bei der B2B-Zahlung');
     } finally {
@@ -325,13 +323,6 @@ export default function B2BPaymentModal({
     setError('');
 
     try {
-      console.log('🚀 Creating B2B Payment Intent:', {
-        projectId,
-        projectTitle,
-        amount,
-        paymentType,
-        providerStripeAccountId,
-      });
 
       const response = await fetch('/api/b2b/create-project-payment', {
         method: 'POST',
@@ -366,9 +357,8 @@ export default function B2BPaymentModal({
       setClientSecret(data.clientSecret);
       setPaymentDetails(data.paymentDetails);
 
-      console.log('✅ B2B Payment Intent created successfully:', data);
     } catch (error: any) {
-      console.error('❌ B2B Payment setup failed:', error);
+
       setError(error.message || 'B2B Payment Setup fehlgeschlagen');
       onError(error.message || 'B2B Payment Setup fehlgeschlagen');
     } finally {

@@ -261,7 +261,7 @@ export function generateSandboxClientId(clientNumber: string = '1'): string {
   const validClients = DATEV_SANDBOX_CONFIG.clientNumbers;
 
   if (!validClients.includes(clientNumber as any)) {
-    console.warn(`Invalid client number ${clientNumber}. Using client 1 (fully authorized).`);
+
     clientNumber = '1';
   }
 

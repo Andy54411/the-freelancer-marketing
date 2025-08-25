@@ -5,7 +5,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[API /gemini/blog-content] Gemini Blog-Content Request empfangen');
 
     // Strukturierte Blog-Inhalte für Gemini Support
     const blogContent = {
@@ -160,10 +159,6 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    console.log(
-      '[API /gemini/blog-content] Blog-Content erfolgreich strukturiert und bereitgestellt'
-    );
-
     return NextResponse.json({
       success: true,
       content: blogContent,
@@ -175,7 +170,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[API /gemini/blog-content] Fehler beim Bereitstellen der Blog-Inhalte:', error);
 
     return NextResponse.json(
       {

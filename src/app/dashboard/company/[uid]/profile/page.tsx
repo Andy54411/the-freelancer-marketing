@@ -54,14 +54,13 @@ export default function CompanyProfilePage() {
           };
         }
 
-        console.log('📊 Loaded combined user data:', combinedData);
         setUserData(combinedData);
 
         // Automatische Metriken laden
         const metrics = await calculateCompanyMetrics(uid);
         setCompanyMetrics(metrics);
       } catch (error) {
-        console.error('Fehler beim Laden der Benutzerdaten:', error);
+
       } finally {
         setLoading(false);
       }
@@ -103,7 +102,7 @@ export default function CompanyProfilePage() {
       const metrics = await calculateCompanyMetrics(uid);
       setCompanyMetrics(metrics);
     } catch (error) {
-      console.error('Fehler beim Laden der Benutzerdaten:', error);
+
     }
   };
 

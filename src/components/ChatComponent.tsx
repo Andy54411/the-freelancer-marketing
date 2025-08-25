@@ -120,14 +120,11 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           if (userDocSnap.exists()) {
             setLoggedInUserProfile(userDocSnap.data() as UserProfileData);
           } else {
-            console.warn(
-              'ChatComponent: Benutzerprofil nicht in Firestore gefunden für:',
-              currentUser.uid
-            );
+
             setLoggedInUserProfile(null);
           }
         } catch (error) {
-          console.error('ChatComponent: Fehler beim Laden des Benutzerprofils:', error);
+
           setChatError('Fehler beim Laden des Benutzerprofils');
         } finally {
           setUserProfileLoading(false);
@@ -178,10 +175,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           setMessages(fetchedMessages);
         }
       } catch (error) {
-        console.error(
-          `[ChatComponent] Fehler beim Laden der Chat-Nachrichten für orderId: ${orderId}`,
-          error
-        );
+
         setChatError('Fehler beim Laden der Nachrichten');
       } finally {
         setChatLoading(false);
@@ -290,7 +284,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
       setNewMessageText(''); // Eingabefeld nach erfolgreichem Senden leeren
     } catch (error) {
-      console.error('Fehler beim Senden der Nachricht:', error);
+
       setChatError('Fehler beim Senden der Nachricht');
     } finally {
       setIsSendingMessage(false); // Sende-Vorgang beenden

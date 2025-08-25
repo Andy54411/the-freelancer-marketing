@@ -21,7 +21,7 @@ export async function GET(
 
         return NextResponse.json(translations);
     } catch (error) {
-        console.error('Error loading translations:', error);
+
         return NextResponse.json({ error: 'Failed to load translations' }, { status: 500 });
     }
 }

@@ -75,12 +75,6 @@ export function SectionCards() {
           const order = doc.data();
 
           // Debug: Zeige alle Status-Werte in der Konsole
-          console.log(
-            'Order Status:',
-            order.status,
-            'Original Price:',
-            order.jobCalculatedPriceInCents
-          );
 
           // VOLLSTÄNDIGE UMSATZBERECHNUNG - berücksichtige alle Einnahmen
           let orderTotalRevenue = 0;
@@ -96,14 +90,9 @@ export function SectionCards() {
               order.status === 'geld_freigegeben'
             ) {
               orderTotalRevenue += order.jobCalculatedPriceInCents;
-              console.log('Added PAID base order value:', order.jobCalculatedPriceInCents);
+
             } else {
-              console.log(
-                'SKIPPED unpaid base order:',
-                order.jobCalculatedPriceInCents,
-                'Status:',
-                order.status
-              );
+
             }
           }
 
@@ -121,25 +110,15 @@ export function SectionCards() {
                   entry.paymentStatus === 'paid')
               ) {
                 orderTotalRevenue += entry.billableAmount;
-                console.log(
-                  'Added PAID timetracking entry:',
-                  entry.billableAmount,
-                  'Status:',
-                  entry.status
-                );
+
               } else {
-                console.log(
-                  'SKIPPED unpaid timetracking entry:',
-                  entry.billableAmount,
-                  'Status:',
-                  entry.status
-                );
+
               }
             });
           }
 
           // Debug: Finaler Auftragsumsatz
-          console.log('Final order revenue:', orderTotalRevenue, 'Order ID:', doc.id);
+
           monthlyRevenue += orderTotalRevenue;
 
           // Neue Aufträge (die auf Clearing warten)
@@ -195,14 +174,12 @@ export function SectionCards() {
             availableBalance = (balanceData.available || 0) / 100;
             pendingBalance = (balanceData.pending || 0) / 100;
           } else {
-            console.warn(
-              `Stripe balance API error: ${balanceResponse.status} ${balanceResponse.statusText}`
-            );
+
             const errorData = await balanceResponse.json().catch(() => ({}));
-            console.warn('Error details:', errorData);
+
           }
         } catch (balanceError) {
-          console.warn('Failed to fetch Stripe balance:', balanceError);
+
         }
 
         setStats({
@@ -215,7 +192,7 @@ export function SectionCards() {
           pendingApprovals,
         });
       } catch (error) {
-        console.error('Error fetching stats:', error);
+
         setStats({
           monthlyRevenue: 0,
           newOrders: 0,

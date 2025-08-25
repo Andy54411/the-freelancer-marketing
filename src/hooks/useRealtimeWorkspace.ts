@@ -43,7 +43,7 @@ export function useRealtimeWorkspace({
       wsRef.current = new WebSocket(fullUrl);
 
       wsRef.current.onopen = () => {
-        console.log('WebSocket connected to AWS');
+
         setIsConnected(true);
         setConnectionError(null);
         reconnectAttempts.current = 0;
@@ -57,21 +57,20 @@ export function useRealtimeWorkspace({
       wsRef.current.onmessage = event => {
         try {
           const update: WorkspaceUpdate = JSON.parse(event.data);
-          console.log('Realtime update received:', update);
+
           onUpdate(update);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+
         }
       };
 
       wsRef.current.onclose = event => {
-        console.log('WebSocket disconnected:', event.code, event.reason);
+
         setIsConnected(false);
 
         // Auto-reconnect mit exponential backoff
         if (reconnectAttempts.current < maxReconnectAttempts) {
           const delay = Math.pow(2, reconnectAttempts.current) * 1000; // 1s, 2s, 4s, 8s, 16s
-          console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1})`);
 
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;
@@ -83,11 +82,11 @@ export function useRealtimeWorkspace({
       };
 
       wsRef.current.onerror = error => {
-        console.error('WebSocket error:', error);
+
         setConnectionError('WebSocket connection error');
       };
     } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
+
       setConnectionError('Failed to create WebSocket connection');
     }
   };
@@ -112,7 +111,7 @@ export function useRealtimeWorkspace({
         workspaceId,
       };
       wsRef.current.send(JSON.stringify(message));
-      console.log(`Subscribed to workspace: ${workspaceId}`);
+
     }
   };
 
@@ -123,7 +122,7 @@ export function useRealtimeWorkspace({
         workspaceId,
       };
       wsRef.current.send(JSON.stringify(message));
-      console.log(`Unsubscribed from workspace: ${workspaceId}`);
+
     }
   };
 

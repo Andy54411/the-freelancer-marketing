@@ -85,7 +85,7 @@ function CheckoutForm({
           });
         }
       } catch (error) {
-        console.warn('Kunde konnte nicht geladen werden, verwende Fallback-Daten:', error);
+
         setCustomerData({
           name: 'Taskilo Kunde',
           email: '',
@@ -100,16 +100,12 @@ function CheckoutForm({
     event.preventDefault();
 
     if (!stripe || !elements) {
-      console.error('[PAYMENT] Stripe oder Elements nicht geladen');
+
       const errorMsg = 'Zahlungssystem ist noch nicht bereit. Bitte versuchen Sie es erneut.';
       setMessage(errorMsg);
       onError(errorMsg);
       return;
     }
-
-    console.log('[PAYMENT] Starting payment process for additional hours...');
-    console.log('[PAYMENT] Order ID:', orderId);
-    console.log('[PAYMENT] Total Amount:', totalAmount, 'cents');
 
     setIsLoading(true);
     onProcessing(true);
@@ -117,17 +113,15 @@ function CheckoutForm({
 
     try {
       // Schritt 1: Elements validieren und Daten sammeln
-      console.log('[PAYMENT] Validating payment elements...');
+
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-        console.error('[PAYMENT] Element submission error:', submitError);
+
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
       }
-
-      console.log('[PAYMENT] Elements validation successful, confirming payment...');
 
       // Schritt 2: Payment bestätigen mit echten Kundendaten
       const confirmParams: any = {
@@ -153,11 +147,6 @@ function CheckoutForm({
         },
       };
 
-      console.log(
-        '[PAYMENT] Calling stripe.confirmPayment with client secret:',
-        clientSecret?.substring(0, 20) + '...'
-      );
-
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret,
@@ -165,31 +154,25 @@ function CheckoutForm({
         redirect: 'if_required', // Nur bei 3D Secure umleiten
       });
 
-      console.log('[PAYMENT] confirmPayment result:', {
-        error: confirmError?.message,
-        paymentIntentStatus: paymentIntent?.status,
-        paymentIntentId: paymentIntent?.id,
-      });
-
       if (confirmError) {
-        console.error('[PAYMENT] Confirm payment error:', confirmError);
+
         const errorMessage = confirmError.message || 'Fehler bei der Zahlungsbestätigung';
         setMessage(errorMessage);
         onError(errorMessage);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('[PAYMENT] 🎉 Payment succeeded! Webhook should be triggered automatically.');
+
         setMessage(
           'Zahlung erfolgreich abgeschlossen! Die Stunden werden automatisch als bezahlt markiert.'
         );
         onSuccess(paymentIntent.id);
       } else {
-        console.warn('[PAYMENT] Unexpected payment status:', paymentIntent?.status);
+
         const errorMessage = `Unerwarteter Zahlungsstatus: ${paymentIntent?.status || 'unbekannt'}`;
         setMessage(errorMessage);
         onError(errorMessage);
       }
     } catch (error) {
-      console.error('[PAYMENT] Payment processing error:', error);
+
       const errorMessage =
         error instanceof Error ? error.message : 'Unbekannter Fehler bei der Zahlung';
       setMessage(errorMessage);

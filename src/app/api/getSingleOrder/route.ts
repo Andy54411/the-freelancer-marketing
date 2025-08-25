@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
     } catch (authError) {
-      console.error('Token verification failed:', authError);
+
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
@@ -41,9 +41,7 @@ export async function POST(request: NextRequest) {
       orderData?.selectedAnbieterId === userId || orderData?.providerFirebaseUid === userId;
 
     if (!isCustomer && !isProvider) {
-      console.log(
-        `Access denied for user ${userId}. Order customer: ${orderData?.kundeId || orderData?.customerFirebaseUid}, provider: ${orderData?.selectedAnbieterId || orderData?.providerFirebaseUid}`
-      );
+
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -56,7 +54,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching single order:', error);
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

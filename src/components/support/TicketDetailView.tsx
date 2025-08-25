@@ -98,7 +98,7 @@ export default function TicketDetailView({
         toast.error('Fehler beim Laden des Tickets');
       }
     } catch (error) {
-      console.error('Fehler beim Laden des Tickets:', error);
+
       toast.error('Fehler beim Laden des Tickets');
     } finally {
       setLoading(false);
@@ -135,7 +135,7 @@ export default function TicketDetailView({
         toast.error(errorData.error || 'Fehler beim Senden der Antwort');
       }
     } catch (error) {
-      console.error('Fehler beim Senden der Antwort:', error);
+
       toast.error('Fehler beim Senden der Antwort');
     } finally {
       setSending(false);

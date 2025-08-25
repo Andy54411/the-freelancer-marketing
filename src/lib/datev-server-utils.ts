@@ -43,7 +43,7 @@ export async function getDatevTokenFromCookies(
   const tokenCookie = cookieStore.get(cookieName);
 
   if (!tokenCookie?.value) {
-    console.log(`[datev-server-utils] No token cookie found for company ${companyId}`);
+
     return null;
   }
 
@@ -63,17 +63,14 @@ export async function getDatevTokenFromCookies(
 
     // Check if token is expired (with 5-minute buffer)
     if (Date.now() >= tokenData.expires_at - 300000) {
-      console.log(`[datev-server-utils] Cookie token is expired for company ${companyId}.`);
+
       // Hier könnte man eine Token-Refresh-Logik einbauen, wenn ein Refresh-Token vorhanden ist.
       return null;
     }
 
     return tokenData;
   } catch (error) {
-    console.error(
-      `[datev-server-utils] Failed to parse token from cookie for company ${companyId}:`,
-      error
-    );
+
     return null;
   }
 }
@@ -116,7 +113,6 @@ export async function setDatevTokenCookies(
     path: '/',
   });
 
-  console.log(`✅ [setDatevTokenCookies] Cookie set for company ${companyId}: ${cookieName}`);
 }
 
 /**
@@ -142,12 +138,6 @@ export async function exchangeCodeForTokens(code: string) {
     client_secret: clientSecret,
   });
 
-  console.log('🔄 DATEV Sandbox Token Exchange:', {
-    tokenUrl,
-    clientId,
-    redirectUri,
-  });
-
   const response = await fetch(tokenUrl, {
     method: 'POST',
     headers: {
@@ -159,15 +149,11 @@ export async function exchangeCodeForTokens(code: string) {
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error('❌ DATEV Sandbox Token Exchange Error:', errorBody);
+
     throw new Error(`Failed to exchange DATEV sandbox code for token: ${response.statusText}`);
   }
 
   const tokenData = await response.json();
-  console.log('✅ DATEV Sandbox Token received:', {
-    expires_in: tokenData.expires_in,
-    token_type: tokenData.token_type,
-  });
 
   return tokenData;
 }
@@ -195,7 +181,6 @@ export async function saveTokensToFirestore(
     { merge: true }
   );
 
-  console.log('✅ DATEV Sandbox tokens saved to Firestore for user:', userId);
 }
 
 /**
@@ -229,15 +214,11 @@ export async function refreshDatevAccessToken(refreshToken: string) {
   const tokenData = await response.json();
 
   if (!response.ok) {
-    console.error('❌ DATEV Token Refresh Error:', {
-      status: response.status,
-      body: tokenData,
-    });
+
     throw new Error(
       `Failed to refresh DATEV token: ${tokenData.error_description || 'Unknown error'}`
     );
   }
 
-  console.log('✅ DATEV Token refreshed successfully.');
   return tokenData;
 }

@@ -11,7 +11,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Benutzer-ID oder Bank-ID fehlt.' }, { status: 400 });
     }
 
-    console.log('Testing finAPI client credentials...');
     const credentialTest = await finapiServiceFixed.testCredentials();
     if (!credentialTest.success) {
       return NextResponse.json(
@@ -23,17 +22,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('SUCCESS: finAPI credentials valid, creating user...');
-
     // LÖSUNG für Sandbox-Verschmutzung: Echte UUIDs verwenden
     function generateUniqueUserId(): string {
       // Verwende echte UUIDs statt vorhersagbare IDs
       const uuid = randomUUID().replace(/-/g, '').substring(0, 16);
       return `taskilo_uuid_${uuid}`;
     }
-
-    console.log('INFO: Creating clean finAPI technical user');
-    console.log('INFO: User will only login to their BANK, not to finAPI!');
 
     let userResult: { user: any; userToken: string } | null = null;
     let attempts = 0;
@@ -45,18 +39,15 @@ export async function POST(req: NextRequest) {
       const uniqueUserId = generateUniqueUserId();
       const securePassword = `secure_${uniqueUserId}_${Date.now()}`;
 
-      console.log(`ATTEMPT ${attempts}/${maxAttempts}: Trying UUID user: ${uniqueUserId}`);
-
       try {
         userResult = await finapiServiceFixed.getOrCreateUser(uniqueUserId, securePassword);
-        console.log(`SUCCESS: UUID user created on attempt ${attempts}:`, uniqueUserId);
+
         break;
       } catch (error: any) {
-        console.log(`FAILED: UUID attempt ${attempts}:`, error.message);
 
         // If user creation succeeded but token failed, continue with WebForm using client token
         if (error.message.includes('User was created successfully but token retrieval failed')) {
-          console.log(`INFO: User created but token failed, continuing with client token fallback`);
+
           userResult = {
             user: { id: uniqueUserId },
             userToken: '', // Empty string instead of null for TypeScript
@@ -66,11 +57,10 @@ export async function POST(req: NextRequest) {
 
         // Wenn selbst UUID-User existieren, ist die Sandbox sehr verschmutzt
         if (error.message.includes('exists but authentication failed')) {
-          console.log(`WARNING: UUID collision on attempt ${attempts} - trying next UUID...`);
 
           // Bei letztem Versuch detaillierten Error geben
           if (attempts === maxAttempts) {
-            console.error('CRITICAL: All UUID attempts failed - Sandbox critically polluted');
+
             return NextResponse.json(
               {
                 error: 'finAPI Sandbox ist überlastet mit Test-Benutzern.',
@@ -103,7 +93,7 @@ export async function POST(req: NextRequest) {
     }
 
     // WebForm 2.0 für Bankverbindung erstellen
-    console.log('Creating WebForm 2.0 for bank connection...');
+
     const webFormToken =
       userResult && userResult.userToken && userResult.userToken.trim() ? userResult.userToken : '';
 
@@ -115,8 +105,6 @@ export async function POST(req: NextRequest) {
         errorCallback: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/finapi/callback/error`,
       },
     });
-
-    console.log('SUCCESS: WebForm 2.0 created:', webForm.url);
 
     return NextResponse.json({
       success: true,
@@ -138,7 +126,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('ERROR: Bank connection failed:', error);
 
     return NextResponse.json(
       {

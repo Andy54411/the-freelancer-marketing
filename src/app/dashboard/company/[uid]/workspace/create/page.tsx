@@ -166,7 +166,7 @@ export default function CreateWorkspacePage() {
       toast.success('Workspace erfolgreich erstellt');
       router.push(`/dashboard/company/${user.uid}/workspace`);
     } catch (error) {
-      console.error('Error creating workspace:', error);
+
       toast.error('Fehler beim Erstellen des Workspace');
     } finally {
       setLoading(false);

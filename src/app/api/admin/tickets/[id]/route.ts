@@ -64,7 +64,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       ticket,
     });
   } catch (error) {
-    console.error('Ticket fetch error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Laden des Tickets', details: error.message },
       { status: 500 }
@@ -111,7 +111,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       message: 'Ticket erfolgreich gelöscht',
     });
   } catch (error) {
-    console.error('Ticket deletion error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Löschen des Tickets', details: error.message },
       { status: 500 }

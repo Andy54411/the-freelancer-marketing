@@ -53,7 +53,7 @@ export default function PaymentsPage() {
 
         setPayments(loadedPayments);
       } catch (error) {
-        console.error('Fehler beim Laden der Zahlungen:', error);
+
         toast.error('Fehler beim Laden der Zahlungen');
       } finally {
         setLoading(false);

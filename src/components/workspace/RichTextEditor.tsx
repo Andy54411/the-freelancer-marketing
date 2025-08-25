@@ -559,7 +559,7 @@ export function RichTextEditor({
   // Debug: Zeige welche Sections existieren
   useEffect(() => {
     if (sections.length > 0) {
-      console.log('🎯 Draggable Sections:', sections.map(s => `${s.type}(${s.id})`).join(', '));
+
     }
   }, [sections]);
 

@@ -36,19 +36,10 @@ export class QuoteInventoryService {
 
       // Quote erstellen (hier würde normalerweise die Quote in der Datenbank gespeichert)
       // TODO: Implementiere Quote-Speicherung in Firestore
-      console.log('Quote würde erstellt mit:', {
-        ...quoteData,
-        inventoryItems: inventoryItems.map(item => ({
-          ...item,
-          reservedAt: new Date(),
-        })),
-        tempQuoteId,
-        status: 'pending',
-      });
 
       return tempQuoteId;
     } catch (error) {
-      console.error('Fehler beim Erstellen der Quote mit Reservierung:', error);
+
       throw error;
     }
   }
@@ -68,9 +59,9 @@ export class QuoteInventoryService {
 
       // Quote-Status aktualisieren
       // TODO: Implementiere Quote-Status-Update in Firestore
-      console.log(`Quote ${quoteId} angenommen, Artikel verkauft:`, inventoryItems);
+
     } catch (error) {
-      console.error('Fehler beim Annehmen der Quote:', error);
+
       throw error;
     }
   }
@@ -90,9 +81,9 @@ export class QuoteInventoryService {
 
       // Quote-Status aktualisieren
       // TODO: Implementiere Quote-Status-Update in Firestore
-      console.log(`Quote ${quoteId} abgelehnt, Reservierung freigegeben:`, inventoryItems);
+
     } catch (error) {
-      console.error('Fehler beim Ablehnen der Quote:', error);
+
       throw error;
     }
   }
@@ -106,9 +97,9 @@ export class QuoteInventoryService {
       // 1. Finde alle Quotes mit Status 'pending' und älter als X Tage
       // 2. Gebe Reservierungen frei
       // 3. Markiere Quotes als 'expired'
-      console.log('Bereinigung abgelaufener Quotes für Unternehmen:', companyId);
+
     } catch (error) {
-      console.error('Fehler beim Bereinigen abgelaufener Quotes:', error);
+
       throw error;
     }
   }
@@ -122,7 +113,7 @@ export class QuoteInventoryService {
       // Momentan als Platzhalter
       return [];
     } catch (error) {
-      console.error('Fehler beim Laden der Inventar-Reservierungen:', error);
+
       throw error;
     }
   }

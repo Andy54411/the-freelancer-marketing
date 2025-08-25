@@ -80,11 +80,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
   // Debug: Log state changes
   useEffect(() => {
-    console.log('[Header] Profile picture state changed:', {
-      profilePictureURLFromStorage,
-      currentUserPhotoURL: currentUser?.photoURL,
-      currentUserUID: currentUser?.uid,
-    });
+
   }, [profilePictureURLFromStorage, currentUser?.photoURL, currentUser?.uid]);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false); // State für Such-Dropdown
@@ -106,7 +102,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         return () => {}; // Leere Cleanup-Funktion zurückgeben
       }
 
-      console.log(`[Header] Attaching recent chats listener for user: ${uid}`);
       const chatCollectionRef = collection(db, 'chats');
       const recentChatsQuery = query(
         chatCollectionRef,
@@ -149,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                       null;
                   }
                 } catch (error) {
-                  console.error('[Header] Fehler beim Laden der Benutzerdaten:', error);
+
                 }
               }
 
@@ -175,7 +170,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           setRecentChats(chatsData);
         },
         error => {
-          console.error(`[Header] Fehler im Listener für aktuelle Chats für User: ${uid}`, error);
+
           setUnreadMessagesCount(0);
           setRecentChats([]);
         }
@@ -187,22 +182,13 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
   // Effekt zur Überwachung des Authentifizierungsstatus
   useEffect(() => {
-    console.log('[Header] Setting up auth state listener');
+
     const unsubscribe = auth.onAuthStateChanged(user => {
-      console.log(
-        '[Header] Auth state changed - user:',
-        user
-          ? {
-              uid: user.uid,
-              email: user.email,
-              photoURL: user.photoURL,
-            }
-          : null
-      );
+
       setCurrentUser(user);
     });
     return () => {
-      console.log('[Header] Cleaning up auth state listener');
+
       unsubscribe();
     };
   }, []);
@@ -221,55 +207,41 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       return;
     }
     try {
-      console.log('[Header] Loading profile picture for UID:', uid);
+
       // Versuche zuerst die Firestore-Benutzerdaten zu laden, um die direkte URL zu bekommen
       const userDocRef = doc(db, 'users', uid);
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
-        console.log('[Header] User data loaded:', {
-          profilePictureFirebaseUrl: userData.profilePictureFirebaseUrl,
-          profilePictureURL: userData.profilePictureURL,
-          photoURL: userData.photoURL,
-        });
 
         // TEST: Versuche die URL direkt zu testen
         const testUrl = userData.profilePictureFirebaseUrl;
         if (testUrl) {
-          console.log('[Header] Testing image URL accessibility:', testUrl);
 
           // Versuche die Firebase Storage URL direkt ohne Encoding zu verwenden
           const directUrl = testUrl
             .replace(/user_uploads%2F/, 'user_uploads/')
             .replace(/%2F/g, '/');
-          console.log('[Header] Direct URL (decoded):', directUrl);
+
         }
 
         const profilePictureUrl =
           userData.profilePictureFirebaseUrl || userData.profilePictureURL || userData.photoURL;
 
-        console.log('[Header] Selected profile picture URL:', profilePictureUrl);
-
         if (profilePictureUrl) {
           // NEUE LOGIK: Verwende die Storage getDownloadURL Methode für bessere Kompatibilität
           if (userData.profilePictureURL && !userData.profilePictureURL.startsWith('http')) {
             try {
-              console.log(
-                '[Header] Attempting to get download URL for path:',
-                userData.profilePictureURL
-              );
+
               const imageRef = storageRef(storage, userData.profilePictureURL);
               const downloadUrl = await getDownloadURL(imageRef);
-              console.log('[Header] Got download URL from storage reference:', downloadUrl);
+
               setProfilePictureURLFromStorage(downloadUrl);
               setImageLoadError(false);
-              console.log('[Header] Profile picture URL set successfully via storage reference');
+
               return;
             } catch (storageError) {
-              console.log(
-                '[Header] Storage reference failed, falling back to direct URL:',
-                storageError
-              );
+
             }
           }
 
@@ -278,15 +250,15 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           if (!profilePictureUrl.startsWith('http')) {
             // Falls es nur ein Pfad ist, füge die Firebase Storage Base URL hinzu
             finalUrl = `https://storage.googleapis.com/tilvo-f142f.firebasestorage.app/${encodeURIComponent(profilePictureUrl)}`;
-            console.log('[Header] Converted relative path to full URL:', finalUrl);
+
           }
           setProfilePictureURLFromStorage(finalUrl);
           setImageLoadError(false); // Reset error state when new image is set
-          console.log('[Header] Profile picture URL set successfully');
+
           return;
         }
       } else {
-        console.log('[Header] User document does not exist for UID:', uid);
+
       }
 
       // Fallback: Suche im Storage (für Rückwärtskompatibilität)
@@ -316,7 +288,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         }
       }
     } catch (error) {
-      console.error('Header: Fehler beim Laden des Profilbilds:', error);
+
       setProfilePictureURLFromStorage(null); // Fehlerfall
     }
   }, []);
@@ -327,38 +299,31 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       return;
     }
     try {
-      console.log('[Header] Loading Firestore user data for UID:', uid);
+
       const userDocRef = doc(db, 'users', uid);
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data() as FirestoreUserData;
-        console.log('[Header] Firestore user data loaded:', {
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          user_type: userData.user_type,
-        });
+
         setFirestoreUserData(userData);
       } else {
-        console.warn('Header: Firestore-Benutzerdokument nicht gefunden für UID:', uid);
+
         setFirestoreUserData(null);
       }
     } catch (error) {
-      console.error('Header: Fehler beim Laden der Firestore-Benutzerdaten:', error);
+
       setFirestoreUserData(null);
     }
   }, []);
 
   useEffect(() => {
-    console.log('[Header] useEffect triggered - currentUser?.uid:', currentUser?.uid);
+
     if (currentUser?.uid) {
-      console.log(
-        '[Header] Calling loadProfilePictureFromStorage and loadFirestoreUserData for UID:',
-        currentUser.uid
-      );
+
       loadProfilePictureFromStorage(currentUser.uid);
       loadFirestoreUserData(currentUser.uid);
     } else {
-      console.log('[Header] No currentUser UID, clearing profile data');
+
       setProfilePictureURLFromStorage(null); // Benutzer abgemeldet oder UID nicht vorhanden
       setFirestoreUserData(null);
     }
@@ -444,7 +409,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       setFirestoreUserData(null); // Firestore-Daten beim Logout zurücksetzen
       router.push('/'); // Weiterleitung zur Startseite nach dem Logout
     } catch (error) {
-      console.error('Fehler beim Abmelden:', error);
+
     }
   };
   // NEU: Gefilterte Kategorien basierend auf dem Suchbegriff
@@ -464,12 +429,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   }, [searchTerm]);
 
   // Debug: Log company prop
-  console.log('[Header] COMPANY PROP DEBUG:', {
-    company: company,
-    companyLogoUrl: company?.logoUrl,
-    hasCompany: !!company,
-    hasCompanyLogo: !!company?.logoUrl,
-  });
 
   return (
     <>
@@ -668,18 +627,11 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         alt="Avatar"
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
                         onError={e => {
-                          console.log(
-                            '[Header] Profile image failed to load:',
-                            profilePictureURLFromStorage || currentUser.photoURL
-                          );
-                          console.log('[Header] Setting imageLoadError to true');
+
                           setImageLoadError(true);
                         }}
                         onLoad={() => {
-                          console.log(
-                            '[Header] Profile image loaded successfully:',
-                            profilePictureURLFromStorage || currentUser.photoURL
-                          );
+
                           setImageLoadError(false);
                         }}
                       />

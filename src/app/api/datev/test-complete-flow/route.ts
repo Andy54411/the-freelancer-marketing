@@ -12,24 +12,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId') || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
 
-    console.log('🚀 [DATEV Test Flow] Starting complete flow test for company:', companyId);
-
     // Step 1: Generate PKCE challenge (same as in auth flow)
     const codeVerifier = crypto.randomBytes(96).toString('base64url').substring(0, 128);
     const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
 
     // Step 2: Get current config
     const config = getDatevConfig();
-
-    console.log('🔍 [DATEV Test Flow] Environment Analysis:', {
-      nodeEnv: process.env.NODE_ENV,
-      clientId: config.clientId,
-      apiBaseUrl: config.apiBaseUrl,
-      tokenUrl: config.tokenUrl,
-      authUrl: config.authUrl,
-      isSandbox: config.clientId === '6111ad8e8cae82d1a805950f2ae4adc4',
-      hasClientSecret: !!config.clientSecret,
-    });
 
     // Step 3: Create state (same format as real OAuth)
     const stateData = {
@@ -49,13 +37,6 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.set('code_challenge', codeChallenge);
     authUrl.searchParams.set('code_challenge_method', 'S256');
     authUrl.searchParams.set('prompt', 'consent');
-
-    console.log('🔗 [DATEV Test Flow] Generated OAuth URL:', {
-      url: authUrl.toString(),
-      state: state,
-      codeChallenge: codeChallenge.substring(0, 20) + '...',
-      codeVerifier: codeVerifier.substring(0, 20) + '...',
-    });
 
     // Step 5: Return comprehensive test information
     return NextResponse.json({
@@ -97,7 +78,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ [DATEV Test Flow] Error:', error);
+
     return NextResponse.json(
       {
         error: 'test_flow_error',

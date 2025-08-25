@@ -77,7 +77,6 @@ export function DatevExport({ companyId }: DatevExportProps) {
 
       // Load organization
       // Organizations not needed for Taskilo - UserInfo API is sufficient
-      console.log('✅ DATEV connection verified via UserInfo API');
 
       // Mock invoice data - in production, load from your backend
       setInvoices([
@@ -133,7 +132,7 @@ export function DatevExport({ companyId }: DatevExportProps) {
         },
       ]);
     } catch (error) {
-      console.error('Fehler beim Laden der Export-Daten:', error);
+
       toast.error('Fehler beim Laden der Export-Daten');
     } finally {
       setLoading(false);
@@ -219,7 +218,7 @@ export function DatevExport({ companyId }: DatevExportProps) {
       setSelectedInvoices([]);
       toast.info(`Export von ${selectedInvoices.length} Rechnung(en) gestartet`);
     } catch (error) {
-      console.error('Export-Fehler:', error);
+
       toast.error('Fehler beim Starten des Exports');
     }
   };

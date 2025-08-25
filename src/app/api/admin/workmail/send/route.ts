@@ -19,19 +19,9 @@ export async function POST(request: NextRequest) {
       password: process.env.WORKMAIL_SUPPORT_PASSWORD || 'demo_password',
     };
 
-    console.log('WorkMail API called with:', { to, subject, from });
-    console.log('Using credentials for:', workmailCredentials.email);
-
     // Für Development: Simuliere E-Mail-Versand ohne echte SMTP-Verbindung
     if (process.env.NODE_ENV === 'development') {
       // Development Mode: Simuliere erfolgreichen E-Mail-Versand
-      console.log('=== DEVELOPMENT MODE: E-Mail Simulation ===');
-      console.log('Von:', from || workmailCredentials.email);
-      console.log('An:', to);
-      console.log('Betreff:', subject);
-      console.log('HTML:', htmlContent?.substring(0, 100) + '...');
-      console.log('Text:', textContent?.substring(0, 100) + '...');
-      console.log('==========================================');
 
       return NextResponse.json({
         success: true,
@@ -67,17 +57,8 @@ export async function POST(request: NextRequest) {
       html: htmlContent || textContent || '',
     };
 
-    console.log('Sending email with WorkMail credentials:', {
-      from: mailOptions.from,
-      to: mailOptions.to,
-      subject: mailOptions.subject,
-      user: workmailCredentials.email,
-    });
-
     // E-Mail senden
     const info = await transporter.sendMail(mailOptions);
-
-    console.log('Email sent successfully:', info);
 
     return NextResponse.json({
       success: true,
@@ -86,7 +67,6 @@ export async function POST(request: NextRequest) {
       sender: workmailCredentials.email,
     });
   } catch (error) {
-    console.error('WorkMail send error:', error);
 
     return NextResponse.json(
       {

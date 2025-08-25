@@ -13,15 +13,13 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     };
 
-    console.log('DATEV Credentials Debug:', credentials);
-
     return NextResponse.json({
       success: true,
       credentials,
       message: 'Debug info logged to console',
     });
   } catch (error) {
-    console.error('Debug credentials error:', error);
+
     return NextResponse.json(
       {
         success: false,

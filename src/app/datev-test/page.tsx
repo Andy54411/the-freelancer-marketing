@@ -33,7 +33,7 @@ export default function DatevTestPage() {
       }
     } catch (err) {
       setError('Netzwerk-Fehler beim Verbinden zur API');
-      console.error('DATEV Auth Error:', err);
+
     } finally {
       setLoading(false);
     }

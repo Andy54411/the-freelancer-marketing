@@ -122,15 +122,6 @@ export default function CompanyProviderDetailPage() {
         }
 
         // DEBUG: Log loaded provider data from firma collection
-        console.log('🔍 [Provider Debug] Firma collection data:', {
-          id: firmaDoc.id,
-          companyName: data.companyName,
-          stripeAccountId: data.stripeAccountId,
-          stripeAccountIdType: typeof data.stripeAccountId,
-          allKeys: Object.keys(data).filter(key => key.includes('stripe')),
-          step4StripeAccountId: data.step4?.stripeAccountId,
-          allData: data, // VOLLSTÄNDIGE DATEN ZUR DIAGNOSE
-        });
 
         setProvider({
           id: firmaDoc.id,
@@ -192,15 +183,6 @@ export default function CompanyProviderDetailPage() {
           }
 
           // DEBUG: Log loaded provider data from users collection
-          console.log('🔍 [Provider Debug] Users collection data:', {
-            id: userDoc.id,
-            userName: data.userName,
-            stripeAccountId: data.stripeAccountId,
-            stripeAccountIdType: typeof data.stripeAccountId,
-            allKeys: Object.keys(data).filter(key => key.includes('stripe')),
-            step4StripeAccountId: data.step4?.stripeAccountId,
-            allData: data, // VOLLSTÄNDIGE DATEN ZUR DIAGNOSE
-          });
 
           setProvider({
             id: userDoc.id,
@@ -226,12 +208,12 @@ export default function CompanyProviderDetailPage() {
             stripeAccountId: data.stripeAccountId, // Top-level field from database
           });
         } else {
-          console.error('Provider nicht gefunden');
+
           router.push(`/dashboard/company/${companyUid}`);
         }
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Provider-Daten:', error);
+
     } finally {
       setLoading(false);
     }
@@ -247,7 +229,7 @@ export default function CompanyProviderDetailPage() {
         setCompanyName(data.companyName || 'Unbekanntes Unternehmen');
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Unternehmensdaten:', error);
+
     }
   };
 
@@ -261,7 +243,7 @@ export default function CompanyProviderDetailPage() {
         setUserProfile(data as UserProfileData);
       }
     } catch (error) {
-      console.error('Fehler beim Laden des Benutzerprofils:', error);
+
     }
   };
 
@@ -285,14 +267,7 @@ export default function CompanyProviderDetailPage() {
     setDatePickerOpen(false);
 
     if (!selection || !time || !durationString || !provider || !firebaseUser || !userProfile) {
-      console.error('Unvollständige Buchungsdaten:', {
-        selection,
-        time,
-        durationString,
-        provider: !!provider,
-        user: !!firebaseUser,
-        userProfile: !!userProfile,
-      });
+
       alert('Unvollständige Buchungsdaten. Bitte versuchen Sie es erneut.');
       return;
     }
@@ -314,14 +289,9 @@ export default function CompanyProviderDetailPage() {
 
     // Automatische Erstellung von BEIDEN Stripe-Profilen wenn sie fehlen
     if (!userProfile.stripeCustomerId || !userProfile.stripeAccountId) {
-      console.log('User profile ohne vollständige Stripe-Profile:', {
-        hasCustomerId: !!userProfile.stripeCustomerId,
-        hasAccountId: !!userProfile.stripeAccountId,
-        profile: userProfile,
-      });
 
       try {
-        console.log('🔄 Erstelle automatisch fehlende Stripe-Profile...');
+
         const createProfilesResponse = await fetch('/api/create-company-stripe-profiles', {
           method: 'POST',
           headers: {
@@ -341,7 +311,6 @@ export default function CompanyProviderDetailPage() {
         }
 
         const profileData = await createProfilesResponse.json();
-        console.log('✅ Stripe-Profile erfolgreich erstellt:', profileData);
 
         // Update das lokale userProfile mit den neuen IDs
         if (profileData.stripeCustomerId) {
@@ -351,7 +320,7 @@ export default function CompanyProviderDetailPage() {
           userProfile.stripeAccountId = profileData.stripeAccountId;
         }
       } catch (profileError) {
-        console.error('❌ Fehler beim Erstellen der Stripe-Profile:', profileError);
+
         const setupPayment = confirm(
           'Ihre Zahlungsprofile konnten nicht automatisch erstellt werden. Möchten Sie jetzt zu den Einstellungen gehen, um die Zahlungsmethoden manuell einzurichten?'
         );
@@ -420,9 +389,7 @@ export default function CompanyProviderDetailPage() {
       if (calculatedNumberOfDays > 1) {
         // Multi-Tag Auftrag: hoursInput sind Stunden pro Tag
         totalHours = hoursInput * calculatedNumberOfDays;
-        console.log(
-          `KORREKTUR Provider-Buchung: ${calculatedNumberOfDays} Tage × ${hoursInput}h = ${totalHours}h total`
-        );
+
       }
 
       const servicePrice = totalHours * hourlyRateNum;
@@ -489,10 +456,9 @@ export default function CompanyProviderDetailPage() {
       };
 
       await setDoc(doc(db, 'temporaryJobDrafts', tempJobDraftId), tempDraftToSave);
-      console.log(`Temporärer Job-Entwurf ${tempJobDraftId} erfolgreich gespeichert.`);
 
       // Stripe Payment Intent erstellen
-      console.log('Erstelle Payment Intent...');
+
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -511,13 +477,11 @@ export default function CompanyProviderDetailPage() {
 
       const data = await response.json();
       if (!response.ok || data.error) {
-        console.error('API-Antwort Fehler:', data.error);
+
         throw new Error(
           data.error?.message || 'Fehler bei der Kommunikation mit dem Zahlungsserver.'
         );
       }
-
-      console.log('Payment Intent erfolgreich erstellt:', data.clientSecret);
 
       // Erfolgreiche Buchung mit Payment Intent
       alert(
@@ -527,7 +491,7 @@ export default function CompanyProviderDetailPage() {
       // Weiterleitung zur Zahlungsseite oder zurück zum Dashboard
       router.push(`/dashboard/company/${companyUid}`);
     } catch (error) {
-      console.error('Fehler beim Erstellen der Buchung:', error);
+
       alert(
         `Fehler beim Buchen des Termins: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );

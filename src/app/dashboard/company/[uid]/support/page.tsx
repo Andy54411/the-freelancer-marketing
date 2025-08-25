@@ -108,10 +108,10 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
       if (email) {
         setUserEmail(email);
       } else {
-        console.error('E-Mail für UID nicht gefunden:', uid);
+
       }
     } catch (error) {
-      console.error('Fehler beim Laden der User-E-Mail:', error);
+
     }
   };
 
@@ -128,10 +128,10 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
         const data = await response.json();
         setTickets(data.tickets || []);
       } else {
-        console.error('Fehler beim Laden der Tickets');
+
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Tickets:', error);
+
     } finally {
       setLoading(false);
     }
@@ -181,7 +181,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
         toast.error('Fehler beim Erstellen des Tickets');
       }
     } catch (error) {
-      console.error('Fehler beim Erstellen des Tickets:', error);
+
       toast.error('Fehler beim Erstellen des Tickets');
     } finally {
       setSubmitting(false);

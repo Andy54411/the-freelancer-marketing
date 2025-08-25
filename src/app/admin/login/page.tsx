@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
         }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+
     }
   };
 

@@ -128,7 +128,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       setUserTemplate(template);
       setFormData(prev => ({ ...prev, template }));
     } catch (error) {
-      console.error('Fehler beim Laden des Templates:', error);
+
       // Fallback zu Default Template
       setUserTemplate(DEFAULT_INVOICE_TEMPLATE);
       setFormData(prev => ({ ...prev, template: DEFAULT_INVOICE_TEMPLATE }));
@@ -143,7 +143,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       const notes = await DeliveryNoteService.getDeliveryNotesByCompany(companyId);
       setDeliveryNotes(notes);
     } catch (error) {
-      console.error('Fehler beim Laden der Lieferscheine:', error);
+
       toast.error('Lieferscheine konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -155,7 +155,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       const statistics = await DeliveryNoteService.getDeliveryNoteStats(companyId);
       setStats(statistics);
     } catch (error) {
-      console.error('Fehler beim Laden der Statistiken:', error);
+
     }
   };
 
@@ -221,7 +221,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-      console.error('Fehler beim Erstellen des Lieferscheins:', error);
+
       toast.error('Lieferschein konnte nicht erstellt werden');
     }
   };
@@ -238,7 +238,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Lieferscheins:', error);
+
       toast.error('Lieferschein konnte nicht aktualisiert werden');
     }
   };
@@ -251,7 +251,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-      console.error('Fehler beim Markieren als versendet:', error);
+
       toast.error('Status konnte nicht aktualisiert werden');
     }
   };
@@ -263,7 +263,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-      console.error('Fehler beim Markieren als zugestellt:', error);
+
       toast.error('Status konnte nicht aktualisiert werden');
     }
   };
@@ -275,7 +275,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-      console.error('Fehler beim Erstellen der Rechnung:', error);
+
       toast.error('Rechnung konnte nicht erstellt werden');
     }
   };
@@ -286,7 +286,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       toast.success('Lagerbestand erfolgreich aktualisiert');
       await loadDeliveryNotes();
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Lagerbestands:', error);
+
       toast.error('Lagerbestand konnte nicht aktualisiert werden');
     }
   };
@@ -302,7 +302,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-      console.error('Fehler beim Löschen des Lieferscheins:', error);
+
       toast.error('Lieferschein konnte nicht gelöscht werden');
     }
   };
@@ -412,7 +412,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
         toast.error(`E-Mail-Versand fehlgeschlagen: ${error.error}`);
       }
     } catch (error) {
-      console.error('Fehler beim E-Mail-Versand:', error);
+
       toast.error('E-Mail konnte nicht gesendet werden');
     }
   };
@@ -444,7 +444,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
         toast.error(`Lagerbestand konnte nicht aktualisiert werden: ${result.errors.join(', ')}`);
       }
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Lagerbestands:', error);
+
       toast.error('Lagerbestand konnte nicht aktualisiert werden');
     }
   };

@@ -18,15 +18,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV EXTF] Fetching accounting files for company:', companyId);
-
     // Get tokens from HTTP-only cookies
     const cookieStore = await cookies();
     const cookieName = `datev_tokens_${companyId}`;
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV EXTF] No token cookie found');
+
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -42,7 +40,7 @@ export async function GET(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-      console.error('❌ [DATEV EXTF] Failed to parse token cookie:', parseError);
+
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -54,7 +52,7 @@ export async function GET(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-      console.log('⚠️ [DATEV EXTF] Tokens expired');
+
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -66,7 +64,6 @@ export async function GET(request: NextRequest) {
 
     // Fetch accounting files from DATEV API
     const config = getDatevConfig();
-    console.log('🌐 [DATEV EXTF] Fetching accounting EXTF files...');
 
     const response = await fetch(`${config.apiBaseUrl}/accounting/v2.0/extf-files`, {
       method: 'GET',
@@ -78,11 +75,6 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [DATEV EXTF] API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
 
       // Handle specific token errors that require clearing tokens
       if (response.status === 401) {
@@ -103,7 +95,6 @@ export async function GET(request: NextRequest) {
               errorDescription.includes('Token malformed') ||
               errorDescription.includes('invalid_token')))
         ) {
-          console.warn('⚠️ [DATEV EXTF] Invalid token detected, clearing cookie...');
 
           // Clear the invalid token cookie
           const response = NextResponse.json(
@@ -142,18 +133,13 @@ export async function GET(request: NextRequest) {
 
     const extfFiles = await response.json();
 
-    console.log('✅ [DATEV EXTF] Files fetched successfully:', {
-      hasData: !!extfFiles,
-      fileCount: Array.isArray(extfFiles) ? extfFiles.length : 'unknown',
-    });
-
     return NextResponse.json({
       success: true,
       data: extfFiles,
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('❌ [DATEV EXTF] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -187,15 +173,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV EXTF] Uploading EXTF file for company:', finalCompanyId);
-
     // Get tokens from HTTP-only cookies
     const cookieStore = await cookies();
     const cookieName = `datev_tokens_${finalCompanyId}`;
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV EXTF] No token cookie found');
+
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -211,7 +195,7 @@ export async function POST(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-      console.error('❌ [DATEV EXTF] Failed to parse token cookie:', parseError);
+
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -223,7 +207,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-      console.log('⚠️ [DATEV EXTF] Tokens expired');
+
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -235,7 +219,6 @@ export async function POST(request: NextRequest) {
 
     // Upload EXTF file to DATEV API
     const config = getDatevConfig();
-    console.log('🌐 [DATEV EXTF] Uploading EXTF file...');
 
     const response = await fetch(`${config.apiBaseUrl}/accounting/v2.0/extf-files`, {
       method: 'POST',
@@ -249,11 +232,6 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [DATEV EXTF] API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
 
       return NextResponse.json(
         {
@@ -267,18 +245,13 @@ export async function POST(request: NextRequest) {
 
     const uploadResult = await response.json();
 
-    console.log('✅ [DATEV EXTF] File uploaded successfully:', {
-      hasData: !!uploadResult,
-      fileId: uploadResult?.fileId || 'unknown',
-    });
-
     return NextResponse.json({
       success: true,
       data: uploadResult,
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('❌ [DATEV EXTF] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',

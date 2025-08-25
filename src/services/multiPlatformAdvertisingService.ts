@@ -170,7 +170,7 @@ export class MultiPlatformAdvertisingService {
               companyId,
               platform
             );
-            console.log(`📦 Using cached campaigns for ${platform}: ${platformCampaigns.length}`);
+
           } else {
             // Lade frische Daten von API
             const apiResult = await this.getCampaignsByPlatform(companyId, platform);
@@ -183,13 +183,12 @@ export class MultiPlatformAdvertisingService {
                 platform,
                 platformCampaigns
               );
-              console.log(`🔄 Refreshed campaigns for ${platform}: ${platformCampaigns.length}`);
+
             }
           }
 
           allCampaigns.push(...platformCampaigns);
         } catch (error) {
-          console.warn(`Failed to fetch campaigns from ${platform}:`, error);
 
           // Fallback zu cached Daten auch bei Fehlern
           try {
@@ -199,12 +198,10 @@ export class MultiPlatformAdvertisingService {
             );
             if (fallbackCampaigns.length > 0) {
               allCampaigns.push(...fallbackCampaigns);
-              console.log(
-                `🔄 Using fallback cached campaigns for ${platform}: ${fallbackCampaigns.length}`
-              );
+
             }
           } catch (cacheError) {
-            console.warn(`No fallback data available for ${platform}`, cacheError);
+
           }
         }
       }
@@ -307,7 +304,7 @@ export class MultiPlatformAdvertisingService {
             });
           }
         } catch (error) {
-          console.warn(`Analytics error for ${platform}:`, error);
+
           // Continue mit anderen Plattformen
         }
       }

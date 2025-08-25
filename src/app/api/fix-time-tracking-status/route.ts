@@ -10,8 +10,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'orderId required' }, { status: 400 });
     }
 
-    console.log(`[FIX-TIME-TRACKING] Fixing status for order ${orderId}`);
-
     const orderRef = db.collection('auftraege').doc(orderId);
     const orderDoc = await orderRef.get();
 
@@ -36,14 +34,6 @@ export async function POST(req: NextRequest) {
       additionalEntries.length === 0 ||
       additionalEntries.every((entry: any) => entry.status === 'transferred');
 
-    console.log(`[FIX-TIME-TRACKING] Order ${orderId} analysis:`, {
-      currentStatus: timeTracking.status,
-      billingCompleted,
-      totalEntries: timeEntries.length,
-      additionalEntries: additionalEntries.length,
-      allAdditionalTransferred,
-    });
-
     // If billing is completed and all additional entries are transferred, update main status
     if (billingCompleted && allAdditionalTransferred && timeTracking.status !== 'completed') {
       await orderRef.update({
@@ -51,10 +41,6 @@ export async function POST(req: NextRequest) {
         'timeTracking.lastUpdated': new Date(),
         lastUpdated: new Date(),
       });
-
-      console.log(
-        `[FIX-TIME-TRACKING] Successfully updated status to 'completed' for order ${orderId}`
-      );
 
       return NextResponse.json({
         success: true,
@@ -79,7 +65,7 @@ export async function POST(req: NextRequest) {
           : 'Status already correct',
     });
   } catch (error) {
-    console.error('[FIX-TIME-TRACKING ERROR]', error);
+
     return NextResponse.json(
       {
         error: 'Failed to fix time tracking status',

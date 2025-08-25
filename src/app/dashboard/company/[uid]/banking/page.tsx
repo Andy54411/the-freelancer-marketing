@@ -83,12 +83,12 @@ export default function BankingDashboardPage() {
 
     if (connectionStatus === 'success') {
       if (mode === 'mock') {
-        console.log('🎭 Mock bank connection successful for bank:', bankId);
+
         setTimeout(() => {
           loadBankConnections();
         }, 1000);
       } else {
-        console.log('✅ Real bank connection successful');
+
         setTimeout(() => {
           loadBankConnections();
         }, 1000);
@@ -121,7 +121,6 @@ export default function BankingDashboardPage() {
   const loadBankConnections = async () => {
     try {
       setLoading(true);
-      console.log('📊 Loading stored banking data for user:', uid);
 
       const response = await fetch(`/api/banking/stored-data?userId=${encodeURIComponent(uid)}`, {
         method: 'GET',
@@ -135,7 +134,6 @@ export default function BankingDashboardPage() {
       }
 
       const data = await response.json();
-      console.log('📊 Banking data response:', data);
 
       if (data.success) {
         const transformedConnections: BankConnection[] = data.connections.map((conn: any) => ({
@@ -148,13 +146,13 @@ export default function BankingDashboardPage() {
         }));
 
         setConnections(transformedConnections);
-        console.log('✅ Banking connections loaded from storage:', transformedConnections.length);
+
       } else {
-        console.log('ℹ️ No stored banking data found');
+
         setConnections([]);
       }
     } catch (error) {
-      console.error('Error loading banking data:', error);
+
       setConnections([]);
     } finally {
       setLoading(false);
@@ -180,7 +178,7 @@ export default function BankingDashboardPage() {
         throw new Error('Invalid response format - no banks data received');
       }
     } catch (error) {
-      console.error('Error loading banks:', error);
+
       setError(
         'Die Bankliste konnte nicht geladen werden. Bitte prüfen Sie die finAPI Sandbox-Konfiguration.'
       );
@@ -208,7 +206,7 @@ export default function BankingDashboardPage() {
         }
       }
     } catch (error) {
-      console.error('Error loading connected banks:', error);
+
     }
   };
 
@@ -225,7 +223,6 @@ export default function BankingDashboardPage() {
     setError(null);
 
     try {
-      console.log('🔗 Starting bank connection for:', bank.name);
 
       const response = await fetch('/api/finapi/webform', {
         method: 'POST',
@@ -254,7 +251,7 @@ export default function BankingDashboardPage() {
         throw new Error(data.error || 'Failed to create WebForm URL');
       }
     } catch (error: any) {
-      console.error('❌ Bank connection error:', error);
+
       setError(error.message || 'Unbekannter Fehler bei der Bankverbindung');
       setIsConnecting(false);
       setSelectedBank(null);
@@ -262,7 +259,7 @@ export default function BankingDashboardPage() {
   };
 
   const handleWebFormSuccess = async (bankConnectionId?: string) => {
-    console.log('🎉 Bank connection successful:', bankConnectionId);
+
     setIsWebFormModalOpen(false);
     setSelectedBank(null);
 
@@ -283,7 +280,7 @@ export default function BankingDashboardPage() {
   };
 
   const handleWebFormError = (error: string) => {
-    console.error('❌ WebForm error:', error);
+
     setIsWebFormModalOpen(false);
     setError(`Verbindungsfehler: ${error}`);
   };

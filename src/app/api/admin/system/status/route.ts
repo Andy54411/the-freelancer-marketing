@@ -35,7 +35,7 @@ export async function GET(_request: NextRequest) {
       });
       await dynamodb.send(dbCommand);
     } catch (error) {
-      console.error('DynamoDB check failed:', error);
+
       status.dynamodb = 'error';
     }
 
@@ -44,13 +44,13 @@ export async function GET(_request: NextRequest) {
       const sesCommand = new GetSendStatisticsCommand({});
       await sesClient.send(sesCommand);
     } catch (error) {
-      console.error('SES check failed:', error);
+
       status.ses = 'error';
     }
 
     return NextResponse.json(status);
   } catch (error) {
-    console.error('System status check error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Überprüfen des System-Status' },
       { status: 500 }

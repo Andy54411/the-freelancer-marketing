@@ -23,12 +23,12 @@ interface InvoicePreviewModalProps {
 export function InvoicePreviewModal({ invoice, template, trigger }: InvoicePreviewModalProps) {
   const handleDownloadPDF = () => {
     // In real app: Generate and download PDF
-    console.log('Download PDF for invoice:', invoice.id);
+
   };
 
   const handleSendEmail = () => {
     // In real app: Send invoice via email
-    console.log('Send email for invoice:', invoice.id);
+
   };
 
   const handlePrint = () => {

@@ -78,11 +78,6 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
 
         const data: ApiAnbieter[] = await res.json();
 
-        console.log(
-          'DEBUG OrderAddressSelection: API-Antwort für Anbieterprofile (raw data):',
-          data
-        );
-
         const formattedData: AnbieterDetails[] = data.map(apiProvider => ({
           id: apiProvider.id,
           companyName: apiProvider.companyName || apiProvider.firmenname || 'Unbekannter Anbieter',
@@ -132,7 +127,7 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
   };
 
   const handleProviderSelect = (provider: AnbieterDetails) => {
-    console.log('DEBUG OrderAddressSelection: Provider ausgewählt:', provider); // <--- NEU
+     // <--- NEU
     setSelectedProvider(provider); // Setzt den internen State
     onProviderSelect(provider); // Informiert CreateOrderModal über die Auswahl
   };

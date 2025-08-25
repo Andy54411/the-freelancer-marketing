@@ -31,7 +31,7 @@ function loadPKCEStore(): Map<string, PKCEData> {
       return new Map(Object.entries(parsed));
     }
   } catch (error) {
-    console.error('Error loading PKCE store:', error);
+
   }
   return new Map();
 }
@@ -42,7 +42,7 @@ function savePKCEStore(store: Map<string, PKCEData>): void {
     const data = Object.fromEntries(store);
     writeFileSync(STORAGE_FILE, JSON.stringify(data, null, 2), 'utf8');
   } catch (error) {
-    console.error('Error saving PKCE store:', error);
+
   }
 }
 
@@ -65,11 +65,6 @@ export function storePKCEData(state: string, data: PKCEData): void {
   // Save to file for persistence
   savePKCEStore(pkceStore);
 
-  console.log('✅ [PKCE Storage] Stored data for state:', state.substring(0, 20) + '...', {
-    companyId: data.companyId,
-    timestamp: new Date(data.timestamp).toISOString(),
-    totalStored: pkceStore.size
-  });
 }
 
 /**
@@ -81,8 +76,7 @@ export function retrievePKCEData(state: string): PKCEData | null {
   const data = freshStore.get(state);
 
   if (!data) {
-    console.error('❌ [PKCE Storage] Data not found for state:', state.substring(0, 20) + '...');
-    console.log('🔍 [PKCE Storage] Available states:', Array.from(freshStore.keys()).map(s => s.substring(0, 20) + '...'));
+
     return null;
   }
 
@@ -91,7 +85,7 @@ export function retrievePKCEData(state: string): PKCEData | null {
   const maxAge = 10 * 60 * 1000; // 10 minutes
 
   if (now - data.timestamp > maxAge) {
-    console.error('⏰ [PKCE Storage] Data expired for state:', state.substring(0, 20) + '...');
+
     freshStore.delete(state);
     savePKCEStore(freshStore);
     return null;
@@ -101,10 +95,6 @@ export function retrievePKCEData(state: string): PKCEData | null {
   freshStore.delete(state);
   savePKCEStore(freshStore);
 
-  console.log('✅ [PKCE Storage] Retrieved data for state:', state.substring(0, 20) + '...', {
-    companyId: data.companyId,
-    age: Math.round((now - data.timestamp) / 1000) + 's'
-  });
   return data;
 }
 
@@ -125,7 +115,7 @@ function cleanExpiredEntries(): void {
 
   if (cleaned > 0) {
     savePKCEStore(pkceStore);
-    console.log(`🧹 [PKCE Storage] Cleaned ${cleaned} expired entries`);
+
   }
 }
 

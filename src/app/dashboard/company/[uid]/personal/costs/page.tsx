@@ -105,7 +105,7 @@ export default function PersonalCostsPage() {
       }));
       setDepartmentCosts(departments);
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Personalkosten:', error);
+
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ export default function PersonalCostsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('❌ Fehler beim Export:', error);
+
     }
   };
 

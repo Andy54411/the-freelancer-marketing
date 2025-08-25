@@ -47,7 +47,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (!companyId || !user) return;
 
       try {
-        console.log('🔄 Loading onboarding status for company:', companyId);
 
         // SIMPLIFIED: Use user document directly instead of subcollection
         const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -71,12 +70,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
             completionPercentage: userData.onboardingCompletionPercentage || 0,
           };
 
-          console.log('✅ Loaded onboarding status from user document:', {
-            isCompleted,
-            currentStep: currentStepFromData,
-            hasStepData: Object.keys(stepDataFromUser).length > 0,
-          });
-
           setOnboardingStatus(status);
           setStepData(stepDataFromUser);
 
@@ -84,7 +77,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           const stepNumber = initialStep || parseInt(currentStepFromData) || 1;
           setCurrentStep(stepNumber);
         } else {
-          console.log('⚠️ User document not found, creating initial onboarding status');
 
           // Create initial onboarding status for new companies
           const initialStatus: CompanyOnboardingStatus = {
@@ -110,7 +102,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           setOnboardingStatus(initialStatus);
         }
       } catch (error) {
-        console.error('Error loading onboarding status:', error);
+
         // Fallback: Set default status to prevent app crash
         const fallbackStatus: CompanyOnboardingStatus = {
           uid: companyId,
@@ -236,9 +228,15 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     [currentStep, totalSteps, canGoNext]
   );
 
-  // Helper function to serialize stepData for Firestore
+  // OPTIMIZED: Helper function to serialize stepData for Firestore (prevent data bloat)
   const serializeStepData = useCallback((data: Record<number, any>) => {
     const serialized: Record<string, any> = {};
+    
+    // Clear existing step data to prevent accumulation
+    const stepKeys = ['step1', 'step2', 'step3', 'step4', 'step5'];
+    stepKeys.forEach(key => {
+      delete serialized[key];
+    });
 
     Object.entries(data).forEach(([stepKey, stepValue]) => {
       if (stepValue && typeof stepValue === 'object') {
@@ -254,7 +252,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
             ) {
               cleanStepData[key] = value;
             } else if (Array.isArray(value)) {
-              // Filter out any non-serializable array items and flatten
+              // Filter out any non-serializable array items
               const cleanArray = value.filter(
                 item =>
                   item !== null &&
@@ -268,7 +266,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
                 cleanStepData[key] = cleanArray;
               }
             } else if (typeof value === 'object' && !Array.isArray(value)) {
-              // For objects, recursively clean them and flatten structure
+              // For objects, recursively clean them
               const cleanObject: Record<string, any> = {};
               Object.entries(value).forEach(([objKey, objValue]) => {
                 if (
@@ -295,7 +293,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       }
     });
 
-    console.log('🔧 Serialized stepData:', serialized);
     return serialized;
   }, []);
 
@@ -307,13 +304,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       const completion = getOverallCompletion();
       const isCompleted = completion === 100;
       const serializedStepData = serializeStepData(stepData);
-
-      console.log('💾 Saving onboarding step to user document:', {
-        currentStep,
-        completion,
-        isCompleted,
-        stepDataKeys: Object.keys(serializedStepData),
-      });
 
       // SIMPLIFIED: Save directly to user document instead of subcollection
       await updateDoc(doc(db, 'users', user.uid), {
@@ -340,9 +330,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       setOnboardingStatus(updatedStatus);
       setLastSaved(new Date());
 
-      console.log('✅ Onboarding step saved successfully');
     } catch (error) {
-      console.error('Error saving onboarding step:', error);
+
     } finally {
       setIsSaving(false);
     }
@@ -371,80 +360,62 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     if (!user || !companyId) return;
 
     try {
-      console.log('📝 Submitting onboarding with stepData:', stepData);
 
       // CRITICAL FIX: Load existing user data FIRST to preserve registration fields
       const userDocRef = doc(db, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
       const existingUserData = userDocSnap.exists() ? userDocSnap.data() : {};
 
-      console.log('🔍 Loaded existing user data for preservation:', {
-        companyRegisterForBackend: existingUserData.companyRegisterForBackend,
-        actualRepresentativeTitle: existingUserData.actualRepresentativeTitle,
-        taxNumberForBackend: existingUserData.taxNumberForBackend,
-        companyPhoneNumberForBackend: existingUserData.companyPhoneNumberForBackend,
-        companyAddressLine1ForBackend: existingUserData.companyAddressLine1ForBackend,
-      });
-
-      // Prepare onboarding data - ONLY SET FIELDS THAT HAVE VALUES
+      // HARMONIZED: Only set the 13 cleaned onboarding fields (NO Registration duplicates)
       const onboardingUpdates: any = {};
 
-      // Step 1: Basic company info - Only add if values exist
-      if (stepData[1]?.companyName) onboardingUpdates.companyName = String(stepData[1].companyName);
+      // Step 1: Erweiterte Unternehmensdaten (4 Felder - KEINE Registration-Duplikate)
       if (stepData[1]?.businessType)
         onboardingUpdates.businessType = String(stepData[1].businessType);
-      if (stepData[1]?.industry) onboardingUpdates.industry = String(stepData[1].industry);
-      if (stepData[1]?.address) onboardingUpdates.address = String(stepData[1].address);
-      if (stepData[1]?.street) onboardingUpdates.street = String(stepData[1].street);
-      if (stepData[1]?.city) onboardingUpdates.city = String(stepData[1].city);
-      if (stepData[1]?.postalCode) onboardingUpdates.postalCode = String(stepData[1].postalCode);
-      if (stepData[1]?.country) onboardingUpdates.country = String(stepData[1].country);
-      if (stepData[1]?.phone) onboardingUpdates.phone = String(stepData[1].phone);
-      if (stepData[1]?.email) onboardingUpdates.email = String(stepData[1].email);
-      if (stepData[1]?.legalForm) onboardingUpdates.legalForm = String(stepData[1].legalForm);
-      if (stepData[1]?.employees) onboardingUpdates.employees = String(stepData[1].employees);
-      if (stepData[1]?.website) onboardingUpdates.website = String(stepData[1].website);
+      if (stepData[1]?.employees) 
+        onboardingUpdates.employees = String(stepData[1].employees);
+      if (stepData[1]?.website) 
+        onboardingUpdates.website = String(stepData[1].website);
+      if (stepData[1]?.description) 
+        onboardingUpdates.description = String(stepData[1].description);
 
-      // CRITICAL: Only add managerData if it doesn't exist AND we have new data
-      if (stepData[1]?.managerData && !existingUserData.managerData) {
-        onboardingUpdates.managerData = {
-          firstName: String(stepData[1].managerData.firstName || ''),
-          lastName: String(stepData[1].managerData.lastName || ''),
-          position: String(stepData[1].managerData.position || ''),
-          email: String(stepData[1].managerData.email || ''),
-          phone: String(stepData[1].managerData.phone || ''),
-          dateOfBirth: String(stepData[1].managerData.dateOfBirth || ''),
-          street: String(stepData[1].managerData.street || ''),
-          city: String(stepData[1].managerData.city || ''),
-          postalCode: String(stepData[1].managerData.postalCode || ''),
-          country: String(stepData[1].managerData.country || 'DE'),
-        };
+      // Manager Zusatzdaten (nur erweiterte Felder, KEINE Registration-Duplikate)
+      if (stepData[1]?.managerData?.position) {
+        onboardingUpdates.managerPosition = String(stepData[1].managerData.position);
+      }
+      if (stepData[1]?.managerData?.nationality) {
+        onboardingUpdates.managerNationality = String(stepData[1].managerData.nationality);
       }
 
-      // Step 2: Banking & Accounting - Only if values exist
-      if (stepData[2]?.kleinunternehmer !== undefined)
-        onboardingUpdates.kleinunternehmer = Boolean(stepData[2].kleinunternehmer);
-      if (stepData[2]?.taxRate) onboardingUpdates.taxRate = Number(stepData[2].taxRate);
-      if (stepData[2]?.iban) onboardingUpdates.iban = String(stepData[2].iban);
-      if (stepData[2]?.accountHolder)
-        onboardingUpdates.accountHolder = String(stepData[2].accountHolder);
-      if (stepData[2]?.currency) onboardingUpdates.currency = String(stepData[2].currency);
+      // Step 2: Steuerliche Zusatzeinstellungen (4 Felder - KEINE taxNumber/vatId Duplikate)
+      if (stepData[2]?.kleinunternehmer)
+        onboardingUpdates.kleinunternehmer = String(stepData[2].kleinunternehmer);
+      if (stepData[2]?.profitMethod)
+        onboardingUpdates.profitMethod = String(stepData[2].profitMethod);
+      if (stepData[2]?.priceInput)
+        onboardingUpdates.priceInput = String(stepData[2].priceInput);
+      if (stepData[2]?.taxRate)
+        onboardingUpdates.taxRate = String(stepData[2].taxRate);
 
-      // Step 3: Public Profile - Only if values exist
-      if (stepData[3]?.companyLogo) onboardingUpdates.companyLogo = String(stepData[3].companyLogo);
+      // Step 3: Profil & Service-Details (8 Felder - KEINE hourlyRate Duplikate)
+      if (stepData[3]?.companyLogo) 
+        onboardingUpdates.companyLogo = String(stepData[3].companyLogo);
       if (stepData[3]?.profileBannerImage)
         onboardingUpdates.profileBannerImage = String(stepData[3].profileBannerImage);
       if (stepData[3]?.publicDescription)
         onboardingUpdates.publicDescription = String(stepData[3].publicDescription);
-      if (stepData[3]?.hourlyRate) onboardingUpdates.hourlyRate = Number(stepData[3].hourlyRate);
+      if (stepData[3]?.instantBooking !== undefined)
+        onboardingUpdates.instantBooking = Boolean(stepData[3].instantBooking);
+      if (stepData[3]?.responseTimeGuarantee)
+        onboardingUpdates.responseTimeGuarantee = Number(stepData[3].responseTimeGuarantee);
       if (Array.isArray(stepData[3]?.skills) && stepData[3].skills.length > 0) {
-        onboardingUpdates.skills = stepData[3].skills.map(String);
-      }
-      if (Array.isArray(stepData[3]?.languages) && stepData[3].languages.length > 0) {
-        onboardingUpdates.languages = stepData[3].languages.map(String);
+        onboardingUpdates.skills = stepData[3].skills;
       }
       if (Array.isArray(stepData[3]?.specialties) && stepData[3].specialties.length > 0) {
-        onboardingUpdates.specialties = stepData[3].specialties.map(String);
+        onboardingUpdates.specialties = stepData[3].specialties;
+      }
+      if (Array.isArray(stepData[3]?.languages) && stepData[3].languages.length > 0) {
+        onboardingUpdates.languages = stepData[3].languages;
       }
       if (Array.isArray(stepData[3]?.servicePackages) && stepData[3].servicePackages.length > 0) {
         onboardingUpdates.servicePackages = stepData[3].servicePackages;
@@ -456,30 +427,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         onboardingUpdates.faqs = stepData[3].faqs;
       }
 
-      // Step 4: Services & Categories - Only if values exist
-      if (stepData[4]?.selectedCategory)
-        onboardingUpdates.selectedCategory = String(stepData[4].selectedCategory);
-      if (stepData[4]?.selectedSubcategory)
-        onboardingUpdates.selectedSubcategory = String(stepData[4].selectedSubcategory);
-      if (
-        Array.isArray(stepData[4]?.additionalCategories) &&
-        stepData[4].additionalCategories.length > 0
-      ) {
-        onboardingUpdates.additionalCategories = stepData[4].additionalCategories.map(String);
-      }
-      if (stepData[4]?.lat) onboardingUpdates.lat = Number(stepData[4].lat);
-      if (stepData[4]?.lng) onboardingUpdates.lng = Number(stepData[4].lng);
-      if (stepData[4]?.radiusKm) onboardingUpdates.radiusKm = Number(stepData[4].radiusKm);
+      // Step 4: Service-Bereich & Verfügbarkeit (5 Felder - KEINE Category/Location Duplikate)
       if (Array.isArray(stepData[4]?.serviceAreas) && stepData[4].serviceAreas.length > 0) {
-        onboardingUpdates.serviceAreas = stepData[4].serviceAreas.map(String);
+        onboardingUpdates.serviceAreas = stepData[4].serviceAreas;
       }
       if (stepData[4]?.availabilityType)
         onboardingUpdates.availabilityType = String(stepData[4].availabilityType);
       if (stepData[4]?.advanceBookingHours)
         onboardingUpdates.advanceBookingHours = Number(stepData[4].advanceBookingHours);
-      if (stepData[4]?.pricingModel)
-        onboardingUpdates.pricingModel = String(stepData[4].pricingModel);
-      if (stepData[4]?.basePrice) onboardingUpdates.basePrice = Number(stepData[4].basePrice);
       if (stepData[4]?.travelCosts !== undefined)
         onboardingUpdates.travelCosts = Boolean(stepData[4].travelCosts);
       if (stepData[4]?.travelCostPerKm)
@@ -487,9 +442,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (stepData[4]?.maxTravelDistance)
         onboardingUpdates.maxTravelDistance = Number(stepData[4].maxTravelDistance);
 
-      // Step 5: Final confirmation
-      if (stepData[5]?.finalTermsAccepted !== undefined)
-        onboardingUpdates.finalTermsAccepted = Boolean(stepData[5].finalTermsAccepted);
+      // Step 5: Finale Bestätigung (1 Feld)
+      if (stepData[5]?.documentsCompleted !== undefined)
+        onboardingUpdates.documentsCompleted = Boolean(stepData[5].documentsCompleted);
 
       // Onboarding completion metadata - ALWAYS SET
       onboardingUpdates.onboardingCompleted = true;
@@ -497,15 +452,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       onboardingUpdates.profileComplete = true;
       onboardingUpdates.profileStatus = 'pending_review';
 
-      console.log(
-        '💾 Conditional onboarding updates (preserving existing data):',
-        onboardingUpdates
-      );
-
       // Update main user document with ONLY the onboarding fields that have values
       await updateDoc(userDocRef, onboardingUpdates);
 
-      console.log('🏢 Updating company document with profile data...');
       // Update company document with onboarding completion AND profile data
       // FIXED: Only update fields that are actually provided, preserve existing data
       const companyUpdateData: any = {
@@ -564,16 +513,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         profileStatus: 'pending_review',
       });
 
-      console.log(
-        '✅ Onboarding completed successfully - registration data preserved, onboarding data added'
-      );
-      console.log('🔍 PRESERVED FIELDS:', {
-        companyRegisterForBackend: existingUserData.companyRegisterForBackend,
-        actualRepresentativeTitle: existingUserData.actualRepresentativeTitle,
-        taxNumberForBackend: existingUserData.taxNumberForBackend,
-      });
     } catch (error) {
-      console.error('Error submitting onboarding:', error);
+
       throw error;
     }
   }, [user, companyId, stepData, serializeStepData]);

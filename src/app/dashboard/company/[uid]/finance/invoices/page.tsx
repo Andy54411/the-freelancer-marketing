@@ -31,7 +31,7 @@ export default function InvoicesPage() {
       const companyInvoices = await FirestoreInvoiceService.getInvoicesByCompany(uid);
       setInvoices(companyInvoices);
     } catch (err) {
-      console.error('Fehler beim Laden der Rechnungen:', err);
+
       setError('Fehler beim Laden der Rechnungen');
     } finally {
       setLoading(false);

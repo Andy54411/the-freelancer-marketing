@@ -90,7 +90,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
         setEmployees(mappedEmployees);
       } catch (error) {
         // Fallback auf direkte Firestore-Abfrage
-        console.error('Error loading employees:', error);
+
         const employeesQuery = query(
           collection(db, 'employees'),
           where('companyId', '==', companyId),
@@ -119,7 +119,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
         setEmployees(employeeData);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Mitarbeiter:', error);
+
       toast.error('Fehler beim Laden der Mitarbeiter');
     } finally {
       setLoading(false);
@@ -157,7 +157,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
       onProjectUpdate(updatedProject);
       toast.success(`${employee.firstName} ${employee.lastName} wurde zum Team hinzugefügt`);
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Teammitglieds:', error);
+
       toast.error('Fehler beim Hinzufügen des Teammitglieds');
     }
   };
@@ -182,7 +182,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
       onProjectUpdate(updatedProject);
       toast.success(`${employee.firstName} ${employee.lastName} wurde aus dem Team entfernt`);
     } catch (error) {
-      console.error('Fehler beim Entfernen des Teammitglieds:', error);
+
       toast.error('Fehler beim Entfernen des Teammitglieds');
     }
   };

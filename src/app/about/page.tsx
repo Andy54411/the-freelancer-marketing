@@ -2,7 +2,6 @@
 
 import { HeroHeader } from '@/components/hero8-header';
 
-
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">

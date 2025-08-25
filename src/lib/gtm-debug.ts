@@ -39,7 +39,7 @@ export class GTMDebugger {
   static logAllEvents(): void {
     console.group('GTM DataLayer Events');
     this.getAllEvents().forEach((event, index) => {
-      console.log(`${index + 1}. ${event.event}:`, event);
+
     });
     console.groupEnd();
   }
@@ -48,7 +48,7 @@ export class GTMDebugger {
     const events = this.getEventsByName(eventName);
     console.group(`GTM ${eventName} Events`);
     events.forEach((event, index) => {
-      console.log(`${index + 1}:`, event);
+
     });
     console.groupEnd();
   }
@@ -56,7 +56,7 @@ export class GTMDebugger {
   static clearDataLayer(): void {
     if (window.dataLayer) {
       window.dataLayer.length = 0;
-      console.log('GTM DataLayer cleared');
+
     }
   }
 
@@ -68,38 +68,35 @@ export class GTMDebugger {
         timestamp: new Date().toISOString(),
         ...data
       };
-      
+
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push(event);
-      
-      console.log(`GTM Debug Event: ${eventName}`, event);
+
     }
   }
 
   static validateEvent(event: any): boolean {
     if (!event.event) {
-      console.error('GTM Event validation failed: Missing event name', event);
+
       return false;
     }
-    
+
     if (typeof event.event !== 'string') {
-      console.error('GTM Event validation failed: Event name must be string', event);
+
       return false;
     }
-    
-    console.log('GTM Event validation passed:', event);
+
     return true;
   }
 
   static monitorDataLayer(): void {
     const originalPush = window.dataLayer.push;
-    
+
     window.dataLayer.push = function(...args) {
-      console.log('GTM DataLayer push:', args);
+
       return originalPush.apply(this, args);
     };
-    
-    console.log('GTM DataLayer monitoring enabled');
+
   }
 
   static getGTMInfo(): any {
@@ -125,12 +122,12 @@ export class GTMDebugger {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed)) {
         window.dataLayer = parsed;
-        console.log('GTM DataLayer imported successfully');
+
       } else {
-        console.error('GTM DataLayer import failed: Data must be an array');
+
       }
     } catch (error) {
-      console.error('GTM DataLayer import failed:', error);
+
     }
   }
 }
@@ -140,8 +137,7 @@ export class GTMDebugger {
  */
 export class GTMTestSuite {
   static testPageView(): void {
-    console.log('Testing GTM Page View...');
-    
+
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       event: 'page_view',
@@ -149,13 +145,11 @@ export class GTMTestSuite {
       page_title: 'Test Page',
       page_path: '/page'
     });
-    
-    console.log('GTM Page View test completed');
+
   }
 
   static testFormSubmit(): void {
-    console.log('Testing GTM Form Submit...');
-    
+
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       event: 'form_submit',
@@ -163,13 +157,11 @@ export class GTMTestSuite {
       form_id: 'test_form_id',
       form_action: '/submit'
     });
-    
-    console.log('GTM Form Submit test completed');
+
   }
 
   static testCookieConsent(): void {
-    console.log('Testing GTM Cookie Consent...');
-    
+
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       event: 'cookie_consent',
@@ -178,13 +170,11 @@ export class GTMTestSuite {
       marketing_consent: true,
       functional_consent: true
     });
-    
-    console.log('GTM Cookie Consent test completed');
+
   }
 
   static testCustomEvent(): void {
-    console.log('Testing GTM Custom Event...');
-    
+
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       event: 'custom_test_event',
@@ -193,19 +183,17 @@ export class GTMTestSuite {
       event_label: 'test_label',
       value: 1
     });
-    
-    console.log('GTM Custom Event test completed');
+
   }
 
   static runAllTests(): void {
     console.group('GTM Test Suite');
-    
+
     this.testPageView();
     this.testFormSubmit();
     this.testCookieConsent();
     this.testCustomEvent();
-    
-    console.log('All GTM tests completed');
+
     console.groupEnd();
   }
 }
@@ -220,10 +208,10 @@ export class GTMPerformanceMonitor {
   static startMonitoring(): void {
     this.startTime = performance.now();
     this.events = [];
-    
+
     // Monitor dataLayer pushes
     const originalPush = window.dataLayer.push;
-    
+
     window.dataLayer.push = function(...args) {
       const timestamp = performance.now();
       GTMPerformanceMonitor.events.push({
@@ -231,26 +219,22 @@ export class GTMPerformanceMonitor {
         duration: timestamp - GTMPerformanceMonitor.startTime,
         event: args[0]
       });
-      
+
       return originalPush.apply(this, args);
     };
-    
-    console.log('GTM Performance monitoring started');
+
   }
 
   static stopMonitoring(): void {
     const endTime = performance.now();
     const totalDuration = endTime - this.startTime;
-    
+
     console.group('GTM Performance Report');
-    console.log(`Total monitoring duration: ${totalDuration.toFixed(2)}ms`);
-    console.log(`Total events: ${this.events.length}`);
-    console.log(`Average time per event: ${(totalDuration / this.events.length).toFixed(2)}ms`);
-    
+
     this.events.forEach((event, index) => {
-      console.log(`${index + 1}. ${event.event?.event || 'Unknown'} - ${event.duration.toFixed(2)}ms`);
+
     });
-    
+
     console.groupEnd();
   }
 

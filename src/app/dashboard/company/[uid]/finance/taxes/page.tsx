@@ -67,7 +67,7 @@ export default function TaxesPage() {
 
         setTaxData(quarterlyData);
       } catch (error) {
-        console.error('Fehler beim Laden der Steuerdaten:', error);
+
         toast.error('Fehler beim Laden der Steuerdaten');
 
         // Fallback: Leere Daten

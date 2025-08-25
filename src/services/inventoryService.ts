@@ -96,7 +96,6 @@ export class InventoryService {
    */
   static async getInventoryItems(companyId: string): Promise<InventoryItem[]> {
     try {
-      console.log('InventoryService: Loading items for companyId:', companyId);
 
       const itemsQuery = query(
         collection(db, 'inventory'),
@@ -104,15 +103,10 @@ export class InventoryService {
         orderBy('name', 'asc')
       );
 
-      console.log('InventoryService: Executing Firestore query...');
       const querySnapshot = await getDocs(itemsQuery);
       const items: InventoryItem[] = [];
 
-      console.log('InventoryService: Query returned', querySnapshot.size, 'documents');
-
       querySnapshot.forEach(doc => {
-        console.log('InventoryService: Processing doc ID:', doc.id);
-        console.log('InventoryService: Doc data:', doc.data());
 
         const data = doc.data();
         const currentStock = data.currentStock || 0;
@@ -148,14 +142,13 @@ export class InventoryService {
           // Berechnete Felder
           stockValue: currentStock * (data.purchasePrice || 0),
         };
-        console.log('InventoryService: Created item:', item);
+
         items.push(item);
       });
 
-      console.log('InventoryService: Final items array:', items);
       return items;
     } catch (error) {
-      console.error('InventoryService: Error loading inventory items:', error);
+
       throw error;
     }
   }
@@ -212,7 +205,7 @@ export class InventoryService {
         stockValue: currentStock * (data.purchasePrice || 0),
       };
     } catch (error) {
-      console.error('Fehler beim Laden des Inventar-Artikels:', error);
+
       return null;
     }
   }
@@ -239,7 +232,7 @@ export class InventoryService {
 
       return stats;
     } catch (error) {
-      console.error('Fehler beim Berechnen der Inventar-Statistiken:', error);
+
       throw error;
     }
   }
@@ -289,7 +282,7 @@ export class InventoryService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Inventar-Artikels:', error);
+
       throw error;
     }
   }
@@ -308,7 +301,7 @@ export class InventoryService {
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Inventar-Artikels:', error);
+
       throw error;
     }
   }
@@ -355,7 +348,7 @@ export class InventoryService {
         createdBy: companyId,
       });
     } catch (error) {
-      console.error('Fehler beim Anpassen des Lagerbestands:', error);
+
       throw error;
     }
   }
@@ -377,7 +370,7 @@ export class InventoryService {
       const docRef = await addDoc(collection(db, 'stockMovements'), movement);
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Hinzufügen der Lagerbewegung:', error);
+
       throw error;
     }
   }
@@ -426,7 +419,7 @@ export class InventoryService {
 
       return movements;
     } catch (error) {
-      console.error('Fehler beim Laden der Lagerbewegungen:', error);
+
       throw error;
     }
   }
@@ -438,7 +431,7 @@ export class InventoryService {
     try {
       await deleteDoc(doc(db, 'inventory', itemId));
     } catch (error) {
-      console.error('Fehler beim Löschen des Inventar-Artikels:', error);
+
       throw error;
     }
   }
@@ -505,7 +498,7 @@ export class InventoryService {
         await batch.commit();
       }
     } catch (error) {
-      console.error('Fehler beim Reservieren der Artikel:', error);
+
       throw error;
     }
   }
@@ -526,7 +519,7 @@ export class InventoryService {
         const currentItem = await this.getInventoryItem(companyId, item.itemId);
 
         if (!currentItem) {
-          console.warn(`Artikel ${item.itemId} nicht gefunden für Freigabe`);
+
           continue;
         }
 
@@ -569,7 +562,7 @@ export class InventoryService {
         await batch.commit();
       }
     } catch (error) {
-      console.error('Fehler beim Freigeben der Reservierung:', error);
+
       throw error;
     }
   }
@@ -590,7 +583,7 @@ export class InventoryService {
         const currentItem = await this.getInventoryItem(companyId, item.itemId);
 
         if (!currentItem) {
-          console.warn(`Artikel ${item.itemId} nicht gefunden für Verkauf`);
+
           continue;
         }
 
@@ -638,7 +631,7 @@ export class InventoryService {
         await batch.commit();
       }
     } catch (error) {
-      console.error('Fehler beim Verkaufen der reservierten Artikel:', error);
+
       throw error;
     }
   }
@@ -668,7 +661,7 @@ export class InventoryService {
 
       return categories.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
-      console.error('Fehler beim Laden der Kategorien:', error);
+
       throw error;
     }
   }

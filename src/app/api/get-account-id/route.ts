@@ -16,8 +16,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[GET-ACCOUNT-ID] Looking for user:', firebaseUserId);
-
     // Genau wie get-stripe-balance API - zuerst users collection
     let stripeAccountId = null;
 
@@ -26,10 +24,10 @@ export async function GET(request: NextRequest) {
       if (userDoc.exists) {
         const userData = userDoc.data();
         stripeAccountId = userData?.stripeAccountId;
-        console.log('[GET-ACCOUNT-ID] Found in users:', stripeAccountId);
+
       }
     } catch (error) {
-      console.log('[GET-ACCOUNT-ID] Error accessing users:', error);
+
     }
 
     // Fallback: stripe_accounts collection
@@ -39,10 +37,10 @@ export async function GET(request: NextRequest) {
         if (doc.exists) {
           const data = doc.data();
           stripeAccountId = data?.stripeAccountId;
-          console.log('[GET-ACCOUNT-ID] Found in stripe_accounts:', stripeAccountId);
+
         }
       } catch (error) {
-        console.log('[GET-ACCOUNT-ID] Error accessing stripe_accounts:', error);
+
       }
     }
 
@@ -59,11 +57,10 @@ export async function GET(request: NextRequest) {
       found: true
     };
 
-    console.log('[GET-ACCOUNT-ID] Success:', response);
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('[GET-ACCOUNT-ID] Error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Account ID.' },
       { status: 500 }

@@ -56,7 +56,7 @@ export async function getAllOrders() {
           return { uid, data: userData };
         }
       } catch (error) {
-        console.error(`Fehler beim Laden von Benutzer ${uid}:`, error);
+
       }
       return { uid, data: null };
     });
@@ -75,12 +75,6 @@ export async function getAllOrders() {
     let customerName = 'Unbekannt';
 
     if (customer) {
-      console.log(
-        'Debug customer data for UID',
-        order.customerUid,
-        ':',
-        JSON.stringify(customer, null, 2)
-      );
 
       // Versuche verschiedene Feldkombinationen
       const firstName = customer.firstName || customer.firstname || customer.vorname || '';

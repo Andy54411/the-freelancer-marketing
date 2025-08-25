@@ -162,30 +162,15 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
   // Effekt zum Laden der Auftragsdaten
   useEffect(() => {
     // KRITISCHE DEBUG-INFORMATION
-    console.log('🔍 AUTHORIZATION DEBUG:');
-    console.log('🆔 URL UID:', uid);
-    console.log('👤 AuthUser UID:', authUser?.uid);
-    console.log('🔥 FirebaseUser UID:', firebaseUser?.uid);
-    console.log('🔑 isAuthorized:', isAuthorized);
-    console.log('⏳ isChecking:', isChecking);
-    console.log('🎯 UID Match:', authUser?.uid === uid);
 
     if (uid && isAuthorized) {
       const fetchOrders = async () => {
         setLoadingOrders(true);
         try {
-          console.log('🔄 Fetching orders for provider:', uid);
-          console.log('🔑 Current user authorized:', isAuthorized);
-          console.log('🆔 Current user UID vs URL UID:', { uid });
+
           const result = await callHttpsFunction('getProviderOrders', { providerId: uid }, 'GET');
-          console.log('📊 API Response:', result);
-          console.log('📋 Orders array:', result.orders);
-          console.log('📏 Orders length:', result.orders?.length || 0);
 
           if (result.orders && result.orders.length > 0) {
-            console.log('📄 First order structure:', result.orders[0]);
-            console.log('🆔 First order ID:', result.orders[0]?.id);
-            console.log('💰 First order revenue:', result.orders[0]?.totalAmountPaidByBuyer);
 
             // KORREKTUR: Transformiere die Daten für die DataTable
             const transformedOrders = result.orders.map((order: any) => ({
@@ -198,22 +183,20 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 : order.orderDate,
             }));
 
-            console.log('🔄 Transformed orders for DataTable:', transformedOrders);
             setOrders(transformedOrders);
           } else {
             setOrders([]);
           }
-          console.log('✅ Orders state updated');
+
         } catch (error) {
-          console.error('❌ Fehler beim Laden der Aufträge für die Tabelle:', error);
+
         } finally {
           setLoadingOrders(false);
         }
       };
       fetchOrders();
     } else {
-      console.log('⚠️ Not fetching orders - uid:', uid, 'isAuthorized:', isAuthorized);
-      console.log('📋 Auth Debug - authUser?.uid:', authUser?.uid, 'URL uid:', uid);
+
       setLoadingOrders(false);
     }
   }, [uid, isAuthorized, authUser?.uid]);
@@ -227,7 +210,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
           const metrics = await calculateCompanyMetrics(uid);
           setCompanyMetrics(metrics);
         } catch (error) {
-          console.error('Fehler beim Berechnen der Company Metriken:', error);
+
         } finally {
           setLoadingMetrics(false);
         }
@@ -352,9 +335,7 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
         return (
           <SettingsComponent
             userData={userData}
-            onDataSaved={() => console.log('Settings updated')}
-          />
-        );
+            onDataSaved={() =>
 
       default:
         return null;

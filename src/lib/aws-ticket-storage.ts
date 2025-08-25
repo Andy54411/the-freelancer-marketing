@@ -159,7 +159,7 @@ export class AWSTicketStorage {
 
       return ticket;
     } catch (error) {
-      console.error('Error creating ticket:', error);
+
       await EnhancedTicketService.logToCloudWatch(
         'tickets-errors',
         {
@@ -189,7 +189,7 @@ export class AWSTicketStorage {
 
       return unmarshall(result.Item) as TicketData;
     } catch (error) {
-      console.error('Error getting ticket:', error);
+
       throw error;
     }
   }
@@ -253,7 +253,7 @@ export class AWSTicketStorage {
 
       return updatedTicket;
     } catch (error) {
-      console.error('Error updating ticket:', error);
+
       await EnhancedTicketService.logToCloudWatch(
         'tickets-errors',
         {
@@ -307,7 +307,7 @@ export class AWSTicketStorage {
 
       return updatedTicket;
     } catch (error) {
-      console.error('Error adding comment:', error);
+
       throw error;
     }
   }
@@ -383,7 +383,7 @@ export class AWSTicketStorage {
 
       return tickets;
     } catch (error) {
-      console.error('Error getting tickets:', error);
+
       throw error;
     }
   }
@@ -408,7 +408,7 @@ export class AWSTicketStorage {
 
       return true;
     } catch (error) {
-      console.error('Error deleting ticket:', error);
+
       return false;
     }
   }

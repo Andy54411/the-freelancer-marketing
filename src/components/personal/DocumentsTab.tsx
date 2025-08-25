@@ -81,21 +81,19 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       // Add-Mode: Zeige leere Liste
       setDocuments([]);
       setLoading(false);
-      console.log('📝 DocumentsTab: Add-Mode erkannt - keine Dokumente zu laden');
+
     }
   }, [employeeId, companyId]);
 
   const loadDocuments = async () => {
     try {
       setLoading(true);
-      console.log('🔄 DocumentsTab: Lade Dokumente für Mitarbeiter:', employeeId);
 
       const docs = await PersonalService.getEmployeeDocuments(companyId, employeeId);
       setDocuments(docs);
 
-      console.log('✅ DocumentsTab: Dokumente geladen:', docs.length);
     } catch (error) {
-      console.error('❌ DocumentsTab: Fehler beim Laden der Dokumente:', error);
+
       toast.error('Fehler beim Laden der Dokumente');
     } finally {
       setLoading(false);
@@ -113,15 +111,12 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       const filePath = `employee_documents/${companyId}/${employeeId}/${category}/${fileName}`;
       const fileRef = storageRef(storage, filePath);
 
-      console.log('🔄 DocumentsTab: Uploading file to:', filePath);
-
       await uploadBytes(fileRef, file);
       const downloadURL = await getDownloadURL(fileRef);
 
-      console.log('✅ DocumentsTab: File uploaded successfully:', downloadURL);
       return downloadURL;
     } catch (error) {
-      console.error('❌ DocumentsTab: Fehler beim Upload zu Firebase Storage:', error);
+
       throw error;
     }
   };
@@ -133,7 +128,7 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
     // Add-Mode Prüfung
     if (!employeeId || employeeId.trim() === '') {
       toast.error('Dokumente können erst nach dem Anlegen des Mitarbeiters hochgeladen werden');
-      console.log('📝 DocumentsTab: Add-Mode - Dokument-Upload nicht möglich ohne Mitarbeiter-ID');
+
       return;
     }
 
@@ -142,7 +137,6 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
 
     try {
       setUploading(true);
-      console.log('🔄 DocumentsTab: Uploading file:', file.name);
 
       // 1. Datei zu Firebase Storage hochladen
       const downloadURL = await uploadFileToFirebaseStorage(
@@ -188,9 +182,8 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       setSelectedCategory('');
       event.target.value = '';
 
-      console.log('✅ DocumentsTab: Document uploaded successfully:', newDocument);
     } catch (error) {
-      console.error('❌ DocumentsTab: Upload error:', error);
+
       toast.error('Fehler beim Hochladen des Dokuments');
     } finally {
       setUploading(false);
@@ -201,7 +194,6 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
     if (!document.id) return;
 
     try {
-      console.log('🗑️ DocumentsTab: Lösche Dokument:', document.id);
 
       // Dokument aus Firestore löschen
       await PersonalService.deleteEmployeeDocument(companyId, document.id);
@@ -212,9 +204,9 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
           const storage = getStorage(app);
           const fileRef = storageRef(storage, document.storagePath);
           await deleteObject(fileRef);
-          console.log('✅ DocumentsTab: Datei aus Storage gelöscht');
+
         } catch (storageError) {
-          console.warn('⚠️ DocumentsTab: Warnung beim Löschen aus Storage:', storageError);
+
           // Wir machen weiter, auch wenn Storage-Löschung fehlschlägt
         }
       }
@@ -223,9 +215,8 @@ const DocumentsTab: React.FC<DocumentsTabProps> = ({ employeeId, companyId }) =>
       setDocuments(prev => prev.filter(doc => doc.id !== document.id));
       toast.success('Dokument erfolgreich gelöscht');
 
-      console.log('✅ DocumentsTab: Dokument komplett gelöscht');
     } catch (error) {
-      console.error('❌ DocumentsTab: Delete error:', error);
+
       toast.error('Fehler beim Löschen des Dokuments');
     }
   };

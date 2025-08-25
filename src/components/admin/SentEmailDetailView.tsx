@@ -50,7 +50,7 @@ export default function SentEmailDetailView({ email, onBack, onDelete }: SentEma
       alert('E-Mail wurde erfolgreich gelöscht.');
       onDelete?.(); // Trigger parent refresh
     } catch (error) {
-      console.error('Error deleting email:', error);
+
       alert('Fehler beim Löschen der E-Mail.');
     } finally {
       setIsDeleting(false);

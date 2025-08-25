@@ -48,11 +48,9 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    console.log('DATEV OAuth URL Debug:', debugInfo);
-
     return NextResponse.json(debugInfo);
   } catch (error) {
-    console.error('DATEV OAuth URL Debug error:', error);
+
     return NextResponse.json(
       {
         success: false,

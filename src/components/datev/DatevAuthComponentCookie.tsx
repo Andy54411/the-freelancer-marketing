@@ -53,10 +53,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   useEffect(() => {
     // Early return if companyId is invalid
     if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
-      console.log(
-        '🚫 [DATEV Cookie Auth] Invalid company ID provided, skipping initialization:',
-        companyId
-      );
+
       setConnection({
         isConnected: false,
         features: {
@@ -77,26 +74,15 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
     const errorType = urlParams.get('error');
     const callbackCompany = urlParams.get('company');
 
-    console.log('🔍 [DATEV Cookie Auth] Checking callback params:', {
-      authStatus,
-      errorType,
-      callbackCompany,
-      currentCompanyId: companyId,
-    });
-
     // Handle OAuth callback results
     if (authStatus === 'success') {
       if (callbackCompany === companyId) {
         toast.success('DATEV-Authentifizierung erfolgreich abgeschlossen!');
-        console.log('✅ [DATEV Cookie Auth] Successful auth for correct company');
 
         // Fetch and store organization data in cookie
         fetchAndStoreOrganizationData();
       } else {
-        console.warn('⚠️ [DATEV Cookie Auth] Company ID mismatch in callback:', {
-          expected: companyId,
-          received: callbackCompany,
-        });
+
       }
 
       // Clean URL parameters
@@ -119,7 +105,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
   const fetchAndStoreOrganizationData = async () => {
     try {
-      console.log('🔍 [DATEV Cookie Auth] Fetching organization data after OAuth...');
 
       // Small delay to ensure cookies are set after redirect
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -137,7 +122,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ [DATEV Cookie Auth] UserInfo data fetched successfully:', result);
 
         // Transform UserInfo result to match expected organization format
         const organizationData = {
@@ -152,7 +136,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           address: {
             street: 'N/A',
             city: 'N/A',
-            zipCode: 'N/A', 
+            zipCode: 'N/A',
             country: 'DE',
           },
           status: 'active' as const,
@@ -166,11 +150,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         }
       } else {
         const errorData = await response.json().catch(() => null);
-        console.error('❌ [DATEV Cookie Auth] Failed to fetch organization data:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-        });
 
         // Check if it's a token error that requires re-authentication
         if (
@@ -186,10 +165,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
                 errorData.error_description.includes('Token malformed') ||
                 errorData.error_description.includes('invalid_token'))))
         ) {
-          console.warn(
-            '⚠️ [DATEV Cookie Auth] Token invalid, clearing stored tokens...',
-            errorData
-          );
 
           // Clear invalid tokens from all storage locations - HTTP-only cookies cleared server-side
           // Clear from localStorage if present
@@ -221,35 +196,21 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
             },
           });
         } else {
-          console.error(
-            '❌ [DATEV Cookie Auth] Failed to fetch organization data:',
-            response.status,
-            errorData
-          );
+
           toast.error('Fehler beim Laden der DATEV-Organisationsdaten');
         }
       }
     } catch (error) {
-      console.error('❌ [DATEV Cookie Auth] Error fetching organization data:', error);
+
       toast.error('Netzwerkfehler beim Laden der DATEV-Daten');
     }
   };
 
   const loadConnectionStatus = async () => {
     try {
-      console.log('🔍 [DATEV Cookie Auth] Loading connection status for company:', companyId);
-      console.log(
-        '🔍 [DATEV Cookie Auth] Company ID type:',
-        typeof companyId,
-        'Value:',
-        JSON.stringify(companyId)
-      );
 
       if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
-        console.log(
-          '🚫 [DATEV Cookie Auth] No valid company ID provided (empty or unknown):',
-          companyId
-        );
+
         setConnection({
           isConnected: false,
           features: {
@@ -276,11 +237,10 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
       if (response.ok) {
         const result = await response.json();
-        console.log('📊 [DATEV Cookie Auth] Connection status:', result);
 
         // Check if we got userinfo data back (indicates connection is working)
         const isConnected = !!(result.success && result.userInfo);
-        
+
         const organizationData = isConnected ? {
           id: result.userInfo?.account_id || result.userInfo?.sub || 'unknown',
           name: result.userInfo?.name || result.userInfo?.preferred_username || 'DATEV User',
@@ -291,7 +251,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           type: 'client' as const,
           address: {
             street: 'N/A',
-            city: 'N/A', 
+            city: 'N/A',
             zipCode: 'N/A',
             country: 'DE',
           },
@@ -327,10 +287,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
                 errorData.error_description.includes('Token malformed') ||
                 errorData.error_description.includes('invalid_token'))))
         ) {
-          console.warn(
-            '⚠️ [DATEV Cookie Auth] Invalid tokens detected in status check - tokens cleared server-side',
-            errorData
-          );
 
           // Clear from localStorage if present (but HTTP-only cookies are cleared server-side)
           if (typeof window !== 'undefined') {
@@ -339,7 +295,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           }
         }
 
-        console.error('❌ [DATEV Cookie Auth] Failed to fetch connection status');
         setConnection({
           isConnected: false,
           features: {
@@ -351,7 +306,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         });
       }
     } catch (error) {
-      console.error('❌ [DATEV Cookie Auth] Error loading connection status:', error);
+
       setConnection({
         isConnected: false,
         features: {
@@ -369,20 +324,19 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const handleConnect = async () => {
     // Validate companyId before connecting
     if (!companyId || companyId.trim() === '' || companyId === 'unknown') {
-      console.error('❌ [DATEV Cookie Auth] Cannot connect - invalid company ID:', companyId);
+
       toast.error('Ungültige Firmen-ID - kann keine DATEV-Verbindung herstellen');
       return;
     }
 
     try {
       setConnecting(true);
-      console.log('🔗 [DATEV Cookie Auth] Starting OAuth flow for company:', companyId);
 
       // Redirect to OAuth authorization
       const authUrl = `/api/datev/auth-cookie?company_id=${encodeURIComponent(companyId)}`;
       window.location.href = authUrl;
     } catch (error) {
-      console.error('❌ [DATEV Cookie Auth] Connection error:', error);
+
       toast.error('Fehler beim Verbinden mit DATEV');
       setConnecting(false);
     }
@@ -390,7 +344,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
 
   const handleDisconnect = async () => {
     try {
-      console.log('🔌 [DATEV Cookie Auth] Disconnecting company:', companyId);
 
       // Clear stored tokens from localStorage (HTTP-only cookies are server-managed)
       if (typeof window !== 'undefined') {
@@ -408,7 +361,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
           body: JSON.stringify({ companyId: companyId }),
         });
       } catch (e) {
-        console.warn('Failed to call disconnect API, clearing locally only');
+
       }
 
       // Update UI
@@ -423,9 +376,9 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
       });
 
       toast.success('DATEV-Verbindung getrennt');
-      console.log('✅ [DATEV Cookie Auth] Successfully disconnected');
+
     } catch (error) {
-      console.error('❌ [DATEV Cookie Auth] Disconnect error:', error);
+
       toast.error('Fehler beim Trennen der DATEV-Verbindung');
     }
   };
@@ -433,7 +386,6 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
   const handleRefresh = async () => {
     try {
       setLoading(true);
-      console.log('🔄 [DATEV Cookie Auth] Refreshing connection...');
 
       // Simply reload connection status - server will handle token validation and refresh
       await loadConnectionStatus();
@@ -444,7 +396,7 @@ export function DatevAuthComponent({ companyId, onAuthSuccess }: DatevAuthCompon
         toast.error('Verbindung nicht aktiv. Bitte erneut verbinden.');
       }
     } catch (error) {
-      console.error('❌ [DATEV Cookie Auth] Refresh error:', error);
+
       toast.error('Fehler beim Aktualisieren der Verbindung');
     } finally {
       setLoading(false);

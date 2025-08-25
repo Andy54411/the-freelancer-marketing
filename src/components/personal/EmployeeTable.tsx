@@ -121,7 +121,7 @@ export function EmployeeTable({
 
   const handleViewEmployee = (employee: Employee) => {
     // Hier könnte eine Detailansicht implementiert werden
-    console.log('View employee details:', employee);
+
   };
 
   const handleContactEmployee = (employee: Employee, type: 'email' | 'phone') => {

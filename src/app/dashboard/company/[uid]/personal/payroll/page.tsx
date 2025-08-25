@@ -175,7 +175,7 @@ export default function PayrollPage({ params }: { params: { uid: string } }) {
         },
       ]);
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Gehaltsabrechnungen:', error);
+
       toast.error('Fehler beim Laden der Gehaltsabrechnungen');
     } finally {
       setLoading(false);

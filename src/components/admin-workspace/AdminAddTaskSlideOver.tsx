@@ -111,7 +111,7 @@ export function AdminAddTaskSlideOver({
 
       onClose();
     } catch (error) {
-      console.error('Error creating task:', error);
+
     } finally {
       setLoading(false);
     }

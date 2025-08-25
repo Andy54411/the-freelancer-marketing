@@ -57,7 +57,7 @@ export default function StripeBalanceWidget({
       const data = await response.json();
       setBalance(data);
     } catch (err) {
-      console.error('Error loading Stripe balance:', err);
+
       setError(err instanceof Error ? err.message : 'Fehler beim Laden des Guthabens');
     } finally {
       setLoading(false);
@@ -97,17 +97,17 @@ export default function StripeBalanceWidget({
       }
 
       const payoutData = await response.json();
-      
+
       // Success feedback
       alert(`Auszahlung erfolgreich angefordert! Payout-ID: ${payoutData.payoutId}\n\nDer Betrag wird in 1-2 Werktagen auf Ihr Bankkonto überwiesen.`);
-      
+
       // Reload balance to reflect changes
       await loadBalance();
-      
+
       // Navigate to payouts page to show details
       router.push(`/dashboard/company/${companyUid}/payouts`);
     } catch (err) {
-      console.error('Error requesting payout:', err);
+
       alert(`Fehler bei der Auszahlung: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
     } finally {
       setPayoutLoading(false);
@@ -150,10 +150,10 @@ export default function StripeBalanceWidget({
             <AlertCircle className="w-4 h-4" />
             {error}
           </div>
-          <Button 
-            onClick={loadBalance} 
-            variant="outline" 
-            size="sm" 
+          <Button
+            onClick={loadBalance}
+            variant="outline"
+            size="sm"
             className="mt-2 w-full"
           >
             Erneut versuchen
@@ -217,7 +217,7 @@ export default function StripeBalanceWidget({
                 )}
               </Button>
             )}
-            
+
             <Button
               onClick={handleViewPayouts}
               variant="outline"
@@ -262,7 +262,7 @@ export default function StripeBalanceWidget({
               {formatCurrency(balance.available, balance.currency)}
             </div>
           </div>
-          
+
           {hasPendingBalance && (
             <div className="p-4 bg-yellow-50 rounded-lg">
               <div className="text-sm text-yellow-600 font-medium">Ausstehend</div>
@@ -294,7 +294,7 @@ export default function StripeBalanceWidget({
               )}
             </Button>
           )}
-          
+
           <Button
             onClick={handleViewPayouts}
             variant="outline"

@@ -12,12 +12,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[API /release-legacy-order] Starting legacy order release...');
 
     const body = await request.json();
     const { orderId, forceRelease = false } = body;
-
-    console.log('[API /release-legacy-order] Request data:', { orderId, forceRelease });
 
     // Validierung
     if (!orderId) {
@@ -87,7 +84,7 @@ export async function POST(request: NextRequest) {
     timeEntries.forEach((entry: any) => {
       if (
         entry.category === 'additional' &&
-        (entry.status === 'billing_pending' || 
+        (entry.status === 'billing_pending' ||
          entry.status === 'customer_approved' ||
          entry.billingStatus === 'paid' ||
          entry.paymentIntentId) && // Hat PaymentIntent = wurde bezahlt
@@ -108,12 +105,6 @@ export async function POST(request: NextRequest) {
 
         totalPendingAmount += amount;
       }
-    });
-
-    console.log('[API /release-legacy-order] Found pending transfers:', {
-      count: pendingTransfers.length,
-      totalAmount: totalPendingAmount,
-      pendingTransfers
     });
 
     if (pendingTransfers.length === 0) {
@@ -137,7 +128,6 @@ export async function POST(request: NextRequest) {
 
     try {
       if (totalPendingAmount > 0) {
-        console.log(`[API /release-legacy-order] Creating legacy transfer: ${totalPendingAmount} cents to ${providerStripeAccountId}`);
 
         // Erstelle Transfer vom Platform Account zum Provider Account
         const transfer = await stripe.transfers.create({
@@ -155,8 +145,6 @@ export async function POST(request: NextRequest) {
           description: `Legacy-Freigabe für Auftrag ${orderId} - ${pendingTransfers.length} Einträge (${(totalPendingAmount / 100).toFixed(2)} EUR)`,
         });
 
-        console.log(`[API /release-legacy-order] Successfully created transfer: ${transfer.id}`);
-
         // Markiere alle Einträge als transferiert
         pendingTransfers.forEach(pendingTransfer => {
           completedTransfers.push({
@@ -167,8 +155,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (error: any) {
-      console.error('[API /release-legacy-order] Error creating transfer:', error);
-      
+
       pendingTransfers.forEach(pendingTransfer => {
         failedTransfers.push({
           entryId: pendingTransfer.entryId,
@@ -181,7 +168,7 @@ export async function POST(request: NextRequest) {
     if (completedTransfers.length > 0) {
       const updatedTimeEntries = timeEntries.map((entry: any) => {
         const completedTransfer = completedTransfers.find(t => t.entryId === entry.id);
-        
+
         if (completedTransfer) {
           return {
             ...entry,
@@ -204,7 +191,6 @@ export async function POST(request: NextRequest) {
         'timeTracking.lastUpdated': new Date().toISOString()
       });
 
-      console.log('[API /release-legacy-order] Updated Firestore with transfer information');
     }
 
     const response = {
@@ -218,11 +204,10 @@ export async function POST(request: NextRequest) {
       errors: failedTransfers
     };
 
-    console.log('[API /release-legacy-order] Final response:', response);
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('[API /release-legacy-order] Unexpected error:', error);
+
     return NextResponse.json(
       { error: 'Unerwarteter Fehler bei Legacy-Order-Release.' },
       { status: 500 }

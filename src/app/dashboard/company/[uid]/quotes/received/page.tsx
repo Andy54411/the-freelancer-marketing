@@ -71,7 +71,6 @@ export default function ReceivedQuotesPage() {
     try {
       if (!firebaseUser || !params?.uid) return;
 
-      console.log('[Frontend] Fetching received quotes for UID:', params.uid);
       const token = await firebaseUser.getIdToken();
       if (!token) return;
 
@@ -81,23 +80,19 @@ export default function ReceivedQuotesPage() {
         },
       });
 
-      console.log('[Frontend] API Response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('[Frontend] API Response data:', data);
 
         if (data.success && data.quotes) {
           const validQuotes = data.quotes.filter((quote: any) => quote && quote.id);
-          console.log('[Frontend] Valid received quotes after filtering:', validQuotes.length);
-          console.log('[Frontend] Valid received quotes:', validQuotes);
+
           setQuotes(validQuotes);
         }
       } else {
-        console.error('[Frontend] Error response:', response.status);
+
       }
     } catch (error) {
-      console.error('[Frontend] Error fetching received quotes:', error);
+
     } finally {
       setLoading(false);
     }
@@ -150,7 +145,7 @@ export default function ReceivedQuotesPage() {
         minute: '2-digit',
       }).format(dateObj);
     } catch (error) {
-      console.error('Error formatting date:', date, error);
+
       return 'Unbekannt';
     }
   };

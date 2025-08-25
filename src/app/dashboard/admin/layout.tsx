@@ -61,7 +61,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         router.push('/admin/login');
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+
       router.push('/admin/login');
     } finally {
       setLoading(false);
@@ -77,7 +77,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       await fetch('/api/admin/auth/logout', { method: 'POST' });
       router.push('/admin/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+
     }
   };
 

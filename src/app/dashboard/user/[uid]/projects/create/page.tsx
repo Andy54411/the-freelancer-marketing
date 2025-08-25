@@ -262,12 +262,11 @@ export default function CreateProjectRequestPage() {
       }
 
       const result = await response.json();
-      console.log('✅ Projektanfrage erstellt:', result);
 
       toast.success('Projektanfrage erfolgreich erstellt!');
       router.push(`/dashboard/user/${uid}/projects`);
     } catch (error) {
-      console.error('Fehler beim Erstellen der Projektanfrage:', error);
+
       toast.error(
         error instanceof Error ? error.message : 'Fehler beim Erstellen der Projektanfrage'
       );
@@ -918,7 +917,7 @@ export default function CreateProjectRequestPage() {
                   </div>
                   {step < 3 && (
                     <div
-                      className={`w-16 h-1 mx-2 
+                      className={`w-16 h-1 mx-2
                             ${currentStep > step ? 'bg-white' : 'bg-white/20'}`}
                     />
                   )}

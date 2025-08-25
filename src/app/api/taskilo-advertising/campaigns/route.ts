@@ -10,7 +10,6 @@ import { db } from '@/firebase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('🎯 Taskilo Advertising Campaigns API called');
 
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -161,7 +160,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Taskilo Advertising Campaigns error:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler',
@@ -177,7 +176,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🎯 Creating new campaign via Taskilo Advertising...');
 
     const body = await request.json();
     const { companyId, name, type, budget, biddingStrategy, targeting, schedule, creatives } = body;
@@ -299,7 +297,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Campaign creation error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen der Kampagne',

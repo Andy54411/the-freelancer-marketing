@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('DATEV token validation failed:', response.status, errorData);
 
       // Check for specific error types
       if (response.status === 401) {
@@ -59,7 +58,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error validating DATEV token:', error);
+
     return NextResponse.json(
       {
         error: 'internal_error',

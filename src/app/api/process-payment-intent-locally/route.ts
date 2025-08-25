@@ -11,8 +11,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'paymentIntentId is required' }, { status: 400 });
     }
 
-    console.log(`[LOCAL ORDER PROCESSING] Verarbeite PaymentIntent: ${paymentIntentId}`);
-
     // Simuliere PaymentIntent-Daten basierend auf den bekannten Metadaten
     const tempJobDraftId = '255b1584-9aaf-4468-a733-2bff51c9516f';
     const firebaseUserId = 'pMcdifjaj0SFu7iqd93n3mCZHPk2';
@@ -39,9 +37,7 @@ export async function POST(req: NextRequest) {
         const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
 
         if (tempJobDraftSnapshot.data()?.status === 'converted') {
-          console.log(
-            `[LOCAL ORDER PROCESSING] Job-Entwurf ${tempJobDraftId} wurde bereits konvertiert. Überspringe.`
-          );
+
           return;
         }
 
@@ -75,9 +71,7 @@ export async function POST(req: NextRequest) {
             const hoursPerDay = durationMatch ? parseFloat(durationMatch[1]) : 8;
 
             correctedJobTotalCalculatedHours = hoursPerDay * daysDiff;
-            console.log(
-              `[LOCAL ORDER PROCESSING] Multi-Tag Auftrag korrigiert: ${daysDiff} Tage × ${hoursPerDay}h = ${correctedJobTotalCalculatedHours}h`
-            );
+
           }
         }
 
@@ -116,7 +110,6 @@ export async function POST(req: NextRequest) {
           convertedToOrderId: newAuftragRef.id,
         });
 
-        console.log(`[LOCAL ORDER PROCESSING] Auftrag erstellt: ${newOrderId}`);
       });
 
       // 🔔 NOTIFICATION: Order erfolgreich erstellt
@@ -138,11 +131,9 @@ export async function POST(req: NextRequest) {
             orderData.selectedAnbieterId, // Provider ID
             orderNotificationData
           );
-          console.log(
-            `[LOCAL ORDER PROCESSING] Order Notifications gesendet für Order ${newOrderId}`
-          );
+
         } catch (notificationError) {
-          console.error('[LOCAL ORDER PROCESSING] Notification failed:', notificationError);
+
         }
       }
 
@@ -158,7 +149,7 @@ export async function POST(req: NextRequest) {
       if (dbError instanceof Error) {
         dbErrorMessage = dbError.message;
       }
-      console.error('[LOCAL ORDER PROCESSING ERROR]', dbError);
+
       return NextResponse.json(
         {
           error: 'Auftragserstellung fehlgeschlagen',
@@ -168,7 +159,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('[LOCAL ORDER PROCESSING ERROR]', error);
+
     return NextResponse.json(
       {
         error: 'Lokale Auftragserstellung fehlgeschlagen',

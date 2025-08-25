@@ -166,7 +166,7 @@ export default function AISchedulePlanningPage({ params }: { params: Promise<{ u
         predictiveAccuracy: 91,
       });
     } catch (error) {
-      console.error('Error loading AI data:', error);
+
       toast.error('Fehler beim Laden der KI-Daten');
     } finally {
       setLoading(false);

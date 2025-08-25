@@ -48,12 +48,12 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
               setUserTemplate(preferredTemplate);
             }
           } catch (error) {
-            console.error('❌ Fehler beim Laden des User-Templates:', error);
+
             // Fallback auf Default-Template wird unten im JSX gehandhabt
           }
         }
       } catch (error) {
-        console.error('❌ Fehler beim Laden der Rechnung für PDF-Druck:', error);
+
         notFound();
       } finally {
         setLoading(false);
@@ -66,14 +66,14 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
       const resolvedParams = await params;
       // Add print-page class to body
       document.body.classList.add('print-page');
-      console.log('🖨️ Print page initialized for invoice:', resolvedParams.invoiceId);
+
     };
 
     initializePage();
 
     // Ensure all images and assets are loaded
     const handleLoad = () => {
-      console.log('✅ Print page fully loaded');
+
     };
 
     window.addEventListener('load', handleLoad);

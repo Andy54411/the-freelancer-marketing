@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       if (orderDoc.exists) {
         const orderData = orderDoc.data();
         const providerId = orderData?.providerId;
-        
+
         if (providerId) {
           const providerDoc = await db.collection('users').doc(providerId).get();
           if (providerDoc.exists) {
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Wenn firebaseUserId gegeben, hole Provider direkt aus users collection
     if (!providerInfo && firebaseUserId) {
       const userDoc = await db.collection('users').doc(firebaseUserId).get();
-      
+
       if (userDoc.exists) {
         const userData = userDoc.data();
         if (userData && userData.user_type === 'firma') {
@@ -72,11 +72,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Provider Info:', providerInfo);
     return NextResponse.json(providerInfo);
 
   } catch (error) {
-    console.error('Get Provider Info Error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Laden der Provider-Informationen.' },
       { status: 500 }

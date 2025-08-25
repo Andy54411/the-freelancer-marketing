@@ -29,10 +29,7 @@ export default function CSPDebugger() {
       setViolations(prev => [violation, ...prev].slice(0, 20)); // Keep last 20 violations
 
       console.group('🚨 CSP Violation Detected');
-      console.log('Blocked URI:', event.blockedURI);
-      console.log('Violated Directive:', event.violatedDirective);
-      console.log('Policy:', event.originalPolicy);
-      console.log('Full Event:', event);
+
       console.groupEnd();
     };
 

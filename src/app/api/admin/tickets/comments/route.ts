@@ -40,8 +40,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Adding comment to ticket ${ticketId} in AWS DynamoDB`);
-
     // Add comment using AWS DynamoDB storage
     const updatedTicket = await AWSTicketStorage.addComment(ticketId, {
       author,
@@ -49,8 +47,6 @@ export async function POST(request: NextRequest) {
       content,
       isInternal: isInternal || false,
     });
-
-    console.log(`Comment added successfully to ticket ${ticketId}`);
 
     // Log to CloudWatch
     await EnhancedTicketService.logToCloudWatch(
@@ -73,7 +69,6 @@ export async function POST(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-    console.error('AWS Comment creation error:', error);
 
     await EnhancedTicketService.logToCloudWatch(
       'ticket-comments-errors',
@@ -107,16 +102,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Ticket-ID ist erforderlich' }, { status: 400 });
     }
 
-    console.log(`Getting comments for ticket ${ticketId} from AWS DynamoDB`);
-
     // Get ticket with comments from AWS DynamoDB
     const ticket = await AWSTicketStorage.getTicket(ticketId);
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
-
-    console.log(`Found ${ticket.comments.length} comments for ticket ${ticketId}`);
 
     return NextResponse.json({
       success: true,
@@ -125,7 +116,7 @@ export async function GET(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-    console.error('AWS Comments fetch error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Kommentare',

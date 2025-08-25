@@ -76,12 +76,10 @@ export class ResponseTimeTracker {
       allTracking[messageId] = trackingData;
       localStorage.setItem('responseTimeTracking', JSON.stringify(allTracking));
 
-      console.log('[ResponseTimeTracker] Started local tracking for message:', messageId);
-
       // HINWEIS: Echte Metrics werden durch Cloud Functions erstellt
       // Diese Client-Version dient nur zur lokalen Verfolgung
     } catch (error) {
-      console.error('[ResponseTimeTracker] Error starting tracking:', error);
+
     }
   }
 
@@ -129,16 +127,10 @@ export class ResponseTimeTracker {
 
         localStorage.setItem('responseTimeTracking', JSON.stringify(allTracking));
 
-        console.log('[ResponseTimeTracker] Local response recorded:', {
-          messageId: latestUnrespondedMessage.messageId,
-          responseTimeHours,
-          isWithinGuarantee,
-        });
-
         // HINWEIS: Echte Metrics-Updates werden durch Cloud Functions verarbeitet
       }
     } catch (error) {
-      console.error('[ResponseTimeTracker] Error recording response:', error);
+
     }
   }
 
@@ -205,12 +197,8 @@ export class ResponseTimeTracker {
         }
       }
 
-      console.log('[ResponseTimeTracker] Provider stats updated:', {
-        providerId,
-        stats,
-      });
     } catch (error) {
-      console.error('[ResponseTimeTracker] Error updating provider stats:', error);
+
     }
   }
 
@@ -229,7 +217,7 @@ export class ResponseTimeTracker {
 
       return null;
     } catch (error) {
-      console.error('[ResponseTimeTracker] Error getting provider stats:', error);
+
       return null;
     }
   }
@@ -261,15 +249,10 @@ export class ResponseTimeTracker {
             hoursOverdue: Math.round((hoursElapsed - metric.guaranteeHours) * 100) / 100,
           });
 
-          console.log('[ResponseTimeTracker] Marked as overdue:', {
-            providerId: metric.providerId,
-            chatId: metric.chatId,
-            hoursOverdue: hoursElapsed - metric.guaranteeHours,
-          });
         }
       }
     } catch (error) {
-      console.error('[ResponseTimeTracker] Error checking overdue responses:', error);
+
     }
   }
 

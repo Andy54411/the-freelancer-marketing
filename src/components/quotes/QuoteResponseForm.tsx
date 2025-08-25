@@ -321,7 +321,7 @@ export default function QuoteResponseForm({
 
       await onSubmit(dataToSubmit);
     } catch (error) {
-      console.error('Fehler beim Reservieren der Inventar-Items:', error);
+
       // TODO: Benutzer über Fehler informieren
       alert('Fehler beim Reservieren der Artikel. Bitte versuchen Sie es erneut.');
     }

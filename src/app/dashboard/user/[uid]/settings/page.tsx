@@ -38,7 +38,7 @@ export default function UserSettingsDashboardPage() {
         setError('Benutzerdaten nicht gefunden.');
       }
     } catch (err: any) {
-      console.error('Fehler beim Laden der Benutzerdaten für Einstellungen:', err);
+
       setError(`Fehler beim Laden der Daten: ${err.message || 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);

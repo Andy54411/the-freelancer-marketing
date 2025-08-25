@@ -118,7 +118,6 @@ export async function GET(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('OAuth flow test error:', error);
 
     return NextResponse.json(
       {

@@ -51,7 +51,6 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(stats);
   } catch (error) {
-    console.error('Dashboard stats error:', error);
 
     // Fallback-Statistiken bei Fehlern
     const fallbackStats = {

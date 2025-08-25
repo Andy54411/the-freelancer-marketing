@@ -39,7 +39,7 @@ export default function CSPMonitor() {
 
       // Log für Development
       if (process.env.NODE_ENV === 'development') {
-        console.warn('🚨 CSP Violation:', violation);
+
       }
     };
 
@@ -71,7 +71,7 @@ export default function CSPMonitor() {
       await navigator.clipboard.writeText(violationData);
       alert('CSP Violations in Zwischenablage kopiert!');
     } catch (err) {
-      console.error('Kopieren fehlgeschlagen:', err);
+
     }
   };
 

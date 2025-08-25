@@ -70,7 +70,7 @@ export default function HoursBillingOverview({
       }
 
       const result = await response.json();
-      
+
       if (!result.success || !result.order) {
         throw new Error('Auftragsdaten nicht gefunden');
       }
@@ -90,7 +90,7 @@ export default function HoursBillingOverview({
 
       setData(hoursData);
     } catch (err) {
-      console.error('Error fetching hours data:', err);
+
       setError(err instanceof Error ? err.message : 'Fehler beim Laden der Stundendaten');
     } finally {
       setLoading(false);
@@ -113,7 +113,7 @@ export default function HoursBillingOverview({
         setError(result.message);
       }
     } catch (error) {
-      console.error('Error approving logged hours:', error);
+
       setError('Fehler bei der Freigabe der Stunden');
     } finally {
       setApproving(false);
@@ -173,19 +173,6 @@ export default function HoursBillingOverview({
   );
 
   // DEBUG: Console-Log für Debugging der Zeit-Einträge
-  console.log('[HoursBillingOverview] DEBUG Zeit-Einträge:', {
-    totalEntries: data.timeEntries.length,
-    totalLoggedHours: data.totalLoggedHours,
-    originalPlannedHours: data.originalPlannedHours,
-    allStatuses: data.timeEntries.map(e => ({
-      id: e.id,
-      category: e.category,
-      status: e.status,
-      hours: e.hours,
-    })),
-    loggedAdditionalEntries: loggedAdditionalEntries.length,
-    loggedAdditionalHours: loggedAdditionalEntries.reduce((sum, entry) => sum + entry.hours, 0),
-  });
 
   // Berechne Summen
   const paidAdditionalHours = paidAdditionalEntries.reduce((sum, entry) => sum + entry.hours, 0);
@@ -248,51 +235,6 @@ export default function HoursBillingOverview({
         ? backupLoggedAdditionalHours * data.hourlyRate
         : 0;
 
-  console.log('[HoursBillingOverview] 🔍 DATENBANK-VERIFIKATION:', {
-    totalTimeEntries: data.timeEntries.length, // 17 Einträge
-    totalLoggedHours: data.totalLoggedHours, // 133h
-    originalPlannedHours: data.originalPlannedHours, // 24h
-    totalAdditionalHours, // 133-24=109h
-    paidAdditionalHours, // Alle 109h haben Status "transferred"
-    pendingAdditionalHours, // 0h mit Status "billing_pending"/"customer_approved"
-    loggedAdditionalHours, // 0h mit anderen Status
-    finalLoggedAdditionalHours, // Ergebnis: 0h
-    shouldShowApprovalButton: finalLoggedAdditionalHours > 0, // false = KORREKT!
-    statusBreakdown: {
-      original_logged: data.timeEntries.filter(
-        e => e.category === 'original' && e.status === 'logged'
-      ).length,
-      additional_transferred: data.timeEntries.filter(
-        e => e.category === 'additional' && e.status === 'transferred'
-      ).length,
-      additional_other: data.timeEntries.filter(
-        e => e.category === 'additional' && e.status !== 'transferred'
-      ).length,
-    },
-    allAdditionalStatuses: data.timeEntries
-      .filter(e => e.category === 'additional')
-      .map(e => ({
-        id: e.id.slice(-8),
-        status: e.status,
-        hours: e.hours,
-        description: e.description?.slice(0, 20),
-      })),
-    newEntriesFound: data.timeEntries
-      .filter(
-        e =>
-          e.category === 'additional' &&
-          e.status !== 'transferred' &&
-          e.status !== 'billing_pending' &&
-          e.status !== 'customer_approved'
-      )
-      .map(e => ({
-        id: e.id.slice(-8),
-        status: e.status,
-        hours: e.hours,
-        description: e.description?.slice(0, 20),
-      })),
-  });
-
   const formatCurrency = (cents: number) => `€${(cents / 100).toFixed(2)}`;
 
   const formatDate = (dateInput: string | Date | { toDate?: () => Date; seconds?: number }) => {
@@ -318,7 +260,7 @@ export default function HoursBillingOverview({
 
       return date.toLocaleDateString('de-DE');
     } catch (error) {
-      console.warn('Error formatting date:', dateInput, error);
+
       return 'Unbekanntes Datum';
     }
   };

@@ -13,8 +13,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🔄 Syncing missing accounts for user:', userId);
-
     // Get accounts from finAPI
     const finapiResponse = await fetch(
       `http://localhost:3000/api/finapi/accounts?userId=${encodeURIComponent(userId)}`,
@@ -31,19 +29,12 @@ export async function POST(request: NextRequest) {
     const finapiData = await finapiResponse.json();
     const finapiAccounts = finapiData.accounts || [];
 
-    console.log('📊 FinAPI accounts retrieved:', finapiAccounts.length);
-
     // Get current Firestore data
     const userDocRef = db.collection('users').doc(userId);
     const userDoc = await userDocRef.get();
     const userData = userDoc.data();
     const currentAccounts = userData?.banking?.accounts || {};
     const currentConnections = userData?.banking?.connections || {};
-
-    console.log('📊 Current Firestore data:', {
-      accounts: Object.keys(currentAccounts).length,
-      connections: Object.keys(currentConnections).length,
-    });
 
     // Find missing accounts
     const missingAccounts: any[] = [];
@@ -63,9 +54,6 @@ export async function POST(request: NextRequest) {
         connectionGroups[connectionId].push(account);
       }
     }
-
-    console.log('📊 Missing accounts:', missingAccounts.length);
-    console.log('📊 New connections needed:', Object.keys(connectionGroups).length);
 
     if (missingAccounts.length === 0) {
       return NextResponse.json({
@@ -158,12 +146,6 @@ export async function POST(request: NextRequest) {
 
     await userDocRef.update(updateData);
 
-    console.log('✅ Missing accounts synced successfully:', {
-      newAccounts: missingAccounts.length,
-      newConnections: Object.keys(newConnectionsData).length,
-      totalBalance: newTotalBalance,
-    });
-
     return NextResponse.json({
       success: true,
       message: 'Missing accounts synced successfully',
@@ -183,7 +165,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Error syncing missing accounts:', error);
+
     return NextResponse.json(
       {
         error: 'Failed to sync missing accounts',

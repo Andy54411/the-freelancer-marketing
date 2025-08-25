@@ -125,13 +125,6 @@ export default function CompanyServiceSubcategoryPage() {
   const decodedCategory = decodeURIComponent(category);
   const decodedSubcategory = decodeURIComponent(subcategory);
 
-  console.log('[ServicePage] URL-Parameter Debug:', {
-    rawCategory: category,
-    rawSubcategory: subcategory,
-    decodedCategory,
-    decodedSubcategory,
-  });
-
   // Normalisierungsfunktion (gleich wie in Navigation verwendet)
   const normalizeToSlug = (str: string) => str.toLowerCase().replace(/\s+/g, '-');
 
@@ -139,26 +132,12 @@ export default function CompanyServiceSubcategoryPage() {
   const categoryInfo = categories.find(cat => {
     const expectedSlug = normalizeToSlug(cat.title);
 
-    console.log('[ServicePage] Category matching:', {
-      categoryTitle: cat.title,
-      expectedSlug,
-      decodedParam: decodedCategory,
-      matches: expectedSlug === decodedCategory,
-    });
-
     return expectedSlug === decodedCategory;
   });
 
   // Finde die Unterkategorie durch Vergleich der normalisierten Namen
   const subcategoryName = categoryInfo?.subcategories.find(sub => {
     const expectedSubSlug = normalizeToSlug(sub);
-
-    console.log('[ServicePage] Subcategory matching:', {
-      subcategoryName: sub,
-      expectedSubSlug,
-      decodedParam: decodedSubcategory,
-      matches: expectedSubSlug === decodedSubcategory,
-    });
 
     return expectedSubSlug === decodedSubcategory;
   });
@@ -180,7 +159,7 @@ export default function CompanyServiceSubcategoryPage() {
         setCompanyName(data.companyName || 'Unbekanntes Unternehmen');
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Unternehmensdaten:', error);
+
     }
   };
 
@@ -193,11 +172,6 @@ export default function CompanyServiceSubcategoryPage() {
   const loadProviders = async () => {
     try {
       setLoading(true);
-      console.log('[ServicePage] Loading providers for:', {
-        category,
-        subcategory,
-        subcategoryName,
-      });
 
       // Query für Firmen mit besserer Fehlerbehandlung - erweitert um verschiedene Aktivitätszustände
       const firmCollectionRef = collection(db, 'firma');
@@ -214,23 +188,16 @@ export default function CompanyServiceSubcategoryPage() {
         limit(20) // Reduziertes Limit für bessere Performance
       );
 
-      console.log('[ServicePage] Executing queries...');
-
       const [firmSnapshot, userSnapshot] = await Promise.all([
         getDocs(firmQuery).catch(error => {
-          console.error('[ServicePage] Error loading firma collection:', error);
+
           return { docs: [] };
         }),
         getDocs(userQuery).catch(error => {
-          console.error('[ServicePage] Error loading users collection:', error);
+
           return { docs: [] };
         }),
       ]);
-
-      console.log('[ServicePage] Query results:', {
-        firmDocs: firmSnapshot.docs?.length || 0,
-        userDocs: userSnapshot.docs?.length || 0,
-      });
 
       const firmProviders: Provider[] = ((firmSnapshot.docs || []) as any[])
         .map(doc => {
@@ -288,30 +255,13 @@ export default function CompanyServiceSubcategoryPage() {
         };
       });
 
-      console.log('[ServicePage] Providers mapped:', {
-        firmProviders: firmProviders.length,
-        userProviders: userProviders.length,
-      });
-
       const allProviders = [...firmProviders, ...userProviders];
-
-      console.log('[ServicePage] All providers:', allProviders.length);
-      console.log('[ServicePage] Firma providers after filter:', firmProviders.length);
 
       // Log specifically Mietkoch providers
       const mietkochers = allProviders.filter(
         p =>
           p.companyName?.toLowerCase().includes('mietkoch') ||
           p.selectedSubcategory?.toLowerCase().includes('mietkoch')
-      );
-      console.log(
-        '[ServicePage] Mietkoch providers found:',
-        mietkochers.map(p => ({
-          name: p.companyName || p.userName,
-          selectedSubcategory: p.selectedSubcategory,
-          selectedCategory: p.selectedCategory,
-          isCompany: p.isCompany,
-        }))
       );
 
       // Filter nach Subcategory
@@ -323,12 +273,7 @@ export default function CompanyServiceSubcategoryPage() {
             provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase();
 
           if (matches) {
-            console.log('[ServicePage] Company match found:', {
-              name: provider.companyName,
-              selectedSubcategory: provider.selectedSubcategory,
-              subcategoryName,
-              subcategory,
-            });
+
           }
 
           return matches;
@@ -342,28 +287,10 @@ export default function CompanyServiceSubcategoryPage() {
         );
 
         if (skillsMatch) {
-          console.log('[ServicePage] Skills match found:', {
-            name: provider.userName,
-            skills: provider.skills,
-          });
+
         }
 
         return skillsMatch;
-      });
-
-      console.log('[ServicePage] Filtered by subcategory:', {
-        subcategoryName,
-        subcategory,
-        totalProviders: allProviders.length,
-        filteredProviders: filteredProviders.length,
-        providersWithSubcategory: allProviders
-          .filter(p => p.selectedSubcategory)
-          .map(p => ({
-            id: p.id,
-            companyName: p.companyName,
-            selectedSubcategory: p.selectedSubcategory,
-            isCompany: p.isCompany,
-          })),
       });
 
       // Suchfilter
@@ -395,9 +322,9 @@ export default function CompanyServiceSubcategoryPage() {
       });
 
       setProviders(filteredProviders);
-      console.log('[ServicePage] Providers set successfully:', filteredProviders.length);
+
     } catch (error) {
-      console.error('[ServicePage] Fehler beim Laden der Anbieter:', error);
+
       // Zeige leere Liste bei Fehlern
       setProviders([]);
     } finally {
@@ -419,14 +346,6 @@ export default function CompanyServiceSubcategoryPage() {
   };
 
   // Debug logging für troubleshooting
-  console.log('[ServicePage] Header Debug:', {
-    categoryInfo: categoryInfo?.title,
-    subcategoryName,
-    hasValidData: !!(categoryInfo && subcategoryName),
-    decodedCategory,
-    decodedSubcategory,
-    availableCategories: categories.map(c => ({ title: c.title, slug: normalizeToSlug(c.title) })),
-  });
 
   if (!categoryInfo || !subcategoryName) {
     return (

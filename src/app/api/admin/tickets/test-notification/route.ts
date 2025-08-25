@@ -49,7 +49,7 @@ async function verifyAdminToken(request: NextRequest) {
 
     return { success: false, error: 'No valid authentication found' };
   } catch (error) {
-    console.error('Auth verification error:', error);
+
     return { success: false, error: 'Invalid token' };
   }
 }
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Unbekannter Notification-Typ' }, { status: 400 });
   } catch (error) {
-    console.error('Test Notification Fehler:', error);
+
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

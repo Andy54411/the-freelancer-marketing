@@ -107,13 +107,13 @@ class WorkspaceServiceClass {
             resolve(workspaces);
           },
           error => {
-            console.error('Error getting workspaces:', error);
+
             reject(new Error('Failed to get workspaces'));
           }
         );
       });
     } catch (error) {
-      console.error('Error getting workspaces:', error);
+
       throw new Error('Failed to get workspaces');
     }
   }
@@ -173,7 +173,7 @@ class WorkspaceServiceClass {
         members: workspace.members || [],
       };
     } catch (error) {
-      console.error('Error creating workspace:', error);
+
       throw new Error('Failed to create workspace');
     }
   }
@@ -191,7 +191,7 @@ class WorkspaceServiceClass {
 
       await update(workspaceRef, updateData);
     } catch (error) {
-      console.error('Error updating workspace:', error);
+
       throw new Error('Failed to update workspace');
     }
   }
@@ -202,7 +202,7 @@ class WorkspaceServiceClass {
       const workspaceRef = ref(database, `${this.collectionName}/${workspaceId}`);
       await remove(workspaceRef);
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+
       throw new Error('Failed to delete workspace');
     }
   }
@@ -233,13 +233,13 @@ class WorkspaceServiceClass {
             resolve(workspace);
           },
           error => {
-            console.error('Error getting workspace by ID:', error);
+
             reject(new Error('Failed to get workspace'));
           }
         );
       });
     } catch (error) {
-      console.error('Error getting workspace by ID:', error);
+
       throw new Error('Failed to get workspace');
     }
   }
@@ -305,13 +305,13 @@ class WorkspaceServiceClass {
             resolve(workspaces);
           },
           error => {
-            console.error('Error getting workspaces by status:', error);
+
             reject(new Error('Failed to get workspaces by status'));
           }
         );
       });
     } catch (error) {
-      console.error('Error getting workspaces by status:', error);
+
       throw new Error('Failed to get workspaces by status');
     }
   }
@@ -347,13 +347,13 @@ class WorkspaceServiceClass {
             resolve(workspaces);
           },
           error => {
-            console.error('Error getting workspaces by priority:', error);
+
             reject(new Error('Failed to get workspaces by priority'));
           }
         );
       });
     } catch (error) {
-      console.error('Error getting workspaces by priority:', error);
+
       throw new Error('Failed to get workspaces by priority');
     }
   }
@@ -392,13 +392,13 @@ class WorkspaceServiceClass {
             resolve(workspaces);
           },
           error => {
-            console.error('Error getting workspaces assigned to user:', error);
+
             reject(new Error('Failed to get workspaces assigned to user'));
           }
         );
       });
     } catch (error) {
-      console.error('Error getting workspaces assigned to user:', error);
+
       throw new Error('Failed to get workspaces assigned to user');
     }
   }
@@ -439,13 +439,13 @@ class WorkspaceServiceClass {
             resolve(workspaces);
           },
           error => {
-            console.error('Error getting overdue workspaces:', error);
+
             reject(new Error('Failed to get overdue workspaces'));
           }
         );
       });
     } catch (error) {
-      console.error('Error getting overdue workspaces:', error);
+
       throw new Error('Failed to get overdue workspaces');
     }
   }
@@ -465,7 +465,7 @@ class WorkspaceServiceClass {
 
       await update(workspaceRef, updateData);
     } catch (error) {
-      console.error('Error updating workspace progress:', error);
+
       throw new Error('Failed to update workspace progress');
     }
   }
@@ -491,7 +491,7 @@ class WorkspaceServiceClass {
 
       await Promise.all(updatePromises);
     } catch (error) {
-      console.error('Error bulk updating workspaces:', error);
+
       throw new Error('Failed to bulk update workspaces');
     }
   }
@@ -543,7 +543,7 @@ class WorkspaceServiceClass {
 
       return analytics;
     } catch (error) {
-      console.error('Error getting workspace analytics:', error);
+
       throw new Error('Failed to get workspace analytics');
     }
   }

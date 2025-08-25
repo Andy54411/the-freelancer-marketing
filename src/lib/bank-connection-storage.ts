@@ -52,14 +52,6 @@ export async function storeBankConnection(
   connectionData: Omit<StoredBankConnection, 'createdAt' | 'updatedAt'>
 ): Promise<void> {
   try {
-    console.log(
-      '💾 Storing bank connection for user:',
-      firebaseUid,
-      'bank:',
-      connectionData.bankName,
-      'connection:',
-      connectionData.finapiConnectionId
-    );
 
     const userDocRef = db.collection('users').doc(firebaseUid);
     const now = new Date();
@@ -117,14 +109,8 @@ export async function storeBankConnection(
     // Aktualisiere Bank- und Konto-Zähler
     await updateBankingStatistics(firebaseUid);
 
-    console.log(
-      '✅ Bank connection stored successfully for user:',
-      firebaseUid,
-      'Bank:',
-      connectionData.bankName
-    );
   } catch (error) {
-    console.error('❌ Error storing bank connection:', error);
+
     throw new Error(`Failed to store bank connection: ${error}`);
   }
 }
@@ -138,14 +124,6 @@ export async function storeBankAccounts(
   accounts: StoredBankAccount[]
 ): Promise<void> {
   try {
-    console.log(
-      '💾 Storing',
-      accounts.length,
-      'bank accounts from',
-      new Set(accounts.map(a => a.bankName)).size,
-      'banks for user:',
-      firebaseUid
-    );
 
     const userDocRef = db.collection('users').doc(firebaseUid);
     const now = new Date();
@@ -190,14 +168,8 @@ export async function storeBankAccounts(
     // Aktualisiere Statistiken
     await updateBankingStatistics(firebaseUid);
 
-    console.log('✅ Bank accounts stored successfully:', {
-      user: firebaseUid,
-      accounts: accounts.length,
-      banks: Object.keys(accountsByBank).length,
-      currencies: new Set(accounts.map(a => a.currency)).size,
-    });
   } catch (error) {
-    console.error('❌ Error storing bank accounts:', error);
+
     throw new Error(`Failed to store bank accounts: ${error}`);
   }
 }
@@ -247,15 +219,8 @@ export async function updateBankingStatistics(firebaseUid: string): Promise<void
       'banking.lastStatsUpdate': FieldValue.serverTimestamp(),
     });
 
-    console.log('✅ Banking statistics updated:', {
-      user: firebaseUid,
-      banks: totalBanks,
-      accounts: totalAccounts,
-      balance: totalBalance,
-      currencies: Array.from(currencies).join(', '),
-    });
   } catch (error) {
-    console.error('❌ Error updating banking statistics:', error);
+
   }
 }
 
@@ -275,7 +240,7 @@ export async function getUserBankConnections(firebaseUid: string): Promise<Store
     const connectionsData = userDoc.data()!.banking.connections;
     return Object.values(connectionsData) as StoredBankConnection[];
   } catch (error) {
-    console.error('❌ Error getting user bank connections:', error);
+
     return [];
   }
 }
@@ -295,7 +260,7 @@ export async function getUserBankAccounts(firebaseUid: string): Promise<StoredBa
     const accountsData = userDoc.data()!.banking.accounts;
     return Object.values(accountsData) as StoredBankAccount[];
   } catch (error) {
-    console.error('❌ Error getting user bank accounts:', error);
+
     return [];
   }
 }
@@ -322,7 +287,7 @@ export async function getUserBankAccountsByBank(
 
     return accountsByBank;
   } catch (error) {
-    console.error('❌ Error getting user bank accounts by bank:', error);
+
     return {};
   }
 }
@@ -365,7 +330,7 @@ export async function getUserBankingOverview(firebaseUid: string): Promise<{
       },
     };
   } catch (error) {
-    console.error('❌ Error getting user banking overview:', error);
+
     return null;
   }
 }
@@ -381,7 +346,7 @@ export async function getAccountsByBank(
     const accounts = await getUserBankAccounts(firebaseUid);
     return accounts.filter(account => account.bankId === bankId);
   } catch (error) {
-    console.error('❌ Error getting accounts by bank:', error);
+
     return [];
   }
 }
@@ -396,7 +361,7 @@ export async function hasUserBankingSetup(firebaseUid: string): Promise<boolean>
       Object.keys(userDoc.data()?.banking?.connections || {}).length > 0
     );
   } catch (error) {
-    console.error('❌ Error checking user banking setup:', error);
+
     return false;
   }
 }
@@ -418,14 +383,8 @@ export async function deactivateBankConnection(
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    console.log(
-      '✅ Bank connection deactivated for user:',
-      firebaseUid,
-      'connection:',
-      connectionId
-    );
   } catch (error) {
-    console.error('❌ Error deactivating bank connection:', error);
+
     throw new Error(`Failed to deactivate bank connection: ${error}`);
   }
 }
@@ -455,9 +414,8 @@ export async function updateAccountBalances(
 
     await userDocRef.update(updateData);
 
-    console.log('✅ Account balances updated for user:', firebaseUid);
   } catch (error) {
-    console.error('❌ Error updating account balances:', error);
+
     throw new Error(`Failed to update account balances: ${error}`);
   }
 }

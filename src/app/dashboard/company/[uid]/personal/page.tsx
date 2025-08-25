@@ -136,16 +136,13 @@ export default function PersonalOverviewPage() {
     if (retryCount < maxRetries) {
       loadEmployees();
     } else {
-      console.warn('❌ Max Retries erreicht für Employee loading');
+
     }
   }, [companyId, retryCount]);
 
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      console.log(
-        `🔄 Lade Mitarbeiter für Company: ${companyId} (Versuch ${retryCount + 1}/${maxRetries})`
-      );
 
       // Import dynamisch um Client-Side zu bleiben
       const { PersonalService } = await import('@/services/personalService');
@@ -182,9 +179,8 @@ export default function PersonalOverviewPage() {
 
       // Reset retry count on success
       setRetryCount(0);
-      console.log('✅ Mitarbeiter geladen:', localEmployees.length);
+
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Mitarbeiter:', error);
 
       // Increment retry count and retry after delay if under limit
       if (retryCount < maxRetries - 1) {
@@ -192,7 +188,7 @@ export default function PersonalOverviewPage() {
           setRetryCount(prev => prev + 1);
         }, 5000); // 5 Sekunden Wartezeit
       } else {
-        console.warn('❌ Max Retries erreicht - verwende Fallback-Daten');
+
       }
 
       // Fallback auf Mock-Daten bei Fehler

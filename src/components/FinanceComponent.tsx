@@ -153,7 +153,7 @@ export default function FinanceComponent({ companyUid }: FinanceComponentProps) 
         setPayments(await paymentsResponse.json());
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Finance-Daten:', error);
+
     } finally {
       setIsLoading(false);
     }

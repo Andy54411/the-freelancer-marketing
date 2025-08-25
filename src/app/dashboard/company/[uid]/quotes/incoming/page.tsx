@@ -84,19 +84,14 @@ export default function IncomingQuotesPage() {
       const token = await firebaseUser.getIdToken();
       if (!token) return;
 
-      console.log('[Frontend] Fetching quotes for UID:', uid);
-
       const response = await fetch(`/api/company/${uid}/quotes/incoming`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      console.log('[Frontend] API Response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('[Frontend] API Response data:', data);
 
         // Validiere und bereinige die Daten
         const validQuotes = Array.isArray(data.quotes)
@@ -109,18 +104,15 @@ export default function IncomingQuotesPage() {
             )
           : [];
 
-        console.log('[Frontend] Valid quotes after filtering:', validQuotes.length);
-        console.log('[Frontend] Valid quotes:', validQuotes);
-
         setQuotes(validQuotes);
       } else {
-        console.error('Fehler beim Laden der Angebots-Anfragen - Status:', response.status);
+
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+
         setQuotes([]);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Angebots-Anfragen:', error);
+
       setQuotes([]);
     } finally {
       setLoading(false);
@@ -188,7 +180,7 @@ export default function IncomingQuotesPage() {
         minute: '2-digit',
       }).format(dateObj);
     } catch (error) {
-      console.error('Error formatting date:', date, error);
+
       return 'Unbekannt';
     }
   };

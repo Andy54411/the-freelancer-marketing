@@ -3,7 +3,6 @@ import { db } from '../../../firebase/server';
 
 export async function GET() {
   try {
-    console.log('[debug-orders] Prüfe auftraege Collection...');
 
     const auftraegeSnapshot = await db.collection('auftraege').limit(10).get();
     const auftraege: any[] = [];
@@ -13,8 +12,6 @@ export async function GET() {
         ...doc.data(),
       });
     });
-
-    console.log('[debug-orders] Prüfe orders Collection...');
 
     const ordersSnapshot = await db.collection('orders').limit(10).get();
     const orders: any[] = [];
@@ -37,7 +34,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('[debug-orders] Fehler:', error);
+
     return NextResponse.json(
       {
         success: false,

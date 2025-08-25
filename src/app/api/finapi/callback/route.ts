@@ -21,18 +21,16 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
     const userId = searchParams.get('userId'); // Taskilo User ID from state
 
-    console.log('🔄 WebForm callback received:', { webFormId, state, error, userId });
-
     // Error-Handling
     if (error) {
-      console.error('❌ WebForm error:', error);
+
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${userId}/finance/banking/import?error=${encodeURIComponent(error)}`
       );
     }
 
     if (!webFormId || !userId) {
-      console.error('❌ Missing required parameters:', { webFormId, userId });
+
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${userId}/finance/banking/import?error=missing_parameters`
       );
@@ -63,7 +61,6 @@ export async function GET(request: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ Client token obtained');
 
     // SCHRITT 2: User-Token für Bank-Daten-Abruf
     const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36);
@@ -89,7 +86,6 @@ export async function GET(request: NextRequest) {
 
     const userTokenData = await userTokenResponse.json();
     const userAccessToken = userTokenData.access_token;
-    console.log('✅ User token obtained');
 
     // SCHRITT 3: Bankverbindungen vom finAPI abrufen
     const connectionsResponse = await fetch(`${baseUrl}/api/v2/bankConnections`, {
@@ -105,7 +101,6 @@ export async function GET(request: NextRequest) {
 
     const connectionsData = await connectionsResponse.json();
     const connections = connectionsData.connections || [];
-    console.log('📊 Found', connections.length, 'bank connections');
 
     // SCHRITT 4: Konten vom finAPI abrufen
     const accountsResponse = await fetch(`${baseUrl}/api/v2/accounts`, {
@@ -121,7 +116,6 @@ export async function GET(request: NextRequest) {
 
     const accountsData = await accountsResponse.json();
     const accounts = accountsData.accounts || [];
-    console.log('💳 Found', accounts.length, 'accounts');
 
     // SCHRITT 5: Bankverbindungen in Taskilo-Datenbank speichern
     for (const connection of connections) {
@@ -143,11 +137,7 @@ export async function GET(request: NextRequest) {
       };
 
       await storeBankConnection(userId, bankConnectionData);
-      console.log('✅ Stored bank connection:', {
-        bank: bank.name,
-        id: connection.id,
-        accounts: connection.accountIds?.length || 0,
-      });
+
     }
 
     // SCHRITT 6: Konten in Taskilo-Datenbank speichern
@@ -198,16 +188,13 @@ export async function GET(request: NextRequest) {
         {} as { [bankName: string]: number }
       );
 
-      console.log('✅ Stored accounts by bank:', accountsByBank);
     }
 
     // SCHRITT 7: Erfolgreiche Weiterleitung zum Dashboard
     const successUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${userId}/finance/banking/accounts?success=bank_connected&connections=${connections.length}&accounts=${accounts.length}`;
 
-    console.log('🎉 Bank connection successful, redirecting to:', successUrl);
     return NextResponse.redirect(successUrl);
   } catch (error: any) {
-    console.error('❌ WebForm callback error:', error);
 
     // Fehler-Weiterleitung
     const errorUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/unknown/finance/banking/import?error=${encodeURIComponent(error.message || 'Unknown error')}`;

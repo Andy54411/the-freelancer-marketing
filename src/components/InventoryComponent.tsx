@@ -116,7 +116,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       setMovements(movementsData);
       setCategories(categoriesData);
     } catch (error) {
-      console.error('Fehler beim Laden der Inventardaten:', error);
+
     } finally {
       setLoading(false);
     }
@@ -147,7 +147,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
         status: 'active',
       });
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Artikels:', error);
+
     }
   };
 
@@ -169,7 +169,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       setStockAdjustment({ newStock: 0, reason: '', type: 'adjustment' });
       setSelectedItem(null);
     } catch (error) {
-      console.error('Fehler beim Anpassen des Bestands:', error);
+
     }
   };
 
@@ -189,7 +189,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       setShowDeleteDialog(false);
       setSelectedItem(null);
     } catch (error) {
-      console.error('Fehler beim Löschen des Artikels:', error);
+
     }
   };
 

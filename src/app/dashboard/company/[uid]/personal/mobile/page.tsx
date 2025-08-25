@@ -150,7 +150,7 @@ export default function MobileAppPage({ params }: { params: Promise<{ uid: strin
         lastSync: new Date(),
       });
     } catch (error) {
-      console.error('Error loading mobile app data:', error);
+
       toast.error('Fehler beim Laden der App-Daten');
     } finally {
       setLoading(false);

@@ -51,11 +51,6 @@ export const trackUserRegistration = (data: UserRegistrationData) => {
     });
   }
 
-  console.log('📊 User Registration Tracked:', {
-    category: data.category,
-    userId: data.userId,
-    method: data.registrationMethod
-  });
 };
 
 // Order Creation Events
@@ -95,47 +90,41 @@ export const trackOrderCreation = (data: OrderCreationData) => {
     });
   }
 
-  console.log('📊 Order Creation Tracked:', {
-    category: data.category,
-    subcategory: data.subcategory,
-    orderId: data.orderId,
-    value: data.value
-  });
 };
 
 // Spezifische Kategorie-Events für besseres Tracking
 export const trackOrderByCategory = {
-  reinigung: (data: Omit<OrderCreationData, 'category'>) => 
+  reinigung: (data: Omit<OrderCreationData, 'category'>) =>
     trackOrderCreation({ ...data, category: 'reinigung' }),
-  
-  gartenLandschaft: (data: Omit<OrderCreationData, 'category'>) => 
+
+  gartenLandschaft: (data: Omit<OrderCreationData, 'category'>) =>
     trackOrderCreation({ ...data, category: 'garten_landschaft' }),
-  
-  handwerk: (data: Omit<OrderCreationData, 'category'>) => 
+
+  handwerk: (data: Omit<OrderCreationData, 'category'>) =>
     trackOrderCreation({ ...data, category: 'handwerk' }),
-  
-  transportUmzug: (data: Omit<OrderCreationData, 'category'>) => 
+
+  transportUmzug: (data: Omit<OrderCreationData, 'category'>) =>
     trackOrderCreation({ ...data, category: 'transport_umzug' }),
-  
-  itTechnik: (data: Omit<OrderCreationData, 'category'>) => 
+
+  itTechnik: (data: Omit<OrderCreationData, 'category'>) =>
     trackOrderCreation({ ...data, category: 'it_technik' }),
-  
-  beratungCoaching: (data: Omit<OrderCreationData, 'category'>) => 
+
+  beratungCoaching: (data: Omit<OrderCreationData, 'category'>) =>
     trackOrderCreation({ ...data, category: 'beratung_coaching' }),
-  
-  gesundheitWellness: (data: Omit<OrderCreationData, 'category'>) => 
+
+  gesundheitWellness: (data: Omit<OrderCreationData, 'category'>) =>
     trackOrderCreation({ ...data, category: 'gesundheit_wellness' }),
-  
-  sonstiges: (data: Omit<OrderCreationData, 'category'>) => 
+
+  sonstiges: (data: Omit<OrderCreationData, 'category'>) =>
     trackOrderCreation({ ...data, category: 'sonstiges' })
 };
 
 // User Registration nach Kategorie
 export const trackRegistrationByCategory = {
-  kunde: (data: Omit<UserRegistrationData, 'category'>) => 
+  kunde: (data: Omit<UserRegistrationData, 'category'>) =>
     trackUserRegistration({ ...data, category: 'kunde' }),
-  
-  dienstleister: (data: Omit<UserRegistrationData, 'category'>) => 
+
+  dienstleister: (data: Omit<UserRegistrationData, 'category'>) =>
     trackUserRegistration({ ...data, category: 'dienstleister' })
 };
 
@@ -214,7 +203,7 @@ export const trackWithConsent = (trackingFunction: () => void) => {
       if (consentData.analytics) {
         trackingFunction();
       } else {
-        console.log('📊 Tracking skipped - Analytics consent not granted');
+
       }
     }
   }

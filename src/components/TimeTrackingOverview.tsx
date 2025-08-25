@@ -60,7 +60,7 @@ export default function TimeTrackingOverview({
       // Temporär deaktiviert für Build-Erfolg
       setOrders([]);
     } catch (error) {
-      console.error('Error loading time tracking overview:', error);
+
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ export default function TimeTrackingOverview({
         onRequestsUpdated();
       }
     } catch (error) {
-      console.error('Error processing approval:', error);
+
     } finally {
       setProcessing(false);
     }

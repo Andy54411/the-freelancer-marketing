@@ -6,7 +6,6 @@ import Stripe from 'stripe';
 function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecret) {
-    console.error('STRIPE_SECRET_KEY ist nicht gesetzt');
     return null;
   }
   return new Stripe(stripeSecret, {
@@ -36,7 +35,7 @@ export async function POST(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-      console.error('Auth-Fehler:', authError);
+
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
@@ -46,7 +45,6 @@ export async function POST(
     }
 
     const body = await request.json();
-    console.log('📋 Request Body:', body);
 
     const {
       proposalId,
@@ -59,28 +57,10 @@ export async function POST(
       customerStripeId,
     } = body;
 
-    console.log('🔍 Extracted Parameters:', {
-      proposalId,
-      amount,
-      currency,
-      companyName,
-      customerFirebaseId,
-    });
-
     // Debug logging
-    console.log('🔍 Payment API Debug - Received parameters:', {
-      proposalId: proposalId || 'MISSING',
-      amount: amount || 'MISSING',
-      quoteTitle,
-      companyName,
-      currency,
-    });
 
     if (!proposalId || !amount) {
-      console.error('❌ Missing required parameters:', {
-        proposalId: !!proposalId,
-        amount: !!amount,
-      });
+
       return NextResponse.json(
         { error: 'Proposal ID und Betrag sind erforderlich' },
         { status: 400 }
@@ -139,15 +119,9 @@ export async function POST(
       );
     }
 
-    console.log('💳 Company Stripe Account ID from DB:', finalCompanyStripeAccountId);
-
     // Final validation with database-fetched Stripe Account ID
     if (!proposalId || !amount || !finalCompanyStripeAccountId) {
-      console.log('❌ Final validation failed:', {
-        proposalId: !!proposalId,
-        amount: !!amount,
-        finalCompanyStripeAccountId: !!finalCompanyStripeAccountId,
-      });
+
       return NextResponse.json(
         { error: 'Proposal ID, Betrag und Stripe Account ID sind erforderlich' },
         { status: 400 }
@@ -159,13 +133,6 @@ export async function POST(
     const platformFeeRate = 0.035; // 3.5%
     const platformFeeCents = Math.round(totalAmountCents * platformFeeRate);
     const companyReceivesCents = totalAmountCents - platformFeeCents;
-
-    console.log('💰 Quote Payment Calculation:', {
-      totalAmountCents,
-      platformFeeCents,
-      companyReceivesCents,
-      finalCompanyStripeAccountId,
-    });
 
     // Get or create Stripe customer
     let stripeCustomerId = customerStripeId;
@@ -208,13 +175,6 @@ export async function POST(
         enabled: true,
         allow_redirects: 'never',
       },
-    });
-
-    console.log('✅ Quote PaymentIntent created:', {
-      paymentIntentId: paymentIntent.id,
-      amount: totalAmountCents,
-      applicationFee: platformFeeCents,
-      destination: finalCompanyStripeAccountId,
     });
 
     // Update quote status to payment_pending
@@ -261,7 +221,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('❌ Fehler beim Erstellen des Quote Payment Intents:', error);
+
     return NextResponse.json({ error: 'Fehler beim Erstellen der Quote-Zahlung' }, { status: 500 });
   }
 }
@@ -276,13 +236,11 @@ export async function PATCH(
 ) {
   const { uid, quoteId } = await params;
 
-  console.log('🔄 [PATCH Payment] Starting payment success handling:', { uid, quoteId });
-
   try {
     // Auth-Check
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ [PATCH Payment] No auth header');
+
       return NextResponse.json({ error: 'Authentifizierung erforderlich' }, { status: 401 });
     }
 
@@ -290,35 +248,29 @@ export async function PATCH(
     let decodedToken;
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-      console.log('✅ [PATCH Payment] Auth successful:', decodedToken.uid);
+
     } catch (authError) {
-      console.error('❌ [PATCH Payment] Auth-Fehler:', authError);
+
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
     // Check if user is authorized
     if (decodedToken.uid !== uid) {
-      console.log('❌ [PATCH Payment] User not authorized:', decodedToken.uid, 'vs', uid);
+
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
     const body = await request.json();
-    console.log('📋 [PATCH Payment] Request body:', body);
 
     const { paymentIntentId, proposalId } = body;
 
     if (!paymentIntentId || !proposalId) {
-      console.log('❌ [PATCH Payment] Missing parameters:', {
-        paymentIntentId: !!paymentIntentId,
-        proposalId: !!proposalId,
-      });
+
       return NextResponse.json(
         { error: 'Payment Intent ID und Proposal ID sind erforderlich' },
         { status: 400 }
       );
     }
-
-    console.log('🔍 [PATCH Payment] Processing payment success:', { paymentIntentId, proposalId });
 
     // Stripe initialisieren
     const stripe = getStripeInstance();
@@ -353,12 +305,6 @@ export async function PATCH(
 
     // Find the proposal - handle both Array and Object structures
     const proposals = projectData?.proposals || [];
-    console.log(
-      '🔍 [PATCH Payment] Proposals structure:',
-      typeof proposals,
-      Array.isArray(proposals)
-    );
-    console.log('🔍 [PATCH Payment] Proposals data:', proposals);
 
     let proposalIndex = -1;
     let proposal: any = null;
@@ -371,15 +317,13 @@ export async function PATCH(
       }
     } else if (typeof proposals === 'object' && proposals !== null) {
       // Object structure - corrupted by Firebase
-      console.log('⚠️ [PATCH Payment] Proposals stored as Object - attempting recovery');
 
       // Try to find by object key matching proposalId
       const objectKeys = Object.keys(proposals);
-      console.log('🔍 [PATCH Payment] Available object keys:', objectKeys);
 
       // First, try to find if proposalId is a direct key
       if (proposals[proposalId]) {
-        console.log('✅ [PATCH Payment] Found proposal by direct key match');
+
         proposal = { ...proposals[proposalId], companyUid: proposalId };
         proposalIndex = 0; // Set to 0 for object structure
       } else {
@@ -392,7 +336,7 @@ export async function PATCH(
             p.paymentIntentId === paymentIntentId ||
             (p.status === 'payment_pending' && objectKeys.length === 1)
           ) {
-            console.log(`✅ [PATCH Payment] Found proposal by matching criteria at index ${i}`);
+
             proposal = p;
             proposalIndex = i;
             break;
@@ -402,7 +346,6 @@ export async function PATCH(
 
       // If still not found, try to reconstruct from payment intent
       if (!proposal && paymentIntentId) {
-        console.log('🔄 [PATCH Payment] Attempting recovery from payment intent metadata');
 
         // Extract amount from PaymentIntent (convert from cents to euros)
         const paymentAmountEuros = paymentIntent.amount / 100;
@@ -421,30 +364,20 @@ export async function PATCH(
           description: paymentIntent.description || '',
         };
         proposalIndex = 0;
-        console.log('✅ [PATCH Payment] Reconstructed proposal with amount:', paymentAmountEuros);
+
       }
     }
 
-    console.log('🔍 [PATCH Payment] Looking for proposalId:', proposalId);
-    console.log('🔍 [PATCH Payment] Found at index:', proposalIndex);
-    console.log('🔍 [PATCH Payment] Proposal data:', proposal);
-
     if (proposalIndex === -1 || !proposal) {
-      console.log('❌ [PATCH Payment] Proposal not found after all recovery attempts');
+
       return NextResponse.json({ error: 'Angebot nicht gefunden' }, { status: 404 });
     }
 
     const acceptedProposal = proposal;
-    console.log('✅ [PATCH Payment] Found proposal:', {
-      companyUid: acceptedProposal.companyUid,
-      price: acceptedProposal.price || acceptedProposal.totalAmount,
-      paymentIntentAmount: paymentIntent.amount / 100, // For debugging
-    });
 
     // Ensure we have a valid amount - fallback to PaymentIntent amount if proposal amount is missing
     const finalAmount =
       acceptedProposal.totalAmount || acceptedProposal.price || paymentIntent.amount / 100;
-    console.log('💰 [PATCH Payment] Using final amount:', finalAmount, 'EUR');
 
     // Generate unique order ID
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -591,13 +524,6 @@ export async function PATCH(
       updatedAt: new Date().toISOString(),
     });
 
-    console.log('✅ [PATCH Payment] Quote → Order Migration completed:', {
-      quoteId,
-      orderId,
-      paymentIntentId,
-      companyUid: acceptedProposal.companyUid,
-    });
-
     // TODO: Send notifications to company about new order
 
     return NextResponse.json({
@@ -607,9 +533,7 @@ export async function PATCH(
       paymentIntentId: paymentIntentId,
     });
   } catch (error) {
-    console.error('❌ [PATCH Payment] Fehler beim Verarbeiten der Quote-Zahlung:', error);
-    console.error('❌ [PATCH Payment] Error stack:', error.stack);
-    console.error('❌ [PATCH Payment] Error message:', error.message);
+
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten der Quote-Zahlung' },
       { status: 500 }

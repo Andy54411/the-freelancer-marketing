@@ -26,8 +26,6 @@ export async function GET(request: NextRequest) {
       paging: { page: 1, perPage: 50, pageCount: 1, totalCount: 0 },
     };
 
-    console.log('Notification rules retrieved:', response.notificationRules?.length || 0);
-
     return NextResponse.json({
       success: true,
       data: response.notificationRules,
@@ -36,7 +34,7 @@ export async function GET(request: NextRequest) {
       totalCount: response.notificationRules?.length || 0,
     });
   } catch (error: any) {
-    console.error('finAPI notification rules error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -109,7 +107,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error: any) {
-    console.error('finAPI notification rules POST error:', error);
+
     return NextResponse.json(
       {
         success: false,

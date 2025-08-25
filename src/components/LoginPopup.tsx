@@ -56,13 +56,13 @@ export default function LoginPopup({
     setError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log(POPUP_LOG, 'Email/Passwort Login erfolgreich für:', userCredential.user.uid);
+
       onLoginSuccess(userCredential.user);
     } catch (err: unknown) {
       // Prüfen, ob es ein Firebase Auth Fehler ist, indem wir auf 'code' und 'message' prüfen
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string }; // Type Assertion
-        console.error(POPUP_ERROR, 'Email/Passwort Login Fehler:', err.code, err.message);
+
         if (
           firebaseError.code === 'auth/user-not-found' ||
           firebaseError.code === 'auth/wrong-password' ||
@@ -87,15 +87,15 @@ export default function LoginPopup({
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      console.log(POPUP_LOG, 'Google Login erfolgreich für:', result.user.uid);
+
       onLoginSuccess(result.user);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string };
-        console.error(POPUP_ERROR, 'Google Login Fehler:', err.code, err.message);
+
         if (firebaseError.code === 'auth/popup-closed-by-user') {
           // Kein Fehler anzeigen, Nutzer hat das Popup geschlossen
-          console.log(POPUP_LOG, 'Google Login Popup vom Nutzer geschlossen.');
+
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
           setError(
             'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
@@ -120,14 +120,14 @@ export default function LoginPopup({
       // provider.addScope('email');
       // provider.addScope('name');
       const result = await signInWithPopup(auth, provider);
-      console.log(POPUP_LOG, 'Apple Login erfolgreich für:', result.user.uid);
+
       onLoginSuccess(result.user);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
         const firebaseError = err as { code: string; message: string };
-        console.error(POPUP_ERROR, 'Apple Login Fehler:', err.code, err.message);
+
         if (firebaseError.code === 'auth/popup-closed-by-user') {
-          console.log(POPUP_LOG, 'Apple Login Popup vom Nutzer geschlossen.');
+
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
           setError(
             'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'

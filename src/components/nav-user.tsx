@@ -48,7 +48,7 @@ export function NavUser({
       await signOut(auth);
       router.push('/'); // Zur Startseite umleiten
     } catch (error) {
-      console.error('Fehler beim Logout:', error);
+
     }
   };
 

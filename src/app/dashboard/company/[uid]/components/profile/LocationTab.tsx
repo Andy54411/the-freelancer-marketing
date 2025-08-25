@@ -31,7 +31,7 @@ const LocationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
 
       autocompleteRef.current = autocomplete;
     } catch (error) {
-      console.warn('Google Places API nicht verfügbar:', error);
+
     }
   }, []);
 
@@ -103,7 +103,7 @@ const LocationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
         setIsLoadingPlaces(false);
       });
     } catch (error) {
-      console.error('Fehler bei der Ortssuche:', error);
+
       setIsLoadingPlaces(false);
     }
   };

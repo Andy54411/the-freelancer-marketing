@@ -14,11 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('Starte Cleanup von abgelaufenen Newsletter-Bestätigungen...');
-
     const result = await cleanupExpiredPendingConfirmations();
-
-    console.log(`Cleanup abgeschlossen: ${result.deletedCount} abgelaufene Bestätigungen gelöscht`);
 
     return NextResponse.json({
       success: true,
@@ -27,7 +23,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Cleanup-Fehler:', error);
+
     return NextResponse.json({ error: 'Fehler beim Cleanup' }, { status: 500 });
   }
 }
@@ -53,7 +49,7 @@ export async function GET(_request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Fehler beim Abrufen der Statistiken:', error);
+
     return NextResponse.json({ error: 'Fehler beim Abrufen der Statistiken' }, { status: 500 });
   }
 }

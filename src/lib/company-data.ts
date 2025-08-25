@@ -15,11 +15,7 @@ export async function getAllCompanies() {
     return companies;
   } catch (error) {
     // Logging mit Kontext für Debugging
-    console.error('[getAllCompanies] Fehler beim Laden der Firmen:', {
-      error,
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString(),
-    });
+
     throw error;
   }
 }

@@ -82,16 +82,6 @@ export default function Step3CompanyPage() {
 
   // Initialisierung und Synchronisierung mit dem Context
   useEffect(() => {
-    console.log(STEP3_PAGE_LOG, 'Komponente geladen. Context-Stand:', {
-      hourlyRate: registration.hourlyRate,
-      legalForm: registration.legalForm,
-      companyRegister: registration.companyRegister,
-      taxNumber: registration.taxNumber,
-      vatId: registration.vatId,
-      profilePictureFileExists: !!registration.profilePictureFile,
-      businessLicenseFileExists: !!registration.businessLicenseFile,
-      masterCraftsmanCertificateFileExists: !!registration.masterCraftsmanCertificateFile,
-    });
 
     // Bestimme das aktive Steuer-Eingabefeld basierend auf den Kontextwerten bei Initialisierung
     if (registration.companyRegister) {
@@ -123,7 +113,7 @@ export default function Step3CompanyPage() {
         objectUrl = URL.createObjectURL(registration.profilePictureFile);
         setProfilePicturePreview(objectUrl);
       } catch (e) {
-        console.error(STEP3_PAGE_LOG, 'Fehler beim Erstellen der ObjectURL für Profilbild', e);
+
         setProfilePicturePreview(null);
       }
     } else {
@@ -142,7 +132,7 @@ export default function Step3CompanyPage() {
         objectUrl = URL.createObjectURL(registration.businessLicenseFile);
         setBusinessLicensePreview(objectUrl);
       } catch (e) {
-        console.error(STEP3_PAGE_LOG, 'Fehler beim Erstellen der ObjectURL für Gewerbeschein', e);
+
         setBusinessLicensePreview(null);
       }
     } else {
@@ -164,7 +154,7 @@ export default function Step3CompanyPage() {
         objectUrl = URL.createObjectURL(registration.masterCraftsmanCertificateFile);
         setMasterCraftsmanCertificatePreview(objectUrl);
       } catch (e) {
-        console.error(STEP3_PAGE_LOG, 'Fehler beim Erstellen der ObjectURL für Meisterbrief', e);
+
         setMasterCraftsmanCertificatePreview(null);
       }
     } else {
@@ -219,7 +209,7 @@ export default function Step3CompanyPage() {
             canvas.height = targetDim;
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-              console.error(PAGE_ERROR, 'Canvas 2D Context nicht bekommen.');
+
               setIsProcessingImage(false);
               resolve(file);
               return;
@@ -248,13 +238,10 @@ export default function Step3CompanyPage() {
                     type: 'image/jpeg',
                     lastModified: Date.now(),
                   });
-                  console.log(
-                    PAGE_LOG,
-                    `Original: ${file.name} (${(file.size / 1024).toFixed(2)}KB, ${img.width}x${img.height}), Verarbeitet zu JPEG: ${processedImageFile.name} (${(processedImageFile.size / 1024).toFixed(2)}KB, ${targetDim}x${targetDim})`
-                  );
+
                   resolve(processedImageFile);
                 } else {
-                  console.error(PAGE_ERROR, 'Fehler bei canvas.toBlob, Blob ist null.');
+
                   resolve(file);
                 }
               },
@@ -263,7 +250,7 @@ export default function Step3CompanyPage() {
             );
           };
           img.onerror = () => {
-            console.error(PAGE_ERROR, 'Bild konnte nicht geladen werden für Verarbeitung.');
+
             setIsProcessingImage(false);
             resolve(file);
           };
@@ -275,7 +262,7 @@ export default function Step3CompanyPage() {
           }
         };
         reader.onerror = () => {
-          console.error(PAGE_ERROR, 'Datei konnte nicht gelesen werden für Verarbeitung.');
+
           setIsProcessingImage(false);
           resolve(null);
         }; // resolve(null) bei Fehler
@@ -336,11 +323,7 @@ export default function Step3CompanyPage() {
           const newPreviewUrl = URL.createObjectURL(fileToSet);
           localPreviewSetter(newPreviewUrl);
         } catch (urlError) {
-          console.error(
-            PAGE_ERROR,
-            'Fehler beim Erstellen der ObjectURL für Preview in handleFileChange:',
-            urlError
-          );
+
           localPreviewSetter(null);
         }
       }
@@ -349,11 +332,7 @@ export default function Step3CompanyPage() {
       fileSetter(null);
       setIsProcessingImage(false);
     }
-    console.log(
-      STEP3_PAGE_LOG,
-      `Datei ausgewählt für ${fileTypeForAlert || 'Unbekannt'}:`,
-      fileToSet?.name
-    );
+
   };
 
   // Hinzugefügte Funktion für Autofill-Synchronisation
@@ -485,13 +464,7 @@ export default function Step3CompanyPage() {
     }
 
     setErrorMessage(null); // Fehlermeldung zurücksetzen, wenn Formular gültig ist
-    console.log(STEP3_PAGE_LOG, 'handleNext aufgerufen. Werte für Navigation:', {
-      hourlyRate,
-      legalForm,
-      companyRegister,
-      taxNumber,
-      vatId,
-    });
+
     router.push('/register/company/step4'); // Navigiere zum nächsten Schritt
   };
 

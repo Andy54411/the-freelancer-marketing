@@ -49,7 +49,6 @@ export class FinAPITokenManager {
     localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokenInfo));
     localStorage.setItem(USER_DATA_STORAGE_KEY, JSON.stringify(tokenData.user));
 
-    console.log('finAPI token stored successfully');
   }
 
   /**
@@ -64,14 +63,14 @@ export class FinAPITokenManager {
 
       // Check if token is expired (with 5-minute buffer)
       if (Date.now() >= tokenInfo.expires_at - 300000) {
-        console.log('finAPI token expired, removing from storage');
+
         this.clearUserToken();
         return null;
       }
 
       return tokenInfo;
     } catch (error) {
-      console.error('Error retrieving finAPI token:', error);
+
       return null;
     }
   }
@@ -86,7 +85,7 @@ export class FinAPITokenManager {
 
       return JSON.parse(stored);
     } catch (error) {
-      console.error('Error retrieving finAPI user data:', error);
+
       return null;
     }
   }
@@ -105,7 +104,7 @@ export class FinAPITokenManager {
   static clearUserToken(): void {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     localStorage.removeItem(USER_DATA_STORAGE_KEY);
-    console.log('finAPI token and user data cleared');
+
   }
 
   /**
@@ -132,7 +131,7 @@ export class FinAPITokenManager {
     }
 
     // TODO: Implement token refresh logic
-    console.log('Token refresh needed but not yet implemented');
+
     return false;
   }
 }

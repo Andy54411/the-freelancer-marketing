@@ -59,7 +59,7 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
 
       // GTM sollte bereits initialisiert sein, aber sicherheitshalber nochmal senden
       setTimeout(() => {
-        console.log('🍪 CookieConsentContext: Restoring saved consent:', parsedConsent);
+
         sendConsentToGTM(parsedConsent);
       }, 200);
     }

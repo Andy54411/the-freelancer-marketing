@@ -32,7 +32,6 @@ export class FinAPIUserAuthServiceServer {
    */
   async getOrCreateFinAPIUser(firebaseUid: string, userEmail: string): Promise<User | null> {
     try {
-      console.log('🔍 Creating/Getting finAPI user for Firebase UID:', firebaseUid);
 
       // 1. Prüfe ob User bereits in Firestore existiert
       const userDocRef = db.collection('finapi_users').doc(firebaseUid);
@@ -43,13 +42,11 @@ export class FinAPIUserAuthServiceServer {
 
       if (userDoc.exists) {
         const userData = userDoc.data() as UserAuthData;
-        console.log('📋 Existing user document found:', userData.finapiUserId);
 
         try {
           // Versuche User Token zu holen (prüft ob User existiert)
           const userToken = await this.finapiService.getUserToken(userData.finapiUserId, password);
           if (userToken) {
-            console.log('✅ Existing finAPI user found:', userData.finapiUserId);
 
             // Update last access
             await userDocRef.update({
@@ -65,11 +62,9 @@ export class FinAPIUserAuthServiceServer {
             } as User;
           }
         } catch (error) {
-          console.log('⚠️ finAPI user not found, creating new one...', error);
+
         }
       }
-
-      console.log('🆕 Creating new finAPI user with ID:', userId);
 
       // 2. Erstelle neuen finAPI User
       const { user, userToken } = await this.finapiService.getOrCreateUser(
@@ -81,8 +76,6 @@ export class FinAPIUserAuthServiceServer {
       if (!user) {
         throw new Error('Failed to create finAPI user');
       }
-
-      console.log('✅ finAPI user created:', user.id);
 
       // 3. Speichere User-Daten in Firestore
       const authData: UserAuthData = {
@@ -96,10 +89,9 @@ export class FinAPIUserAuthServiceServer {
 
       await userDocRef.set(authData);
 
-      console.log('💾 User data stored in Firestore for:', user.id);
       return user;
     } catch (error) {
-      console.error('❌ Error in getOrCreateFinAPIUser:', error);
+
       return null;
     }
   }
@@ -128,7 +120,7 @@ export class FinAPIUserAuthServiceServer {
       const userDoc = await userDocRef.get();
 
       if (!userDoc.exists) {
-        console.error('❌ No finAPI user found for Firebase UID:', firebaseUid);
+
         return null;
       }
 
@@ -160,7 +152,7 @@ export class FinAPIUserAuthServiceServer {
 
       return null;
     } catch (error) {
-      console.error('❌ Error getting user access token:', error);
+
       return null;
     }
   }
@@ -180,13 +172,12 @@ export class FinAPIUserAuthServiceServer {
           updatedAt: new Date(),
         });
 
-        console.log('✅ finAPI user deactivated for Firebase UID:', firebaseUid);
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error('❌ Error deactivating finAPI user:', error);
+
       return false;
     }
   }
@@ -205,7 +196,7 @@ export class FinAPIUserAuthServiceServer {
 
       return null;
     } catch (error) {
-      console.error('❌ Error getting user status:', error);
+
       return null;
     }
   }

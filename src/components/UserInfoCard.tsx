@@ -64,7 +64,6 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
       }
 
       try {
-        console.log('🔍 UserInfoCard: Loading data for userId:', userId);
 
         // 1. Lade User-Daten aus users collection
         const userDocRef = doc(db, 'users', userId);
@@ -72,7 +71,6 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
 
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data() as UserData;
-          console.log('✅ UserInfoCard: User data found:', userData);
 
           // Prioritäre Namens-Auswahl basierend auf userRole
           let displayName = fallbackUserName;
@@ -109,13 +107,8 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
             fallbackAvatarUrl;
           setRealAvatarUrl(avatarUrl || null);
 
-          console.log('✅ UserInfoCard: Final user data:', {
-            displayName,
-            avatarUrl,
-            userRole,
-          });
         } else {
-          console.log('❌ UserInfoCard: No user document found for:', userId);
+
         }
 
         // 2. Lade Review-Daten für Provider
@@ -143,16 +136,12 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
             setRating(Math.round(averageRating * 10) / 10); // Auf 1 Dezimalstelle runden
             setReviewCount(totalReviews);
 
-            console.log('✅ UserInfoCard: Review data loaded:', {
-              averageRating,
-              totalReviews,
-            });
           } else {
-            console.log('📝 UserInfoCard: No reviews found for provider:', userId);
+
           }
         }
       } catch (error) {
-        console.error('❌ UserInfoCard: Error loading user data:', error);
+
       } finally {
         setIsLoading(false);
       }
@@ -208,13 +197,13 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
       } else if (typeof lastSeen === 'number') {
         lastSeenDate = new Date(lastSeen);
       } else {
-        console.warn('Unknown lastSeen format:', lastSeen);
+
         return 'Offline';
       }
 
       // Validiere das resultierende Date-Objekt
       if (isNaN(lastSeenDate.getTime())) {
-        console.warn('Invalid date created from lastSeen:', lastSeen);
+
         return 'Offline';
       }
 
@@ -229,7 +218,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
       if (diffDays < 7) return `vor ${diffDays} Tag${diffDays > 1 ? 'en' : ''} online`;
       return 'Lange nicht online';
     } catch (error) {
-      console.error('Error in getLastSeenText:', error, 'lastSeen:', lastSeen);
+
       return 'Offline';
     }
   };

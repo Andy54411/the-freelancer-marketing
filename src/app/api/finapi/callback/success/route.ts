@@ -9,7 +9,6 @@ import { finapiService } from '@/lib/finapi-sdk-service';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('🎉 finAPI Success Callback aufgerufen');
 
     const searchParams = request.nextUrl.searchParams;
 
@@ -19,15 +18,8 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const webFormId = searchParams.get('webFormId');
 
-    console.log('Callback Parameters:', {
-      bankConnectionId,
-      userId,
-      webFormId,
-      allParams: Object.fromEntries(searchParams.entries()),
-    });
-
     if (!bankConnectionId || !userId) {
-      console.error('❌ Missing required parameters:', { bankConnectionId, userId });
+
       return new NextResponse(
         '<html><body><h1>Fehler</h1><p>Fehlende Parameter</p><script>window.close();</script></body></html>',
         { headers: { 'Content-Type': 'text/html' } }
@@ -38,15 +30,14 @@ export async function GET(request: NextRequest) {
     const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36); // Consistent ID
     const userPassword = `TaskiloPass_${userId.slice(0, 10)}!2024`; // Consistent password
 
-    console.log('🔑 Getting user token for data retrieval...');
     const userToken = await finapiService.getUserToken(finapiUserId, userPassword);
 
     // Get bank connection details
-    console.log('🏦 Fetching bank connection details...');
+
     const bankConnection = await finapiService.getBankConnection(userToken, bankConnectionId);
 
     if (!bankConnection) {
-      console.error('❌ Bank connection not found:', bankConnectionId);
+
       return new NextResponse(
         '<html><body><h1>Fehler</h1><p>Bank-Verbindung nicht gefunden</p><script>window.close();</script></body></html>',
         { headers: { 'Content-Type': 'text/html' } }
@@ -54,18 +45,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Get accounts for this connection
-    console.log('💳 Fetching accounts for bank connection...');
+
     const accounts = await finapiService.getAccounts(userToken);
     const connectionAccounts = accounts.filter(
       acc => acc.bankConnectionId === parseInt(bankConnectionId)
     );
 
-    console.log(
-      `📊 Found ${connectionAccounts.length} accounts for connection ${bankConnectionId}`
-    );
-
     // Store bank connection in Firestore - use correct interface
-    console.log('💾 Storing bank connection in Firestore...');
+
     const bankData = {
       finapiConnectionId: bankConnection.id?.toString() || bankConnectionId,
       bankId: bankConnection.bank?.id?.toString() || 'unknown',
@@ -82,8 +69,6 @@ export async function GET(request: NextRequest) {
 
     await storeBankConnection(userId, bankData);
 
-    console.log('✅ Bank connection successfully stored');
-
     // Return success page that closes automatically
     const successHtml = `
     <!DOCTYPE html>
@@ -92,7 +77,7 @@ export async function GET(request: NextRequest) {
       <title>Bank erfolgreich verbunden</title>
       <meta charset="utf-8">
       <style>
-        body { 
+        body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           background: linear-gradient(135deg, #14ad9f 0%, #129488 100%);
           color: white;
@@ -130,18 +115,18 @@ export async function GET(request: NextRequest) {
         <p>${connectionAccounts.length} Konten gefunden</p>
         <p>Dieses Fenster schließt sich in <span class="countdown" id="countdown">3</span> Sekunden...</p>
       </div>
-      
+
       <script>
         let seconds = 3;
         const countdownEl = document.getElementById('countdown');
-        
+
         const timer = setInterval(() => {
           seconds--;
           countdownEl.textContent = seconds;
-          
+
           if (seconds <= 0) {
             clearInterval(timer);
-            
+
             // Send success message to parent window
             if (window.opener) {
               window.opener.postMessage({
@@ -151,11 +136,11 @@ export async function GET(request: NextRequest) {
                 accountCount: ${connectionAccounts.length}
               }, '*');
             }
-            
+
             window.close();
           }
         }, 1000);
-        
+
         // Also try to close immediately if parent exists
         setTimeout(() => {
           if (window.opener) {
@@ -176,7 +161,6 @@ export async function GET(request: NextRequest) {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   } catch (error) {
-    console.error('❌ Callback success handler error:', error);
 
     const errorHtml = `
     <!DOCTYPE html>
@@ -185,7 +169,7 @@ export async function GET(request: NextRequest) {
       <title>Fehler beim Speichern</title>
       <meta charset="utf-8">
       <style>
-        body { 
+        body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
           background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
           color: white;
@@ -218,7 +202,7 @@ export async function GET(request: NextRequest) {
         <p>Die Bank-Verbindung konnte nicht gespeichert werden.</p>
         <p>Bitte versuchen Sie es erneut.</p>
       </div>
-      
+
       <script>
         setTimeout(() => {
           if (window.opener) {

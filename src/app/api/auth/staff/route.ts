@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
 
       if (!staff || staff.status !== 'active') {
         // Log fehlgeschlagenen Login-Versuch
-        console.log(`Failed login attempt for: ${email}`);
 
         return NextResponse.json(
           { error: 'Ungültige Anmeldedaten oder inaktiver Account' },
@@ -101,7 +100,6 @@ export async function POST(request: NextRequest) {
       const token = createToken(staff);
 
       // Log erfolgreiche Anmeldung
-      console.log(`Successful login for: ${staff.name} (${staff.email})`);
 
       const response = NextResponse.json({
         success: true,
@@ -171,7 +169,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
   } catch (error) {
-    console.error('Authentification error:', error);
+
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }
@@ -212,7 +210,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Authentication verification error:', error);
+
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

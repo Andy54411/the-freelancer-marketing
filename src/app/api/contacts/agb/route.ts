@@ -80,8 +80,6 @@ export async function GET(request: Request) {
     const section = url.searchParams.get('section');
     const format = url.searchParams.get('format');
 
-    console.log('[API /contacts/agb] GET request received', { section, format });
-
     let contacts = AGB_CONTACTS;
 
     // Filter by specific AGB section if requested
@@ -158,7 +156,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('[API /contacts/agb] Error in GET:', error);
 
     return NextResponse.json(
       {
@@ -176,8 +173,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { action, section, email } = body;
-
-    console.log('[API /contacts/agb] POST request received:', { action, section, email });
 
     if (action === 'validate') {
       // Validate if email follows Taskilo domain pattern
@@ -230,7 +225,6 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   } catch (error) {
-    console.error('[API /contacts/agb] Error in POST:', error);
 
     return NextResponse.json(
       {

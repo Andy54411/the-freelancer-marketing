@@ -3,7 +3,6 @@ import { db } from '../../../firebase/server';
 
 export async function POST() {
   try {
-    console.log('[migrate-orders] Starte Migration von orders → auftraege...');
 
     // Hole alle Orders aus der 'orders' Collection
     const ordersSnapshot = await db.collection('orders').get();
@@ -23,8 +22,6 @@ export async function POST() {
       const orderData = doc.data();
       const orderId = doc.id;
 
-      console.log(`[migrate-orders] Migriere Order ${orderId}`);
-
       // Füge zur auftraege Collection hinzu
       const auftraegeRef = db.collection('auftraege').doc(orderId);
       batch.set(auftraegeRef, orderData);
@@ -38,15 +35,13 @@ export async function POST() {
     // Führe die Migration aus
     await batch.commit();
 
-    console.log(`[migrate-orders] Migration abgeschlossen: ${migrated} Orders migriert`);
-
     return NextResponse.json({
       success: true,
       message: `${migrated} Orders erfolgreich von orders → auftraege migriert`,
       migrated,
     });
   } catch (error) {
-    console.error('[migrate-orders] Fehler:', error);
+
     return NextResponse.json(
       {
         success: false,

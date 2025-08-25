@@ -12,8 +12,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId') || searchParams.get('company_id');
 
-    console.log('🔍 [DATEV Cookie Debug] Starting cookie debug for company:', companyId);
-
     const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
 
@@ -87,11 +85,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log('🔍 [DATEV Cookie Debug] Results:', debugInfo);
-
     return NextResponse.json(debugInfo, { status: 200 });
   } catch (error) {
-    console.error('❌ [DATEV Cookie Debug] Error:', error);
+
     return NextResponse.json({ error: 'debug_failed', message: error.message }, { status: 500 });
   }
 }

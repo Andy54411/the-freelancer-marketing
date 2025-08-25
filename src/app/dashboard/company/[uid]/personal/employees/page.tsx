@@ -39,7 +39,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
     if (user && resolvedParams.uid && retryCount < maxRetries) {
       loadEmployees();
     } else if (retryCount >= maxRetries) {
-      console.warn('❌ Max Retries erreicht für Employee loading');
+
     }
   }, [user, resolvedParams.uid, retryCount]);
 
@@ -49,18 +49,14 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
 
   const loadEmployees = async () => {
     try {
-      console.log(
-        '🔄 Lade Mitarbeiter für Company:',
-        resolvedParams.uid,
-        `(Versuch ${retryCount + 1}/${maxRetries})`
-      );
+
       setLoading(true);
 
       const employeeData = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(employeeData || []);
       setRetryCount(0); // Reset auf Erfolg
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Mitarbeiter:', error);
+
       setRetryCount(prev => prev + 1);
       toast.error('Fehler beim Laden der Mitarbeiter');
     } finally {
@@ -124,7 +120,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
       window.URL.revokeObjectURL(url);
       toast.success('Mitarbeiterdaten exportiert');
     } catch (error) {
-      console.error('❌ Export-Fehler:', error);
+
       toast.error('Fehler beim Export');
     }
   };
@@ -174,7 +170,7 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
       setSelectedEmployee(null);
       toast.success('Mitarbeiter wurde deaktiviert');
     } catch (error) {
-      console.error('❌ Fehler beim Deaktivieren:', error);
+
       toast.error('Fehler beim Deaktivieren des Mitarbeiters');
     }
   };

@@ -45,7 +45,7 @@ export default function AdminWorkspaceOverview() {
           return;
         }
       } catch (error) {
-        console.error('Admin auth check failed:', error);
+
         window.location.href = '/admin/login';
         return;
       } finally {
@@ -82,7 +82,7 @@ export default function AdminWorkspaceOverview() {
       const workspaceWithTasks = await adminWorkspaceService.getWorkspace(workspace.id);
       setSelectedWorkspace(workspaceWithTasks);
     } catch (error) {
-      console.error('Error loading workspace:', error);
+
       // Fallback to basic workspace if detailed loading fails
       setSelectedWorkspace(workspace);
     }
@@ -113,7 +113,7 @@ export default function AdminWorkspaceOverview() {
         );
       }
     } catch (error) {
-      console.error('Error updating workspace:', error);
+
     }
   };
 
@@ -127,7 +127,7 @@ export default function AdminWorkspaceOverview() {
         setSelectedWorkspace(null);
       }
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+
     }
   };
 

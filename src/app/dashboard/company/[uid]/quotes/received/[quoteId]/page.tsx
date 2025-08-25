@@ -128,7 +128,6 @@ export default function ReceivedQuoteDetailPage() {
       const quoteId = getQuoteId();
       const companyId = getCompanyId();
 
-      console.log('[Frontend] Fetching received quote detail for:', quoteId);
       const token = await firebaseUser.getIdToken();
       if (!token) return;
 
@@ -153,7 +152,7 @@ export default function ReceivedQuoteDetailPage() {
         setError('Fehler beim Laden des Angebots');
       }
     } catch (error) {
-      console.error('[Frontend] Error fetching quote detail:', error);
+
       setError('Fehler beim Laden des Angebots');
     } finally {
       setLoading(false);
@@ -252,7 +251,7 @@ export default function ReceivedQuoteDetailPage() {
         throw new Error('Netzwerkfehler beim Verarbeiten der Anfrage');
       }
     } catch (error) {
-      console.error('[Frontend] Error handling quote action:', error);
+
       alert(
         `Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots: ${error.message}`
       );

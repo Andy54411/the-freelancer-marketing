@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         providerName = providerData?.companyName || 'Anbieter';
       }
     } catch (error) {
-      console.log('Provider name lookup failed, using default');
+
     }
 
     // Bell-Notifications senden
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
           description: projectData.description,
         }
       );
-      console.log(`✅ Quote-Request-Notifications gesendet für Quote ${quoteId}`);
+
     } catch (notificationError) {
-      console.error('❌ Fehler bei Quote-Request-Notifications:', notificationError);
+
       // Notifications-Fehler sollten die Quote-Erstellung nicht blockieren
     }
 
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       notificationsSent: true,
     });
   } catch (error) {
-    console.error('Fehler beim Senden der Angebotsanfrage:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Serverfehler beim Senden der Angebotsanfrage',

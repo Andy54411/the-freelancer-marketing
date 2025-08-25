@@ -88,12 +88,12 @@ export function InvoicePreview({
 
   const handleDownloadPDF = () => {
     // In real app: Generate and download PDF
-    console.log('Download PDF for invoice preview:', previewData.invoiceNumber);
+
   };
 
   const handleSendEmail = () => {
     // In real app: Send invoice via email
-    console.log('Send email for invoice preview:', previewData.invoiceNumber);
+
   };
 
   const handlePrint = () => {

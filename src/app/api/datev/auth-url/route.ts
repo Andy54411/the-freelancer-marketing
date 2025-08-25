@@ -26,13 +26,6 @@ export async function POST(request: NextRequest) {
       companyId,
     });
 
-    console.log('Generated DATEV auth data:', {
-      state: authData.state,
-      codeVerifier: authData.codeVerifier.substring(0, 10) + '...',
-      nonce: authData.nonce.substring(0, 10) + '...',
-      authUrl: authData.authUrl.substring(0, 100) + '...',
-    });
-
     return NextResponse.json({
       success: true,
       authUrl: authData.authUrl,
@@ -40,7 +33,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('DATEV auth URL generation failed:', error);
 
     return NextResponse.json(
       {
@@ -80,11 +72,6 @@ export async function GET(request: NextRequest) {
     });
 
     // Log for debugging
-    console.log('Generated DATEV auth data (GET):', {
-      state: authData.state,
-      codeVerifier: authData.codeVerifier.substring(0, 10) + '...',
-      nonce: authData.nonce.substring(0, 10) + '...',
-    });
 
     return NextResponse.json({
       success: true,
@@ -93,7 +80,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('DATEV auth URL generation failed:', error);
 
     return NextResponse.json(
       {

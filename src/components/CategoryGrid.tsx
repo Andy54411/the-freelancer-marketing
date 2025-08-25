@@ -129,7 +129,7 @@ const useCategoryData = () => {
 
         // Prüfe zuerst die Firestore-Verbindung
         if (!db) {
-          console.warn('Firestore nicht verfügbar, verwende statische Daten');
+
           return;
         }
 
@@ -171,10 +171,7 @@ const useCategoryData = () => {
           setCategoryTags(prev => ({ ...prev, ...topSubcategories }));
         }
       } catch (error) {
-        console.warn(
-          'Kategoriedaten aus Firebase nicht verfügbar, verwende statische Daten:',
-          error
-        );
+
         // Statische Daten bleiben als Fallback
       } finally {
         setLoading(false);

@@ -16,8 +16,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json() as ReconcileRequest;
     const { invoiceId, transactionId, companyId, amount, matchType, notes } = body;
 
-    console.log('🔄 Processing reconciliation:', { invoiceId, transactionId, companyId, amount, matchType });
-
     if (!invoiceId || !transactionId || !companyId) {
       return NextResponse.json(
         { success: false, error: 'Invoice ID, Transaction ID und Company ID sind erforderlich' },
@@ -59,8 +57,6 @@ export async function POST(request: NextRequest) {
 
     await invoiceRef.update(reconciliationData);
 
-    console.log('✅ Successfully reconciled invoice:', invoiceId, 'with transaction:', transactionId);
-
     return NextResponse.json({
       success: true,
       message: 'Rechnung erfolgreich abgeglichen',
@@ -73,7 +69,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Error during reconciliation:', error);
+
     return NextResponse.json(
       { success: false, error: `Fehler beim Abgleich: ${error.message}` },
       { status: 500 }
@@ -87,8 +83,6 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const invoiceId = searchParams.get('invoiceId');
     const companyId = searchParams.get('companyId');
-
-    console.log('🔄 Undoing reconciliation:', { invoiceId, companyId });
 
     if (!invoiceId || !companyId) {
       return NextResponse.json(
@@ -131,8 +125,6 @@ export async function DELETE(request: NextRequest) {
 
     await invoiceRef.update(undoReconciliationData);
 
-    console.log('✅ Successfully undid reconciliation for invoice:', invoiceId);
-
     return NextResponse.json({
       success: true,
       message: 'Abgleich erfolgreich rückgängig gemacht',
@@ -140,7 +132,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Error undoing reconciliation:', error);
+
     return NextResponse.json(
       { success: false, error: `Fehler beim Rückgängigmachen: ${error.message}` },
       { status: 500 }

@@ -11,7 +11,7 @@ const elementsOptions: StripeElementsOptions = {
 
 export default function StripeElementsAppProvider({ children }: { children: React.ReactNode }) {
   if (!stripePromise) {
-    console.error('FEHLER: stripePromise ist nicht verfügbar in StripeElementsAppProvider.');
+
     return (
       <div className="text-red-500 p-4">
         Stripe konnte nicht initialisiert werden. Publishable Key fehlt.

@@ -240,7 +240,7 @@ export function TaxComponent({ taxData, companyId }: TaxComponentProps) {
         setRecentReports(newReports.slice(0, 5));
       }
     } catch (error) {
-      console.error('Fehler beim Generieren des Berichts:', error);
+
       toast.error(`${reportConfig.title} konnte nicht generiert werden.`);
     } finally {
       setGeneratingReports(prev => prev.filter(id => id !== reportConfig.id));
@@ -284,7 +284,7 @@ export function TaxComponent({ taxData, companyId }: TaxComponentProps) {
         const reports = await TaxService.getTaxReportsByCompany(companyId);
         setRecentReports(reports.slice(0, 5));
       } catch (error) {
-        console.error('Fehler beim Laden der Berichte:', error);
+
       }
     };
 

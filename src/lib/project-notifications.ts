@@ -97,11 +97,8 @@ export class ProjectNotificationService {
         db.collection('notifications').add(companyNotification),
       ]);
 
-      console.log(
-        `✅ Project-Proposal-Notifications erstellt für Projekt ${projectId}: Customer ${customerUid}, Company ${companyUid}`
-      );
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Project-Proposal-Notifications:', error);
+
       throw error;
     }
   }
@@ -167,11 +164,8 @@ export class ProjectNotificationService {
 
       await db.collection('notifications').add(notification);
 
-      console.log(
-        `✅ Project-Status-Notification erstellt: ${status} für User ${targetUserUid}, Project ${projectId}`
-      );
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Project-Status-Notification:', error);
+
       throw error;
     }
   }
@@ -200,12 +194,10 @@ export class ProjectNotificationService {
       // Diese Funktion kann später für Marketplace-Features verwendet werden
       // um relevante Anbieter über neue Projektanfragen zu benachrichtigen
 
-      console.log(`📋 Neue Projektanfrage erstellt: ${projectId} - ${projectData.title}`);
-
       // TODO: Implementiere Matching-Logic um relevante Companies zu finden
       // und sie über neue Projektanfragen zu benachrichtigen
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der New-Project-Notification:', error);
+
       throw error;
     }
   }

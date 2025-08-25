@@ -106,7 +106,7 @@ export function useCompanySettings(userId?: string) {
           setError('Unternehmensdaten nicht gefunden');
         }
       } catch (err) {
-        console.error('Fehler beim Laden der Unternehmenseinstellungen:', err);
+
         setError('Fehler beim Laden der Unternehmenseinstellungen');
       } finally {
         setLoading(false);

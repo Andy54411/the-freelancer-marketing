@@ -21,8 +21,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔗 Generating Google Ads OAuth URL for company:', companyId);
-
     const googleAdsService = new GoogleAdsClientService();
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/multi-platform-advertising/auth/google-ads/callback`;
 
@@ -33,7 +31,7 @@ export async function GET(request: NextRequest) {
       authUrl: authUrl,
     });
   } catch (error: any) {
-    console.error('❌ Google Ads OAuth URL generation error:', error);
+
     return NextResponse.json(
       {
         success: false,

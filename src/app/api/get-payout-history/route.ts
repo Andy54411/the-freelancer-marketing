@@ -10,10 +10,9 @@ const stripe = stripeSecret
   : null;
 
 export async function POST(request: NextRequest) {
-  console.log('[API /get-payout-history] POST request received');
 
   if (!stripe) {
-    console.error('[API /get-payout-history] Stripe not initialized');
+
     return NextResponse.json({ error: 'Stripe-Konfiguration fehlt.' }, { status: 500 });
   }
 
@@ -35,11 +34,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
-      console.error('[API /get-payout-history] No valid Stripe account found');
+
       return NextResponse.json({ error: 'Kein gültiges Stripe-Konto gefunden.' }, { status: 404 });
     }
-
-    console.log('[API /get-payout-history] Fetching payouts for account:', stripeAccountId);
 
     // Fetch payouts from Stripe
     const payouts = await stripe.payouts.list(
@@ -50,8 +47,6 @@ export async function POST(request: NextRequest) {
         stripeAccount: stripeAccountId,
       }
     );
-
-    console.log('[API /get-payout-history] Found payouts:', payouts.data.length);
 
     // Calculate summary
     const summary = {
@@ -69,7 +64,6 @@ export async function POST(request: NextRequest) {
       success: true,
     });
   } catch (error) {
-    console.error('[API /get-payout-history] Error:', error);
 
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(

@@ -17,8 +17,6 @@ export async function GET(req: NextRequest) {
     const perPage = parseInt(searchParams.get('perPage') || '20');
     const order = searchParams.get('order') || 'createdAt,desc';
 
-    console.log('🔄 Getting finAPI tasks...', { credentialType, page, perPage, order });
-
     // Get finAPI configuration
     const baseUrl = getFinApiBaseUrl(credentialType);
     const credentials = getFinApiCredentials(credentialType);
@@ -42,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('❌ Token request failed:', tokenResponse.status, errorText);
+
       return NextResponse.json(
         { error: 'Authentication failed', details: errorText },
         { status: 401 }
@@ -50,7 +48,6 @@ export async function GET(req: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ Client token obtained');
 
     // Step 2: Get tasks from finAPI Tasks API
     // According to docs: API Server is https://webform-sandbox.finapi.io/
@@ -75,7 +72,6 @@ export async function GET(req: NextRequest) {
 
     if (!tasksResponse.ok) {
       const errorText = await tasksResponse.text();
-      console.error('❌ Tasks API request failed:', tasksResponse.status, errorText);
 
       // Handle specific error cases
       if (tasksResponse.status === 403) {
@@ -100,7 +96,6 @@ export async function GET(req: NextRequest) {
     }
 
     const tasksData = await tasksResponse.json();
-    console.log('✅ Tasks retrieved successfully:', tasksData.paging?.totalCount || 0, 'tasks');
 
     return NextResponse.json({
       success: true,
@@ -118,7 +113,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Tasks API error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -138,8 +133,6 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { bankConnectionIds, credentialType = 'sandbox' } = body;
-
-    console.log('🔄 Creating background update task...', { bankConnectionIds });
 
     // Get finAPI configuration
     const baseUrl = getFinApiBaseUrl(credentialType);
@@ -206,7 +199,6 @@ export async function POST(req: NextRequest) {
     }
 
     const updateData = await updateResponse.json();
-    console.log('✅ Background update task created:', updateData.id);
 
     return NextResponse.json({
       success: true,
@@ -218,7 +210,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Background update error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

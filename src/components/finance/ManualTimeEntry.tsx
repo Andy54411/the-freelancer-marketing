@@ -124,10 +124,6 @@ export function ManualTimeEntry({
         ? projects.find(p => p.id === formData.projectId)
         : null;
 
-      console.log('DEBUG: Selected Project:', selectedProject);
-      console.log('DEBUG: FormData ProjectId:', formData.projectId);
-      console.log('DEBUG: Available Projects:', projects);
-
       // Erstelle Zeiteinträge basierend auf dem Typ
       if (workType === 'split-shift') {
         // Erstelle mehrere Zeiteinträge für geteilte Schichten
@@ -206,7 +202,7 @@ export function ManualTimeEntry({
       setOpen(false);
       onTimeEntryCreated();
     } catch (error) {
-      console.error('Fehler beim Erstellen des Zeiteintrags:', error);
+
       toast.error('Zeiteintrag konnte nicht erstellt werden');
     } finally {
       setLoading(false);

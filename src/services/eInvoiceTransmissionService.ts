@@ -217,7 +217,7 @@ export class EInvoiceTransmissionService {
         throw transmissionError;
       }
     } catch (error) {
-      console.error('Fehler beim Versenden der E-Rechnung:', error);
+
       throw new Error(`E-Rechnungs-Versendung fehlgeschlagen: ${(error as Error).message}`);
     }
   }
@@ -319,7 +319,7 @@ export class EInvoiceTransmissionService {
         complianceLevel,
       };
     } catch (error) {
-      console.error('Fehler bei UStG-Compliance-Prüfung:', error);
+
       errors.push(`Validierung fehlgeschlagen: ${(error as Error).message}`);
 
       return {
@@ -370,7 +370,6 @@ export class EInvoiceTransmissionService {
       }
 
       // Simulation der E-Mail-Versendung
-      console.log('E-Mail versenden würde:', emailPayload);
 
       // In echter Implementierung: E-Mail-Service aufrufen
       // await emailService.send(emailPayload);
@@ -403,8 +402,6 @@ export class EInvoiceTransmissionService {
         body: xmlContent,
       };
 
-      console.log('Webservice-Aufruf würde erfolgen:', requestPayload);
-
       // In echter Implementierung: HTTP-Request senden
       // const response = await fetch(requestPayload.url, requestPayload);
       // if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -422,7 +419,7 @@ export class EInvoiceTransmissionService {
     xmlContent: string
   ): Promise<void> {
     // Portal-Integration würde hier implementiert
-    console.log('Portal-Upload würde erfolgen für:', recipientSettings.recipientName);
+
     throw new Error('Portal-Integration noch nicht implementiert');
   }
 
@@ -440,9 +437,9 @@ export class EInvoiceTransmissionService {
       });
 
       // Wiederholung planen (in echter Implementierung mit Queue/Scheduler)
-      console.log(`Wiederholung geplant für Log ${logId}: ${error.message}`);
+
     } catch (updateError) {
-      console.error('Fehler beim Aktualisieren des Transmission Logs:', updateError);
+
     }
   }
 
@@ -469,7 +466,7 @@ export class EInvoiceTransmissionService {
         updatedAt: doc.data().updatedAt.toDate(),
       })) as EInvoiceTransmissionLog[];
     } catch (error) {
-      console.error('Fehler beim Laden der Übertragungsprotokolle:', error);
+
       throw new Error('Übertragungsprotokolle konnten nicht geladen werden');
     }
   }
@@ -495,7 +492,7 @@ export class EInvoiceTransmissionService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Speichern der Empfänger-Einstellungen:', error);
+
       throw new Error('Empfänger-Einstellungen konnten nicht gespeichert werden');
     }
   }
@@ -580,16 +577,10 @@ export class EInvoiceTransmissionService {
       xmlContent.includes('<cbc:TaxableAmount>');
 
     // Debug-Logs
-    console.log('🔍 Tax Validation Debug:');
-    console.log('- hasTaxType:', hasTaxType);
-    console.log('- hasTaxAmount:', hasTaxAmount);
-    console.log('- hasTaxRate:', hasTaxRate);
-    console.log('- hasTaxCategory:', hasTaxCategory);
-    console.log('- hasTaxBasis:', hasTaxBasis);
 
     // Alle kritischen Steuerfelder müssen vorhanden sein
     const result = hasTaxType && hasTaxAmount && hasTaxRate && hasTaxCategory && hasTaxBasis;
-    console.log('📊 Tax Data Valid:', result);
+
     return result;
   }
 

@@ -124,7 +124,7 @@ export default function ProviderReviews({
         setLastVisible(reviewsSnapshot.docs[reviewsSnapshot.docs.length - 1]);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Bewertungen:', error);
+
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -249,7 +249,7 @@ export default function ProviderReviews({
         setTranslatedReviews(prev => new Map([...prev, [reviewId, data.translatedText]]));
       }
     } catch (error) {
-      console.error('Übersetzungsfehler:', error);
+
       // Fallback: zeige Original-Text
     } finally {
       if (isResponse) {

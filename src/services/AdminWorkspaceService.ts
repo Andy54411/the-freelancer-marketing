@@ -102,12 +102,6 @@ export class AdminWorkspaceService {
   private async callLambdaAPI(endpoint: string, options: RequestInit = {}) {
     const url = `${this.apiUrl}${endpoint}`;
 
-    console.log('[AdminWorkspaceService] Lambda API Call:', {
-      url,
-      method: options.method || 'GET',
-      hasBody: !!options.body,
-    });
-
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -117,32 +111,23 @@ export class AdminWorkspaceService {
       ...options,
     });
 
-    console.log('[AdminWorkspaceService] Lambda API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-    });
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[AdminWorkspaceService] Lambda API Error Details:', errorText);
+
       throw new Error(`Lambda API Error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('[AdminWorkspaceService] Lambda API Success Response:', data);
+
     return data;
   }
 
   async getAllWorkspaces(adminId?: string): Promise<AdminWorkspace[]> {
     try {
-      console.log('Loading workspaces for admin:', adminId);
 
       // Production Lambda API Call
       const queryParams = adminId ? `?adminId=${adminId}` : '';
       const result = await this.callLambdaAPI(queryParams);
-
-      console.log('Raw workspace data from backend:', result.workspaces);
 
       return result.workspaces.map((workspace: any) => {
         const mappedWorkspace = {
@@ -172,15 +157,11 @@ export class AdminWorkspaceService {
             deleteLevel: 'admin',
           },
         };
-        console.log(`Mapped workspace ${mappedWorkspace.title}:`, {
-          id: mappedWorkspace.id,
-          tasksCount: mappedWorkspace.tasks.length,
-          tasks: mappedWorkspace.tasks,
-        });
+
         return mappedWorkspace;
       });
     } catch (error) {
-      console.error('Error fetching admin workspaces:', error);
+
       return [];
     }
   }
@@ -215,8 +196,6 @@ export class AdminWorkspaceService {
         relatedCompanies: workspaceData.relatedCompanies,
         permissions: workspaceData.permissions,
       };
-
-      console.log('[AdminWorkspaceService] Creating workspace with payload:', payload);
 
       const result = await this.callLambdaAPI('', {
         method: 'POST',
@@ -256,8 +235,6 @@ export class AdminWorkspaceService {
         },
       };
 
-      console.log('[AdminWorkspaceService] Workspace created successfully:', transformedWorkspace);
-
       // Send AWS EventBridge event for realtime updates
       if (typeof window !== 'undefined') {
         awsRealtimeService
@@ -272,7 +249,7 @@ export class AdminWorkspaceService {
 
       return transformedWorkspace;
     } catch (error) {
-      console.error('[AdminWorkspaceService] Error creating workspace:', error);
+
       throw error;
     }
   }
@@ -299,7 +276,7 @@ export class AdminWorkspaceService {
         body: JSON.stringify(payload),
       });
     } catch (error) {
-      console.error('Error updating workspace:', error);
+
       throw error;
     }
   }
@@ -310,7 +287,7 @@ export class AdminWorkspaceService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+
       throw error;
     }
   }
@@ -353,7 +330,7 @@ export class AdminWorkspaceService {
         },
       };
     } catch (error) {
-      console.error('Error fetching workspace:', error);
+
       return null;
     }
   }
@@ -401,7 +378,7 @@ export class AdminWorkspaceService {
         contentTitleLevel: task.contentTitleLevel,
       }));
     } catch (error) {
-      console.error('Error fetching workspace tasks:', error);
+
       return [];
     }
   }
@@ -410,7 +387,6 @@ export class AdminWorkspaceService {
     workspaceId: string,
     taskData: Partial<AdminWorkspaceTask>
   ): Promise<AdminWorkspaceTask> {
-    console.log('AdminWorkspaceService.createTask called with:', { workspaceId, taskData });
 
     try {
       const payload = {
@@ -434,14 +410,10 @@ export class AdminWorkspaceService {
         tags: taskData.tags || [],
       };
 
-      console.log('Sending payload to Lambda:', payload);
-
       const result = await this.callLambdaAPI(`/${workspaceId}/tasks`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-
-      console.log('Lambda response:', result);
 
       const task = result.task;
       return {
@@ -480,7 +452,7 @@ export class AdminWorkspaceService {
         contentTitleLevel: task.contentTitleLevel,
       };
     } catch (error) {
-      console.error('Error creating task:', error);
+
       throw error;
     }
   }
@@ -510,7 +482,7 @@ export class AdminWorkspaceService {
         body: JSON.stringify(payload),
       });
     } catch (error) {
-      console.error('Error updating task:', error);
+
       throw error;
     }
   }
@@ -521,7 +493,7 @@ export class AdminWorkspaceService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error('Error deleting task:', error);
+
       throw error;
     }
   }
@@ -538,7 +510,7 @@ export class AdminWorkspaceService {
         avatar: member.avatar,
       }));
     } catch (error) {
-      console.error('Error fetching workspace members:', error);
+
       return [];
     }
   }
@@ -557,7 +529,7 @@ export class AdminWorkspaceService {
         }),
       });
     } catch (error) {
-      console.error('Error adding workspace member:', error);
+
       throw error;
     }
   }
@@ -568,7 +540,7 @@ export class AdminWorkspaceService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error('Error removing workspace member:', error);
+
       throw error;
     }
   }
@@ -579,7 +551,7 @@ export class AdminWorkspaceService {
       const result = await this.callLambdaAPI(`/${workspaceId}/activity`);
       return result.activities || [];
     } catch (error) {
-      console.error('Error fetching workspace activity:', error);
+
       return [];
     }
   }
@@ -590,7 +562,7 @@ export class AdminWorkspaceService {
       const result = await this.callLambdaAPI(`/${workspaceId}/boards`);
       return result.boards || [];
     } catch (error) {
-      console.error('Error fetching workspace boards:', error);
+
       return [];
     }
   }
@@ -606,7 +578,7 @@ export class AdminWorkspaceService {
       });
       return result.board;
     } catch (error) {
-      console.error('Error creating board:', error);
+
       throw error;
     }
   }
@@ -652,7 +624,7 @@ export class AdminWorkspaceService {
 
       return result.task;
     } catch (error) {
-      console.error('Error updating task in workspace:', error);
+
       throw error;
     }
   }
@@ -682,30 +654,30 @@ export class AdminWorkspaceService {
     // Versuche WebSocket-Verbindung
     awsRealtimeService
       .subscribeToWorkspaceEvents(adminId, async event => {
-        console.log('🔄 Realtime workspace update received:', event);
+
         webSocketConnected = true;
 
         // WebSocket funktioniert - deaktiviere Polling
         if (pollingInterval) {
           clearInterval(pollingInterval);
           pollingInterval = null;
-          console.log('✅ WebSocket connected - Polling deaktiviert');
+
         }
 
         try {
           const workspaces = await this.getAllWorkspaces(adminId);
           callback(workspaces);
         } catch (error) {
-          console.error('Error reloading workspaces after realtime update:', error);
+
         }
       })
       .then(unsubscribe => {
         unsubscribeWebSocket = unsubscribe;
         webSocketConnected = true;
-        console.log('✅ WebSocket Realtime System verbunden');
+
       })
       .catch(error => {
-        console.warn('⚠️ WebSocket Connection fehlgeschlagen:', error);
+
         webSocketConnected = false;
       });
 
@@ -715,7 +687,7 @@ export class AdminWorkspaceService {
         const workspaces = await this.getAllWorkspaces(adminId);
         callback(workspaces);
       } catch (error) {
-        console.error('Error loading workspaces:', error);
+
       }
     });
 

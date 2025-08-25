@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
 
     // Einzelnes Ticket abrufen
     if (ticketId) {
-      console.log(`Fetching single ticket ${ticketId} from AWS DynamoDB`);
 
       const ticket = await AWSTicketStorage.getTicket(ticketId);
 
@@ -52,8 +51,6 @@ export async function GET(request: NextRequest) {
           { status: 404 }
         );
       }
-
-      console.log(`Found ticket ${ticketId} from DynamoDB`);
 
       return NextResponse.json({
         success: true,
@@ -70,15 +67,6 @@ export async function GET(request: NextRequest) {
     const customerEmail = searchParams.get('customerEmail') || undefined;
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    console.log('Fetching tickets from AWS DynamoDB with filters:', {
-      status,
-      priority,
-      category,
-      assignedTo,
-      customerEmail,
-      limit,
-    });
-
     const tickets = await AWSTicketStorage.getTickets({
       status,
       priority,
@@ -88,8 +76,6 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
-    console.log(`Found ${tickets.length} tickets from DynamoDB`);
-
     return NextResponse.json({
       success: true,
       tickets,
@@ -97,7 +83,7 @@ export async function GET(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-    console.error('AWS Ticket fetch error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Tickets aus AWS',
@@ -132,12 +118,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Creating new ticket in AWS DynamoDB:', {
-      title: title.substring(0, 50) + '...',
-      category: category || 'other',
-      priority: priority || 'medium',
-    });
-
     // Create ticket using AWS DynamoDB
     const ticket = await AWSTicketStorage.createTicket({
       title,
@@ -151,8 +131,6 @@ export async function POST(request: NextRequest) {
       status: 'open',
       comments: [],
     });
-
-    console.log(`Ticket created successfully in DynamoDB: ${ticket.id}`);
 
     // Log creation to CloudWatch
     await EnhancedTicketService.logToCloudWatch(
@@ -175,7 +153,6 @@ export async function POST(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-    console.error('AWS Ticket creation error:', error);
 
     await EnhancedTicketService.logToCloudWatch(
       'ticket-creation-errors',
@@ -209,12 +186,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Ticket-ID ist erforderlich' }, { status: 400 });
     }
 
-    console.log(`Updating ticket ${id} in AWS DynamoDB:`, Object.keys(updates));
-
     // Update ticket using AWS DynamoDB
     const updatedTicket = await AWSTicketStorage.updateTicket(id, updates);
-
-    console.log(`Ticket ${id} updated successfully in DynamoDB`);
 
     return NextResponse.json({
       success: true,
@@ -223,7 +196,6 @@ export async function PUT(request: NextRequest) {
       source: 'aws-dynamodb',
     });
   } catch (error) {
-    console.error('AWS Ticket update error:', error);
 
     await EnhancedTicketService.logToCloudWatch(
       'ticket-update-errors',
@@ -257,12 +229,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Ticket-ID ist erforderlich' }, { status: 400 });
     }
 
-    console.log(`Deleting ticket ${id} from AWS DynamoDB`);
-
     const success = await AWSTicketStorage.deleteTicket(id);
 
     if (success) {
-      console.log(`Ticket ${id} deleted successfully from DynamoDB`);
+
       return NextResponse.json({
         success: true,
         message: 'Ticket erfolgreich aus AWS DynamoDB gelöscht',
@@ -275,7 +245,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('AWS Ticket deletion error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Löschen des Tickets aus AWS',

@@ -96,7 +96,7 @@ export class EnhancedTicketService {
 
       return true;
     } catch (error) {
-      console.error('Fehler beim Senden der Ticket-Benachrichtigung:', error);
+
       await this.logToCloudWatch('ticket-notifications-errors', {
         error: error instanceof Error ? error.message : 'Unknown error',
         ticketId: ticket.id,
@@ -209,7 +209,6 @@ export class EnhancedTicketService {
 
       return result;
     } catch (error) {
-      console.error('Fehler bei der Auto-Klassifizierung:', error);
 
       // Fallback: Standard-Werte
       return {
@@ -248,10 +247,10 @@ export class EnhancedTicketService {
               logGroupName,
             })
           );
-          console.log(`CloudWatch Log Group ${logGroupName} erstellt`);
+
         }
       } catch (createError) {
-        console.error('Fehler beim Erstellen der Log Group:', createError);
+
       }
 
       // Erstelle Log Stream
@@ -294,13 +293,9 @@ export class EnhancedTicketService {
         await this.sendCloudWatchMetrics(data);
       }
     } catch (error) {
-      console.error('CloudWatch Logging fehler:', error);
+
       // Fallback zu Console für lokale Entwicklung
-      console.log(`[CLOUDWATCH-FALLBACK] ${logGroup}:`, {
-        level,
-        timestamp: new Date().toISOString(),
-        ...data,
-      });
+
     }
   }
 
@@ -309,17 +304,9 @@ export class EnhancedTicketService {
     try {
       // Hier würden CloudWatch Custom Metrics gesendet werden
       // Implementierung hängt von AWS CloudWatch Metrics SDK ab
-      console.log('CloudWatch Metric gesendet:', {
-        metricName: `Tickets.${data.action}`,
-        value: 1,
-        unit: 'Count',
-        dimensions: {
-          Category: data.category || 'unknown',
-          Priority: data.priority || 'unknown',
-        },
-      });
+
     } catch (error) {
-      console.error('CloudWatch Metrics Fehler:', error);
+
     }
   }
 
@@ -349,7 +336,6 @@ export class EnhancedTicketService {
 
       return await response.json();
     } catch (error) {
-      console.error('Fehler beim Abrufen der Analytics:', error);
 
       // Fallback: Leere Analytics
       return {
@@ -390,7 +376,7 @@ export class EnhancedTicketService {
         complaintRate: latestStats?.Complaints || 0,
       };
     } catch (error) {
-      console.error('Fehler beim Abrufen der SES-Statistiken:', error);
+
       return {
         quotaUsed: 0,
         quotaRemaining: 0,
@@ -415,7 +401,7 @@ export class EnhancedTicketService {
       await snsClient.send(command);
       return true;
     } catch (error) {
-      console.error('Fehler beim Senden der Push-Benachrichtigung:', error);
+
       return false;
     }
   }
@@ -470,7 +456,7 @@ export class EnhancedTicketService {
         <title>Taskilo Ticket Benachrichtigung</title>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-        
+
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #14ad9f 0%, #129488 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center;">
           <h1 style="margin: 0; font-size: 24px;">Taskilo Support</h1>
@@ -479,13 +465,13 @@ export class EnhancedTicketService {
 
         <!-- Content -->
         <div style="background: white; padding: 20px; border: 1px solid #e9ecef;">
-          
+
           <!-- Ticket Info -->
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #14ad9f;">
             <h2 style="margin: 0 0 15px 0; color: #14ad9f;">
               ${ticket.title}
             </h2>
-            
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
               <div>
                 <strong>Ticket-ID:</strong> #${ticket.id}
@@ -537,7 +523,7 @@ export class EnhancedTicketService {
 
           <!-- Call to Action -->
           <div style="text-align: center; margin: 20px 0;">
-            <a href="${ticketUrl}" 
+            <a href="${ticketUrl}"
                style="background: #14ad9f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
               Ticket im Dashboard öffnen
             </a>

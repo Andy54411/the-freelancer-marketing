@@ -101,10 +101,9 @@ export class AdminEmailsService {
         })
       );
 
-      console.log('Email saved to DynamoDB:', id);
       return { success: true, id, item };
     } catch (error) {
-      console.error('Error saving email to DynamoDB:', error);
+
       throw error;
     }
   }
@@ -121,7 +120,7 @@ export class AdminEmailsService {
       const result = await docClient.send(command);
       return (result.Items as AdminEmail[]) || [];
     } catch (error) {
-      console.error('Error getting all emails:', error);
+
       throw error;
     }
   }
@@ -141,7 +140,7 @@ export class AdminEmailsService {
       const result = await docClient.send(command);
       return (result.Item as AdminEmail) || null;
     } catch (error) {
-      console.error('Error getting email by ID:', error);
+
       throw error;
     }
   }
@@ -165,7 +164,7 @@ export class AdminEmailsService {
       const result = await docClient.send(command);
       return (result.Items as AdminEmail[]) || [];
     } catch (error) {
-      console.error('Error getting emails by type:', error);
+
       throw error;
     }
   }
@@ -201,7 +200,7 @@ export class AdminEmailsService {
 
       await docClient.send(command);
     } catch (error) {
-      console.error('Error updating email:', error);
+
       throw error;
     }
   }
@@ -245,7 +244,7 @@ export class AdminEmailsService {
 
       return sortedItems as AdminEmail[];
     } catch (error) {
-      console.error('Error getting emails from DynamoDB:', error);
+
       throw error;
     }
   }
@@ -264,7 +263,7 @@ export class AdminEmailsService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error marking email as read:', error);
+
       throw error;
     }
   }
@@ -280,7 +279,7 @@ export class AdminEmailsService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error deleting email:', error);
+
       throw error;
     }
   }
@@ -302,7 +301,7 @@ export class AdminEmailsService {
 
       return { success: true, stats };
     } catch (error) {
-      console.error('Error getting email stats:', error);
+
       throw error;
     }
   }
@@ -323,7 +322,7 @@ export class DynamoDBService {
       );
       return { success: true, message: 'DynamoDB connection healthy' };
     } catch (error) {
-      console.error('DynamoDB health check failed:', error);
+
       return { success: false, error: error.message };
     }
   }
@@ -335,7 +334,7 @@ export class DynamoDBService {
       );
       return { success: true, tables: TableNames };
     } catch (error) {
-      console.error('Error listing DynamoDB tables:', error);
+
       throw error;
     }
   }

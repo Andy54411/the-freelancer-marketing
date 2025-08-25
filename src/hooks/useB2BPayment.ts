@@ -123,10 +123,9 @@ export function useB2BPayment() {
         // Save to Firebase
         await setDoc(doc(db, 'b2b_projects', projectId), project);
 
-        console.log('✅ B2B Project created:', projectId);
         return projectId;
       } catch (err: any) {
-        console.error('❌ Error creating B2B project:', err);
+
         setError(err.message || 'Failed to create B2B project');
         throw err;
       } finally {
@@ -151,7 +150,7 @@ export function useB2BPayment() {
 
         return { id: projectDoc.id, ...projectDoc.data() } as B2BPaymentProject;
       } catch (err: any) {
-        console.error('❌ Error getting B2B project:', err);
+
         setError(err.message || 'Failed to get B2B project');
         return null;
       } finally {
@@ -226,9 +225,8 @@ export function useB2BPayment() {
           });
         }
 
-        console.log('✅ B2B Payment processed successfully:', paymentIntentId);
       } catch (err: any) {
-        console.error('❌ Error processing B2B payment success:', err);
+
         setError(err.message || 'Failed to process B2B payment');
         throw err;
       } finally {
@@ -260,7 +258,7 @@ export function useB2BPayment() {
 
         return payments;
       } catch (err: any) {
-        console.error('❌ Error getting B2B payment history:', err);
+
         setError(err.message || 'Failed to get B2B payment history');
         return [];
       } finally {

@@ -6,14 +6,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Upload, 
-  Download, 
-  Settings, 
-  RefreshCw, 
-  CheckCircle, 
-  AlertTriangle, 
-  Clock, 
+import {
+  Upload,
+  Download,
+  Settings,
+  RefreshCw,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
   ArrowLeft,
   FileText,
   Activity,
@@ -57,7 +57,6 @@ export default function BankingImportPage() {
   const loadBankConnections = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('📊 Loading banking data for import page:', uid);
 
       const response = await fetch(`/api/banking/stored-data?userId=${encodeURIComponent(uid)}`, {
         method: 'GET',
@@ -71,7 +70,6 @@ export default function BankingImportPage() {
       }
 
       const data = await response.json();
-      console.log('📊 Banking data response:', data);
 
       if (data.success) {
         const transformedConnections: BankConnection[] = data.connections.map((conn: any) => ({
@@ -83,13 +81,13 @@ export default function BankingImportPage() {
         }));
 
         setConnections(transformedConnections);
-        console.log('✅ Banking connections loaded for import:', transformedConnections.length);
+
       } else {
-        console.log('ℹ️ No stored banking data found');
+
         setConnections([]);
       }
     } catch (error) {
-      console.error('Error loading banking data:', error);
+
       setConnections([]);
     } finally {
       setLoading(false);
@@ -98,7 +96,6 @@ export default function BankingImportPage() {
 
   const loadImportSettings = useCallback(async () => {
     try {
-      console.log('⚙️ Loading import settings for user:', uid);
 
       const response = await fetch(`/api/banking/import-settings?userId=${encodeURIComponent(uid)}`, {
         method: 'GET',
@@ -109,18 +106,16 @@ export default function BankingImportPage() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('⚙️ Import settings response:', data);
 
         if (data.success && data.settings) {
           setImportSettings(data.settings);
-          console.log('✅ Import settings loaded successfully');
+
         }
       } else {
-        console.log('ℹ️ Using default import settings');
+
       }
     } catch (error) {
-      console.error('Error loading import settings:', error);
-      console.log('ℹ️ Using default import settings');
+
     }
   }, [uid]);
 
@@ -148,20 +143,18 @@ export default function BankingImportPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          console.log('✅ Transactions categorized successfully:', data.categorizedCount);
+
         }
       }
     } catch (error) {
-      console.error('❌ Error categorizing transactions:', error);
+
     }
   }, [user?.uid]);
 
   const syncConnection = useCallback(async (connectionId: string) => {
     setSyncing(connectionId);
     try {
-      console.log('🔄 Starting real sync for connection:', connectionId);
-      console.log('⚙️ Applying import settings to finAPI:', importSettings);
-      
+
       const response = await fetch('/api/finapi/sync-connection', {
         method: 'POST',
         headers: {
@@ -180,30 +173,28 @@ export default function BankingImportPage() {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
         // Update connection status with real data
-        setConnections(prev => prev.map(conn => 
-          conn.id === connectionId 
-            ? { 
-                ...conn, 
-                lastSync: new Date().toISOString(), 
+        setConnections(prev => prev.map(conn =>
+          conn.id === connectionId
+            ? {
+                ...conn,
+                lastSync: new Date().toISOString(),
                 status: 'connected' as const,
                 accountCount: data.accountCount || conn.accountCount
               }
             : conn
         ));
-        
-        console.log('✅ Real sync successful for connection:', connectionId);
-        console.log('📊 Synced accounts:', data.accountCount);
+
       } else {
         throw new Error(data.error || 'Sync failed');
       }
     } catch (error) {
-      console.error('❌ Real sync error:', error);
+
       // Update connection with error status
-      setConnections(prev => prev.map(conn => 
-        conn.id === connectionId 
+      setConnections(prev => prev.map(conn =>
+        conn.id === connectionId
           ? { ...conn, status: 'error' as const }
           : conn
       ));
@@ -217,12 +208,6 @@ export default function BankingImportPage() {
       return;
     }
 
-    console.log('🔄 Triggering automatic sync based on settings:', importSettings.syncFrequency);
-    console.log('⚙️ Auto-sync will apply settings:', {
-      categorizeTransactions: importSettings.categorizeTransactions,
-      reconcileAutomatically: importSettings.reconcileAutomatically
-    });
-    
     // Only sync if last sync was long enough ago based on frequency
     const now = new Date();
     for (const connection of connections) {
@@ -243,12 +228,12 @@ export default function BankingImportPage() {
         }
 
         if (shouldSync) {
-          console.log(`🔄 Auto-syncing connection: ${connection.bankName}`);
+
           await syncConnection(connection.id); // syncConnection verwendet bereits importSettings
-          
+
           // Additional categorization if enabled (finAPI wird das auch automatisch machen)
           if (importSettings.categorizeTransactions) {
-            console.log(`🏷️ Auto-categorizing transactions for: ${connection.bankName}`);
+
             await categorizeTransactions(connection.id);
           }
         }
@@ -274,7 +259,7 @@ export default function BankingImportPage() {
       case 'HOURLY':
         return 60 * 60 * 1000; // 1 hour
       case 'DAILY':
-        return 24 * 60 * 60 * 1000; // 24 hours  
+        return 24 * 60 * 60 * 1000; // 24 hours
       case 'WEEKLY':
         return 7 * 24 * 60 * 60 * 1000; // 1 week
       default:
@@ -285,9 +270,7 @@ export default function BankingImportPage() {
   const importTransactions = async () => {
     setImportingTransactions(true);
     try {
-      console.log('📥 Starting real transaction import for all connections');
-      console.log('⚙️ Applying import settings to finAPI import:', importSettings);
-      
+
       const response = await fetch('/api/finapi/import-transactions', {
         method: 'POST',
         headers: {
@@ -305,17 +288,16 @@ export default function BankingImportPage() {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
-        console.log('✅ Real transaction import successful:', data.imported);
-        console.log('📊 Imported transactions count:', data.transactionCount);
+
         // Reload connections to update sync status
         await loadBankConnections();
       } else {
         throw new Error(data.error || 'Transaction import failed');
       }
     } catch (error) {
-      console.error('❌ Real import error:', error);
+
     } finally {
       setImportingTransactions(false);
     }
@@ -325,8 +307,7 @@ export default function BankingImportPage() {
     setSettingsSaving(true);
     setSettingsSaved(false);
     try {
-      console.log('💾 Saving import settings:', importSettings);
-      
+
       const response = await fetch('/api/banking/import-settings', {
         method: 'POST',
         headers: {
@@ -343,11 +324,11 @@ export default function BankingImportPage() {
       }
 
       const data = await response.json();
-      
+
       if (data.success) {
-        console.log('✅ Import settings saved successfully');
+
         setSettingsSaved(true);
-        
+
         // Auto-hide success message after 3 seconds
         setTimeout(() => {
           setSettingsSaved(false);
@@ -356,7 +337,7 @@ export default function BankingImportPage() {
         throw new Error(data.error || 'Failed to save settings');
       }
     } catch (error) {
-      console.error('❌ Error saving settings:', error);
+
       alert('Fehler beim Speichern der Einstellungen: ' + (error as Error).message);
     } finally {
       setSettingsSaving(false);
@@ -459,7 +440,7 @@ export default function BankingImportPage() {
                 Automatische Synchronisation
               </label>
             </div>
-            
+
             <div className="flex items-center">
               <input
                 id="categorizeTransactions"
@@ -505,7 +486,7 @@ export default function BankingImportPage() {
         </div>
 
         <div className="mt-6 flex justify-between">
-          <button 
+          <button
             onClick={importTransactions}
             disabled={importingTransactions || connections.length === 0}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
@@ -517,13 +498,13 @@ export default function BankingImportPage() {
             )}
             {importingTransactions ? 'Importiere...' : 'Alle Transaktionen importieren'}
           </button>
-          
-          <button 
+
+          <button
             onClick={saveSettings}
             disabled={settingsSaving}
             className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 ${
-              settingsSaved 
-                ? 'bg-green-600 hover:bg-green-700' 
+              settingsSaved
+                ? 'bg-green-600 hover:bg-green-700'
                 : 'bg-[#14ad9f] hover:bg-[#129488]'
             }`}
           >
@@ -585,7 +566,7 @@ export default function BankingImportPage() {
                     <RefreshCw className={`h-3 w-3 mr-1 ${syncing === connection.id ? 'animate-spin' : ''}`} />
                     {syncing === connection.id ? 'Synchronisiere...' : 'Sync'}
                   </button>
-                  
+
                   <button className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs leading-4 font-medium rounded text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
                     <Settings className="h-3 w-3 mr-1" />
                     Einstellungen
@@ -618,12 +599,12 @@ export default function BankingImportPage() {
           <Upload className="h-6 w-6 mr-3" />
           <span className="font-medium">Datei importieren</span>
         </button>
-        
+
         <button className="flex items-center justify-center px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#14ad9f] hover:text-[#14ad9f] transition-colors">
           <Download className="h-6 w-6 mr-3" />
           <span className="font-medium">Export erstellen</span>
         </button>
-        
+
         <button className="flex items-center justify-center px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#14ad9f] hover:text-[#14ad9f] transition-colors">
           <Settings className="h-6 w-6 mr-3" />
           <span className="font-medium">Import-Regeln</span>

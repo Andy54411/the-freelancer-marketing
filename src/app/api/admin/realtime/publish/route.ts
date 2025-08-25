@@ -34,14 +34,12 @@ export async function POST(request: NextRequest) {
 
     const result = await eventBridge.send(command);
 
-    console.log('EventBridge event published:', result);
-
     return NextResponse.json({
       success: true,
       eventId: result.Entries?.[0]?.EventId,
     });
   } catch (error) {
-    console.error('Error publishing EventBridge event:', error);
+
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

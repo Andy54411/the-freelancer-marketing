@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(successUrl);
   } catch (error) {
-    console.error('Newsletter-Bestätigung Fehler:', error);
+
     return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 });
   }
 }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       subscriberId: result.subscriberId,
     });
   } catch (error) {
-    console.error('Newsletter-Bestätigung Fehler:', error);
+
     return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 });
   }
 }

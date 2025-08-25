@@ -72,7 +72,7 @@ export default function FooterSection() {
         );
       }
     } catch (error) {
-      console.error('Newsletter-Anmeldung Fehler:', error);
+
       setMessage('❌ Netzwerkfehler. Bitte prüfen Sie Ihre Internetverbindung.');
     } finally {
       setIsLoading(false);

@@ -76,7 +76,7 @@ export default function DatevPage() {
           <DatevAuthComponent
             companyId={companyId}
             onAuthSuccess={org => {
-              console.log('DATEV authentication successful:', org);
+
             }}
           />
         </TabsContent>

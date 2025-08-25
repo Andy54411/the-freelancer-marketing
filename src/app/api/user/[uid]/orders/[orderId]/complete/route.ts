@@ -7,7 +7,7 @@ try {
   const { db } = require('@/firebase/server');
   adminDb = db;
 } catch (firebaseError) {
-  console.warn('⚠️ Firebase Admin not available, using fallback mode');
+
   // Fallback initialization
   try {
     const admin = require('firebase-admin');
@@ -19,7 +19,7 @@ try {
     }
     adminDb = admin.firestore();
   } catch (fallbackError) {
-    console.error('❌ Firebase Admin initialization failed completely:', fallbackError);
+
   }
 }
 
@@ -64,8 +64,6 @@ export async function POST(
     const { uid, orderId } = params;
     const body: OrderCompletionRequest = await request.json();
 
-    console.log('📋 Order Completion Request:', { uid, orderId, body });
-
     // Check if Firebase is available
     if (!adminDb) {
       return NextResponse.json(
@@ -108,15 +106,6 @@ export async function POST(
       orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
     const companyNetAmount = orderData.totalAmountPaidByBuyer - platformFee;
 
-    console.log('� Order completion - funds marked as available for payout:', {
-      orderId: orderId,
-      totalAmount: orderData.totalAmountPaidByBuyer / 100,
-      platformFee: platformFee / 100,
-      companyNetAmount: companyNetAmount / 100,
-      currency: 'EUR',
-      note: 'Manual payout required from company dashboard'
-    });
-
     // 5. Update Order Status zu "ABGESCHLOSSEN"
     const updateData: any = {
       status: 'ABGESCHLOSSEN',
@@ -148,9 +137,6 @@ export async function POST(
       subcategory: orderData.selectedSubcategory,
     });
 
-    console.log('✅ Order completed successfully:', orderId);
-    console.log('✅ Payout entry created:', companyNetAmount / 100, '€');
-
     return NextResponse.json({
       success: true,
       message: 'Order completed successfully',
@@ -160,7 +146,7 @@ export async function POST(
       note: 'Funds available for manual payout from company dashboard',
     });
   } catch (error: any) {
-    console.error('❌ Order completion error:', error);
+
     return NextResponse.json(
       { error: 'Failed to complete order', details: error.message },
       { status: 500 }
@@ -178,8 +164,6 @@ export async function PATCH(
   try {
     const { uid, orderId } = params;
     const body: Partial<OrderCompletionRequest> = await request.json();
-
-    console.log('📝 Update Order Completion:', { uid, orderId, body });
 
     // 1. Prüfe ob Order existiert und dem User gehört
     const orderRef = adminDb.collection('auftraege').doc(orderId);
@@ -224,15 +208,13 @@ export async function PATCH(
 
     await orderRef.update(updateData);
 
-    console.log('✅ Order completion details updated:', orderId);
-
     return NextResponse.json({
       success: true,
       message: 'Order completion details updated',
       orderId: orderId,
     });
   } catch (error: any) {
-    console.error('❌ Order completion update error:', error);
+
     return NextResponse.json(
       { error: 'Failed to update order completion', details: error.message },
       { status: 500 }

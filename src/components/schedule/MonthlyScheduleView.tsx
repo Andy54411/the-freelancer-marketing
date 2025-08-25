@@ -222,7 +222,7 @@ export function MonthlyScheduleView({
                             {employee ? `${employee.firstName} ${employee.lastName}` : 'Unbekannt'}
                           </div>
                           <div className="text-gray-600 truncate">
-                            {shift.status === 'ABSENT' || shift.status === 'SICK' 
+                            {shift.status === 'ABSENT' || shift.status === 'SICK'
                               ? (shift.department || 'Abwesend')
                               : `${shift.startTime} - ${shift.endTime}`
                             }

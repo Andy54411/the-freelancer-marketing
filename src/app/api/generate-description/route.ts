@@ -21,24 +21,20 @@ export async function POST(request: Request) {
       currentDescription,
     } = await request.json();
 
-    console.log('Received request:', { companyName, industry, selectedSubcategory, city, country });
-
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error('Fehler: GEMINI_API_KEY ist in den Umgebungsvariablen nicht gesetzt.');
+
       return NextResponse.json(
         { error: 'Die Server-Konfiguration ist unvollständig. Der API-Schlüssel fehlt.' },
         { status: 500 }
       );
     }
 
-    console.log('API Key found, initializing Gemini...');
-
     const genAI = new GoogleGenerativeAI(apiKey);
 
     // System-Anweisung für die Firmenbeschreibung
-    const systemInstruction = `Du bist ein professioneller Texter, der ansprechende und überzeugende Firmenbeschreibungen für öffentliche Profile erstellt. 
+    const systemInstruction = `Du bist ein professioneller Texter, der ansprechende und überzeugende Firmenbeschreibungen für öffentliche Profile erstellt.
 
 Deine Aufgabe ist es, eine professionelle, kundenorientierte Firmenbeschreibung zu erstellen, die:
 - Professionell und vertrauenswürdig klingt
@@ -109,34 +105,21 @@ Standort: ${city}, ${country}`;
 
     prompt += `\n\nErstelle eine ansprechende, professionelle Firmenbeschreibung, die die Kompetenzen und Leistungen des Unternehmens hervorhebt. Fokussiere dich auf Expertise, Erfahrung und Kundennutzen - OHNE direkte Kontaktaufforderungen.`;
 
-    console.log('Sending prompt to Gemini API...');
-
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig,
       safetySettings,
     });
 
-    console.log('Gemini API response received successfully');
-
     const response = result.response;
     const generatedText = response.text();
 
-    console.log('Generated text length:', generatedText.length);
-
     return NextResponse.json({ description: generatedText });
   } catch (error) {
-    console.error('Fehler bei der Beschreibungsgenerierung:', error);
 
     const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     const errorStack = error instanceof Error ? error.stack : undefined;
     const errorName = error instanceof Error ? error.name : 'Error';
-
-    console.error('Error details:', {
-      message: errorMessage,
-      stack: errorStack,
-      name: errorName,
-    });
 
     // Spezifischere Fehlerbehandlung
     if (errorMessage.includes('API key')) {

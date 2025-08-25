@@ -59,7 +59,7 @@ export default function AdminWorkspaceManager() {
           return;
         }
       } catch (error) {
-        console.error('Admin auth check failed:', error);
+
         router.push('/admin/login');
         return;
       } finally {
@@ -111,7 +111,7 @@ export default function AdminWorkspaceManager() {
       setWorkspaces(prev => [newWorkspace, ...prev]);
       // Modal wurde entfernt, da wir jetzt eine separate Seite verwenden
     } catch (error) {
-      console.error('Error creating admin workspace:', error);
+
     }
   };
 
@@ -121,7 +121,7 @@ export default function AdminWorkspaceManager() {
       await adminWorkspaceService.updateWorkspaceWithRealtime(workspaceId, updates);
       // State will be updated automatically through realtime subscription
     } catch (error) {
-      console.error('Error updating admin workspace:', error);
+
       // Revert optimistic update on error by reloading
       if (adminId) {
         const workspaceData = await adminWorkspaceService.getWorkspacesByAdmin(adminId);
@@ -135,7 +135,7 @@ export default function AdminWorkspaceManager() {
       await adminWorkspaceService.deleteWorkspace(workspaceId);
       setWorkspaces(prev => prev.filter(workspace => workspace.id !== workspaceId));
     } catch (error) {
-      console.error('Error deleting admin workspace:', error);
+
     }
   };
 

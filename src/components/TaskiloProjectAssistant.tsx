@@ -150,7 +150,7 @@ Lassen Sie uns anfangen! Was für ein Projekt haben Sie im Sinn?`,
 
 📊 **Projekt-Status:**
 • Auftrag bestätigt ✅
-• Dienstleister zugewiesen ✅  
+• Dienstleister zugewiesen ✅
 • Nächster Termin: Morgen um 10:00 📅
 
 Wie kann ich Ihnen heute helfen?`,
@@ -204,7 +204,7 @@ Wie kann ich Ihnen heute helfen?`,
       welcome: () => ({
         id: generateId(),
         type: 'assistant',
-        content: `Perfekt! "${userInput}" ist eine großartige Wahl. 
+        content: `Perfekt! "${userInput}" ist eine großartige Wahl.
 
 🎯 **Nächste Schritte:**
 1. Kategorie spezifizieren
@@ -252,7 +252,7 @@ Bitte geben Sie Ihre Adresse oder PLZ ein, damit ich passende Dienstleister in I
 
 ⏰ **Wann soll das Projekt starten?**
 - Sofort / Diese Woche
-- Nächste Woche  
+- Nächste Woche
 - Flexibel innerhalb des nächsten Monats
 - Konkretes Datum
 
@@ -267,7 +267,7 @@ Bitte geben Sie Ihre Adresse oder PLZ ein, damit ich passende Dienstleister in I
       timeline: () => ({
         id: generateId(),
         type: 'assistant',
-        content: `Zeitplanung notiert! 
+        content: `Zeitplanung notiert!
 
 💰 **Budget-Rahmen festlegen:**
 Basierend auf ähnlichen Projekten in Ihrer Region liegen die Kosten typischerweise zwischen **150€ - 800€**.
@@ -321,7 +321,7 @@ Ich habe 3 perfekte Dienstleister für Sie gefunden:
 ⭐ **Max Müller Handwerk** (4.9/5) - 280€
 • 15 Jahre Erfahrung • Verfügbar diese Woche
 
-⭐ **ProFix Solutions** (4.8/5) - 320€  
+⭐ **ProFix Solutions** (4.8/5) - 320€
 • Spezialist für Ihr Projekt • Verfügbar nächste Woche
 
 ⭐ **Heimwerker-Profis** (4.7/5) - 250€

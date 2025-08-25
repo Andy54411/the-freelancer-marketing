@@ -10,17 +10,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId') || 'test-company-123';
 
-    console.log('🧪 DATEV OAuth Flow Debug starting for company:', companyId);
-
     // Generate OAuth URL
     const authData = generateDatevAuthUrl(companyId);
-
-    console.log('✅ Generated OAuth data:', {
-      state: authData.state,
-      codeVerifier: authData.codeVerifier.substring(0, 20) + '...',
-      nonce: authData.nonce.substring(0, 20) + '...',
-      authUrl: authData.authUrl,
-    });
 
     // Parse the auth URL to show all parameters
     const authUrl = new URL(authData.authUrl);
@@ -75,7 +66,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('DATEV OAuth debug failed:', error);
 
     return NextResponse.json(
       {

@@ -11,17 +11,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[API /emergency-transfer] Starting emergency transfer...');
 
     const body = await request.json();
     const { providerStripeAccountId, amount, orderId, reason } = body;
-
-    console.log('[API /emergency-transfer] Request data:', {
-      providerStripeAccountId,
-      amount,
-      orderId,
-      reason
-    });
 
     // Validierung
     if (!providerStripeAccountId || !amount || !orderId) {
@@ -41,7 +33,6 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      console.log(`[API /emergency-transfer] Creating emergency transfer: ${amount} cents to ${providerStripeAccountId}`);
 
       // Erstelle Transfer vom Platform Account zum Provider Account
       const transfer = await stripe.transfers.create({
@@ -58,8 +49,6 @@ export async function POST(request: NextRequest) {
         description: `Emergency Transfer für Auftrag ${orderId} - ${reason || 'Manueller Transfer'} (€${(amount / 100).toFixed(2)})`,
       });
 
-      console.log(`[API /emergency-transfer] Successfully created transfer: ${transfer.id}`);
-
       // Erstelle detaillierte Antwort
       const response = {
         success: true,
@@ -74,14 +63,12 @@ export async function POST(request: NextRequest) {
         metadata: transfer.metadata
       };
 
-      console.log('[API /emergency-transfer] Transfer completed:', response);
       return NextResponse.json(response);
 
     } catch (stripeError: any) {
-      console.error('[API /emergency-transfer] Stripe error:', stripeError);
-      
+
       return NextResponse.json(
-        { 
+        {
           error: 'Stripe Transfer fehlgeschlagen',
           details: stripeError.message,
           code: stripeError.code,
@@ -92,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('[API /emergency-transfer] Unexpected error:', error);
+
     return NextResponse.json(
       { error: 'Unerwarteter Fehler bei Emergency Transfer.' },
       { status: 500 }

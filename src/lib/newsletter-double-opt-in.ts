@@ -16,11 +16,10 @@ export async function sendConfirmationEmail(
   confirmationToken: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('📧 Newsletter-Bestätigung senden an:', email);
 
     // 🚀 RESEND als einzige Methode
     try {
-      console.log('🚀 Verwende Resend für Newsletter-Bestätigung');
+
       const resendResult = await sendNewsletterConfirmationViaResend(
         email,
         name,
@@ -28,24 +27,24 @@ export async function sendConfirmationEmail(
       );
 
       if (resendResult.success) {
-        console.log('✅ Resend Newsletter-Bestätigung erfolgreich:', resendResult.messageId);
+
         return { success: true };
       } else {
-        console.error('❌ Resend fehlgeschlagen:', resendResult.error);
+
         return {
           success: false,
           error: resendResult.error || 'E-Mail-Versand über Resend fehlgeschlagen',
         };
       }
     } catch (resendError) {
-      console.error('🚨 Resend Fehler:', resendError);
+
       return {
         success: false,
         error: resendError instanceof Error ? resendError.message : 'Unbekannter Resend-Fehler',
       };
     }
   } catch (error) {
-    console.error('Fehler beim Senden der Bestätigungs-E-Mail:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -121,17 +120,9 @@ export async function createPendingSubscription(
       return { success: false, error: 'Fehler beim Senden der Bestätigungs-E-Mail' };
     }
 
-    console.log('Pending Newsletter-Anmeldung erstellt:', {
-      email,
-      name: options.name || 'Unbekannt',
-      source: options.source,
-      token: confirmationToken.substring(0, 8) + '...',
-      expiresAt: expiresAt.toISOString(),
-    });
-
     return { success: true, token: confirmationToken };
   } catch (error) {
-    console.error('Fehler beim Erstellen der pending subscription:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -230,15 +221,9 @@ export async function confirmNewsletterSubscription(
     // Lösche pending confirmation
     await pendingDoc.ref.delete();
 
-    console.log('Newsletter-Anmeldung bestätigt:', {
-      email,
-      subscriberId: subscriberRef.id,
-      confirmedAt: new Date().toISOString(),
-    });
-
     return { success: true, subscriberId: subscriberRef.id };
   } catch (error) {
-    console.error('Fehler bei Newsletter-Bestätigung:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -269,11 +254,9 @@ export async function cleanupExpiredPendingConfirmations(): Promise<{ deletedCou
 
     await batch.commit();
 
-    console.log(`${expiredQuery.docs.length} abgelaufene Newsletter-Bestätigungen gelöscht`);
-
     return { deletedCount: expiredQuery.docs.length };
   } catch (error) {
-    console.error('Fehler bei Cleanup von abgelaufenen Bestätigungen:', error);
+
     return { deletedCount: 0 };
   }
 }

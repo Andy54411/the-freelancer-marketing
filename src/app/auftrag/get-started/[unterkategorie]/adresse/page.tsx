@@ -67,7 +67,7 @@ export default function AddressPage() {
       const place = autocomplete.getPlace();
 
       if (!place || !place.address_components) {
-        console.warn('Kein gültiger Ort oder keine Adresskomponenten gefunden');
+
         return;
       }
 
@@ -116,12 +116,12 @@ export default function AddressPage() {
       // Aktualisiere die Zustände
       if (foundCity) {
         setCityState(foundCity);
-        console.log('Stadt gefunden:', foundCity);
+
       }
 
       if (foundPostalCode) {
         setPostalCodeState(foundPostalCode);
-        console.log('Postleitzahl gefunden:', foundPostalCode);
+
       }
 
       if (foundCountry) {
@@ -134,15 +134,7 @@ export default function AddressPage() {
       }
 
       // Debug-Ausgabe für bessere Nachverfolgung
-      console.log('Google Places Autocomplete Ergebnis:', {
-        place: place.formatted_address,
-        city: foundCity,
-        postalCode: foundPostalCode,
-        country: foundCountry,
-        street: foundStreet,
-        streetNumber: foundStreetNumber,
-        allComponents: place.address_components,
-      });
+
     }
   }, [autocomplete]);
 
@@ -202,7 +194,7 @@ export default function AddressPage() {
         registration.setSelectedSubcategory(initialSubcategory);
       }
     } else {
-      console.warn(PAGE_WARN, 'Keine initiale Unterkategorie für AddressPage gefunden.');
+
     }
 
     // BESCHREIBUNG: Beschreibung aus URL-Parametern lesen und im Context speichern.
@@ -216,9 +208,9 @@ export default function AddressPage() {
       try {
         const decodedDescription = decodeURIComponent(descriptionFromUrl);
         registration.setDescription(decodedDescription);
-        console.log(PAGE_LOG, `Beschreibung aus URL in Context geladen: "${decodedDescription}"`);
+
       } catch (e) {
-        console.error(PAGE_ERROR, 'Fehler beim Dekodieren der Beschreibung aus der URL:', e);
+
         registration.setDescription(descriptionFromUrl); // Fallback auf nicht-dekodierten Wert
       }
     }
@@ -265,9 +257,7 @@ export default function AddressPage() {
         );
         if (!res.ok) {
           const errorText = await res.text();
-          console.error(
-            `${PAGE_ERROR} API getDataForSubcategory FAILED: ${res.status} ${res.statusText}. Response: ${errorText}`
-          );
+
           throw new Error(`API Error ${res.status}`);
         }
         const data = await res.json();
@@ -279,7 +269,7 @@ export default function AddressPage() {
         setDynamicSliderMax(newMax);
         setPriceDistribution(data.distribution || null);
       } catch (err: unknown) {
-        console.error(`${PAGE_ERROR} Critical error in fetchDataForSubcategory:`, err);
+
         setAveragePriceForSubcategory(null);
         setDynamicSliderMin(GLOBAL_FALLBACK_MIN_PRICE);
         setDynamicSliderMax(GLOBAL_FALLBACK_MAX_PRICE);
@@ -323,9 +313,7 @@ export default function AddressPage() {
       const res = await fetch(apiUrl);
       if (!res.ok) {
         const errorText = await res.text();
-        console.error(
-          `${PAGE_ERROR} API searchCompanyProfiles FAILED: ${res.status} ${res.statusText}. Response: ${errorText}`
-        );
+
         throw new Error(`Anbieter konnten nicht geladen werden (Fehler ${res.status})`);
       }
       const data: Company[] = await res.json();
@@ -342,7 +330,7 @@ export default function AddressPage() {
       }
       setRatingMap(newRatingMap);
     } catch (err: unknown) {
-      console.error(`${PAGE_ERROR} Critical error in fetchCompanyProfiles:`, err);
+
       let message = 'Fehler beim Laden der Anbieter.';
       if (err instanceof Error) {
         message = err.message;
@@ -440,11 +428,7 @@ export default function AddressPage() {
   const handleDateTimeConfirm: DateTimeSelectionPopupProps['onConfirm'] = useCallback(
     async (selection?: Date | DateRange, time?: string, durationStringFromPopup?: string) => {
       setError(null);
-      console.log(PAGE_LOG, 'AddressPage: handleDateTimeConfirm mit:', {
-        selection,
-        time,
-        durationStringFromPopup,
-      });
+
       let dateFromFormatted: string | undefined;
       let dateToFormatted: string | undefined;
       let calculatedNumberOfDays = 1;
@@ -558,36 +542,13 @@ export default function AddressPage() {
         const bestaetigungsPagePath = `/auftrag/get-started/${encodedSubcategoryForPath}/BestaetigungsPage?${bestaetigungsPageParams.toString()}`;
 
         // DEBUG: Ausführliches Logging für URL-Parameter-Debugging
-        console.log(PAGE_LOG, '=== URL-Parameter-Erstellung in Adresse-Seite ===');
-        console.log(PAGE_LOG, 'Einzelne Parameter:');
-        console.log(PAGE_LOG, `  anbieterId: "${selectedCompanyForPopup.id}"`);
-        console.log(PAGE_LOG, `  postalCode: "${postalCode}"`);
-        console.log(PAGE_LOG, `  dateFrom: "${dateFromFormatted}"`);
-        console.log(PAGE_LOG, `  dateTo: "${dateToFormatted}"`);
-        console.log(PAGE_LOG, `  time: "${finalTimeParam}"`);
-        console.log(PAGE_LOG, `  auftragsDauer: "${finalDurationStringInput}"`);
-        console.log(
-          PAGE_LOG,
-          `  price: "${totalPriceInCents ? (totalPriceInCents / 100).toFixed(2) : 'null'}"`
-        );
-        console.log(PAGE_LOG, `  description: "${registration.description}"`);
-        console.log(
-          PAGE_LOG,
-          `bestaetigungsPageParams.toString(): "${bestaetigungsPageParams.toString()}"`
-        );
-        console.log(PAGE_LOG, `Finale URL: "${bestaetigungsPagePath}"`);
 
         // DEBUG: Teste URL-Parsing
         try {
           const testUrl = new URL(bestaetigungsPagePath, window.location.origin);
-          console.log(PAGE_LOG, 'URL-Test erfolgreich:', testUrl.href);
-          console.log(
-            PAGE_LOG,
-            'Alle Parameter in URL:',
-            Object.fromEntries(testUrl.searchParams.entries())
-          );
+
         } catch (urlError) {
-          console.error(PAGE_ERROR, 'URL-Test fehlgeschlagen:', urlError);
+
         }
 
         // BENUTZER-AUTHENTIFIZIERUNG: Prüfung beim Klick auf Bestätigen von Datum/Uhrzeit
@@ -595,22 +556,16 @@ export default function AddressPage() {
         if (user) {
           // Wenn der Benutzer bereits eingeloggt ist, leiten Sie ihn direkt zur Bestätigungsseite weiter.
           // Die vorherige Logik, die hier zum Dashboard weiterleitete, verhinderte, dass bestehende Benutzer neue Aufträge erstellen konnten.
-          console.log(
-            PAGE_LOG,
-            `Benutzer bereits eingeloggt, direkte Weiterleitung zu: ${bestaetigungsPagePath}`
-          );
+
           router.push(bestaetigungsPagePath);
         } else {
           // Nicht angemeldet, leite zur Registrierungsseite weiter
           const registrationRedirectUrl = `/register/user?redirectTo=${encodeURIComponent(bestaetigungsPagePath)}`;
-          console.log(PAGE_LOG, `Benutzer nicht eingeloggt, Weiterleitung zur Registrierung:`);
-          console.log(PAGE_LOG, `  Original URL: ${bestaetigungsPagePath}`);
-          console.log(PAGE_LOG, `  Encoded URL: ${encodeURIComponent(bestaetigungsPagePath)}`);
-          console.log(PAGE_LOG, `  Finale Registrierungs-URL: ${registrationRedirectUrl}`);
+
           router.push(registrationRedirectUrl);
         }
       } else if (dateFromFormatted) {
-        console.log(`${PAGE_LOG} Nur Datum/Zeit im Filter geändert. Lade Profile neu.`);
+
         fetchCompanyProfiles();
       }
       setSelectedCompanyForPopup(null);

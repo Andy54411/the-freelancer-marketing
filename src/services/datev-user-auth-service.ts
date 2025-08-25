@@ -38,13 +38,12 @@ export async function getOrCreateDatevUser(
   config?: Partial<DatevUserConfig>
 ): Promise<{ success: boolean; datefUserId?: string; error?: string }> {
   try {
-    console.log('🔐 Creating/updating DATEV user for Firebase UID:', firebaseUserId);
 
     const userRef = doc(db, 'users', firebaseUserId);
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
-      console.error('❌ Firebase user not found:', firebaseUserId);
+
       return { success: false, error: 'Firebase user not found' };
     }
 
@@ -54,7 +53,7 @@ export async function getOrCreateDatevUser(
     if (!datefUserId) {
       // Generate DATEV user ID if not exists
       datefUserId = generateDatefUserId(firebaseUserId);
-      console.log('🆕 Generated new DATEV user ID:', datefUserId);
+
     }
 
     // Update user document with DATEV configuration
@@ -73,10 +72,9 @@ export async function getOrCreateDatevUser(
       updatedAt: Date.now(),
     });
 
-    console.log('✅ DATEV user configuration updated successfully');
     return { success: true, datefUserId };
   } catch (error: any) {
-    console.error('❌ Error creating/updating DATEV user:', error);
+
     return { success: false, error: error.message };
   }
 }
@@ -89,13 +87,12 @@ export async function getDatevUserToken(
   firebaseUserId: string
 ): Promise<{ success: boolean; token?: DatevTokenData; error?: string }> {
   try {
-    console.log('🔍 Getting DATEV token for user:', firebaseUserId);
 
     const tokenRef = doc(db, 'datev_tokens', firebaseUserId);
     const tokenDoc = await getDoc(tokenRef);
 
     if (!tokenDoc.exists()) {
-      console.log('ℹ️ No DATEV token found for user:', firebaseUserId);
+
       return { success: false, error: 'No token found' };
     }
 
@@ -103,14 +100,13 @@ export async function getDatevUserToken(
 
     // Check if token is expired
     if (tokenData.expiresAt && Date.now() >= tokenData.expiresAt) {
-      console.log('⚠️ DATEV token expired for user:', firebaseUserId);
+
       return { success: false, error: 'Token expired' };
     }
 
-    console.log('✅ Valid DATEV token found');
     return { success: true, token: tokenData };
   } catch (error: any) {
-    console.error('❌ Error getting DATEV token:', error);
+
     return { success: false, error: error.message };
   }
 }
@@ -125,7 +121,6 @@ export async function storeDatevUserToken(
   tokenData: Omit<DatevTokenData, 'userId' | 'createdAt' | 'updatedAt'>
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('💾 Storing DATEV token for user:', firebaseUserId);
 
     const tokenRef = doc(db, 'datev_tokens', firebaseUserId);
     const now = Date.now();
@@ -139,10 +134,9 @@ export async function storeDatevUserToken(
 
     await setDoc(tokenRef, fullTokenData);
 
-    console.log('✅ DATEV token stored successfully');
     return { success: true };
   } catch (error: any) {
-    console.error('❌ Error storing DATEV token:', error);
+
     return { success: false, error: error.message };
   }
 }
@@ -155,7 +149,6 @@ export async function validateDatevUserExists(
   firebaseUserId: string
 ): Promise<{ exists: boolean; isActive: boolean; datefUserId?: string; error?: string }> {
   try {
-    console.log('🔍 Validating DATEV user existence:', firebaseUserId);
 
     const userRef = doc(db, 'users', firebaseUserId);
     const userDoc = await getDoc(userRef);
@@ -168,15 +161,9 @@ export async function validateDatevUserExists(
     const datefConfig = userData.datefConfig as DatevUserConfig;
 
     if (!datefConfig || !userData.datefUserId) {
-      console.log('ℹ️ DATEV configuration not found for user');
+
       return { exists: false, isActive: false };
     }
-
-    console.log('✅ DATEV user validated:', {
-      exists: true,
-      isActive: datefConfig.isActive,
-      datefUserId: userData.datefUserId,
-    });
 
     return {
       exists: true,
@@ -184,7 +171,7 @@ export async function validateDatevUserExists(
       datefUserId: userData.datefUserId,
     };
   } catch (error: any) {
-    console.error('❌ Error validating DATEV user:', error);
+
     return { exists: false, isActive: false, error: error.message };
   }
 }
@@ -197,7 +184,6 @@ export async function revokeDatevUserToken(
   firebaseUserId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('🗑️ Revoking DATEV token for user:', firebaseUserId);
 
     const tokenRef = doc(db, 'datev_tokens', firebaseUserId);
 
@@ -208,10 +194,9 @@ export async function revokeDatevUserToken(
       isRevoked: true,
     });
 
-    console.log('✅ DATEV token revoked successfully');
     return { success: true };
   } catch (error: any) {
-    console.error('❌ Error revoking DATEV token:', error);
+
     return { success: false, error: error.message };
   }
 }
@@ -229,7 +214,6 @@ export async function handleDatevOAuthCallback(
   firebaseUserId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('🔄 Processing DATEV OAuth callback for user:', firebaseUserId);
 
     // Validate state parameter
     if (!validateOAuthState(state, firebaseUserId)) {
@@ -263,10 +247,9 @@ export async function handleDatevOAuthCallback(
       organizationId: tokenData.organizationId,
     });
 
-    console.log('✅ DATEV OAuth callback processed successfully');
     return { success: true };
   } catch (error: any) {
-    console.error('❌ Error processing DATEV OAuth callback:', error);
+
     return { success: false, error: error.message };
   }
 }
@@ -280,7 +263,6 @@ export async function initiateDatevAuthFlow(
   userId: string,
   redirectUri?: string
 ): Promise<{ authUrl: string; state: string }> {
-  console.log('🔄 Initiating DATEV OAuth flow for user:', userId);
 
   // Generate secure state parameter
   const state = generateSecureState(userId);
@@ -328,7 +310,7 @@ function generateSecureState(userId: string): string {
 
 function storeAuthState(state: string, userId: string): void {
   // Store state for OAuth flow verification
-  console.log('Storing auth state for user:', userId, 'state:', state);
+
 }
 
 export { type DatevTokenData, type DatevUserConfig };

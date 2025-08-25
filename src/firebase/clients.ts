@@ -46,7 +46,7 @@ const getClientApp = (): FirebaseApp => {
   if (getApps().length) {
     return getApp();
   }
-  console.log('[Firebase Client] Initializing new Firebase App.');
+
   return initializeApp(firebaseConfig);
 };
 
@@ -64,44 +64,41 @@ if (process.env.NODE_ENV === 'development') {
   // Ein globales Flag, um zu verhindern, dass die Verbindung zu den Emulatoren
   // bei jedem Hot-Reload erneut versucht wird, was zu Fehlern führen würde.
   if (!(global as any)._firebaseEmulatorsConnected) {
-    console.log('[Firebase Client] (Dev) Connecting to emulators...');
 
     // Auth Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST) {
       connectAuthEmulator(auth, `http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`, {
         disableWarnings: true,
       });
-      console.log(`[Firebase Client] (Dev) Auth Emulator connected.`);
+
     }
 
     // Firestore Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST) {
       const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST.split(':');
       connectFirestoreEmulator(db, host, parseInt(portStr, 10));
-      console.log(`[Firebase Client] (Dev) Firestore Emulator connected to ${host}:${portStr}.`);
+
     }
 
     // Storage Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST) {
       const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST.split(':');
       connectStorageEmulator(storage, host, parseInt(portStr, 10));
-      console.log(`[Firebase Client] (Dev) Storage Emulator connected to ${host}:${portStr}.`);
+
     }
 
     // Functions Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
       const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST.split(':');
       connectFunctionsEmulator(functions, host, parseInt(portStr, 10));
-      console.log(`[Firebase Client] (Dev) Functions Emulator connected to ${host}:${portStr}.`);
+
     }
 
     // Realtime Database Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST) {
       const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST.split(':');
       connectDatabaseEmulator(realtimeDb, host, parseInt(portStr, 10));
-      console.log(
-        `[Firebase Client] (Dev) Realtime Database Emulator connected to ${host}:${portStr}.`
-      );
+
     }
 
     (global as any)._firebaseEmulatorsConnected = true;

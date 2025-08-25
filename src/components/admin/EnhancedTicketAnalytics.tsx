@@ -102,7 +102,7 @@ export default function EnhancedTicketAnalytics() {
         setAnalytics(data.metrics);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Analytics:', error);
+
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -118,9 +118,9 @@ export default function EnhancedTicketAnalytics() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('API Response:', data); // Debug-Log
+         // Debug-Log
         const tickets = Array.isArray(data.tickets) ? data.tickets : []; // Stelle sicher, dass es ein Array ist
-        console.log('Extracted tickets:', tickets); // Debug-Log
+         // Debug-Log
         const openTickets = tickets.filter((t: any) => t.status === 'open');
 
         for (const ticket of openTickets.slice(0, 5)) {
@@ -129,8 +129,6 @@ export default function EnhancedTicketAnalytics() {
             ticket.title,
             ticket.description
           );
-
-          console.log(`Ticket ${ticket.id} klassifiziert:`, classification);
 
           // Update Ticket mit AI-Klassifizierung
           await fetch(`/api/admin/tickets/${ticket.id}`, {
@@ -150,7 +148,7 @@ export default function EnhancedTicketAnalytics() {
         await loadAnalytics();
       }
     } catch (error) {
-      console.error('AI-Klassifizierung Fehler:', error);
+
     }
   };
 
@@ -167,10 +165,10 @@ export default function EnhancedTicketAnalytics() {
       });
 
       if (response.ok) {
-        console.log('Test-Benachrichtigung gesendet');
+
       }
     } catch (error) {
-      console.error('Test-Benachrichtigung Fehler:', error);
+
     }
   };
 

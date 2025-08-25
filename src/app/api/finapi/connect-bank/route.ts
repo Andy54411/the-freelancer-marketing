@@ -13,8 +13,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Benutzer-ID oder Bank-ID fehlt.' }, { status: 400 });
     }
 
-    console.log('🔄 Creating WebForm 2.0 for user:', userId, 'bank:', bankId);
-
     // SCHRITT 1: WebForm 2.0 URL erstellen
     // WICHTIG: Das ist NICHT die Standard finAPI API!
     // WebForm 2.0 läuft auf webform-sandbox.finapi.io mit eigenen Credentials
@@ -31,8 +29,6 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-
-    console.log('✅ WebForm 2.0 erstellt:', webFormResult.webFormUrl);
 
     return NextResponse.json({
       success: true,
@@ -61,7 +57,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ WebForm 2.0 Error:', error);
 
     return NextResponse.json(
       {
@@ -79,7 +74,6 @@ export async function POST(req: NextRequest) {
  * Basierend auf finAPI Dokumentation und Tests
  */
 async function createWebForm2_0(bankId: number, userId: string) {
-  console.log('🎯 Creating WebForm 2.0 for bankId:', bankId);
 
   try {
     // METHODE 1: Versuche echte WebForm 2.0 API (falls Credentials verfügbar)
@@ -88,13 +82,11 @@ async function createWebForm2_0(bankId: number, userId: string) {
       return webFormApiResult;
     }
 
-    console.log('📋 WebForm API nicht verfügbar, verwende Fallback...');
-
     // METHODE 2: Fallback - Generiere WebForm URL nach finAPI Pattern
     const fallbackResult = createWebFormFallback(bankId, userId);
     return fallbackResult;
   } catch (error: any) {
-    console.error('❌ WebForm 2.0 Creation Error:', error);
+
     return {
       success: false,
       error: error.message,
@@ -108,12 +100,11 @@ async function createWebForm2_0(bankId: number, userId: string) {
  */
 async function tryWebFormApi(bankId: number, userId: string) {
   try {
-    console.log('🔄 Trying WebForm 2.0 API with USER TOKEN...');
 
     // Schritt 1: Erstelle oder hole finAPI User
     const finApiUser = await getOrCreateFinApiUser(userId);
     if (!finApiUser.success) {
-      console.log('⚠️ Could not create finAPI user:', finApiUser.error);
+
       return { success: false, error: 'User creation failed' };
     }
 
@@ -144,14 +135,13 @@ async function tryWebFormApi(bankId: number, userId: string) {
     });
 
     if (!userTokenResponse.ok) {
-      console.log('⚠️ User Token Request failed:', userTokenResponse.status);
+
       const errorText = await userTokenResponse.text();
-      console.log('⚠️ Error details:', errorText);
+
       return { success: false, error: 'User token failed' };
     }
 
     const userTokenData = await userTokenResponse.json();
-    console.log('✅ User Token erhalten für WebForm 2.0');
 
     // Schritt 3: WebForm bankConnectionImport erstellen - MIT USER TOKEN
     const webFormResponse = await fetch(
@@ -185,12 +175,11 @@ async function tryWebFormApi(bankId: number, userId: string) {
 
     if (!webFormResponse.ok) {
       const errorText = await webFormResponse.text();
-      console.log('⚠️ WebForm Creation failed:', webFormResponse.status, errorText);
+
       return { success: false, error: `WebForm API Error: ${errorText}` };
     }
 
     const webFormData = await webFormResponse.json();
-    console.log('✅ WebForm 2.0 API Success:', webFormData.url);
 
     return {
       success: true,
@@ -199,7 +188,7 @@ async function tryWebFormApi(bankId: number, userId: string) {
       source: 'webform-api',
     };
   } catch (error: any) {
-    console.log('⚠️ WebForm API Exception:', error.message);
+
     return { success: false, error: error.message };
   }
 }
@@ -209,7 +198,6 @@ async function tryWebFormApi(bankId: number, userId: string) {
  * Basierend auf finAPI URL Pattern und Dokumentation
  */
 function createWebFormFallback(bankId: number, userId: string) {
-  console.log('🔄 Creating WebForm Fallback URL...');
 
   // Generate WebForm Token (128 chars wie in finAPI Dokumentation)
   const webFormToken = generateWebFormToken();
@@ -228,8 +216,6 @@ function createWebFormFallback(bankId: number, userId: string) {
   });
 
   const finalUrl = `${webFormUrl}?${params.toString()}`;
-
-  console.log('📋 Generated Fallback WebForm URL');
 
   return {
     success: true,
@@ -263,8 +249,6 @@ async function getOrCreateFinApiUser(taskiloUserId: string) {
     // Use same logic as import-bank for consistency
     const username = `tsk_${taskiloUserId.slice(0, 28)}`.slice(0, 36);
     const password = `TaskiloPass_${taskiloUserId.slice(0, 10)}!2024`;
-
-    console.log('🔄 Creating/getting finAPI user:', username);
 
     // Step 1: Get client token for user operations
     const clientTokenResponse = await fetch('https://sandbox.finapi.io/api/v2/oauth/token', {
@@ -305,14 +289,14 @@ async function getOrCreateFinApiUser(taskiloUserId: string) {
     if (!createUserResponse.ok) {
       const errorText = await createUserResponse.text();
       if (errorText.includes('already exists') || errorText.includes('ENTITY_EXISTS')) {
-        console.log('✅ User already exists:', username);
+
         userExists = true;
       } else {
-        console.error('❌ User creation failed:', errorText);
+
         throw new Error(`User creation failed: ${errorText}`);
       }
     } else {
-      console.log('✅ New finAPI user created:', username);
+
     }
 
     return {
@@ -322,7 +306,7 @@ async function getOrCreateFinApiUser(taskiloUserId: string) {
       userExists: userExists,
     };
   } catch (error: any) {
-    console.error('❌ getOrCreateFinApiUser error:', error);
+
     return {
       success: false,
       error: error.message,

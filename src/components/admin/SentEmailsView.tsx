@@ -25,7 +25,7 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
   // Reagiere auf refreshTrigger Änderungen
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-      console.log('📤 [SentEmailsView] Refresh triggered:', refreshTrigger);
+
       // Verzögerung, damit IMAP-Speicherung Zeit hat
       setTimeout(() => {
         loadSentEmails();
@@ -37,7 +37,6 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
     try {
       setLoading(true);
       setError(null);
-      console.log('📤 Loading sent emails from WorkMail...');
 
       const response = await fetch('/api/admin/workmail/emails/sent?limit=50', {
         method: 'GET',
@@ -49,10 +48,8 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
       }
 
       const result = await response.json();
-      console.log('📤 Sent emails API Response:', result);
 
       if (result.success && result.data?.emails) {
-        console.log('✅ Loaded sent emails:', result.data.emails.length);
 
         // Konvertiere zu SentEmail-Format
         const sentEmailsData = result.data.emails.map((email: any) => ({
@@ -68,14 +65,14 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
         }));
 
         setSentEmails(sentEmailsData);
-        console.log('📤 Set sent emails to state:', sentEmailsData);
+
       } else {
-        console.error('❌ Failed to load sent emails:', result.error);
+
         // Fallback zu Demo-Daten
         loadDemoSentEmails();
       }
     } catch (error) {
-      console.error('❌ Error loading sent emails:', error);
+
       setError('Fehler beim Laden der gesendeten E-Mails');
       // Fallback zu Demo-Daten
       loadDemoSentEmails();
@@ -85,7 +82,7 @@ export default function SentEmailsView({ onEmailClick, refreshTrigger }: SentEma
   };
 
   const loadDemoSentEmails = () => {
-    console.log('📤 Loading demo sent emails...');
+
     setSentEmails([
       {
         id: 'demo_1',

@@ -72,25 +72,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV Organizations] Fetching organizations for company:', companyId);
-
     // Get tokens from HTTP-only cookies with retry logic
     const cookieStore = await cookies();
     const cookieName = getDatevCookieName(companyId);
     let tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV Organizations] No token cookie found');
 
       // Add a small delay and try once more (for post-OAuth scenarios)
-      console.log('🔄 [DATEV Organizations] Retrying after 1 second...');
+
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const retryCookieStore = await cookies();
       const retryTokenCookie = retryCookieStore.get(cookieName);
 
       if (!retryTokenCookie?.value) {
-        console.log('❌ [DATEV Organizations] No token cookie found after retry');
+
         return NextResponse.json(
           {
             error: 'no_tokens',
@@ -100,7 +97,6 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      console.log('✅ [DATEV Organizations] Token found after retry');
       tokenCookie = retryTokenCookie;
     }
 
@@ -110,17 +106,8 @@ export async function GET(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
 
-      console.log('🔍 [DATEV Organizations] Hybrid Token Analysis:', {
-        environment: tokenData.environment || 'unknown',
-        client_id: tokenData.client_id || 'unknown',
-        api_base_url: tokenData.api_base_url || 'unknown',
-        hasAccessToken: !!tokenData.access_token,
-        connected_at: new Date(tokenData.connected_at).toISOString(),
-        expires_in: tokenData.expires_in,
-        current_env: process.env.NODE_ENV,
-      });
     } catch (parseError) {
-      console.error('❌ [DATEV Organizations] Failed to parse token cookie:', parseError);
+
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -136,7 +123,7 @@ export async function GET(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-      console.log('⚠️ [DATEV Organizations] Tokens expired');
+
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -150,8 +137,6 @@ export async function GET(request: NextRequest) {
     const fallbackConfig = getDatevConfig();
     const apiBaseUrl = tokenData.api_base_url || fallbackConfig.apiBaseUrl;
 
-    console.log('� [DATEV Organizations] Testing API endpoints to find working one...');
-
     // Try each endpoint until we find one that works
     let lastError: any = null;
     let workingEndpoint: any = null;
@@ -159,8 +144,6 @@ export async function GET(request: NextRequest) {
 
     for (const endpoint of DATEV_ORGANIZATIONS_ENDPOINTS) {
       const apiUrl = `${apiBaseUrl}${endpoint.path}`;
-
-      console.log(`🧪 [DATEV Organizations] Testing: ${endpoint.name} (${endpoint.path})`);
 
       try {
         const response = await fetch(apiUrl, {
@@ -178,30 +161,14 @@ export async function GET(request: NextRequest) {
           responseData = endpoint.transform(rawData);
           workingEndpoint = endpoint;
 
-          console.log(`✅ [DATEV Organizations] SUCCESS: ${endpoint.name} works!`);
-          console.log(`📊 [DATEV Organizations] Data received:`, {
-            hasData: !!rawData,
-            dataType: typeof rawData,
-            transformedOrgs: responseData.organizations.length,
-            source: responseData.source,
-            type: responseData.type,
-          });
-
           break; // Success! Use this endpoint
         } else {
           const errorText = await response.text();
-          console.log(
-            `❌ [DATEV Organizations] ${endpoint.name} failed: ${response.status} ${response.statusText}`
-          );
 
           // Try to parse error for debugging
           try {
             const errorData = JSON.parse(errorText);
-            console.log(`📋 [DATEV Organizations] Error details:`, {
-              error: errorData.error,
-              description: errorData.error_description,
-              request_id: errorData.request_id,
-            });
+
           } catch (e) {
             // Ignore parse errors
           }
@@ -213,7 +180,7 @@ export async function GET(request: NextRequest) {
           };
         }
       } catch (fetchError) {
-        console.log(`❌ [DATEV Organizations] ${endpoint.name} fetch error:`, fetchError);
+
         lastError = {
           endpoint: endpoint.name,
           error: fetchError instanceof Error ? fetchError.message : 'Unknown fetch error',
@@ -223,23 +190,11 @@ export async function GET(request: NextRequest) {
 
     // If no endpoint worked, try UserInfo fallback
     if (!workingEndpoint || !responseData) {
-      console.log('⚠️ [DATEV Organizations] All endpoints failed, trying UserInfo fallback...');
 
       try {
         // Use EXACT SAME config as working UserInfo Test API
         const { DATEV_SANDBOX_CONFIG } = await import('@/lib/datev-config');
         const userInfoUrl = DATEV_SANDBOX_CONFIG.endpoints.userinfo;
-
-        console.log('🔧 [DATEV Organizations] Using working UserInfo endpoint:', userInfoUrl);
-        console.log('🔍 [DATEV Organizations] Fallback Token Debug:', {
-          hasAccessToken: !!tokenData.access_token,
-          tokenPrefix: tokenData.access_token?.substring(0, 10) + '...',
-          tokenLength: tokenData.access_token?.length,
-          environment: tokenData.environment,
-          client_id: tokenData.client_id,
-          api_base_url: tokenData.api_base_url,
-          connected_at: new Date(tokenData.connected_at).toISOString(),
-        });
 
         const userInfoResponse = await fetch(userInfoUrl, {
           method: 'GET',
@@ -253,7 +208,6 @@ export async function GET(request: NextRequest) {
 
         if (userInfoResponse.ok) {
           const userInfoData = await userInfoResponse.json();
-          console.log('✅ [DATEV Organizations] UserInfo fallback successful:', userInfoData);
 
           // Transform UserInfo to organization-like structure
           const fallbackOrganization = {
@@ -288,17 +242,13 @@ export async function GET(request: NextRequest) {
           });
         } else {
           const fallbackError = await userInfoResponse.text();
-          console.log('❌ [DATEV Organizations] UserInfo fallback failed:', {
-            status: userInfoResponse.status,
-            error: fallbackError,
-          });
+
         }
       } catch (fallbackError) {
-        console.error('❌ [DATEV Organizations] UserInfo fallback exception:', fallbackError);
+
       }
 
       // Final error if everything fails
-      console.error('❌ [DATEV Organizations] All endpoints failed. Last error:', lastError);
 
       return NextResponse.json(
         {
@@ -322,14 +272,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Success! Return the data from the working endpoint
-    console.log('🎉 [DATEV Organizations] Organization data fetched successfully:', {
-      workingEndpoint: workingEndpoint.name,
-      path: workingEndpoint.path,
-      orgCount: responseData.organizations.length,
-      source: responseData.source,
-      type: responseData.type,
-      apiUrl: `${apiBaseUrl}${workingEndpoint.path}`,
-    });
 
     return NextResponse.json({
       success: true,
@@ -350,7 +292,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ [DATEV Organizations] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -376,8 +318,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV Organizations] POST request for company:', company_id);
-
     // Redirect to GET method with query parameter
     const url = new URL(request.url);
     url.searchParams.set('companyId', company_id);
@@ -389,7 +329,7 @@ export async function POST(request: NextRequest) {
 
     return await GET(getRequest);
   } catch (error) {
-    console.error('❌ [DATEV Organizations] POST error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',

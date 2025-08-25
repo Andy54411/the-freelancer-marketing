@@ -104,11 +104,10 @@ export default function ReviewForm({
       const result = await submitReviewCallable(body);
       const resultData = result.data;
 
-      console.log('Bewertung erfolgreich gesendet:', resultData);
       setSuccess(true);
       setKommentar('');
     } catch (err: unknown) {
-      console.error('Fehler beim Senden der Bewertung:', err);
+
       let errorMessage = 'Bewertung konnte nicht gesendet werden.';
       if (err && typeof err === 'object' && 'code' in err && 'message' in err) {
         const errorObj = err as { code: string; message: string };

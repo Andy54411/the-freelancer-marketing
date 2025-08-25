@@ -2,7 +2,7 @@
  * DATEV Cookie Token Manager - DSGVO-konform
  * Verwaltet DATEV OAuth Tokens über sichere Browser-Cookies
  * Ersetzt die problematische Firestore-basierte Token-Speicherung
- * 
+ *
  * Datenschutz-Features nach sevdesk-Vorbild:
  * - Lokale Speicherung in Deutschland (Browser-basiert)
  * - Verschlüsselte Base64-Kodierung der Token-Daten
@@ -56,15 +56,8 @@ export class DatevCookieManager {
 
       document.cookie = cookieValue;
 
-      console.log('✅ [DATEV Cookie] Token data saved for company:', companyId, {
-        dataSize: encodedData.length,
-        expiresAt: new Date(tokenData.expires_at).toISOString(),
-        hasOrganization: !!tokenData.organization,
-        scope: tokenData.scope,
-        compliance: 'DSGVO-konform, Serverstandort Deutschland-äquivalent (Browser-lokal)'
-      });
     } catch (error) {
-      console.error('❌ [DATEV Cookie] Failed to save token data:', error);
+
       throw new Error('Failed to save DATEV token data');
     }
   }
@@ -85,16 +78,15 @@ export class DatevCookieManager {
 
           // Verify the token belongs to the correct company
           if (tokenData.company_id === companyId) {
-            console.log('✅ [DATEV Cookie] Token data loaded for company:', companyId);
+
             return tokenData;
           }
         }
       }
 
-      console.log('❌ [DATEV Cookie] No token data found for company:', companyId);
       return null;
     } catch (error) {
-      console.error('❌ [DATEV Cookie] Failed to load token data:', error);
+
       return null;
     }
   }
@@ -114,13 +106,6 @@ export class DatevCookieManager {
     const expiresAt = tokenData.expires_at;
     const isValid = expiresAt > now + 5 * 60 * 1000; // 5 minutes buffer
 
-    console.log('🔍 [DATEV Cookie] Token validity check:', {
-      companyId,
-      hasToken: !!tokenData.access_token,
-      expiresAt: new Date(expiresAt).toISOString(),
-      isValid,
-    });
-
     return isValid;
   }
 
@@ -134,9 +119,8 @@ export class DatevCookieManager {
       // Set cookie with past expiration date to delete it
       document.cookie = `${cookieName}=; Max-Age=0; Path=/; SameSite=Lax`;
 
-      console.log('✅ [DATEV Cookie] Token data cleared for company:', companyId);
     } catch (error) {
-      console.error('❌ [DATEV Cookie] Failed to clear token data:', error);
+
     }
   }
 
@@ -147,12 +131,11 @@ export class DatevCookieManager {
     const tokenData = this.getTokens(companyId);
 
     if (!tokenData || !tokenData.refresh_token) {
-      console.log('❌ [DATEV Cookie] No refresh token available for company:', companyId);
+
       return false;
     }
 
     try {
-      console.log('🔄 [DATEV Cookie] Refreshing tokens for company:', companyId);
 
       // Call refresh endpoint
       const response = await fetch('/api/datev/refresh-token', {
@@ -182,10 +165,8 @@ export class DatevCookieManager {
         organization: tokenData.organization,
       });
 
-      console.log('✅ [DATEV Cookie] Tokens refreshed successfully for company:', companyId);
       return true;
     } catch (error) {
-      console.error('❌ [DATEV Cookie] Token refresh failed:', error);
 
       // Clear invalid tokens
       this.clearTokens(companyId);

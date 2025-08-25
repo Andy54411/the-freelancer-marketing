@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.error('Fehler: GEMINI_API_KEY ist in den Umgebungsvariablen nicht gesetzt.');
+
       return NextResponse.json(
         { error: 'Die Server-Konfiguration ist unvollständig.' },
         { status: 500 }
@@ -91,22 +91,22 @@ export async function POST(request: NextRequest) {
       ? config.moderationRules
       : DEFAULT_MODERATION_RULES;
 
-    const systemContext = `Du bist ein KI-Moderator für die Taskilo-Plattform. 
+    const systemContext = `Du bist ein KI-Moderator für die Taskilo-Plattform.
     Deine Aufgabe ist es, Chat-Nachrichten auf Verstöße gegen die Plattform-Regeln zu prüfen.
-    
+
     PLATTFORM-REGELN:
     ${moderationRules.map((rule, index) => `${index + 1}. ${rule}`).join('\n')}
-    
+
     KONTEXT:
     - Chat-Typ: ${chatType}
     - Chat-ID: ${chatId}
     - Sender: ${senderId}
-    
+
     Analysiere die Nachricht und bewerte sie nach folgenden Kriterien:
     - Verstößt sie gegen eine der Regeln?
     - Wie schwerwiegend ist der Verstoß?
     - Welche Aktion sollte ergriffen werden?
-    
+
     Antworte im JSON-Format mit:
     {
       "isViolation": boolean,
@@ -143,7 +143,7 @@ Analysiere diese Nachricht sorgfältig und bewerte sie nach den Plattform-Regeln
     try {
       moderationResult = JSON.parse(text);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', text);
+
       // Fallback bei Parse-Fehler
       moderationResult = {
         isViolation: false,
@@ -189,7 +189,6 @@ Analysiere diese Nachricht sorgfältig und bewerte sie nach den Plattform-Regeln
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
-    console.error('Fehler in der Chat-Moderation API:', errorMessage);
 
     // Bei Fehlern: Erlauben, aber loggen
     return NextResponse.json({
@@ -216,6 +215,6 @@ async function logModerationEvent(event: {
       reviewed: false,
     });
   } catch (error) {
-    console.error('Failed to log moderation event:', error);
+
   }
 }

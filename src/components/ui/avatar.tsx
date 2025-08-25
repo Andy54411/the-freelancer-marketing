@@ -25,7 +25,10 @@ const AvatarImage = ({
     className={`h-full w-full object-cover rounded-full ${className}`}
     src={src}
     alt={alt}
-    onError={e => console.error(`Fehler beim Laden des Avatarbilds: ${src}`, e)}
+    onError={(e) => {
+      const target = e.target as HTMLImageElement;
+      target.style.display = 'none';
+    }}
     {...props}
   />
 );

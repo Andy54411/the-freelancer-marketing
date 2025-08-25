@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error) {
-      console.error('❌ Meta OAuth error:', error);
+
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/taskilo-advertising?error=oauth_failed&platform=meta`
       );
@@ -26,8 +26,6 @@ export async function GET(request: NextRequest) {
 
     const companyId = state;
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/multi-platform-advertising/auth/meta/callback`;
-
-    console.log('🔄 Exchanging Meta authorization code for tokens...');
 
     // Exchange code for access token
     const tokenResponse = await fetch('https://graph.facebook.com/v19.0/oauth/access_token', {
@@ -92,14 +90,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log('✅ Meta connection established successfully');
-
     // Redirect back to dashboard with success
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${companyId}/taskilo-advertising?success=connected&platform=meta`
     );
   } catch (error: any) {
-    console.error('❌ Meta OAuth callback error:', error);
 
     const companyId = new URL(request.url).searchParams.get('state');
     return NextResponse.redirect(

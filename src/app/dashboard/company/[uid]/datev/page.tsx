@@ -47,7 +47,7 @@ export default function DatevMainPage() {
       setLoading(true);
 
       if (!firebaseUser) {
-        console.warn('No Firebase user available for DATEV API call');
+
         setConnections([]);
         return;
       }
@@ -76,14 +76,14 @@ export default function DatevMainPage() {
         setConnections(datevConnections);
       } else if (response.status === 401 && (data.error === 'no_tokens' || data.error === 'invalid_token')) {
         // DATEV Authentication required - this is expected for fresh installations
-        console.log('DATEV authentication required - user needs to complete OAuth2 flow');
+
         setConnections([]);
       } else {
-        console.warn('DATEV API error:', response.status, data.error || 'Unknown error');
+
         setConnections([]);
       }
     } catch (error) {
-      console.error('Failed to load DATEV connections:', error);
+
       setConnections([]);
     } finally {
       setLoading(false);

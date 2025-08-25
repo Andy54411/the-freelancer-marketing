@@ -15,7 +15,7 @@ if (typeof window !== 'undefined') {
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
     const url = input.toString();
     if (url.includes('errors.stripe.com') || url.includes('sentry_key=')) {
-      console.log('🚫 Stripe Sentry request blocked completely:', url.slice(0, 100));
+
       return Promise.resolve(
         new Response('{"status":"blocked"}', {
           status: 200,
@@ -30,7 +30,7 @@ if (typeof window !== 'undefined') {
 const initializeStripe = () => {
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
   if (!publishableKey) {
-    console.error('FEHLER: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ist nicht gesetzt.');
+
     throw new Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ist nicht konfiguriert.');
   }
 

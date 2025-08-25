@@ -7,9 +7,7 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-    console.error(
-      'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/create-b2b-payment-intent.'
-    );
+
     return null;
   }
 
@@ -19,13 +17,10 @@ function getStripeInstance() {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('[API /create-b2b-payment-intent] B2B Payment Intent Anfrage empfangen.');
 
   const stripe = getStripeInstance();
   if (!stripe) {
-    console.error(
-      '[API /create-b2b-payment-intent] Stripe wurde nicht initialisiert, da STRIPE_SECRET_KEY fehlt.'
-    );
+
     return NextResponse.json(
       { error: 'Stripe-Konfiguration auf dem Server fehlt.' },
       { status: 500 }
@@ -34,10 +29,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    console.log(
-      '[API /create-b2b-payment-intent] B2B Request Body empfangen:',
-      JSON.stringify(body, null, 2)
-    );
 
     const {
       projectId,
@@ -55,16 +46,12 @@ export async function POST(request: NextRequest) {
 
     // B2B-spezifische Validierung
     if (!projectId || typeof projectId !== 'string') {
-      console.error('[API /create-b2b-payment-intent] Validierungsfehler: Ungültige Projekt-ID.', {
-        projectId,
-      });
+
       return NextResponse.json({ error: 'Ungültige Projekt-ID.' }, { status: 400 });
     }
 
     if (typeof amount !== 'number' || amount <= 0) {
-      console.error('[API /create-b2b-payment-intent] Validierungsfehler: Ungültiger Betrag.', {
-        amount,
-      });
+
       return NextResponse.json(
         { error: 'Ungültiger Betrag. Muss eine positive Zahl sein.' },
         { status: 400 }
@@ -76,10 +63,7 @@ export async function POST(request: NextRequest) {
       typeof providerStripeAccountId !== 'string' ||
       !providerStripeAccountId.startsWith('acct_')
     ) {
-      console.error(
-        '[API /create-b2b-payment-intent] Validierungsfehler: Ungültige Provider Stripe Account ID.',
-        { providerStripeAccountId }
-      );
+
       return NextResponse.json(
         { error: 'Ungültige Provider Stripe Account ID. Muss mit "acct_" beginnen.' },
         { status: 400 }
@@ -87,10 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!billingDetails?.companyName || !billingDetails?.address) {
-      console.error(
-        '[API /create-b2b-payment-intent] Validierungsfehler: Unvollständige B2B Rechnungsdetails.',
-        { billingDetails }
-      );
+
       return NextResponse.json(
         { error: 'Vollständige B2B Rechnungsdetails sind erforderlich.' },
         { status: 400 }
@@ -101,13 +82,6 @@ export async function POST(request: NextRequest) {
     const platformFeePercent = 0.05; // 5% für B2B
     const platformFeeAmount = Math.round(amount * platformFeePercent);
     const applicationFeeAmount = platformFeeAmount;
-
-    console.log('[API /create-b2b-payment-intent] B2B Platform Fee berechnet:', {
-      amount,
-      platformFeePercent,
-      platformFeeAmount,
-      applicationFeeAmount,
-    });
 
     // B2B Payment Intent erstellen mit Stripe Connect
     const paymentIntent = await stripe.paymentIntents.create(
@@ -160,13 +134,6 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    console.log('[API /create-b2b-payment-intent] B2B Payment Intent erfolgreich erstellt:', {
-      paymentIntentId: paymentIntent.id,
-      amount: paymentIntent.amount,
-      applicationFeeAmount: paymentIntent.application_fee_amount,
-      stripeAccount: providerStripeAccountId,
-    });
-
     // B2B Success Response
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
@@ -180,12 +147,6 @@ export async function POST(request: NextRequest) {
       message: 'B2B Payment Intent erfolgreich erstellt',
     });
   } catch (error: any) {
-    console.error('[API /create-b2b-payment-intent] Fehler bei B2B Payment Intent Erstellung:', {
-      error: error.message,
-      stack: error.stack,
-      stripeErrorCode: error.code,
-      stripeErrorType: error.type,
-    });
 
     // B2B-spezifische Fehlerbehandlung
     if (error.type === 'StripeInvalidRequestError') {

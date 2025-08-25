@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-      console.error('Auth-Fehler:', authError);
+
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
@@ -43,14 +43,6 @@ export async function POST(request: NextRequest) {
     if (!quoteData) {
       return NextResponse.json({ error: 'Angebotsanfrage-Daten nicht verfügbar' }, { status: 404 });
     }
-
-    console.log('🔍 Debug Quote Data:', {
-      quoteId,
-      userUid: decodedToken.uid,
-      availableFields: Object.keys(quoteData || {}),
-      proposalsCount: quoteData?.proposals?.length || 0,
-      customerUid: quoteData?.customerUid,
-    });
 
     // Berechtigungs-Check: Company muss in der assignedCompanies Liste sein oder es ist eine offene Anfrage
     // TODO: Prüfen welches Feld für die Berechtigung verwendet wird
@@ -133,23 +125,18 @@ export async function POST(request: NextRequest) {
                 estimatedDuration: response.timeline || 'Nicht angegeben',
               }
             );
-            console.log(`✅ Quote-Response-Notification gesendet für Quote ${quoteId}`);
 
             // Email Notification an Customer
             try {
-              console.log('🔍 Starting email notification process...');
 
               // Customer Email aus User-Daten holen
               const userDoc = await db.collection('users').doc(quoteData.customerUid).get();
-              console.log('📧 User doc exists:', userDoc.exists);
 
               if (userDoc.exists) {
                 const userData = userDoc.data();
                 const customerEmail = userData?.email;
-                console.log('📧 Customer email found:', customerEmail ? 'Yes' : 'No');
 
                 if (customerEmail) {
-                  console.log('📧 Attempting to send email to:', customerEmail);
 
                   // Import Email Service
                   const { emailService } = await import('@/lib/resend-email-service');
@@ -161,30 +148,22 @@ export async function POST(request: NextRequest) {
                     response.totalAmount || 0
                   );
 
-                  console.log('📧 Email result:', emailResult);
-
                   if (emailResult.success) {
-                    console.log(`✅ Neues-Angebot-Email gesendet an ${customerEmail}`);
+
                   } else {
-                    console.error(
-                      '❌ Fehler beim Senden der Neues-Angebot-Email:',
-                      emailResult.error
-                    );
+
                   }
                 } else {
-                  console.warn('⚠️ Keine E-Mail-Adresse für Customer gefunden');
+
                 }
               } else {
-                console.warn(
-                  '⚠️ User-Dokument nicht gefunden für customerUid:',
-                  quoteData.customerUid
-                );
+
               }
             } catch (emailError) {
-              console.error('❌ Fehler bei Neues-Angebot-Email:', emailError);
+
             }
           } catch (notificationError) {
-            console.error('❌ Fehler bei Quote-Response-Notification:', notificationError);
+
             // Notification-Fehler sollten den Response nicht blockieren
           }
         }
@@ -235,7 +214,7 @@ export async function POST(request: NextRequest) {
       }`,
     });
   } catch (error) {
-    console.error('Fehler beim Bearbeiten der Angebotsanfrage:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Bearbeiten der Angebotsanfrage' },
       { status: 500 }

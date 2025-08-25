@@ -177,7 +177,7 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
       //       ...parsed,
       //     };
       //   } catch (e) {
-      //     console.error('Fehler beim Parsen von registrationData aus localStorage:', e);
+      //
       //     localStorage.removeItem('registrationData');
       //   }
       // }

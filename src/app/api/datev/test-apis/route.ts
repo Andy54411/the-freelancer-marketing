@@ -40,11 +40,9 @@ export async function GET(request: NextRequest) {
       tests: {},
     };
 
-    console.log('Starting DATEV API tests...', { testType, baseUrl: config.baseUrl });
-
     // Test UserInfo API (always included)
     if (testType === 'all' || testType === 'userinfo') {
-      console.log('Testing UserInfo API...');
+
       const userInfoResult = await client.getUserInfo();
       testResults.tests.userinfo = {
         endpoint: '/userinfo',
@@ -55,7 +53,6 @@ export async function GET(request: NextRequest) {
 
     // Test Cashregister Import API
     if (testType === 'all' || testType === 'cashregister') {
-      console.log('Testing Cashregister Import API...');
 
       // Test getting formats
       const formatsResult = await client.getCashRegisterFormats();
@@ -85,7 +82,6 @@ export async function GET(request: NextRequest) {
 
     // Test Master Data: Master Clients API
     if (testType === 'all' || testType === 'master-clients') {
-      console.log('Testing Master Clients API...');
 
       // Get master clients
       const clientsResult = await client.getMasterClients({ limit: 10 });
@@ -126,7 +122,6 @@ export async function GET(request: NextRequest) {
 
     // Test Accounting: EXTF Files API
     if (testType === 'all' || testType === 'extf-files') {
-      console.log('Testing EXTF Files API...');
 
       const extfResult = await client.getExtfFiles({ limit: 10 });
       testResults.tests.extf_files = {
@@ -138,7 +133,6 @@ export async function GET(request: NextRequest) {
 
     // Test Accounting: DXSO Jobs API
     if (testType === 'all' || testType === 'dxso-jobs') {
-      console.log('Testing DXSO Jobs API...');
 
       const jobsResult = await client.getDxsoJobs({ limit: 10 });
       testResults.tests.dxso_jobs_list = {
@@ -173,7 +167,6 @@ export async function GET(request: NextRequest) {
 
     // Test Accounting: Documents API
     if (testType === 'all' || testType === 'documents') {
-      console.log('Testing Documents API...');
 
       const documentsResult = await client.getDocuments({ limit: 10 });
       testResults.tests.documents = {
@@ -196,11 +189,9 @@ export async function GET(request: NextRequest) {
       success_rate: totalTests > 0 ? (successfulTests / totalTests) * 100 : 0,
     };
 
-    console.log('DATEV API tests completed:', testResults.summary);
-
     return NextResponse.json(testResults);
   } catch (error) {
-    console.error('DATEV API test error:', error);
+
     return NextResponse.json(
       {
         error: 'test_error',
@@ -236,8 +227,6 @@ export async function POST(request: NextRequest) {
 
     const client = createDatevApiClient(access_token);
     const config = getDatevConfig();
-
-    console.log('Running custom DATEV API test:', { api, method, endpoint });
 
     // Make custom API request
     let result;
@@ -277,7 +266,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Custom DATEV API test error:', error);
+
     return NextResponse.json(
       {
         error: 'test_error',

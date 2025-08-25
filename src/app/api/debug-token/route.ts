@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         message: 'Token erfolgreich verifiziert',
       });
     } catch (error) {
-      console.error('[debug-token] Token verification failed:', error);
+
       return NextResponse.json(
         {
           success: false,
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       );
     }
   } catch (error) {
-    console.error('[debug-token] Fehler:', error);
+
     return NextResponse.json(
       {
         success: false,

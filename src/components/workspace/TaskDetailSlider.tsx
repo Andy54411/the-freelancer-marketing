@@ -264,7 +264,7 @@ export default function TaskDetailSlider({
       await onTaskUpdated(task.id, updates);
       setIsEditing(false);
     } catch (error) {
-      console.error('Error updating task:', error);
+
       setErrors({ general: 'Fehler beim Speichern der Aufgabe' });
     } finally {
       setLoading(false);
@@ -378,7 +378,7 @@ export default function TaskDetailSlider({
         };
         setActivities(prev => [activity, ...prev]);
       } catch (error) {
-        console.error('Fehler beim Upload der Datei:', error);
+
         setUploadProgress(prev => {
           const newProgress = { ...prev };
           delete newProgress[fileId];
@@ -421,7 +421,7 @@ export default function TaskDetailSlider({
       };
       setActivities(prev => [activity, ...prev]);
     } catch (error) {
-      console.error('Fehler beim Löschen der Datei:', error);
+
       setErrors(prev => ({ ...prev, delete: `Fehler beim Löschen von ${attachment.name}` }));
     }
   };
@@ -878,9 +878,9 @@ export default function TaskDetailSlider({
                           </Badge>
                         </div>
                       </div>
-                      
+
                       <div className="text-sm text-gray-600 mb-4">
-                        Erstelle professionellen Content mit unserem Rich-Text-Editor. 
+                        Erstelle professionellen Content mit unserem Rich-Text-Editor.
                         Perfekt für Blog-Posts, Social Media Content, Dokumentation und mehr.
                       </div>
 
@@ -935,7 +935,7 @@ export default function TaskDetailSlider({
                               <div className="text-xs text-gray-500">Strukturierter Artikel</div>
                             </div>
                           </Button>
-                          
+
                           <Button
                             variant="outline"
                             size="sm"
@@ -962,7 +962,7 @@ Was sollen deine Follower tun?</p>
                               <div className="text-xs text-gray-500">Post-Vorlage</div>
                             </div>
                           </Button>
-                          
+
                           <Button
                             variant="outline"
                             size="sm"
@@ -998,7 +998,7 @@ Was sollen deine Follower tun?</p>
                               <div className="text-xs text-gray-500">Kampagnen-Plan</div>
                             </div>
                           </Button>
-                          
+
                           <Button
                             variant="outline"
                             size="sm"

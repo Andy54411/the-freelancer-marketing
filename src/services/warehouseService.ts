@@ -115,7 +115,7 @@ export class WarehouseService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Erstellen des Warehouse Items:', error);
+
       throw error;
     }
   }
@@ -139,7 +139,7 @@ export class WarehouseService {
         } as WarehouseItem;
       });
     } catch (error) {
-      console.error('Fehler beim Abrufen der Warehouse Items:', error);
+
       throw error;
     }
   }
@@ -160,7 +160,7 @@ export class WarehouseService {
 
       return null;
     } catch (error) {
-      console.error('Fehler beim Abrufen des Warehouse Items:', error);
+
       throw error;
     }
   }
@@ -187,7 +187,7 @@ export class WarehouseService {
 
       return null;
     } catch (error) {
-      console.error('Fehler beim Abrufen des Warehouse Items per SKU:', error);
+
       throw error;
     }
   }
@@ -199,7 +199,7 @@ export class WarehouseService {
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Warehouse Items:', error);
+
       throw error;
     }
   }
@@ -219,7 +219,7 @@ export class WarehouseService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Hinzufügen der Stock Movement:', error);
+
       throw error;
     }
   }
@@ -248,7 +248,7 @@ export class WarehouseService {
         } as StockMovement;
       });
     } catch (error) {
-      console.error('Fehler beim Abrufen der Stock Movements:', error);
+
       throw error;
     }
   }
@@ -341,7 +341,7 @@ export class WarehouseService {
         return { success: true, errors: [] };
       });
     } catch (error) {
-      console.error('Fehler beim Verarbeiten der Delivery Note Stock:', error);
+
       return {
         success: false,
         errors: ['Unerwarteter Fehler beim Aktualisieren des Lagerbestands'],
@@ -377,7 +377,7 @@ export class WarehouseService {
         }
       }
     } catch (error) {
-      console.error('Fehler beim Prüfen der Low Stock Alerts:', error);
+
     }
   }
 
@@ -404,7 +404,7 @@ export class WarehouseService {
         });
       }
     } catch (error) {
-      console.error('Fehler beim Erstellen des Low Stock Alerts:', error);
+
     }
   }
 
@@ -424,7 +424,7 @@ export class WarehouseService {
         });
       }
     } catch (error) {
-      console.error('Fehler beim Auflösen des Low Stock Alerts:', error);
+
     }
   }
 
@@ -445,7 +445,7 @@ export class WarehouseService {
         resolvedAt: doc.data().resolvedAt?.toDate()?.toISOString(),
       })) as LowStockAlert[];
     } catch (error) {
-      console.error('Fehler beim Abrufen der Low Stock Alerts:', error);
+
       throw error;
     }
   }
@@ -496,7 +496,7 @@ export class WarehouseService {
         topMovingItems,
       };
     } catch (error) {
-      console.error('Fehler beim Erstellen des Stock Reports:', error);
+
       throw error;
     }
   }

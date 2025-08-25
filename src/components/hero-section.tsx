@@ -88,7 +88,7 @@ export default function HeroSection() {
 
         setNewCompanies(limitedCompanies);
       } catch (err) {
-        console.error('Fehler beim Laden der neuen Firmen:', err);
+
         // Bei Timeout oder anderen Fehlern - verwende leere Liste statt Fehlermeldung für bessere UX
         setNewCompanies([]);
       } finally {
@@ -155,7 +155,7 @@ export default function HeroSection() {
                   alt="Taskilo Hero"
                   loading="lazy"
                   onError={e => {
-                    console.error('Hero image failed to load');
+
                     e.currentTarget.style.display = 'none';
                   }}
                   style={{
@@ -214,10 +214,7 @@ export default function HeroSection() {
                                   style={{ objectFit: 'contain' }}
                                   loading="lazy"
                                   onError={e => {
-                                    console.warn(
-                                      `Failed to load image for ${company.name}:`,
-                                      imageUrl
-                                    );
+
                                     // Verstecke das Bild und den Container bei Fehlern
                                     const target = e.currentTarget as HTMLImageElement;
                                     const container = target.closest('.flex') as HTMLElement;

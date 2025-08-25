@@ -69,8 +69,7 @@ export default function VacationSettingsTab({
   const handleSaveSettings = async () => {
     // In Add-Mode (kein employee.id): Nur lokalen State updaten
     if (!employee.id) {
-      console.log('📝 Add-Modus: Speichere Urlaubseinstellungen nur lokal');
-      
+
       // Update das Employee-Objekt lokal
       const updatedVacation = {
         ...employee.vacation,
@@ -88,8 +87,7 @@ export default function VacationSettingsTab({
       onUpdate({ vacation: updatedVacation });
       setHasChanges(false);
       toast.success('Urlaubseinstellungen werden beim Speichern des Mitarbeiters mit gespeichert');
-      
-      console.log('✅ Urlaubseinstellungen lokal gespeichert für späteren DB-Speichervorgang');
+
       return;
     }
 
@@ -122,12 +120,8 @@ export default function VacationSettingsTab({
       setHasChanges(false);
       toast.success('Urlaubseinstellungen erfolgreich in der Datenbank gespeichert');
 
-      console.log(
-        '✅ Urlaubseinstellungen gespeichert in Firebase unter:',
-        `companies/${companyId}/employees/${employee.id}`
-      );
     } catch (error) {
-      console.error('Fehler beim Speichern der Urlaubseinstellungen:', error);
+
       toast.error('Fehler beim Speichern der Urlaubseinstellungen');
     } finally {
       setIsLoading(false);
@@ -503,7 +497,7 @@ export default function VacationSettingsTab({
                   usedDays: employee.vacation?.usedDays || 0,
                   remainingDays: availableDays - (employee.vacation?.usedDays || 0),
                 };
-                console.log('Urlaubsdaten Export:', data);
+
                 toast.success('Urlaubsdaten in Konsole exportiert');
               }}
             >

@@ -48,7 +48,7 @@ export async function sendChatMessage(
       throw new Error(data.error || 'Fehler beim Senden der Nachricht');
     }
   } catch (error) {
-    console.error('Chat API Fehler:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -89,7 +89,7 @@ export async function takeoverSession(
       throw new Error(data.error || 'Fehler bei der Übernahme');
     }
   } catch (error) {
-    console.error('Takeover API Fehler:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -126,7 +126,7 @@ export async function getSessionStatus(sessionId: string) {
       throw new Error(data.error || 'Fehler beim Abrufen des Status');
     }
   } catch (error) {
-    console.error('Status API Fehler:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -158,7 +158,7 @@ export async function getSupportDashboardData() {
       throw new Error(data.error || 'Fehler beim Laden der Dashboard-Daten');
     }
   } catch (error) {
-    console.error('Dashboard API Fehler:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -290,15 +290,15 @@ export function useSupportDashboard() {
 /*
 function ChatWidget({ sessionId, customerId, customerName, customerEmail }) {
     const { sessionStatus, sendMessage, isLoading, isHumanActive, sessionType } = useChatbot(
-        sessionId, 
-        customerId, 
-        customerName, 
+        sessionId,
+        customerId,
+        customerName,
         customerEmail
     );
 
     const handleSendMessage = async (message: string) => {
         const result = await sendMessage(message);
-        
+
         if (result.shouldEscalate) {
             // Zeige Eskalations-Nachricht
             alert(result.escalationMessage);
@@ -312,13 +312,13 @@ function ChatWidget({ sessionId, customerId, customerName, customerEmail }) {
                     👤 Sie chatten jetzt mit {sessionStatus?.supportAgentName} (Support-Team)
                 </div>
             )}
-            
+
             {sessionType === 'ai_with_escalation' && (
                 <div className="escalation-banner">
                     ⏰ Ein Support-Mitarbeiter wird sich in Kürze bei Ihnen melden
                 </div>
             )}
-            
+
             // ... Rest der Chat-UI
         </div>
     );
@@ -333,12 +333,12 @@ function SupportDashboard() {
     return (
         <div className="support-dashboard">
             <h1>Support Dashboard</h1>
-            
+
             <div className="summary">
                 <div>Eskalationen: {dashboardData?.summary?.totalEscalations}</div>
                 <div>Aktive Chats: {dashboardData?.summary?.totalActiveSessions}</div>
             </div>
-            
+
             <div className="escalations">
                 {dashboardData?.escalations?.map((escalation: any) => (
                     <div key={escalation.id} className="escalation-item">

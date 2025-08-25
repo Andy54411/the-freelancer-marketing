@@ -115,7 +115,7 @@ export const FormCheckboxGroup: React.FC<{
 }> = ({ value, onChange, options, maxSelections }) => {
   // Sicherheitsüberprüfung: stelle sicher, dass value ein Array ist
   if (!Array.isArray(value)) {
-    console.warn('FormCheckboxGroup: value is not an array, got:', typeof value, value);
+
   }
   const safeValue = Array.isArray(value) ? value : [];
 
@@ -195,15 +195,13 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
 
   const handleNextClick = () => {
     if (!isValid) {
-      console.log('Form is not valid, cannot proceed');
+
       return;
     }
 
-    console.log('Form is valid, proceeding to address page');
-
     // Speichere die Formulardaten im localStorage über setSubcategoryData
     if (formData && setSubcategoryData) {
-      console.log('Saving form data to localStorage:', formData);
+
       setSubcategoryData(formData);
     }
 
@@ -229,7 +227,7 @@ export const FormSubmitButton: React.FC<FormSubmitButtonProps> = ({
       // Setze die Beschreibung im Registration-Context
       if (description && description.trim()) {
         setDescription(description.trim());
-        console.log('Setting description from form data:', description.trim());
+
       }
     }
 

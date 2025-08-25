@@ -12,7 +12,7 @@ interface OnboardingWelcomeProps {
 }
 
 function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeProps) {
-  const { 
+  const {
     onboardingStatus
   } = useOnboarding();
 
@@ -65,7 +65,7 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
             Willkommen bei Taskilo Business
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Verwandeln Sie Ihr Unternehmen in eine professionelle Dienstleistungsmarke. 
+            Verwandeln Sie Ihr Unternehmen in eine professionelle Dienstleistungsmarke.
             Unser 5-Schritte-Onboarding führt Sie durch alle wichtigen Einstellungen für einen erfolgreichen Start.
           </p>
         </div>
@@ -142,10 +142,10 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
             <div className="bg-white rounded-lg p-8 shadow-sm border">
               <h3 className="text-2xl font-bold mb-4">Bereit für den nächsten Schritt?</h3>
               <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                Das Onboarding dauert etwa 45 Minuten und kann jederzeit unterbrochen und später fortgesetzt werden. 
+                Das Onboarding dauert etwa 45 Minuten und kann jederzeit unterbrochen und später fortgesetzt werden.
                 Ihre Daten werden automatisch gespeichert.
               </p>
-              <Button 
+              <Button
                 size="lg"
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white px-8 py-3 text-lg"
                 onClick={onStartOnboarding}
@@ -168,7 +168,7 @@ function OnboardingWelcome({ companyUid, onStartOnboarding }: OnboardingWelcomeP
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button 
+                  <Button
                     variant="outline"
                     className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                     onClick={onStartOnboarding}

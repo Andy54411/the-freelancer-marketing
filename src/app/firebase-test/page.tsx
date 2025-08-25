@@ -26,8 +26,6 @@ export default function FirebaseTestPage() {
     // Test Firebase Auth
     if (auth) {
       setStatus('✅ Firebase Auth initialized');
-      console.log('🔥 Firebase Auth Object:', auth);
-      console.log('🔥 Current User:', auth.currentUser);
 
       // DON'T test login automatically - just check if auth works
       setAuthTest('Ready to test - Auth object exists');
@@ -49,7 +47,7 @@ export default function FirebaseTestPage() {
       setAuthTest(`✅ Login successful: ${result.user.uid}`);
     } catch (error: any) {
       setAuthTest(`❌ Login failed: ${error.code} - ${error.message}`);
-      console.error('🚨 Full error:', error);
+
     }
   };
 

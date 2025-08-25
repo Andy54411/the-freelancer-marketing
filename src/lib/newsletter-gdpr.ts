@@ -102,16 +102,9 @@ export async function addNewsletterSubscriber(
 
     const docRef = await admin.firestore().collection('newsletterSubscribers').add(subscriberData);
 
-    console.log('DSGVO Newsletter-Abonnent hinzugefügt:', {
-      email,
-      subscriberId: docRef.id,
-      source: options.source,
-      consentGiven: options.consentGiven,
-    });
-
     return { success: true, subscriberId: docRef.id };
   } catch (error) {
-    console.error('Fehler beim Newsletter-Abonnement:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -138,7 +131,7 @@ export async function getActiveSubscribers(): Promise<NewsletterSubscriber[]> {
       dataRetentionUntil: doc.data().dataRetentionUntil?.toDate(),
     })) as NewsletterSubscriber[];
   } catch (error) {
-    console.error('Fehler beim Abrufen der Abonnenten:', error);
+
     return [];
   }
 }
@@ -157,7 +150,7 @@ export function addUnsubscribeLinkToHtml(
       <p>
         <a href="${unsubscribeUrl}" style="color: #666; text-decoration: underline;">
           Vom Newsletter abmelden
-        </a> | 
+        </a> |
         <a href="mailto:support@taskilo.de" style="color: #666; text-decoration: underline;">
           Kontakt
         </a>
@@ -200,11 +193,9 @@ export async function cleanupExpiredSubscriberData(): Promise<{ deletedCount: nu
 
     await batch.commit();
 
-    console.log(`DSGVO Cleanup: ${expiredQuery.docs.length} abgelaufene Newsletter-Daten gelöscht`);
-
     return { deletedCount: expiredQuery.docs.length };
   } catch (error) {
-    console.error('Fehler bei DSGVO Datenbereinigung:', error);
+
     return { deletedCount: 0 };
   }
 }

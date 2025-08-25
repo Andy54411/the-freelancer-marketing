@@ -19,16 +19,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'accountId ist erforderlich' }, { status: 400 });
     }
 
-    console.log(`[STRIPE-TRANSFERS] Checking transfers for account: ${stripeAccountId}`);
-
     // 1. Alle Transfers zu diesem Account
     const transfers = await stripe.transfers.list({
       destination: stripeAccountId,
       limit: limit,
       expand: ['data.destination_payment'],
     });
-
-    console.log(`[STRIPE-TRANSFERS] Found ${transfers.data.length} transfers`);
 
     // 2. Payment Intents mit Charges expandiert
     const paymentIntents = await stripe.paymentIntents.list({
@@ -40,10 +36,6 @@ export async function GET(request: NextRequest) {
     const relevantPaymentIntents = orderId
       ? paymentIntents.data.filter(pi => pi.metadata?.orderId === orderId)
       : paymentIntents.data;
-
-    console.log(
-      `[STRIPE-TRANSFERS] Found ${relevantPaymentIntents.length} relevant payment intents`
-    );
 
     // 3. Balance Transactions für detaillierte Historie
     const balanceTransactions = await stripe.balanceTransactions.list({
@@ -88,7 +80,7 @@ export async function GET(request: NextRequest) {
             }
           }
         } catch (error) {
-          console.warn(`[STRIPE-TRANSFERS] Could not get transfer for PI ${pi.id}:`, error);
+
         }
 
         return {
@@ -134,7 +126,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error: any) {
-    console.error('[STRIPE-TRANSFERS] Error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Stripe Transfers',

@@ -23,11 +23,6 @@ export function RoleBasedRedirect() {
 
     // Rolle "firma" sollte immer auf company-Dashboard sein
     if (user.role === 'firma' && !isOnCompanyRoute) {
-      console.log('🔄 [RoleBasedRedirect] Correcting route for firma:', {
-        currentPath: pathname,
-        correctPath: `/dashboard/company/${user.uid}`,
-        userRole: user.role,
-      });
 
       // Nur wenn der User auf /dashboard ist, leite direkt weiter
       if (pathname === '/dashboard') {
@@ -54,11 +49,6 @@ export function RoleBasedRedirect() {
 
     // Rolle "kunde" sollte auf user-Dashboard sein
     if (user.role === 'kunde' && !isOnUserRoute) {
-      console.log('🔄 [RoleBasedRedirect] Correcting route for kunde:', {
-        currentPath: pathname,
-        correctPath: `/dashboard/user/${user.uid}`,
-        userRole: user.role,
-      });
 
       // Nur wenn der User auf /dashboard ist, leite direkt weiter
       if (pathname === '/dashboard') {
@@ -85,11 +75,6 @@ export function RoleBasedRedirect() {
 
     // Master/Support sollten auf admin-Dashboard sein
     if ((user.role === 'master' || user.role === 'support') && !isOnAdminRoute) {
-      console.log('🔄 [RoleBasedRedirect] Correcting route for admin:', {
-        currentPath: pathname,
-        correctPath: '/dashboard/admin',
-        userRole: user.role,
-      });
 
       router.replace('/dashboard/admin');
       return;

@@ -19,15 +19,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV DXSO] Fetching accounting jobs for company:', companyId);
-
     // Get tokens from HTTP-only cookies
     const cookieStore = await cookies();
     const cookieName = `datev_tokens_${companyId}`;
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV DXSO] No token cookie found');
+
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -43,7 +41,7 @@ export async function GET(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-      console.error('❌ [DATEV DXSO] Failed to parse token cookie:', parseError);
+
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -55,7 +53,7 @@ export async function GET(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-      console.log('⚠️ [DATEV DXSO] Tokens expired');
+
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -72,8 +70,6 @@ export async function GET(request: NextRequest) {
       apiUrl += `/${jobId}`;
     }
 
-    console.log('🌐 [DATEV DXSO] Fetching DXSO jobs...', { jobId });
-
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -84,11 +80,6 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [DATEV DXSO] API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
 
       // Handle specific token errors that require clearing tokens
       if (response.status === 401) {
@@ -109,7 +100,6 @@ export async function GET(request: NextRequest) {
               errorDescription.includes('Token malformed') ||
               errorDescription.includes('invalid_token')))
         ) {
-          console.warn('⚠️ [DATEV DXSO] Invalid token detected, clearing cookie...');
 
           // Clear the invalid token cookie
           const response = NextResponse.json(
@@ -148,18 +138,13 @@ export async function GET(request: NextRequest) {
 
     const dxsoJobs = await response.json();
 
-    console.log('✅ [DATEV DXSO] Jobs fetched successfully:', {
-      hasData: !!dxsoJobs,
-      jobCount: Array.isArray(dxsoJobs) ? dxsoJobs.length : 'single job',
-    });
-
     return NextResponse.json({
       success: true,
       data: dxsoJobs,
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('❌ [DATEV DXSO] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -193,15 +178,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV DXSO] Creating DXSO job for company:', finalCompanyId);
-
     // Get tokens from HTTP-only cookies
     const cookieStore = await cookies();
     const cookieName = `datev_tokens_${finalCompanyId}`;
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV DXSO] No token cookie found');
+
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -217,7 +200,7 @@ export async function POST(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-      console.error('❌ [DATEV DXSO] Failed to parse token cookie:', parseError);
+
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -229,7 +212,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-      console.log('⚠️ [DATEV DXSO] Tokens expired');
+
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -241,7 +224,6 @@ export async function POST(request: NextRequest) {
 
     // Create DXSO job via DATEV API
     const config = getDatevConfig();
-    console.log('🌐 [DATEV DXSO] Creating DXSO job...');
 
     const response = await fetch(`${config.apiBaseUrl}/accounting/v2.0/dxso-jobs`, {
       method: 'POST',
@@ -255,11 +237,6 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [DATEV DXSO] API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
 
       return NextResponse.json(
         {
@@ -273,18 +250,13 @@ export async function POST(request: NextRequest) {
 
     const jobResult = await response.json();
 
-    console.log('✅ [DATEV DXSO] Job created successfully:', {
-      hasData: !!jobResult,
-      jobId: jobResult?.jobId || 'unknown',
-    });
-
     return NextResponse.json({
       success: true,
       data: jobResult,
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('❌ [DATEV DXSO] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',

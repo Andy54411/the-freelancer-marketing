@@ -119,7 +119,7 @@ export default function StornoInvoice({ invoice, onStornoCreated }: StornoInvoic
       setShowConfirmDialog(false);
       setStornoReason('');
     } catch (error) {
-      console.error('Fehler beim Erstellen der Storno-Rechnung:', error);
+
       toast.error('Fehler beim Erstellen der Storno-Rechnung');
     } finally {
       setIsCreatingStorno(false);

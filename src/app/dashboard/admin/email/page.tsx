@@ -88,7 +88,7 @@ const cleanTextContent = (content: string): string => {
 
     return textContent.trim();
   } catch (error) {
-    console.warn('Fallback: Nur manuelle Bereinigung:', error);
+
     // Fallback: Einfache Tag-Entfernung falls html-to-text fehlschlägt
     return content.replace(/<[^>]*>/g, '').trim();
   }
@@ -140,7 +140,7 @@ export default function EmailAdminPage() {
 
   // Load real WorkMail data
   useEffect(() => {
-    console.log('🔄 useEffect executed - loading WorkMail emails...');
+
     loadWorkmailEmails();
     loadEmailTemplates();
   }, []);
@@ -148,7 +148,6 @@ export default function EmailAdminPage() {
   const loadWorkmailEmails = async () => {
     try {
       setLoading(true);
-      console.log('📧 Loading WorkMail emails...');
 
       const response = await fetch('/api/admin/workmail/emails?folder=INBOX&limit=50', {
         method: 'GET',
@@ -160,19 +159,17 @@ export default function EmailAdminPage() {
       }
 
       const result = await response.json();
-      console.log('📧 WorkMail API Response:', result);
 
       if (result.success && result.data?.emails) {
-        console.log('✅ Loaded WorkMail emails:', result.data.emails.length);
-        console.log('📧 Setting WorkMail emails to state:', result.data.emails);
+
         setReceivedEmails(result.data.emails);
       } else {
-        console.error('❌ Failed to load WorkMail emails:', result.error);
+
         // Fallback to demo data if WorkMail fails
         loadDemoEmails();
       }
     } catch (error) {
-      console.error('❌ Error loading WorkMail emails:', error);
+
       // Fallback to demo data if WorkMail fails
       loadDemoEmails();
     } finally {
@@ -224,7 +221,7 @@ export default function EmailAdminPage() {
 
   const loadDemoEmails = () => {
     // Fallback Demo-Daten
-    console.log('🚨 Loading DEMO emails (fallback)');
+
     setReceivedEmails([
       {
         id: 'received_1',
@@ -322,8 +319,6 @@ export default function EmailAdminPage() {
         // Entferne die E-Mail aus dem Posteingang
         setReceivedEmails(prev => prev.filter(email => email.id !== emailId));
 
-        console.log(`✅ E-Mail "${emailToArchive.subject}" erfolgreich archiviert`);
-
         // API-Call für echte Archivierung (WorkMail IMAP MOVE-Operation)
         await fetch('/api/admin/workmail/emails/archive', {
           method: 'POST',
@@ -333,7 +328,7 @@ export default function EmailAdminPage() {
           credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToArchive.messageId }),
         }).catch(err => {
-          console.warn('⚠️ Archiv-API-Call fehlgeschlagen:', err);
+
         });
       }
 
@@ -341,7 +336,7 @@ export default function EmailAdminPage() {
       setShowEmailDetail(false);
       setSelectedEmail(null);
     } catch (error) {
-      console.error('❌ Fehler beim Archivieren:', error);
+
     }
   };
 
@@ -360,19 +355,19 @@ export default function EmailAdminPage() {
   };
 
   const handleReplyAllToEmail = (email: ReceivedEmail) => {
-    console.log('Allen antworten für E-Mail:', email.subject);
+
     // Implementierung für "Allen antworten"
     // Hier würde normalerweise ein Reply-All-Dialog geöffnet werden
   };
 
   const handleForwardEmail = (email: ReceivedEmail) => {
-    console.log('Weiterleiten E-Mail:', email.subject);
+
     // Implementierung für "Weiterleiten"
     // Hier würde normalerweise ein Forward-Dialog geöffnet werden
   };
 
   const handleFavoriteEmail = async (emailId: string) => {
-    console.log('Favorit markieren E-Mail ID:', emailId);
+
     // Implementierung für "Favorit"
     // Hier würde normalerweise der Favorit-Status in der API aktualisiert werden
     setReceivedEmails(prev =>
@@ -410,8 +405,6 @@ export default function EmailAdminPage() {
           },
         ]);
 
-        console.log(`✅ E-Mail "${emailToRestore.subject}" erfolgreich wiederhergestellt`);
-
         // API-Call für echte Wiederherstellung
         await fetch('/api/admin/workmail/emails/restore', {
           method: 'POST',
@@ -421,11 +414,11 @@ export default function EmailAdminPage() {
           credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToRestore.messageId }),
         }).catch(err => {
-          console.warn('⚠️ Wiederherstellungs-API-Call fehlgeschlagen:', err);
+
         });
       }
     } catch (error) {
-      console.error('❌ Fehler beim Wiederherstellen:', error);
+
     }
   };
 
@@ -436,8 +429,6 @@ export default function EmailAdminPage() {
         // Entferne aus Archiv
         setArchivedEmails(prev => prev.filter(email => email.id !== emailId));
 
-        console.log(`✅ E-Mail "${emailToDelete.subject}" endgültig gelöscht`);
-
         // API-Call für echtes Löschen
         await fetch('/api/admin/workmail/emails/delete', {
           method: 'DELETE',
@@ -447,11 +438,11 @@ export default function EmailAdminPage() {
           credentials: 'include',
           body: JSON.stringify({ emailId, messageId: emailToDelete.messageId }),
         }).catch(err => {
-          console.warn('⚠️ Lösch-API-Call fehlgeschlagen:', err);
+
         });
       }
     } catch (error) {
-      console.error('❌ Fehler beim Löschen:', error);
+
     }
   };
 
@@ -525,7 +516,7 @@ export default function EmailAdminPage() {
         alert(`E-Mail Fehler: ${result.error}`);
       }
     } catch (error) {
-      console.error('E-Mail error:', error);
+
       alert('Fehler beim E-Mail-Versand');
     } finally {
       setLoading(false);
@@ -556,7 +547,7 @@ export default function EmailAdminPage() {
       });
       alert('Template erfolgreich gespeichert!');
     } catch (error) {
-      console.error('Error saving template:', error);
+
       alert('Fehler beim Speichern des Templates');
     } finally {
       setLoading(false);
@@ -807,7 +798,7 @@ export default function EmailAdminPage() {
                               alert(`E-Mail Test fehlgeschlagen: ${result.error}`);
                             }
                           } catch (error) {
-                            console.error('E-Mail test error:', error);
+
                             alert('Fehler beim E-Mail Test');
                           } finally {
                             setLoading(false);
@@ -1120,9 +1111,7 @@ export default function EmailAdminPage() {
                 <SentEmailsView
                   refreshTrigger={sentEmailsRefreshTrigger}
                   onEmailClick={email => {
-                    console.log('🔍 [DEBUG] Sent email clicked:', email);
-                    console.log('🔍 [DEBUG] Setting selectedSentEmail:', email);
-                    console.log('🔍 [DEBUG] Setting showSentEmailDetail to true');
+
                     setSelectedSentEmail(email);
                     setShowSentEmailDetail(true);
                   }}
@@ -1131,32 +1120,24 @@ export default function EmailAdminPage() {
 
               {/* Sent Email Detail View */}
               {(() => {
-                console.log('🔍 [DEBUG] Detail View Check:', {
-                  activeTab,
-                  showSentEmailDetail,
-                  hasSelectedSentEmail: !!selectedSentEmail,
-                  condition: activeTab === 'sent' && showSentEmailDetail && selectedSentEmail,
-                });
+
                 return null;
               })()}
               {activeTab === 'sent' && showSentEmailDetail && selectedSentEmail && (
                 <div>
                   {(() => {
-                    console.log('🔍 [DEBUG] Rendering SentEmailDetailView:', {
-                      showSentEmailDetail,
-                      selectedSentEmail,
-                    });
+
                     return null;
                   })()}
                   <SentEmailDetailView
                     email={selectedSentEmail}
                     onBack={() => {
-                      console.log('🔍 [DEBUG] Back button clicked');
+
                       setShowSentEmailDetail(false);
                       setSelectedSentEmail(null);
                     }}
                     onDelete={() => {
-                      console.log('🔍 [DEBUG] Delete button clicked');
+
                       // Trigger refresh of sent emails after deletion
                       setSentEmailsRefreshTrigger(prev => prev + 1);
                       setShowSentEmailDetail(false);
@@ -1324,7 +1305,7 @@ export default function EmailAdminPage() {
                                   alert(`SSO Fehler: ${result.error}`);
                                 }
                               } catch (error) {
-                                console.error('SSO check error:', error);
+
                                 alert('Fehler beim SSO-Check');
                               }
                             }}
@@ -1355,7 +1336,7 @@ export default function EmailAdminPage() {
                                   alert(`Fehler: ${result.error}`);
                                 }
                               } catch (error) {
-                                console.error('WorkMail interface error:', error);
+
                                 alert('Fehler beim Öffnen des WorkMail Interface');
                               }
                             }}

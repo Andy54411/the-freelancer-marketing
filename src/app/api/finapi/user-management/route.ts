@@ -29,8 +29,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('👤 Creating enhanced finAPI user:', userId);
-
     // Test credentials first
     const credentialTest = await finapiService.testCredentials();
     if (!credentialTest.success) {
@@ -57,8 +55,6 @@ export async function POST(req: NextRequest) {
 
       // Get user access token to verify creation
       const userToken = await finapiService.getUserToken(userId, password);
-
-      console.log('✅ Enhanced finAPI user created:', user.id);
 
       return NextResponse.json({
         success: true,
@@ -127,7 +123,7 @@ export async function POST(req: NextRequest) {
       throw createError;
     }
   } catch (error) {
-    console.error('❌ Error in user management:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -152,8 +148,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log('👤 Getting finAPI user details for:', userId);
-
     // Get user token first
     const userToken = await finapiService.getUserToken(userId, password);
 
@@ -173,8 +167,6 @@ export async function GET(req: NextRequest) {
     }
 
     const userData = await response.json();
-
-    console.log('✅ finAPI user details retrieved');
 
     return NextResponse.json({
       success: true,
@@ -197,7 +189,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Error getting user details:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -219,8 +211,6 @@ export async function PATCH(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    console.log('👤 Updating finAPI user:', userId);
 
     // Validate updates
     const allowedUpdates = ['email', 'phone', 'isAutoUpdateEnabled'];
@@ -266,8 +256,6 @@ export async function PATCH(req: NextRequest) {
 
     const updatedUser = await response.json();
 
-    console.log('✅ finAPI user updated successfully');
-
     return NextResponse.json({
       success: true,
       message: 'User updated successfully',
@@ -284,7 +272,7 @@ export async function PATCH(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Error updating user:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -320,8 +308,6 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    console.log('⚠️ DELETING finAPI user (DANGEROUS OPERATION):', userId);
-
     // Get user token first
     const userToken = await finapiService.getUserToken(userId, password);
 
@@ -340,8 +326,6 @@ export async function DELETE(req: NextRequest) {
       throw new Error(`Failed to delete user: ${error}`);
     }
 
-    console.log('🗑️ finAPI user deleted successfully (THIS CANNOT BE UNDONE!)');
-
     return NextResponse.json({
       success: true,
       message: 'User deleted successfully',
@@ -354,7 +338,7 @@ export async function DELETE(req: NextRequest) {
       notice: 'All bank connections, accounts, and transactions for this user have been removed',
     });
   } catch (error) {
-    console.error('❌ Error deleting user:', error);
+
     return NextResponse.json(
       {
         success: false,

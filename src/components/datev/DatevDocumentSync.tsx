@@ -72,7 +72,6 @@ export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
       }
 
       // Load organization - Organizations not needed for Taskilo
-      console.log('✅ DATEV connection verified via UserInfo API');
 
       // Mock document data - in production, load from your backend
       setDocuments([
@@ -109,7 +108,7 @@ export function DatevDocumentSync({ companyId }: DatevDocumentSyncProps) {
         },
       ]);
     } catch (error) {
-      console.error('Fehler beim Laden der Dokument-Daten:', error);
+
       toast.error('Fehler beim Laden der Dokument-Daten');
     } finally {
       setLoading(false);

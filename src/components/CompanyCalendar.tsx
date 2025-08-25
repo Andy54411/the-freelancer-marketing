@@ -135,7 +135,6 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
           { providerId: companyUid },
           'GET'
         );
-        console.log('[CompanyCalendar] Rohdaten vom Backend erhalten:', orderResult.orders);
 
         // KORREKTUR: Aufträge filtern, die im Kalender angezeigt werden sollen (AKTIV, IN BEARBEITUNG, ABGESCHLOSSEN)
         // und sicherstellen, dass sie ein Startdatum haben.
@@ -145,13 +144,10 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
           );
           const hasStartDate = !!order.jobDateFrom;
           if (!hasValidStatus || !hasStartDate) {
-            console.log(
-              `[CompanyCalendar] Auftrag ${order.id} wird herausgefiltert. Grund: Status OK? ${hasValidStatus}, Startdatum vorhanden? ${hasStartDate}`
-            );
+
           }
           return hasValidStatus && hasStartDate;
         });
-        console.log('[CompanyCalendar] Relevante, gefilterte Aufträge:', relevantOrders);
 
         // Projekte aus Firebase laden
         const projectsQuery = query(
@@ -177,8 +173,6 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
             });
           }
         });
-
-        console.log('[CompanyCalendar] Geladene Projekte:', loadedProjects);
 
         // Rechnungen aus Firebase laden
         const invoicesQuery = query(
@@ -215,8 +209,6 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
           }
         });
 
-        console.log('[CompanyCalendar] Geladene Rechnungen:', loadedInvoices);
-
         setAllOrders(relevantOrders);
         setAllProjects(loadedProjects);
         setAllInvoices(loadedInvoices);
@@ -232,12 +224,6 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
 
   // Effekt zum Erstellen der Kalender-Events, wenn sich die Aufträge, Projekte, Rechnungen oder die Auswahl ändern
   useEffect(() => {
-    console.log(
-      '[CompanyCalendar] Erstelle Kalender-Events aus allOrders, allProjects und allInvoices:',
-      allOrders,
-      allProjects,
-      allInvoices
-    );
 
     // Events für Aufträge erstellen
     const orderEvents = allOrders.map(order => {
@@ -271,13 +257,6 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         ...colors,
       };
 
-      console.log(`[CompanyCalendar] Erstelle Event für Auftrag ${order.id}:`, {
-        title: eventObject.title,
-        start: eventObject.start,
-        end: eventObject.end,
-        allDay: eventObject.allDay,
-      });
-
       return eventObject;
     });
 
@@ -307,13 +286,6 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         },
         ...colors,
       };
-
-      console.log(`[CompanyCalendar] Erstelle Event für Projekt ${project.id}:`, {
-        title: eventObject.title,
-        start: eventObject.start,
-        end: eventObject.end,
-        allDay: eventObject.allDay,
-      });
 
       return eventObject;
     });
@@ -354,19 +326,12 @@ export default function CompanyCalendar({ companyUid, selectedOrderId }: Company
         ...colors,
       };
 
-      console.log(`[CompanyCalendar] Erstelle Event für Rechnung ${invoice.id}:`, {
-        title: eventObject.title,
-        start: eventObject.start,
-        status: invoice.status,
-        dueDate: invoice.dueDate,
-      });
-
       return eventObject;
     });
 
     // Alle Events kombinieren
     const calendarEvents = [...orderEvents, ...projectEvents, ...invoiceEvents];
-    console.log('[CompanyCalendar] Finales Array von Kalender-Events:', calendarEvents);
+
     setEvents(calendarEvents);
   }, [allOrders, allProjects, allInvoices, selectedOrderId, companyUid]);
 

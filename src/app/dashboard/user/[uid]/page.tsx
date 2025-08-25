@@ -142,7 +142,7 @@ export default function UserDashboardPage() {
 
       const ordersData = Array.from(allOrderDocs.values()).map(doc => {
         const data = doc.data() as any; // Temporär any verwenden für Debugging
-        console.log('Order data from Firestore:', data); // Debug-Log hinzufügen
+         // Debug-Log hinzufügen
 
         // Mapping der korrekten Felder
         return {
@@ -186,7 +186,7 @@ export default function UserDashboardPage() {
                 providerNameCache.set(providerId, name);
               }
             } catch (error) {
-              console.warn(`Failed to fetch provider ${providerId}:`, error);
+
               providerNameCache.set(providerId, 'Unbekannter Anbieter');
             }
           })
@@ -208,7 +208,7 @@ export default function UserDashboardPage() {
       setUserOrders(visibleOrders);
       setLoadingOrders(false);
     } catch (err: any) {
-      console.error('Fehler beim Laden des Benutzerprofils oder der Daten:', err);
+
       setError(
         `Fehler beim Laden der Daten: ${err.message || 'Ein unbekannter Fehler ist aufgetreten.'}`
       );
@@ -242,7 +242,7 @@ export default function UserDashboardPage() {
     const setupIntentClientSecret = urlParams.get('setup_intent_client_secret');
 
     if (setupRedirect === 'true' && setupIntentClientSecret) {
-      console.log(PAGE_LOG, 'Stripe SetupIntent Redirect erkannt. Status:', redirectStatus);
+
       if (redirectStatus === 'succeeded') {
         toast.success('Zahlungsmethode erfolgreich hinzugefügt!');
         handlePaymentMethodAdded(); // Lade Zahlungsmethoden neu
@@ -284,7 +284,7 @@ export default function UserDashboardPage() {
       setClientSecretForSetupIntent(result.data.clientSecret);
       setShowAddPaymentMethodModal(true);
     } catch (err: any) {
-      console.error('Fehler beim Abrufen des SetupIntent Client Secrets:', err);
+
       setSetupIntentError(
         `Fehler beim Vorbereiten der Zahlungsmethode: ${err.message || 'Unbekannter Fehler'}`
       ); // Typ für msg wird in der Komponente selbst behandelt
@@ -294,9 +294,7 @@ export default function UserDashboardPage() {
   };
 
   const handlePaymentMethodAdded = async () => {
-    console.log(
-      'Zahlungsmethode erfolgreich hinzugefügt (Webhook sollte Firestore aktualisieren). Lade neu...'
-    );
+
     setShowAddPaymentMethodModal(false);
     setClientSecretForSetupIntent(null);
     setSetupIntentError(null);
@@ -311,7 +309,7 @@ export default function UserDashboardPage() {
         }));
       }
     } catch (err: any) {
-      console.error('Fehler beim Neuladen der Zahlungsmethoden nach Hinzufügen:', err);
+
       setError(
         `Fehler beim Aktualisieren der Zahlungsmethoden: ${err.message || 'Unbekannter Fehler'}`
       );
@@ -337,7 +335,7 @@ export default function UserDashboardPage() {
           );
         }
       } catch (err: any) {
-        console.error('Fehler beim Entfernen der Zahlungsmethode:', err);
+
         alert(`Fehler beim Entfernen: ${err.message || 'Unbekannter Fehler'}`);
         setError(
           `Fehler beim Entfernen der Zahlungsmethode: ${err.message || 'Unbekannter Fehler'}`
@@ -375,7 +373,7 @@ export default function UserDashboardPage() {
       setEditingAddress(null);
       alert('Adresse erfolgreich hinzugefügt.');
     } catch (err: any) {
-      console.error('Fehler beim Hinzufügen der Adresse:', err);
+
       setError(`Fehler beim Hinzufügen der Adresse: ${err.message || 'Unbekannter Fehler'}`);
     }
   };
@@ -409,7 +407,7 @@ export default function UserDashboardPage() {
       setEditingAddress(null);
       alert('Adresse erfolgreich aktualisiert.');
     } catch (err: any) {
-      console.error('Fehler beim Aktualisieren der Adresse:', err);
+
       setError(`Fehler beim Aktualisieren der Adresse: ${err.message || 'Unbekannter Fehler'}`);
     }
   };
@@ -422,7 +420,7 @@ export default function UserDashboardPage() {
         const addressToDelete = userProfile.savedAddresses?.find(addr => addr.id === addressId);
 
         if (!addressToDelete) {
-          console.warn('Versuch, nicht existierende Adresse zu löschen:', addressId);
+
           return;
         }
 
@@ -436,7 +434,7 @@ export default function UserDashboardPage() {
         }));
         alert('Adresse erfolgreich entfernt.');
       } catch (err: any) {
-        console.error('Fehler beim Löschen der Adresse:', err);
+
         alert(`Fehler beim Löschen: ${err.message || 'Unbekannter Fehler'}`);
         setError(`Fehler beim Löschen der Adresse: ${err.message || 'Unbekannter Fehler'}`);
       }
@@ -447,9 +445,9 @@ export default function UserDashboardPage() {
     try {
       await signOut(auth);
       router.replace('/login');
-      console.log('Benutzer erfolgreich abgemeldet.');
+
     } catch (err: any) {
-      console.error('Fehler beim Abmelden:', err);
+
       alert(`Fehler beim Abmelden: ${err.message || 'Unbekannter Fehler'}`);
     }
   };
@@ -724,7 +722,7 @@ export default function UserDashboardPage() {
                 <TimeTrackingOverview
                   customerId={currentUser.uid}
                   onRequestsUpdated={() => {
-                    console.log('Time tracking requests updated');
+
                   }}
                 />
               </div>

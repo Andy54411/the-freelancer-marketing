@@ -33,8 +33,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    console.log('🏦 Getting accounts for user:', userId);
-
     // Get finAPI configuration
     const baseUrl = getFinApiBaseUrl(credentialType);
     const taskiloCredentials = getFinApiCredentials(credentialType);
@@ -57,7 +55,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      console.error('❌ Client token request failed');
+
       return NextResponse.json({ error: 'Failed to authenticate with finAPI' }, { status: 401 });
     }
 
@@ -82,7 +80,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userTokenResponse.ok) {
-      console.log('⚠️ User not found in finAPI - no accounts to show');
+
       return NextResponse.json({
         success: true,
         accounts: [],
@@ -105,12 +103,11 @@ export async function GET(request: NextRequest) {
 
     if (!accountsResponse.ok) {
       const errorText = await accountsResponse.text();
-      console.error('❌ Failed to get accounts:', errorText);
+
       return NextResponse.json({ error: 'Failed to get accounts from finAPI' }, { status: 500 });
     }
 
     const accountsData = await accountsResponse.json();
-    console.log('✅ Retrieved accounts:', accountsData.accounts?.length || 0);
 
     // Step 4: Get bank connections to get correct bank names
     const connectionsResponse = await fetch(`${baseUrl}/api/v2/bankConnections`, {
@@ -125,7 +122,6 @@ export async function GET(request: NextRequest) {
 
     if (connectionsResponse.ok) {
       const connectionsData = await connectionsResponse.json();
-      console.log('✅ Retrieved bank connections:', connectionsData.connections?.length || 0);
 
       // Create a map of connection ID to bank info
       (connectionsData.connections || []).forEach((conn: any) => {
@@ -137,7 +133,7 @@ export async function GET(request: NextRequest) {
         };
       });
     } else {
-      console.warn('⚠️ Could not load bank connections, using account bank names');
+
     }
 
     // Transform finAPI accounts to Taskilo format for dashboard
@@ -187,7 +183,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('finAPI accounts error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -209,8 +205,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    console.log('Processing account action:', action, 'for user:', userId);
-
     // For now, return not implemented - would need specific account operations
     return NextResponse.json(
       {
@@ -221,7 +215,7 @@ export async function POST(request: NextRequest) {
       { status: 501 }
     );
   } catch (error: any) {
-    console.error('finAPI accounts POST error:', error);
+
     return NextResponse.json(
       {
         success: false,

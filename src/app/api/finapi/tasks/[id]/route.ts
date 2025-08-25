@@ -14,8 +14,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { searchParams } = new URL(req.url);
     const credentialType = (searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
 
-    console.log('🔍 Getting finAPI task details for ID:', taskId);
-
     // Get finAPI configuration
     const baseUrl = getFinApiBaseUrl(credentialType);
     const credentials = getFinApiCredentials(credentialType);
@@ -39,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('❌ Token request failed:', tokenResponse.status, errorText);
+
       return NextResponse.json(
         { error: 'Authentication failed', details: errorText },
         { status: 401 }
@@ -47,7 +45,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ Client token obtained');
 
     // Step 2: Get specific task details
     const tasksBaseUrl =
@@ -66,7 +63,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (!taskResponse.ok) {
       const errorText = await taskResponse.text();
-      console.error('❌ Task details request failed:', taskResponse.status, errorText);
 
       if (taskResponse.status === 404) {
         return NextResponse.json(
@@ -102,7 +98,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     const taskData = await taskResponse.json();
-    console.log('✅ Task details retrieved:', taskId, 'Status:', taskData.status);
 
     // Add Taskilo-specific enhancements to task data
     const enhancedTask = {
@@ -131,7 +126,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       },
     });
   } catch (error: unknown) {
-    console.error('❌ Task details error:', error);
+
     const resolvedParams = await params;
     return NextResponse.json(
       {
@@ -153,8 +148,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const taskId = resolvedParams.id;
     const { searchParams } = new URL(req.url);
     const credentialType = (searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
-
-    console.log('🛑 Cancelling finAPI task:', taskId);
 
     // Get finAPI configuration
     const baseUrl = getFinApiBaseUrl(credentialType);
@@ -216,7 +209,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     const cancelData = await cancelResponse.json();
-    console.log('✅ Task cancelled successfully:', taskId);
 
     return NextResponse.json({
       success: true,
@@ -230,7 +222,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       },
     });
   } catch (error: unknown) {
-    console.error('❌ Task cancellation error:', error);
+
     const resolvedParams = await params;
     return NextResponse.json(
       {

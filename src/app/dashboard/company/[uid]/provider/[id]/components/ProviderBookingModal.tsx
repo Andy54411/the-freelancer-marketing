@@ -93,80 +93,40 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
     setIsProcessingPayment(true);
     try {
       // DEBUG: Provider Stripe Account prüfen
-      console.log('🔍 [B2B Payment Debug] Provider Info:', {
-        id: provider.id,
-        companyName: provider.companyName,
-        userName: provider.userName,
-        stripeAccountId: provider.stripeAccountId,
-        stripeAccountIdType: typeof provider.stripeAccountId,
-        stripeAccountIdValid: provider.stripeAccountId?.startsWith('acct_'),
-        providerKeys: Object.keys(provider),
-        fullProvider: provider, // VOLLSTÄNDIGE PROVIDER-DATEN ZUR DIAGNOSE
-      });
 
       // FALLBACK: Falls stripeAccountId undefined ist, versuche direkten DB-Zugriff
       if (!provider.stripeAccountId) {
-        console.warn(
-          '⚠️ [B2B Payment] stripeAccountId ist undefined, versuche direkten DB-Zugriff...'
-        );
 
         try {
           // Direkter Firestore-Zugriff um stripeAccountId zu holen
           const { doc, getDoc } = await import('firebase/firestore');
           const { db } = await import('@/firebase/clients');
 
-          console.log('🔍 [B2B Payment] Prüfe Firestore für Provider ID:', provider.id);
-
           const userDoc = await getDoc(doc(db, 'users', provider.id));
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log('🔍 [B2B Payment Fallback] Direkte DB-Daten:', {
-              stripeAccountId: userData.stripeAccountId,
-              email: userData.email,
-              companyName: userData.companyName,
-              verfügbareFelder: Object.keys(userData),
-            });
 
             // Verwende die direkt geladene stripeAccountId
             if (userData.stripeAccountId?.startsWith('acct_')) {
-              console.log(
-                '✅ [B2B Payment Fallback] Gültige stripeAccountId gefunden:',
-                userData.stripeAccountId
-              );
+
               // Überschreibe die provider stripeAccountId für diese Session
               provider.stripeAccountId = userData.stripeAccountId;
             } else {
-              console.error('❌ [B2B Payment Fallback] Keine gültige stripeAccountId in DB:', {
-                stripeAccountId: userData.stripeAccountId,
-                isString: typeof userData.stripeAccountId,
-                startsWithAcct: userData.stripeAccountId?.startsWith('acct_'),
-              });
+
             }
           } else {
-            console.error(
-              '❌ [B2B Payment Fallback] Kein User-Dokument gefunden für ID:',
-              provider.id
-            );
+
           }
         } catch (fallbackError) {
-          console.error(
-            '❌ [B2B Payment Fallback] Direkter DB-Zugriff fehlgeschlagen:',
-            fallbackError
-          );
+
         }
       } else {
-        console.log(
-          '✅ [B2B Payment] Provider stripeAccountId bereits vorhanden:',
-          provider.stripeAccountId
-        );
+
       }
 
       // Prüfe ob Provider Stripe Account vorhanden und gültig ist
       if (!provider.stripeAccountId || !provider.stripeAccountId.startsWith('acct_')) {
-        console.error('❌ [B2B Payment] Provider hat keine gültige Stripe Account ID:', {
-          stripeAccountId: provider.stripeAccountId,
-          providerId: provider.id,
-        });
+
         alert(
           'B2B Payment nicht möglich: Provider hat kein konfiguriertes Stripe Connect Konto. ' +
             'Bitte kontaktieren Sie den Anbieter oder verwenden Sie eine andere Zahlungsmethode.'
@@ -200,14 +160,6 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
 
       const totalAmountCents = Math.round(hourlyRate * totalHours * 100); // In Cents
 
-      console.log('🚀 Starting B2B Stripe payment process:', {
-        provider: provider.companyName || provider.userName,
-        totalHours,
-        hourlyRate,
-        totalAmountCents,
-        dateSelection: selectedDateTime.dateSelection,
-      });
-
       // Erstelle B2B Project Data für die neue B2BPaymentComponent
       const projectData = {
         projectId: `b2b-booking-${Date.now()}`,
@@ -224,7 +176,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
       setCurrentStep('stripe-payment');
       setIsB2BPaymentOpen(true);
     } catch (error) {
-      console.error('❌ Payment setup failed:', error);
+
       alert(
         `Zahlung fehlgeschlagen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );
@@ -234,11 +186,9 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   };
 
   const handleStripePaymentSuccess = async (paymentIntentId: string) => {
-    console.log('✅ Stripe payment successful:', paymentIntentId);
 
     // KORREKT: Webhook erstellt die Order automatisch - kein Frontend-Order-Creation
     // Der Webhook verarbeitet den payment_intent.succeeded Event und erstellt die Order
-    console.log('🔄 Webhook wird automatisch die Order erstellen...');
 
     alert(
       'Buchung erfolgreich abgeschlossen! Die Bestellung wird automatisch erstellt. Sie erhalten eine Bestätigung per E-Mail.'
@@ -247,7 +197,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   };
 
   const handleStripePaymentError = (errorMessage: string) => {
-    console.error('❌ Stripe payment failed:', errorMessage);
+
     alert(`Zahlung fehlgeschlagen: ${errorMessage}`);
     setCurrentStep('payment'); // Zurück zum Payment Step
   };
@@ -489,9 +439,6 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                           const hourlyRate = provider.hourlyRate || 0;
                           const durationStr = selectedDateTime.duration;
 
-                          console.log('Duration string received:', durationStr);
-                          console.log('DateSelection object:', selectedDateTime.dateSelection);
-
                           // Prüfe ob wir eine DateRange haben (mehrtägige Buchung)
                           if (
                             selectedDateTime.dateSelection &&
@@ -509,9 +456,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                             const hoursPerDay = parseFloat(durationStr) || 8; // Fallback auf 8 Stunden
 
                             const totalHours = daysDiff * hoursPerDay;
-                            console.log(
-                              `Multi-day booking detected: ${daysDiff} days × ${hoursPerDay} hours/day = ${totalHours} total hours`
-                            );
+
                             return (hourlyRate * totalHours).toFixed(2);
                           }
 
@@ -529,9 +474,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                               const days = parseInt(match[1]);
                               const hoursPerDay = parseInt(match[2]);
                               const totalHours = days * hoursPerDay;
-                              console.log(
-                                `Multi-day text format: ${days} days × ${hoursPerDay} hours = ${totalHours} hours`
-                              );
+
                               return (hourlyRate * totalHours).toFixed(2);
                             }
                           }
@@ -540,13 +483,13 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                           const hoursMatch = durationStr.match(/(\d+(?:\.\d+)?)\s*Stunden?/i);
                           if (hoursMatch) {
                             const hours = parseFloat(hoursMatch[1]);
-                            console.log(`Single hour booking: ${hours} hours`);
+
                             return (hourlyRate * hours).toFixed(2);
                           }
 
                           // Fallback: versuche direkt zu parsen
                           const directHours = parseFloat(durationStr) || 1;
-                          console.log(`Fallback parsing: ${directHours} hours`);
+
                           return (hourlyRate * directHours).toFixed(2);
                         })()}
                       </span>

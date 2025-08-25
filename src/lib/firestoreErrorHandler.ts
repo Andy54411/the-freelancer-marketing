@@ -11,8 +11,6 @@ export function setupFirestoreErrorHandler() {
   // TEMPORÄR DEAKTIVIERT - Error Handler wurde deaktiviert um echte Firestore-Probleme zu diagnostizieren
   // Der Error Handler hat fetch-Requests manipuliert und echte Verbindungsprobleme verschleiert
 
-  console.log('⚠️ Firestore error handler DEAKTIVIERT zur Fehlerbehebung');
-
   // Nur minimale Unterdrückung bestimmter bekannter harmlöser Warnings beibehalten
   const originalWarn = console.warn;
   console.warn = (...args: any[]) => {

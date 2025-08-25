@@ -43,7 +43,7 @@ const LogoUpload: React.FC<LogoUploadProps> = ({ profile, setProfile }) => {
           const oldLogoRef = ref(storage, profile.companyLogo);
           await deleteObject(oldLogoRef);
         } catch (error) {
-          console.warn('Altes Logo konnte nicht gelöscht werden:', error);
+
         }
       }
 
@@ -58,7 +58,7 @@ const LogoUpload: React.FC<LogoUploadProps> = ({ profile, setProfile }) => {
           setUploadProgress(progress);
         },
         error => {
-          console.error('Logo-Upload Fehler:', error);
+
           toast.error('Fehler beim Upload des Logos');
           setIsUploadingLogo(false);
         },
@@ -70,7 +70,7 @@ const LogoUpload: React.FC<LogoUploadProps> = ({ profile, setProfile }) => {
 
             toast.success('Firmen-Logo erfolgreich hochgeladen!');
           } catch (error) {
-            console.error('Fehler beim Abrufen der Logo-URL:', error);
+
             toast.error('Fehler beim Speichern des Logos');
           } finally {
             setIsUploadingLogo(false);
@@ -79,7 +79,7 @@ const LogoUpload: React.FC<LogoUploadProps> = ({ profile, setProfile }) => {
         }
       );
     } catch (error) {
-      console.error('Logo-Upload Fehler:', error);
+
       toast.error('Fehler beim Logo-Upload');
       setIsUploadingLogo(false);
     }
@@ -96,7 +96,7 @@ const LogoUpload: React.FC<LogoUploadProps> = ({ profile, setProfile }) => {
 
       toast.success('Firmen-Logo entfernt');
     } catch (error) {
-      console.error('Fehler beim Löschen des Logos:', error);
+
       toast.error('Fehler beim Löschen des Logos');
     }
   };

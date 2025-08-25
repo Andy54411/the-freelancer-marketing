@@ -114,7 +114,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       if (data) {
         return data;
       }
-      
+
       switch (subcategory) {
         case 'Maler & Lackierer':
           return {
@@ -1109,7 +1109,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   };
 
   const handleNextClick = () => {
-    console.log('Form is valid, proceeding to address page');
 
     // Extrahiere die Beschreibung aus den Formulardaten
     let description = '';
@@ -1130,7 +1129,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       // Setze die Beschreibung im Registration-Context
       if (description && setDescription) {
         setDescription(description);
-        console.log('Setting description from form data:', description);
+
       }
     }
 

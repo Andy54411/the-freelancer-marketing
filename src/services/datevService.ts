@@ -102,12 +102,12 @@ export class DatevService {
 
         if (auth.currentUser) {
           authToken = await auth.currentUser.getIdToken();
-          console.log('🔑 [DATEV Service] Firebase auth token obtained for API call');
+
         } else {
-          console.warn('⚠️ [DATEV Service] No authenticated Firebase user found');
+
         }
       } catch (authError) {
-        console.error('❌ [DATEV Service] Failed to get Firebase auth token:', authError);
+
       }
 
       const headers: Record<string, string> = {
@@ -119,9 +119,9 @@ export class DatevService {
       // Add Authorization header if we have an auth token
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
-        console.log('🔑 [DATEV Service] Adding Authorization header to request');
+
       } else {
-        console.warn('⚠️ [DATEV Service] Making request without Authorization header');
+
       }
 
       const response = await fetch(`/api/datev${endpoint}`, {
@@ -174,10 +174,7 @@ export class DatevService {
       return JSON.parse(responseText);
     } catch (error) {
       if (error instanceof Error) {
-        console.error('DATEV backend API call failed:', {
-          endpoint,
-          error: error.message,
-        });
+
         throw error;
       }
 
@@ -205,7 +202,7 @@ export class DatevService {
 
       return accounts;
     } catch (error) {
-      console.error('Error fetching DATEV accounts:', error);
+
       throw error;
     }
   }
@@ -220,10 +217,10 @@ export class DatevService {
   ): Promise<DatevTransaction[]> {
     try {
       // Note: This would need a dedicated backend route for transactions
-      console.warn('getTransactions not yet implemented with backend routing');
+
       return [];
     } catch (error) {
-      console.error('Error fetching DATEV transactions:', error);
+
       throw error;
     }
   }
@@ -237,10 +234,10 @@ export class DatevService {
   ): Promise<DatevTransaction> {
     try {
       // Note: This would need a dedicated backend route for transactions
-      console.warn('createTransaction not yet implemented with backend routing');
+
       throw new Error('createTransaction not yet implemented');
     } catch (error) {
-      console.error('Error creating DATEV transaction:', error);
+
       throw error;
     }
   }
@@ -255,10 +252,10 @@ export class DatevService {
   ): Promise<DatevDocument> {
     try {
       // Note: This would need a dedicated backend route for document upload
-      console.warn('uploadDocument not yet implemented with backend routing');
+
       throw new Error('uploadDocument not yet implemented');
     } catch (error) {
-      console.error('Error uploading document to DATEV:', error);
+
       throw error;
     }
   }
@@ -269,10 +266,10 @@ export class DatevService {
   static async getDocuments(organizationId?: string): Promise<DatevDocument[]> {
     try {
       // Note: This would need a dedicated backend route for documents
-      console.warn('getDocuments not yet implemented with backend routing');
+
       return [];
     } catch (error) {
-      console.error('Error fetching DATEV documents:', error);
+
       throw error;
     }
   }
@@ -289,10 +286,10 @@ export class DatevService {
   ): Promise<DatevExportJob> {
     try {
       // Note: This would need a dedicated backend route for export jobs
-      console.warn('createExportJob not yet implemented with backend routing');
+
       throw new Error('createExportJob not yet implemented');
     } catch (error) {
-      console.error('Error creating DATEV export job:', error);
+
       throw error;
     }
   }
@@ -303,10 +300,10 @@ export class DatevService {
   static async getExportJob(jobId: string): Promise<DatevExportJob> {
     try {
       // Note: This would need a dedicated backend route for export jobs
-      console.warn('getExportJob not yet implemented with backend routing');
+
       throw new Error('getExportJob not yet implemented');
     } catch (error) {
-      console.error('Error fetching DATEV export job:', error);
+
       throw error;
     }
   }
@@ -329,10 +326,10 @@ export class DatevService {
   ): Promise<DatevTransaction> {
     try {
       // Note: This requires createTransaction to be implemented
-      console.warn('importInvoiceToDatev not yet fully implemented');
+
       throw new Error('importInvoiceToDatev requires transaction creation');
     } catch (error) {
-      console.error('Error importing invoice to DATEV:', error);
+
       throw error;
     }
   }
@@ -352,10 +349,10 @@ export class DatevService {
   ): Promise<DatevTransaction> {
     try {
       // Note: This requires createTransaction to be implemented
-      console.warn('syncPaymentToDatev not yet fully implemented');
+
       throw new Error('syncPaymentToDatev requires transaction creation');
     } catch (error) {
-      console.error('Error syncing payment to DATEV:', error);
+
       throw error;
     }
   }

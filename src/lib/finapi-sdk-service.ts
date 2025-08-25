@@ -75,8 +75,6 @@ export class FinAPISDKService {
       );
     }
 
-    console.log('🔑 Getting new finAPI client token...');
-
     const authApi = this.getAuthApi();
     const tokenResponse = await authApi.getToken(
       'client_credentials',
@@ -89,7 +87,6 @@ export class FinAPISDKService {
     const expirySeconds = tokenResponse.expiresIn ? tokenResponse.expiresIn * 0.9 : 3600;
     this.clientTokenExpiry = new Date(Date.now() + expirySeconds * 1000);
 
-    console.log('✅ finAPI client token obtained');
     return this.clientToken;
   }
 
@@ -97,7 +94,6 @@ export class FinAPISDKService {
    * Get user access token
    */
   async getUserToken(userId: string, password: string): Promise<string> {
-    console.log('Getting finAPI user token for:', userId);
 
     // Runtime credential check
     if (!this.config.credentials.clientId || !this.config.credentials.clientSecret) {
@@ -116,11 +112,9 @@ export class FinAPISDKService {
         password
       );
 
-      console.log('SUCCESS: finAPI user token obtained for:', userId);
       return tokenResponse.accessToken;
     } catch (error: any) {
-      console.error('FAILED: Could not get user token for:', userId);
-      console.error('Error details:', error.body || error.message);
+
       throw error;
     }
   }
@@ -185,7 +179,7 @@ export class FinAPISDKService {
       const token = await this.getClientToken();
       return { success: true, token: `${token.substring(0, 20)}...` };
     } catch (error: any) {
-      console.error('❌ finAPI credential test failed:', error);
+
       return {
         success: false,
         error: error.message || 'Unknown error',
@@ -197,8 +191,6 @@ export class FinAPISDKService {
    * Create finAPI user for Taskilo user
    */
   async createUser(userId: string, password: string, email?: string): Promise<User> {
-    console.log('👤 Creating finAPI user:', userId);
-    console.log('🔑 Using consistent password for user:', userId);
 
     try {
       const usersApi = await this.getUsersApi();
@@ -210,14 +202,12 @@ export class FinAPISDKService {
         isAutoUpdateEnabled: true,
       });
 
-      console.log('✅ New finAPI user created:', user.id);
       return user;
     } catch (error: any) {
-      console.log('⚠️ User creation failed:', error.status, error.message);
 
       // User already exists - this is actually OK for our use case
       if (error.status === 422 && error.message?.includes('already exists')) {
-        console.log('ℹ️ User already exists, will attempt authentication');
+
         // Return a minimal user object
         return {
           id: userId,
@@ -241,14 +231,10 @@ export class FinAPISDKService {
     password: string,
     email?: string
   ): Promise<{ user: User; userToken: string }> {
-    console.log('👤 Getting or creating technical finAPI user account for:', userId);
-    console.log(
-      'ℹ️ Note: This is only a technical account - user will login to their BANK, not finAPI'
-    );
 
     // Step 1: Try to authenticate existing user first (more common scenario)
     try {
-      console.log('� Step 1: Trying to authenticate existing user:', userId);
+
       const userToken = await this.getUserToken(userId, password);
 
       // User exists and authentication successful
@@ -259,28 +245,21 @@ export class FinAPISDKService {
         isAutoUpdateEnabled: true,
       };
 
-      console.log('✅ Successfully authenticated existing finAPI user:', userId);
       return { user, userToken };
     } catch (authError: any) {
-      console.log('ℹ️ User authentication failed (user might not exist):', authError.status);
 
       // Step 2: If authentication fails because user doesn't exist, try to create
       if (authError.status === 400 || authError.status === 401 || authError.status === 404) {
         try {
-          console.log('� Step 2: Creating new finAPI user:', userId);
+
           const user = await this.createUser(userId, password, email);
 
           // Get token for newly created user
-          console.log('🔑 Getting authentication token for new user');
+
           const userToken = await this.getUserToken(userId, password);
 
-          console.log('✅ New finAPI user created and authenticated:', userId);
           return { user, userToken };
         } catch (createError: any) {
-          console.error('❌ User creation failed after authentication failure:', {
-            status: createError.status,
-            message: createError.message,
-          });
 
           // If creation also fails, provide detailed error
           throw new Error(
@@ -291,10 +270,6 @@ export class FinAPISDKService {
       }
 
       // Step 3: If it's a different authentication error, provide detailed info
-      console.error('❌ Unexpected user authentication error:', {
-        status: authError.status,
-        message: authError.message,
-      });
 
       throw new Error(
         `Failed to authenticate finAPI user '${userId}'. Status: ${authError.status}, ` +
@@ -307,7 +282,6 @@ export class FinAPISDKService {
    * List available banks (Public API - no user token required)
    */
   async listBanks(search?: string, location?: string, page = 1, perPage = 20): Promise<Bank[]> {
-    console.log('🏦 Listing banks with client credentials...');
 
     // Use client token only for public banks listing
     const banksApi = await this.getBanksApi();
@@ -323,7 +297,6 @@ export class FinAPISDKService {
       perPage
     );
 
-    console.log(`✅ Found ${response.banks?.length || 0} banks`);
     return response.banks || [];
   }
 
@@ -337,7 +310,6 @@ export class FinAPISDKService {
     page = 1,
     perPage = 20
   ): Promise<Bank[]> {
-    console.log('🏦 Listing banks for user...');
 
     const banksApi = await this.getBanksApi(userToken);
     const response = await banksApi.getAndSearchAllBanks(
@@ -374,7 +346,7 @@ export class FinAPISDKService {
       const connection = await connectionsApi.getBankConnection(parseInt(connectionId));
       return connection;
     } catch (error) {
-      console.error('❌ Failed to get bank connection:', connectionId, error);
+
       return null;
     }
   }
@@ -406,7 +378,6 @@ export class FinAPISDKService {
       redirectUrl?: string;
     } = {}
   ): Promise<{ id: string; url: string; expiresAt?: string }> {
-    console.log('🌐 Creating WebForm 2.0 for bank import...');
 
     // Use raw fetch for WebForm 2.0 as SDK might not support it yet
     const response = await fetch(`${this.baseUrl}/api/webForms/bankConnectionImport`, {
@@ -430,7 +401,6 @@ export class FinAPISDKService {
     }
 
     const webFormData = await response.json();
-    console.log('✅ WebForm 2.0 created:', webFormData.url);
 
     return {
       id: webFormData.id,

@@ -120,7 +120,7 @@ export default function PersonalAnalyticsPage() {
       );
       setPerformanceData(performance);
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Analytics:', error);
+
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ export default function PersonalAnalyticsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('❌ Fehler beim Export:', error);
+
     }
   };
 

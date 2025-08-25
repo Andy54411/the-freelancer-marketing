@@ -100,7 +100,7 @@ export default function SubcategoryPage() {
           // Fallback auf ursprüngliche Daten
           return provider;
         } catch (error) {
-          console.error(`[ServicePage] Error loading reviews for provider ${provider.id}:`, error);
+
           return provider;
         }
       })
@@ -118,12 +118,6 @@ export default function SubcategoryPage() {
     try {
       setLoading(true);
 
-      console.log('[ServicePage] Loading providers for:', {
-        category,
-        subcategory,
-        subcategoryName,
-      });
-
       // Query für Firmen - erweitert um verschiedene Aktivitätszustände
       const firmCollectionRef = collection(db, 'companies');
       const firmQuery = query(firmCollectionRef, limit(50));
@@ -136,11 +130,6 @@ export default function SubcategoryPage() {
         getDocs(firmQuery),
         getDocs(userQuery),
       ]);
-
-      console.log('[ServicePage] Query results:', {
-        firmDocs: firmSnapshot.docs.length,
-        userDocs: userSnapshot.docs.length,
-      });
 
       const firmProviders: Provider[] = firmSnapshot.docs
         .map(doc => {
@@ -222,12 +211,8 @@ export default function SubcategoryPage() {
 
       const allProviders = [...firmProviders, ...userProviders];
 
-      console.log('[ServicePage] All providers before enrichment:', allProviders.length);
-
       // Anreichern mit echten Bewertungen
       const enrichedProviders = await enrichProvidersWithReviews(allProviders);
-
-      console.log('[ServicePage] Providers after enrichment:', enrichedProviders.length);
 
       // Filter nach Subcategory - erweiterte und allgemeine Prüfung
       let filteredProviders = enrichedProviders.filter(provider => {
@@ -300,7 +285,7 @@ export default function SubcategoryPage() {
 
       setProviders(filteredProviders);
     } catch (error) {
-      console.error('Fehler beim Laden der Anbieter:', error);
+
     } finally {
       setLoading(false);
     }
@@ -320,23 +305,12 @@ export default function SubcategoryPage() {
   };
 
   // Debug logging für troubleshooting
-  console.log('[ServicePage] Debug Info:', {
-    category,
-    subcategory,
-    decodedCategory,
-    decodedSubcategory,
-    categoryInfo: categoryInfo?.title,
-    subcategoryName,
-    hasValidData: !!(categoryInfo && subcategoryName),
-    availableCategories: categories.map(c => ({ title: c.title, slug: normalizeToSlug(c.title) })),
-  });
 
   const handleBookNow = (provider: Provider) => {
-    console.log('handleBookNow called with provider:', provider);
 
     // Auth-Check: Wenn nicht eingeloggt, zur Registrierung weiterleiten
     if (!user) {
-      console.log('User not logged in - redirecting to login page');
+
       router.push('/login');
       return;
     }
@@ -344,7 +318,7 @@ export default function SubcategoryPage() {
     // Wenn eingeloggt, Modal öffnen
     setSelectedProvider(provider);
     setIsBookingModalOpen(true);
-    console.log('Modal state set - isBookingModalOpen:', true);
+
   };
 
   const handleBookingConfirm = async (
@@ -354,15 +328,6 @@ export default function SubcategoryPage() {
     description: string
   ) => {
     try {
-      console.log('Intelligent Payment Routing:', {
-        provider: selectedProvider,
-        user: user?.role,
-        isLoggedIn: !!user,
-        selection,
-        time,
-        durationString,
-        description,
-      });
 
       // Schließe das Modal
       setIsBookingModalOpen(false);
@@ -371,7 +336,7 @@ export default function SubcategoryPage() {
       // Intelligente Weiterleitung basierend auf User-Typ
       if (!user) {
         // Nicht eingeloggt → Login/Registrierung
-        console.log('User not logged in - redirecting to login');
+
         router.push(
           `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
         );
@@ -380,14 +345,14 @@ export default function SubcategoryPage() {
 
       if (user.role === 'firma') {
         // Firma → B2B Payment im Company Dashboard
-        console.log('Firma user - redirecting to B2B payment');
+
         router.push(`/dashboard/company/${user.uid}/provider/${selectedProvider?.id}?booking=true`);
         return;
       }
 
       if (user.role === 'kunde') {
         // Kunde → B2C Payment Flow
-        console.log('Kunde user - redirecting to B2C payment');
+
         router.push(
           `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
         );
@@ -395,12 +360,12 @@ export default function SubcategoryPage() {
       }
 
       // Fallback für unbekannte Rollen
-      console.log('Unknown user role - redirecting to get-started');
+
       router.push(
         `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
       );
     } catch (error) {
-      console.error('Fehler bei der intelligenten Payment-Weiterleitung:', error);
+
       alert('Fehler bei der Weiterleitung. Bitte versuchen Sie es erneut.');
     }
   };
@@ -573,9 +538,7 @@ export default function SubcategoryPage() {
 
                           // Auth-Check für Profil-Ansicht
                           if (!user) {
-                            console.log(
-                              'User not logged in - redirecting to login page for profile view'
-                            );
+
                             router.push('/login');
                             return;
                           }

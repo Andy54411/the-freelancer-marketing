@@ -43,7 +43,6 @@ function DatevAuthComponent({
 
     try {
       // Check if user has existing DATEV tokens by testing UserInfo API
-      console.log('🔍 [DATEV Debug] Checking existing connection...');
 
       const response = await fetch(`/api/datev/userinfo-test?companyId=${companyId}`, {
         method: 'GET',
@@ -51,7 +50,6 @@ function DatevAuthComponent({
 
       if (response.ok) {
         const userInfo = await response.json();
-        console.log('✅ DATEV connection exists:', userInfo);
 
         setConnection({
           isConnected: true,
@@ -78,11 +76,11 @@ function DatevAuthComponent({
 
         toast.success('DATEV-Verbindung erfolgreich überprüft');
       } else {
-        console.log('🔄 DATEV authentication required');
+
         setShowButtons(true);
       }
     } catch (error) {
-      console.error('Error checking DATEV connection:', error);
+
       setShowButtons(true);
     } finally {
       setIsLoading(false);
@@ -109,11 +107,11 @@ function DatevAuthComponent({
       const { authUrl } = await response.json();
 
       // Redirect to DATEV OAuth
-      console.log('🚀 Redirecting to DATEV OAuth:', authUrl);
+
       window.location.href = authUrl;
 
     } catch (error) {
-      console.error('DATEV authentication error:', error);
+
       if (onAuthError) {
         onAuthError(error instanceof Error ? error.message : 'Authentication failed');
       }
@@ -132,7 +130,7 @@ function DatevAuthComponent({
 
       toast.success('DATEV-Verbindung getrennt');
     } catch (error) {
-      console.error('Error disconnecting DATEV:', error);
+
       toast.error('Fehler beim Trennen der DATEV-Verbindung');
     }
   };

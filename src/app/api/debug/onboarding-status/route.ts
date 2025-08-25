@@ -13,8 +13,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'companyUid parameter is required' }, { status: 400 });
     }
 
-    console.log('🔍 Debug: Checking onboarding status for company:', companyUid);
-
     // 1. Check user document
     const userDoc = await getDoc(doc(db, 'users', companyUid));
     const userData = userDoc.exists() ? userDoc.data() : null;
@@ -93,7 +91,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(debugInfo, { status: 200 });
   } catch (error) {
-    console.error('❌ Debug API Error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

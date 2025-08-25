@@ -47,7 +47,7 @@ export class DatevTokenManager {
     user: DatevUserData;
   }): void {
     if (!isClient) {
-      console.warn('storeUserToken should only be called on client-side');
+
       return;
     }
 
@@ -67,7 +67,6 @@ export class DatevTokenManager {
     localStorage.setItem(DATEV_TOKEN_STORAGE_KEY, JSON.stringify(tokenInfo));
     localStorage.setItem(DATEV_USER_DATA_STORAGE_KEY, JSON.stringify(tokenData.user));
 
-    console.log('DATEV token stored successfully');
   }
 
   /**
@@ -75,9 +74,7 @@ export class DatevTokenManager {
    */
   static getUserToken(): DatevUserToken | null {
     if (!isClient) {
-      console.warn(
-        'getUserToken should only be called on client-side. Use getServerToken for server APIs.'
-      );
+
       return null;
     }
 
@@ -89,14 +86,14 @@ export class DatevTokenManager {
 
       // Check if token is expired (with 5-minute buffer)
       if (Date.now() >= tokenInfo.expires_at - 300000) {
-        console.log('DATEV token expired, removing from storage');
+
         this.clearUserToken();
         return null;
       }
 
       return tokenInfo;
     } catch (error) {
-      console.error('Error retrieving DATEV token:', error);
+
       return null;
     }
   }
@@ -125,13 +122,13 @@ export class DatevTokenManager {
 
       // Check if token is expired (with 5-minute buffer)
       if (Date.now() >= tokenInfo.expires_at - 300000) {
-        console.log('DATEV server token expired');
+
         return null;
       }
 
       return tokenInfo;
     } catch (error) {
-      console.error('Error retrieving DATEV server token:', error);
+
       return null;
     }
   }
@@ -141,7 +138,7 @@ export class DatevTokenManager {
    */
   static getUserData(): DatevUserData | null {
     if (!isClient) {
-      console.warn('getUserData should only be called on client-side');
+
       return null;
     }
 
@@ -151,7 +148,7 @@ export class DatevTokenManager {
 
       return JSON.parse(stored);
     } catch (error) {
-      console.error('Error retrieving DATEV user data:', error);
+
       return null;
     }
   }
@@ -169,13 +166,13 @@ export class DatevTokenManager {
    */
   static clearUserToken(): void {
     if (!isClient) {
-      console.warn('clearUserToken should only be called on client-side');
+
       return;
     }
 
     localStorage.removeItem(DATEV_TOKEN_STORAGE_KEY);
     localStorage.removeItem(DATEV_USER_DATA_STORAGE_KEY);
-    console.log('DATEV token and user data cleared');
+
   }
 
   /**
@@ -212,7 +209,7 @@ export class DatevTokenManager {
   static async refreshTokenIfNeeded(): Promise<boolean> {
     const token = this.getUserToken();
     if (!token) {
-      console.log('No DATEV token available');
+
       return false;
     }
 
@@ -222,11 +219,9 @@ export class DatevTokenManager {
       return true; // Token is still valid
     }
 
-    console.log('DATEV token expires soon, attempting refresh...');
-
     // If no refresh token available, clear everything and require re-auth
     if (!token.refresh_token) {
-      console.log('No refresh token available, clearing stored data');
+
       this.clearUserToken();
       return false;
     }
@@ -244,7 +239,7 @@ export class DatevTokenManager {
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Failed to refresh DATEV token:', response.status, errorData);
+
         this.clearUserToken();
         return false;
       }
@@ -253,14 +248,14 @@ export class DatevTokenManager {
 
       // Validate response data
       if (!data.access_token) {
-        console.error('Invalid refresh response: missing access_token');
+
         this.clearUserToken();
         return false;
       }
 
       const userData = this.getUserData();
       if (!userData) {
-        console.error('No user data available for token refresh');
+
         this.clearUserToken();
         return false;
       }
@@ -275,10 +270,9 @@ export class DatevTokenManager {
         user: userData,
       });
 
-      console.log('DATEV token refreshed successfully');
       return true;
     } catch (error) {
-      console.error('Error refreshing DATEV token:', error);
+
       this.clearUserToken();
       return false;
     }
@@ -300,14 +294,14 @@ export class DatevTokenManager {
       });
 
       if (!response.ok) {
-        console.log('Token validation failed, clearing stored token');
+
         this.clearUserToken();
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Error validating DATEV token:', error);
+
       this.clearUserToken();
       return false;
     }
@@ -330,13 +324,13 @@ export class DatevTokenManager {
       });
 
       if (response.status === 401) {
-        console.log('DATEV server token validation failed');
+
         return false;
       }
 
       return response.ok;
     } catch (error) {
-      console.error('Error validating DATEV server token:', error);
+
       return false;
     }
   }

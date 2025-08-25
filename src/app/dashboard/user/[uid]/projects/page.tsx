@@ -158,8 +158,6 @@ const ProjectsPage: React.FC = () => {
   useEffect(() => {
     if (!uid || !user) return;
 
-    console.log('🔍 Suche Projekte für User (Realtime):', { uid, userUid: user.uid });
-
     // Verwende project_requests Collection als "Projekte" da dort die echten Projekte sind
     const projectRequestsRef = collection(db, 'project_requests');
     const projectRequestsQuery = query(projectRequestsRef, where('customerUid', '==', uid));
@@ -168,21 +166,9 @@ const ProjectsPage: React.FC = () => {
     const unsubscribe = onSnapshot(
       projectRequestsQuery,
       snapshot => {
-        console.log(
-          '� Realtime Update - project_requests Collection (User Projekte):',
-          snapshot.docs.length,
-          'Dokumente'
-        );
 
         const userProjects: Project[] = snapshot.docs.map(doc => {
           const data = doc.data();
-          console.log('📄 Project Request als Projekt (Realtime):', {
-            id: doc.id,
-            title: data.title,
-            status: data.status,
-            customerUid: data.customerUid,
-            category: data.category,
-          });
 
           return {
             id: doc.id,
@@ -226,18 +212,16 @@ const ProjectsPage: React.FC = () => {
           };
         });
 
-        console.log('✅ Finale User-Projekte (Realtime):', userProjects.length);
         setProjects(userProjects);
 
         // Gruppiere Projekte automatisch
         const groups = groupProjectsByTheme(userProjects);
         setProjectGroups(groups);
-        console.log('📦 Projektgruppen erstellt:', groups.length, 'Gruppen');
 
         setLoading(false);
       },
       error => {
-        console.error('❌ Fehler beim Realtime-Laden der Projekte:', error);
+
         toast.error('Fehler beim Laden der Projekte');
         setLoading(false);
       }
@@ -278,7 +262,7 @@ const ProjectsPage: React.FC = () => {
         projectTitle: '',
       });
     } catch (error) {
-      console.error('❌ Fehler beim Löschen des Projekts:', error);
+
       toast.error('Fehler beim Löschen des Projekts');
     }
   };

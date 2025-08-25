@@ -40,9 +40,7 @@ export class FirestoreInvoiceService {
           const data = numberingDoc.data() as InvoiceNumbering;
           nextNumber = data.nextNumber;
         } else {
-          console.log(
-            `🆕 Erstelle neue Rechnungsnummern-Sequenz für ${companyId} in Jahr ${currentYear}`
-          );
+
         }
 
         // Update der nächsten Nummer
@@ -56,19 +54,15 @@ export class FirestoreInvoiceService {
 
         transaction.set(numberingRef, newNumberingData);
 
-        console.log(`✅ Rechnungsnummer generiert: ${nextNumber} für ${companyId}`);
-
         return {
           sequentialNumber: nextNumber,
           formattedNumber: GermanInvoiceService.formatInvoiceNumber(nextNumber, currentYear),
         };
       });
     } catch (error) {
-      console.error('❌ Fehler bei Rechnungsnummerngenerierung:', error);
 
       // Fallback: Generiere eine Nummer basierend auf Timestamp
       const fallbackNumber = Date.now() % 1000;
-      console.log(`🔄 Fallback-Rechnungsnummer: ${fallbackNumber}`);
 
       return {
         sequentialNumber: fallbackNumber,
@@ -89,10 +83,9 @@ export class FirestoreInvoiceService {
 
       const docRef = await addDoc(collection(db, 'invoices'), invoiceData);
 
-      console.log('Rechnung gespeichert mit ID:', docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Speichern der Rechnung:', error);
+
       throw error;
     }
   }
@@ -125,7 +118,7 @@ export class FirestoreInvoiceService {
 
       return invoices;
     } catch (error) {
-      console.error('Fehler beim Laden der Rechnungen:', error);
+
       throw error;
     }
   }
@@ -188,7 +181,7 @@ export class FirestoreInvoiceService {
 
       return null;
     } catch (error) {
-      console.error('Fehler beim Laden der Rechnung:', error);
+
       throw error;
     }
   }
@@ -204,9 +197,8 @@ export class FirestoreInvoiceService {
       const docRef = doc(db, 'invoices', invoiceId);
       await updateDoc(docRef, { status });
 
-      console.log('Rechnungsstatus aktualisiert:', invoiceId, status);
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Status:', error);
+
       throw error;
     }
   }
@@ -266,7 +258,7 @@ export class FirestoreInvoiceService {
         };
       });
     } catch (error) {
-      console.error('Fehler beim Erstellen der Storno-Rechnung:', error);
+
       throw error;
     }
   }
@@ -330,7 +322,7 @@ export class FirestoreInvoiceService {
 
       return invoices;
     } catch (error) {
-      console.error('Fehler beim Suchen von Rechnungen:', error);
+
       throw error;
     }
   }
@@ -352,9 +344,8 @@ export class FirestoreInvoiceService {
       const docRef = doc(db, 'invoices', invoiceId);
       await setDoc(docRef, { deleted: true }, { merge: true });
 
-      console.log('Rechnung gelöscht:', invoiceId);
     } catch (error) {
-      console.error('Fehler beim Löschen der Rechnung:', error);
+
       throw error;
     }
   }
@@ -412,7 +403,7 @@ export class FirestoreInvoiceService {
 
       return stats;
     } catch (error) {
-      console.error('Fehler beim Laden der Statistiken:', error);
+
       throw error;
     }
   }

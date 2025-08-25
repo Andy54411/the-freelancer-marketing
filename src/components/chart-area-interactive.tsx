@@ -90,7 +90,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
         );
         setOrders(result.orders || []);
       } catch (err: any) {
-        console.error('Fehler beim Laden der Aufträge für den Chart:', err);
+
         setError(err.message || 'Fehler beim Laden der Umsatzdaten');
       } finally {
         setLoading(false);

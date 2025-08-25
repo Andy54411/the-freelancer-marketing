@@ -103,7 +103,7 @@ export default function QuoteDetailPage() {
         setError(result.error || 'Angebotsanfrage nicht gefunden');
       }
     } catch (err) {
-      console.error('Fehler beim Laden der Angebotsanfrage:', err);
+
       setError('Fehler beim Laden der Angebotsanfrage');
     } finally {
       setLoading(false);
@@ -136,7 +136,7 @@ export default function QuoteDetailPage() {
         setError(result.error || 'Fehler beim Bearbeiten der Angebotsanfrage');
       }
     } catch (err) {
-      console.error('Fehler beim Bearbeiten der Angebotsanfrage:', err);
+
       setError('Fehler beim Bearbeiten der Angebotsanfrage');
     } finally {
       setResponding(false);
@@ -171,7 +171,7 @@ export default function QuoteDetailPage() {
         setError(result.error || 'Fehler beim Senden des Angebots');
       }
     } catch (err) {
-      console.error('Fehler beim Senden des Angebots:', err);
+
       setError('Fehler beim Senden des Angebots');
     } finally {
       setResponding(false);

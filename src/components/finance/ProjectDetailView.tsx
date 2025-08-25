@@ -109,7 +109,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
       setTimeEntries(entries);
     } catch (error) {
-      console.error('Fehler beim Laden der Zeiteinträge:', error);
+
     } finally {
       setLoading(false);
     }
@@ -150,7 +150,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
       onProjectUpdate(updatedProject);
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Projektstatus:', error);
+
     }
   };
 

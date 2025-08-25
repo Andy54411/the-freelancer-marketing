@@ -52,7 +52,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
       if (submitError) {
         // Fehler bei der Validierung des Payment Elements (z.B. ungültige Kartennummer)
-        console.error('Fehler beim Absenden des Payment Elements:', submitError);
+
         onError(submitError.message || 'Fehler bei der Zahlungseingabe.');
         setProcessingInternal(false);
         onProcessing(false);
@@ -73,20 +73,20 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
       if (confirmError) {
         // Fehler bei der Bestätigung der Zahlung (z.B. von der Bank abgelehnt)
-        console.error('Fehler bei der Bestätigung des Payment Intents:', confirmError);
+
         onError(confirmError.message || 'Ein unerwarteter Zahlungsfehler ist aufgetreten.');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Zahlung erfolgreich!
-        console.log('PaymentIntent erfolgreich abgeschlossen:', paymentIntent);
+
         onSuccess(paymentIntent.id); // RUFT onSuccess MIT paymentIntent.id AUF
       } else {
         // Andere PaymentIntent-Status (z.B. 'processing', 'requires_action' ohne Redirect)
-        console.warn("PaymentIntent Status ist nicht 'succeeded':", paymentIntent?.status);
+
         onError(`Zahlung fehlgeschlagen. Status: ${paymentIntent?.status}.`);
       }
     } catch (apiError: any) {
       // Ein unerwarteter Fehler im try-Block
-      console.error('Unerwarteter Fehler im handleSubmit:', apiError);
+
       onError(`Ein unerwarteter Fehler ist aufgetreten: ${apiError.message || 'Unbekannt.'}`);
     } finally {
       setProcessingInternal(false); // Internen State zurücksetzen

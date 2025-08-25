@@ -39,7 +39,7 @@ export default function AdminUsersPage() {
         setUsers(data.users || []);
       }
     } catch (error) {
-      console.error('Failed to load users:', error);
+
     } finally {
       setLoading(false);
     }

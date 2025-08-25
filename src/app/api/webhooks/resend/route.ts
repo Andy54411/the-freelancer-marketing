@@ -8,8 +8,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { type, data } = body;
 
-    console.log('Resend Webhook Event:', { type, data });
-
     switch (type) {
       case 'email.received':
         // Neue eingehende E-Mail
@@ -42,7 +40,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log('Unbekanntes Webhook-Event:', type);
+
     }
 
     return NextResponse.json({
@@ -50,7 +48,7 @@ export async function POST(request: NextRequest) {
       message: 'Webhook verarbeitet',
     });
   } catch (error) {
-    console.error('Webhook-Verarbeitungsfehler:', error);
+
     return NextResponse.json({ error: 'Webhook-Verarbeitungsfehler' }, { status: 500 });
   }
 }
@@ -99,12 +97,6 @@ async function handleIncomingEmail(data: any) {
     // In Firestore speichern
     const docRef = await addDoc(collection(db, 'inbox_emails'), inboxMessage);
 
-    console.log('Eingehende E-Mail gespeichert:', {
-      firestoreId: docRef.id,
-      from: data.from,
-      subject: data.subject,
-    });
-
     // Optional: Automatische Ticket-Erstellung bei bestimmten E-Mail-Adressen
     if (shouldCreateTicket(data.from, data.subject)) {
       await createTicketFromEmail(docRef.id, inboxMessage);
@@ -112,7 +104,7 @@ async function handleIncomingEmail(data: any) {
 
     return docRef.id;
   } catch (error) {
-    console.error('Fehler beim Verarbeiten der eingehenden E-Mail:', error);
+
     throw error;
   }
 }
@@ -140,10 +132,9 @@ async function updateEmailStatus(messageId: string, status: string, data: any) {
         ],
       });
 
-      console.log(`E-Mail-Status aktualisiert: ${messageId} -> ${status}`);
     }
   } catch (error) {
-    console.error('Fehler beim Aktualisieren des E-Mail-Status:', error);
+
   }
 }
 
@@ -190,9 +181,9 @@ async function createTicketFromEmail(emailId: string, emailData: any) {
     };
 
     await addDoc(collection(db, 'tickets'), ticket);
-    console.log('Automatisches Ticket erstellt für E-Mail:', emailId);
+
   } catch (error) {
-    console.error('Fehler beim Erstellen des automatischen Tickets:', error);
+
   }
 }
 

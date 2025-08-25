@@ -165,7 +165,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       setRunningEntry(running);
       setStats(statistics);
     } catch (error) {
-      console.error('Fehler beim Laden der Daten:', error);
+
       toast.error('Daten konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -210,7 +210,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
 
       return loadedProjects;
     } catch (error) {
-      console.error('Fehler beim Laden der Firebase-Projekte:', error);
+
       return [];
     }
   };
@@ -268,7 +268,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiterfassung gestartet');
       await loadData();
     } catch (error) {
-      console.error('Fehler beim Starten der Zeiterfassung:', error);
+
       toast.error('Zeiterfassung konnte nicht gestartet werden');
     }
   };
@@ -281,7 +281,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiterfassung gestoppt');
       await loadData();
     } catch (error) {
-      console.error('Fehler beim Stoppen der Zeiterfassung:', error);
+
       toast.error('Zeiterfassung konnte nicht gestoppt werden');
     }
   };
@@ -294,7 +294,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiterfassung pausiert');
       await loadData();
     } catch (error) {
-      console.error('Fehler beim Pausieren der Zeiterfassung:', error);
+
       toast.error('Zeiterfassung konnte nicht pausiert werden');
     }
   };
@@ -307,7 +307,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiterfassung fortgesetzt');
       await loadData();
     } catch (error) {
-      console.error('Fehler beim Fortsetzen der Zeiterfassung:', error);
+
       toast.error('Zeiterfassung konnte nicht fortgesetzt werden');
     }
   };
@@ -322,7 +322,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       toast.success('Zeiteintrag gelöscht');
       await loadData();
     } catch (error) {
-      console.error('Fehler beim Löschen des Zeiteintrags:', error);
+
       toast.error('Zeiteintrag konnte nicht gelöscht werden');
     }
   };
@@ -343,7 +343,7 @@ export function TimeTrackingComponent({ companyId, userId }: TimeTrackingCompone
       setReport(reportData);
       setShowReport(true);
     } catch (error) {
-      console.error('Fehler beim Generieren des Reports:', error);
+
       toast.error('Report konnte nicht generiert werden');
     }
   };

@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       }, {} as any),
     });
   } catch (error) {
-    console.error('Debug API Fehler:', error);
+
     return NextResponse.json(
       { error: 'Failed to fetch time entries', details: error },
       { status: 500 }

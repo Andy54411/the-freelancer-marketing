@@ -20,7 +20,6 @@ interface DatevAuthResult {
  */
 export async function validateDatevToken(userId: string): Promise<DatevAuthResult> {
   try {
-    console.log('🔐 DATEV Auth Middleware: Validating token for user:', userId);
 
     // Check if token exists in localStorage (client-side) or database (server-side)
     const token = getStoredDatevToken(userId);
@@ -35,7 +34,6 @@ export async function validateDatevToken(userId: string): Promise<DatevAuthResul
 
     // Check if token is expired
     if (token.expiresAt && Date.now() >= token.expiresAt) {
-      console.log('⚠️ DATEV token expired, attempting refresh...');
 
       if (token.refreshToken) {
         return await refreshDatevToken(token.refreshToken, userId);
@@ -55,7 +53,7 @@ export async function validateDatevToken(userId: string): Promise<DatevAuthResul
       expiresAt: token.expiresAt,
     };
   } catch (error: any) {
-    console.error('❌ DATEV Auth Middleware Error:', error);
+
     return {
       success: false,
       error: error.message || 'Unknown authentication error',
@@ -73,7 +71,6 @@ export async function initiateDatevAuthFlow(
   userId: string,
   redirectUri?: string
 ): Promise<{ authUrl: string; state: string }> {
-  console.log('🔄 Initiating DATEV OAuth flow for user:', userId);
 
   // Generate secure state parameter
   const state = generateSecureState(userId);
@@ -104,7 +101,6 @@ export async function initiateDatevAuthFlow(
  */
 async function refreshDatevToken(refreshToken: string, userId: string): Promise<DatevAuthResult> {
   try {
-    console.log('🔄 Refreshing DATEV token for user:', userId);
 
     const config = await getDatevConfig();
 
@@ -138,8 +134,6 @@ async function refreshDatevToken(refreshToken: string, userId: string): Promise<
       tokenType: tokenData.token_type || 'Bearer',
     });
 
-    console.log('✅ DATEV token refreshed successfully');
-
     return {
       success: true,
       accessToken: tokenData.access_token,
@@ -147,7 +141,7 @@ async function refreshDatevToken(refreshToken: string, userId: string): Promise<
       expiresAt,
     };
   } catch (error: any) {
-    console.error('❌ DATEV token refresh failed:', error);
+
     return {
       success: false,
       requiresAuth: true,

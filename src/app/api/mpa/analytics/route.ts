@@ -24,8 +24,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('📊 Getting unified analytics for company:', companyId);
-
     const dateRange = startDate && endDate ? { startDate, endDate } : undefined;
 
     const result = await multiPlatformAdvertisingService.getUnifiedAnalytics(companyId, dateRange);
@@ -45,7 +43,7 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Multi-platform analytics API error:', error);
+
     return NextResponse.json(
       {
         success: false,

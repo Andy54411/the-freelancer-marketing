@@ -8,9 +8,7 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-    console.error(
-      'FATAL_ERROR: Die Umgebungsvariable STRIPE_SECRET_KEY ist nicht gesetzt für die API Route /api/bill-additional-hours.'
-    );
+
     return null;
   }
 
@@ -20,7 +18,6 @@ function getStripeInstance() {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('[API /bill-additional-hours] POST Anfrage empfangen.');
 
   const stripe = getStripeInstance();
   if (!stripe) {
@@ -32,10 +29,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    console.log(
-      '[API /bill-additional-hours] Request Body empfangen:',
-      JSON.stringify(body, null, 2)
-    );
 
     const {
       orderId,
@@ -85,9 +78,6 @@ export async function POST(request: NextRequest) {
     let providerStripeAccountId = initialProviderStripeAccountId;
 
     if (!providerStripeAccountId || !providerStripeAccountId.startsWith('acct_')) {
-      console.log(
-        '[API /bill-additional-hours] Invalid provider Stripe Account ID, checking for fallback...'
-      );
 
       // Versuche Fallback aus users collection zu holen
       try {
@@ -98,10 +88,6 @@ export async function POST(request: NextRequest) {
           const fallbackStripeAccountId = userData?.stripeAccountId;
 
           if (fallbackStripeAccountId && fallbackStripeAccountId.startsWith('acct_')) {
-            console.log(
-              '[API /bill-additional-hours] Found fallback Stripe Account ID:',
-              fallbackStripeAccountId
-            );
 
             // Migriere die ID zur users collection (Server-Side)
             try {
@@ -110,14 +96,9 @@ export async function POST(request: NextRequest) {
                 migratedFromUsers: true,
                 migratedAt: new Date(),
               });
-              console.log(
-                '[API /bill-additional-hours] Successfully migrated Stripe Account ID to users collection'
-              );
+
             } catch (migrationError) {
-              console.warn(
-                '[API /bill-additional-hours] Could not migrate Stripe Account ID (non-critical):',
-                migrationError
-              );
+
             }
 
             // Verwende Fallback für diese Anfrage
@@ -140,10 +121,7 @@ export async function POST(request: NextRequest) {
           );
         }
       } catch (fallbackError) {
-        console.error(
-          '[API /bill-additional-hours] Error checking fallback Stripe Account ID:',
-          fallbackError
-        );
+
         return NextResponse.json(
           {
             error: 'Fehler beim Prüfen der Provider Stripe-Konfiguration.',
@@ -187,8 +165,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[API /bill-additional-hours] Erstelle PaymentIntent für ${totalAmount} Cents`);
-
     // Berechne Plattformgebühr (4.5% - wird bei Auszahlung an Company abgezogen)
     const platformFee = Math.round(totalAmount * 0.045);
 
@@ -229,11 +205,6 @@ export async function POST(request: NextRequest) {
       description: `Zusätzliche Arbeitsstunden für Auftrag ${orderId} - Direktüberweisung`,
     });
 
-    console.log(
-      '[API /bill-additional-hours] Platform Hold PaymentIntent erfolgreich erstellt:',
-      paymentIntent.id
-    );
-
     return NextResponse.json({
       success: true,
       paymentIntentId: paymentIntent.id,
@@ -256,24 +227,15 @@ export async function POST(request: NextRequest) {
     let stripeErrorType: string | null = null;
 
     if (error instanceof Stripe.errors.StripeError) {
-      console.error(
-        '[API /bill-additional-hours] StripeError:',
-        JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-      );
+
       errorMessage = `Stripe Fehler: ${error.message}`;
       stripeErrorCode = error.code || null;
       stripeErrorType = error.type;
     } else if (error instanceof Error) {
-      console.error(
-        '[API /bill-additional-hours] Allgemeiner Fehler:',
-        JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-      );
+
       errorMessage = error.message;
     } else {
-      console.error(
-        '[API /bill-additional-hours] Unbekannter Fehler:',
-        JSON.stringify(error, null, 2)
-      );
+
     }
 
     return NextResponse.json(

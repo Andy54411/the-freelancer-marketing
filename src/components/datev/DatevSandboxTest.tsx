@@ -33,17 +33,17 @@ interface DatevDebugInfo {
     isSandbox: boolean;
   };
   tests?: {
-    oidcDiscovery: { 
-      success: boolean; 
+    oidcDiscovery: {
+      success: boolean;
       status: number;
       error?: string;
     };
-    endpointValidation: { 
+    endpointValidation: {
       allMatch: boolean;
       details?: string[];
     };
-    credentials: { 
-      configured: boolean; 
+    credentials: {
+      configured: boolean;
       validSandboxId: boolean;
       issues?: string[];
     };
@@ -85,7 +85,7 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
         toast.error('DATEV Sandbox-Test fehlgeschlagen');
       }
     } catch (error) {
-      console.error('Connection test failed:', error);
+
       toast.error('Verbindungstest fehlgeschlagen');
       setDebugInfo({ success: false });
     } finally {
@@ -113,12 +113,10 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
         throw new Error(result.error || 'Failed to generate auth URL');
       }
 
-      console.log('🚀 Starting DATEV OAuth flow:', result.authUrl);
-
       // Vollständige Seitenweiterleitung
       window.location.href = result.authUrl;
     } catch (error) {
-      console.error('OAuth flow failed:', error);
+
       toast.error(
         'Fehler beim Starten des DATEV OAuth-Flows: ' +
           (error instanceof Error ? error.message : 'Unbekannter Fehler')
@@ -130,16 +128,15 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
   const getDebugOAuthUrl = async () => {
     try {
       const response = await fetch(`/api/datev/debug-oauth-flow?companyId=${companyId}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
 
       if (data.success && data.debug?.authUrl?.fullUrl) {
-        console.log('🔍 Debug OAuth URL:', data.debug.authUrl.fullUrl);
-        
+
         // Moderne Clipboard API mit Fallback
         try {
           await navigator.clipboard.writeText(data.debug.authUrl.fullUrl);
@@ -152,23 +149,23 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
           textArea.style.opacity = '0';
           document.body.appendChild(textArea);
           textArea.select();
-          
+
           try {
             document.execCommand('copy');
             toast.success('OAuth URL in die Zwischenablage kopiert (Fallback)');
           } catch (fallbackError) {
-            console.log('🔗 OAuth URL:', data.debug.authUrl.fullUrl);
+
             toast.info('OAuth URL wurde in der Konsole ausgegeben');
           }
-          
+
           document.body.removeChild(textArea);
         }
       } else {
         throw new Error('Ungültige API-Response: Fehlende OAuth URL');
       }
     } catch (error) {
-      console.error('Debug OAuth URL failed:', error);
-      toast.error('Fehler beim Generieren der Debug-URL: ' + 
+
+      toast.error('Fehler beim Generieren der Debug-URL: ' +
         (error instanceof Error ? error.message : 'Unbekannter Fehler'));
     }
   };
@@ -346,9 +343,9 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
               )}
             </Button>
 
-            <Button 
-              onClick={getDebugOAuthUrl} 
-              variant="outline" 
+            <Button
+              onClick={getDebugOAuthUrl}
+              variant="outline"
               className="flex-shrink-0 border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white focus:ring-2 focus:ring-[#14ad9f] focus:ring-offset-2"
               aria-label="Debug OAuth URL in Zwischenablage kopieren"
             >
@@ -357,8 +354,8 @@ export function DatevSandboxTest({ companyId }: DatevSandboxTestProps) {
             </Button>
           </div>
 
-          <p 
-            id="oauth-flow-description" 
+          <p
+            id="oauth-flow-description"
             className="text-xs text-gray-500 text-center"
           >
             Sie werden sicher zu DATEV Sandbox weitergeleitet, um die Verbindung zu autorisieren.

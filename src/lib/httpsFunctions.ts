@@ -11,10 +11,6 @@ export async function callHttpsFunction(
     throw new Error('User not authenticated');
   }
 
-  console.log('🔐 callHttpsFunction - User UID:', user.uid);
-  console.log('📡 callHttpsFunction - Function:', functionName);
-  console.log('📊 callHttpsFunction - Data:', data);
-
   // Verwende direkte HTTP-Requests für alle Functions
   return await callHttpsFunctionDirect(functionName, data, method);
 }

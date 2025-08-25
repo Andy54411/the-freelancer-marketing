@@ -8,21 +8,20 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     const headersList = await headers();
     const signature = headersList.get('resend-signature');
-    
+
     // TODO: Webhook-Signatur validieren (für Produktionsumgebung)
-    console.log('📧 Eingehende E-Mail Webhook erhalten');
 
     const webhookData = JSON.parse(body);
-    
+
     // E-Mail-Typ bestimmen
     if (webhookData.type === 'email.received') {
       return await handleIncomingEmail(webhookData.data);
     }
-    
+
     return NextResponse.json({ message: 'Webhook verarbeitet' });
-    
+
   } catch (error) {
-    console.error('❌ Fehler beim Verarbeiten des E-Mail-Webhooks:', error);
+
     return NextResponse.json(
       { error: 'Webhook-Verarbeitung fehlgeschlagen' },
       { status: 500 }
@@ -33,12 +32,10 @@ export async function POST(request: NextRequest) {
 async function handleIncomingEmail(emailData: any) {
   try {
     const { from, to, subject, text, html } = emailData;
-    
-    console.log('📨 Eingehende E-Mail:', { from, to, subject });
 
     // Prüfen ob es eine Antwort auf ein bestehendes Ticket ist
     const ticketIdMatch = subject.match(/#(ticket-\w+)/);
-    
+
     if (ticketIdMatch) {
       // Antwort auf bestehendes Ticket
       const ticketId = ticketIdMatch[1];
@@ -47,9 +44,9 @@ async function handleIncomingEmail(emailData: any) {
       // Neues Ticket aus E-Mail erstellen
       return await createTicketFromEmail(from, subject, text || html);
     }
-    
+
   } catch (error) {
-    console.error('❌ Fehler beim Verarbeiten der eingehenden E-Mail:', error);
+
     return NextResponse.json(
       { error: 'E-Mail-Verarbeitung fehlgeschlagen' },
       { status: 500 }
@@ -61,8 +58,6 @@ async function addCommentToTicket(ticketId: string, from: string, content: strin
   try {
     // TODO: Hier würde die Datenbank-Integration stehen
     // Für jetzt nur Logging
-    console.log(`💬 Neuer Kommentar für Ticket ${ticketId} von ${from}`);
-    console.log('Inhalt:', content);
 
     // Ticket aus Datenbank laden (Mock)
     const ticket: Ticket = {
@@ -93,30 +88,29 @@ async function addCommentToTicket(ticketId: string, from: string, content: strin
     };
 
     // TODO: Kommentar in Datenbank speichern
-    
+
     // E-Mail-Benachrichtigung an Team senden
     // await TicketEmailService.sendTicketCommentEmail(ticket, newComment);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Kommentar hinzugefügt',
       ticketId,
       commentId: newComment.id
     });
-    
+
   } catch (error) {
-    console.error('❌ Fehler beim Hinzufügen des Kommentars:', error);
+
     throw error;
   }
 }
 
 async function createTicketFromEmail(from: string, subject: string, content: string) {
   try {
-    console.log(`🎫 Erstelle neues Ticket aus E-Mail von ${from}`);
-    
+
     // Kategorie basierend auf Subject bestimmen
     const category = determineCategory(subject, content);
-    
-    // Priorität basierend auf Keywords bestimmen  
+
+    // Priorität basierend auf Keywords bestimmen
     const priority = determinePriority(subject, content);
 
     const newTicket: Ticket = {
@@ -135,25 +129,24 @@ async function createTicketFromEmail(from: string, subject: string, content: str
     };
 
     // TODO: Ticket in Datenbank speichern
-    console.log('Neues Ticket erstellt:', newTicket);
 
     // E-Mail-Bestätigung an Absender senden
     await sendTicketConfirmationEmail(from, newTicket);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Ticket aus E-Mail erstellt',
       ticketId: newTicket.id
     });
-    
+
   } catch (error) {
-    console.error('❌ Fehler beim Erstellen des Tickets aus E-Mail:', error);
+
     throw error;
   }
 }
 
 function determineCategory(subject: string, content: string): Ticket['category'] {
   const text = `${subject} ${content}`.toLowerCase();
-  
+
   if (text.includes('bug') || text.includes('fehler') || text.includes('problem')) {
     return 'bug';
   }
@@ -166,13 +159,13 @@ function determineCategory(subject: string, content: string): Ticket['category']
   if (text.includes('account') || text.includes('konto') || text.includes('login')) {
     return 'account';
   }
-  
+
   return 'support'; // Standard
 }
 
 function determinePriority(subject: string, content: string): Ticket['priority'] {
   const text = `${subject} ${content}`.toLowerCase();
-  
+
   if (text.includes('urgent') || text.includes('dringend') || text.includes('sofort')) {
     return 'urgent';
   }
@@ -182,7 +175,7 @@ function determinePriority(subject: string, content: string): Ticket['priority']
   if (text.includes('niedrig') || text.includes('low')) {
     return 'low';
   }
-  
+
   return 'medium'; // Standard
 }
 
@@ -201,11 +194,11 @@ async function sendTicketConfirmationEmail(to: string, ticket: Ticket) {
     });
 
     if (response.ok) {
-      console.log('✅ Bestätigungs-E-Mail gesendet an:', to);
+
     } else {
-      console.error('❌ Fehler beim Senden der Bestätigungs-E-Mail');
+
     }
   } catch (error) {
-    console.error('❌ Fehler beim Senden der Bestätigungs-E-Mail:', error);
+
   }
 }

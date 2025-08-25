@@ -145,10 +145,6 @@ const ProjectDetailPage: React.FC = () => {
         const data = projectDocSnap.data();
 
         // Debug: Logge die rohen Daten um zu verstehen was geladen wird
-        console.log('🔍 Raw project data:', data);
-        console.log('🔍 Proposals type:', typeof data?.proposals);
-        console.log('🔍 Proposals value:', data?.proposals);
-        console.log('🔍 Is proposals array?', Array.isArray(data?.proposals));
 
         // Prüfe ob der User der Eigentümer ist
         if (data.customerUid !== uid) {
@@ -165,7 +161,6 @@ const ProjectDetailPage: React.FC = () => {
         } else if (data.proposals && typeof data.proposals === 'object') {
           // Falls proposals als Objekt gespeichert sind, konvertiere zu Array
           proposalsToProcess = Object.values(data.proposals);
-          console.log('🔄 Converted proposals object to array:', proposalsToProcess);
 
           // Filtere nur echte Proposals (nicht payment_pending Einträge)
           proposalsToProcess = proposalsToProcess.filter(
@@ -176,13 +171,11 @@ const ProjectDetailPage: React.FC = () => {
               !proposal.paymentIntentId &&
               (proposal.providerId || proposal.companyUid || proposal.providerName)
           );
-          console.log('🔍 Filtered real proposals:', proposalsToProcess);
+
         } else {
           proposalsToProcess = [];
-          console.log('⚠️ No proposals found or invalid format');
-        }
 
-        console.log('📝 Processing proposals:', proposalsToProcess);
+        }
 
         const projectData: ProjectRequest = {
           id: projectDocSnap.id,
@@ -236,7 +229,6 @@ const ProjectDetailPage: React.FC = () => {
         };
 
         // Erweitere Proposals mit Company-Daten
-        console.log('📝 Processing proposals:', proposalsToProcess);
 
         const enhancedProposals = await Promise.all(
           proposalsToProcess.map(async (proposal: any) => {
@@ -246,7 +238,7 @@ const ProjectDetailPage: React.FC = () => {
                 proposal.providerId || proposal.companyId || proposal.companyUid || proposal.uid;
 
               if (!providerId) {
-                console.warn('Proposal ohne providerId gefunden:', proposal);
+
                 return {
                   id: proposal.id || `unknown_${Date.now()}`,
                   providerId: 'unknown',
@@ -277,8 +269,6 @@ const ProjectDetailPage: React.FC = () => {
               const companyDocRef = doc(db, 'users', providerId);
               const companyDoc = await getDoc(companyDocRef);
               const companyData = companyDoc.exists() ? companyDoc.data() : {};
-
-              console.log('🏢 Company data loaded for providerId:', providerId, companyData);
 
               const enhancedProposal = {
                 id: proposal.id || `${providerId}_${Date.now()}`,
@@ -342,7 +332,7 @@ const ProjectDetailPage: React.FC = () => {
               };
               return enhancedProposal;
             } catch (error) {
-              console.error('Fehler beim Laden der Company-Daten für Proposal:', error);
+
               // Fallback für defekte Proposals
               const fallbackProviderId =
                 proposal.providerId ||
@@ -383,7 +373,7 @@ const ProjectDetailPage: React.FC = () => {
         setProject(projectData);
         setLoading(false);
       } catch (error) {
-        console.error('Fehler beim Laden der Projektdetails:', error);
+
         setError('Fehler beim Laden der Projektdetails');
         setLoading(false);
         toast.error('Fehler beim Laden der Projektdetails');
@@ -397,18 +387,12 @@ const ProjectDetailPage: React.FC = () => {
   useEffect(() => {
     if (!projectId) return;
 
-    console.log('🔴 Setting up realtime listener for project statistics...');
-
     const projectDocRef = doc(db, 'project_requests', projectId);
     const unsubscribe = onSnapshot(
       projectDocRef,
       docSnapshot => {
         if (docSnapshot.exists()) {
           const updatedData = docSnapshot.data();
-          console.log('📊 Realtime update received:', {
-            viewCount: updatedData.viewCount,
-            proposalsCount: updatedData.proposals?.length || 0,
-          });
 
           // Aktualisiere NUR viewCount und updatedAt
           // Lasse proposals völlig unberührt (behält enhancedProposals)
@@ -427,13 +411,13 @@ const ProjectDetailPage: React.FC = () => {
         }
       },
       error => {
-        console.error('❌ Realtime listener error:', error);
+
       }
     );
 
     // Cleanup function
     return () => {
-      console.log('🟡 Cleaning up realtime listener...');
+
       unsubscribe();
     };
   }, [projectId]);
@@ -1147,7 +1131,6 @@ const ProjectDetailPage: React.FC = () => {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {project.selectedProviders.map((provider, index) => {
-                              console.log('🔍 Provider Debug:', provider, typeof provider);
 
                               // Wenn es ein String ist
                               if (typeof provider === 'string') {

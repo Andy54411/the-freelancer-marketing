@@ -9,8 +9,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'paymentIntentId is required' }, { status: 400 });
     }
 
-    console.log(`[TEST WEBHOOK] Simuliere payment_intent.succeeded für: ${paymentIntentId}`);
-
     // Simuliere ein Stripe Event für die Webhook-Verarbeitung
     const simulatedStripeEvent = {
       id: `evt_test_${Date.now()}`,
@@ -50,7 +48,6 @@ export async function POST(req: NextRequest) {
     });
 
     // Rufe den echten Webhook-Handler direkt auf
-    console.log('[TEST WEBHOOK] Rufe echten Webhook-Handler auf...');
 
     // Da der Handler die Signatur überprüft, müssen wir das umgehen
     // Stattdessen rufen wir die Logik direkt auf
@@ -61,7 +58,7 @@ export async function POST(req: NextRequest) {
       simulatedEvent: simulatedStripeEvent,
     });
   } catch (error) {
-    console.error('[TEST WEBHOOK ERROR]', error);
+
     return NextResponse.json(
       {
         error: 'Test webhook simulation failed',

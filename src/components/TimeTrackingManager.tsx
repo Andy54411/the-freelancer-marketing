@@ -76,7 +76,6 @@ export default function TimeTrackingManager({
   const loadTimeTracking = async () => {
     try {
       setLoading(true);
-      console.log('[TimeTrackingManager] Loading time tracking for order:', orderId);
 
       // Lade Auftragsdaten direkt aus Firebase
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
@@ -84,21 +83,11 @@ export default function TimeTrackingManager({
         const orderData = orderDoc.data();
         const entries: TimeEntry[] = [];
 
-        console.log(
-          '[TimeTrackingManager] Order data loaded, timeTracking:',
-          orderData.timeTracking
-        );
-
         // Lade TimeTracking-Einträge aus dem Auftrag
         if (orderData.timeTracking?.timeEntries) {
-          console.log(
-            '[TimeTrackingManager] Found timeEntries:',
-            orderData.timeTracking.timeEntries.length
-          );
 
           orderData.timeTracking.timeEntries.forEach((entry: any, index: number) => {
             // Debug: Log the raw status from database
-            console.log('Raw entry status from DB:', entry.status, 'Entry:', entry);
 
             // Erweiterte Status-Mapping-Logik
             let mappedStatus: 'logged' | 'submitted' | 'approved' | 'rejected' | 'paid' = 'logged';
@@ -125,7 +114,6 @@ export default function TimeTrackingManager({
             }
 
             // Debug: Log the mapped status
-            console.log('Mapped status:', mappedStatus, 'for raw status:', entry.status);
 
             entries.push({
               id: entry.id || `entry-${index}`,
@@ -143,16 +131,15 @@ export default function TimeTrackingManager({
             });
           });
         } else {
-          console.log('[TimeTrackingManager] No timeEntries found in order data');
+
         }
 
-        console.log('[TimeTrackingManager] Processed entries:', entries.length);
         setTimeEntries(entries);
       } else {
-        console.error('[TimeTrackingManager] Order not found:', orderId);
+
       }
     } catch (error) {
-      console.error('Error loading time tracking:', error);
+
     } finally {
       setLoading(false);
     }
@@ -223,8 +210,6 @@ export default function TimeTrackingManager({
         category: category,
       };
 
-      console.log('Submitting time entry:', timeEntry);
-
       // Falls wir split benötigen, erstelle zwei Einträge
       if (originalHours > 0 && additionalHours > 0) {
         // Erstelle original-Eintrag
@@ -293,7 +278,7 @@ export default function TimeTrackingManager({
         }
       }, 500);
     } catch (error) {
-      console.error('Error submitting time entry:', error);
+
       showError(
         'Fehler beim Speichern',
         error instanceof Error ? error.message : 'Unbekannter Fehler'
@@ -328,7 +313,7 @@ export default function TimeTrackingManager({
       );
       await loadTimeTracking();
     } catch (error) {
-      console.error('Error deleting time entry:', error);
+
       showError('Fehler beim Löschen der Zeiteintragung');
     }
   };
@@ -347,17 +332,16 @@ export default function TimeTrackingManager({
       .reduce((sum, entry) => sum + entry.hours, 0),
     totalRevenue: timeEntries.reduce((sum, entry) => {
       // Debug: Log entry for revenue calculation
-      console.log('Revenue calc for entry:', entry.status, 'billableAmount:', entry.billableAmount);
 
       // Berechne Revenue für alle Einträge mit billableAmount, unabhängig vom Status
       if (entry.billableAmount && entry.billableAmount > 0) {
-        console.log('Adding billableAmount to revenue:', entry.billableAmount / 100);
+
         return sum + entry.billableAmount / 100; // Convert from cents to euros
       }
 
       // Fallback: Für approved/paid ohne billableAmount verwende Stunden * Rate
       if ((entry.status === 'approved' || entry.status === 'paid') && entry.hours > 0) {
-        console.log('Adding hours * rate to revenue:', entry.hours * hourlyRate);
+
         return sum + entry.hours * hourlyRate;
       }
 

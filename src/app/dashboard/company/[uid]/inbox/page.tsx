@@ -132,7 +132,7 @@ export default function CompanyInboxPage() {
           checkCompletion();
         },
         err => {
-          console.error('Fehler beim Laden der normalen Chats:', err);
+
           checkCompletion();
         }
       );
@@ -171,7 +171,7 @@ export default function CompanyInboxPage() {
           checkCompletion();
         },
         err => {
-          console.error('Fehler beim Laden der direkten Chats:', err);
+
           checkCompletion();
         }
       );
@@ -207,7 +207,7 @@ export default function CompanyInboxPage() {
           setError('Zugehöriger Auftrag für diesen Chat nicht gefunden.');
         }
       } catch (err) {
-        console.error('Fehler beim Laden des Auftragsstatus:', err);
+
         setError('Fehler beim Laden des Auftragsstatus.');
       } finally {
         setLoadingOrderStatus(false);

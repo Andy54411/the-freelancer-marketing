@@ -4,7 +4,6 @@ import { db } from '@/firebase/server';
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[LIST TEMP DRAFTS] Lade alle temporären Job-Entwürfe...');
 
     const snapshot = await db.collection('temporaryJobDrafts')
       .orderBy('createdAt', 'desc')
@@ -16,8 +15,6 @@ export async function GET(req: NextRequest) {
       data: doc.data()
     }));
 
-    console.log(`[LIST TEMP DRAFTS] ${drafts.length} Entwürfe gefunden`);
-
     return NextResponse.json({
       success: true,
       count: drafts.length,
@@ -25,7 +22,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[LIST TEMP DRAFTS] Fehler:', error);
+
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler'
@@ -38,10 +35,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { firebaseUserId } = body;
 
-    console.log('[LIST TEMP DRAFTS] Suche Entwürfe für User:', firebaseUserId);
-
     let query = db.collection('temporaryJobDrafts').orderBy('createdAt', 'desc');
-    
+
     if (firebaseUserId) {
       query = query.where('firebaseUserId', '==', firebaseUserId) as any;
     }
@@ -53,8 +48,6 @@ export async function POST(req: NextRequest) {
       data: doc.data()
     }));
 
-    console.log(`[LIST TEMP DRAFTS] ${drafts.length} Entwürfe für User ${firebaseUserId} gefunden`);
-
     return NextResponse.json({
       success: true,
       firebaseUserId: firebaseUserId,
@@ -63,7 +56,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[LIST TEMP DRAFTS] Fehler:', error);
+
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler'

@@ -22,7 +22,7 @@ export default function FinancePage() {
       const financeStats = await FinanceService.getFinanceStats(uid);
       setStats(financeStats);
     } catch (error) {
-      console.error('Fehler beim Laden der Finanzstatistiken:', error);
+
       toast.error('Fehler beim Laden der Finanzstatistiken');
 
       // Fallback: Leere Statistiken

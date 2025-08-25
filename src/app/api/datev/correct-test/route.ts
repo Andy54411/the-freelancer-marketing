@@ -55,7 +55,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('DATEV correct test error:', error);
+
     return NextResponse.json(
       {
         success: false,

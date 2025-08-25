@@ -50,7 +50,7 @@ export default function ExpensesPage() {
 
         setExpenses(loadedExpenses);
       } catch (error) {
-        console.error('Fehler beim Laden der Ausgaben:', error);
+
         toast.error('Fehler beim Laden der Ausgaben');
       } finally {
         setLoading(false);

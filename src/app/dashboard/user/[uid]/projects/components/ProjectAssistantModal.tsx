@@ -138,11 +138,11 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
           `${result.data.questions?.length || 0} Fragen generiert für bessere Projektplanung!`
         );
       } else {
-        console.error('API Response:', result);
+
         throw new Error(result.error || 'Fehler beim Generieren der Fragen');
       }
     } catch (error) {
-      console.error('Fehler beim Generieren der intelligenten Fragen:', error);
+
       toast.error('Fehler beim Generieren der Fragen');
     } finally {
       setLoading(false);
@@ -178,7 +178,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         );
       }
     } catch (error) {
-      console.error('Fehler beim Erstellen des detaillierten Projekts:', error);
+
       toast.error('Fehler beim Erstellen des Projekts');
     } finally {
       setLoading(false);
@@ -214,24 +214,9 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
 
   // Dienstleister für ein Projekt auswählen/abwählen
   const toggleProviderSelection = (projectIndex: number, provider: ProviderRecommendation) => {
-    console.log('[ProjectAssistant] toggleProviderSelection called with:', {
-      projectIndex,
-      providerId: provider.id,
-      providerName: provider.companyName || provider.name,
-    });
-
     setSelectedProviders(prev => {
       const currentProviders = prev[projectIndex] || [];
       const isSelected = currentProviders.some(p => p.id === provider.id);
-
-      console.log('[ProjectAssistant] Current selectedProviders state:', {
-        currentProviders: currentProviders.map(p => ({ id: p.id, name: p.companyName || p.name })),
-        isSelected,
-        allSelectedProviders: Object.keys(prev).reduce((acc, key) => {
-          acc[key] = prev[parseInt(key)].map(p => ({ id: p.id, name: p.companyName || p.name }));
-          return acc;
-        }, {} as any),
-      });
 
       if (isSelected) {
         // Dienstleister entfernen
@@ -239,14 +224,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
           ...prev,
           [projectIndex]: currentProviders.filter(p => p.id !== provider.id),
         };
-        console.log('[ProjectAssistant] Provider removed, new state:', {
-          projectIndex,
-          removedProvider: { id: provider.id, name: provider.companyName || provider.name },
-          remainingProviders: newState[projectIndex].map(p => ({
-            id: p.id,
-            name: p.companyName || p.name,
-          })),
-        });
         return newState;
       } else {
         // Dienstleister hinzufügen
@@ -254,14 +231,10 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
           ...prev,
           [projectIndex]: [...currentProviders, provider],
         };
-        console.log('[ProjectAssistant] Provider selection toggled successfully:', {
-          projectIndex,
-          addedProvider: { id: provider.id, name: provider.companyName || provider.name },
-          allProviders: newState[projectIndex].map(p => ({
-            id: p.id,
-            name: p.companyName || p.name,
-          })),
-        });
+        return newState;
+      }
+    });
+
         return newState;
       }
     });
@@ -296,12 +269,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         const services = getSelectedServices(index);
         const providers = selectedProviders[index] || [];
 
-        console.log(`🔍 DEBUG Projekt ${index} (${idea.title}):`, {
-          services: services.length,
-          providers: providers.length,
-          providerNames: providers.map(p => p.companyName || p.name),
-        });
-
         if (services.length > 0) {
           projectsToCreate.push({
             idea,
@@ -317,8 +284,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         setLoading(false);
         return;
       }
-
-      console.log('🚀 Erstelle mehrere Projekte:', projectsToCreate);
 
       // Erstelle Bundle-Daten für übergeordnete Organisation
       const bundleData = {
@@ -353,8 +318,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
             deliverables: [], // ProjectIdea hat keine deliverables
           };
 
-          console.log(`📤 Erstelle Projekt ${successCount + 1}:`, projectData);
-
           const response = await fetch('/api/ai-project-creation', {
             method: 'POST',
             headers: {
@@ -379,20 +342,19 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
 
           if (result.success) {
             successCount++;
-            console.log(`✅ Projekt ${successCount} erfolgreich erstellt:`, result.project.title);
 
             // Speichere Bundle-ID vom ersten Projekt für nachfolgende Projekte
             if (successCount === 1 && result.bundleId) {
               createdBundleId = result.bundleId;
-              console.log('📦 Bundle-ID gespeichert für nachfolgende Projekte:', createdBundleId);
+
             }
           } else {
             errorCount++;
-            console.error(`❌ Fehler bei Projekt ${idea.title}:`, result.error);
+
           }
         } catch (error) {
           errorCount++;
-          console.error(`❌ Fehler bei Projekt ${idea.title}:`, error);
+
         }
       }
 
@@ -417,7 +379,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         toast.error(`❌ Fehler beim Erstellen der Projekte. Versuche es erneut.`);
       }
     } catch (error) {
-      console.error('Fehler beim Erstellen der Projekte:', error);
+
       toast.error('Fehler beim Erstellen der Projekte');
     } finally {
       setLoading(false);
@@ -433,16 +395,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
 
       // Verwende ausgewählte Provider falls verfügbar
       const providersToUse = projectIndex !== undefined ? getSelectedProviders(projectIndex) : [];
-
-      console.log('🔍 Creating project with:', {
-        title: idea.title,
-        projectIndex,
-        originalServices: idea.services,
-        selectedServices: servicesToUse,
-        allSelectedServices: selectedServices,
-        selectedProviders: providersToUse,
-        hasProviders: providersToUse.length > 0,
-      });
 
       if (servicesToUse.length === 0) {
         toast.error('Bitte wähle mindestens einen Service aus');
@@ -464,12 +416,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         specialRequirements: '', // ProjectIdea hat keine specialRequirements
         deliverables: [], // ProjectIdea hat keine deliverables
       };
-
-      console.log('📤 Sending project data:', {
-        projectData,
-        selectedProviders: providersToUse,
-        isDirectAssignment: providersToUse.length > 0,
-      });
 
       const response = await fetch('/api/project-requests', {
         method: 'POST',
@@ -499,7 +445,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         throw new Error(result.error || 'Fehler beim Erstellen des Projekts');
       }
     } catch (error) {
-      console.error('Fehler beim Erstellen des Projekts:', error);
+
       toast.error('Fehler beim Erstellen des Projekts');
     } finally {
       setLoading(false);
@@ -534,11 +480,11 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         setProjectIdeas(result.data);
         toast.success('Projektideen erfolgreich generiert!');
       } else {
-        console.error('API Response:', result);
+
         throw new Error(result.error || 'Ungültige Antwort von der KI');
       }
     } catch (error) {
-      console.error('Fehler beim Generieren der Projektideen:', error);
+
       toast.error('Fehler beim Generieren der Projektideen');
     } finally {
       setLoading(false);
@@ -549,18 +495,12 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
     setSelectedProject(project);
     setLoading(true);
 
-    console.log('🔍 DEBUG findProviders called:', {
-      projectTitle: project.title,
-      projectIndex,
-      showProviderSelectionBefore: showProviderSelection,
-    });
-
     // Wenn projectIndex gegeben ist, zeige Dienstleister-Auswahl für dieses spezifische Projekt
     if (projectIndex !== undefined) {
       setShowProviderSelection(projectIndex);
-      console.log('✅ showProviderSelection gesetzt auf:', projectIndex);
+
     } else {
-      console.log('❌ projectIndex ist undefined - showProviderSelection bleibt null!');
+
     }
 
     try {
@@ -592,11 +532,11 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
 
         toast.success('Passende Dienstleister gefunden!');
       } else {
-        console.error('API Response:', result);
+
         throw new Error('Ungültige Antwort von der KI');
       }
     } catch (error) {
-      console.error('Fehler beim Finden der Dienstleister:', error);
+
       toast.error('Fehler beim Finden der Dienstleister');
     } finally {
       setLoading(false);
@@ -634,7 +574,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         throw new Error('Ungültige Antwort von der KI');
       }
     } catch (error) {
-      console.error('Fehler bei der Beratung:', error);
+
       toast.error('Fehler bei der Beratung');
     } finally {
       setLoading(false);
@@ -1355,18 +1295,11 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                                         : 'bg-[#14ad9f] hover:bg-[#129488] text-white'
                                     }`}
                                     onClick={() => {
-                                      console.log('🔍 DEBUG Button-Click:', {
-                                        showProviderSelection,
-                                        providerId: provider.id,
-                                        providerName: provider.companyName || provider.name,
-                                      });
 
                                       if (showProviderSelection !== null) {
                                         toggleProviderSelection(showProviderSelection, provider);
                                       } else {
-                                        console.log(
-                                          '❌ showProviderSelection ist null - Button funktioniert nicht!'
-                                        );
+
                                       }
                                     }}
                                   >

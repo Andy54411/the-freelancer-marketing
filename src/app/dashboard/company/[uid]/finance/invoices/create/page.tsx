@@ -138,7 +138,7 @@ export default function CreateInvoicePage() {
           }
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Template-Einstellung:', error);
+
         // Fallback to localStorage on error
         if (typeof window !== 'undefined') {
           const savedTemplate = localStorage.getItem('selectedInvoiceTemplate') as InvoiceTemplate;
@@ -198,7 +198,7 @@ export default function CreateInvoicePage() {
 
         setCustomers(loadedCustomers);
       } catch (error) {
-        console.error('Fehler beim Laden der Kunden:', error);
+
       } finally {
         setLoadingCustomers(false);
       }
@@ -318,17 +318,15 @@ export default function CreateInvoicePage() {
   // Funktion zum Prüfen ob eine Rechnungsnummer bereits existiert
   const checkInvoiceNumberExists = async (invoiceNumber: string): Promise<boolean> => {
     try {
-      console.log('🕵️ Prüfe ob Rechnungsnummer bereits existiert:', invoiceNumber);
+
       const allInvoices = await FirestoreInvoiceService.getInvoicesByCompany(uid);
       const exists = allInvoices.some(
         invoice => invoice.invoiceNumber === invoiceNumber || invoice.number === invoiceNumber
       );
-      console.log(
-        `${exists ? '❌' : '✅'} Rechnungsnummer ${invoiceNumber} ${exists ? 'existiert bereits' : 'ist verfügbar'}`
-      );
+
       return exists;
     } catch (error) {
-      console.error('❌ Fehler beim Prüfen der Rechnungsnummer:', error);
+
       return false;
     }
   };
@@ -336,15 +334,13 @@ export default function CreateInvoicePage() {
   // Funktion zum Generieren der nächsten Rechnungsnummer - nutzt den korrekten Service
   const generateNextInvoiceNumber = async () => {
     try {
-      console.log('🔢 Generiere nächste Rechnungsnummer via FirestoreInvoiceService...');
+
       const { sequentialNumber, formattedNumber } =
         await FirestoreInvoiceService.getNextInvoiceNumber(uid);
-      console.log(
-        `✅ Generierte Rechnungsnummer: ${formattedNumber} (sequentialNumber: ${sequentialNumber})`
-      );
+
       return { number: formattedNumber, sequentialNumber };
     } catch (error) {
-      console.error('❌ Fehler beim Generieren der Rechnungsnummer:', error);
+
       // Fallback
       const year = new Date().getFullYear();
       const randomNumber = Math.floor(Math.random() * 1000) + 1;
@@ -357,24 +353,17 @@ export default function CreateInvoicePage() {
     e.preventDefault();
 
     if (isSubmitting) {
-      console.log('⚠️ Submit bereits in Bearbeitung, ignoriere weiteren Submit');
+
       return;
     }
 
-    console.log(`🚀 Starting handleSubmit with action: ${action}`);
     setIsSubmitting(true);
 
     try {
       // Validation
-      console.log('🔍 Validiere Formulardaten...', {
-        customerName: formData.customerName,
-        issueDate: formData.issueDate,
-        dueDate: formData.dueDate,
-        itemsCount: items.length,
-      });
 
       if (!formData.customerName || !formData.issueDate || !formData.dueDate) {
-        console.error('❌ Validierung fehlgeschlagen: Pflichtfelder fehlen');
+
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         setIsSubmitting(false);
         return;
@@ -384,17 +373,14 @@ export default function CreateInvoicePage() {
       if (action === 'finalize') {
         // Prüfe ob bereits eine Rechnungsnummer vorhanden ist (bei Draft-Bearbeitung)
         if (!formData.invoiceNumber) {
-          console.log('🔢 Keine Rechnungsnummer vorhanden - generiere neue für Finalisierung...');
+
           // Generiere neue Rechnungsnummer nur wenn keine vorhanden ist
         } else {
-          console.log('✅ Rechnungsnummer bereits vorhanden:', formData.invoiceNumber);
+
           // Prüfe ob die vorhandene Rechnungsnummer eindeutig ist
           const numberExists = await checkInvoiceNumberExists(formData.invoiceNumber);
           if (numberExists) {
-            console.error(
-              '❌ Validierung fehlgeschlagen: Rechnungsnummer bereits vergeben:',
-              formData.invoiceNumber
-            );
+
             toast.error(
               `Rechnungsnummer ${formData.invoiceNumber} ist bereits vergeben. Bitte verwenden Sie eine andere Nummer.`
             );
@@ -408,16 +394,13 @@ export default function CreateInvoicePage() {
         item => item.description && item.quantity > 0 && item.unitPrice > 0
       );
       if (!hasValidItems) {
-        console.error('❌ Validierung fehlgeschlagen: Keine gültigen Positionen', items);
+
         toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
         setIsSubmitting(false);
         return;
       }
 
-      console.log('✅ Alle Validierungen bestanden');
-
       const { subtotal, tax, total } = calculateTotals();
-      console.log('💰 Berechnungen:', { subtotal, tax, total });
 
       // Bei Finalisierung Rechnungsnummer verwalten
       let finalInvoiceNumber = formData.invoiceNumber || '';
@@ -425,24 +408,18 @@ export default function CreateInvoicePage() {
 
       // Nur für finale Rechnungen eine echte Rechnungsnummer generieren (wenn nicht bereits vorhanden)
       if (action === 'finalize' && !finalInvoiceNumber) {
-        console.log('🔢 Generiere neue finale Rechnungsnummer...');
+
         const result = await generateNextInvoiceNumber();
         finalInvoiceNumber = result.number;
         sequentialNumber = result.sequentialNumber;
-        console.log(
-          '✅ Generierte finale Rechnungsnummer:',
-          finalInvoiceNumber,
-          'Sequential:',
-          sequentialNumber
-        );
+
       } else if (action === 'finalize' && finalInvoiceNumber) {
-        console.log('✅ Verwende vorhandene Rechnungsnummer:', finalInvoiceNumber);
+
       } else {
         // Für Entwürfe keine Rechnungsnummer setzen
-        console.log('📝 Entwurf wird ohne finale Rechnungsnummer gespeichert');
+
       }
 
-      console.log('📋 Erstelle Rechnungsobjekt...');
       const newInvoice = {
         // Rechnungsnummer nur für finalisierte Rechnungen
         ...(action === 'finalize' &&
@@ -497,17 +474,8 @@ export default function CreateInvoicePage() {
         ...(action === 'finalize' && { finalizedAt: serverTimestamp() }),
       };
 
-      console.log('📤 Speichere Rechnung in Firestore...', {
-        status: newInvoice.status,
-        companyId: newInvoice.companyId,
-        createdBy: newInvoice.createdBy,
-        itemsCount: newInvoice.items.length,
-      });
-
       // Save invoice to Firestore
       const docRef = await addDoc(collection(db, 'invoices'), newInvoice);
-
-      console.log('✅ Rechnung erfolgreich gespeichert! Document ID:', docRef.id);
 
       if (action === 'finalize') {
         toast.success(`Rechnung ${finalInvoiceNumber} erfolgreich erstellt!`);
@@ -516,15 +484,12 @@ export default function CreateInvoicePage() {
       }
 
       // Leite weiter zur Rechnungsübersicht
-      console.log('🔄 Leite weiter zur Rechnungsübersicht...');
+
       router.push(`/dashboard/company/${uid}/finance/invoices`);
     } catch (error) {
-      console.error('❌ Fehler beim Speichern der Rechnung:', error);
 
       // Detaillierte Fehleranalyse
       if (error.code) {
-        console.error('🔍 Firestore Error Code:', error.code);
-        console.error('🔍 Firestore Error Message:', error.message);
 
         if (error.code === 'permission-denied') {
           toast.error('Berechtigung verweigert - bitte kontaktieren Sie den Support');
@@ -537,7 +502,7 @@ export default function CreateInvoicePage() {
         toast.error('Unbekannter Fehler beim Speichern der Rechnung');
       }
     } finally {
-      console.log('🏁 Submit beendet, setze isSubmitting auf false');
+
       setIsSubmitting(false);
     }
   };

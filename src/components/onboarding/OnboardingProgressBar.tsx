@@ -21,9 +21,9 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
   lastSaved
 }) => {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('de-DE', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleTimeString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -32,12 +32,12 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-          <div 
+          <div
             className="bg-[#14ad9f] h-2 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${completionPercentage}%` }}
           />
         </div>
-        
+
         {/* Step Indicators */}
         <div className="flex items-center justify-between mb-4">
           {Array.from({ length: totalSteps }, (_, i) => {
@@ -45,15 +45,15 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
             const isCompleted = stepsData.find(s => s.step === stepNumber)?.isCompleted || false;
             const isCurrent = stepNumber === currentStep;
             const isAccessible = stepNumber <= currentStep;
-            
+
             return (
               <div key={stepNumber} className="flex items-center">
-                <div 
+                <div
                   className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-all duration-200 ${
-                    isCompleted 
-                      ? 'bg-[#14ad9f] text-white' 
-                      : isCurrent 
-                        ? 'bg-[#14ad9f] text-white ring-4 ring-[#14ad9f] ring-opacity-20' 
+                    isCompleted
+                      ? 'bg-[#14ad9f] text-white'
+                      : isCurrent
+                        ? 'bg-[#14ad9f] text-white ring-4 ring-[#14ad9f] ring-opacity-20'
                         : isAccessible
                           ? 'bg-gray-300 text-gray-600 hover:bg-gray-400 cursor-pointer'
                           : 'bg-gray-100 text-gray-400'
@@ -65,10 +65,10 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
                     stepNumber
                   )}
                 </div>
-                
+
                 {/* Step connector line */}
                 {stepNumber < totalSteps && (
-                  <div 
+                  <div
                     className={`w-12 h-0.5 mx-2 transition-colors duration-200 ${
                       stepNumber < currentStep ? 'bg-[#14ad9f]' : 'bg-gray-200'
                     }`}
@@ -78,14 +78,14 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
             );
           })}
         </div>
-        
+
         {/* Status and Navigation */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">
               {Math.round(completionPercentage)}% abgeschlossen • Schritt {currentStep} von {totalSteps}
             </span>
-            
+
             {/* Auto-save indicator */}
             <div className="flex items-center gap-2 text-xs text-gray-500">
               {isSaving ? (
@@ -106,13 +106,13 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
               )}
             </div>
           </div>
-          
+
           {/* Navigation Buttons */}
           <div className="flex gap-3">
-            <button 
+            <button
               className={`px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-                canGoBack 
-                  ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-50' 
+                canGoBack
+                  ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                   : 'text-gray-400 cursor-not-allowed'
               } rounded-md`}
               disabled={!canGoBack}
@@ -120,11 +120,11 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
             >
               Zurück
             </button>
-            
-            <button 
+
+            <button
               className={`px-6 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                canGoNext 
-                  ? 'bg-[#14ad9f] text-white hover:bg-[#129488] hover:shadow-md transform hover:-translate-y-0.5' 
+                canGoNext
+                  ? 'bg-[#14ad9f] text-white hover:bg-[#129488] hover:shadow-md transform hover:-translate-y-0.5'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
               disabled={!canGoNext}
@@ -134,7 +134,7 @@ const OnboardingProgressBar: React.FC<OnboardingProgressBarProps> = ({
             </button>
           </div>
         </div>
-        
+
         {/* Current step info */}
         <div className="mt-3 pt-3 border-t border-gray-100">
           <div className="text-xs text-gray-500">

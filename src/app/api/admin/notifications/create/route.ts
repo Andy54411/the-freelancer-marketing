@@ -29,8 +29,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'userId erforderlich' }, { status: 400 });
     }
 
-    console.log(`Erstelle Admin-SDK Notification für User: ${targetUserId}`);
-
     // Erstelle Notification mit Admin-SDK (umgeht Firestore-Regeln)
     let notification;
 
@@ -67,15 +65,13 @@ export async function POST(request: NextRequest) {
     // Verwende Admin-SDK zum Erstellen (umgeht Client-Regeln)
     const docRef = await db.collection('notifications').add(notification);
 
-    console.log(`Admin-Notification erfolgreich erstellt mit ID: ${docRef.id}`);
-
     return NextResponse.json({
       success: true,
       message: 'Admin-Notification erfolgreich erstellt',
       notificationId: docRef.id,
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen der Admin-Notification:', error);
+
     return NextResponse.json(
       {
         success: false,

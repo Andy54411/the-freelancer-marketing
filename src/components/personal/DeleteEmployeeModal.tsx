@@ -36,7 +36,7 @@ export function DeleteEmployeeModal({
       onEmployeeDeleted(employee.id!);
       onClose();
     } catch (error) {
-      console.error('Error deleting employee:', error);
+
       toast.error('Fehler beim Löschen des Mitarbeiters');
     } finally {
       setLoading(false);

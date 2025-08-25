@@ -22,8 +22,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🎯 Getting campaigns from all platforms for company:', companyId);
-
     const result = await multiPlatformAdvertisingService.getAllCampaigns(companyId);
 
     if (result.success) {
@@ -41,7 +39,7 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Multi-platform campaigns API error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -73,8 +71,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🚀 Creating campaign on platform:', platform, 'for company:', companyId);
-
     const result = await multiPlatformAdvertisingService.createCampaign(
       companyId,
       platform,
@@ -96,7 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Campaign creation API error:', error);
+
     return NextResponse.json(
       {
         success: false,

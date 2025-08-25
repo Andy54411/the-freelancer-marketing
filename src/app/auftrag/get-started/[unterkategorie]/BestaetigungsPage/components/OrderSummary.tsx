@@ -68,13 +68,9 @@ export function OrderSummary({
   // Nur in Development-Modus loggen
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     // eslint-disable-next-line no-console
-    console.log('Image-URL:', imageUrl);
+
     // eslint-disable-next-line no-console
-    console.log(
-      'profilePictureURL:',
-      anbieterDetails.profilePictureURL,
-      typeof anbieterDetails.profilePictureURL
-    );
+
   }
 
   return (
@@ -91,7 +87,7 @@ export function OrderSummary({
             onError={e => {
               if (process.env.NODE_ENV === 'development') {
                 // eslint-disable-next-line no-console
-                console.error('Image-Load-Error:', imageUrl, e);
+
               }
               const img = e.target as HTMLImageElement;
               if (img && img.style) {
@@ -101,7 +97,7 @@ export function OrderSummary({
             onLoad={() => {
               if (process.env.NODE_ENV === 'development') {
                 // eslint-disable-next-line no-console
-                console.log('Image loaded successfully:', imageUrl);
+
               }
             }}
           />

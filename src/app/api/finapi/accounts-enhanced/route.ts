@@ -41,12 +41,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    console.log('🏦 Getting accounts for user:', userId, 'forceRefresh:', forceRefresh);
-
     // SCHRITT 1: Prüfe ob User Banking-Setup hat
     const hasBanking = await hasUserBankingSetup(userId);
     if (!hasBanking && !forceRefresh) {
-      console.log('⚠️ User has no banking setup - returning empty state');
+
       return NextResponse.json({
         success: true,
         accounts: [],
@@ -58,7 +56,6 @@ export async function GET(request: NextRequest) {
 
     // SCHRITT 2: Lade gespeicherte Konten aus der lokalen Datenbank
     const storedAccounts = await getUserBankAccounts(userId);
-    console.log('💾 Found', storedAccounts.length, 'stored accounts');
 
     // Wenn forceRefresh = false und wir haben gespeicherte Konten, verwende diese
     if (!forceRefresh && storedAccounts.length > 0) {
@@ -95,13 +92,6 @@ export async function GET(request: NextRequest) {
         {} as { [bankName: string]: any[] }
       );
 
-      console.log(
-        '✅ Returning',
-        transformedAccounts.length,
-        'accounts from',
-        Object.keys(accountsByBank).length,
-        'banks (local storage)'
-      );
       return NextResponse.json({
         success: true,
         accounts: transformedAccounts,
@@ -115,7 +105,6 @@ export async function GET(request: NextRequest) {
     }
 
     // SCHRITT 3: Falls forceRefresh oder keine lokalen Daten - synchronisiere mit finAPI
-    console.log('🔄 Syncing with finAPI...');
 
     // Get finAPI configuration
     const baseUrl = getFinApiBaseUrl(credentialType);
@@ -147,7 +136,6 @@ export async function GET(request: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ Client credentials token obtained');
 
     // Step 2: Get user token
     const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36);
@@ -168,7 +156,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userTokenResponse.ok) {
-      console.log('⚠️ User not found in finAPI - returning stored accounts if available');
+
       if (storedAccounts.length > 0) {
         const transformedAccounts = storedAccounts.map(account => ({
           id: account.finapiAccountId,
@@ -205,7 +193,6 @@ export async function GET(request: NextRequest) {
     }
 
     const userTokenData = await userTokenResponse.json();
-    console.log('✅ User token obtained');
 
     // Step 3: Get accounts from finAPI
     const accountsResponse = await fetch(`${baseUrl}/api/v2/accounts?view=userView`, {
@@ -217,7 +204,6 @@ export async function GET(request: NextRequest) {
 
     if (!accountsResponse.ok) {
       const errorText = await accountsResponse.text();
-      console.error('❌ finAPI accounts request failed:', errorText);
 
       // Fallback to stored accounts if available
       if (storedAccounts.length > 0) {
@@ -255,8 +241,6 @@ export async function GET(request: NextRequest) {
     const accountsData = await accountsResponse.json();
     const accounts = accountsData.accounts || [];
 
-    console.log(`📊 Retrieved ${accounts.length} accounts from finAPI`);
-
     // Step 4: Transform finAPI accounts to Taskilo format
     const transformedAccounts = accounts.map((account: any) => ({
       id: account.id.toString(),
@@ -292,9 +276,9 @@ export async function GET(request: NextRequest) {
 
       try {
         await storeBankAccounts(userId, storedAccountsData);
-        console.log('✅ Updated stored accounts with fresh finAPI data');
+
       } catch (error) {
-        console.error('⚠️ Failed to update stored accounts:', error);
+
       }
     }
 
@@ -307,7 +291,6 @@ export async function GET(request: NextRequest) {
       hasBankingSetup: accounts.length > 0,
     });
   } catch (error: any) {
-    console.error('❌ Error in accounts API:', error);
 
     // Last fallback - try to return stored accounts
     try {
@@ -341,7 +324,7 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch (fallbackError) {
-      console.error('❌ Fallback also failed:', fallbackError);
+
     }
 
     return NextResponse.json(

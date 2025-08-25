@@ -44,7 +44,7 @@ export default function DatevAuthComponent({
           const token = await auth.currentUser.getIdToken();
           setFirebaseToken(token);
         } catch (error) {
-          console.error('Failed to get Firebase token:', error);
+
         }
       }
     };
@@ -64,7 +64,6 @@ export default function DatevAuthComponent({
     setStatusMessage('Initiating DATEV OAuth flow...');
 
     try {
-      console.log('🔐 Starting DATEV OAuth with new auth middleware');
 
       // Call new DATEV auth API with Firebase token
       const response = await fetch('/api/datev/auth', {
@@ -93,7 +92,7 @@ export default function DatevAuthComponent({
         throw new Error(result.error || 'Invalid OAuth response');
       }
     } catch (error: any) {
-      console.error('❌ DATEV OAuth initiation failed:', error);
+
       setStatusMessage(error.message || 'Authentication failed');
       setAuthStatus('error');
       onAuthError?.(error.message || 'Authentication failed');
@@ -106,7 +105,6 @@ export default function DatevAuthComponent({
     if (!user || !firebaseToken) return;
 
     try {
-      console.log('🔍 Checking DATEV authentication status');
 
       const response = await fetch('/api/datev/userinfo-test', {
         headers: {
@@ -133,7 +131,7 @@ export default function DatevAuthComponent({
         }
       }
     } catch (error: any) {
-      console.error('❌ DATEV auth status check failed:', error);
+
       setStatusMessage('Failed to check authentication status');
       setAuthStatus('error');
     }

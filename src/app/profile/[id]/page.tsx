@@ -134,8 +134,6 @@ export default function ProfilePage() {
       return;
     }
 
-    console.log('handleBookNow called for profile:', profile);
-
     // User-Profil laden falls noch nicht vorhanden
     if (!userProfile) {
       await loadUserProfile();
@@ -157,7 +155,7 @@ export default function ProfilePage() {
         setUserProfile(userDoc.data() as UserProfileData);
       }
     } catch (error) {
-      console.error('Fehler beim Laden des User-Profils:', error);
+
     }
   };
 
@@ -168,13 +166,6 @@ export default function ProfilePage() {
     description: string
   ) => {
     try {
-      console.log('Buchung bestätigt:', {
-        provider: profile,
-        selection,
-        time,
-        durationString,
-        description,
-      });
 
       // Prüfe ob Profile verfügbar ist
       if (!profile) {
@@ -184,7 +175,7 @@ export default function ProfilePage() {
       setIsBookingModalOpen(false);
       setIsCreateOrderModalOpen(true);
     } catch (error) {
-      console.error('Fehler bei der Buchung:', error);
+
       alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
     }
   };
@@ -241,7 +232,7 @@ export default function ProfilePage() {
           setUserProfile(userDoc.data() as UserProfileData);
         }
       } catch (error) {
-        console.error('Fehler beim Laden des User-Profils:', error);
+
       }
     };
 
@@ -263,7 +254,6 @@ export default function ProfilePage() {
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          console.log('🔍 Loaded user data for profile:', userData);
 
           // Extrahiere Profilbild aus verschiedenen möglichen Quellen
           const profilePicture =
@@ -436,7 +426,7 @@ export default function ProfilePage() {
           }
         }
       } catch (err) {
-        console.error('Fehler beim Laden des Firmenprofils:', err);
+
         setError('Fehler beim Laden des Firmenprofils');
       } finally {
         setLoading(false);
@@ -488,9 +478,8 @@ export default function ProfilePage() {
           );
         }
 
-        console.log('Loaded reviews for provider:', companyId, reviewsData);
       } catch (error) {
-        console.error('Error loading reviews:', error);
+
         setReviews([]);
       } finally {
         setReviewsLoading(false);

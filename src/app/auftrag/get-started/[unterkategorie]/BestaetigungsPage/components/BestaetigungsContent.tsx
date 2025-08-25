@@ -21,7 +21,7 @@ function parseDurationStringToHours(durationStr?: string): number | null {
   }
   const parsedNum = parseFloat(durationStr);
   if (!isNaN(parsedNum)) return parsedNum;
-  console.warn(PAGE_WARN, `parseDuration: Konnte keine Zahl extrahieren aus "${durationStr}"`);
+
   return null;
 }
 
@@ -68,7 +68,7 @@ export default function BestaetigungsContent({
       try {
         return decodeURIComponent(initialJobDurationString);
       } catch (e) {
-        console.error(PAGE_ERROR, 'Fehler Dekod. initialJobDurationString:', e);
+
         return undefined;
       }
     }
@@ -77,7 +77,7 @@ export default function BestaetigungsContent({
       try {
         return decodeURIComponent(auftragsDauerFromQuery);
       } catch (e) {
-        console.error(PAGE_ERROR, 'Fehler Dekod. auftragsDauer:', e);
+
         return undefined;
       }
     }
@@ -146,7 +146,7 @@ export default function BestaetigungsContent({
   );
 
   if (!anbieterId || !unterkategorie || !postalCodeJob) {
-    console.log(PAGE_LOG, 'BestaetigungsContent: Notwendige Props noch nicht verfügbar.');
+
     const missingParams: string[] = [];
     if (!anbieterId) missingParams.push('Anbieter-ID');
     if (!unterkategorie) missingParams.push('Unterkategorie');

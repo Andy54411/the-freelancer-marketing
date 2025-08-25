@@ -62,7 +62,7 @@ export function useCompanyDashboard() {
         ]);
 
         if (!userSnap.exists()) {
-          console.warn('useCompanyDashboard: User document does not exist for UID:', uid);
+
           setUserData(null);
           setMissingFields([]);
           return;
@@ -109,7 +109,7 @@ export function useCompanyDashboard() {
           setView('settings');
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Firmendaten:', error);
+
         // Optional: Einen Fehlerstatus setzen, um ihn in der UI anzuzeigen.
       } finally {
         setIsChecking(false);

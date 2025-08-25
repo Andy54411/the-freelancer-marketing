@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error) {
-      console.error('❌ LinkedIn OAuth error:', error);
+
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/taskilo-advertising?error=oauth_failed&platform=linkedin`
       );
@@ -26,8 +26,6 @@ export async function GET(request: NextRequest) {
 
     const companyId = state;
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/multi-platform-advertising/auth/linkedin/callback`;
-
-    console.log('🔄 Exchanging LinkedIn authorization code for tokens...');
 
     // Exchange code for access token
     const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -86,14 +84,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log('✅ LinkedIn connection established successfully');
-
     // Redirect back to dashboard with success
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${companyId}/taskilo-advertising?success=connected&platform=linkedin`
     );
   } catch (error: any) {
-    console.error('❌ LinkedIn OAuth callback error:', error);
 
     const companyId = new URL(request.url).searchParams.get('state');
     return NextResponse.redirect(

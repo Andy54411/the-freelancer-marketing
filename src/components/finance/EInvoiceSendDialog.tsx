@@ -134,20 +134,20 @@ Mit freundlichen Grüßen`,
   const checkCompliance = async () => {
     setIsChecking(true);
     try {
-      console.log('🔍 XML Content für Compliance-Check:', xmlContent.substring(0, 500));
+
       const compliance = await EInvoiceTransmissionService.checkUStGCompliance(xmlContent);
-      console.log('📋 Compliance Result:', compliance);
+
       setComplianceCheck(compliance);
 
       if (compliance.isCompliant) {
         toast.success('E-Rechnung ist UStG §14 konform');
       } else {
         toast.error('E-Rechnung entspricht nicht UStG §14 Anforderungen');
-        console.log('❌ Compliance Errors:', compliance.errors);
+
       }
     } catch (error) {
       toast.error('Compliance-Prüfung fehlgeschlagen');
-      console.error('Compliance check error:', error);
+
     } finally {
       setIsChecking(false);
     }
@@ -242,7 +242,7 @@ Mit freundlichen Grüßen`,
       setStep('completed');
       toast.success('E-Rechnung erfolgreich versendet');
     } catch (error) {
-      console.error('Versendung fehlgeschlagen:', error);
+
       toast.error('E-Rechnungs-Versendung fehlgeschlagen: ' + (error as Error).message);
       setStep('recipient');
     } finally {
@@ -434,7 +434,7 @@ Mit freundlichen Grüßen`,
 
       return true;
     } catch (error) {
-      console.error('PDF-Generation fehlgeschlagen:', error);
+
       throw error;
     }
   };
@@ -1142,7 +1142,7 @@ Mit freundlichen Grüßen`,
                   generateTransmissionLogPDF();
                   toast.success('PDF wurde heruntergeladen');
                 } catch (error) {
-                  console.error('PDF-Export fehlgeschlagen:', error);
+
                   toast.error('PDF-Export fehlgeschlagen');
                 }
               }}

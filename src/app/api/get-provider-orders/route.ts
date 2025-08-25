@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
 
     // DIRECT FIRESTORE ACCESS - Bypass Firebase Functions billing issue
     try {
-      console.log(`[getProviderOrders API] Fetching orders for provider: ${providerId}`);
 
       // Fetch orders directly from Firestore
       const ordersSnapshot = await db
@@ -49,7 +48,7 @@ export async function GET(request: NextRequest) {
         .get();
 
       if (ordersSnapshot.empty) {
-        console.log(`[getProviderOrders API] No orders found for provider ${providerId}`);
+
         return NextResponse.json({ orders: [] }, { headers });
       }
 
@@ -77,10 +76,7 @@ export async function GET(request: NextRequest) {
                   customerData?.profilePictureURL || customerData?.profilePictureFirebaseUrl;
               }
             } catch (customerError) {
-              console.warn(
-                `[getProviderOrders API] Could not fetch customer details:`,
-                customerError
-              );
+
             }
           }
 
@@ -102,10 +98,6 @@ export async function GET(request: NextRequest) {
         })
       );
 
-      console.log(
-        `[getProviderOrders API] Successfully fetched ${orders.length} orders for provider ${providerId}`
-      );
-
       return NextResponse.json(
         {
           orders,
@@ -115,10 +107,8 @@ export async function GET(request: NextRequest) {
         { headers }
       );
     } catch (firestoreError) {
-      console.error('[getProviderOrders API] Firestore direct access failed:', firestoreError);
 
       // Fallback: Try Firebase Function (if billing gets activated)
-      console.log('[getProviderOrders API] Attempting Firebase Function fallback...');
 
       const functionUrl = `https://europe-west1-tilvo-f142f.cloudfunctions.net/getProviderOrders?providerId=${providerId}`;
 
@@ -146,7 +136,7 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error: unknown) {
-    console.error('API Proxy Error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

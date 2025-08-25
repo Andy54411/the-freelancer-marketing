@@ -44,9 +44,8 @@ export class TicketNotificationService {
 
       await db.collection('notifications').add(notification);
 
-      console.log(`Ticket-Notification erstellt für User ${customerUid}, Ticket ${ticketId}`);
     } catch (error) {
-      console.error('Fehler beim Erstellen der Ticket-Notification:', error);
+
       throw error;
     }
   }
@@ -80,9 +79,8 @@ export class TicketNotificationService {
         await db.collection('notifications').add(notification);
       }
 
-      console.log(`Admin-Notifications erstellt für neues Ticket ${ticketId}`);
     } catch (error) {
-      console.error('Fehler beim Erstellen der Admin-Notification:', error);
+
       throw error;
     }
   }

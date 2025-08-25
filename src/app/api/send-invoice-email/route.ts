@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   try {
     // Prüfe Resend API Key
     if (!process.env.RESEND_API_KEY) {
-      console.error('❌ RESEND_API_KEY nicht gefunden');
+
       return NextResponse.json(
         { error: 'E-Mail-Service nicht konfiguriert - API Key fehlt' },
         { status: 500 }
@@ -18,20 +18,13 @@ export async function POST(request: NextRequest) {
     const { invoiceId, recipientEmail, recipientName, subject, message, senderName } =
       await request.json();
 
-    console.log('📧 Starte Rechnungsversendung:', {
-      invoiceId,
-      recipientEmail,
-      recipientName,
-      senderName,
-    });
-
     // Validierung
     if (!invoiceId || !recipientEmail || !subject || !message || !senderName) {
       return NextResponse.json({ error: 'Fehlende erforderliche Felder' }, { status: 400 });
     }
 
     // Rechnung laden
-    console.log('🔄 Lade Rechnung aus Firestore...');
+
     const invoiceDoc = await db.collection('invoices').doc(invoiceId).get();
     if (!invoiceDoc.exists) {
       return NextResponse.json({ error: 'Rechnung nicht gefunden' }, { status: 404 });
@@ -56,8 +49,6 @@ export async function POST(request: NextRequest) {
     const personalizedEmailPrefix = createEmailFromCompanyName(senderName);
     const personalizedSenderEmail = `${personalizedEmailPrefix}@taskilo.de`;
 
-    console.log('📧 Personalisierte Sender-E-Mail:', personalizedSenderEmail);
-
     // PDF-Anhang generieren
     let pdfAttachment: {
       filename: string;
@@ -66,7 +57,6 @@ export async function POST(request: NextRequest) {
       disposition: string;
     } | null = null;
     try {
-      console.log('📄 Generiere PDF-Anhang für Rechnung...');
 
       // Interne PDF-Generation über unsere bestehende API
       const pdfResponse = await fetch(
@@ -97,18 +87,16 @@ export async function POST(request: NextRequest) {
             disposition: 'attachment',
           };
 
-          console.log('✅ PDF-Anhang erfolgreich generiert:', pdfAttachment.filename);
         } else {
           // JSON-Antwort (Fallback-Modus)
           const result = await pdfResponse.json();
-          console.log('⚠️ PDF-Service im Fallback-Modus - Print-URL erhalten:', result.printUrl);
-          console.log('📧 E-Mail wird ohne PDF-Anhang gesendet');
+
         }
       } else {
-        console.warn('⚠️ PDF-Generation fehlgeschlagen - E-Mail wird ohne Anhang gesendet');
+
       }
     } catch (pdfError) {
-      console.warn('⚠️ PDF-Anhang konnte nicht generiert werden:', pdfError.message);
+
     }
 
     // E-Mail-Konfiguration mit optionalem PDF-Anhang
@@ -125,24 +113,24 @@ export async function POST(request: NextRequest) {
           <meta charset="utf-8">
           <title>${subject}</title>
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              line-height: 1.6; 
-              color: #333; 
-              max-width: 600px; 
-              margin: 0 auto; 
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
               padding: 20px;
             }
-            .header { 
-              text-align: center; 
-              margin-bottom: 30px; 
-              border-bottom: 2px solid #14ad9f; 
-              padding-bottom: 20px; 
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #14ad9f;
+              padding-bottom: 20px;
             }
-            .logo { 
-              color: #14ad9f; 
-              font-size: 24px; 
-              font-weight: bold; 
+            .logo {
+              color: #14ad9f;
+              font-size: 24px;
+              font-weight: bold;
             }
             .download-button {
               display: inline-block;
@@ -164,10 +152,10 @@ export async function POST(request: NextRequest) {
             <h1 class="logo">Taskilo</h1>
             <p>Ihre Rechnung von ${senderName}</p>
           </div>
-          
+
           <p>Hallo ${recipientName || 'Kunde'},</p>
           <p>${message}</p>
-          
+
           <div style="background: #f8fafc; padding: 20px; border-radius: 6px; margin: 20px 0;">
             <h3 style="color: #14ad9f;">Rechnungsdetails</h3>
             <p><strong>Rechnungsnummer:</strong> ${invoice.invoiceNumber || invoice.number}</p>
@@ -182,9 +170,9 @@ export async function POST(request: NextRequest) {
                 : ''
             }
           </div>
-          
+
           <p>Bei Fragen wenden Sie sich bitte direkt an ${senderName}.</p>
-          
+
           <div style="text-align: center; margin-top: 30px; color: #666; font-size: 12px;">
             <p>Diese E-Mail wurde automatisch über <a href="https://taskilo.de" style="color: #14ad9f;">Taskilo</a> versendet.</p>
           </div>
@@ -194,27 +182,24 @@ export async function POST(request: NextRequest) {
       ...(pdfAttachment && { attachments: [pdfAttachment] }),
     };
 
-    console.log('📤 Sende E-Mail mit Resend...');
     const emailResponse = await resend.emails.send(emailConfig);
 
     if (emailResponse.error) {
-      console.error('❌ Resend Fehler:', emailResponse.error);
+
       throw new Error(`E-Mail-Versendung fehlgeschlagen: ${emailResponse.error.message}`);
     }
 
     if (!emailResponse.data?.id) {
-      console.error('❌ Keine Message ID erhalten');
+
       throw new Error('E-Mail-Versendung fehlgeschlagen: Keine Message ID erhalten');
     }
-
-    console.log('✅ E-Mail erfolgreich gesendet:', emailResponse.data.id);
 
     // Rechnungsstatus aktualisieren
     try {
       await db.collection('invoices').doc(invoiceId).update({ status: 'sent' });
-      console.log('✅ Rechnungsstatus auf "sent" aktualisiert');
+
     } catch (updateError) {
-      console.warn('⚠️ Rechnungsstatus konnte nicht aktualisiert werden:', updateError);
+
     }
 
     return NextResponse.json({
@@ -228,7 +213,6 @@ export async function POST(request: NextRequest) {
       attachmentFilename: pdfAttachment?.filename,
     });
   } catch (error: any) {
-    console.error('❌ Fehler beim Versenden der Rechnung:', error);
 
     return NextResponse.json(
       {

@@ -48,13 +48,9 @@ export function useCompanyOnboardingCheck(companyUid: string | null | undefined)
         });
 
         // Log for debugging
-        console.log(`🔍 Onboarding check for ${companyUid}:`, {
-          needsOnboarding: result.needsOnboarding,
-          completion: result.completionPercentage,
-          currentStep: result.currentStep,
-        });
+
       } catch (error) {
-        console.error('❌ Error checking onboarding status:', error);
+
         setStatus({
           needsOnboarding: true,
           completionPercentage: 0,

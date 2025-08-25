@@ -13,7 +13,7 @@ export async function POST(_request: NextRequest) {
       message: 'Erfolgreich abgemeldet',
     });
   } catch (error) {
-    console.error('Logout error:', error);
+
     return NextResponse.json({ error: 'Logout-Fehler' }, { status: 500 });
   }
 }

@@ -50,17 +50,7 @@ export default function Step2CompanyPage() {
   });
 
   useEffect(() => {
-    console.log(STEP2_PAGE_LOG, 'Komponente geladen. Initialer Context für Firma:', {
-      companyName: registration.companyName,
-      companyStreet: registration.companyStreet,
-      companyHouseNumber: registration.companyHouseNumber,
-      companyPostalCode: registration.companyPostalCode,
-      companyCity: registration.companyCity,
-      companyCountry: registration.companyCountry,
-      lat: registration.lat,
-      lng: registration.lng,
-      radiusKm: registration.radiusKm,
-    });
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -89,14 +79,14 @@ export default function Step2CompanyPage() {
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
     autocompleteRef.current = autocomplete;
-    console.log(STEP2_PAGE_LOG, 'Google Maps Autocomplete geladen.');
+
   }, []);
 
   const onPlaceChanged = () => {
-    console.log(STEP2_PAGE_LOG, 'onPlaceChanged getriggert.');
+
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
-      console.log(STEP2_PAGE_LOG, 'Google Place Result:', place);
+
       if (place && place.address_components) {
         const components = place.address_components;
         let streetName = '';
@@ -123,15 +113,6 @@ export default function Step2CompanyPage() {
         setLocalCity(foundCity);
         setLocalCountry(countryISO || 'DE');
 
-        console.log(STEP2_PAGE_LOG, 'Werte aus Autocomplete (onPlaceChanged):', {
-          streetName,
-          streetNum,
-          fullStreet,
-          foundCity,
-          foundPostalCode,
-          countryISO,
-        });
-
         registration.setCompanyStreet(streetName.trim());
         registration.setCompanyHouseNumber(streetNum.trim());
         registration.setCompanyPostalCode(foundPostalCode);
@@ -145,10 +126,7 @@ export default function Step2CompanyPage() {
           setLocalLng(newLng);
           registration.setLat(newLat);
           registration.setLng(newLng);
-          console.log(STEP2_PAGE_LOG, 'Koordinaten gesetzt (onPlaceChanged):', {
-            lat: newLat,
-            lng: newLng,
-          });
+
         } else {
           setLocalLat(null);
           setLocalLng(null);
@@ -156,7 +134,7 @@ export default function Step2CompanyPage() {
           registration.setLng(null);
         }
       } else {
-        console.warn(STEP2_PAGE_LOG, 'Kein valider Ort im Autocomplete-Ergebnis (onPlaceChanged).');
+
       }
     }
   };
@@ -170,10 +148,7 @@ export default function Step2CompanyPage() {
       const inputElement = event.target as HTMLInputElement;
       setTimeout(() => {
         const autofilledValue = inputElement.value;
-        console.log(
-          STEP2_PAGE_LOG,
-          `Autofill-Event '${event.animationName}' auf Feld '${inputElement.id}', Wert: '${autofilledValue}'`
-        );
+
         if (typeof contextSetter === 'function') {
           contextSetter(autofilledValue);
         }
@@ -228,21 +203,6 @@ export default function Step2CompanyPage() {
   };
 
   const handleNext = () => {
-    console.log(
-      STEP2_PAGE_LOG,
-      'handleNext aufgerufen. Context für Firmenadresse vor Navigation:',
-      {
-        name: registration.companyName,
-        street: registration.companyStreet,
-        hn: registration.companyHouseNumber,
-        plz: registration.companyPostalCode,
-        city: registration.companyCity,
-        country: registration.companyCountry,
-        lat: registration.lat,
-        lng: registration.lng,
-        radius: registration.radiusKm,
-      }
-    );
 
     if (
       !registration.companyName?.trim() ||

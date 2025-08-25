@@ -244,7 +244,7 @@ export default function AIAssistantPage() {
         <TaskiloProjectAssistant
           userId={user.uid}
           onOrderCreate={orderData => {
-            console.log('Order created:', orderData);
+
           }}
         />
       )}

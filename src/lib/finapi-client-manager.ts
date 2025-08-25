@@ -202,7 +202,7 @@ export class FinAPIClientManager {
       await this.users.getAuthorizedUser();
       return true;
     } catch (error) {
-      console.error('finAPI connection test failed:', error);
+
       return false;
     }
   }

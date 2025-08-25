@@ -14,18 +14,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'PaymentIntent ID required' }, { status: 400 });
     }
 
-    console.log(`🔍 Checking PaymentIntent: ${paymentIntentId}`);
-
     // Retrieve PaymentIntent details
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-    console.log('📊 PaymentIntent Details:', {
-      id: paymentIntent.id,
-      amount: paymentIntent.amount,
-      status: paymentIntent.status,
-      created: new Date(paymentIntent.created * 1000).toISOString(),
-      metadata: paymentIntent.metadata,
-    });
 
     // Check for related events
     const events = await stripe.events.list({
@@ -39,14 +29,9 @@ export async function POST(req: NextRequest) {
     });
 
     if (relatedEvent) {
-      console.log('✅ Found related webhook event:', {
-        id: relatedEvent.id,
-        type: relatedEvent.type,
-        created: new Date(relatedEvent.created * 1000).toISOString(),
-        livemode: relatedEvent.livemode,
-      });
+
     } else {
-      console.log('❌ No related webhook event found');
+
     }
 
     return NextResponse.json({
@@ -71,7 +56,7 @@ export async function POST(req: NextRequest) {
         : 'No webhook event found - Stripe might not have sent webhook',
     });
   } catch (error: any) {
-    console.error('❌ Error checking webhook logs:', error.message);
+
     return NextResponse.json(
       {
         success: false,

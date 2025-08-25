@@ -25,8 +25,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Erstelle Notifications für User ${userUid} mit E-Mail ${customerEmail}`);
-
     // Lade alle Tickets für diesen User
     const tickets = await AWSTicketStorage.getTickets({ customerEmail });
 
@@ -49,9 +47,9 @@ export async function POST(request: NextRequest) {
             lastAdminReply.author || 'Support Team'
           );
           notificationsCreated++;
-          console.log(`Notification erstellt für Ticket ${ticket.id}`);
+
         } catch (error) {
-          console.error(`Fehler beim Erstellen der Notification für Ticket ${ticket.id}:`, error);
+
         }
       }
     }
@@ -63,7 +61,7 @@ export async function POST(request: NextRequest) {
       notificationsCreated,
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen der Notifications:', error);
+
     return NextResponse.json(
       {
         success: false,

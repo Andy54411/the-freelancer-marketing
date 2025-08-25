@@ -23,7 +23,7 @@ export async function POST(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-      console.error('Auth-Fehler:', authError);
+
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
@@ -128,7 +128,7 @@ export async function POST(
       });
     }
   } catch (error) {
-    console.error('Fehler beim Bearbeiten des Angebots:', error);
+
     return NextResponse.json({ error: 'Fehler beim Bearbeiten des Angebots' }, { status: 500 });
   }
 }

@@ -42,7 +42,7 @@ export default function InvoiceTemplatesPage() {
           }
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Template-Einstellung:', error);
+
       } finally {
         setLoading(false);
       }
@@ -139,7 +139,7 @@ export default function InvoiceTemplatesPage() {
       toast.success('Template-Einstellung erfolgreich gespeichert!');
       router.push('../invoices'); // Back to invoices page
     } catch (error) {
-      console.error('Fehler beim Speichern der Template-Einstellung:', error);
+
       toast.error('Fehler beim Speichern der Template-Einstellung');
     } finally {
       setSaving(false);

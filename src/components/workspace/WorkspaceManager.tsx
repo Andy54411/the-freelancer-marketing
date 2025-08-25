@@ -53,7 +53,7 @@ export default function WorkspaceManager() {
           setLoading(false);
         });
       } catch (error) {
-        console.error('Error setting up workspace subscription:', error);
+
         setLoading(false);
       }
     };
@@ -84,7 +84,7 @@ export default function WorkspaceManager() {
       setWorkspaces(prev => [newWorkspace, ...prev]);
       // Modal wurde entfernt, da wir jetzt eine separate Seite verwenden
     } catch (error) {
-      console.error('Error creating workspace:', error);
+
     }
   };
 
@@ -102,7 +102,7 @@ export default function WorkspaceManager() {
       // Update in Realtime Database - real-time listener will sync automatically
       await WorkspaceService.updateWorkspace(workspaceId, updates);
     } catch (error) {
-      console.error('Error updating workspace:', error);
+
       // Revert optimistic update on error by re-triggering realtime sync
       // The subscription will automatically refresh the data
     }
@@ -113,7 +113,7 @@ export default function WorkspaceManager() {
       await WorkspaceService.deleteWorkspace(workspaceId);
       setWorkspaces(prev => prev.filter(workspace => workspace.id !== workspaceId));
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+
     }
   };
 

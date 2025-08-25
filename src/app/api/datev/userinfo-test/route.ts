@@ -28,15 +28,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing companyId parameter' }, { status: 400 });
     }
 
-    console.log('[DATEV UserInfo Test] Testing DATEV /userinfo endpoint for company:', companyId);
-
     // Get stored tokens from HTTP-only cookie
     const cookieStore = await cookies();
     const cookieName = getDatevCookieName(companyId);
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV UserInfo Test] No token cookie found');
+
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -52,24 +50,13 @@ export async function GET(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (error) {
-      console.error('❌ [DATEV UserInfo Test] Failed to parse token data:', error);
+
       return NextResponse.json({ error: 'Invalid token data' }, { status: 401 });
     }
-
-    console.log('🔍 [DATEV UserInfo Test] Token Analysis:', {
-      environment: tokenData.environment,
-      client_id: tokenData.client_id,
-      api_base_url: tokenData.api_base_url,
-      hasAccessToken: !!tokenData.access_token,
-      connected_at: new Date(tokenData.connected_at).toISOString(),
-      expires_in: tokenData.expires_in,
-    });
 
     // Use correct OIDC userinfo endpoint (not platform API)
     const { DATEV_SANDBOX_CONFIG } = await import('@/lib/datev-config');
     const apiUrl = DATEV_SANDBOX_CONFIG.endpoints.userinfo;
-
-    console.log('🔧 [DATEV UserInfo Test] Testing OIDC UserInfo endpoint:', apiUrl);
 
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -82,13 +69,6 @@ export async function GET(request: NextRequest) {
     });
 
     const responseText = await response.text();
-    
-    console.log('📊 [DATEV UserInfo Test] API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      body: responseText,
-    });
 
     if (!response.ok) {
       return NextResponse.json({
@@ -116,7 +96,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [DATEV UserInfo Test] Unexpected error:', error);
+
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

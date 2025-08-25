@@ -227,7 +227,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       setOpen(false);
       toast.success('Kunde erfolgreich hinzugefügt');
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Kunden:', error);
+
       toast.error('Fehler beim Hinzufügen des Kunden');
     } finally {
       setLoading(false);

@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       projects,
     });
   } catch (error) {
-    console.error('Debug API Fehler:', error);
+
     return NextResponse.json(
       { error: 'Failed to fetch projects', details: error },
       { status: 500 }

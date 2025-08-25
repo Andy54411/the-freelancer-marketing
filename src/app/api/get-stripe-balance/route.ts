@@ -26,13 +26,12 @@ function getStripeInstance() {
 }
 
 async function handleBalanceRequest(firebaseUserId: string) {
-  console.log('[BALANCE-API] Request for user:', firebaseUserId);
 
   // Check cache first
   const cacheKey = `balance_${firebaseUserId}`;
   const cached = balanceCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log('[BALANCE-API] Cache hit');
+
     return NextResponse.json(cached.data);
   }
 
@@ -49,11 +48,10 @@ async function handleBalanceRequest(firebaseUserId: string) {
 
     return result;
   } catch (error: any) {
-    console.error('[BALANCE-API] Error:', error.message);
 
     // Return expired cache if available
     if (cached) {
-      console.log('[BALANCE-API] Using expired cache');
+
       return NextResponse.json({ ...cached.data, source: 'expired_cache' });
     }
 
@@ -85,10 +83,10 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
     if (userDoc?.exists) {
       const userData = userDoc.data();
       stripeAccountId = userData?.stripeAccountId;
-      console.log('[BALANCE-API] Found stripeAccountId in users:', stripeAccountId);
+
     }
   } catch (error) {
-    console.log('[BALANCE-API] Error accessing users collection:', error);
+
   }
 
   // Fallback: try stripe_accounts collection
@@ -102,10 +100,10 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
       if (doc?.exists) {
         const data = doc.data();
         stripeAccountId = data?.stripeAccountId;
-        console.log('[BALANCE-API] Found stripeAccountId in stripe_accounts:', stripeAccountId);
+
       }
     } catch (error) {
-      console.log('[BALANCE-API] Error accessing stripe_accounts collection:', error);
+
     }
   }
 
@@ -135,7 +133,6 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
 
   // Cache successful result
   balanceCache.set(cacheKey, { data: response, timestamp: Date.now() });
-  console.log('[BALANCE-API] Success:', response);
 
   return NextResponse.json(response);
 }
@@ -151,7 +148,7 @@ export async function GET(request: NextRequest) {
 
     return await handleBalanceRequest(firebaseUserId);
   } catch (error: any) {
-    console.error('[BALANCE-API] GET Error:', error);
+
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }
@@ -173,7 +170,7 @@ export async function POST(request: NextRequest) {
 
     return await handleBalanceRequest(firebaseUserId);
   } catch (error: any) {
-    console.error('[BALANCE-API] POST Error:', error);
+
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

@@ -92,8 +92,7 @@ export async function POST(request: Request) {
 
     // Wenn Dienstleister ausgewählt wurden, erstelle automatisch Einladungen
     if (projectData.selectedProviders && projectData.selectedProviders.length > 0) {
-      console.log(`📧 Lade ${projectData.selectedProviders.length} Dienstleister für Projekt ${projectRef.id} ein`);
-      
+
       for (const provider of projectData.selectedProviders) {
         try {
           // Erstelle eine Benachrichtigung für den Dienstleister
@@ -109,9 +108,9 @@ export async function POST(request: Request) {
             read: false,
             priority: 'high'
           });
-          console.log(`✅ Benachrichtigung für Provider ${provider.id} erstellt`);
+
         } catch (error) {
-          console.error(`❌ Fehler beim Benachrichtigen von Provider ${provider.id}:`, error);
+
         }
       }
     }
@@ -130,7 +129,7 @@ export async function POST(request: Request) {
       projectUrl: `/dashboard/user/${userId}/projects/${projectRef.id}`,
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen des Projekts:', error);
+
     return NextResponse.json({ error: 'Fehler beim Erstellen des Projekts' }, { status: 500 });
   }
 }

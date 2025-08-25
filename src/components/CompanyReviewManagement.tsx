@@ -96,7 +96,7 @@ export default function CompanyReviewManagement({
 
       setReviews(data);
     } catch (err: unknown) {
-      console.error('Fehler beim Laden der Bewertungen:', err);
+
       setError('Fehler beim Laden der Bewertungen. Bitte versuchen Sie es später noch einmal.');
     } finally {
       setIsLoading(false);

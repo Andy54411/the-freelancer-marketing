@@ -65,14 +65,14 @@ export class ClientEmailService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         return { success: false, error: result.error || 'Fehler beim Senden der E-Mail' };
       }
 
       return result;
     } catch (error) {
-      console.error('Fehler beim E-Mail-Versand:', error);
+
       return { success: false, error: 'Netzwerkfehler beim E-Mail-Versand' };
     }
   }
@@ -83,8 +83,8 @@ export class ClientEmailService {
     subject: string;
     htmlContent: string;
     from?: string;
-  }>): Promise<{ 
-    success: boolean; 
+  }>): Promise<{
+    success: boolean;
     results: Array<{ messageId?: string; error?: string; to: string[] }>;
     totalSent: number;
     successCount: number;
@@ -105,7 +105,7 @@ export class ClientEmailService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         return {
           success: false,
@@ -118,7 +118,7 @@ export class ClientEmailService {
 
       return result;
     } catch (error) {
-      console.error('Fehler beim Bulk-E-Mail-Versand:', error);
+
       return {
         success: false,
         results: messages.map(m => ({ error: 'Netzwerkfehler', to: m.to })),
@@ -131,8 +131,8 @@ export class ClientEmailService {
 
   // Template-E-Mail senden über API-Route
   async sendTemplateEmail(
-    templateId: string, 
-    to: string[], 
+    templateId: string,
+    to: string[],
     variables: Record<string, string>,
     options?: {
       cc?: string[];
@@ -154,14 +154,14 @@ export class ClientEmailService {
       });
 
       const result = await response.json();
-      
+
       if (!response.ok) {
         return { success: false, error: result.error || 'Fehler beim Template-E-Mail-Versand' };
       }
 
       return result;
     } catch (error) {
-      console.error('Fehler beim Template-E-Mail-Versand:', error);
+
       return { success: false, error: 'Netzwerkfehler beim Template-E-Mail-Versand' };
     }
   }
@@ -170,29 +170,29 @@ export class ClientEmailService {
   async getAvailableTemplates(): Promise<EmailTemplate[]> {
     try {
       const response = await fetch('/api/admin/emails/templates');
-      
+
       if (!response.ok) {
-        console.error('Fehler beim Laden der Templates');
+
         return [];
       }
 
       const result = await response.json();
       return result.templates || [];
     } catch (error) {
-      console.error('Fehler beim Laden der Templates:', error);
+
       return [];
     }
   }
 
   // E-Mail-Status abrufen
-  async getEmailStatus(messageId: string): Promise<{ 
+  async getEmailStatus(messageId: string): Promise<{
     status: 'sent' | 'delivered' | 'bounced' | 'complaint' | 'delivery_delayed';
     lastEvent?: Date;
     error?: string;
   }> {
     try {
       const response = await fetch(`/api/admin/emails/send?messageId=${encodeURIComponent(messageId)}`);
-      
+
       if (!response.ok) {
         return { status: 'sent', error: 'Status nicht verfügbar' };
       }
@@ -204,7 +204,7 @@ export class ClientEmailService {
         error: result.error,
       };
     } catch (error) {
-      console.error('Fehler beim Abrufen des E-Mail-Status:', error);
+
       return { status: 'sent', error: 'Netzwerkfehler' };
     }
   }

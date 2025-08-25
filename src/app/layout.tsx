@@ -67,24 +67,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
-              
+
               // Check for saved consent first
               let savedConsent = null;
               let hasAnalyticsCookies = false;
-              
+
               try {
                 const stored = localStorage.getItem('taskilo-cookie-consent');
                 if (stored) {
                   savedConsent = JSON.parse(stored);
                 }
-                
+
                 // Check if analytics cookies already exist (indicating previous consent)
                 hasAnalyticsCookies = document.cookie.includes('_ga=') || document.cookie.includes('_ga_');
               } catch (e) {
-                console.log('No saved consent found, checking for existing cookies');
+
                 hasAnalyticsCookies = document.cookie.includes('_ga=') || document.cookie.includes('_ga_');
               }
-              
+
               // Set consent state based on saved preferences, existing cookies, or defaults
               if (savedConsent) {
                 // ALWAYS respect saved consent - never override with cookie inference
@@ -98,11 +98,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   'security_storage': 'granted',
                   'wait_for_update': 500
                 });
-                console.log('🚀 GTM initialized with saved consent:', savedConsent);
-                
+
                 // If user revoked analytics consent, clear existing analytics cookies
                 if (!savedConsent.analytics && hasAnalyticsCookies) {
-                  console.log('⚠️ CLEARING ANALYTICS COOKIES - User revoked consent');
+
                   // Clear Google Analytics cookies
                   const cookiesToClear = ['_ga', '_ga_' + '${process.env.NEXT_PUBLIC_GA_ID}'.replace('G-', ''), '_gid', '_gat', '_gat_gtag_' + '${process.env.NEXT_PUBLIC_GA_ID}'];
                   cookiesToClear.forEach(cookieName => {
@@ -122,7 +121,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   'security_storage': 'granted',
                   'wait_for_update': 500
                 });
-                console.log('🚀 GTM initialized with inferred consent from existing cookies');
+
               } else {
                 gtag('consent', 'default', {
                   'analytics_storage': 'denied',
@@ -134,7 +133,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   'security_storage': 'granted',
                   'wait_for_update': 2000
                 });
-                console.log('🚀 GTM initialized with default denied consent');
+
               }
             `,
           }}

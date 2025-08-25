@@ -7,13 +7,12 @@ export async function POST(
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
 ) {
   const { uid, quoteId } = await params;
-  console.log('[Quote Action API] Processing action for company:', uid, 'quote:', quoteId);
 
   try {
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('[Quote Action API] No auth header found');
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -22,15 +21,15 @@ export async function POST(
 
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-      console.log('[Quote Action API] Token verified for user:', decodedToken.uid);
+
     } catch (error) {
-      console.error('[Quote Action API] Error verifying token:', error);
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if the user is authorized to access this company's data
     if (decodedToken.uid !== uid) {
-      console.log('[Quote Action API] User not authorized for this company');
+
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -39,14 +38,12 @@ export async function POST(
     const { action } = body;
 
     if (!action || !['accept', 'decline'].includes(action)) {
-      console.log('[Quote Action API] Invalid action:', action);
+
       return NextResponse.json(
         { error: 'Invalid action. Must be "accept" or "decline"' },
         { status: 400 }
       );
     }
-
-    console.log('[Quote Action API] Processing action:', action, 'for quote:', quoteId);
 
     // Get the quote document - first try quotes collection, then requests collection
     let quoteDoc = await db.collection('quotes').doc(quoteId).get();
@@ -65,27 +62,17 @@ export async function POST(
     }
 
     if (!quoteData) {
-      console.log('[Quote Action API] Quote not found in either collection');
+
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
-    console.log('[Quote Action API] Found quote in collection:', collectionName);
-    console.log('[Quote Action API] Quote data:', {
-      customerEmail: quoteData.customerEmail,
-      providerId: quoteData.providerId || quoteData.providerUid,
-      projectTitle: quoteData.projectTitle || quoteData.title,
-      status: quoteData.status,
-      paymentStatus: quoteData.payment?.provisionStatus || 'none',
-    });
-
     // CHECK: If quote is already accepted and action is accept, verify payment status
     if (action === 'accept' && quoteData.status === 'accepted') {
-      console.log('[Quote Action API] Quote already accepted - checking payment status');
 
       const paymentStatus = quoteData.payment?.provisionStatus;
 
       if (paymentStatus === 'pending') {
-        console.log('[Quote Action API] Provision payment still pending');
+
         return NextResponse.json(
           {
             error: 'Provision payment required',
@@ -98,7 +85,7 @@ export async function POST(
       }
 
       if (paymentStatus !== 'paid') {
-        console.log('[Quote Action API] Invalid payment status:', paymentStatus);
+
         return NextResponse.json(
           {
             error: 'Payment verification failed',
@@ -108,18 +95,16 @@ export async function POST(
         );
       }
 
-      console.log('[Quote Action API] Provision payment verified - allowing contact exchange');
     }
 
     // Get user data for contact exchange
     const userDoc = await db.collection('users').doc(uid).get();
     if (!userDoc.exists) {
-      console.log('[Quote Action API] User not found');
+
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const userData = userDoc.data();
-    console.log('[Quote Action API] User data found for UID:', uid);
 
     // Get provider and customer names for notifications
     const customerName =
@@ -137,7 +122,7 @@ export async function POST(
           providerName = providerData?.companyName || 'Anbieter';
         }
       } catch (error) {
-        console.log('Provider name lookup failed, using default');
+
       }
     }
 
@@ -155,13 +140,6 @@ export async function POST(
 
     await db.collection(collectionName).doc(quoteId).update(updateData);
 
-    console.log(
-      '[Quote Action API] Quote status updated to:',
-      newStatus,
-      'in collection:',
-      collectionName
-    );
-
     // Bell-Notification an Provider senden (Kunde hat entschieden)
     if (providerId) {
       try {
@@ -177,18 +155,15 @@ export async function POST(
             isCustomerAction: true, // Flag to indicate this was a customer action
           }
         );
-        console.log(
-          `✅ Quote-Status-Notification gesendet für Quote ${quoteId}, Action: ${action}`
-        );
+
       } catch (notificationError) {
-        console.error('❌ Fehler bei Quote-Status-Notification:', notificationError);
+
         // Notification-Fehler sollten die Aktion nicht blockieren
       }
     }
 
     // If accepted, set up provision payment requirement (DO NOT exchange contacts yet)
     if (action === 'accept') {
-      console.log('[Quote Action API] Quote accepted - setting up provision payment requirement');
 
       const totalAmount = quoteData.response?.totalAmount || 0;
       const provisionAmount = totalAmount * 0.05; // 5% provision
@@ -204,11 +179,6 @@ export async function POST(
           },
         });
 
-      console.log('[Quote Action API] Provision payment requirement set:', provisionAmount, '€');
-      console.log(
-        '[Quote Action API] Contact exchange will happen AFTER successful provision payment via payment endpoint'
-      );
-
       // Bell-Notification für Zahlungsanforderung
       try {
         await QuoteNotificationService.createPaymentRequiredNotification(
@@ -220,9 +190,9 @@ export async function POST(
             provisionAmount: provisionAmount,
           }
         );
-        console.log(`✅ Payment-Required-Notification gesendet für Quote ${quoteId}`);
+
       } catch (notificationError) {
-        console.error('❌ Fehler bei Payment-Required-Notification:', notificationError);
+
       }
     }
 
@@ -232,7 +202,6 @@ export async function POST(
       quoteData.status === 'accepted' &&
       quoteData.payment?.provisionStatus === 'paid'
     ) {
-      console.log('[Quote Action API] Payment verified - exchanging contact information');
 
       // Exchange contact information between customer and provider
       const providerId = quoteData.providerId || quoteData.providerUid;
@@ -270,12 +239,9 @@ export async function POST(
               status: 'contacts_exchanged',
             });
 
-          console.log('[Quote Action API] Contact information exchanged successfully');
         }
       }
     }
-
-    console.log('[Quote Action API] Quote action processed successfully');
 
     // Determine response based on payment status and action
     let responseData: any = {
@@ -319,7 +285,7 @@ export async function POST(
       data: responseData,
     });
   } catch (error) {
-    console.error('[Quote Action API] Error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

@@ -29,20 +29,11 @@ export async function GET(request: NextRequest) {
         ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
         : 'https://taskilo.de/dashboard/company/unknown/datev/setup';
 
-    console.log('🔄 [DATEV Callback] Initial redirect URL:', redirectUrl);
-
     // Log detailed callback information for debugging
-    console.log('DATEV OpenID Connect Callback received:', {
-      code: code ? `${code.substring(0, 10)}...` : null,
-      state: state,
-      error: error,
-      error_description: error_description,
-      timestamp: new Date().toISOString(),
-    });
 
     // Check for OAuth errors
     if (error) {
-      console.error('DATEV OAuth error:', { error, error_description });
+
       return NextResponse.redirect(
         `${redirectUrl}?error=${error}&message=${encodeURIComponent(error_description || 'Unknown error')}`
       );
@@ -50,14 +41,14 @@ export async function GET(request: NextRequest) {
 
     // Validate required parameters
     if (!code) {
-      console.error('Missing authorization code in callback');
+
       return NextResponse.redirect(
         `${redirectUrl}?error=missing_code&message=${encodeURIComponent('Authorization code not provided')}`
       );
     }
 
     if (!state) {
-      console.error('Missing state parameter in callback');
+
       return NextResponse.redirect(
         `${redirectUrl}?error=missing_state&message=${encodeURIComponent('State parameter not provided')}`
       );
@@ -68,47 +59,42 @@ export async function GET(request: NextRequest) {
     let timestamp: string;
     let randomPart: string;
     let stateData: any = null;
-    
+
     try {
       // Try to parse as Base64-encoded JSON first (new format)
       try {
         const decodedState = Buffer.from(state, 'base64').toString('utf-8');
         stateData = JSON.parse(decodedState);
-        
+
         if (stateData.companyId && stateData.timestamp) {
           companyId = stateData.companyId;
           timestamp = stateData.timestamp.toString();
           randomPart = 'json_state'; // Placeholder for JSON format
-          console.log('✅ [DATEV Callback] JSON State parsed successfully:', { 
-            companyId, 
-            timestamp, 
-            hasCodeVerifier: !!stateData.codeVerifier 
-          });
+
         } else {
           throw new Error('Invalid JSON state format: missing companyId or timestamp');
         }
       } catch (jsonError) {
         // Fallback to colon-separated format (old format)
         const stateParts = state.split(':');
-        console.log('🔍 [DATEV Callback] Parsing colon state:', { state, stateParts, length: stateParts.length });
-        
+
         if (stateParts.length >= 4 && stateParts[0] === 'company') {
           companyId = stateParts[1];
           timestamp = stateParts[2];
           randomPart = stateParts[3];
-          console.log('✅ [DATEV Callback] Colon State parsed successfully:', { companyId, timestamp, randomPart: randomPart.substring(0, 8) + '...' });
+
         } else if (stateParts.length >= 3 && stateParts[0] === 'state') {
           // Fallback für state ohne companyId
           companyId = 'unknown';
           timestamp = stateParts[1];
           randomPart = stateParts[2];
-          console.log('⚠️ [DATEV Callback] Using fallback parsing:', { companyId, timestamp, randomPart: randomPart.substring(0, 8) + '...' });
+
         } else {
           throw new Error(`Invalid state format: expected Base64 JSON or 'company:id:timestamp:random', got ${stateParts.length} colon parts`);
         }
       }
     } catch (error) {
-      console.error('❌ [DATEV Callback] State parsing failed:', { state, error: error instanceof Error ? error.message : error });
+
       return NextResponse.redirect(
         `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter format: ' + state)}`
       );
@@ -124,25 +110,14 @@ export async function GET(request: NextRequest) {
       codeVerifier = stateData.codeVerifier;
       nonce = stateData.nonce; // May be undefined for some flows
       companyId = stateData.companyId || companyId;
-      console.log('🔑 [DATEV Callback] Using JSON State Data:', { 
-        companyId,
-        hasCodeVerifier: !!codeVerifier,
-        hasNonce: !!nonce,
-        timestamp: stateData.timestamp
-      });
+
     } else {
       // Fallback to PKCE storage for colon-format states
       const pkceData = retrievePKCEData(state);
       storedAuthData = pkceData;
-      console.log('🔑 [DATEV Callback] PKCE Data Retrieval:', { 
-        stateKey: state, 
-        hasStoredData: !!storedAuthData,
-        storedCompanyId: storedAuthData?.companyId,
-        timestamp: storedAuthData?.timestamp
-      });
 
       if (!storedAuthData) {
-        console.error('❌ [DATEV Callback] No stored auth data found for state:', state);
+
         return NextResponse.redirect(
           `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Authentifizierungs-Session nicht gefunden oder abgelaufen')}`
         );
@@ -155,7 +130,7 @@ export async function GET(request: NextRequest) {
 
     // Validate that we have a codeVerifier
     if (!codeVerifier) {
-      console.error('❌ [DATEV Callback] No code verifier found in state or storage');
+
       return NextResponse.redirect(
         `${redirectUrl}?error=missing_verifier&message=${encodeURIComponent('Code verifier nicht gefunden - bitte versuchen Sie es erneut')}`
       );
@@ -167,15 +142,13 @@ export async function GET(request: NextRequest) {
         ? `http://localhost:3000/dashboard/company/${companyId}/datev/setup`
         : `https://taskilo.de/dashboard/company/${companyId}/datev/setup`;
 
-    console.log('🔄 [DATEV Callback] Final redirect URL:', redirectUrl);
-
     // Validate state timestamp (should not be older than 10 minutes)
     const stateTime = parseInt(timestamp);
     const now = Date.now();
     const maxAge = 10 * 60 * 1000; // 10 minutes
 
     if (now - stateTime > maxAge) {
-      console.error('State parameter expired:', { stateTime, now, age: now - stateTime });
+
       return NextResponse.redirect(
         `${redirectUrl}?error=expired_state&message=${encodeURIComponent('Authentication request expired')}`
       );
@@ -191,33 +164,27 @@ export async function GET(request: NextRequest) {
         const clientValidation = validateSandboxClientPermissions(
           config.defaultClientId || '455148-1'
         );
-        console.log('Sandbox client validation:', clientValidation);
 
         if (!clientValidation.hasFullPermissions) {
-          console.warn(
-            `Client ${config.defaultClientId} has limited permissions. Recommended: ${clientValidation.recommendedClient}`
-          );
+
         }
       }
 
       // Store tokens securely for the company
       await storeTokensForCompany(companyId, tokenData);
 
-      console.log('DATEV token exchange successful for company:', companyId);
-
       // IMPORTANT: Use a more specific success URL with clear parameters
       const successUrl = `${redirectUrl}?datev_auth=success&company=${companyId}&timestamp=${Date.now()}`;
-      console.log('🔄 [DATEV Callback] Redirecting to:', successUrl);
 
       return NextResponse.redirect(successUrl);
     } catch (tokenError) {
-      console.error('Token exchange failed:', tokenError);
+
       return NextResponse.redirect(
         `${redirectUrl}?error=token_exchange&message=${encodeURIComponent('Failed to exchange authorization code for tokens')}`
       );
     }
   } catch (error) {
-    console.error('DATEV OAuth callback error:', error);
+
     const errorRedirectUrl =
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
@@ -232,12 +199,6 @@ export async function GET(request: NextRequest) {
  */
 async function exchangeCodeForTokenPKCE(code: string, codeVerifier: string) {
   const config = getDatevConfig();
-
-  console.log('Exchanging code for tokens with PKCE...', {
-    tokenUrl: config.tokenUrl,
-    clientId: config.clientId,
-    redirectUri: config.redirectUri,
-  });
 
   try {
     // DATEV requires Basic Authentication with client credentials
@@ -262,26 +223,15 @@ async function exchangeCodeForTokenPKCE(code: string, codeVerifier: string) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-      console.error('Token exchange failed:', {
-        status: tokenResponse.status,
-        statusText: tokenResponse.statusText,
-        error: tokenData,
-      });
+
       throw new Error(
         `Token exchange failed: ${tokenData.error || 'Unknown error'} - ${tokenData.error_description || ''}`
       );
     }
 
-    console.log('Token exchange successful:', {
-      access_token: tokenData.access_token ? 'received' : 'missing',
-      refresh_token: tokenData.refresh_token ? 'received' : 'missing',
-      expires_in: tokenData.expires_in,
-      token_type: tokenData.token_type,
-    });
-
     return tokenData;
   } catch (error) {
-    console.error('Token exchange error:', error);
+
     throw error;
   }
 }
@@ -306,22 +256,12 @@ export async function OPTIONS() {
  */
 async function storeTokensForCompany(companyId: string, tokenData: any) {
   try {
-    console.log('🔧 [DATEV Callback] Storing DATEV tokens for company:', companyId);
-    console.log('🔧 [DATEV Callback] Token data received:', {
-      hasAccessToken: !!tokenData.access_token,
-      tokenType: tokenData.token_type,
-      expiresIn: tokenData.expires_in,
-      hasRefreshToken: !!tokenData.refresh_token,
-      scope: tokenData.scope,
-    });
 
     // Calculate expiration timestamp
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000);
-    console.log('🔧 [DATEV Callback] Token will expire at:', expiresAt);
 
     // 1. Store tokens in Firestore (for persistence across sessions)
     const tokenDocRef = db.collection('users').doc(companyId).collection('datev').doc('tokens');
-    console.log('🔧 [DATEV Callback] Storing at path:', `companies/${companyId}/datev/tokens`);
 
     const tokenDocData = {
       access_token: tokenData.access_token,
@@ -336,12 +276,9 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     };
 
     await tokenDocRef.set(tokenDocData);
-    console.log('✅ [DATEV Callback] Token document created successfully');
 
     // 2. Store tokens in httpOnly cookies (for current session API calls)
     await setDatevTokenCookies(tokenData, companyId);
-
-    console.log('✅ [DATEV Callback] Tokens stored in cookies for company:', companyId);
 
     // 3. Also store connection status in company document (using Admin SDK)
     const companyDocRef = db.collection('users').doc(companyId);
@@ -354,11 +291,9 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     };
 
     await companyDocRef.set(companyUpdateData, { merge: true });
-    console.log('✅ [DATEV Callback] Company document updated with connection status');
 
-    console.log('🎉 [DATEV Callback] DATEV tokens stored successfully for company:', companyId);
   } catch (error) {
-    console.error('❌ [DATEV Callback] Failed to store DATEV tokens:', error);
+
     throw new Error('Failed to store authentication tokens');
   }
 }
@@ -369,7 +304,6 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔧 [DATEV Callback] Manual callback processing with new auth middleware...');
 
     const body = await request.json();
     const { code, state, firebaseUserId } = body;
@@ -386,27 +320,20 @@ export async function POST(request: NextRequest) {
       const callbackResult = await handleDatevOAuthCallback(code, state, firebaseUserId);
 
       if (callbackResult.success) {
-        console.log('✅ [DATEV Callback] New auth middleware processed successfully');
+
         return NextResponse.json({
           success: true,
           message: 'DATEV OAuth callback processed with new auth middleware',
           middleware: 'new',
         });
       } else {
-        console.log(
-          '⚠️ [DATEV Callback] New auth middleware failed, trying legacy fallback:',
-          callbackResult.error
-        );
+
       }
     } catch (newAuthError) {
-      console.log(
-        '⚠️ [DATEV Callback] New auth middleware error, using legacy fallback:',
-        newAuthError
-      );
+
     }
 
     // Fallback to legacy processing if new middleware fails
-    console.log('🔄 [DATEV Callback] Using legacy callback processing...');
 
     // Legacy callback processing would go here
     // For now, return a message indicating fallback
@@ -417,7 +344,7 @@ export async function POST(request: NextRequest) {
       note: 'New auth middleware not fully implemented yet',
     });
   } catch (error: any) {
-    console.error('❌ [DATEV Callback] Manual callback error:', error);
+
     return NextResponse.json(
       { error: error.message || 'Callback processing failed' },
       { status: 500 }

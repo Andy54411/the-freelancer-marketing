@@ -209,9 +209,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   useEffect(() => {
     if (userData) {
       // Debug-Logging für Datenbank-Struktur
-      console.log('Raw userData from database:', userData);
-      console.log('step1 data:', userData.step1);
-      console.log('step2 data:', userData.step2);
 
       const get = <T,>(path: string, fallback: T): T => {
         const keys = path.split('.');
@@ -295,11 +292,11 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
             // Wenn nicht, prüfe selectedSubcategory für automatische Zuordnung
             const subcategory = get('selectedSubcategory', '') as string;
-            console.log('Industry mapping - selectedSubcategory:', subcategory);
+
             if (subcategory && subcategory !== '') {
               // Verwende findCategoryBySubcategory um die richtige Kategorie zu finden
               const mappedCategory = findCategoryBySubcategory(subcategory);
-              console.log('Industry mapping - mapped category for subcategory:', mappedCategory);
+
               if (mappedCategory) {
                 return mappedCategory;
               }
@@ -307,7 +304,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
             // Versuche Kategorie-Mapping basierend auf selectedCategory
             const selectedCategory = get('selectedCategory', '') as string;
-            console.log('Industry mapping - selectedCategory:', selectedCategory);
+
             if (
               selectedCategory &&
               selectedCategory !== 'Bitte wählen' &&
@@ -318,7 +315,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
             // Ansonsten verwende industry als Fallback
             const fallback = get('industry', '');
-            console.log('Industry mapping - fallback:', fallback);
+
             return fallback;
           })(),
           industryMcc: get('step2.industryMcc', get('industryMcc', '')),
@@ -376,61 +373,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       });
 
       // Debug-Logging für gemappte Formularwerte
-      console.log('Mapped form data:', {
-        step1: {
-          firstName: get('step1.firstName', get('firstName', '')),
-          lastName: get('step1.lastName', get('lastName', '')),
-          phoneNumber: get('step1.phoneNumber', get('phoneNumber', '')),
-          email: get('step1.email', get('email', '')),
-          personalStreet: get('step1.personalStreet', get('personalStreet', '')),
-          personalPostalCode: get('step1.personalPostalCode', get('personalPostalCode', '')),
-          personalCity: get('step1.personalCity', get('personalCity', '')),
-        },
-        step2: {
-          companyName: get('step2.companyName', get('companyName', '')),
-          companySuffix: get('step2.companySuffix', get('companySuffix', '')),
-          legalForm: get('step2.legalForm', get('legalForm', null)),
-          address: get(
-            'step2.address',
-            get('companyAddressLine1ForBackend', get('personalStreet', get('address', '')))
-          ),
-          street: get(
-            'step2.street',
-            get('companyAddressLine1ForBackend', get('personalStreet', get('street', '')))
-          ),
-          postalCode: get(
-            'step2.postalCode',
-            get('companyPostalCodeForBackend', get('personalPostalCode', get('postalCode', '')))
-          ),
-          city: get(
-            'step2.city',
-            get('companyCityForBackend', get('personalCity', get('city', '')))
-          ),
-          companyPhoneNumber: get(
-            'step2.companyPhoneNumber',
-            get('companyPhoneNumber', get('companyPhoneNumberForBackend', get('phoneNumber', '')))
-          ),
-          industry: get(
-            'step2.industry',
-            get('selectedSubcategory', null) === 'Mietkoch'
-              ? 'Hotel & Gastronomie'
-              : get('selectedCategory', get('industry', ''))
-          ),
-          description: get('step2.description', get('publicDescription', get('description', ''))),
-        },
-        // Debug: Zeige auch die rohen Datenbank-Werte
-        rawData: {
-          personalStreet: get('personalStreet', ''),
-          personalPostalCode: get('personalPostalCode', ''),
-          personalCity: get('personalCity', ''),
-          legalForm: get('legalForm', ''),
-          companyAddressLine1ForBackend: get('companyAddressLine1ForBackend', ''),
-          companyPostalCodeForBackend: get('companyPostalCodeForBackend', ''),
-          companyCityForBackend: get('companyCityForBackend', ''),
-          selectedSubcategory: get('selectedSubcategory', ''),
-          selectedCategory: get('selectedCategory', ''),
-        },
-      });
+
     }
   }, [userData]);
 
@@ -544,7 +487,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       const downloadURL = await getDownloadURL(fileRef);
       return downloadURL;
     } catch (error: unknown) {
-      console.error(`Fehler beim Hochladen von ${fileName} zu Firebase Storage:`, error);
+
       toast.error(
         `Fehler beim Hochladen von ${fileName}: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );
@@ -771,7 +714,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       toast.success('Profildaten erfolgreich gespeichert!');
       onDataSaved();
     } catch (error: unknown) {
-      console.error(PAGE_ERROR, '[SettingsPage] Fehler beim Speichern:', error);
+
       let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
       if (error && typeof error === 'object' && 'message' in error) {
         // Use the specific message from the backend (which now includes the Stripe error)

@@ -186,7 +186,6 @@ export class AdvertisingFirebaseService {
       date: new Date().toISOString().split('T')[0],
     });
 
-    console.log('📊 Analytics snapshot saved:', docRef.id);
   }
 
   async getAnalyticsHistory(
@@ -274,7 +273,6 @@ export class AdvertisingFirebaseService {
     const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
     await Promise.all(deletePromises);
 
-    console.log(`🧹 Cleaned up ${querySnapshot.size} old analytics records`);
   }
 
   /**

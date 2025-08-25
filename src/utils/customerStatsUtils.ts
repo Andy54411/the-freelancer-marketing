@@ -64,7 +64,7 @@ export async function calculateCustomerStats(
       totalInvoices: validInvoices.length,
     };
   } catch (error) {
-    console.error('Fehler beim Berechnen der Kundenstatistiken:', error);
+
     return { totalAmount: 0, totalInvoices: 0 };
   }
 }
@@ -96,7 +96,7 @@ export async function updateCustomerStats(
 
     await updateDoc(customerRef, updateData);
   } catch (error) {
-    console.error('Fehler beim Aktualisieren der Kundenstatistiken:', error);
+
     throw error;
   }
 }
@@ -121,9 +121,9 @@ export async function syncAllCustomerStats(companyId: string): Promise<void> {
     });
 
     await Promise.all(updates);
-    console.log(`✅ Kundenstatistiken für ${updates.length} Kunden aktualisiert`);
+
   } catch (error) {
-    console.error('Fehler beim Synchronisieren aller Kundenstatistiken:', error);
+
     throw error;
   }
 }

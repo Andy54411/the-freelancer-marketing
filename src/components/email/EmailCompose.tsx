@@ -44,12 +44,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
   // SICHERHEITS-CHECK: Stelle sicher, dass immer eine gültige E-Mail ausgewählt ist
   useEffect(() => {
     if (!senderEmails.includes(selectedSenderEmail)) {
-      console.warn(
-        'Invalid sender email detected:',
-        selectedSenderEmail,
-        'Setting to default:',
-        senderEmails[0]
-      );
+
       setSelectedSenderEmail(senderEmails[0]);
     }
   }, [selectedSenderEmail, senderEmails]);
@@ -194,16 +189,6 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         textContent: emailData.textContent,
       };
 
-      console.log('=== FRONTEND EMAIL DEBUG (AWS SESSION SENDER) ===');
-      console.log('🔐 Sender Email: Wird automatisch aus AWS Session bezogen');
-      console.log('📧 Email Data (ohne from-Feld):', cleanEmailData);
-      console.log('Request URL:', '/api/admin/emails/send-aws');
-      console.log('Request Method:', 'POST');
-      console.log('Request Headers:', { 'Content-Type': 'application/json' });
-      console.log('Request Body (String):', JSON.stringify(cleanEmailData));
-      console.log('Request Body (Pretty):', JSON.stringify(cleanEmailData, null, 2));
-      console.log('=== END DEBUG ===');
-
       // Verwende AWS SES API-Route
       const response = await fetch('/api/admin/emails/send-aws', {
         method: 'POST',
@@ -213,40 +198,27 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         body: JSON.stringify(cleanEmailData),
       });
 
-      console.log('=== API RESPONSE DEBUG ===');
-      console.log('API Response Status:', response.status, response.statusText);
-      console.log('API Response Headers:', Object.fromEntries(response.headers.entries()));
-      console.log('Response OK?', response.ok);
-      console.log('=== END RESPONSE DEBUG ===');
-
       if (!response.ok) {
         let errorData;
         let errorText = '';
         try {
           const responseText = await response.text();
-          console.log('Raw Response Text:', responseText);
+
           errorText = responseText;
           errorData = JSON.parse(responseText);
         } catch (parseError) {
-          console.log('Error parsing response JSON:', parseError);
+
           errorData = {
             error: `Server-Fehler: ${response.status} ${response.statusText}`,
             rawResponse: errorText,
           };
         }
 
-        console.error('AWS SES API Fehler:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          url: response.url,
-        });
-
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('AWS SES Erfolgreiche Antwort:', result);
+
       toast.success('E-Mail erfolgreich gesendet');
       setComposeForm({
         to: '',
@@ -261,7 +233,6 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
 
       onEmailSent?.();
     } catch (error) {
-      console.error('Fehler beim Senden der E-Mail:', error);
 
       // Detaillierte Fehlerbehandlung
       if (error instanceof Error) {
@@ -304,9 +275,6 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
         htmlContent: composeForm.htmlContent.replace('{{name}}', contact.name),
       }));
 
-      console.log('🔐 Bulk Email: Sender wird automatisch aus AWS Session bezogen');
-      console.log('📧 Bulk Messages (ohne from-Feld):', messages);
-
       // Verwende AWS SES API-Route für Bulk-Versand
       const response = await fetch('/api/admin/emails/bulk-send-aws', {
         method: 'POST',
@@ -325,7 +293,7 @@ export function EmailCompose({ templates, contacts, onEmailSent }: EmailComposeP
       toast.success(`E-Mail an ${activeContacts.length} Kontakte gesendet`);
       onEmailSent?.();
     } catch (error) {
-      console.error('Fehler beim Senden der Bulk-E-Mail:', error);
+
       toast.error('Fehler beim Senden der Bulk-E-Mail');
     } finally {
       setLoading(false);

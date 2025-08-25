@@ -152,11 +152,11 @@ export default function UserProviderProfilePage() {
           const reviewsSnapshot = await getDocs(reviewsQuery);
           setReviews(reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Review));
         } catch (reviewError) {
-          console.log('Keine Bewertungen gefunden:', reviewError);
+
           setReviews([]);
         }
       } catch (err) {
-        console.error('Fehler beim Laden des Profils:', err);
+
         setError('Fehler beim Laden des Profils.');
       } finally {
         setLoading(false);

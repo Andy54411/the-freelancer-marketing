@@ -39,7 +39,7 @@ async function verifyAdminAuth(): Promise<any> {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     return payload;
   } catch (error) {
-    console.error('Auth verification error:', error);
+
     return null;
   }
 }
@@ -98,7 +98,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('WorkMail SSO error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('WorkMail SSO POST error:', error);
+
     return NextResponse.json(
       {
         success: false,

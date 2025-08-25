@@ -74,9 +74,7 @@ export default function CustomerQuotesOverviewPage() {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('Fetching quotes for user:', uid);
-      
+
       // Korrigierter API-Pfad
       const response = await fetch(`/api/quotes/customer/${uid}`, {
         method: 'GET',
@@ -85,25 +83,22 @@ export default function CustomerQuotesOverviewPage() {
         },
       });
 
-      console.log('Response status:', response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', errorText);
+
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('API Result:', result);
 
       if (result.success) {
         setQuotes(result.quotes || []);
-        console.log('Quotes loaded:', result.quotes?.length || 0);
+
       } else {
         setError(result.error || 'Fehler beim Laden der Angebote');
       }
     } catch (err) {
-      console.error('Fehler beim Laden der Angebote:', err);
+
       setError(`Fehler beim Laden der Angebote: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);

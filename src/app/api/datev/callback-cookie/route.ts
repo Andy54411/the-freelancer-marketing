@@ -14,13 +14,6 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
     const error_description = searchParams.get('error_description');
 
-    console.log('🔄 [DATEV Cookie Callback] Callback received:', {
-      code: code ? `${code.substring(0, 10)}...` : null,
-      state: state,
-      error: error,
-      error_description: error_description,
-    });
-
     // Default redirect URL - will be updated with actual companyId
     let redirectUrl =
       process.env.NODE_ENV === 'development'
@@ -29,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Check for OAuth errors
     if (error) {
-      console.error('DATEV OAuth error:', { error, error_description });
+
       return NextResponse.redirect(
         `${redirectUrl}?error=${error}&message=${encodeURIComponent(error_description || 'Unknown error')}`
       );
@@ -37,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     // Validate required parameters
     if (!code || !state) {
-      console.error('Missing required OAuth parameters:', { code: !!code, state: !!state });
+
       return NextResponse.redirect(
         `${redirectUrl}?error=missing_parameters&message=${encodeURIComponent('Missing required OAuth parameters')}`
       );
@@ -52,16 +45,11 @@ export async function GET(request: NextRequest) {
       companyId = stateData.companyId;
       codeVerifier = stateData.codeVerifier;
 
-      console.log('🔍 [DATEV Cookie Callback] Parsed state:', {
-        companyId,
-        hasCodeVerifier: !!codeVerifier,
-      });
-
       if (!companyId || !codeVerifier) {
         throw new Error('Invalid state data');
       }
     } catch (parseError) {
-      console.error('Failed to parse state parameter:', parseError);
+
       return NextResponse.redirect(
         `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter')}`
       );
@@ -77,12 +65,6 @@ export async function GET(request: NextRequest) {
       // Exchange authorization code for tokens
       const tokenData = await exchangeCodeForTokens(code, codeVerifier);
       const config = getDatevConfig(); // Get config for metadata
-
-      console.log('✅ [DATEV Cookie Callback] Token exchange successful:', {
-        hasAccessToken: !!tokenData.access_token,
-        hasRefreshToken: !!tokenData.refresh_token,
-        expiresIn: tokenData.expires_in,
-      });
 
       // Store tokens in cookies using NextResponse
       const response = NextResponse.redirect(
@@ -122,27 +104,14 @@ export async function GET(request: NextRequest) {
         httpOnly: true, // Server-only for security
       });
 
-      console.log(
-        '✅ [DATEV Cookie Callback] Tokens stored in HTTP-only cookie for company:',
-        companyId,
-        {
-          cookieName,
-          dataSize: encodedData.length,
-          expiresIn: tokenData.expires_in,
-          scope: tokenData.scope || '',
-        }
-      );
-
-      console.log('🔄 [DATEV Cookie Callback] Redirecting to success page...');
       return response;
     } catch (tokenError) {
-      console.error('❌ [DATEV Cookie Callback] Token exchange failed:', tokenError);
+
       return NextResponse.redirect(
         `${redirectUrl}?error=token_exchange_failed&message=${encodeURIComponent('Failed to exchange authorization code for tokens')}`
       );
     }
   } catch (error) {
-    console.error('❌ [DATEV Cookie Callback] Unexpected error:', error);
 
     const fallbackUrl =
       process.env.NODE_ENV === 'development'
@@ -179,16 +148,6 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
   });
 
   // First try without client_secret (standard PKCE)
-  console.log('🔄 [DATEV Cookie Callback] Exchanging code for tokens (PKCE-only)...', {
-    redirectUri: cookieRedirectUri,
-    hasCode: !!code,
-    hasVerifier: !!codeVerifier,
-    clientId: config.clientId,
-    tokenUrl: config.tokenUrl,
-    requestBody: Object.fromEntries(tokenRequestData.entries()),
-  });
-
-  console.log('🌐 [DATEV Debug] Sending token request to:', config.tokenUrl);
 
   const response = await fetch(config.tokenUrl, {
     method: 'POST',
@@ -203,7 +162,6 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
 
   // If PKCE-only fails with invalid_client, try with client_secret
   if (!response.ok && response.status === 401) {
-    console.log('⚠️ [DATEV Cookie Callback] PKCE-only failed, trying with client_secret...');
 
     const tokenRequestDataWithSecret = new URLSearchParams({
       grant_type: 'authorization_code',
@@ -227,11 +185,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
 
     if (!responseWithSecret.ok) {
       const errorText = await responseWithSecret.text();
-      console.error('Token exchange failed (both attempts):', {
-        pkceOnlyStatus: response.status,
-        withSecretStatus: responseWithSecret.status,
-        error: errorText,
-      });
+
       throw new Error(
         `Token exchange failed: ${responseWithSecret.status} ${responseWithSecret.statusText}`
       );
@@ -248,11 +202,7 @@ async function exchangeCodeForTokens(code: string, codeVerifier: string) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Token exchange failed:', {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorText,
-    });
+
     throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`);
   }
 

@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error) {
       errorMessage = error.message;
     }
-    console.error('[STRIPE LOGS ERROR]', error);
+
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

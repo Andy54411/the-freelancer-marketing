@@ -5,7 +5,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[API /gemini/sync-blog] Automatische Blog-Synchronisation gestartet');
 
     // Hole aktuelle Inhalte von der Live-Website
     const blogUrls = ['https://taskilo.de/blog', 'https://taskilo.de/blog/zahlungsablaeufe'];
@@ -43,10 +42,10 @@ export async function GET(request: NextRequest) {
           };
 
           blogData[url] = pageInfo;
-          console.log(`[API /gemini/sync-blog] Erfolgreich synchronisiert: ${url}`);
+
         }
       } catch (fetchError) {
-        console.error(`[API /gemini/sync-blog] Fehler beim Laden von ${url}:`, fetchError);
+
         blogData[url] = {
           url,
           lastFetched: new Date().toISOString(),
@@ -177,8 +176,6 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    console.log('[API /gemini/sync-blog] Erweiterte Wissensbasis erfolgreich erstellt');
-
     return NextResponse.json({
       success: true,
       knowledgeBase: enhancedKnowledgeBase,
@@ -192,7 +189,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[API /gemini/sync-blog] Kritischer Fehler bei der Blog-Synchronisation:', error);
 
     return NextResponse.json(
       {

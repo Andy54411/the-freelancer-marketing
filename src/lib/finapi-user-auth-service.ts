@@ -47,7 +47,6 @@ export class FinAPIUserAuthService {
           // Versuche User Token zu holen (prüft ob User existiert)
           const userToken = await this.finapiService.getUserToken(userData.finapiUserId, password);
           if (userToken) {
-            console.log('✅ Existing finAPI user found:', userData.finapiUserId);
 
             // Update last access
             await updateDoc(userDocRef, {
@@ -63,7 +62,7 @@ export class FinAPIUserAuthService {
             } as User;
           }
         } catch (error) {
-          console.log('⚠️ finAPI user not found, creating new one...');
+
         }
       }
 
@@ -90,10 +89,9 @@ export class FinAPIUserAuthService {
 
       await setDoc(userDocRef, authData);
 
-      console.log('✅ finAPI user created and stored:', user.id);
       return user;
     } catch (error) {
-      console.error('❌ Error in getOrCreateFinAPIUser:', error);
+
       return null;
     }
   }
@@ -122,7 +120,7 @@ export class FinAPIUserAuthService {
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-        console.error('❌ No finAPI user found for Firebase UID:', firebaseUid);
+
         return null;
       }
 
@@ -154,7 +152,7 @@ export class FinAPIUserAuthService {
 
       return null;
     } catch (error) {
-      console.error('❌ Error getting user access token:', error);
+
       return null;
     }
   }
@@ -174,13 +172,12 @@ export class FinAPIUserAuthService {
           updatedAt: Timestamp.now(),
         });
 
-        console.log('✅ finAPI user deactivated for Firebase UID:', firebaseUid);
         return true;
       }
 
       return false;
     } catch (error) {
-      console.error('❌ Error deactivating finAPI user:', error);
+
       return false;
     }
   }
@@ -199,7 +196,7 @@ export class FinAPIUserAuthService {
 
       return null;
     } catch (error) {
-      console.error('❌ Error getting user status:', error);
+
       return null;
     }
   }

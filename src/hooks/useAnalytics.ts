@@ -10,10 +10,10 @@ export const useAnalytics = () => {
 
   const trackEvent = useCallback(
     (action: string, category: string, label?: string, value?: number) => {
-      gtag.event(action, { 
-        event_category: category, 
-        event_label: label, 
-        value: value 
+      gtag.event(action, {
+        event_category: category,
+        event_label: label,
+        value: value
       });
     },
     []

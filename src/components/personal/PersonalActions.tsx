@@ -103,7 +103,7 @@ export function PersonalActions({
 
   const handleViewEmployee = (employee: Employee) => {
     // Hier könnte eine Detailansicht geöffnet werden
-    console.log('View employee details:', employee);
+
   };
 
   // Absence Actions
@@ -149,7 +149,7 @@ export function PersonalActions({
         reader.onload = e => {
           const csv = e.target?.result as string;
           // Hier würde die CSV-Import-Logik implementiert werden
-          console.log('Import CSV:', csv);
+
         };
         reader.readAsText(file);
       }
@@ -359,13 +359,7 @@ export function PersonalActions({
 
 // Export individual action functions
 export const PersonalActionHandlers = {
-  handleAddEmployee: () => console.log('Add employee'),
-  handleEditEmployee: (employee: Employee) => console.log('Edit employee:', employee),
-  handleDeleteEmployee: (employee: Employee) => console.log('Delete employee:', employee),
-  handleViewEmployee: (employee: Employee) => console.log('View employee:', employee),
-  handleCreateAbsenceRequest: () => console.log('Create absence request'),
-  handleApproveAbsenceRequest: (request: AbsenceRequest) =>
-    console.log('Approve request:', request),
-  handleExportEmployees: (employees: Employee[]) => console.log('Export employees:', employees),
-  handleImportEmployees: () => console.log('Import employees'),
+  handleAddEmployee: () => {
+    console.log('Add employee action');
+  },
 };

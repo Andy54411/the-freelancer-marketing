@@ -90,7 +90,7 @@ ${companyName}`);
 
       onClose();
     } catch (error) {
-      console.error('❌ Fehler beim Senden der Rechnung:', error);
+
       toast.error('Fehler beim Versenden der Rechnung', {
         description: error instanceof Error ? error.message : 'Unbekannter Fehler',
       });

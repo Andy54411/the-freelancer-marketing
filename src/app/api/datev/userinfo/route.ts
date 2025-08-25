@@ -20,11 +20,6 @@ export async function GET(request: NextRequest) {
 
     const config = getDatevConfig();
 
-    console.log('Fetching DATEV user info...', {
-      userInfoUrl: config.userInfoUrl,
-      timestamp: new Date().toISOString(),
-    });
-
     // Call DATEV UserInfo endpoint with Bearer token
     const userInfoResponse = await fetch(config.userInfoUrl, {
       method: 'GET',
@@ -38,11 +33,6 @@ export async function GET(request: NextRequest) {
     const userInfo = await userInfoResponse.json();
 
     if (!userInfoResponse.ok) {
-      console.error('DATEV UserInfo API error:', {
-        status: userInfoResponse.status,
-        statusText: userInfoResponse.statusText,
-        error: userInfo,
-      });
 
       return NextResponse.json(
         {
@@ -53,12 +43,6 @@ export async function GET(request: NextRequest) {
         { status: userInfoResponse.status }
       );
     }
-
-    console.log('DATEV UserInfo successful:', {
-      hasAccountId: !!userInfo.account_id,
-      hasProfile: !!userInfo.profile,
-      hasEmail: !!userInfo.email,
-    });
 
     // Return user information according to DATEV specification
     return NextResponse.json({
@@ -77,7 +61,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('DATEV UserInfo API error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_error',
@@ -121,7 +105,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error) {
-    console.error('DATEV UserInfo mock error:', error);
+
     return NextResponse.json(
       { error: 'internal_error', message: 'Failed to process mock request' },
       { status: 500 }

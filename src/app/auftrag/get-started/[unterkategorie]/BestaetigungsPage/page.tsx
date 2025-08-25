@@ -45,20 +45,20 @@ export default function BestaetigungsPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [anbieterStripeAccountId, setAnbieterStripeAccountId] = useState<string | null>(null);
   const [tempJobDraftId, setTempJobDraftId] = useState<string | null>(null);
-  
+
   // States für BestaetigungsContent
   const [jobPriceInCents, setJobPriceInCents] = useState<number | null>(null);
   const [totalAmountPayableInCents, setTotalAmountPayableInCents] = useState<number | null>(null);
 
   // Callback für Preisberechnung von BestaetigungsContent
   const handlePriceCalculatedFromChild = useCallback((priceInCents: number) => {
-    console.log('Preis von BestaetigungsContent erhalten:', priceInCents);
+
     setJobPriceInCents(priceInCents);
     setTotalAmountPayableInCents(priceInCents); // Gesamtbetrag = Jobpreis
   }, []);
 
   const handleDetailsChangeFromChild = useCallback(() => {
-    console.log('Details wurden in BestaetigungsContent geändert');
+
     // Reset clientSecret wenn sich Details ändern
     setClientSecret(null);
   }, []);
@@ -113,7 +113,6 @@ export default function BestaetigungsPage() {
       return;
     }
 
-    console.log('BestaetigungsPage: Alle Parameter validiert, bereit für Anzeige');
   }, [firebaseUser, authLoading, urlParams, router]);
 
   // Payment Intent erstellen
@@ -128,7 +127,7 @@ export default function BestaetigungsPage() {
 
     try {
       // 1. Stripe Customer ID erstellen oder abrufen
-      console.log('Erstelle/lade Stripe Customer...');
+
       const customerResponse = await fetch('/api/stripe/get-or-create-customer', {
         method: 'POST',
         headers: {
@@ -143,17 +142,15 @@ export default function BestaetigungsPage() {
       });
 
       const customerData = await customerResponse.json();
-      
+
       if (!customerResponse.ok || !customerData.stripeCustomerId) {
         throw new Error(customerData.error || 'Fehler beim Erstellen des Stripe Kunden');
       }
 
       const stripeCustomerId = customerData.stripeCustomerId;
-      console.log('Stripe Customer ID:', stripeCustomerId);
 
       // 2. Temporären Job-Entwurf erstellen
-      console.log('Erstelle temporären Job-Entwurf...');
-      
+
       // Erstelle orderData aus URL-Parametern und berechneten Werten
       const hours = parseFloat(urlParams.duration);
       const orderDataForDraft: TemporaryJobDraftData = {
@@ -169,7 +166,7 @@ export default function BestaetigungsPage() {
         jobTotalCalculatedHours: hours,
         jobCalculatedPriceInCents: jobPriceInCents
       };
-      
+
       const createDraftCallable = httpsCallable<TemporaryJobDraftData, TemporaryJobDraftResult>(
         functions,
         'createTemporaryJobDraft'
@@ -182,27 +179,27 @@ export default function BestaetigungsPage() {
       setAnbieterStripeAccountId(stripeAccountId);
 
       // 3. Lade Benutzeradresse für Billing Details
-      console.log('Lade Benutzeradresse...');
+
       let billingDetails: any = null;
-      
+
       try {
         const { doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('@/firebase/clients');
-        
+
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          
+
           // Erstelle Billing Details aus Firebase-Daten oder Registration Context
           const street = userData.street || registration.personalStreet;
           const postalCode = userData.postalCode || registration.personalPostalCode;
           const city = userData.city || registration.personalCity;
           const country = userData.country || registration.personalCountry || 'DE';
-          
+
           if (street && postalCode && city) {
             billingDetails = {
-              name: userData.firstName && userData.lastName 
-                ? `${userData.firstName} ${userData.lastName}` 
+              name: userData.firstName && userData.lastName
+                ? `${userData.firstName} ${userData.lastName}`
                 : firebaseUser.displayName || 'Kunde',
               email: userData.email || firebaseUser.email,
               phone: userData.phoneNumber || registration.phoneNumber,
@@ -218,7 +215,7 @@ export default function BestaetigungsPage() {
           }
         }
       } catch (addressError) {
-        console.warn('Fehler beim Laden der Benutzeradresse:', addressError);
+
       }
 
       // Fallback Billing Details wenn keine Adresse gefunden
@@ -236,11 +233,11 @@ export default function BestaetigungsPage() {
             country: 'DE'
           }
         };
-        console.warn('Verwende Fallback-Rechnungsadresse, da keine Benutzeradresse gefunden wurde');
+
       }
 
       // 4. Payment Intent erstellen
-      console.log('Erstelle Payment Intent...');
+
       const idToken = await firebaseUser.getIdToken();
 
       const paymentResponse = await fetch('/api/create-payment-intent', {
@@ -271,7 +268,7 @@ export default function BestaetigungsPage() {
 
       setClientSecret(paymentData.clientSecret);
     } catch (err) {
-      console.error('Payment Error:', err);
+
       setError(err instanceof Error ? err.message : 'Fehler beim Vorbereiten der Zahlung');
     } finally {
       setIsLoading(false);
@@ -280,7 +277,6 @@ export default function BestaetigungsPage() {
 
   // Payment Success Handler
   const handlePaymentSuccess = (paymentIntentId: string) => {
-    console.log('Zahlung erfolgreich:', paymentIntentId);
 
     // Reset Registration Context
     if (registration.resetRegistrationData) {
@@ -295,7 +291,7 @@ export default function BestaetigungsPage() {
 
   // Payment Error Handler
   const handlePaymentError = (errorMessage: string) => {
-    console.error('Payment Error:', errorMessage);
+
     setError(`Zahlungsfehler: ${errorMessage}`);
     setClientSecret(null); // Reset für erneuten Versuch
   };
@@ -353,7 +349,7 @@ export default function BestaetigungsPage() {
     <Suspense
       fallback={
         <div className="flex justify-center items-center min-h-screen">
-          <Loader2 className="animate-spin text-4xl text-[#14ad9f] mr-3" /> 
+          <Loader2 className="animate-spin text-4xl text-[#14ad9f] mr-3" />
           Seite wird aufgebaut...
         </div>
       }
@@ -382,7 +378,7 @@ export default function BestaetigungsPage() {
           {/* Payment Section - Rechts */}
           <div className="w-full bg-gray-50 p-6 rounded-lg shadow">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Sichere Zahlung</h2>
-            
+
             {/* Payment Message */}
             {error && (
               <div className="my-4 p-3 rounded-md text-sm bg-red-100 text-red-700 flex items-center">

@@ -20,7 +20,7 @@ export async function GET(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (error) {
-      console.error('Error verifying token:', error);
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -64,10 +64,10 @@ export async function GET(
           }
         } else {
           // Customer not found in users collection
-          console.log('[Project Details API] Customer not found in users collection:', projectData.customerUid);
+
         }
       } catch (error) {
-        console.error('[Project Details API] Error fetching customer data:', error);
+
       }
     }
 
@@ -164,7 +164,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error fetching quote details:', error);
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -188,7 +188,7 @@ export async function PATCH(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (error) {
-      console.error('Error verifying token:', error);
+
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -267,9 +267,9 @@ export async function PATCH(
             }
           );
         }
-        console.log(`✅ Bell-Notification gesendet für neues Angebot: Projekt ${quoteId}`);
+
       } catch (notificationError) {
-        console.error('❌ Fehler beim Senden der Bell-Notification:', notificationError);
+
         // Angebot trotzdem erfolgreich, auch wenn Notification fehlschlägt
       }
 
@@ -290,7 +290,7 @@ export async function PATCH(
       });
     }
   } catch (error) {
-    console.error('Error updating quote:', error);
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  getDoc,
+  query,
+  where,
   orderBy
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
@@ -93,8 +93,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[Steuerberater API] GET request:', { companyId, action });
-
     switch (action) {
       case 'invites':
         return await getInvites(companyId);
@@ -109,10 +107,10 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ [Steuerberater API] GET error:', error);
+
     return NextResponse.json(
-      { 
-        error: 'internal_server_error', 
+      {
+        error: 'internal_server_error',
         message: 'Unerwarteter Serverfehler',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -135,8 +133,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Steuerberater API] POST request:', { finalCompanyId, action });
-
     switch (action) {
       case 'invite':
         return await sendInvite(finalCompanyId, data);
@@ -154,10 +150,10 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ [Steuerberater API] POST error:', error);
+
     return NextResponse.json(
-      { 
-        error: 'internal_server_error', 
+      {
+        error: 'internal_server_error',
         message: 'Unerwarteter Serverfehler',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -172,8 +168,6 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { action, inviteId, companyId, company_id, ...data } = body;
     const finalCompanyId = companyId || company_id;
-
-    console.log('[Steuerberater API] PUT request:', { finalCompanyId, action, inviteId });
 
     switch (action) {
       case 'accept_invite':
@@ -192,10 +186,10 @@ export async function PUT(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ [Steuerberater API] PUT error:', error);
+
     return NextResponse.json(
-      { 
-        error: 'internal_server_error', 
+      {
+        error: 'internal_server_error',
         message: 'Unerwarteter Serverfehler',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -212,8 +206,6 @@ export async function DELETE(request: NextRequest) {
     const documentId = searchParams.get('documentId');
     const action = searchParams.get('action');
 
-    console.log('[Steuerberater API] DELETE request:', { inviteId, documentId, action });
-
     if (inviteId) {
       return await deleteInvite(inviteId);
     } else if (documentId) {
@@ -226,10 +218,10 @@ export async function DELETE(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ [Steuerberater API] DELETE error:', error);
+
     return NextResponse.json(
-      { 
-        error: 'internal_server_error', 
+      {
+        error: 'internal_server_error',
         message: 'Unerwarteter Serverfehler',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
@@ -450,20 +442,20 @@ async function shareDocument(companyId: string, data: {
   sharedBy?: string;
   expiresAt?: string;
 }) {
-  const { 
-    steuerberaterId, 
-    name, 
-    description, 
-    type, 
-    category, 
-    fileUrl, 
-    filePath, 
-    fileSize, 
-    accessLevel = 'view', 
-    tags = [], 
+  const {
+    steuerberaterId,
+    name,
+    description,
+    type,
+    category,
+    fileUrl,
+    filePath,
+    fileSize,
+    accessLevel = 'view',
+    tags = [],
     metadata = {},
     sharedBy,
-    expiresAt 
+    expiresAt
   } = data;
 
   if (!steuerberaterId || !name || !type) {
@@ -579,7 +571,7 @@ async function sendMessage(companyId: string, data: {
   await logCollaborationActivity(companyId, steuerberaterId, 'message_sent', `Nachricht: "${message.substring(0, 50)}..."`, sender || 'system');
 
   // TODO: Echte Nachrichten-Funktionalität implementieren
-  
+
   return NextResponse.json({
     success: true,
     message: 'Nachricht erfolgreich gesendet',
@@ -589,7 +581,7 @@ async function sendMessage(companyId: string, data: {
 
 async function acceptInvite(inviteId: string, data: Record<string, unknown>) {
   const docRef = doc(db, 'steuerberater_invites', inviteId);
-  
+
   await updateDoc(docRef, {
     status: 'accepted',
     acceptedAt: new Date(),
@@ -612,7 +604,7 @@ async function acceptInvite(inviteId: string, data: Record<string, unknown>) {
 
 async function declineInvite(inviteId: string, data: Record<string, unknown>) {
   const docRef = doc(db, 'steuerberater_invites', inviteId);
-  
+
   await updateDoc(docRef, {
     status: 'declined',
     declinedAt: new Date(),
@@ -632,7 +624,7 @@ async function updatePermissions(inviteId: string, data: {
 }) {
   const { permissions, accessLevel } = data;
   const docRef = doc(db, 'steuerberater_invites', inviteId);
-  
+
   await updateDoc(docRef, {
     permissions,
     accessLevel,
@@ -648,7 +640,7 @@ async function updatePermissions(inviteId: string, data: {
 
 async function revokeAccess(inviteId: string) {
   const docRef = doc(db, 'steuerberater_invites', inviteId);
-  
+
   await updateDoc(docRef, {
     status: 'revoked',
     revokedAt: new Date(),
@@ -682,10 +674,10 @@ async function deleteSharedDocument(documentId: string) {
 }
 
 async function logCollaborationActivity(
-  companyId: string, 
-  steuerberaterId: string, 
-  action: string, 
-  details: string, 
+  companyId: string,
+  steuerberaterId: string,
+  action: string,
+  details: string,
   performedBy: string
 ) {
   const log: CollaborationLog = {

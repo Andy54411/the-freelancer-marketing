@@ -9,7 +9,7 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-    console.error('[B2B Payment API] STRIPE_SECRET_KEY ist nicht gesetzt.');
+
     return null;
   }
 
@@ -62,7 +62,6 @@ interface B2BPaymentRequest {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('[B2B Payment API] Neue B2B-Zahlungsanfrage empfangen');
 
   const stripe = getStripeInstance();
   if (!stripe) {
@@ -71,7 +70,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: B2BPaymentRequest = await request.json();
-    console.log('[B2B Payment API] Request:', JSON.stringify(body, null, 2));
 
     // Validate B2B specific requirements
     const {
@@ -93,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Validate Stripe Account ID format for B2B
     if (!providerStripeAccountId.startsWith('acct_')) {
-      console.error('[B2B Payment API] Ungültige Connected Account ID:', providerStripeAccountId);
+
       return NextResponse.json(
         {
           error: 'Ungültige Connected Account ID. Muss mit "acct_" beginnen.',
@@ -122,7 +120,7 @@ export async function POST(request: NextRequest) {
         );
       }
     } catch (stripeError: any) {
-      console.error('[B2B Payment API] Stripe Account Check fehlgeschlagen:', stripeError);
+
       return NextResponse.json(
         {
           error: 'Provider-Konto konnte nicht verifiziert werden',
@@ -178,17 +176,10 @@ export async function POST(request: NextRequest) {
             { merge: true }
           );
         } catch (firebaseError) {
-          console.warn(
-            '[B2B Payment API] Could not update user with Stripe Customer ID:',
-            firebaseError
-          );
+
           // Continue without failing - not critical for payment
         }
       } catch (firebaseError) {
-        console.warn(
-          '[B2B Payment API] Firebase access failed, using fallback data:',
-          firebaseError
-        );
 
         // Create customer with fallback data
         const customer = await stripe.customers.create({
@@ -210,13 +201,6 @@ export async function POST(request: NextRequest) {
     // Calculate B2B Platform Fee
     const platformFee = Math.round(amount * B2B_PLATFORM_FEE_RATE);
     const providerAmount = amount - platformFee;
-
-    console.log('[B2B Payment API] Fee Calculation:', {
-      grossAmount: amount / 100,
-      platformFee: platformFee / 100,
-      providerReceives: providerAmount / 100,
-      feeRate: B2B_PLATFORM_FEE_RATE * 100 + '%',
-    });
 
     // Create B2B Payment Intent with business-specific features
     const paymentIntent = await stripe.paymentIntents.create({
@@ -305,16 +289,9 @@ export async function POST(request: NextRequest) {
     try {
       await setDoc(doc(db, 'b2b_payments', paymentIntent.id), b2bPaymentData);
     } catch (firebaseError) {
-      console.warn('[B2B Payment API] Could not save payment record to Firebase:', firebaseError);
+
       // Continue without failing - payment intent is created, record can be recreated later
     }
-
-    console.log('[B2B Payment API] B2B PaymentIntent created successfully:', {
-      paymentIntentId: paymentIntent.id,
-      projectId,
-      amount: amount / 100,
-      paymentType,
-    });
 
     return NextResponse.json({
       success: true,
@@ -338,7 +315,6 @@ export async function POST(request: NextRequest) {
       message: 'B2B Payment Intent erfolgreich erstellt',
     });
   } catch (error: any) {
-    console.error('[B2B Payment API] Fehler bei der B2B-Zahlungserstellung:', error);
 
     return NextResponse.json(
       {

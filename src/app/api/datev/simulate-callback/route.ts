@@ -15,8 +15,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId') || '0Rj5vGkBjeXrzZKBr4cFfV0jRuw1';
 
-    console.log('🔄 [DATEV Callback Simulator] Starting simulation for company:', companyId);
-
     if (process.env.NODE_ENV === 'production') {
       return NextResponse.json(
         { error: 'simulator_disabled', message: 'Simulator nur in Development verfügbar' },
@@ -100,21 +98,9 @@ export async function GET(request: NextRequest) {
       httpOnly: true, // Server-only for security
     });
 
-    console.log(
-      '✅ [DATEV Callback Simulator] Mock tokens stored in cookie for company:',
-      companyId,
-      {
-        cookieName,
-        dataSize: encodedData.length,
-        expiresIn: mockTokenData.expires_in,
-        environment: process.env.NODE_ENV,
-        apiBaseUrl: config.apiBaseUrl,
-      }
-    );
-
     return response;
   } catch (error) {
-    console.error('❌ [DATEV Callback Simulator] Error:', error);
+
     return NextResponse.json(
       {
         error: 'simulation_error',

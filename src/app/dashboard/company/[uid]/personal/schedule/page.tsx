@@ -177,11 +177,11 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     const employeesUnsubscribe = PersonalService.subscribeToEmployees(
       resolvedParams.uid,
       employeeList => {
-        console.log('📊 Realtime: Mitarbeiter aktualisiert', employeeList.length);
+
         setEmployees(employeeList);
       },
       error => {
-        console.error('❌ Realtime: Fehler bei Mitarbeiter-Subscription:', error);
+
         toast.error('Fehler beim Laden der Mitarbeiter');
       }
     );
@@ -190,12 +190,12 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
     const shiftsUnsubscribe = PersonalService.subscribeToShifts(
       resolvedParams.uid,
       shiftList => {
-        console.log('📅 Realtime: Schichten aktualisiert', shiftList.length);
+
         setShifts(shiftList);
         setLoading(false);
       },
       error => {
-        console.error('❌ Realtime: Fehler bei Schichten-Subscription:', error);
+
         toast.error('Fehler beim Laden der Schichten');
         setLoading(false);
       }
@@ -221,7 +221,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
   const loadData = async () => {
     // Diese Methode wird nur noch für manuelle Refreshes verwendet
     // Hauptdatenladung erfolgt über Realtime-Subscriptions
-    console.log('🔄 Manueller Refresh der Daten...');
+
   };
 
   const handleCreateShift = async () => {
@@ -261,7 +261,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
         status: 'PLANNED',
       });
     } catch (error) {
-      console.error('Fehler beim Erstellen der Schicht:', error);
+
       toast.error('Fehler beim Erstellen der Schicht');
     }
   };
@@ -291,7 +291,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
       // Daten werden automatisch über Realtime-Subscription aktualisiert
     } catch (error) {
-      console.error('Fehler beim Erstellen der Schicht:', error);
+
       toast.error('Fehler beim Erstellen der Schicht');
     }
   };
@@ -320,7 +320,7 @@ export default function ModernSchedulePage({ params }: ModernSchedulePageProps) 
 
       // Daten werden automatisch über Realtime-Subscription aktualisiert
     } catch (error) {
-      console.error('Fehler beim Aktualisieren der Schicht:', error);
+
       toast.error('Fehler beim Verschieben der Schicht');
     }
   };

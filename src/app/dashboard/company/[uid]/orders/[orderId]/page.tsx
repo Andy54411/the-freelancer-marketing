@@ -209,9 +209,9 @@ export default function CompanyOrderDetailPage() {
           };
 
           setOrder(orderData);
-          console.log('✅ REALTIME COMPANY: Order data updated:', orderData.status);
+
         } catch (err: any) {
-          console.error('❌ REALTIME COMPANY: Error processing order update:', err);
+
           if (err.code === 'permission-denied') {
             setError(
               'Zugriff auf Teilnehmerdetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support.'
@@ -226,7 +226,7 @@ export default function CompanyOrderDetailPage() {
         }
       },
       error => {
-        console.error('❌ REALTIME COMPANY: Firestore listener error:', error);
+
         if (error.code === 'permission-denied') {
           setError(
             'Zugriff auf diesen Auftrag verweigert. Die Auftragsdaten sind möglicherweise einem anderen Anbieter zugeordnet.'
@@ -240,7 +240,7 @@ export default function CompanyOrderDetailPage() {
 
     // Cleanup function
     return () => {
-      console.log('🔄 REALTIME COMPANY: Cleaning up order listener');
+
       unsubscribe();
     };
   }, [authLoading, currentUser, orderId, router, companyUid]);
@@ -254,8 +254,6 @@ export default function CompanyOrderDetailPage() {
 
     try {
       // Debug: Prüfe Auth Status
-      console.log('Debug: Current User:', currentUser);
-      console.log('Debug: Auth Loading:', authLoading);
 
       if (!currentUser) {
         throw new Error('Benutzer ist nicht angemeldet');
@@ -268,7 +266,6 @@ export default function CompanyOrderDetailPage() {
       }
 
       const idToken = await firebaseUser.getIdToken();
-      console.log('Debug: ID Token (erste 50 Zeichen):', idToken.substring(0, 50) + '...');
 
       // HTTP Request zur acceptOrderHTTP Function
       const response = await fetch(
@@ -291,11 +288,9 @@ export default function CompanyOrderDetailPage() {
       }
 
       const result = await response.json();
-      console.log('Accept Order Success:', result);
 
       setOrder(prev => (prev ? { ...prev, status: 'AKTIV' } : null));
     } catch (err: any) {
-      console.error('Fehler beim Annehmen des Auftrags:', err);
 
       // Bessere Error-Messages für verschiedene Fehlertypen
       let errorMessage = 'Fehler beim Annehmen des Auftrags.';
@@ -335,7 +330,6 @@ export default function CompanyOrderDetailPage() {
 
     try {
       // Debug: Prüfe Auth Status
-      console.log('Debug: Completing order for user:', currentUser);
 
       if (!currentUser) {
         throw new Error('Benutzer ist nicht angemeldet');
@@ -348,7 +342,6 @@ export default function CompanyOrderDetailPage() {
       }
 
       const idToken = await firebaseUser.getIdToken();
-      console.log('Debug: Completing order with ID Token');
 
       // HTTP Request zur completeOrder Function
       const response = await fetch(
@@ -373,7 +366,6 @@ export default function CompanyOrderDetailPage() {
       }
 
       const result = await response.json();
-      console.log('Complete Order Success:', result);
 
       // Update local state
       setOrder(prev => (prev ? { ...prev, status: 'PROVIDER_COMPLETED' } : null));
@@ -383,7 +375,7 @@ export default function CompanyOrderDetailPage() {
         'Auftrag als erledigt markiert! Der Kunde wurde benachrichtigt und muss jetzt den Abschluss bestätigen und bewerten. Das Geld wird nach der Kundenbestätigung freigegeben.'
       );
     } catch (err: any) {
-      console.error('Fehler beim Abschließen des Auftrags:', err);
+
       setActionError(err.message || 'Fehler beim Abschließen des Auftrags.');
     } finally {
       setIsActionLoading(false);
@@ -405,7 +397,7 @@ export default function CompanyOrderDetailPage() {
       await rejectOrderCallable({ orderId: order.id, reason: reason.trim() });
       setOrder(prev => (prev ? { ...prev, status: 'abgelehnt_vom_anbieter' } : null));
     } catch (err: any) {
-      console.error('Fehler beim Ablehnen des Auftrags:', err);
+
       let message = err.message || 'Fehler beim Ablehnen des Auftrags.';
       if (err.details) {
         message += ` Details: ${JSON.stringify(err.details)}`;
@@ -421,19 +413,12 @@ export default function CompanyOrderDetailPage() {
     if (!orderId) return;
 
     try {
-      console.log('🔄 DIRECT: Starting payment process for order:', orderId);
 
       // Import TimeTracker dynamisch
       const { TimeTracker } = await import('@/lib/timeTracker');
 
       // Stelle echte Stripe-Abrechnung für genehmigte Stunden
       const billingResult = await TimeTracker.billApprovedHours(orderId);
-
-      console.log('✅ DIRECT: Real billing data received:', {
-        paymentIntentId: billingResult.paymentIntentId,
-        customerPays: billingResult.customerPays,
-        clientSecret: billingResult.clientSecret,
-      });
 
       // Berechne echte Payment Hours aus OrderDetails
       const orderDetails = await TimeTracker.getOrderDetails(orderId);
@@ -454,12 +439,8 @@ export default function CompanyOrderDetailPage() {
       setPaymentHours(paymentHours);
       setShowInlinePayment(true);
 
-      console.log('✅ DIRECT: Real payment modal opened with:', {
-        amount: billingResult.customerPays / 100,
-        hours: paymentHours,
-      });
     } catch (error) {
-      console.error('❌ DIRECT: Error creating payment:', error);
+
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
 
       if (
@@ -476,7 +457,7 @@ export default function CompanyOrderDetailPage() {
   };
 
   const handlePaymentSuccess = async () => {
-    console.log('✅ Payment successful!');
+
     setShowInlinePayment(false);
 
     // Success-Nachricht anzeigen
@@ -489,7 +470,7 @@ export default function CompanyOrderDetailPage() {
       // Order data neu laden nach erfolgreichem Payment
       window.location.reload();
     } catch (error) {
-      console.error('❌ Error reloading order data after payment:', error);
+
       setSuccessMessage(
         'Zahlung erfolgreich, aber Daten-Update fehlgeschlagen. Seite wird neu geladen...'
       );
@@ -502,7 +483,7 @@ export default function CompanyOrderDetailPage() {
   };
 
   const handlePaymentCancel = () => {
-    console.log('❌ Payment cancelled');
+
     setShowInlinePayment(false);
   };
 
@@ -768,7 +749,7 @@ export default function CompanyOrderDetailPage() {
                     })()}
                     onTimeSubmitted={() => {
                       // Optional: Reload order data or show success message
-                      console.log('Time tracking updated');
+
                     }}
                   />
                 </div>
@@ -994,11 +975,11 @@ export default function CompanyOrderDetailPage() {
             isOpen={showInlinePayment}
             onClose={handlePaymentCancel}
             onSuccess={(paymentIntentId: string) => {
-              console.log('Payment successful:', paymentIntentId);
+
               handlePaymentSuccess();
             }}
             onError={(error: string) => {
-              console.error('Payment error:', error);
+
               handlePaymentCancel();
             }}
           />

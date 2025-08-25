@@ -71,7 +71,7 @@ function CheckoutForm({
     event.preventDefault();
 
     if (!stripe || !elements) {
-      console.error('[Quote Payment] Stripe nicht verfügbar');
+
       return;
     }
 
@@ -80,19 +80,16 @@ function CheckoutForm({
     setMessage('');
 
     try {
-      console.log('[Quote Payment] Validiere Zahlungsdaten...');
 
       // Submit payment data to Stripe
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-        console.error('[Quote Payment] Element submission error:', submitError);
+
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
       }
-
-      console.log('[Quote Payment] Elements validation successful, confirming quote payment...');
 
       // Confirm Quote payment
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
@@ -110,20 +107,20 @@ function CheckoutForm({
       });
 
       if (confirmError) {
-        console.error('[Quote Payment] Fehler bei der Bestätigung:', confirmError);
+
         setMessage(confirmError.message || 'Quote-Zahlung fehlgeschlagen');
         onError(confirmError.message || 'Quote-Zahlung fehlgeschlagen');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('[Quote Payment] PaymentIntent erfolgreich abgeschlossen:', paymentIntent);
+
         setMessage('Quote-Zahlung erfolgreich abgeschlossen!');
         onSuccess(paymentIntent.id);
       } else {
-        console.warn('[Quote Payment] PaymentIntent Status unexpected:', paymentIntent?.status);
+
         setMessage(`Quote-Zahlung Status: ${paymentIntent?.status}`);
         onError(`Quote-Zahlung unvollständig. Status: ${paymentIntent?.status}`);
       }
     } catch (error: any) {
-      console.error('[Quote Payment] Unexpected error:', error);
+
       setMessage('Unerwarteter Fehler bei der Quote-Zahlung');
       onError('Unerwarteter Fehler bei der Quote-Zahlung');
     } finally {
@@ -277,14 +274,6 @@ export default function QuotePaymentModal({
 
       const token = await firebaseUser.getIdToken();
 
-      console.log('🚀 Creating Quote Payment Intent:', {
-        quoteId,
-        proposalId,
-        quoteTitle,
-        proposalAmount,
-        companyName,
-      });
-
       const response = await fetch(
         `/api/user/${customerFirebaseId}/quotes/received/${quoteId}/payment`,
         {
@@ -316,12 +305,12 @@ export default function QuotePaymentModal({
       if (data.success && data.clientSecret) {
         setClientSecret(data.clientSecret);
         setPaymentDetails(data.paymentDetails);
-        console.log('✅ Quote Payment Intent created successfully');
+
       } else {
         throw new Error(data.error || 'Fehler beim Erstellen der Quote-Zahlung');
       }
     } catch (error: any) {
-      console.error('❌ Error creating quote payment intent:', error);
+
       setError(error.message || 'Fehler beim Erstellen der Quote-Zahlung');
     } finally {
       setIsCreatingPayment(false);
@@ -329,7 +318,7 @@ export default function QuotePaymentModal({
   };
 
   const handleSuccess = (paymentIntentId: string) => {
-    console.log('✅ Quote payment successful!');
+
     onSuccess(paymentIntentId);
   };
 

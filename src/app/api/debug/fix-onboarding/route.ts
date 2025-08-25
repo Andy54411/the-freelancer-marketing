@@ -9,8 +9,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'companyUid is required' }, { status: 400 });
     }
 
-    console.log('🔧 Fixing onboarding status for company:', companyUid);
-
     if (markAsGrandfathered) {
       // Mark existing company as grandfathered (no onboarding needed)
       await initializeOnboardingProgress(companyUid, 'existing_grandfathered');
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('❌ Fix onboarding error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

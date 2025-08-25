@@ -108,7 +108,7 @@ export class ResendEmailService {
 
       return { success: true, messageId: result.data?.id };
     } catch (error) {
-      console.error('Fehler beim Senden der E-Mail:', error);
+
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -147,7 +147,7 @@ export class ResendEmailService {
         results: mappedResults,
       };
     } catch (error) {
-      console.error('Fehler beim Bulk-Versand:', error);
+
       return {
         success: false,
         results: messages.map(m => ({ error: 'Bulk-Versand fehlgeschlagen', to: m.to })),
@@ -195,7 +195,7 @@ export class ResendEmailService {
         metadata: { templateId, variables },
       });
     } catch (error) {
-      console.error('Fehler beim Template-E-Mail-Versand:', error);
+
       return { success: false, error: error instanceof Error ? error.message : 'Template-Fehler' };
     }
   }
@@ -211,7 +211,7 @@ export class ResendEmailService {
       // Hier würde normalerweise eine Datenbankabfrage stehen
       return { status: 'sent' };
     } catch (error) {
-      console.error('Fehler beim Abrufen des E-Mail-Status:', error);
+
       return { status: 'sent', error: 'Status nicht verfügbar' };
     }
   }
@@ -281,7 +281,7 @@ export class ResendEmailService {
 
       return { success: true };
     } catch (error) {
-      console.error('Fehler bei Domain-Verifizierung:', error);
+
       return { success: false, error: error instanceof Error ? error.message : 'Domain-Fehler' };
     }
   }
@@ -291,22 +291,22 @@ export class ResendEmailService {
     try {
       switch (event.type) {
         case 'email.sent':
-          console.log('E-Mail gesendet:', event.data);
+
           break;
         case 'email.delivered':
-          console.log('E-Mail zugestellt:', event.data);
+
           break;
         case 'email.bounced':
-          console.log('E-Mail bounced:', event.data);
+
           break;
         case 'email.complained':
-          console.log('E-Mail als Spam markiert:', event.data);
+
           break;
         default:
-          console.log('Unbekanntes Webhook-Event:', event.type);
+
       }
     } catch (error) {
-      console.error('Fehler bei Webhook-Verarbeitung:', error);
+
     }
   }
 
@@ -318,12 +318,6 @@ export class ResendEmailService {
     proposalAmount: number
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      console.log('📧 sendNewProposalEmail called with:', {
-        customerEmail,
-        projectTitle,
-        providerName,
-        proposalAmount,
-      });
 
       const emailHtml = `
         <!DOCTYPE html>
@@ -350,7 +344,7 @@ export class ResendEmailService {
             <div class="content">
               <h2>Hallo!</h2>
               <p>Gute Nachrichten! Sie haben ein neues Angebot für Ihr Projekt erhalten:</p>
-              
+
               <div class="proposal-box">
                 <h3>📋 ${projectTitle}</h3>
                 <p><strong>Anbieter:</strong> ${providerName}</p>
@@ -358,20 +352,20 @@ export class ResendEmailService {
               </div>
 
               <p>Schauen Sie sich das vollständige Angebot in Ihrem Dashboard an:</p>
-              
+
               <div style="text-align: center;">
                 <a href="https://taskilo.de/dashboard" class="button">Angebot anschauen</a>
               </div>
 
               <p>Sie können das Angebot annehmen, ablehnen oder weitere Fragen an den Anbieter stellen.</p>
-              
+
               <p><strong>Tipp:</strong> Antworten Sie schnell, um die besten Anbieter zu sichern!</p>
             </div>
             <div class="footer">
               <p>Beste Grüße,<br>Ihr Taskilo Team</p>
               <p style="font-size: 12px; color: #666;">
-                <a href="https://taskilo.de">taskilo.de</a> | 
-                <a href="https://taskilo.de/impressum">Impressum</a> | 
+                <a href="https://taskilo.de">taskilo.de</a> |
+                <a href="https://taskilo.de/impressum">Impressum</a> |
                 <a href="https://taskilo.de/datenschutz">Datenschutz</a>
               </p>
             </div>
@@ -380,7 +374,6 @@ export class ResendEmailService {
         </html>
       `;
 
-      console.log('📧 Calling sendEmail...');
       const result = await this.sendEmail({
         to: [customerEmail],
         from: 'noreply@taskilo.de',
@@ -389,10 +382,9 @@ export class ResendEmailService {
         textContent: `Neues Angebot erhalten!\n\nProjekt: ${projectTitle}\nAnbieter: ${providerName}\nPreis: ${proposalAmount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}\n\nSchauen Sie sich das Angebot in Ihrem Dashboard an: https://taskilo.de/dashboard`,
       });
 
-      console.log('📧 sendEmail result:', result);
       return result;
     } catch (error) {
-      console.error('Fehler beim Senden der Neues-Angebot-Email:', error);
+
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unbekannter Fehler',

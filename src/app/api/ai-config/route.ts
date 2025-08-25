@@ -7,9 +7,7 @@ export async function GET() {
     const configDoc = await docRef.get();
 
     if (!configDoc.exists) {
-      console.warn(
-        "Chatbot 'knowledge_base' document not found in Firestore. Returning default config."
-      );
+
       return NextResponse.json({
         persona: '',
         context: '',
@@ -26,7 +24,7 @@ export async function GET() {
     const config = configDoc.data();
     return NextResponse.json(config);
   } catch (error) {
-    console.error('Error fetching AI config:', error);
+
     return NextResponse.json({ error: 'Fehler beim Laden der Konfiguration' }, { status: 500 });
   }
 }
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error saving AI config:', error);
+
     return NextResponse.json({ error: 'Fehler beim Speichern der Konfiguration' }, { status: 500 });
   }
 }

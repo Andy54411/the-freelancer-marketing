@@ -18,8 +18,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'orderId ist erforderlich' }, { status: 400 });
     }
 
-    console.log(`[ORDER-PAYMENTS] Searching for all payments for order: ${orderId}`);
-
     // Alle Payment Intents durchsuchen
     const allPayments: any[] = [];
     let hasMore = true;
@@ -49,8 +47,6 @@ export async function GET(request: NextRequest) {
         hasMore = false;
       }
     }
-
-    console.log(`[ORDER-PAYMENTS] Found ${allPayments.length} payments for order ${orderId}`);
 
     // Berechne Totals
     const succeededPayments = allPayments.filter(pi => pi.status === 'succeeded');
@@ -100,7 +96,7 @@ export async function GET(request: NextRequest) {
       payments: formattedPayments,
     });
   } catch (error: any) {
-    console.error('[ORDER-PAYMENTS] Error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Order Payments',

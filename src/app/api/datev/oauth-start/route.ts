@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
     // Dies ist der KORREKTE Weg für OAuth Authorization
     return NextResponse.redirect(authUrl.toString());
   } catch (error) {
-    console.error('DATEV OAuth start error:', error);
 
     return NextResponse.json(
       {
@@ -97,7 +96,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('DATEV OAuth URL generation error:', error);
 
     return NextResponse.json(
       {

@@ -48,7 +48,7 @@ export default function StaffLoginPage() {
         }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+
     }
   };
 
@@ -107,7 +107,7 @@ export default function StaffLoginPage() {
       setEmail('');
       setPassword('');
     } catch (error) {
-      console.error('Logout failed:', error);
+
     }
   };
 

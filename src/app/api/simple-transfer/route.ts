@@ -21,8 +21,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[SIMPLE-TRANSFER] Starting transfer for user:', firebaseUserId);
-
     // 1. Hole Stripe Account ID (wie request-payout API)
     let stripeAccountId: string | null = null;
 
@@ -31,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (userDoc.exists) {
       const userData = userDoc.data();
       stripeAccountId = userData?.stripeAccountId;
-      console.log('[SIMPLE-TRANSFER] Found in users:', stripeAccountId);
+
     }
 
         // Fallback: users collection
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest) {
       if (companyDoc.exists) {
         const companyData = companyDoc.data();
         stripeAccountId = companyData?.stripeAccountId;
-        console.log('[SIMPLE-TRANSFER] Found in companies:', stripeAccountId);
+
       }
     }
 
@@ -52,7 +50,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Erstelle Transfer
-    console.log(`[SIMPLE-TRANSFER] Creating transfer: ${amount} cents to ${stripeAccountId}`);
 
     const transfer = await stripe.transfers.create({
       amount: amount,
@@ -67,8 +64,6 @@ export async function POST(request: NextRequest) {
       description: `Emergency Transfer für User ${firebaseUserId} - €${(amount / 100).toFixed(2)}`,
     });
 
-    console.log(`[SIMPLE-TRANSFER] Transfer successful: ${transfer.id}`);
-
     return NextResponse.json({
       success: true,
       transferId: transfer.id,
@@ -82,9 +77,9 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[SIMPLE-TRANSFER] Error:', error);
+
     return NextResponse.json(
-      { 
+      {
         error: 'Transfer fehlgeschlagen',
         details: error.message,
         code: error.code

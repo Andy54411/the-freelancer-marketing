@@ -13,8 +13,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
     const { orderId } = params;
     const { feedback } = await request.json();
 
-    console.log('🎯 Order Completion API called:', { orderId, feedback });
-
     if (!feedback?.trim()) {
       return NextResponse.json({ error: 'Arbeitsnachweis erforderlich' }, { status: 400 });
     }
@@ -27,13 +25,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
     }
 
     const orderData = orderDoc.data()!;
-
-    console.log('📋 Order Data:', {
-      status: orderData.status,
-      paymentIntentId: orderData.paymentIntentId,
-      companyStripeAccountId: orderData.companyStripeAccountId,
-      totalAmount: orderData.totalAmount,
-    });
 
     // Prüfe ob Auftrag bereits abgeschlossen
     if (orderData.status === 'completed') {
@@ -48,14 +39,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
     const platformFeeAmount = Math.round(orderData.totalAmount * 0.035); // 3.5%
     const payoutAmount = orderData.totalAmount - platformFeeAmount;
 
-    console.log('💰 Payout Calculation:', {
-      totalAmount: orderData.totalAmount,
-      platformFeeAmount,
-      payoutAmount,
-    });
-
     // ✅ CONTROLLED PAYOUT: Markiere für manuelle Auszahlung statt automatischer Transfer
-    console.log('🎯 Setting order as available for controlled payout...');
 
     // Update Order Status für kontrollierte Auszahlung
     await adminDb.collection('auftraege').doc(orderId).update({
@@ -68,10 +52,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
       updatedAt: new Date(),
     });
 
-    console.log('✅ Order updated to completed with controlled payout status');
-
     // ✅ CONTROLLED PAYOUT: Markiere für manuelle Auszahlung statt automatischer Transfer
-    console.log('🎯 Setting order as available for controlled payout...');
 
     // Update Order Status für kontrollierte Auszahlung
     await adminDb.collection('auftraege').doc(orderId).update({
@@ -83,8 +64,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
       platformFeeAmount,
       updatedAt: new Date(),
     });
-
-    console.log('✅ Order updated to completed with controlled payout status');
 
     return NextResponse.json({
       success: true,
@@ -94,7 +73,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
       payoutStatus: 'available_for_payout',
     });
   } catch (error: any) {
-    console.error('❌ Order Completion Error:', error);
+
     return NextResponse.json(
       { error: 'Interner Server-Fehler', details: error.message },
       { status: 500 }
@@ -119,7 +98,7 @@ export async function GET(request: NextRequest, { params }: { params: { orderId:
       ...orderData,
     });
   } catch (error: any) {
-    console.error('❌ Get Order Error:', error);
+
     return NextResponse.json(
       { error: 'Interner Server-Fehler', details: error.message },
       { status: 500 }

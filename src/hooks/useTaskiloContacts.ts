@@ -78,7 +78,7 @@ export const useTaskiloContacts = () => {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
         setError(errorMessage);
-        console.error('[useTaskiloContacts] Error fetching contacts:', err);
+
         return null;
       } finally {
         setLoading(false);
@@ -117,7 +117,7 @@ export const useTaskiloContacts = () => {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
         setError(errorMessage);
-        console.error('[useTaskiloContacts] Error fetching AGB contacts:', err);
+
         return null;
       } finally {
         setLoading(false);
@@ -148,7 +148,7 @@ export const useTaskiloContacts = () => {
       const data = await response.json();
       return data.success ? data.validation : null;
     } catch (err) {
-      console.error('[useTaskiloContacts] Error validating email:', err);
+
       return null;
     }
   }, []);
@@ -174,7 +174,7 @@ export const useTaskiloContacts = () => {
       const data = await response.json();
       return data.success ? data.suggestions : [];
     } catch (err) {
-      console.error('[useTaskiloContacts] Error getting suggestions:', err);
+
       return [];
     }
   }, []);

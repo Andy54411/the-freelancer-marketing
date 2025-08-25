@@ -7,7 +7,6 @@ import { emailService } from '@/lib/resend-email-service';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('🧪 Testing email API...');
 
     // Test-Daten
     const testData = {
@@ -17,16 +16,12 @@ export async function GET(request: NextRequest) {
       proposalAmount: 1500,
     };
 
-    console.log('📤 Sending test email with data:', testData);
-
     const result = await emailService.sendNewProposalEmail(
       testData.customerEmail,
       testData.projectTitle,
       testData.providerName,
       testData.proposalAmount
     );
-
-    console.log('📧 Email result:', result);
 
     return NextResponse.json({
       success: true,
@@ -39,7 +34,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('💥 Email test error:', error);
 
     return NextResponse.json(
       {

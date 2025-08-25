@@ -39,7 +39,7 @@ function parseDurationStringToHours(durationStr?: string): number | null {
   }
   const parsedNum = parseFloat(durationStr);
   if (!isNaN(parsedNum)) return parsedNum;
-  console.warn(PAGE_WARN, `parseDuration: Konnte keine Zahl extrahieren aus "${durationStr}"`);
+
   return null;
 }
 
@@ -196,27 +196,18 @@ export default function BestaetigungsPage() {
   // =================================================================================================
   React.useEffect(() => {
     if (urlParamsLoaded.current) {
-      console.log(PAGE_LOG, 'BestaetigungsPage: URL-Parameter bereits geladen, überspringe.');
+
       return;
     }
 
-    console.log(PAGE_LOG, '=== BestaetigungsPage URL-Parameter-Loading ===');
-    console.log(PAGE_LOG, 'BestaetigungsPage: searchParams object:', searchParams);
-    console.log(PAGE_LOG, 'BestaetigungsPage: pathParams object:', pathParams);
-    console.log(
-      PAGE_LOG,
-      'BestaetigungsPage: window.location.href:',
-      typeof window !== 'undefined' ? window.location.href : 'undefined'
-    );
-
     // DEBUG: Zeige alle verfügbaren URL-Parameter
     if (searchParams) {
-      console.log(PAGE_LOG, 'BestaetigungsPage: Alle verfügbaren URL-Parameter:');
+
       for (const [key, value] of searchParams.entries()) {
-        console.log(PAGE_LOG, `  ${key}: "${value}"`);
+
       }
     } else {
-      console.warn(PAGE_WARN, 'BestaetigungsPage: searchParams ist null/undefined!');
+
     }
 
     // Hole alle URL-Parameter
@@ -253,18 +244,6 @@ export default function BestaetigungsPage() {
     })();
 
     // DEBUG: Log aller URL-Parameter
-    console.log(PAGE_LOG, '=== URL-Parameter-Extraktion ===');
-    console.log(PAGE_LOG, 'BestaetigungsPage: URL-Parameter gefunden:', {
-      anbieterIdFromUrl,
-      unterkategorieAusPfad,
-      postalCodeFromUrl,
-      dateFromUrl,
-      dateToUrl,
-      timeUrl,
-      auftragsDauerUrl,
-      descriptionFromUrl,
-      priceFromUrl,
-    });
 
     // DEBUG: Prüfe, ob die URL vollständig ist
     const expectedParams = [
@@ -277,26 +256,16 @@ export default function BestaetigungsPage() {
     ];
     const missingParams = expectedParams.filter(param => !searchParams?.get(param));
     if (missingParams.length > 0) {
-      console.warn(PAGE_WARN, 'BestaetigungsPage: Fehlende URL-Parameter:', missingParams);
-      console.warn(PAGE_WARN, 'BestaetigungsPage: Mögliche Ursachen:');
-      console.warn(
-        PAGE_WARN,
-        '  1. URL-Parameter wurden bei der Registrierung nicht richtig weitergeleitet'
-      );
-      console.warn(PAGE_WARN, '  2. URL-Encoding/Decoding-Problem');
-      console.warn(PAGE_WARN, '  3. Redirect-Problem von der Adresse-Seite');
+
     } else {
-      console.log(PAGE_LOG, 'BestaetigungsPage: Alle erwarteten URL-Parameter sind vorhanden ✓');
+
     }
 
     // DEBUG: Zusätzliche Info über dateTo Parameter
     if (dateToUrl) {
-      console.log(PAGE_LOG, `BestaetigungsPage: dateTo Parameter gefunden: ${dateToUrl}`);
+
     } else {
-      console.log(
-        PAGE_LOG,
-        'BestaetigungsPage: dateTo Parameter nicht gefunden (möglicherweise Single-Day-Booking)'
-      );
+
     }
 
     // KORREKTUR: Lade Parameter in den Context, auch wenn der Context bereits Werte hat
@@ -305,42 +274,39 @@ export default function BestaetigungsPage() {
     // Unterkategorie aus dem Pfad
     if (unterkategorieAusPfad) {
       registration.setSelectedSubcategory?.(unterkategorieAusPfad);
-      console.log(PAGE_LOG, `BestaetigungsPage: Set selectedSubcategory: ${unterkategorieAusPfad}`);
+
     }
 
     // HINZUGEFÜGT: selectedCategory aus URL-Parameter, falls verfügbar
     const selectedCategoryFromUrl = searchParams?.get('selectedCategory');
     if (selectedCategoryFromUrl) {
       registration.setSelectedCategory?.(decodeURIComponent(selectedCategoryFromUrl));
-      console.log(
-        PAGE_LOG,
-        `BestaetigungsPage: Set selectedCategory from URL: ${selectedCategoryFromUrl}`
-      );
+
     }
 
     if (anbieterIdFromUrl) {
       registration.setSelectedAnbieterId?.(anbieterIdFromUrl);
-      console.log(PAGE_LOG, `BestaetigungsPage: Set selectedAnbieterId: ${anbieterIdFromUrl}`);
+
     }
 
     if (postalCodeFromUrl) {
       registration.setJobPostalCode?.(postalCodeFromUrl);
-      console.log(PAGE_LOG, `BestaetigungsPage: Set jobPostalCode: ${postalCodeFromUrl}`);
+
     }
 
     if (dateFromUrl) {
       registration.setJobDateFrom?.(dateFromUrl);
-      console.log(PAGE_LOG, `BestaetigungsPage: Set jobDateFrom: ${dateFromUrl}`);
+
     }
 
     if (dateToUrl) {
       registration.setJobDateTo?.(dateToUrl);
-      console.log(PAGE_LOG, `BestaetigungsPage: Set jobDateTo: ${dateToUrl}`);
+
     }
 
     if (timeUrl) {
       registration.setJobTimePreference?.(timeUrl);
-      console.log(PAGE_LOG, `BestaetigungsPage: Set jobTimePreference: ${timeUrl}`);
+
     }
 
     if (auftragsDauerUrl) {
@@ -349,30 +315,24 @@ export default function BestaetigungsPage() {
       if (totalHours !== null && totalHours > 0 && registration.setJobTotalCalculatedHours) {
         registration.setJobTotalCalculatedHours(totalHours);
       }
-      console.log(
-        PAGE_LOG,
-        `BestaetigungsPage: Set jobDurationString: ${auftragsDauerUrl}, totalHours: ${totalHours}`
-      );
+
     }
 
     if (descriptionFromUrl) {
       try {
         const decodedDescription = decodeURIComponent(descriptionFromUrl);
         registration.setDescription?.(decodedDescription);
-        console.log(PAGE_LOG, `BestaetigungsPage: Set description: ${decodedDescription}`);
+
       } catch (e) {
-        console.error(PAGE_ERROR, 'Error decoding description from URL:', e);
+
         registration.setDescription?.(descriptionFromUrl);
-        console.log(
-          PAGE_LOG,
-          `BestaetigungsPage: Set description (fallback): ${descriptionFromUrl}`
-        );
+
       }
     }
 
     if (priceFromUrl) {
       registration.setJobCalculatedPriceInCents?.(priceFromUrl);
-      console.log(PAGE_LOG, `BestaetigungsPage: Set jobCalculatedPriceInCents: ${priceFromUrl}`);
+
     }
 
     // Versuche, die Kategorie aus der Unterkategorie abzuleiten
@@ -380,24 +340,24 @@ export default function BestaetigungsPage() {
       const foundCategory = findCategoryBySubcategory(unterkategorieAusPfad);
       if (foundCategory) {
         registration.setSelectedCategory?.(foundCategory);
-        console.log(PAGE_LOG, `BestaetigungsPage: Set selectedCategory: ${foundCategory}`);
+
       }
     }
 
     // HINZUGEFÜGT: Setze customerType auf 'private' als Default, falls nicht gesetzt
     if (!registration.customerType) {
       registration.setCustomerType?.('private');
-      console.log(PAGE_LOG, `BestaetigungsPage: Set customerType default: private`);
+
     }
 
     urlParamsLoaded.current = true;
-    console.log(PAGE_LOG, 'BestaetigungsPage: URL-Parameter erfolgreich geladen und markiert.');
+
   }, [searchParams, pathParams]);
 
   // --- NEU: Frühe Pflichtdaten-Prüfung und Redirect, nur wenn URL-Parameter geladen wurden ---
   React.useEffect(() => {
     // TEMPORÄR DEAKTIVIERT: Frühe Validierung, um Registrierungs-Redirect-Problem zu lösen
-    console.log(PAGE_LOG, 'BestaetigungsPage: Frühe Validierung temporär deaktiviert');
+
     return;
 
     // Prüfe, ob der Benutzer aus einer Registrierung kommt
@@ -408,27 +368,20 @@ export default function BestaetigungsPage() {
         window.history.state?.fromRegistration);
 
     if (fromRegistration) {
-      console.log(
-        PAGE_LOG,
-        'BestaetigungsPage: Benutzer kommt aus Registrierung, überspringe frühe Validierung'
-      );
+
       return;
     }
 
     // Nur ausführen, wenn URL-Parameter bereits geladen wurden
     if (!urlParamsLoaded.current) {
-      console.log(PAGE_LOG, 'BestaetigungsPage: URL-Parameter noch nicht geladen, warte...');
+
       return;
     }
 
     // Zusätzliche Verzögerung, um sicherzustellen, dass alle Context-Updates abgeschlossen sind
     const timeoutId = setTimeout(() => {
-      console.log(PAGE_LOG, 'BestaetigungsPage: Starte frühe Pflichtdaten-Prüfung');
 
       // DEBUG: Logge die komplette URL
-      console.log(PAGE_LOG, 'BestaetigungsPage: Aktuelle URL:', window.location.href);
-      console.log(PAGE_LOG, 'BestaetigungsPage: SearchParams:', searchParams?.toString());
-      console.log(PAGE_LOG, 'BestaetigungsPage: PathParams:', pathParams);
 
       // Hilfsfunktionen für Pflichtdaten aus Context/URL
       const unterkategorieAusPfad =
@@ -482,8 +435,6 @@ export default function BestaetigungsPage() {
         jobCalculatedPriceInCents: registration.jobCalculatedPriceInCents || priceFromUrl,
       };
 
-      console.log(PAGE_LOG, 'BestaetigungsPage: Prüfe Pflichtfelder:', requiredFields);
-
       // GELOCKERTE VALIDIERUNG: Nur kritische Felder prüfen, die für die Zahlung absolut notwendig sind
       const criticalMissing: string[] = [];
       if (!requiredFields.selectedAnbieterId) criticalMissing.push('Anbieter');
@@ -492,25 +443,15 @@ export default function BestaetigungsPage() {
 
       // Weniger strikte Prüfung für Beschreibung (erlaubt leere Beschreibung)
       if (!requiredFields.description || requiredFields.description.trim().length === 0) {
-        console.log(
-          PAGE_LOG,
-          'BestaetigungsPage: Beschreibung fehlt oder ist leer, aber das ist nicht kritisch'
-        );
+
       }
 
       if (criticalMissing.length > 0) {
-        console.log(
-          PAGE_LOG,
-          'BestaetigungsPage: Kritische Felder fehlen, Redirect zu get-started:',
-          criticalMissing
-        );
+
         // Sofortige Weiterleitung zurück zum Start der Auftragserstellung
         router.replace('/auftrag/get-started');
       } else {
-        console.log(
-          PAGE_LOG,
-          'BestaetigungsPage: Alle kritischen Felder vorhanden, zeige Seite an'
-        );
+
         // Zusätzliche Logging für optionale Felder
         const optionalMissing: string[] = [];
         if (!requiredFields.customerType) optionalMissing.push('Kundentyp');
@@ -527,11 +468,7 @@ export default function BestaetigungsPage() {
           optionalMissing.push('Preis');
 
         if (optionalMissing.length > 0) {
-          console.log(
-            PAGE_LOG,
-            'BestaetigungsPage: Optionale Felder fehlen (können später nachgeladen werden):',
-            optionalMissing
-          );
+
         }
       }
     }, 500); // Erhöhte Verzögerung auf 500ms für bessere Context-Updates
@@ -587,37 +524,31 @@ export default function BestaetigungsPage() {
 
   // KORRIGIERT: Unterstütze additionalData[totalcost] für Gesamtkosten
   const priceFromUrl = useMemo(() => {
-    console.log(PAGE_LOG, 'BestaetigungsPage: useMemo priceFromUrl wird berechnet');
 
     // DEBUG: Zeige alle verfügbaren searchParams
     if (searchParams) {
-      console.log(PAGE_LOG, 'BestaetigungsPage: Alle verfügbaren searchParams in useMemo:');
+
       for (const [key, value] of searchParams.entries()) {
-        console.log(PAGE_LOG, `  ${key}: "${value}"`);
+
       }
     }
 
     const totalCostString = searchParams?.get('additionalData[totalcost]');
     const priceString = searchParams?.get('price');
 
-    console.log(PAGE_LOG, `BestaetigungsPage: Preis-Parameter in useMemo:`, {
-      totalCostString,
-      priceString,
-    });
-
     if (totalCostString) {
       // totalcost ist bereits in Cents, wenn es vom Frontend kommt
       const totalCents = parseInt(totalCostString, 10);
       const result = isNaN(totalCents) ? null : totalCents;
-      console.log(PAGE_LOG, `BestaetigungsPage: useMemo Preis aus totalCostString: ${result}`);
+
       return result;
     } else if (priceString) {
       // price ist in Euro, konvertiere zu Cents
       const result = Math.round(parseFloat(priceString) * 100);
-      console.log(PAGE_LOG, `BestaetigungsPage: useMemo Preis aus priceString: ${result}`);
+
       return result;
     }
-    console.log(PAGE_LOG, 'BestaetigungsPage: useMemo kein Preis gefunden, return null');
+
     return null;
   }, [searchParams]);
   const tempDraftIdFromUrl = useMemo(() => searchParams?.get('tempDraftId') ?? '', [searchParams]);
@@ -628,24 +559,17 @@ export default function BestaetigungsPage() {
   // Callback, der den vom BestaetigungsContent berechneten Preis (Basispreis) erhält
   const handlePriceCalculatedFromChild = useCallback(
     (priceInCents: number) => {
-      console.log(
-        PAGE_LOG,
-        `handlePriceCalculatedFromChild: Neuer Basis-Preis (jobPrice) von Kindkomponente: ${priceInCents} Cents.`
-      );
 
       // Nur aktualisieren und clientSecret zurücksetzen, wenn der Basis-Preis sich tatsächlich ändert
       if (jobPriceInCents !== priceInCents) {
-        console.log(
-          PAGE_LOG,
-          'Basis-Preis (jobPrice) hat sich geändert. Aktualisiere Preise und setze clientSecret zurück.'
-        );
+
         setJobPriceInCents(priceInCents);
 
         if (priceInCents > 0) {
           // ANPASSUNG: Der Gesamtbetrag, den der Käufer zahlt, ist jetzt identisch mit dem Auftragswert.
           // Die Servicegebühr wird serverseitig vom Guthaben des Anbieters abgezogen.
           setTotalAmountPayableInCents(priceInCents);
-          console.log(PAGE_LOG, `Neuer Job-Preis und Gesamtbetrag: ${priceInCents}`);
+
         } else {
           // Preise zurücksetzen, wenn Basispreis <= 0 ist
           setTotalAmountPayableInCents(null);
@@ -654,10 +578,7 @@ export default function BestaetigungsPage() {
         setClientSecret(null); // Client Secret zurücksetzen, da sich der zu zahlende Betrag geändert hat
         setPaymentIntentError(null);
       } else {
-        console.log(
-          PAGE_LOG,
-          'Basis-Preis (jobPrice) ist gleich geblieben. Keine Änderungen an clientSecret.'
-        );
+
       }
 
       // `jobCalculatedPriceInCents` im Context aktualisieren (dies ist der Basispreis)
@@ -666,10 +587,7 @@ export default function BestaetigungsPage() {
         registration.setJobCalculatedPriceInCents
       ) {
         registration.setJobCalculatedPriceInCents(priceInCents);
-        console.log(
-          PAGE_LOG,
-          'registration.jobCalculatedPriceInCents (Basis-Preis) im Context aktualisiert.'
-        );
+
       }
     },
     [
@@ -680,7 +598,7 @@ export default function BestaetigungsPage() {
   ); // BUYER_SERVICE_FEE_RATE entfernt
 
   const handleDetailsChangeFromChild = useCallback(() => {
-    console.log(PAGE_LOG, 'BestaetigungsPage: onDetailsChange von Kindkomponente empfangen.');
+
   }, []);
 
   // Call the helper function inside a useMemo hook at the top level of the component.
@@ -712,26 +630,21 @@ export default function BestaetigungsPage() {
   // EFFECT 1: Handle user authentication state using AuthContext
   // =================================================================================================
   useEffect(() => {
-    console.log(PAGE_LOG, 'BestaetigungsPage: AuthContext values:', {
-      authLoading,
-      firebaseUser: firebaseUser?.uid || 'null',
-      authUser: authUser?.uid || 'null'
-    });
 
     if (authLoading) {
-      console.log(PAGE_LOG, 'BestaetigungsPage: Auth still loading, waiting...');
+
       return;
     }
 
     if (!firebaseUser) {
-      console.warn(PAGE_WARN, 'BestaetigungsPage: No user logged in. Redirecting to registration...');
+
       const currentPath = `${window.location.pathname}${window.location.search}`;
       // TIMEOUT hinzufügen um Race Conditions zu vermeiden
       setTimeout(() => {
         router.push(`/register/user?redirectTo=${encodeURIComponent(currentPath)}`);
       }, 100);
     } else {
-      console.log(PAGE_LOG, 'BestaetigungsPage: User authenticated via AuthContext:', firebaseUser.uid);
+
     }
   }, [firebaseUser, authLoading, authUser, router]);
 
@@ -742,18 +655,11 @@ export default function BestaetigungsPage() {
     const initializeOrder = async () => {
       if (firebaseUser) {
         if (isInitializing.current) {
-          console.log(
-            PAGE_LOG,
-            'BestaetigungsPage: Initialisierung bereits im Gange oder abgeschlossen. Überspringe.'
-          );
+
           return;
         }
         isInitializing.current = true;
 
-        console.log(
-          PAGE_LOG,
-          `BestaetigungsPage: User ${firebaseUser.uid} authenticated. Starting one-time initialization.`
-        );
         setIsLoadingPageData(true);
         setPageError(null);
 
@@ -766,13 +672,10 @@ export default function BestaetigungsPage() {
           if (userDocSnap.exists()) {
             userProfileDataLocal = userDocSnap.data() as { user_type?: 'kunde' | 'firma' | 'support' | 'master' };
             setUserProfileData(userProfileDataLocal); // State für billingAddressDetails aktualisieren
-            console.log(
-              PAGE_LOG,
-              `Benutzerprofil für ${firebaseUser.uid} geladen. Kundentyp: ${userProfileDataLocal.user_type}`
-            );
+
           }
         } catch (e) {
-          console.error(PAGE_ERROR, 'Fehler beim Laden des Benutzerprofils:', e);
+
         }
 
         // --- Datenquelle für DraftData (Priorität: Context > URL-Parameter > Fallbacks) ---
@@ -793,66 +696,45 @@ export default function BestaetigungsPage() {
         const descriptionFromUrlDirect = searchParams?.get('description') ?? '';
 
         // DEBUG: Zeige alle verwendeten Parameter
-        console.log(PAGE_LOG, 'BestaetigungsPage: Extrahierte Parameter aus URL:');
-        console.log(PAGE_LOG, `  auftragsDauerUrlDirect: "${auftragsDauerUrlDirect}"`);
-        console.log(PAGE_LOG, `  descriptionFromUrlDirect: "${descriptionFromUrlDirect}"`);
-        console.log(PAGE_LOG, `  dateFromUrlDirect: "${dateFromUrlDirect}"`);
-        console.log(PAGE_LOG, `  timeUrlDirect: "${timeUrlDirect}"`);
 
         // DEBUG: Zeige alle verfügbaren searchParams
-        console.log(PAGE_LOG, 'BestaetigungsPage: Alle verfügbaren searchParams:');
+
         if (searchParams) {
           for (const [key, value] of searchParams.entries()) {
-            console.log(PAGE_LOG, `  ${key}: "${value}"`);
+
           }
         }
 
         // KORRIGIERT: Preis aus URL-Parameter direkt extrahieren
         const priceFromUrlDirect = (() => {
           // DEBUG: Zeige alle verfügbaren searchParams
-          console.log(PAGE_LOG, 'BestaetigungsPage: Alle verfügbaren searchParams:');
+
           if (searchParams) {
             for (const [key, value] of searchParams.entries()) {
-              console.log(PAGE_LOG, `  ${key}: "${value}"`);
+
             }
           }
 
           const totalCostString = searchParams?.get('additionalData[totalcost]');
           const priceString = searchParams?.get('price');
 
-          console.log(PAGE_LOG, `BestaetigungsPage: Preis-Parameter gefunden:`, {
-            totalCostString,
-            priceString,
-          });
-
           if (totalCostString) {
             const totalCents = parseInt(totalCostString, 10);
             const result = isNaN(totalCents) ? null : totalCents;
-            console.log(PAGE_LOG, `BestaetigungsPage: Preis aus totalCostString: ${result}`);
+
             return result;
           } else if (priceString) {
             const result = Math.round(parseFloat(priceString) * 100);
-            console.log(PAGE_LOG, `BestaetigungsPage: Preis aus priceString: ${result}`);
+
             return result;
           }
-          console.log(PAGE_LOG, 'BestaetigungsPage: Kein Preis-Parameter gefunden, return null');
+
           return null;
         })();
 
-        console.log(PAGE_LOG, 'BestaetigungsPage: Direkte URL-Parameter für draftData:', {
-          anbieterIdFromUrlDirect,
-          unterkategorieAusPfadDirect,
-          postalCodeFromUrlDirect,
-          dateFromUrlDirect,
-          timeUrlDirect,
-          auftragsDauerUrlDirect,
-          descriptionFromUrlDirect,
-          priceFromUrlDirect,
-        });
-
         const customerTypeToUse =
-          registration.customerType || 
-          (userProfileDataLocal?.user_type === 'kunde' ? 'private' : 
+          registration.customerType ||
+          (userProfileDataLocal?.user_type === 'kunde' ? 'private' :
            userProfileDataLocal?.user_type === 'firma' ? 'business' : 'private');
         // VERSUCH, selectedCategory abzuleiten, falls nicht im Context
         let selectedCategoryToUse = registration.selectedCategory || null; // Beginne mit dem Wert aus dem Context
@@ -861,21 +743,15 @@ export default function BestaetigungsPage() {
           const foundCategory = findCategoryBySubcategory(unterkategorieAusPfadDirect);
           if (foundCategory) {
             selectedCategoryToUse = foundCategory;
-            console.log(
-              PAGE_LOG,
-              `BestaetigungsPage: Kategorie "${foundCategory}" wurde für Unterkategorie "${unterkategorieAusPfadDirect}" über Mapping gefunden.`
-            );
+
           } else {
-            console.warn(
-              PAGE_WARN,
-              `BestaetigungsPage: Keine Hauptkategorie für Unterkategorie "${unterkategorieAusPfadDirect}" im Mapping gefunden. 'selectedCategoryToUse' bleibt: ${selectedCategoryToUse}`
-            );
+
           }
         }
         const selectedSubcategoryToUse =
           registration.selectedSubcategory || unterkategorieAusPfadDirect || null;
         const descriptionToUse = registration.description || descriptionFromUrlDirect || '';
-        
+
         // FIX: Sicherstellen, dass Adressfelder niemals undefined sind, sondern null
         const jobStreetToUse = registration.jobStreet || null;
         const jobPostalCodeToUse = registration.jobPostalCode || postalCodeFromUrlDirect || null;
@@ -917,53 +793,7 @@ export default function BestaetigungsPage() {
         };
 
         // --- DEBUG: Detaillierte Logs für jeden Wert ---
-        console.log(PAGE_LOG, 'BestaetigungsPage: Einzelwerte für draftData:');
-        console.log(
-          PAGE_LOG,
-          `  jobPostalCodeToUse: "${jobPostalCodeToUse}" (Context: "${registration.jobPostalCode}", URL: "${postalCodeFromUrlDirect}")`
-        );
-        console.log(
-          PAGE_LOG,
-          `  jobDateFromToUse: "${jobDateFromToUse}" (Context: "${registration.jobDateFrom}", URL: "${dateFromUrlDirect}")`
-        );
-        console.log(
-          PAGE_LOG,
-          `  jobTimePreferenceToUse: "${jobTimePreferenceToUse}" (Context: "${registration.jobTimePreference}", URL: "${timeUrlDirect}")`
-        );
-        console.log(
-          PAGE_LOG,
-          `  jobDurationStringToUse: "${jobDurationStringToUse}" (Context: "${registration.jobDurationString}", URL: "${auftragsDauerUrlDirect}")`
-        );
-        console.log(
-          PAGE_LOG,
-          `  jobTotalCalculatedHoursToUse: ${jobTotalCalculatedHoursToUse} (Context: ${registration.jobTotalCalculatedHours}, parsed: ${auftragsDauerUrlDirect ? parseDurationStringToHours(auftragsDauerUrlDirect) : 'null'})`
-        );
-        console.log(
-          PAGE_LOG,
-          `  jobCalculatedPriceInCentsToUse: ${jobCalculatedPriceInCentsToUse} (Context: ${registration.jobCalculatedPriceInCents}, URL: ${priceFromUrlDirect})`
-        );
-        console.log(
-          PAGE_LOG,
-          `  selectedAnbieterIdToUse: "${selectedAnbieterIdToUse}" (URL: "${anbieterIdFromUrlDirect}", Context: "${registration.selectedAnbieterId}")`
-        );
-        console.log(
-          PAGE_LOG,
-          `  descriptionToUse: "${descriptionToUse}" (Context: "${registration.description}", URL: "${descriptionFromUrlDirect}")`
-        );
-        console.log(
-          PAGE_LOG,
-          `  selectedSubcategoryToUse: "${selectedSubcategoryToUse}" (Context: "${registration.selectedSubcategory}", URL: "${unterkategorieAusPfadDirect}")`
-        );
-        console.log(
-          PAGE_LOG,
-          `  selectedCategoryToUse: "${selectedCategoryToUse}" (Context: "${registration.selectedCategory}")`
-        );
-        console.log(
-          PAGE_LOG,
-          `  customerTypeToUse: "${customerTypeToUse}" (Context: "${registration.customerType}", Profile: "${userProfileDataLocal?.user_type || 'unknown'}")`
-        );
-        console.log(PAGE_LOG, `  tempDraftIdFromUrl: "${tempDraftIdFromUrl}"`);
-        console.log(PAGE_LOG, `  billingAddressDetails: `, billingAddressDetails);
+
         // --- ENDE DEBUG LOGS ---
 
         // jobCalculatedPriceInCents ist der Basis-Preis des Anbieters
@@ -976,36 +806,15 @@ export default function BestaetigungsPage() {
           setJobPriceInCents(initialJobPrice);
           // ANPASSUNG: Der Gesamtbetrag ist jetzt identisch mit dem Auftragswert.
           setTotalAmountPayableInCents(initialJobPrice);
-          console.log(
-            PAGE_LOG,
-            'BestaetigungsPage: Initialer Basis-Preis (jobPrice) und Gesamtbetrag aus draftData gesetzt.',
-            { initialJobPrice }
-          );
+
         } else if (jobPriceInCents === null && (initialJobPrice == null || initialJobPrice <= 0)) {
-          console.warn(
-            PAGE_WARN,
-            'BestaetigungsPage: jobCalculatedPriceInCents (Basis-Preis) ist ungültig oder 0 aus draftData bei Initialisierung.',
-            {
-              initialJobPrice,
-              priceFromUrlDirect,
-              allSearchParams: searchParams ? Object.fromEntries(searchParams.entries()) : null,
-              registrationContextPrice: registration.jobCalculatedPriceInCents,
-            }
-          );
+
         } else {
-          console.log(
-            PAGE_LOG,
-            'BestaetigungsPage: Basis-Preis bereits gesetzt, überspringe Initialisierung.',
-            { jobPriceInCents, initialJobPrice }
-          );
+
         }
 
         // --- Hinzugefügter Debug-Log für draftData vor Validierung ---
-        console.log(
-          PAGE_LOG,
-          'BestaetigungsPage: fullDraftData vor Pflichtdatenprüfung:',
-          JSON.stringify(draftData, null, 2)
-        );
+
         // --- ENDE Debug-Log ---
 
         // --- KORRIGIERTE PFLICHTDATEN-PRÜFUNG ---
@@ -1066,19 +875,10 @@ export default function BestaetigungsPage() {
           billingAddressDetails.address?.country;
 
         if (!hasBillingAddress) {
-          console.log(
-            PAGE_LOG,
-            'BestaetigungsPage: Keine vollständige Rechnungsadresse gefunden. Weiterleitung zur Registrierung.'
-          );
 
           // Erstelle die aktuelle URL für die Weiterleitung nach der Registrierung
           const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
           const registrationRedirectUrl = `/register/user?redirectTo=${encodeURIComponent(currentUrl)}`;
-
-          console.log(
-            PAGE_LOG,
-            `BestaetigungsPage: Weiterleitung zur Registrierung: ${registrationRedirectUrl}`
-          );
 
           setIsLoadingPageData(false);
           isInitializing.current = false;
@@ -1089,21 +889,7 @@ export default function BestaetigungsPage() {
         // Prüfe andere Pflichtfelder (ohne Rechnungsadresse)
         if (missingFields.length > 0) {
           // Detaillierteres Logging der fehlenden Felder
-          console.log(
-            PAGE_LOG,
-            'BestaetigungsPage: Inhalt von missingFields Array:',
-            missingFields
-          );
-          console.log(
-            PAGE_LOG,
-            "BestaetigungsPage: Ergebnis von missingFields.join(', '):",
-            missingFields.join(', ')
-          );
-          console.error(PAGE_ERROR, 'BestaetigungsPage: Fehlende Pflichtdaten in draftData!', {
-            missingFieldsArray: missingFields,
-            missingFieldsJoined: missingFields.join(', '),
-            fullDraftData: draftData,
-          });
+
           setPageError(
             `Wichtige Auftragsinformationen fehlen: ${missingFields.join(', ')}. Bitte gehen Sie zurück und vervollständigen Sie Ihre Eingaben.`
           );
@@ -1119,10 +905,6 @@ export default function BestaetigungsPage() {
 
         // KORREKTUR: Temporärer Job-Entwurf wird NICHT mehr hier erstellt!
         // Das war das Hauptproblem - Aufträge sollen erst nach erfolgreicher Zahlung erstellt werden.
-        console.log(
-          PAGE_LOG,
-          'BestaetigungsPage: Alle Daten validiert. Temporärer Job-Entwurf wird erst beim Bezahlvorgang erstellt.'
-        );
 
         // Speichere die validierten draftData für späteren Gebrauch beim Payment
         setValidatedDraftData(draftData);
@@ -1131,22 +913,16 @@ export default function BestaetigungsPage() {
         try {
           // Rufe die Anbieter-Details ab, um die Stripe Account ID zu erhalten
           const anbieterDetailsUrl = `https://europe-west1-tilvo-f142f.cloudfunctions.net/searchCompanyProfiles?id=${draftData.selectedAnbieterId}`;
-          
-          console.log(PAGE_LOG, `BestaetigungsPage: Rufe Anbieter-Details ab: ${anbieterDetailsUrl}`);
-          
+
           const anbieterResponse = await fetch(anbieterDetailsUrl);
           if (!anbieterResponse.ok) {
             throw new Error(`HTTP ${anbieterResponse.status}: ${anbieterResponse.statusText}`);
           }
-          
+
           const anbieterData = await anbieterResponse.json();
-          
+
           if (!anbieterData.stripeConnectAccountId) {
-            console.error(
-              PAGE_ERROR,
-              'BestaetigungsPage: Anbieter hat keine Stripe Account ID!',
-              'Anbieter-Daten:', anbieterData
-            );
+
             setPageError(
               'Der ausgewählte Anbieter kann derzeit keine Zahlungen verarbeiten. Bitte wählen Sie einen anderen Anbieter aus.'
             );
@@ -1154,15 +930,11 @@ export default function BestaetigungsPage() {
             isInitializing.current = false;
             return;
           }
-          
+
           setAnbieterStripeConnectId(anbieterData.stripeConnectAccountId);
-          console.log(PAGE_LOG, 'BestaetigungsPage: Anbieter Stripe Account ID erhalten.');
+
         } catch (error: unknown) {
-          console.error(
-            PAGE_ERROR,
-            'BestaetigungsPage: FEHLER beim Abrufen der Anbieter-Details:',
-            error
-          );
+
           let specificErrorMessage = 'Fehler beim Laden der Anbieter-Informationen.';
           if (error instanceof Error) {
             specificErrorMessage = `Fehler beim Laden der Anbieter-Informationen: ${error.message}`;
@@ -1178,10 +950,7 @@ export default function BestaetigungsPage() {
           // Daten für Stripe-Kundenaufruf vorbereiten
           const emailForStripe = billingAddressDetails?.email || firebaseUser.email;
           if (!emailForStripe) {
-            console.error(
-              PAGE_ERROR,
-              'BestaetigungsPage: E-Mail für Stripe-Kunden konnte nicht ermittelt werden.'
-            );
+
             setPageError(
               'E-Mail für die Zahlungsabwicklung fehlt. Bitte Profil vervollständigen oder erneut versuchen.'
             );
@@ -1198,27 +967,15 @@ export default function BestaetigungsPage() {
             address: billingAddressDetails?.address || undefined,
           };
 
-          console.log(
-            PAGE_LOG,
-            `BestaetigungsPage: Rufe getOrCreateStripeCustomer für User ${firebaseUser.uid} auf mit Payload:`,
-            JSON.stringify(stripeCustomerPayload, null, 2)
-          );
           const getOrCreateStripeCustomerCallable = httpsCallable<
             GetOrCreateStripeCustomerPayload,
             GetOrCreateStripeCustomerResult
           >(functions, 'getOrCreateStripeCustomer');
           const customerResult = await getOrCreateStripeCustomerCallable(stripeCustomerPayload);
           setKundeStripeCustomerId(customerResult.data.stripeCustomerId);
-          console.log(
-            PAGE_LOG,
-            `BestaetigungsPage: Stripe Customer ID erhalten: ${customerResult.data.stripeCustomerId}`
-          );
+
         } catch (error) {
-          console.error(
-            PAGE_ERROR,
-            'BestaetigungsPage: FEHLER bei getOrCreateStripeCustomer:',
-            error
-          );
+
           let specificErrorMessage =
             'Ein Fehler bei der Synchronisierung Ihres Kundenprofils ist aufgetreten.';
           if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
@@ -1275,21 +1032,17 @@ export default function BestaetigungsPage() {
   // =================================================================================================
   const handlePaymentButtonClick = async () => {
     if (!validatedDraftData || !firebaseUser || !kundeStripeCustomerId || !anbieterStripeConnectId) {
-      console.error(PAGE_ERROR, 'BestaetigungsPage: Nicht alle Daten für Payment vorhanden');
+
       setPaymentIntentError('Zahlungsdaten sind unvollständig. Bitte laden Sie die Seite neu.');
       return;
     }
 
-    console.log(PAGE_LOG, 'BestaetigungsPage: Starte Payment-Prozess...');
     setLoadingPaymentIntent(true);
     setPaymentIntentError(null);
 
     try {
       // Schritt 1: Erstelle temporären Job-Entwurf
-      console.log(
-        PAGE_LOG,
-        'BestaetigungsPage: Erstelle temporären Job-Entwurf für Payment...'
-      );
+
       const createTemporaryJobDraftCallable = httpsCallable<
         TemporaryJobDraftData,
         TemporaryJobDraftResult
@@ -1298,10 +1051,6 @@ export default function BestaetigungsPage() {
       const draftResultData = draftResult.data;
 
       setTempJobDraftId(draftResultData.tempDraftId);
-      console.log(
-        PAGE_LOG,
-        `BestaetigungsPage: Temporärer Job-Entwurf für Payment erstellt: ${draftResultData.tempDraftId}`
-      );
 
       // Schritt 2: Erstelle Payment Intent
       const payload = {
@@ -1317,7 +1066,6 @@ export default function BestaetigungsPage() {
         billingDetails: billingAddressDetails,
       };
 
-      console.log(PAGE_LOG, 'BestaetigungsPage: Erstelle Payment Intent...');
       const idToken = await firebaseUser.getIdToken();
       const serverResponse = await fetch('/api/create-payment-intent', {
         method: 'POST',
@@ -1330,7 +1078,7 @@ export default function BestaetigungsPage() {
 
       const responseData = await serverResponse.json();
       const { clientSecret: fetchedClientSecret, error: backendError } = responseData;
-      
+
       if (!serverResponse.ok || backendError || !fetchedClientSecret) {
         const displayErrorMessage =
           typeof backendError === 'string'
@@ -1340,9 +1088,9 @@ export default function BestaetigungsPage() {
       }
 
       setClientSecret(fetchedClientSecret);
-      console.log(PAGE_LOG, 'BestaetigungsPage: Payment Intent erfolgreich erstellt');
+
     } catch (error: unknown) {
-      console.error(PAGE_ERROR, 'BestaetigungsPage: FEHLER beim Payment-Prozess:', error);
+
       let errorMessage = 'Fehler beim Starten des Bezahlvorgangs.';
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -1355,10 +1103,7 @@ export default function BestaetigungsPage() {
 
   // NEU: Redirection nach erfolgreicher Zahlung
   const handlePaymentSuccess = (paymentIntentId: string) => {
-    console.log(
-      PAGE_LOG,
-      `BestaetigungsPage: Zahlung erfolgreich: ${paymentIntentId}. Leite zu Dashboard weiter.`
-    );
+
     setPaymentMessage(
       `Zahlung erfolgreich! ID: ${paymentIntentId}. Dein Auftrag ${tempJobDraftId || 'unbekannt'} wird bearbeitet.`
     );
@@ -1376,10 +1121,7 @@ export default function BestaetigungsPage() {
   };
 
   const handlePaymentError = (errorMessage: string) => {
-    console.error(
-      PAGE_ERROR,
-      `BestaetigungsPage: Zahlungsfehler von StripeCardCheckout: ${errorMessage}`
-    );
+
     setPaymentMessage(`Fehler bei der Zahlung: ${errorMessage}`);
   };
 
@@ -1606,7 +1348,7 @@ export default function BestaetigungsPage() {
             )}
 
             {/* NEUE LOGIK: Zeige Button wenn Daten bereit sind, aber noch kein clientSecret */}
-            {!clientSecret && validatedDraftData && kundeStripeCustomerId && anbieterStripeConnectId && 
+            {!clientSecret && validatedDraftData && kundeStripeCustomerId && anbieterStripeConnectId &&
              totalAmountPayableInCents !== null && jobPriceInCents !== null && !isLoadingPageData && !pageError ? (
               <div className="mb-6 p-4 border rounded-md bg-white text-center">
                 <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center justify-center">

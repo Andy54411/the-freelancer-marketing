@@ -199,7 +199,7 @@ export default function RequestQuoteModal({
       setStep('success');
       toast.success('Angebot erfolgreich angefragt!');
     } catch (error) {
-      console.error('Fehler beim Senden der Angebots-Anfrage:', error);
+
       toast.error('Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.');
     } finally {
       setLoading(false);

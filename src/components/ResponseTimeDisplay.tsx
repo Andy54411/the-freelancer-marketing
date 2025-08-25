@@ -30,7 +30,7 @@ export default function ResponseTimeDisplay({
       const responseStats = await ResponseTimeTracker.getProviderResponseTimeStats(providerId);
       setStats(responseStats);
     } catch (error) {
-      console.error('Error loading response time stats:', error);
+
     } finally {
       setLoading(false);
     }

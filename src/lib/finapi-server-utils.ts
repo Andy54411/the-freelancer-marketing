@@ -29,7 +29,7 @@ export async function getClientToken(): Promise<string> {
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('Fehler beim Abrufen des finAPI Client-Tokens:', errorData);
+
     throw new Error('Fehler bei der Authentifizierung des Clients bei finAPI.');
   }
 
@@ -65,7 +65,7 @@ export async function createFinapiUser(
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('Fehler beim Erstellen des finAPI-Benutzers:', errorData);
+
     throw new Error('Der finAPI-Benutzer konnte nicht erstellt werden.');
   }
 
@@ -100,7 +100,7 @@ export async function getUserToken(finapiUserId: string, finapiPassword: string)
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('Fehler beim Abrufen des finAPI Benutzer-Tokens:', errorData);
+
     throw new Error('Fehler bei der Authentifizierung des finAPI-Benutzers.');
   }
 
@@ -134,7 +134,7 @@ export async function getBanks(userToken: string) {
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('Fehler beim Abrufen der Banken von finAPI:', errorData);
+
     throw new Error('Banken konnten nicht von finAPI abgerufen werden.');
   }
 
@@ -164,7 +164,7 @@ export async function importBankConnection(userToken: string, bankId: number, re
 
   if (!response.ok) {
     const errorData = await response.json();
-    console.error('Fehler beim Importieren der Bankverbindung:', errorData);
+
     throw new Error('Bankverbindung konnte nicht importiert werden.');
   }
 

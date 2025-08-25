@@ -66,7 +66,7 @@ export function NavMain({
               <SidebarMenuButton
                 tooltip={item.title}
                 onClick={item.onClick}
-                className={`cursor-pointer transition-colors duration-200 
+                className={`cursor-pointer transition-colors duration-200
                   ${item.isActive
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold'
                     : 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'

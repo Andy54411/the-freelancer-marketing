@@ -14,8 +14,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    console.log('🔄 Getting transactions for user:', userId);
-
     // Get finAPI configuration
     const baseUrl = getFinApiBaseUrl(credentialType);
     const taskiloCredentials = getFinApiCredentials(credentialType);
@@ -38,7 +36,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      console.error('❌ Client token request failed');
+
       return NextResponse.json({ error: 'Failed to authenticate with finAPI' }, { status: 401 });
     }
 
@@ -63,7 +61,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userTokenResponse.ok) {
-      console.log('⚠️ User not found in finAPI - no transactions to show');
+
       return NextResponse.json({
         success: true,
         transactions: [],
@@ -92,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     if (!transactionsResponse.ok) {
       const errorText = await transactionsResponse.text();
-      console.error('❌ Failed to get transactions:', errorText);
+
       return NextResponse.json(
         { error: 'Failed to get transactions from finAPI' },
         { status: 500 }
@@ -100,15 +98,10 @@ export async function GET(request: NextRequest) {
     }
 
     const transactionsData = await transactionsResponse.json();
-    console.log('✅ Retrieved transactions:', transactionsData.transactions?.length || 0);
-    console.log('📊 Raw finAPI response keys:', Object.keys(transactionsData));
 
     // Log first transaction for debugging if any exist
     if (transactionsData.transactions && transactionsData.transactions.length > 0) {
-      console.log(
-        '🔍 First transaction sample:',
-        JSON.stringify(transactionsData.transactions[0], null, 2)
-      );
+
     }
 
     // Transform finAPI transactions to Taskilo format for dashboard
@@ -153,7 +146,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('finAPI transactions error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -175,8 +168,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    console.log('Processing transaction action:', action, 'for user:', userId);
-
     // For now, return not implemented - would need specific transaction operations
     return NextResponse.json(
       {
@@ -187,7 +178,7 @@ export async function POST(request: NextRequest) {
       { status: 501 }
     );
   } catch (error: any) {
-    console.error('finAPI transactions POST error:', error);
+
     return NextResponse.json(
       {
         success: false,

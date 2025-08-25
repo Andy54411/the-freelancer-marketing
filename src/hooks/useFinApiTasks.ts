@@ -119,7 +119,7 @@ export function useFinApiTasks(
       setTasks(data.tasks);
       setPagination(data.pagination);
     } catch (err: any) {
-      console.error('❌ Error fetching tasks:', err);
+
       setError(err.message);
     } finally {
       setLoading(false);
@@ -208,7 +208,7 @@ export function useFinApiTask(
       const data: TaskDetailsResponse = await response.json();
       setTask(data.task);
     } catch (err: any) {
-      console.error('❌ Error fetching task:', err);
+
       setError(err.message);
     } finally {
       setLoading(false);
@@ -232,7 +232,7 @@ export function useFinApiTask(
 
       return true;
     } catch (err: any) {
-      console.error('❌ Error cancelling task:', err);
+
       setError(err.message);
       return false;
     }
@@ -318,7 +318,7 @@ export function useCreateFinApiTask(credentialType: 'sandbox' | 'admin' = 'sandb
         const data = await response.json();
         return data.task;
       } catch (err: any) {
-        console.error('❌ Error creating task:', err);
+
         setError(err.message);
         return null;
       } finally {

@@ -129,7 +129,6 @@ interface CollaborationLog {
 
 export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   // DEBUG: Prüfe ob die Komponente überhaupt geladen wird
-  console.log('🚀 [DEBUG] SteuerberaterPortal Component geladen!', { companyId });
 
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<SteuerberaterInvite[]>([]);
@@ -164,10 +163,8 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   const loadPortalData = async () => {
     try {
       setLoading(true);
-      console.log('🔄 [DEBUG] Portal-Daten werden geladen...');
 
       // MOCK DATA - Portal funktioniert unabhängig von APIs
-      console.log('✅ [DEBUG] Mock-Daten geladen - Portal ist betriebsbereit');
 
       // Set empty/mock data instead of API calls
       setInvites([]);
@@ -182,13 +179,13 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
       setCollaborationLogs([]);
 
       // DATEV is optional - don't block the portal
-      console.log('✅ [DEBUG] Portal-Initialisierung abgeschlossen');
+
     } catch (error) {
-      console.error('Fehler beim Laden der Portal-Daten:', error);
+
       toast.error('Fehler beim Laden der Portal-Daten');
     } finally {
       setLoading(false);
-      console.log('🏁 [DEBUG] Loading-Status beendet');
+
     }
   };
 
@@ -237,7 +234,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
         toast.error(result.message || 'Fehler beim Senden der Einladung');
       }
     } catch (error) {
-      console.error('Fehler beim Senden der Einladung:', error);
+
       toast.error('Fehler beim Senden der Einladung');
     }
   };
@@ -277,7 +274,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
         toast.error(result.message || 'Fehler beim Erstellen des Berichts');
       }
     } catch (error) {
-      console.error('Fehler beim Erstellen des Berichts:', error);
+
       toast.error('Fehler beim Erstellen des Berichts');
     }
   };
@@ -305,7 +302,7 @@ export function SteuerberaterPortal({ companyId }: SteuerberaterPortalProps) {
   };
 
   if (loading) {
-    console.log('🔄 [DEBUG] SteuerberaterPortal ist im Loading-Zustand');
+
     return (
       <Card>
         <CardContent className="p-6">

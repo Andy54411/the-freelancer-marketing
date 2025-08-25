@@ -80,8 +80,6 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
         throw new Error(data.error || 'Failed to complete order');
       }
 
-      console.log('✅ Order completed:', data);
-
       toast.success('Auftrag erfolgreich abgeschlossen!', {
         description:
           data.payoutStatus === 'transferred'
@@ -92,7 +90,7 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
       onOrderCompleted();
       onClose();
     } catch (error: any) {
-      console.error('❌ Order completion error:', error);
+
       toast.error('Fehler beim Abschließen des Auftrags', {
         description: error.message || 'Bitte versuchen Sie es später erneut.',
       });

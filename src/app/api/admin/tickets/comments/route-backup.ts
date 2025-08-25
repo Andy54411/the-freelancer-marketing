@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       message: 'Kommentar erfolgreich hinzugefügt',
     });
   } catch (error) {
-    console.error('Comment creation error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Hinzufügen des Kommentars', details: error.message },
       { status: 500 }
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
       total: comments.length,
     });
   } catch (error) {
-    console.error('Comments fetch error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Laden der Kommentare', details: error.message },
       { status: 500 }
@@ -200,7 +200,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Kommentar erfolgreich gelöscht',
     });
   } catch (error) {
-    console.error('Comment deletion error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Löschen des Kommentars', details: error.message },
       { status: 500 }

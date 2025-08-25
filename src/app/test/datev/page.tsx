@@ -38,10 +38,9 @@ export default function DatevTestPage() {
     // Test alle APIs parallel
     const promises = endpoints.map(async (api, index) => {
       const startTime = Date.now();
-      
+
       try {
-        console.log(`🧪 [DATEV Test] Starting ${api.name}...`);
-        
+
         const response = await fetch(api.url, {
           method: 'GET',
           headers: {
@@ -61,11 +60,9 @@ export default function DatevTestPage() {
           duration,
         };
 
-        console.log(`${response.ok ? '✅' : '❌'} [DATEV Test] ${api.name} completed in ${duration}ms`);
-        
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         testResults[index] = {
           name: api.name,
           status: 'error',
@@ -73,7 +70,6 @@ export default function DatevTestPage() {
           duration,
         };
 
-        console.error(`❌ [DATEV Test] ${api.name} failed:`, error);
       }
 
       // Update UI after each API completes
@@ -170,7 +166,7 @@ export default function DatevTestPage() {
                     <div className="text-sm text-green-600 font-medium">
                       ✅ Erfolgreich!
                     </div>
-                    
+
                     <div className="bg-green-50 border border-green-200 rounded p-3 text-sm">
                       <h4 className="font-medium text-green-800 mb-2">Response:</h4>
                       <pre className="text-green-700 whitespace-pre-wrap overflow-x-auto max-h-32 text-xs">
@@ -185,7 +181,7 @@ export default function DatevTestPage() {
                     <div className="text-sm text-red-600 font-medium">
                       ❌ Fehler aufgetreten
                     </div>
-                    
+
                     <div className="bg-red-50 border border-red-200 rounded p-3 text-sm">
                       <h4 className="font-medium text-red-800 mb-2">Error:</h4>
                       <pre className="text-red-700 whitespace-pre-wrap overflow-x-auto max-h-32 text-xs">

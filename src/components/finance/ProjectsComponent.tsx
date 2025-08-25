@@ -165,7 +165,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       setProjects(loadedProjects);
     } catch (error) {
-      console.error('Fehler beim Laden der Projekte:', error);
+
       toast.error('Projekte konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -193,7 +193,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       });
       return Math.round(totalHours * 100) / 100; // Runde auf 2 Dezimalstellen
     } catch (error) {
-      console.error(`Fehler beim Berechnen der Stunden für Projekt ${projectId}:`, error);
+
       return 0;
     }
   };
@@ -234,7 +234,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       toast.success('Projekt erfolgreich gelöscht');
     } catch (error) {
-      console.error('Fehler beim Löschen des Projekts:', error);
+
       toast.error('Fehler beim Löschen des Projekts');
     }
   };
@@ -277,7 +277,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       setCustomers(loadedCustomers);
     } catch (error) {
-      console.error('Fehler beim Laden der Kunden:', error);
+
       toast.error('Kunden konnten nicht geladen werden');
     } finally {
       setLoadingCustomers(false);
@@ -425,7 +425,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       toast.success('Projekt wurde erfolgreich erstellt');
     } catch (error) {
-      console.error('Fehler beim Erstellen des Projekts:', error);
+
       toast.error('Projekt konnte nicht erstellt werden');
     }
   };
@@ -457,7 +457,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       toast.success(`Projektstatus wurde auf "${getStatusLabel(newStatus)}" geändert`);
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Projektstatus:', error);
+
       toast.error('Projektstatus konnte nicht geändert werden');
     }
   };

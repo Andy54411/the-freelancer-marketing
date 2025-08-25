@@ -9,18 +9,8 @@ export async function GET(request: NextRequest) {
   try {
     const config = getDatevConfig();
 
-    console.log('🧪 Testing DATEV Sandbox Connection...');
-    console.log('📋 Config:', {
-      clientId: config.clientId,
-      hasClientSecret: !!config.clientSecret,
-      authUrl: config.authUrl,
-      tokenUrl: config.tokenUrl,
-      baseUrl: config.baseUrl,
-      isSandbox: config.clientId === '6111ad8e8cae82d1a805950f2ae4adc4',
-    });
-
     // Test 1: Check OIDC Discovery endpoint
-    console.log('🔍 Testing OIDC Discovery...');
+
     const oidcResponse = await fetch(
       'https://login.datev.de/openidsandbox/.well-known/openid-configuration'
     );
@@ -45,12 +35,12 @@ export async function GET(request: NextRequest) {
     };
 
     // Test 4: Try to access userinfo endpoint (should fail without token - that's expected)
-    console.log('🔒 Testing userinfo endpoint (should return 401)...');
+
     const userinfoResponse = await fetch(config.userInfoUrl);
     const expectedUnauthorized = userinfoResponse.status === 401;
 
     // Test 5: Test Organizations endpoint (should also fail without token)
-    console.log('🏢 Testing userinfo endpoint...');
+
     const orgResponse = await fetch(`${config.baseUrl}/v1/userinfo`);
     const orgUnauthorized = orgResponse.status === 401;
 
@@ -100,7 +90,6 @@ export async function GET(request: NextRequest) {
       ],
     });
   } catch (error) {
-    console.error('DATEV Sandbox test failed:', error);
 
     return NextResponse.json(
       {

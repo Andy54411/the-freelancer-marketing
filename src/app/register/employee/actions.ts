@@ -48,12 +48,12 @@ export async function registerEmployee(
     const masterInviteCode = process.env.MASTER_INVITE_CODE;
     if (masterInviteCode && inviteCode === masterInviteCode) {
       role = 'master';
-      console.log(`[registerEmployee] Master-Einladungscode erkannt. Weise Rolle '${role}' zu.`);
+
     } else {
       // 2. Fallback auf den regulären Mitarbeiter-Code
       const employeeInviteCode = process.env.EMPLOYEE_INVITE_CODE;
       if (!employeeInviteCode) {
-        console.error('Die Umgebungsvariable EMPLOYEE_INVITE_CODE ist nicht gesetzt.');
+
         return { error: 'Fehler bei der Serverkonfiguration.', success: false };
       }
       if (inviteCode !== employeeInviteCode) {
@@ -63,9 +63,7 @@ export async function registerEmployee(
         };
       }
       role = 'support';
-      console.log(
-        `[registerEmployee] Mitarbeiter-Einladungscode erkannt. Weise Rolle '${role}' zu.`
-      );
+
     }
 
     let userRecord: UserRecord;
@@ -88,15 +86,11 @@ export async function registerEmployee(
           success: false,
         };
       }
-      console.log(
-        `[registerEmployee] Benutzer mit E-Mail ${email} existiert bereits (UID: ${userRecord.uid}). Weise Rolle '${role}' zu und aktualisiere Profil.`
-      );
+
     } catch (error: unknown) {
       // 3. Wenn der Benutzer nicht gefunden wird, erstellen wir ihn neu.
       if (isFirebaseError(error) && error.code === 'auth/user-not-found') {
-        console.log(
-          `[registerEmployee] Benutzer mit E-Mail ${email} nicht gefunden. Erstelle neuen Benutzer.`
-        );
+
         userRecord = await auth.createUser({
           email,
           password,
@@ -113,9 +107,6 @@ export async function registerEmployee(
     // 4. Setze Custom Claims, um die Rolle sicher im Backend festzulegen.
     // Dies ist die maßgebliche Quelle für die Zugriffskontrolle.
     await auth.setCustomUserClaims(userRecord.uid, { role: role });
-    console.log(
-      `[registerEmployee] Custom Claim 'role: ${role}' für Benutzer ${userRecord.uid} gesetzt.`
-    );
 
     // 5. Erstelle oder aktualisiere das Benutzerdokument in Firestore.
     // { merge: true } stellt sicher, dass wir bestehende Daten (wie createdAt) nicht überschreiben.
@@ -141,7 +132,6 @@ export async function registerEmployee(
 
     return { error: null, success: true };
   } catch (error: unknown) {
-    console.error('Fehler bei der Mitarbeiter-Registrierung:', error);
 
     if (isFirebaseError(error)) {
       // Detailliertere Fehlermeldungen basierend auf dem Firebase-Fehlercode

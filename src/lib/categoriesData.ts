@@ -154,6 +154,6 @@ export function findCategoryBySubcategory(subcategoryName: string): string | nul
       return category.title;
     }
   }
-  console.warn(`[categoriesData] No main category found for subcategory: ${subcategoryName}`);
+
   return null;
 }

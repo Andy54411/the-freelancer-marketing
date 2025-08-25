@@ -21,9 +21,7 @@ export async function getAiConfigData(): Promise<AiConfig> {
   const configDoc = await docRef.get();
 
   if (!configDoc.exists) {
-    console.warn(
-      "Chatbot 'knowledge_base' document not found in Firestore. Returning default config."
-    );
+
     return { persona: '', context: '', faqs: [], rules: [], coreProcesses: [] };
   }
 

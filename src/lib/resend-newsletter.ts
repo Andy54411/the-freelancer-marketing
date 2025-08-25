@@ -29,22 +29,22 @@ export async function sendNewsletterConfirmationViaResend(
             <div style="text-align: center; margin-bottom: 30px;">
               <h1 style="color: #14ad9f; margin: 0;">🎉 Willkommen bei Taskilo!</h1>
             </div>
-            
+
             <p style="font-size: 16px; line-height: 1.6; color: #374151;">Hallo${name ? ` ${name}` : ''},</p>
-            
+
             <p style="font-size: 16px; line-height: 1.6; color: #374151;">
-              vielen Dank für Ihr Interesse an unserem Newsletter! Um Ihre Anmeldung abzuschließen, 
+              vielen Dank für Ihr Interesse an unserem Newsletter! Um Ihre Anmeldung abzuschließen,
               bestätigen Sie bitte Ihre E-Mail-Adresse, indem Sie auf den Button unten klicken.
             </p>
-            
+
             <div style="text-align: center; margin: 40px 0;">
-              <a href="${confirmationUrl}" 
-                 style="background-color: #14ad9f; color: white; padding: 16px 32px; text-decoration: none; 
+              <a href="${confirmationUrl}"
+                 style="background-color: #14ad9f; color: white; padding: 16px 32px; text-decoration: none;
                         border-radius: 6px; font-weight: 600; font-size: 16px; display: inline-block;">
                 Newsletter-Anmeldung bestätigen
               </a>
             </div>
-            
+
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 30px 0;">
               <p style="margin: 0; font-size: 14px; color: #6b7280;">
                 <strong>Funktioniert der Button nicht?</strong><br>
@@ -52,20 +52,20 @@ export async function sendNewsletterConfirmationViaResend(
                 <a href="${confirmationUrl}" style="color: #14ad9f; word-break: break-all;">${confirmationUrl}</a>
               </p>
             </div>
-            
+
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            
+
             <div style="text-align: center;">
               <p style="color: #6b7280; font-size: 14px; margin: 10px 0;">
                 <strong>Warum erhalten Sie diese E-Mail?</strong><br>
                 Diese E-Mail wurde versendet, weil sich jemand mit Ihrer E-Mail-Adresse für unseren Newsletter angemeldet hat.
               </p>
-              
+
               <p style="color: #6b7280; font-size: 14px; margin: 10px 0;">
                 Falls Sie sich nicht angemeldet haben, können Sie diese E-Mail einfach ignorieren.
                 Der Bestätigungslink ist 24 Stunden gültig.
               </p>
-              
+
               <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
                 <p style="color: #6b7280; font-size: 12px; margin: 0;">
                   <strong>Taskilo GmbH</strong><br>
@@ -82,25 +82,19 @@ export async function sendNewsletterConfirmationViaResend(
     });
 
     if (error) {
-      console.error('🚨 Resend Fehler:', error);
+
       return {
         success: false,
         error: error.message || 'E-Mail-Versand fehlgeschlagen',
       };
     }
 
-    console.log('✅ Newsletter-Bestätigung via Resend gesendet:', {
-      email,
-      messageId: data?.id,
-      confirmationToken: confirmationToken.substring(0, 8) + '...',
-    });
-
     return {
       success: true,
       messageId: data?.id,
     };
   } catch (error) {
-    console.error('🚨 Resend Newsletter-Bestätigung fehlgeschlagen:', error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -149,7 +143,7 @@ export async function sendBulkNewsletterViaResend(
         });
 
         if (error) {
-          console.error(`❌ Resend Batch ${i / batchSize + 1} fehlgeschlagen:`, error);
+
           results.push({
             batch: i / batchSize + 1,
             recipients: batch,
@@ -157,7 +151,7 @@ export async function sendBulkNewsletterViaResend(
             error: error.message,
           });
         } else {
-          console.log(`✅ Resend Batch ${i / batchSize + 1} erfolgreich:`, data?.id);
+
           results.push({
             batch: i / batchSize + 1,
             recipients: batch,
@@ -171,7 +165,7 @@ export async function sendBulkNewsletterViaResend(
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       } catch (batchError) {
-        console.error(`❌ Batch ${i / batchSize + 1} Exception:`, batchError);
+
         results.push({
           batch: i / batchSize + 1,
           recipients: batch,
@@ -189,7 +183,7 @@ export async function sendBulkNewsletterViaResend(
       results,
     };
   } catch (error) {
-    console.error('🚨 Resend Bulk Newsletter fehlgeschlagen:', error);
+
     return {
       success: false,
       results: [],

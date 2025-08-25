@@ -70,7 +70,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
           });
         }
       } catch (error) {
-        console.error('Fehler beim Abrufen des Session-Status:', error);
+
       }
     };
 
@@ -148,7 +148,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
         onMessageSent?.(newMessage);
       }
     } catch (error) {
-      console.error('Fehler beim Senden der Nachricht:', error);
+
     } finally {
       setIsLoading(false);
     }

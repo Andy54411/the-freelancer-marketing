@@ -27,9 +27,9 @@ export async function getCurrentPlatformFeeRate(): Promise<number> {
   // Fallback verwenden wenn Build-Zeit oder keine Datenbank verfügbar
   if (isBuildTime || !db) {
     if (isBuildTime) {
-      console.log('Build time detected - using default platform fee rate');
+
     } else {
-      console.log('Firebase service account key not available in platform-config');
+
     }
     return defaultFeeRate;
   }
@@ -50,7 +50,7 @@ export async function getCurrentPlatformFeeRate(): Promise<number> {
       return defaultFeeRate;
     }
   } catch (error) {
-    console.log('Error loading platform config:', error);
+
     // Bei Verbindungsfehlern (wie während Build) stillen Fallback verwenden
     return defaultFeeRate;
   }
@@ -63,7 +63,7 @@ export async function getCurrentPlatformFeeRate(): Promise<number> {
 export async function getPlatformConfig(): Promise<PlatformFeeConfig | null> {
   // Fallback wenn keine Datenbank verfügbar
   if (!db) {
-    console.log('Firebase service account key not available in platform-config');
+
     return null;
   }
 

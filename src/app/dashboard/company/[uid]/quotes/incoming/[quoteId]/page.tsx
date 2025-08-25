@@ -182,12 +182,12 @@ export default function QuoteResponsePage({
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ View-Count erhöht:`, data);
+
       } else {
-        console.warn('⚠️ View-Count konnte nicht erhöht werden');
+
       }
     } catch (error) {
-      console.error('❌ Fehler beim Erhöhen des View-Counts:', error);
+
     }
   };
 
@@ -202,40 +202,31 @@ export default function QuoteResponsePage({
       const companyId = getCompanyId();
       const quoteId = getQuoteId();
 
-      console.log('🔍 Fetching quote details:', { companyId, quoteId });
-
       const apiResponse = await fetch(`/api/company/${companyId}/quotes/incoming/${quoteId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      console.log('📡 API Response status:', apiResponse.status);
-
       if (apiResponse.ok) {
         const data = await apiResponse.json();
-        console.log('✅ Quote data received:', data);
+
         setQuote(data.quote);
 
         // View-Count erhöhen (nach erfolgreichem Laden)
         await incrementViewCount(quoteId, token);
       } else {
         const errorData = await apiResponse.json().catch(() => ({}));
-        console.error('❌ Fehler beim Laden der Angebots-Anfrage:', {
-          status: apiResponse.status,
-          statusText: apiResponse.statusText,
-          error: errorData,
-        });
 
         if (apiResponse.status === 404) {
-          console.error('📋 Quote nicht gefunden - ID:', quoteId);
+
         }
 
         // Nicht automatisch weiterleiten, sondern Fehler anzeigen
         // router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       }
     } catch (error) {
-      console.error('💥 Fehler beim Laden der Angebots-Anfrage:', error);
+
       // Nicht automatisch weiterleiten bei Fehlern
       // router.push(`/dashboard/company/${getCompanyId()}/quotes/incoming`);
     } finally {
@@ -262,7 +253,7 @@ export default function QuoteResponsePage({
       const dataToSend = responseData || response;
 
       if (!dataToSend) {
-        console.error('Keine Antwortdaten vorhanden');
+
         return;
       }
 
@@ -273,12 +264,6 @@ export default function QuoteResponsePage({
         response: dataToSend,
       };
 
-      console.log('Sende Quote Response:', {
-        url: '/api/quotes/respond',
-        payload: requestPayload,
-        hasToken: !!token,
-      });
-
       const apiResponse = await fetch(`/api/quotes/respond`, {
         method: 'POST',
         headers: {
@@ -288,35 +273,23 @@ export default function QuoteResponsePage({
         body: JSON.stringify(requestPayload),
       });
 
-      console.log('API Response Status:', apiResponse.status);
-
       if (apiResponse.ok) {
         const responseData = await apiResponse.json();
-        console.log('Antwort erfolgreich gesendet:', responseData);
+
         const companyId = getCompanyId();
         router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       } else {
         const errorText = await apiResponse.text();
-        console.error('API Fehler Details:', {
-          status: apiResponse.status,
-          statusText: apiResponse.statusText,
-          url: apiResponse.url,
-          errorText: errorText,
-        });
 
         try {
           const errorData = JSON.parse(errorText);
-          console.error('Parsed Error Data:', errorData);
+
         } catch (parseError) {
-          console.error('Error Response ist kein JSON:', errorText);
+
         }
       }
     } catch (error) {
-      console.error('Network/Parse Fehler beim Senden der Antwort:', {
-        error: error,
-        message: error instanceof Error ? error.message : 'Unbekannter Fehler',
-        stack: error instanceof Error ? error.stack : undefined,
-      });
+
     } finally {
       setSubmitting(false);
     }
@@ -347,10 +320,10 @@ export default function QuoteResponsePage({
         const companyId = getCompanyId();
         router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       } else {
-        console.error('Fehler beim Ablehnen');
+
       }
     } catch (error) {
-      console.error('Fehler beim Ablehnen:', error);
+
     } finally {
       setSubmitting(false);
     }
@@ -372,12 +345,6 @@ export default function QuoteResponsePage({
       const companyId = getCompanyId();
       const quoteId = getQuoteId();
 
-      console.log('[Frontend] Starting provision payment:', {
-        companyId,
-        quoteId,
-        provisionAmount,
-      });
-
       // Erstelle Payment Intent
       const response = await fetch(`/api/company/${companyId}/quotes/received/${quoteId}/payment`, {
         method: 'POST',
@@ -393,7 +360,6 @@ export default function QuoteResponsePage({
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.clientSecret) {
-          console.log('[Frontend] Payment Intent created:', result);
 
           // Führe die Stripe Zahlung durch
           const cardElement = elements.getElement(CardElement);
@@ -445,7 +411,7 @@ export default function QuoteResponsePage({
         throw new Error(errorData.error || 'Netzwerkfehler');
       }
     } catch (error) {
-      console.error('[Frontend] Error paying provision:', error);
+
       alert(`Fehler beim Zahlen der Provision: ${error.message}`);
       return false;
     } finally {
@@ -457,7 +423,7 @@ export default function QuoteResponsePage({
   const handleContractAccept = async () => {
     try {
       if (!quote?.response?.totalAmount) {
-        console.error('Angebotssumme nicht verfügbar');
+
         return;
       }
 
@@ -477,7 +443,7 @@ export default function QuoteResponsePage({
         setShowPaymentModal(false);
       }
     } catch (error) {
-      console.error('Fehler beim Vertragsabschluss:', error);
+
     }
   };
 
@@ -1195,7 +1161,7 @@ export default function QuoteResponsePage({
                         }
                         return 'Unbekannt';
                       } catch (error) {
-                        console.error('Error formatting exchanged date:', error);
+
                         return 'Unbekannt';
                       }
                     })()}
@@ -1345,13 +1311,11 @@ export default function QuoteResponsePage({
                   companyId={getCompanyId()}
                   onSubmit={async data => {
                     try {
-                      console.log('📊 Received form data:', data);
 
                       let quoteData;
 
                       // Prüfe, ob es zeitbasierte Projekte sind (TimeBasedQuoteForm)
                       if (data.timeBasedProjects && Array.isArray(data.timeBasedProjects)) {
-                        console.log('🕒 Processing time-based projects:', data.timeBasedProjects);
 
                         quoteData = {
                           message:
@@ -1385,7 +1349,6 @@ export default function QuoteResponsePage({
                       }
                       // Standard-Angebot (QuoteResponseForm)
                       else if (data.serviceItems && Array.isArray(data.serviceItems)) {
-                        console.log('📦 Processing standard service items:', data.serviceItems);
 
                         quoteData = {
                           message:
@@ -1411,7 +1374,6 @@ export default function QuoteResponsePage({
                       }
                       // Fallback für andere Datenstrukturen
                       else {
-                        console.log('🔄 Processing fallback data structure');
 
                         quoteData = {
                           message: data.message || data.additionalNotes || 'Angebot erstellt',
@@ -1433,13 +1395,10 @@ export default function QuoteResponsePage({
                         };
                       }
 
-                      console.log('📋 Converted quote data:', quoteData);
-
                       // Direkt mit den konvertierten Daten senden
                       await submitResponse(quoteData);
                     } catch (error) {
-                      console.error('❌ Fehler beim Verarbeiten der Form-Daten:', error);
-                      console.error('📊 Original data:', data);
+
                     }
                   }}
                   onCancel={() => setShowResponseForm(false)}

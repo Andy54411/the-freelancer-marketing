@@ -188,16 +188,7 @@ export default function CompanyAIAssistantPage() {
       description: 'Donnerstag 14-16 Uhr: 2.3x mehr Kundenanfragen',
       type: 'insight',
       action: 'Verfügbarkeit anpassen',
-      actionFunction: () => console.log('Kalender öffnen'),
-    },
-    {
-      title: 'Preisanpassung vorgeschlagen',
-      description: 'Stundensatz könnte um €8 erhöht werden',
-      type: 'revenue',
-      action: 'Analyse zeigen',
-      actionFunction: () => console.log('Preisanalyse öffnen'),
-    },
-  ];
+      actionFunction: () =>
 
   const handleQuickAction = async (action: string) => {
     setIsGenerating(true);

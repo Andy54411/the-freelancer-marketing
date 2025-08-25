@@ -36,7 +36,7 @@ export class UserPreferencesService {
         preferredCurrency: 'EUR',
       };
     } catch (error) {
-      console.error('Fehler beim Laden der User-Preferences:', error);
+
       return {
         preferredInvoiceTemplate: DEFAULT_INVOICE_TEMPLATE,
         preferredLanguage: 'de',
@@ -63,7 +63,7 @@ export class UserPreferencesService {
         { merge: true }
       );
     } catch (error) {
-      console.error('Fehler beim Speichern der User-Preferences:', error);
+
       throw new Error('User-Preferences konnten nicht gespeichert werden');
     }
   }

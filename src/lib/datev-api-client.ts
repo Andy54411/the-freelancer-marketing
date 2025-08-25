@@ -42,7 +42,7 @@ export class DatevApiClient {
     let authHeader = DatevTokenManager.getServerAuthHeader(request);
 
     if (authHeader) {
-      console.log('[DatevApiClient] Using cookie-based token');
+
       return authHeader;
     }
 
@@ -57,7 +57,7 @@ export class DatevApiClient {
 
     // If we have a company ID, try Firestore
     if (companyId) {
-      console.log('[DatevApiClient] Checking Firestore for company:', companyId);
+
       try {
         const tokenDoc = await db
           .collection('users')
@@ -73,18 +73,17 @@ export class DatevApiClient {
           // Check if token is still valid (with 5-minute buffer)
           if (expiresAt && expiresAt.getTime() > Date.now() + 300000 && tokenData) {
             authHeader = `${tokenData.token_type || 'Bearer'} ${tokenData.access_token}`;
-            console.log('[DatevApiClient] Using Firestore token');
+
             return authHeader;
           } else {
-            console.log('[DatevApiClient] Firestore token expired');
+
           }
         }
       } catch (firestoreError) {
-        console.error('[DatevApiClient] Firestore token retrieval failed:', firestoreError);
+
       }
     }
 
-    console.log('[DatevApiClient] No valid authentication token found');
     return null;
   }
 

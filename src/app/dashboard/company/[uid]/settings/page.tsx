@@ -27,7 +27,7 @@ export default function SettingsPage() {
           setUserData(userDoc.data());
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Benutzerdaten:', error);
+
       } finally {
         setLoading(false);
       }
@@ -60,7 +60,7 @@ export default function SettingsPage() {
   }
 
   const handleDataSaved = () => {
-    console.log('Settings updated');
+
     // Benutzerdaten neu laden nach dem Speichern
     if (uid) {
       getDoc(doc(db, 'users', uid)).then(userDoc => {

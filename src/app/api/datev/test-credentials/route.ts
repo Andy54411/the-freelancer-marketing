@@ -27,8 +27,6 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     };
 
-    console.log('DATEV Credentials Test:', validation);
-
     return NextResponse.json({
       success: true,
       validation,
@@ -42,7 +40,7 @@ export async function GET() {
       ].filter(Boolean),
     });
   } catch (error) {
-    console.error('Credentials test error:', error);
+
     return NextResponse.json(
       {
         success: false,

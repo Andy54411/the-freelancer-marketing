@@ -89,7 +89,7 @@ export class EInvoiceService {
       });
       return docRef.id;
     } catch (error) {
-      console.error('Fehler beim Erstellen der E-Rechnung:', error);
+
       throw new Error('E-Rechnung konnte nicht erstellt werden');
     }
   }
@@ -114,7 +114,7 @@ export class EInvoiceService {
       <ram:ID>${metadata.guideline}</ram:ID>
     </ram:GuidelineSpecifiedDocumentContextParameter>
   </rsm:ExchangedDocumentContext>
-  
+
   <rsm:ExchangedDocument>
     <ram:ID>${invoiceData.invoiceNumber}</ram:ID>
     <ram:TypeCode>380</ram:TypeCode>
@@ -122,7 +122,7 @@ export class EInvoiceService {
       <udt:DateTimeString format="102">${invoiceData.issueDate.replace(/-/g, '')}</udt:DateTimeString>
     </ram:IssueDateTime>
   </rsm:ExchangedDocument>
-  
+
   <rsm:SupplyChainTradeTransaction>
     <ram:ApplicableHeaderTradeAgreement>
       <ram:BuyerReference>${invoiceData.buyerReference || ''}</ram:BuyerReference>
@@ -138,7 +138,7 @@ export class EInvoiceService {
           <ram:ID schemeID="VA">${companyData.companyVatId}</ram:ID>
         </ram:SpecifiedTaxRegistration>
       </ram:SellerTradeParty>
-      
+
       <ram:BuyerTradeParty>
         <ram:Name>${invoiceData.customerName}</ram:Name>
         <ram:PostalTradeAddress>
@@ -149,7 +149,7 @@ export class EInvoiceService {
         </ram:PostalTradeAddress>
       </ram:BuyerTradeParty>
     </ram:ApplicableHeaderTradeAgreement>
-    
+
     <ram:ApplicableHeaderTradeDelivery>
       <ram:ActualDeliverySupplyChainEvent>
         <ram:OccurrenceDateTime>
@@ -157,11 +157,11 @@ export class EInvoiceService {
         </ram:OccurrenceDateTime>
       </ram:ActualDeliverySupplyChainEvent>
     </ram:ApplicableHeaderTradeDelivery>
-    
+
     <ram:ApplicableHeaderTradeSettlement>
       <ram:PaymentReference>${invoiceData.invoiceNumber}</ram:PaymentReference>
       <ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
-      
+
       <ram:ApplicableTradeTax>
         <ram:CalculatedAmount>${invoiceData.tax.toFixed(2)}</ram:CalculatedAmount>
         <ram:TypeCode>VAT</ram:TypeCode>
@@ -169,13 +169,13 @@ export class EInvoiceService {
         <ram:CategoryCode>S</ram:CategoryCode>
         <ram:RateApplicablePercent>${invoiceData.vatRate}</ram:RateApplicablePercent>
       </ram:ApplicableTradeTax>
-      
+
       <ram:SpecifiedTradePaymentTerms>
         <ram:DueDateDateTime>
           <udt:DateTimeString format="102">${invoiceData.dueDate.replace(/-/g, '')}</udt:DateTimeString>
         </ram:DueDateDateTime>
       </ram:SpecifiedTradePaymentTerms>
-      
+
       <ram:SpecifiedTradeSettlementHeaderMonetarySummation>
         <ram:LineTotalAmount>${invoiceData.amount.toFixed(2)}</ram:LineTotalAmount>
         <ram:TaxBasisTotalAmount>${invoiceData.amount.toFixed(2)}</ram:TaxBasisTotalAmount>
@@ -185,14 +185,14 @@ export class EInvoiceService {
         <ram:DuePayableAmount>${invoiceData.total.toFixed(2)}</ram:DuePayableAmount>
       </ram:SpecifiedTradeSettlementHeaderMonetarySummation>
     </ram:ApplicableHeaderTradeSettlement>
-    
+
     ${this.generateLineItems(invoiceData.items)}
   </rsm:SupplyChainTradeTransaction>
 </rsm:CrossIndustryInvoice>`;
 
       return xmlTemplate;
     } catch (error) {
-      console.error('Fehler beim Generieren der ZUGFeRD XML:', error);
+
       throw new Error('ZUGFeRD XML konnte nicht generiert werden');
     }
   }
@@ -210,7 +210,7 @@ export class EInvoiceService {
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
          xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
          xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
-  
+
   <cbc:CustomizationID>${metadata.specificationId}</cbc:CustomizationID>
   <cbc:ProfileID>${metadata.businessProcessType}</cbc:ProfileID>
   <cbc:ID>${invoiceData.invoiceNumber}</cbc:ID>
@@ -219,9 +219,9 @@ export class EInvoiceService {
   <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
   <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
   <cbc:BuyerReference>${metadata.buyerReference}</cbc:BuyerReference>
-  
+
   ${metadata.processingNote ? `<cbc:Note>${metadata.processingNote}</cbc:Note>` : ''}
-  
+
   <cac:AccountingSupplierParty>
     <cac:Party>
       <cac:PartyName>
@@ -243,7 +243,7 @@ export class EInvoiceService {
       </cac:PartyTaxScheme>
     </cac:Party>
   </cac:AccountingSupplierParty>
-  
+
   <cac:AccountingCustomerParty>
     <cac:Party>
       <cac:PartyName>
@@ -259,12 +259,12 @@ export class EInvoiceService {
       </cac:PostalAddress>
     </cac:Party>
   </cac:AccountingCustomerParty>
-  
+
   <cac:PaymentMeans>
     <cbc:PaymentMeansCode>58</cbc:PaymentMeansCode>
     <cbc:PaymentID>${invoiceData.invoiceNumber}</cbc:PaymentID>
   </cac:PaymentMeans>
-  
+
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="EUR">${invoiceData.tax.toFixed(2)}</cbc:TaxAmount>
     <cac:TaxSubtotal>
@@ -279,20 +279,20 @@ export class EInvoiceService {
       </cac:TaxCategory>
     </cac:TaxSubtotal>
   </cac:TaxTotal>
-  
+
   <cac:LegalMonetaryTotal>
     <cbc:LineExtensionAmount currencyID="EUR">${invoiceData.amount.toFixed(2)}</cbc:LineExtensionAmount>
     <cbc:TaxExclusiveAmount currencyID="EUR">${invoiceData.amount.toFixed(2)}</cbc:TaxExclusiveAmount>
     <cbc:TaxInclusiveAmount currencyID="EUR">${invoiceData.total.toFixed(2)}</cbc:TaxInclusiveAmount>
     <cbc:PayableAmount currencyID="EUR">${invoiceData.total.toFixed(2)}</cbc:PayableAmount>
   </cac:LegalMonetaryTotal>
-  
+
   ${this.generateXRechnungLineItems(invoiceData.items)}
 </Invoice>`;
 
       return xmlTemplate;
     } catch (error) {
-      console.error('Fehler beim Generieren der XRechnung XML:', error);
+
       throw new Error('XRechnung XML konnte nicht generiert werden');
     }
   }
@@ -375,7 +375,7 @@ export class EInvoiceService {
         warnings,
       };
     } catch (error) {
-      console.error('Fehler bei der E-Rechnungs-Validierung:', error);
+
       return {
         isValid: false,
         errors: ['Validierung fehlgeschlagen: ' + (error as Error).message],
@@ -403,7 +403,7 @@ export class EInvoiceService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       })) as EInvoiceData[];
     } catch (error) {
-      console.error('Fehler beim Laden der E-Rechnungen:', error);
+
       throw new Error('E-Rechnungen konnten nicht geladen werden');
     }
   }
@@ -438,7 +438,7 @@ export class EInvoiceService {
         });
       }
     } catch (error) {
-      console.error('Fehler beim Speichern der E-Rechnungs-Einstellungen:', error);
+
       throw new Error('E-Rechnungs-Einstellungen konnten nicht gespeichert werden');
     }
   }

@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       selectedAnbieterId: data?.selectedAnbieterId,
     });
   } catch (error: any) {
-    console.error('[CHECK TEMPJOB ERROR]', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Prüfen des temporären Job-Entwurfs',

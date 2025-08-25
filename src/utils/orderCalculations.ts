@@ -60,7 +60,6 @@ export function calculateOrderDetails(orderData: {
         hoursPerDay = parseFloat(String(orderData.jobDurationString || 8));
         totalHours = totalDays * hoursPerDay;
 
-        console.log(`Mehrtägiger Auftrag: ${totalDays} Tage × ${hoursPerDay}h = ${totalHours}h`);
     }
     // Szenario 2: Eintägiger Auftrag oder flexible Stunden
     else {
@@ -75,14 +74,11 @@ export function calculateOrderDetails(orderData: {
 
         hoursPerDay = totalHours;
 
-        console.log(`Eintägiger Auftrag: ${totalHours}h`);
     }
 
     // Stundensatz berechnen
     const hourlyRate = totalHours > 0 ? priceInEur / totalHours : 0;
     const hourlyRateInCents = Math.round(hourlyRate * 100);
-
-    console.log(`Berechnung: ${priceInEur}€ ÷ ${totalHours}h = ${hourlyRate.toFixed(2)}€/h`);
 
     return {
         totalHours,

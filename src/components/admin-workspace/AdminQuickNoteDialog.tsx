@@ -109,7 +109,7 @@ export function AdminQuickNoteDialog({
         onNoteAdded();
       }
     } catch (error) {
-      console.error('Error adding quick note:', error);
+
     } finally {
       setLoading(false);
     }

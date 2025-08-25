@@ -84,10 +84,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(
-      `Adding reply to ticket ${ticketId} by ${authResult.userType}: ${authResult.userId}`
-    );
-
     // Bestimme Autor-Typ basierend auf Authentifizierung
     const authorType = authResult.userType === 'admin' ? 'admin' : 'customer';
     const isInternalReply = isInternal && authResult.userType === 'admin'; // Nur Admins können interne Antworten schreiben
@@ -160,7 +156,7 @@ export async function POST(request: NextRequest) {
           );
         }
       } catch (emailError) {
-        console.error('Fehler beim Senden der E-Mail-Benachrichtigung:', emailError);
+
         // Fehler bei E-Mail nicht weiterleiten, da die Antwort erfolgreich gespeichert wurde
       }
 
@@ -192,14 +188,12 @@ export async function POST(request: NextRequest) {
             };
 
             await db.collection('notifications').add(notification);
-            console.log(
-              `Bell-Notification erstellt für Customer ${customerUid} - Ticket ${ticketId}`
-            );
+
           } else {
-            console.log(`Keine UID gefunden für E-Mail: ${updatedTicket.customerEmail}`);
+
           }
         } catch (notificationError) {
-          console.error('Fehler beim Erstellen der Bell-Notification:', notificationError);
+
           // Nicht weiterleiten, da dies optional ist
         }
       }
@@ -216,7 +210,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Reply API error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Senden der Antwort',
@@ -281,7 +275,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('Get replies API error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Antworten',

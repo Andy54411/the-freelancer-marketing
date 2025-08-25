@@ -10,7 +10,6 @@ import { db } from '@/firebase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('🎯 Taskilo Advertising Keywords API called');
 
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -92,7 +91,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Taskilo Advertising Keywords error:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler',
@@ -108,7 +107,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🎯 Creating new keyword via Taskilo Advertising...');
 
     const body = await request.json();
     const { companyId, adGroupId, keyword, matchType, cpc, finalUrl } = body;
@@ -133,7 +131,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Keyword creation error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen des Keywords',

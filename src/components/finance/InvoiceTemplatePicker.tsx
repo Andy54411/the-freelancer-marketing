@@ -120,7 +120,7 @@ export function InvoiceTemplatePicker({
       }
       setOpen(false);
     } catch (error) {
-      console.error('Fehler beim Speichern der Template-Auswahl:', error);
+
       toast.error('Fehler beim Speichern der Template-Auswahl');
 
       // Still execute callback even if save failed

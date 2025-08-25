@@ -113,7 +113,7 @@ export default function CustomerQuoteDetailPage() {
         setError(result.error || 'Angebotsanfrage nicht gefunden');
       }
     } catch (err) {
-      console.error('Fehler beim Laden der Angebotsanfrage:', err);
+
       setError('Fehler beim Laden der Angebotsanfrage');
     } finally {
       setLoading(false);
@@ -156,10 +156,7 @@ export default function CustomerQuoteDetailPage() {
         );
       }
     } catch (err) {
-      console.error(
-        `Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots:`,
-        err
-      );
+
       setError(`Fehler beim ${action === 'accept' ? 'Annehmen' : 'Ablehnen'} des Angebots`);
     } finally {
       setLoadingState(false);

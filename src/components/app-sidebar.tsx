@@ -84,7 +84,7 @@ export function AppSidebar({
         setProfilePictureURL(null);
       }
     } catch (err) {
-      console.error('Fehler beim Abrufen der Daten:', err);
+
       setError('Fehler beim Laden der Daten');
     } finally {
       setLoading(false);

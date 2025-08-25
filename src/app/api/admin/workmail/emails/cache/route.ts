@@ -19,7 +19,6 @@ const lambdaClient = new LambdaClient({
 // GET - Gespeicherte E-Mails aus Cache abrufen
 export async function GET(request: NextRequest) {
   try {
-    console.log('🗄️ [Email Cache API] Starting request...');
 
     // URL-Parameter
     const { searchParams } = new URL(request.url);
@@ -31,7 +30,7 @@ export async function GET(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-      console.error('❌ [Email Cache API] Missing admin token cookie');
+
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -41,8 +40,6 @@ export async function GET(request: NextRequest) {
       const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
       const adminEmail = payload.email as string;
 
-      console.log('✅ [Email Cache API] JWT verified for admin:', adminEmail);
-
       // Lambda-Funktion aufrufen
       const lambdaPayload = {
         action: 'getEmails',
@@ -51,8 +48,6 @@ export async function GET(request: NextRequest) {
         adminEmail: adminEmail,
       };
 
-      console.log('🚀 [Email Cache API] Calling Lambda with payload:', lambdaPayload);
-
       const command = new InvokeCommand({
         FunctionName: 'TaskiloEmailOperations',
         Payload: JSON.stringify(lambdaPayload),
@@ -60,8 +55,6 @@ export async function GET(request: NextRequest) {
 
       const response = await lambdaClient.send(command);
       const result = JSON.parse(new TextDecoder().decode(response.Payload));
-
-      console.log('📊 [Email Cache API] Lambda response:', result);
 
       if (result.statusCode === 200) {
         const data = JSON.parse(result.body);
@@ -84,11 +77,11 @@ export async function GET(request: NextRequest) {
         throw new Error(`Lambda error: ${result.body}`);
       }
     } catch (jwtError) {
-      console.error('❌ [Email Cache API] JWT verification failed:', jwtError);
+
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-    console.error('❌ [Email Cache API] Error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -103,7 +96,6 @@ export async function GET(request: NextRequest) {
 // POST - E-Mails in Cache synchronisieren
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔄 [Email Cache Sync] Starting sync request...');
 
     const body = await request.json();
     const { emails, folder = 'sent', forceSync = false } = body;
@@ -113,7 +105,7 @@ export async function POST(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-      console.error('❌ [Email Cache Sync] Missing admin token cookie');
+
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -122,8 +114,6 @@ export async function POST(request: NextRequest) {
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
       const adminEmail = payload.email as string;
-
-      console.log('✅ [Email Cache Sync] JWT verified for admin:', adminEmail);
 
       // Lambda-Funktion aufrufen
       const lambdaPayload = {
@@ -134,13 +124,6 @@ export async function POST(request: NextRequest) {
         forceSync: forceSync,
       };
 
-      console.log('🚀 [Email Cache Sync] Calling Lambda with payload:', {
-        action: lambdaPayload.action,
-        emailCount: emails?.length || 0,
-        folder: lambdaPayload.folder,
-        adminEmail: lambdaPayload.adminEmail,
-      });
-
       const command = new InvokeCommand({
         FunctionName: 'TaskiloEmailOperations',
         Payload: JSON.stringify(lambdaPayload),
@@ -148,8 +131,6 @@ export async function POST(request: NextRequest) {
 
       const response = await lambdaClient.send(command);
       const result = JSON.parse(new TextDecoder().decode(response.Payload));
-
-      console.log('📊 [Email Cache Sync] Lambda response:', result);
 
       if (result.statusCode === 200) {
         const data = JSON.parse(result.body);
@@ -170,11 +151,11 @@ export async function POST(request: NextRequest) {
         throw new Error(`Lambda error: ${result.body}`);
       }
     } catch (jwtError) {
-      console.error('❌ [Email Cache Sync] JWT verification failed:', jwtError);
+
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-    console.error('❌ [Email Cache Sync] Error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -189,7 +170,6 @@ export async function POST(request: NextRequest) {
 // DELETE - E-Mails endgültig aus Cache löschen
 export async function DELETE(request: NextRequest) {
   try {
-    console.log('🗑️ [Email Cache Delete] Starting delete request...');
 
     const { searchParams } = new URL(request.url);
     const emailId = searchParams.get('emailId');
@@ -204,7 +184,7 @@ export async function DELETE(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-      console.error('❌ [Email Cache Delete] Missing admin token cookie');
+
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -214,8 +194,6 @@ export async function DELETE(request: NextRequest) {
       const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
       const adminEmail = payload.email as string;
 
-      console.log('✅ [Email Cache Delete] JWT verified for admin:', adminEmail);
-
       // Lambda-Funktion aufrufen
       const lambdaPayload = {
         action: 'deleteEmail',
@@ -224,8 +202,6 @@ export async function DELETE(request: NextRequest) {
         adminEmail: adminEmail,
       };
 
-      console.log('🚀 [Email Cache Delete] Calling Lambda with payload:', lambdaPayload);
-
       const command = new InvokeCommand({
         FunctionName: 'TaskiloEmailOperations',
         Payload: JSON.stringify(lambdaPayload),
@@ -233,8 +209,6 @@ export async function DELETE(request: NextRequest) {
 
       const response = await lambdaClient.send(command);
       const result = JSON.parse(new TextDecoder().decode(response.Payload));
-
-      console.log('📊 [Email Cache Delete] Lambda response:', result);
 
       if (result.statusCode === 200) {
         return NextResponse.json({
@@ -248,11 +222,11 @@ export async function DELETE(request: NextRequest) {
         throw new Error(`Lambda error: ${result.body}`);
       }
     } catch (jwtError) {
-      console.error('❌ [Email Cache Delete] JWT verification failed:', jwtError);
+
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-    console.error('❌ [Email Cache Delete] Error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

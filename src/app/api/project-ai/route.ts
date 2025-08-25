@@ -215,7 +215,7 @@ export async function POST(request: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.error('Fehler: GEMINI_API_KEY ist in den Umgebungsvariablen nicht gesetzt.');
+
       return NextResponse.json(
         { error: 'Die Server-Konfiguration ist unvollständig. Der API-Schlüssel fehlt.' },
         { status: 500 }
@@ -257,18 +257,18 @@ export async function POST(request: Request) {
     switch (action) {
       case 'generateSmartQuestions':
         // Neue Action: Generiere automatisch intelligente Fragen basierend auf der ersten Eingabe
-        systemContext = `Du bist ein erfahrener KI-Projektmanagement-Assistent für die Taskilo-Plattform. 
+        systemContext = `Du bist ein erfahrener KI-Projektmanagement-Assistent für die Taskilo-Plattform.
         Analysiere die Eingabe des Benutzers und generiere präzise Fragen, um ein vollständiges Projektbriefing zu erstellen.
-        
+
         Du kennst alle verfügbaren Service-Kategorien: ${Object.keys(categories).join(', ')}.`;
 
         prompt = `Der Benutzer hat folgende Projektidee beschrieben: "${data.userInput || 'Kein Input'}"
-        
+
         Analysiere diese Beschreibung und:
         1. Bestimme die wahrscheinlichste Hauptkategorie
         2. Identifiziere fehlende wichtige Informationen
         3. Generiere 5-7 gezielte Fragen für ein vollständiges Projektbriefing
-        
+
         Die Fragen müssen abdecken:
         - Zeitrahmen (Wann soll es durchgeführt werden?)
         - Ort/Location (Wo findet es statt?)
@@ -276,7 +276,7 @@ export async function POST(request: Request) {
         - Spezifische Anforderungen der erkannten Kategorie
         - Qualitätserwartungen
         - Besondere Umstände
-        
+
         WICHTIG: Antworte ausschließlich mit einem validen JSON Objekt:
         {
           "detectedCategory": "Erkannte Hauptkategorie",
@@ -292,7 +292,7 @@ export async function POST(request: Request) {
               "category": "timing"
             },
             {
-              "id": "location", 
+              "id": "location",
               "question": "Wo soll der Service durchgeführt werden?",
               "type": "location",
               "required": true,
@@ -302,7 +302,7 @@ export async function POST(request: Request) {
             {
               "id": "budget",
               "question": "Welches Budget haben Sie für dieses Projekt eingeplant?",
-              "type": "budget_range", 
+              "type": "budget_range",
               "required": false,
               "placeholder": "z.B. 500-1000 Euro, verhandelbar",
               "category": "budget"
@@ -311,7 +311,7 @@ export async function POST(request: Request) {
           "projectSummary": "Kurze Zusammenfassung des erkannten Projekts",
           "recommendedNext": "Empfehlung für nächste Schritte"
         }
-        
+
         Stelle intelligente, kategorie-spezifische Fragen!`;
         break;
 
@@ -321,9 +321,9 @@ export async function POST(request: Request) {
         const subcategory = data.subcategory;
         const userInput = data.userInput || '';
 
-        systemContext = `Du bist ein erfahrener KI-Projektmanagement-Assistent für die Taskilo-Plattform. 
+        systemContext = `Du bist ein erfahrener KI-Projektmanagement-Assistent für die Taskilo-Plattform.
         Du hilfst Kunden dabei, durch gezielte Fragen ihre Projektanforderungen zu präzisieren.
-        
+
         Du kennst alle Service-Kategorien und Subkategorien der Plattform und stellst passende, intelligente Fragen.`;
 
         // Hole kategorie-spezifische Fragen aus der Datenbank
@@ -334,13 +334,13 @@ export async function POST(request: Request) {
         const commonQuestions = categoryQuestions?.commonQuestions || [];
 
         prompt = `Der Benutzer möchte ein Projekt in der Kategorie "${category}"${subcategory ? ` und Subkategorie "${subcategory}"` : ''} erstellen.
-        
+
         Bisherige Beschreibung: "${userInput}"
-        
+
         Relevante Fragen für diese Kategorie:
         Allgemeine Fragen: ${commonQuestions.join(', ')}
         ${subcategoryQuestions.length > 0 ? `Spezifische Fragen: ${subcategoryQuestions.join(', ')}` : ''}
-        
+
         Stelle 4-6 gezielte Fragen, um das Projekt zu präzisieren. Die Fragen sollen abdecken:
         1. Zeitrahmen und Dringlichkeit (Wann?)
         2. Ort und Zugänglichkeit (Wo?)
@@ -348,7 +348,7 @@ export async function POST(request: Request) {
         4. Spezifische Anforderungen der gewählten Kategorie
         5. Gewünschte Qualität und Standards
         6. Besondere Umstände oder Herausforderungen
-        
+
         WICHTIG: Antworte ausschließlich mit einem validen JSON Objekt:
         {
           "questions": [
@@ -381,17 +381,17 @@ export async function POST(request: Request) {
             "timeEstimate": "Zu bestimmen basierend auf Antworten"
           }
         }
-        
+
         Passe die Fragen an die spezifische Kategorie an!`;
         break;
 
       case 'generateProjectIdeas':
-        systemContext = `Du bist ein KI-Projektmanagement-Assistent für die Taskilo-Plattform, einer Service-Marketplace-App. 
+        systemContext = `Du bist ein KI-Projektmanagement-Assistent für die Taskilo-Plattform, einer Service-Marketplace-App.
         Taskilo verbindet Kunden mit Dienstleistern in Bereichen wie Handwerk, IT, Haushalt, Transport, etc.
-        
+
         WICHTIGE KATEGORIEN: Du MUSST eine der folgenden exakten Kategorien verwenden:
         - Handwerk
-        - IT & Digital  
+        - IT & Digital
         - Haushalt & Reinigung
         - Transport & Umzug
         - Wellness & Gesundheit
@@ -404,49 +404,49 @@ export async function POST(request: Request) {
         - Auto & Motorrad
         - Immobilien
         - Bildung & Coaching
-        
+
         Deine Aufgabe ist es, basierend auf der Beschreibung des Benutzers personalisierte und praktische Projektideen zu generieren, die auf der Plattform umsetzbar sind.`;
 
         prompt = `Der Benutzer hat folgendes Vorhaben beschrieben: "${data.userInput || 'Allgemeine Projektideen'}"
 
-        Generiere 3-5 konkrete, auf diese Beschreibung zugeschnittene Projektideen für die Taskilo-Plattform. 
+        Generiere 3-5 konkrete, auf diese Beschreibung zugeschnittene Projektideen für die Taskilo-Plattform.
         Die Ideen sollten:
         - Direkt auf die Benutzerbeschreibung eingehen
         - Praktisch und umsetzbar sein
         - Verschiedene Service-Kategorien einbeziehen, die relevant sind
         - Einen klaren Nutzen bieten
         - Für die beschriebene Situation passend sein
-        
+
         WICHTIG: Du MUSST eine der EXAKTEN Kategorien und Subkategorien verwenden:
-        
+
         **Handwerk:** Tischler, Klempner, Maler & Lackierer, Elektriker, HeizungSanitär, Fliesenleger, Dachdecker, Maurer, Trockenbauer, Schreiner, Zimmerer, Bodenleger, Glaser, Schlosser, Metallbauer, FensterTürenbau, Heizung, Autoreparatur, Montageservice, Umzugshelfer
-        
+
         **Haushalt:** Reinigungskraft, Haushaltshilfe, Fensterputzer, Teppichreinigung, Bodenreinigung, Hausreinigung
-        
+
         **Transport:** Fahrer, Kurierdienst, Transportdienstleistungen, Lagerlogistik, Logistik, MöbelTransportieren
-        
+
         **IT & Digital:** Webentwicklung, App-Entwicklung, IT-Support, Systemadministration, Cybersecurity, Softwareentwicklung, Datenanalyse, Cloud Services, Netzwerktechnik
-        
+
         **Garten:** Gartenpflege, Landschaftsgärtner, Rasenpflege, Heckenschnitt, Baumpflege, Gartenplanung, Bewässerungsanlagen
-        
+
         **Wellness:** Massage, Physiotherapie, Ernährungsberatung, Kosmetik, Friseur, FitnessTraining, Seniorenbetreuung
-        
+
         **Hotel & Gastronomie:** Mietkoch, Mietkellner, Catering
-        
+
         **Marketing & Vertrieb:** OnlineMarketing, Social Media Marketing, ContentMarketing, Marketingberater, Marktforschung
-        
+
         **Finanzen & Recht:** Buchhaltung, Steuerberatung, Rechtsberatung, Finanzberatung, Versicherungsberatung, Rechnungswesen, Unternehmensberatung, Verwaltung
-        
+
         **Bildung & Unterstützung:** Nachhilfe, Nachhilfelehrer, Sprachunterricht, Musikunterricht, Übersetzer, Kinderbetreuung
-        
+
         **Tiere & Pflanzen:** Tierbetreuung, Hundetrainer, TierarztAssistenz, Tierpflege
-        
+
         **Kreativ & Kunst:** Fotograf, Videograf, Grafiker, Musiker, Texter, Dekoration
-        
+
         **Event & Veranstaltung:** Eventplanung, Sicherheitsdienst, DJService, Musiker
-        
+
         **Büro & Administration:** Telefonservice, Inventur, Recherche
-        
+
         WICHTIG: Antworte ausschließlich mit einem validen JSON Array (keine anderen Texte oder Erklärungen):
         [
           {
@@ -461,18 +461,18 @@ export async function POST(request: Request) {
             "recommendedProviders": ["Typ des benötigten Dienstleisters", "Weitere Spezialisierung"]
           }
         ]
-        
+
         Sei spezifisch und praktisch in deinen Vorschlägen!`;
         break;
 
       case 'createDetailedProject':
         // Neue Action zum Erstellen einer detaillierten Projektbeschreibung basierend auf Fragen-Antworten
-        systemContext = `Du bist ein Experte für Projektspezifikationen auf der Taskilo-Plattform. 
+        systemContext = `Du bist ein Experte für Projektspezifikationen auf der Taskilo-Plattform.
         Du erstellst basierend auf gesammelten Antworten eine präzise, professionelle Projektausschreibung.
-        
+
         WICHTIGE KATEGORIEN: Du MUSST eine der folgenden exakten Kategorien verwenden:
         - Handwerk
-        - Haushalt  
+        - Haushalt
         - Transport
         - IT & Digital
         - Garten
@@ -490,26 +490,26 @@ export async function POST(request: Request) {
         const originalDescription = data.originalDescription || '';
 
         prompt = `Erstelle basierend auf den folgenden Informationen eine detaillierte Projektbeschreibung:
-        
+
         Ursprüngliche Beschreibung: "${originalDescription}"
         Kategorie: "${data.category}"
         Subkategorie: "${data.subcategory || 'Nicht spezifiziert'}"
-        
+
         Antworten auf Detailfragen:
         ${Object.entries(answers)
           .map(([key, value]) => `${key}: ${value}`)
           .join('\n')}
-        
+
         Erstelle eine professionelle Projektausschreibung die:
         1. Einen klaren, prägnanten Titel hat
         2. Eine detaillierte Beschreibung mit allen wichtigen Aspekten
         3. Spezifische Anforderungen und Erwartungen definiert
         4. Zeitrahmen und Budget berücksichtigt
         5. Für Dienstleister verständlich und umsetzbar ist
-        
+
         WICHTIG: Du MUSST eine der EXAKTEN Kategorien verwenden:
         Handwerk, Haushalt, Transport, IT & Digital, Garten, Wellness, Hotel & Gastronomie, Marketing & Vertrieb, Finanzen & Recht, Bildung & Unterstützung, Tiere & Pflanzen, Kreativ & Kunst, Event & Veranstaltung, Büro & Administration
-        
+
         WICHTIG: Antworte ausschließlich mit einem validen JSON Objekt:
         {
           "title": "Präziser Projekttitel",
@@ -535,20 +535,20 @@ export async function POST(request: Request) {
         break;
 
       case 'analyzeProject':
-        systemContext = `Du bist ein KI-Projektmanagement-Experte für die Taskilo-Plattform. 
+        systemContext = `Du bist ein KI-Projektmanagement-Experte für die Taskilo-Plattform.
         Analysiere das gegebene Projekt und gib hilfreiche Verbesserungsvorschläge.`;
 
         prompt = `Analysiere folgendes Projekt und gib Verbesserungsvorschläge:
-        
+
         Projekt: ${JSON.stringify(data.project)}
-        
+
         Bitte analysiere:
         1. Projektstruktur und Ziele
         2. Zeitplanung und Budgetschätzung
         3. Risiken und Herausforderungen
         4. Optimierungsmöglichkeiten
         5. Empfohlene nächste Schritte
-        
+
         Format: JSON Objekt mit folgenden Feldern:
         - analysis: Allgemeine Analyse des Projekts
         - suggestions: Array von Verbesserungsvorschlägen
@@ -562,14 +562,14 @@ export async function POST(request: Request) {
         Erstelle detaillierte Aufgabenlisten für Projekte.`;
 
         prompt = `Erstelle eine detaillierte Aufgabenliste für folgendes Projekt:
-        
+
         Titel: ${data.title}
         Beschreibung: ${data.description}
         Kategorie: ${data.category}
         Budget: ${data.budget ? `€${data.budget}` : 'Nicht angegeben'}
-        
+
         Erstelle 5-10 konkrete, umsetzbare Aufgaben.
-        
+
         Format: JSON Array mit Objekten:
         - title: Kurzer Aufgabentitel
         - description: Detaillierte Beschreibung
@@ -585,17 +585,17 @@ export async function POST(request: Request) {
         Gib professionelle Beratung zu Projektfragen.`;
 
         prompt = `Beantworte folgende Projektfrage professionell und hilfreich:
-        
+
         Frage: ${data.question}
-        
+
         ${data.projectContext ? `Projektkontext: ${data.projectContext}` : ''}
-        
+
         Gib eine strukturierte, hilfreiche Antwort mit:
         1. Direkter Antwort auf die Frage
         2. Praktischen Empfehlungen
         3. Möglichen nächsten Schritten
         4. Relevanten Taskilo-Services, die helfen könnten
-        
+
         Antworte auf Deutsch und sei konkret und umsetzungsorientiert.`;
         break;
 
@@ -603,8 +603,6 @@ export async function POST(request: Request) {
         // Echte Dienstleister aus Firebase users collection laden
         try {
           const { title, category, services } = data;
-
-          console.log('🔍 Suche Dienstleister für:', { title, category, services });
 
           // Query Firebase users collection für Firmen/Dienstleister
           const usersRef = db.collection('users');
@@ -657,9 +655,6 @@ export async function POST(request: Request) {
           let finalSnapshot = usersSnapshot;
 
           if (usersSnapshot.empty) {
-            console.log(
-              '❌ Keine Dienstleister in der Datenbank gefunden, teste ohne Kategorie-Filter'
-            );
 
             // Fallback: Suche ohne Kategorie-Filter
             const fallbackQuery = usersRef
@@ -670,7 +665,7 @@ export async function POST(request: Request) {
             const fallbackSnapshot = await fallbackQuery.get();
 
             if (fallbackSnapshot.empty) {
-              console.log('❌ Keine Firmen-User in der Datenbank gefunden');
+
               return NextResponse.json({
                 success: true,
                 data: [],
@@ -760,7 +755,7 @@ export async function POST(request: Request) {
                     null,
                 };
               } catch (error) {
-                console.error(`Fehler beim Laden der Daten für ${doc.id}:`, error);
+
                 // Fallback zu Basis-Daten bei Fehlern
                 return {
                   id: doc.id,
@@ -811,8 +806,6 @@ export async function POST(request: Request) {
             return scoreB - scoreA;
           });
 
-          console.log(`✅ ${providers.length} echte Dienstleister gefunden`);
-
           return NextResponse.json({
             success: true,
             data: providers.slice(0, 10),
@@ -820,7 +813,7 @@ export async function POST(request: Request) {
             message: `${providers.length} passende Dienstleister gefunden`,
           });
         } catch (error) {
-          console.error('Fehler beim Laden der Dienstleister aus Firebase:', error);
+
           return NextResponse.json(
             { error: 'Fehler beim Abrufen der Dienstleister aus der Datenbank' },
             { status: 500 }
@@ -871,7 +864,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
-    console.error('Fehler in der Projekt-KI API-Route:', errorMessage);
+
     return NextResponse.json(
       { error: 'Ein interner Serverfehler ist aufgetreten.' },
       { status: 500 }

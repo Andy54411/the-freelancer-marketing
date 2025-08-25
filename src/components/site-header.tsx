@@ -5,7 +5,6 @@ import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ModeToggle } from '@/components/mode-toggle'; // Pfad anpassen, falls nötig
 
-
 interface SiteHeaderProps {
   currentTab: string;
   showSidebarTrigger?: boolean; // Neue Prop hinzugefügt

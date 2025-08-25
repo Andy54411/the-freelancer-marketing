@@ -661,7 +661,6 @@ export class PersonalService {
    */
   static async getEmployees(companyId: string): Promise<Employee[]> {
     try {
-      console.log('🔄 PersonalService: Lade Mitarbeiter für Company:', companyId);
 
       const employeesQuery = query(
         collection(db, 'companies', companyId, 'employees'),
@@ -681,10 +680,9 @@ export class PersonalService {
         } as Employee);
       });
 
-      console.log(`✅ PersonalService: ${employees.length} Mitarbeiter geladen`);
       return employees;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Mitarbeiter:', error);
+
       throw error;
     }
   }
@@ -696,11 +694,6 @@ export class PersonalService {
     employee: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log(
-        '🔄 PersonalService: Erstelle neuen Mitarbeiter:',
-        employee.firstName,
-        employee.lastName
-      );
 
       // Berechne automatisch Zusatzdaten
       const calculatedData = this.calculateEmployeeCosts(employee);
@@ -719,10 +712,9 @@ export class PersonalService {
         employeeData
       );
 
-      console.log('✅ PersonalService: Mitarbeiter erstellt mit ID:', docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Erstellen des Mitarbeiters:', error);
+
       throw error;
     }
   }
@@ -764,7 +756,7 @@ export class PersonalService {
 
       return newEmployee;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Hinzufügen des Mitarbeiters:', error);
+
       throw error;
     }
   }
@@ -774,14 +766,12 @@ export class PersonalService {
    */
   static async deleteEmployee(companyId: string, employeeId: string): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Lösche Mitarbeiter:', employeeId);
 
       const employeeRef = doc(db, 'companies', companyId, 'employees', employeeId);
       await deleteDoc(employeeRef);
 
-      console.log('✅ PersonalService: Mitarbeiter gelöscht:', employeeId);
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Löschen des Mitarbeiters:', error);
+
       throw error;
     }
   }
@@ -795,7 +785,6 @@ export class PersonalService {
     updates: Partial<Employee>
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Aktualisiere Mitarbeiter:', employeeId);
 
       // Berechne Kosten neu wenn relevante Felder geändert wurden
       if (
@@ -815,9 +804,8 @@ export class PersonalService {
 
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
 
-      console.log('✅ PersonalService: Mitarbeiter aktualisiert');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Aktualisieren des Mitarbeiters:', error);
+
       throw error;
     }
   }
@@ -827,7 +815,6 @@ export class PersonalService {
    */
   static async deactivateEmployee(companyId: string, employeeId: string): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Deaktiviere Mitarbeiter:', employeeId);
 
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), {
         isActive: false,
@@ -835,9 +822,8 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Mitarbeiter deaktiviert');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Deaktivieren des Mitarbeiters:', error);
+
       throw error;
     }
   }
@@ -851,10 +837,6 @@ export class PersonalService {
     vacationSettings: VacationSettings
   ): Promise<void> {
     try {
-      console.log(
-        '🔄 PersonalService: Aktualisiere Urlaubseinstellungen für Mitarbeiter:',
-        employeeId
-      );
 
       const updateData = {
         'vacation.settings': {
@@ -866,12 +848,8 @@ export class PersonalService {
 
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
 
-      console.log('✅ PersonalService: Urlaubseinstellungen aktualisiert');
     } catch (error) {
-      console.error(
-        '❌ PersonalService: Fehler beim Aktualisieren der Urlaubseinstellungen:',
-        error
-      );
+
       throw error;
     }
   }
@@ -885,7 +863,6 @@ export class PersonalService {
     vacationRequest: Omit<VacationRequest, 'id'>
   ): Promise<string> {
     try {
-      console.log('🔄 PersonalService: Speichere Urlaubsantrag für Mitarbeiter:', employeeId);
 
       const requestId = Date.now().toString();
       const newRequest: VacationRequest = {
@@ -905,10 +882,9 @@ export class PersonalService {
 
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
 
-      console.log('✅ PersonalService: Urlaubsantrag gespeichert mit ID:', requestId);
       return requestId;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Speichern des Urlaubsantrags:', error);
+
       throw error;
     }
   }
@@ -925,12 +901,6 @@ export class PersonalService {
     reviewComment?: string
   ): Promise<void> {
     try {
-      console.log(
-        '🔄 PersonalService: Aktualisiere Urlaubsantrag Status:',
-        requestId,
-        'zu',
-        status
-      );
 
       const employee = await this.getEmployee(companyId, employeeId);
       const requests = employee.vacation?.requests || [];
@@ -955,12 +925,8 @@ export class PersonalService {
 
       await updateDoc(doc(db, 'companies', companyId, 'employees', employeeId), updateData);
 
-      console.log('✅ PersonalService: Urlaubsantrag Status aktualisiert');
     } catch (error) {
-      console.error(
-        '❌ PersonalService: Fehler beim Aktualisieren des Urlaubsantrag Status:',
-        error
-      );
+
       throw error;
     }
   }
@@ -1014,7 +980,6 @@ export class PersonalService {
    */
   static async getPersonalStats(companyId: string): Promise<PersonalStats> {
     try {
-      console.log('🔄 PersonalService: Berechne Personal-Statistiken für Company:', companyId);
 
       const employees = await this.getEmployees(companyId);
 
@@ -1067,10 +1032,9 @@ export class PersonalService {
         employmentTypeBreakdown,
       };
 
-      console.log('✅ PersonalService: Statistiken berechnet:', stats);
       return stats;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Berechnen der Statistiken:', error);
+
       throw error;
     }
   }
@@ -1150,7 +1114,7 @@ export class PersonalService {
 
       return csvRows.join('\n');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim CSV-Export:', error);
+
       throw error;
     }
   }
@@ -1160,7 +1124,6 @@ export class PersonalService {
    */
   static async importEmployeesCSV(companyId: string, csvData: string): Promise<number> {
     try {
-      console.log('🔄 PersonalService: Importiere CSV-Daten für Company:', companyId);
 
       const lines = csvData.trim().split('\n');
       let importedCount = 0;
@@ -1204,10 +1167,9 @@ export class PersonalService {
         }
       }
 
-      console.log(`✅ PersonalService: ${importedCount} Mitarbeiter importiert`);
       return importedCount;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim CSV-Import:', error);
+
       throw error;
     }
   }
@@ -1219,7 +1181,6 @@ export class PersonalService {
    */
   static async getShifts(companyId: string, startDate?: Date, endDate?: Date): Promise<Shift[]> {
     try {
-      console.log('🔄 PersonalService: Lade Schichten für Company:', companyId);
 
       let shiftsQuery = query(
         collection(db, 'companies', companyId, 'shifts'),
@@ -1248,10 +1209,9 @@ export class PersonalService {
         } as Shift);
       });
 
-      console.log(`✅ PersonalService: ${shifts.length} Schichten geladen`);
       return shifts;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Schichten:', error);
+
       throw error;
     }
   }
@@ -1261,7 +1221,6 @@ export class PersonalService {
    */
   static async createShift(shift: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
-      console.log('🔄 PersonalService: Erstelle neue Schicht');
 
       const shiftData = {
         ...shift,
@@ -1274,10 +1233,9 @@ export class PersonalService {
         shiftData
       );
 
-      console.log('✅ PersonalService: Schicht erstellt mit ID:', docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Erstellen der Schicht:', error);
+
       throw error;
     }
   }
@@ -1291,7 +1249,6 @@ export class PersonalService {
     updates: Partial<Shift>
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Aktualisiere Schicht:', shiftId);
 
       const updateData = {
         ...updates,
@@ -1300,9 +1257,8 @@ export class PersonalService {
 
       await updateDoc(doc(db, 'companies', companyId, 'shifts', shiftId), updateData);
 
-      console.log('✅ PersonalService: Schicht aktualisiert');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Aktualisieren der Schicht:', error);
+
       throw error;
     }
   }
@@ -1312,13 +1268,11 @@ export class PersonalService {
    */
   static async deleteShift(companyId: string, shiftId: string): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Lösche Schicht:', shiftId);
 
       await deleteDoc(doc(db, 'companies', companyId, 'shifts', shiftId));
 
-      console.log('✅ PersonalService: Schicht gelöscht');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Löschen der Schicht:', error);
+
       throw error;
     }
   }
@@ -1333,12 +1287,6 @@ export class PersonalService {
     date: string
   ): Promise<boolean> {
     try {
-      console.log(
-        '🔍 PersonalService: Prüfe Verfügbarkeit für Mitarbeiter:',
-        employeeId,
-        'am',
-        date
-      );
 
       // Prüfe genehmigte Abwesenheitsanträge
       const absenceRequests = await this.getAbsenceRequests(companyId);
@@ -1351,7 +1299,7 @@ export class PersonalService {
       );
 
       if (employeeAbsences.length > 0) {
-        console.log('❌ PersonalService: Mitarbeiter ist abwesend:', employeeAbsences[0].type);
+
         return false;
       }
 
@@ -1365,17 +1313,13 @@ export class PersonalService {
       );
 
       if (employeeShift) {
-        console.log(
-          '❌ PersonalService: Mitarbeiter hat Abwesenheits-Schicht:',
-          employeeShift.status
-        );
+
         return false;
       }
 
-      console.log('✅ PersonalService: Mitarbeiter ist verfügbar');
       return true;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler bei Verfügbarkeitsprüfung:', error);
+
       throw error;
     }
   }
@@ -1385,7 +1329,6 @@ export class PersonalService {
    */
   static async getAvailableEmployees(companyId: string, date: string): Promise<Employee[]> {
     try {
-      console.log('🔍 PersonalService: Lade verfügbare Mitarbeiter für:', date);
 
       const allEmployees = await this.getEmployees(companyId);
       const availableEmployees: Employee[] = [];
@@ -1396,12 +1339,9 @@ export class PersonalService {
         }
       }
 
-      console.log(
-        `✅ PersonalService: ${availableEmployees.length} verfügbare Mitarbeiter gefunden`
-      );
       return availableEmployees;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden verfügbarer Mitarbeiter:', error);
+
       throw error;
     }
   }
@@ -1418,7 +1358,6 @@ export class PersonalService {
     endDate?: Date
   ): Promise<TimeEntry[]> {
     try {
-      console.log('🔄 PersonalService: Lade Zeiteinträge für Company:', companyId);
 
       let timeQuery = query(
         collection(db, 'companies', companyId, 'timeEntries'),
@@ -1456,10 +1395,9 @@ export class PersonalService {
         }
       });
 
-      console.log(`✅ PersonalService: ${timeEntries.length} Zeiteinträge geladen`);
       return timeEntries;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Zeiteinträge:', error);
+
       throw error;
     }
   }
@@ -1471,7 +1409,6 @@ export class PersonalService {
     timeEntry: Omit<TimeEntry, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log('🔄 PersonalService: Erstelle neuen Zeiteintrag');
 
       const entryData = {
         ...timeEntry,
@@ -1484,10 +1421,9 @@ export class PersonalService {
         entryData
       );
 
-      console.log('✅ PersonalService: Zeiteintrag erstellt mit ID:', docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Erstellen des Zeiteintrags:', error);
+
       throw error;
     }
   }
@@ -1501,7 +1437,6 @@ export class PersonalService {
     description: string = 'Arbeitszeit'
   ): Promise<string> {
     try {
-      console.log('🔄 PersonalService: Starte Timer für Mitarbeiter:', employeeId);
 
       // Prüfe ob bereits ein aktiver Timer läuft
       const activeTimerQuery = query(
@@ -1529,10 +1464,10 @@ export class PersonalService {
       };
 
       const timerId = await this.createTimeEntry(timeEntry);
-      console.log('✅ PersonalService: Timer gestartet mit ID:', timerId);
+
       return timerId;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Starten des Timers:', error);
+
       throw error;
     }
   }
@@ -1542,7 +1477,6 @@ export class PersonalService {
    */
   static async stopTimer(companyId: string, employeeId: string): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Stoppe Timer für Mitarbeiter:', employeeId);
 
       // Finde aktiven Timer
       const activeTimerQuery = query(
@@ -1574,9 +1508,8 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Timer gestoppt');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Stoppen des Timers:', error);
+
       throw error;
     }
   }
@@ -1590,7 +1523,6 @@ export class PersonalService {
     updates: Partial<TimeEntry>
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Aktualisiere Zeiteintrag:', entryId);
 
       const updateData = {
         ...updates,
@@ -1599,9 +1531,8 @@ export class PersonalService {
 
       await updateDoc(doc(db, 'companies', companyId, 'timeEntries', entryId), updateData);
 
-      console.log('✅ PersonalService: Zeiteintrag aktualisiert');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Aktualisieren des Zeiteintrags:', error);
+
       throw error;
     }
   }
@@ -1611,13 +1542,11 @@ export class PersonalService {
    */
   static async deleteTimeEntry(companyId: string, entryId: string): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Lösche Zeiteintrag:', entryId);
 
       await deleteDoc(doc(db, 'companies', companyId, 'timeEntries', entryId));
 
-      console.log('✅ PersonalService: Zeiteintrag gelöscht');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Löschen des Zeiteintrags:', error);
+
       throw error;
     }
   }
@@ -1632,7 +1561,6 @@ export class PersonalService {
     period?: { year: number; month: number }
   ): Promise<Payroll[]> {
     try {
-      console.log('🔄 PersonalService: Lade Gehaltsabrechnungen für Company:', companyId);
 
       let payrollQuery = query(
         collection(db, 'companies', companyId, 'payrolls'),
@@ -1662,10 +1590,9 @@ export class PersonalService {
         } as Payroll);
       });
 
-      console.log(`✅ PersonalService: ${payrolls.length} Gehaltsabrechnungen geladen`);
       return payrolls;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Gehaltsabrechnungen:', error);
+
       throw error;
     }
   }
@@ -1679,7 +1606,6 @@ export class PersonalService {
     period: { year: number; month: number }
   ): Promise<string> {
     try {
-      console.log('🔄 PersonalService: Erstelle Gehaltsabrechnung für:', employeeId);
 
       // Lade Mitarbeiterdaten
       const employees = await this.getEmployees(companyId);
@@ -1742,10 +1668,9 @@ export class PersonalService {
 
       const docRef = await addDoc(collection(db, 'companies', companyId, 'payrolls'), payrollData);
 
-      console.log('✅ PersonalService: Gehaltsabrechnung erstellt mit ID:', docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Erstellen der Gehaltsabrechnung:', error);
+
       throw error;
     }
   }
@@ -1759,7 +1684,6 @@ export class PersonalService {
     status: 'DRAFT' | 'CALCULATED' | 'APPROVED' | 'SENT' | 'PAID'
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Aktualisiere Payroll Status:', payrollId, status);
 
       const updateData: any = {
         status,
@@ -1772,9 +1696,8 @@ export class PersonalService {
 
       await updateDoc(doc(db, 'companies', companyId, 'payrolls', payrollId), updateData);
 
-      console.log('✅ PersonalService: Payroll Status aktualisiert');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Aktualisieren des Payroll Status:', error);
+
       throw error;
     }
   }
@@ -1786,7 +1709,6 @@ export class PersonalService {
    */
   static async getAbsenceRequests(companyId: string): Promise<AbsenceRequest[]> {
     try {
-      console.log('🔄 PersonalService: Lade Abwesenheitsanträge für Company:', companyId);
 
       const requestsQuery = query(
         collection(db, 'companies', companyId, 'absenceRequests'),
@@ -1804,10 +1726,9 @@ export class PersonalService {
         } as AbsenceRequest);
       });
 
-      console.log(`✅ PersonalService: ${requests.length} Abwesenheitsanträge geladen`);
       return requests;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Abwesenheitsanträge:', error);
+
       throw error;
     }
   }
@@ -1817,7 +1738,6 @@ export class PersonalService {
    */
   static async createAbsenceRequest(request: Omit<AbsenceRequest, 'id'>): Promise<string> {
     try {
-      console.log('🔄 PersonalService: Erstelle Abwesenheitsantrag');
 
       const docRef = await addDoc(
         collection(db, 'companies', request.companyId, 'absenceRequests'),
@@ -1829,10 +1749,9 @@ export class PersonalService {
       // Automatisch Dienstplan-Einträge für die Abwesenheit erstellen
       await this.createAbsenceShifts(request, requestId);
 
-      console.log('✅ PersonalService: Abwesenheitsantrag erstellt mit ID:', requestId);
       return requestId;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Erstellen des Abwesenheitsantrags:', error);
+
       throw error;
     }
   }
@@ -1845,7 +1764,6 @@ export class PersonalService {
     requestId: string
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Erstelle Dienstplan-Einträge für Abwesenheit');
 
       const startDate = new Date(request.startDate);
       const endDate = new Date(request.endDate);
@@ -1900,9 +1818,8 @@ export class PersonalService {
         });
       }
 
-      console.log('✅ PersonalService: Dienstplan-Einträge für Abwesenheit erstellt');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Erstellen der Dienstplan-Einträge:', error);
+
       throw error;
     }
   }
@@ -1930,7 +1847,6 @@ export class PersonalService {
     newStatus: 'APPROVED' | 'REJECTED'
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Aktualisiere Dienstplan-Einträge für Abwesenheitsantrag');
 
       // Lade alle Schichten, die zu diesem Abwesenheitsantrag gehören
       const shiftsQuery = query(
@@ -1957,12 +1873,8 @@ export class PersonalService {
         }
       }
 
-      console.log('✅ PersonalService: Dienstplan-Einträge aktualisiert');
     } catch (error) {
-      console.error(
-        '❌ PersonalService: Fehler beim Aktualisieren der Dienstplan-Einträge:',
-        error
-      );
+
       throw error;
     }
   }
@@ -1978,7 +1890,6 @@ export class PersonalService {
     notes?: string
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Bearbeite Abwesenheitsantrag:', requestId, status);
 
       const updateData = {
         status,
@@ -1992,9 +1903,8 @@ export class PersonalService {
       // Aktualisiere entsprechende Dienstplan-Einträge
       await this.updateAbsenceShifts(companyId, requestId, status);
 
-      console.log('✅ PersonalService: Abwesenheitsantrag bearbeitet');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Bearbeiten des Abwesenheitsantrags:', error);
+
       throw error;
     }
   }
@@ -2020,12 +1930,8 @@ export class PersonalService {
 
       await updateDoc(doc(db, 'companies', companyId, 'absenceRequests', requestId), updateData);
 
-      console.log('✅ PersonalService: Abwesenheitsantrag aktualisiert:', requestId);
     } catch (error) {
-      console.error(
-        '❌ PersonalService: Fehler beim Aktualisieren des Abwesenheitsantrags:',
-        error
-      );
+
       throw error;
     }
   }
@@ -2086,7 +1992,7 @@ export class PersonalService {
 
       return csvRows.join('\n');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Abwesenheits-Export:', error);
+
       throw error;
     }
   }
@@ -2141,7 +2047,7 @@ export class PersonalService {
 
       return csvRows.join('\n');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Zeiterfassung-Export:', error);
+
       throw error;
     }
   }
@@ -2190,7 +2096,7 @@ export class PersonalService {
 
       return csvRows.join('\n');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Dienstplan-Export:', error);
+
       throw error;
     }
   }
@@ -2207,7 +2113,7 @@ export class PersonalService {
 
       return employee;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden des Mitarbeiters:', error);
+
       throw error;
     }
   }
@@ -2218,7 +2124,6 @@ export class PersonalService {
     feedback: Omit<EmployeeFeedback, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log('💾 PersonalService: Speichere Feedback für Mitarbeiter:', feedback.employeeId);
 
       const feedbackData: EmployeeFeedback = {
         ...feedback,
@@ -2231,11 +2136,10 @@ export class PersonalService {
         collection(db, `companies/${companyId}/employee_feedback`),
         feedbackData
       );
-      console.log('✅ PersonalService: Feedback gespeichert mit ID:', docRef.id);
 
       return docRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Speichern des Feedbacks:', error);
+
       throw error;
     }
   }
@@ -2246,7 +2150,6 @@ export class PersonalService {
     employeeId: string
   ): Promise<EmployeeFeedback[]> {
     try {
-      console.log('🔄 PersonalService: Lade Feedback für Mitarbeiter:', employeeId);
 
       const feedbackRef = collection(db, `companies/${companyId}/employee_feedback`);
       const q = query(feedbackRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
@@ -2261,10 +2164,9 @@ export class PersonalService {
         } as EmployeeFeedback);
       });
 
-      console.log(`✅ PersonalService: ${feedback.length} Feedback-Einträge geladen`);
       return feedback;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden des Feedbacks:', error);
+
       throw error;
     }
   }
@@ -2276,7 +2178,6 @@ export class PersonalService {
     updates: Partial<EmployeeFeedback>
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Aktualisiere Feedback:', feedbackId);
 
       const feedbackDoc = doc(db, `companies/${companyId}/employee_feedback`, feedbackId);
       await updateDoc(feedbackDoc, {
@@ -2284,9 +2185,8 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Feedback aktualisiert');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Aktualisieren des Feedbacks:', error);
+
       throw error;
     }
   }
@@ -2294,14 +2194,12 @@ export class PersonalService {
   // Feedback löschen
   static async deleteFeedback(companyId: string, feedbackId: string): Promise<void> {
     try {
-      console.log('🗑️ PersonalService: Lösche Feedback:', feedbackId);
 
       const feedbackDoc = doc(db, `companies/${companyId}/employee_feedback`, feedbackId);
       await deleteDoc(feedbackDoc);
 
-      console.log('✅ PersonalService: Feedback gelöscht');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Löschen des Feedbacks:', error);
+
       throw error;
     }
   }
@@ -2314,7 +2212,6 @@ export class PersonalService {
     document: Omit<EmployeeDocument, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log('📄 PersonalService: Füge Dokument hinzu für Mitarbeiter:', document.employeeId);
 
       const documentsRef = collection(db, `companies/${companyId}/employee_documents`);
       const docRef = await addDoc(documentsRef, {
@@ -2323,10 +2220,9 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Dokument hinzugefügt');
       return docRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Hinzufügen des Dokuments:', error);
+
       throw error;
     }
   }
@@ -2337,7 +2233,6 @@ export class PersonalService {
     employeeId: string
   ): Promise<EmployeeDocument[]> {
     try {
-      console.log('🔄 PersonalService: Lade Dokumente für Mitarbeiter:', employeeId);
 
       const documentsRef = collection(db, `companies/${companyId}/employee_documents`);
       const q = query(
@@ -2356,10 +2251,9 @@ export class PersonalService {
         } as EmployeeDocument);
       });
 
-      console.log(`✅ PersonalService: ${documents.length} Dokumente geladen`);
       return documents;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Dokumente:', error);
+
       throw error;
     }
   }
@@ -2367,14 +2261,12 @@ export class PersonalService {
   // Dokument löschen
   static async deleteEmployeeDocument(companyId: string, documentId: string): Promise<void> {
     try {
-      console.log('🗑️ PersonalService: Lösche Dokument:', documentId);
 
       const documentDoc = doc(db, `companies/${companyId}/employee_documents`, documentId);
       await deleteDoc(documentDoc);
 
-      console.log('✅ PersonalService: Dokument gelöscht');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Löschen des Dokuments:', error);
+
       throw error;
     }
   }
@@ -2387,10 +2279,6 @@ export class PersonalService {
     leave: Omit<EmployeeLeave, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log(
-        '🏖️ PersonalService: Füge Urlaubsantrag hinzu für Mitarbeiter:',
-        leave.employeeId
-      );
 
       const leavesRef = collection(db, `companies/${companyId}/employee_leaves`);
       const leaveRef = await addDoc(leavesRef, {
@@ -2399,10 +2287,9 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Urlaubsantrag hinzugefügt');
       return leaveRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Hinzufügen des Urlaubsantrags:', error);
+
       throw error;
     }
   }
@@ -2410,7 +2297,6 @@ export class PersonalService {
   // Urlaub/Abwesenheiten für einen Mitarbeiter abrufen
   static async getEmployeeLeaves(companyId: string, employeeId: string): Promise<EmployeeLeave[]> {
     try {
-      console.log('🔄 PersonalService: Lade Urlaube für Mitarbeiter:', employeeId);
 
       const leavesRef = collection(db, `companies/${companyId}/employee_leaves`);
       const q = query(
@@ -2429,10 +2315,9 @@ export class PersonalService {
         } as EmployeeLeave);
       });
 
-      console.log(`✅ PersonalService: ${leaves.length} Urlaube geladen`);
       return leaves;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Urlaube:', error);
+
       throw error;
     }
   }
@@ -2445,7 +2330,6 @@ export class PersonalService {
     approvedBy?: string
   ): Promise<void> {
     try {
-      console.log('🔄 PersonalService: Aktualisiere Urlaubsstatus:', leaveId, status);
 
       const leaveDoc = doc(db, `companies/${companyId}/employee_leaves`, leaveId);
       await updateDoc(leaveDoc, {
@@ -2455,9 +2339,8 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Urlaubsstatus aktualisiert');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Aktualisieren des Urlaubsstatus:', error);
+
       throw error;
     }
   }
@@ -2470,10 +2353,6 @@ export class PersonalService {
     timeEntry: Omit<TimeTracking, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log(
-        '⏰ PersonalService: Füge Zeiterfassung hinzu für Mitarbeiter:',
-        timeEntry.employeeId
-      );
 
       const timeRef = collection(db, `companies/${companyId}/time_tracking`);
       const entryRef = await addDoc(timeRef, {
@@ -2482,10 +2361,9 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Zeiterfassung hinzugefügt');
       return entryRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Hinzufügen der Zeiterfassung:', error);
+
       throw error;
     }
   }
@@ -2498,7 +2376,6 @@ export class PersonalService {
     endDate?: string
   ): Promise<TimeTracking[]> {
     try {
-      console.log('🔄 PersonalService: Lade Zeiterfassungen für Mitarbeiter:', employeeId);
 
       const timeRef = collection(db, `companies/${companyId}/time_tracking`);
       const q = query(timeRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
@@ -2524,10 +2401,9 @@ export class PersonalService {
         }
       });
 
-      console.log(`✅ PersonalService: ${timeEntries.length} Zeiterfassungen geladen`);
       return timeEntries;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Zeiterfassungen:', error);
+
       throw error;
     }
   }
@@ -2535,13 +2411,11 @@ export class PersonalService {
   // Zeiterfassung löschen
   static async deleteTimeTracking(companyId: string, timeTrackingId: string): Promise<void> {
     try {
-      console.log('🗑️ PersonalService: Lösche Zeiterfassung:', timeTrackingId);
 
       await deleteDoc(doc(db, `companies/${companyId}/time_tracking`, timeTrackingId));
 
-      console.log('✅ PersonalService: Zeiterfassung gelöscht');
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Löschen der Zeiterfassung:', error);
+
       throw error;
     }
   }
@@ -2554,10 +2428,6 @@ export class PersonalService {
     review: Omit<PerformanceReview, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log(
-        '📊 PersonalService: Füge Leistungsbeurteilung hinzu für Mitarbeiter:',
-        review.employeeId
-      );
 
       const reviewsRef = collection(db, `companies/${companyId}/performance_reviews`);
       const reviewRef = await addDoc(reviewsRef, {
@@ -2566,10 +2436,9 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Leistungsbeurteilung hinzugefügt');
       return reviewRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Hinzufügen der Leistungsbeurteilung:', error);
+
       throw error;
     }
   }
@@ -2580,7 +2449,6 @@ export class PersonalService {
     employeeId: string
   ): Promise<PerformanceReview[]> {
     try {
-      console.log('🔄 PersonalService: Lade Leistungsbeurteilungen für Mitarbeiter:', employeeId);
 
       const reviewsRef = collection(db, `companies/${companyId}/performance_reviews`);
       const q = query(
@@ -2599,10 +2467,9 @@ export class PersonalService {
         } as PerformanceReview);
       });
 
-      console.log(`✅ PersonalService: ${reviews.length} Leistungsbeurteilungen geladen`);
       return reviews;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Leistungsbeurteilungen:', error);
+
       throw error;
     }
   }
@@ -2615,10 +2482,6 @@ export class PersonalService {
     action: Omit<DisciplinaryAction, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log(
-        '⚠️ PersonalService: Füge Disziplinarmaßnahme hinzu für Mitarbeiter:',
-        action.employeeId
-      );
 
       const actionsRef = collection(db, `companies/${companyId}/disciplinary_actions`);
       const actionRef = await addDoc(actionsRef, {
@@ -2627,10 +2490,9 @@ export class PersonalService {
         updatedAt: new Date(),
       });
 
-      console.log('✅ PersonalService: Disziplinarmaßnahme hinzugefügt');
       return actionRef.id;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Hinzufügen der Disziplinarmaßnahme:', error);
+
       throw error;
     }
   }
@@ -2641,7 +2503,6 @@ export class PersonalService {
     employeeId: string
   ): Promise<DisciplinaryAction[]> {
     try {
-      console.log('🔄 PersonalService: Lade Disziplinarmaßnahmen für Mitarbeiter:', employeeId);
 
       const actionsRef = collection(db, `companies/${companyId}/disciplinary_actions`);
       const q = query(actionsRef, where('employeeId', '==', employeeId), orderBy('date', 'desc'));
@@ -2656,10 +2517,9 @@ export class PersonalService {
         } as DisciplinaryAction);
       });
 
-      console.log(`✅ PersonalService: ${actions.length} Disziplinarmaßnahmen geladen`);
       return actions;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Laden der Disziplinarmaßnahmen:', error);
+
       throw error;
     }
   }
@@ -2675,7 +2535,6 @@ export class PersonalService {
     onError?: (error: Error) => void
   ): () => void {
     try {
-      console.log('🔄 PersonalService: Starte Realtime-Subscription für Mitarbeiter');
 
       const q = query(
         collection(db, 'companies', companyId, 'employees'),
@@ -2694,21 +2553,17 @@ export class PersonalService {
             } as Employee);
           });
 
-          console.log(`📊 PersonalService: Realtime-Update - ${employees.length} Mitarbeiter`);
           onUpdate(employees);
         },
         error => {
-          console.error('❌ PersonalService: Realtime-Fehler bei Mitarbeitern:', error);
+
           onError?.(error as Error);
         }
       );
 
       return unsubscribe;
     } catch (error) {
-      console.error(
-        '❌ PersonalService: Fehler beim Erstellen der Mitarbeiter-Subscription:',
-        error
-      );
+
       onError?.(error as Error);
       return () => {};
     }
@@ -2723,7 +2578,6 @@ export class PersonalService {
     onError?: (error: Error) => void
   ): () => void {
     try {
-      console.log('🔄 PersonalService: Starte Realtime-Subscription für Schichten');
 
       // Lade Schichten für aktuellen und nächsten Monat
       const now = new Date();
@@ -2753,18 +2607,17 @@ export class PersonalService {
             } as Shift);
           });
 
-          console.log(`📅 PersonalService: Realtime-Update - ${shifts.length} Schichten`);
           onUpdate(shifts);
         },
         error => {
-          console.error('❌ PersonalService: Realtime-Fehler bei Schichten:', error);
+
           onError?.(error as Error);
         }
       );
 
       return unsubscribe;
     } catch (error) {
-      console.error('❌ PersonalService: Fehler beim Erstellen der Schichten-Subscription:', error);
+
       onError?.(error as Error);
       return () => {};
     }
@@ -2779,7 +2632,6 @@ export class PersonalService {
     onError?: (error: Error) => void
   ): () => void {
     try {
-      console.log('🔄 PersonalService: Starte Realtime-Subscription für Abwesenheitsanträge');
 
       const q = query(
         collection(db, 'companies', companyId, 'absenceRequests'),
@@ -2798,23 +2650,17 @@ export class PersonalService {
             } as AbsenceRequest);
           });
 
-          console.log(
-            `🏖️ PersonalService: Realtime-Update - ${requests.length} Abwesenheitsanträge`
-          );
           onUpdate(requests);
         },
         error => {
-          console.error('❌ PersonalService: Realtime-Fehler bei Abwesenheitsanträgen:', error);
+
           onError?.(error as Error);
         }
       );
 
       return unsubscribe;
     } catch (error) {
-      console.error(
-        '❌ PersonalService: Fehler beim Erstellen der Abwesenheitsanträge-Subscription:',
-        error
-      );
+
       onError?.(error as Error);
       return () => {};
     }

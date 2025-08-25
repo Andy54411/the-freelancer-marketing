@@ -14,8 +14,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Company ID required' }, { status: 400 });
     }
 
-    console.log('🔍 Checking DATEV tokens for company:', companyId);
-
     // Check if tokens exist in Firestore
     const tokenDoc = await db
       .collection('users')
@@ -70,7 +68,6 @@ export async function GET(request: NextRequest) {
         : ['Token appears valid', 'Try using the token for API calls'],
     });
   } catch (error) {
-    console.error('DATEV token debug failed:', error);
 
     return NextResponse.json(
       {

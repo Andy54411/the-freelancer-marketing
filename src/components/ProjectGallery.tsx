@@ -38,7 +38,7 @@ export default function ProjectGallery({ userId }: Props) {
           }
         }
       } catch (err) {
-        console.error('Fehler beim Laden der Projektbilder:', err);
+
         setImages([]);
       }
     };

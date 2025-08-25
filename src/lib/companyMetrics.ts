@@ -61,7 +61,7 @@ export async function calculateCompanyMetrics(companyUid: string): Promise<Compa
 
     return metrics;
   } catch (error) {
-    console.error('Fehler beim Berechnen der Company Metriken:', error);
+
     return getDefaultMetrics();
   }
 }
@@ -232,7 +232,7 @@ export async function calculateOrderMetrics(companyUid: string): Promise<OrderMe
 
     return metrics;
   } catch (error) {
-    console.error('Fehler beim Berechnen der Order Metriken:', error);
+
     return { completed: 0, inProgress: 0, cancelled: 0, totalRevenue: 0 };
   }
 }

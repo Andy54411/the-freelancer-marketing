@@ -36,7 +36,7 @@ export function BaseHeader({ currentUid, menuItems = [], children }: BaseHeaderP
       await signOut(auth);
       window.location.href = '/login';
     } catch (error) {
-      console.error('Logout fehlgeschlagen:', error);
+
     }
   };
 

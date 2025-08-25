@@ -76,7 +76,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
         }
       },
       error => {
-        console.error('Fehler beim Chat-Listener:', error);
+
       }
     );
 
@@ -97,7 +97,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
         setLoading(false); // Set loading to false after first successful fetch
       },
       error => {
-        console.error('Fehler beim Laden der Chat-Nachrichten:', error);
+
         setChatError('Nachrichten konnten nicht geladen werden.');
         setLoading(false);
       }
@@ -108,7 +108,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
       try {
         const docSnap = await getDoc(chatDocRef);
         if (!docSnap.exists()) {
-          console.log(`[SupportChat] Chat-Dokument für ${chatId} existiert nicht. Erstelle es...`);
+
           // KORREKTUR: Dokumentenstruktur an die 'supportChats'-Regeln anpassen.
           await setDoc(chatDocRef, {
             userId: currentUser.uid, // Wichtig für die Sicherheitsregeln
@@ -144,15 +144,13 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           // KORREKTUR: Setze den Status bei JEDEM Öffnen des Chats auf 'bot',
           // um sicherzustellen, dass jede neue Konversation mit dem Bot beginnt.
           if (chatData.status !== 'bot') {
-            console.log(
-              `[SupportChat] Chat-Dokument ${chatId} existiert, aber Status ist '${chatData.status || 'undefined'}'. Setze auf 'bot' zurück...`
-            );
+
             await updateDoc(chatDocRef, { status: 'bot' });
           }
         }
         setIsChatReady(true); // Chat ist jetzt initialisiert und bereit zum Senden.
       } catch (error) {
-        console.error('Fehler beim Sicherstellen des Chat-Dokuments:', error);
+
         setChatError('Chat konnte nicht initialisiert werden.');
         setIsChatReady(false);
       }
@@ -303,7 +301,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
               }
             }
           } catch (geminiError) {
-            console.error('Fehler bei Gemini API:', geminiError);
+
             // Fallback: Setze Status auf "human" für manuelle Bearbeitung
             await updateDoc(chatDocRef, {
               status: 'human',
@@ -313,7 +311,7 @@ const SupportChatInterface: React.FC<SupportChatInterfaceProps> = ({ onClose }) 
           }
         }
       } catch (error) {
-        console.error('Fehler beim Senden der Nachricht: ', error);
+
         setChatError('Nachricht konnte nicht gesendet werden.');
       } finally {
         setIsSending(false);

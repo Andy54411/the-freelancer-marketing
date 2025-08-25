@@ -6,18 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Calendar, 
-  Clock, 
-  Coffee, 
-  Plane, 
-  Plus, 
-  Edit2, 
-  Trash2, 
-  CalendarDays, 
+import {
+  Calendar,
+  Clock,
+  Coffee,
+  Plane,
+  Plus,
+  Edit2,
+  Trash2,
+  CalendarDays,
   AlertCircle,
   CheckCircle,
-  ArrowRight 
+  ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PersonalService, TimeTracking, Shift } from '@/services/personalService';
@@ -70,7 +70,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       const entries = await PersonalService.getEmployeeTimeTracking(companyId, employeeId);
       setTimeEntries(entries);
     } catch (error) {
-      console.error('Fehler beim Laden der Zeiterfassung:', error);
+
       toast.error('Fehler beim Laden der Zeiteinträge');
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       const today = new Date();
       const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
       const endOfWeek = new Date(today.setDate(today.getDate() - today.getDay() + 6));
-      
+
       const shiftsData = await PersonalService.getShifts(companyId, startOfWeek, endOfWeek);
       const employeeShifts = shiftsData.filter(shift => shift.employeeId === employeeId);
       setShifts(employeeShifts);
@@ -102,7 +102,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
         }));
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Schichten:', error);
+
     }
   };
 
@@ -172,7 +172,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
 
       toast.success('Zeiteintrag erfolgreich hinzugefügt');
     } catch (error) {
-      console.error('Fehler beim Hinzufügen:', error);
+
       toast.error('Fehler beim Hinzufügen des Zeiteintrags');
     } finally {
       setLoading(false);
@@ -185,7 +185,7 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
       setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
       toast.success('Zeiteintrag gelöscht');
     } catch (error) {
-      console.error('Fehler beim Löschen:', error);
+
       toast.error('Fehler beim Löschen des Zeiteintrags');
     }
   };
@@ -254,8 +254,8 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                   </p>
                 </div>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={useShiftTime}
                 className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
@@ -287,12 +287,12 @@ const TimeTrackingTab: React.FC<TimeTrackingTabProps> = ({ employeeId, companyId
                       {formatTime(shift.startTime)} - {formatTime(shift.endTime)} • {shift.position}
                     </p>
                   </div>
-                  <Badge 
+                  <Badge
                     variant={shift.status === 'CONFIRMED' ? 'default' : 'secondary'}
                     className={shift.status === 'CONFIRMED' ? 'bg-[#14ad9f] hover:bg-[#129488]' : ''}
                   >
-                    {shift.status === 'PLANNED' ? 'Geplant' : 
-                     shift.status === 'CONFIRMED' ? 'Bestätigt' : 
+                    {shift.status === 'PLANNED' ? 'Geplant' :
+                     shift.status === 'CONFIRMED' ? 'Bestätigt' :
                      shift.status === 'ABSENT' ? 'Abwesend' : 'Krank'}
                   </Badge>
                 </div>

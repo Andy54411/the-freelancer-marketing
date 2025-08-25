@@ -96,7 +96,7 @@ export default function AuthDebugPage() {
 
       setDebugInfo(info);
     } catch (error: any) {
-      console.error('Debug test failed:', error);
+
       setDebugInfo({
         authContext: { error: error.message },
         firebaseAuth: { error: error.message },

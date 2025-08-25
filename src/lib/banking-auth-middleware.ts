@@ -22,7 +22,6 @@ export async function getOrCreateFinAPIUser(
   userEmail: string
 ): Promise<BankingAuthResult> {
   try {
-    console.log('🔐 Banking Auth Middleware: Creating/Getting finAPI user for:', firebaseUid);
 
     // Verwende Server-Side User Auth Service
     const finapiUser = await finapiUserAuthServer.getOrCreateFinAPIUser(firebaseUid, userEmail);
@@ -50,7 +49,7 @@ export async function getOrCreateFinAPIUser(
       };
     }
   } catch (error: any) {
-    console.error('❌ Banking Auth Middleware Error:', error);
+
     return {
       success: false,
       error: error.message || 'Unknown authentication error',
@@ -66,7 +65,7 @@ export async function getFinAPIUserToken(firebaseUid: string): Promise<string | 
   try {
     return await finapiUserAuthServer.getUserAccessToken(firebaseUid);
   } catch (error: any) {
-    console.error('❌ Error getting finAPI user token:', error);
+
     return null;
   }
 }
@@ -92,7 +91,7 @@ export async function deactivateFinAPIUser(firebaseUid: string): Promise<boolean
   try {
     return await finapiUserAuthServer.deactivateFinAPIUser(firebaseUid);
   } catch (error: any) {
-    console.error('❌ Error deactivating finAPI user:', error);
+
     return false;
   }
 }

@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Analytics error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Analytics-Daten',
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
       message: 'Metric erfolgreich gesendet',
     });
   } catch (error) {
-    console.error('Custom metric error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Senden der Metric',
@@ -149,7 +149,7 @@ async function verifyAdminAuth(
         return { isValid: true, userId: decoded.userId };
       }
     } catch (error) {
-      console.error('JWT Bearer Token invalid:', error);
+
     }
   }
 
@@ -173,7 +173,7 @@ async function verifyAdminAuth(
           return { isValid: true, userId: decoded.userId };
         }
       } catch (error) {
-        console.error('JWT Cookie Token invalid:', error);
+
       }
     }
   }
@@ -188,18 +188,12 @@ async function getTicketsForAnalytics(timeRange: string, category?: string, prio
   // Verwende AWS DynamoDB direkt über AWSTicketStorage
   const { AWSTicketStorage } = await import('@/lib/aws-ticket-storage');
 
-  console.log(
-    `Loading tickets for analytics from AWS DynamoDB, timeRange: ${timeRange}, cutoff: ${cutoffDate}`
-  );
-
   const tickets = await AWSTicketStorage.getTickets({
     startDate: cutoffDate,
     category,
     priority,
     limit: 1000, // Für Analytics alle Tickets laden
   });
-
-  console.log(`Loaded ${tickets.length} tickets from DynamoDB for analytics`);
 
   return tickets;
 }
@@ -427,14 +421,9 @@ function calculateFirstResponseTime(tickets: any[]): number {
 async function sendMetricsToCloudWatch(metrics: any, namespace: string = 'Taskilo/Tickets') {
   try {
     // In einer vollständigen Implementierung würden hier CloudWatch Metrics gesendet
-    console.log('Metrics would be sent to CloudWatch:', {
-      namespace,
-      totalTickets: metrics.totalTickets,
-      slaCompliance: metrics.performanceMetrics.slaCompliance,
-      resolutionRate: metrics.performanceMetrics.resolutionRate,
-    });
+
   } catch (error) {
-    console.error('Error sending metrics to CloudWatch:', error);
+
   }
 }
 
@@ -466,7 +455,7 @@ async function getPerformanceMetrics(timeRange: string) {
       resolutionRate: 0, // Wird aus den Ticket-Daten berechnet
     };
   } catch (error) {
-    console.error('Error getting performance metrics:', error);
+
     return {
       slaCompliance: 0,
       firstResponseTime: 0,
@@ -483,7 +472,7 @@ async function sendCustomMetric(
 ) {
   // CloudWatch Metrics würden hier implementiert werden
   // Für jetzt loggen wir nur
-  console.log(`Metric: ${metricName}, Value: ${value}, Unit: ${unit}`, dimensions);
+
 }
 
 // AWS Enhanced Metrics Funktion
@@ -504,7 +493,7 @@ async function getAWSEnhancedMetrics(tickets: any[]) {
       cloudWatchInsights,
     };
   } catch (error) {
-    console.error('AWS Enhanced Metrics Error:', error);
+
     return {
       emailStats: {
         quotaUsed: 0,
@@ -543,7 +532,7 @@ async function getSESStatistics() {
       complaintRate: latestStats?.Complaints || 0,
     };
   } catch (error) {
-    console.error('SES Statistics Error:', error);
+
     return {
       quotaUsed: 0,
       quotaRemaining: 0,
@@ -583,7 +572,7 @@ async function getCloudWatchInsights() {
     const logGroupExists = logGroupsResult.logGroups?.some(lg => lg.logGroupName === logGroupName);
 
     if (!logGroupExists) {
-      console.log(`Log Group ${logGroupName} nicht gefunden`);
+
       return {
         logGroups: [],
         totalLogEvents: 0,
@@ -654,7 +643,7 @@ async function getCloudWatchInsights() {
       };
     }
   } catch (error) {
-    console.error('CloudWatch Insights Error:', error);
+
     return {
       logGroups: [],
       totalLogEvents: 0,

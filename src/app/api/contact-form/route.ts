@@ -80,12 +80,6 @@ export async function POST(request: NextRequest) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    console.log('📧 Kontaktformular-Nachricht wird gesendet...', {
-      from: email,
-      to: 'andy.staudinger@taskilo.de',
-      subject,
-    });
-
     // E-Mail an Andy Staudinger senden
     const emailResponse = await resend.emails.send({
       from: 'Taskilo Kontaktformular <noreply@taskilo.de>',
@@ -97,19 +91,19 @@ export async function POST(request: NextRequest) {
           <h2 style="color: #14ad9f; border-bottom: 2px solid #14ad9f; padding-bottom: 10px;">
             Neue Nachricht über Taskilo Kontaktformular
           </h2>
-          
+
           <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="color: #333; margin-top: 0;">Kontaktdaten:</h3>
             <p><strong>Name:</strong> ${name}</p>
             <p><strong>E-Mail:</strong> <a href="mailto:${email}">${email}</a></p>
             <p><strong>Betreff:</strong> ${subject}</p>
           </div>
-          
+
           <div style="background-color: white; padding: 20px; border: 1px solid #e9ecef; border-radius: 8px;">
             <h3 style="color: #333; margin-top: 0;">Nachricht:</h3>
             <p style="line-height: 1.6; white-space: pre-wrap;">${message}</p>
           </div>
-          
+
           <div style="margin-top: 20px; padding: 15px; background-color: #e7f3ff; border-radius: 8px;">
             <p style="margin: 0; font-size: 14px; color: #666;">
               <strong>Hinweis:</strong> Diese Nachricht wurde über das Kontaktformular auf taskilo.de gesendet.
@@ -122,7 +116,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (emailResponse.error) {
-      console.error('❌ Resend Fehler:', emailResponse.error);
+
       return NextResponse.json(
         {
           error: 'E-Mail konnte nicht gesendet werden',
@@ -132,15 +126,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ Kontaktformular-E-Mail erfolgreich gesendet:', emailResponse.data?.id);
-
     return NextResponse.json({
       success: true,
       message: 'Nachricht erfolgreich gesendet',
       emailId: emailResponse.data?.id,
     });
   } catch (error) {
-    console.error('❌ Fehler beim Senden der Kontaktformular-E-Mail:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',

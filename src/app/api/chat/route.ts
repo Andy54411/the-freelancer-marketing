@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     if (!apiKey) {
       // Log the error on the server for debugging
-      console.error('Fehler: GEMINI_API_KEY ist in den Umgebungsvariablen nicht gesetzt.');
+
       // Return a specific error message to the client
       return NextResponse.json(
         { error: 'Die Server-Konfiguration ist unvollständig. Der API-Schlüssel fehlt.' },
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
           message: 'Ihre Anfrage wurde an unser Support-Team weitergeleitet.',
         });
       } catch (escalationError) {
-        console.error('Fehler bei der Eskalation:', escalationError);
+
         // Fallback: Normale Antwort ohne Eskalation
         const cleanedText = text.replace(/\[escalate\]/g, '').trim();
         return NextResponse.json({ text: cleanedText });
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
-    console.error('Fehler in der Gemini API-Route:', errorMessage);
+
     // Return a more generic error for other cases to avoid leaking implementation details
     return NextResponse.json(
       { error: 'Ein interner Serverfehler ist aufgetreten.' },

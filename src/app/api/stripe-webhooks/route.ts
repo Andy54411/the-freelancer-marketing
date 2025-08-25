@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (!stripe) {
     const errorKey = 'stripe_not_configured';
     if (shouldLogError(errorKey)) {
-      console.error('[WEBHOOK ERROR] Stripe ist nicht konfiguriert.');
+
     }
     return NextResponse.json(
       { received: false, error: 'Stripe nicht konfiguriert' },
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   if (!webhookSecret) {
     const errorKey = 'webhook_secret_missing';
     if (shouldLogError(errorKey)) {
-      console.error('[WEBHOOK ERROR] STRIPE_WEBHOOK_SECRET ist nicht gesetzt.');
+
     }
     return NextResponse.json(
       { received: false, error: 'Webhook secret nicht konfiguriert' },
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     if (!signature) {
       const errorKey = 'missing_signature';
       if (shouldLogError(errorKey)) {
-        console.error('[WEBHOOK ERROR] Keine Stripe-Signatur gefunden.');
+
       }
       return NextResponse.json({ received: false, error: 'Keine Signatur' }, { status: 400 });
     }
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      console.log(`[WEBHOOK LOG] Event empfangen: ${event.type} (${event.id})`);
+
     } catch (err: unknown) {
       let errorMessage = 'Fehler bei der Webhook-Verifikation.';
       if (err instanceof Error) {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       }
       const errorKey = `webhook_verification_${errorMessage.slice(0, 20)}`;
       if (shouldLogError(errorKey)) {
-        console.error(`[WEBHOOK ERROR] ${errorMessage}`, err);
+
       }
       return NextResponse.json({ received: false, error: errorMessage }, { status: 400 });
     }
@@ -82,7 +82,6 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case 'charge.succeeded': {
         const chargeSucceeded = event.data.object as Stripe.Charge;
-        console.log(`[WEBHOOK LOG] charge.succeeded: ${chargeSucceeded.id}`);
 
         // DUAL SUPPORT: Check both 'type' (for additional_hours) and 'paymentType' (for B2B)
         const paymentType = chargeSucceeded.metadata?.type || chargeSucceeded.metadata?.paymentType;
@@ -93,9 +92,6 @@ export async function POST(req: NextRequest) {
           paymentType === 'additional_hours_platform_hold' ||
           paymentType === 'additional_hours_direct_transfer'
         ) {
-          console.log(
-            `[WEBHOOK LOG] Processing additional hours payment (charge): ${chargeSucceeded.id}`
-          );
 
           const orderId = chargeSucceeded.metadata?.orderId;
           const entryIds = chargeSucceeded.metadata?.entryIds;
@@ -103,9 +99,7 @@ export async function POST(req: NextRequest) {
           if (!orderId || !entryIds) {
             const errorKey = `missing_metadata_charge_${chargeSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-              console.error(
-                `[WEBHOOK ERROR] Fehlende Metadaten für zusätzliche Stunden im Charge ${chargeSucceeded.id}. orderId: ${orderId}, entryIds: ${entryIds}`
-              );
+
             }
             return NextResponse.json({
               received: true,
@@ -132,9 +126,7 @@ export async function POST(req: NextRequest) {
                 const now = new Date();
                 const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
                   if (entryIdsList.includes(entry.id)) {
-                    console.log(
-                      `[WEBHOOK LOG] TimeEntry ${entry.id} marked as transferred (paid) via charge.succeeded`
-                    );
+
                     return {
                       ...entry,
                       status: 'transferred', // CRITICAL: Change status to transferred
@@ -167,9 +159,7 @@ export async function POST(req: NextRequest) {
                 let timeTrackingStatus = timeTracking.status;
                 if (allAdditionalTransferred && timeTrackingStatus !== 'completed') {
                   timeTrackingStatus = 'completed';
-                  console.log(
-                    `[WEBHOOK LOG] All additional hours transferred (charge) - setting timeTracking.status to 'completed' for order ${orderId}`
-                  );
+
                 }
 
                 // Update the entire timeTracking object
@@ -183,9 +173,6 @@ export async function POST(req: NextRequest) {
               }
             });
 
-            console.log(
-              `[WEBHOOK LOG] Additional hours payment (charge) processed successfully for order ${orderId}`
-            );
           } catch (dbError: unknown) {
             let dbErrorMessage =
               'Unbekannter Datenbankfehler bei der Verarbeitung zusätzlicher Stunden (charge).';
@@ -194,7 +181,7 @@ export async function POST(req: NextRequest) {
             }
             const errorKey = `db_additional_hours_charge_${orderId}`;
             if (shouldLogError(errorKey)) {
-              console.error(`[WEBHOOK ERROR] Fehler bei zusätzlichen Stunden (charge):`, dbError);
+
             }
             return NextResponse.json({
               received: true,
@@ -208,7 +195,6 @@ export async function POST(req: NextRequest) {
 
       case 'payment_intent.succeeded': {
         const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
-        console.log(`[WEBHOOK LOG] payment_intent.succeeded: ${paymentIntentSucceeded.id}`);
 
         // DUAL SUPPORT: Check both 'type' (for additional_hours) and 'paymentType' (for B2B)
         const paymentType =
@@ -219,9 +205,6 @@ export async function POST(req: NextRequest) {
           paymentType === 'additional_hours_platform_hold' ||
           paymentType === 'additional_hours_direct_transfer'
         ) {
-          console.log(
-            `[WEBHOOK LOG] Processing additional hours payment (${paymentType}): ${paymentIntentSucceeded.id}`
-          );
 
           const orderId = paymentIntentSucceeded.metadata?.orderId;
           const entryIds = paymentIntentSucceeded.metadata?.entryIds;
@@ -229,9 +212,7 @@ export async function POST(req: NextRequest) {
           if (!orderId || !entryIds) {
             const errorKey = `missing_metadata_${paymentIntentSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-              console.error(
-                `[WEBHOOK ERROR] Fehlende Metadaten für zusätzliche Stunden im PI ${paymentIntentSucceeded.id}. orderId: ${orderId}, entryIds: ${entryIds}`
-              );
+
             }
             return NextResponse.json({
               received: true,
@@ -258,7 +239,7 @@ export async function POST(req: NextRequest) {
                 const now = new Date();
                 const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
                   if (entryIdsList.includes(entry.id)) {
-                    console.log(`[WEBHOOK LOG] TimeEntry ${entry.id} marked as transferred (paid)`);
+
                     return {
                       ...entry,
                       status: 'transferred', // CRITICAL: Change status to transferred
@@ -291,9 +272,7 @@ export async function POST(req: NextRequest) {
                 let timeTrackingStatus = timeTracking.status;
                 if (allAdditionalTransferred && timeTrackingStatus !== 'completed') {
                   timeTrackingStatus = 'completed';
-                  console.log(
-                    `[WEBHOOK LOG] All additional hours transferred (payment_intent) - setting timeTracking.status to 'completed' for order ${orderId}`
-                  );
+
                 }
 
                 // Update the entire timeTracking object
@@ -328,10 +307,6 @@ export async function POST(req: NextRequest) {
                     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                   });
 
-                  console.log(
-                    `[WEBHOOK LOG] Company balance updated: +${additionalAmount} cents (Platform Hold)`
-                  );
-
                   // Create audit trail
                   const auditRef = companyDoc.ref.collection('balanceHistory').doc();
                   transaction.set(auditRef, {
@@ -355,28 +330,15 @@ export async function POST(req: NextRequest) {
                 paymentIntentSucceeded.metadata?.providerStripeAccountId;
               const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
 
-              console.log(
-                `[WEBHOOK DEBUG] Platform Hold Transfer check: providerStripeAccountId=${providerStripeAccountId}, companyReceives=${companyReceives}`
-              );
-
               if (providerStripeAccountId && companyReceives) {
                 const transferAmount = parseInt(companyReceives, 10);
-
-                console.log(
-                  `[WEBHOOK LOG] Creating platform hold transfer to Connect account ${providerStripeAccountId}: ${transferAmount} cents for order ${orderId}`
-                );
 
                 try {
                   // Prüfe erst, ob das Connect-Konto existiert und empfangsfähig ist
                   const connectAccount = await stripe.accounts.retrieve(providerStripeAccountId);
-                  console.log(
-                    `[WEBHOOK DEBUG] Connect account status: ${connectAccount.charges_enabled}, payouts_enabled: ${connectAccount.payouts_enabled}`
-                  );
 
                   if (!connectAccount.charges_enabled) {
-                    console.error(
-                      `[WEBHOOK ERROR] Connect account ${providerStripeAccountId} is not charges_enabled`
-                    );
+
                     // Trotzdem weitermachen, aber warnen
                   }
 
@@ -396,9 +358,6 @@ export async function POST(req: NextRequest) {
                   // });
 
                   // ✅ KONTROLLIERTE PAYOUTS: Markiere Additional Hours für manuelle Auszahlung
-                  console.log(
-                    `[WEBHOOK CONTROLLED] Additional Hours marked for controlled payout: ${transferAmount} cents to ${providerStripeAccountId} for order ${orderId}`
-                  );
 
                   // Update Order mit Additional Hours Payout Info
                   const orderRef = db.collection('auftraege').doc(orderId);
@@ -431,13 +390,9 @@ export async function POST(req: NextRequest) {
                       lastAdditionalHoursOrderId: orderId,
                       pendingAdditionalHours: admin.firestore.FieldValue.increment(transferAmount),
                     });
-                    console.log(
-                      `[WEBHOOK LOG] Company document updated with controlled additional hours: ${transferAmount} cents for order ${orderId}`
-                    );
+
                   } else {
-                    console.error(
-                      `[WEBHOOK ERROR] No company found with anbieterStripeAccountId: ${providerStripeAccountId}`
-                    );
+
                   }
                 } catch (transferError: unknown) {
                   let transferErrorMessage = 'Unbekannter Transfer-Fehler';
@@ -446,13 +401,7 @@ export async function POST(req: NextRequest) {
                   }
                   const errorKey = `transfer_error_${orderId}_${Date.now()}`;
                   if (shouldLogError(errorKey)) {
-                    console.error(
-                      `[WEBHOOK ERROR] Platform hold transfer failed for order ${orderId} to account ${providerStripeAccountId}:`,
-                      transferError
-                    );
-                    console.error(
-                      `[WEBHOOK ERROR] Transfer details: amount=${transferAmount}, currency=eur, destination=${providerStripeAccountId}`
-                    );
+
                   }
                   // Continue processing even if transfer fails - important for webhook reliability
                   // Aber versuche einen Retry-Mechanismus zu implementieren
@@ -468,27 +417,18 @@ export async function POST(req: NextRequest) {
                       retryCount: 0,
                       status: 'pending_retry',
                     });
-                    console.log(
-                      `[WEBHOOK LOG] Failed transfer saved for retry: order ${orderId}, amount ${transferAmount}`
-                    );
+
                   } catch (saveError) {
-                    console.error(`[WEBHOOK ERROR] Failed to save failed transfer:`, saveError);
+
                   }
                 }
               } else {
-                console.error(
-                  `[WEBHOOK ERROR] Missing platform hold transfer data for additional hours payment ${paymentIntentSucceeded.id}: providerStripeAccountId=${providerStripeAccountId}, companyReceives=${companyReceives}`
-                );
+
               }
             } else if (paymentType === 'additional_hours_direct_transfer') {
-              console.log(
-                `[WEBHOOK LOG] Direct transfer payment detected - no manual transfer needed: ${paymentIntentSucceeded.id}`
-              );
+
             }
 
-            console.log(
-              `[WEBHOOK LOG] Additional hours payment processed successfully for order ${orderId}`
-            );
           } catch (dbError: unknown) {
             let dbErrorMessage =
               'Unbekannter Datenbankfehler bei der Verarbeitung zusätzlicher Stunden.';
@@ -497,7 +437,7 @@ export async function POST(req: NextRequest) {
             }
             const errorKey = `db_additional_hours_${orderId}`;
             if (shouldLogError(errorKey)) {
-              console.error(`[WEBHOOK ERROR] Fehler bei zusätzlichen Stunden:`, dbError);
+
             }
             return NextResponse.json({
               received: true,
@@ -509,19 +449,8 @@ export async function POST(req: NextRequest) {
 
         // Handle B2B Provider Booking payments (from ProviderBookingModal)
         if (paymentType === 'b2b_payment' || paymentType === 'b2b_project') {
-          console.log(
-            `[WEBHOOK LOG] Processing B2B Provider Booking payment: ${paymentIntentSucceeded.id} (type: ${paymentType})`
-          );
 
           // DEBUG: Log alle Metadaten für B2B Payments
-          console.log(`[WEBHOOK DEBUG] B2B Payment Metadaten:`, {
-            paymentType,
-            customerFirebaseId: paymentIntentSucceeded.metadata?.customerFirebaseId,
-            providerFirebaseId: paymentIntentSucceeded.metadata?.providerFirebaseId,
-            projectId: paymentIntentSucceeded.metadata?.projectId,
-            projectTitle: paymentIntentSucceeded.metadata?.projectTitle,
-            allMetadata: paymentIntentSucceeded.metadata,
-          });
 
           const customerFirebaseId = paymentIntentSucceeded.metadata?.customerFirebaseId;
           const providerFirebaseId = paymentIntentSucceeded.metadata?.providerFirebaseId;
@@ -532,9 +461,7 @@ export async function POST(req: NextRequest) {
           if (!customerFirebaseId || !providerFirebaseId) {
             const errorKey = `missing_b2b_metadata_${paymentIntentSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-              console.error(
-                `[WEBHOOK ERROR] Fehlende B2B-Metadaten im PI ${paymentIntentSucceeded.id}. customerFirebaseId: ${customerFirebaseId}, providerFirebaseId: ${providerFirebaseId}`
-              );
+
             }
             return NextResponse.json({
               received: true,
@@ -643,9 +570,6 @@ export async function POST(req: NextRequest) {
               const newAuftragRef = auftragCollectionRef.doc(orderId);
               transaction.set(newAuftragRef, b2bOrderData);
 
-              console.log(
-                `[WEBHOOK LOG] B2B Order ${orderId} erfolgreich erstellt für Payment ${paymentIntentSucceeded.id}`
-              );
             });
 
             // 🔔 BELL NOTIFICATION: B2B Order erfolgreich erstellt
@@ -666,9 +590,9 @@ export async function POST(req: NextRequest) {
                 providerFirebaseId, // Provider ID
                 orderNotificationData
               );
-              console.log(`[WEBHOOK LOG] B2B Order Notifications gesendet für Order ${orderId}`);
+
             } catch (notificationError) {
-              console.error('[WEBHOOK ERROR] B2B Notification failed:', notificationError);
+
             }
 
             return NextResponse.json({
@@ -682,7 +606,7 @@ export async function POST(req: NextRequest) {
             }
             const errorKey = `b2b_order_creation_${paymentIntentSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-              console.error(`[WEBHOOK ERROR] B2B Order Creation Fehler:`, b2bError);
+
             }
             return NextResponse.json({
               received: true,
@@ -695,7 +619,6 @@ export async function POST(req: NextRequest) {
         const quotePaymentType = paymentIntentSucceeded.metadata?.type;
 
         if (quotePaymentType === 'quote_payment') {
-          console.log(`[WEBHOOK LOG] Processing quote payment: ${paymentIntentSucceeded.id}`);
 
           // Quote payment - delegate to the existing API route
           const quoteId = paymentIntentSucceeded.metadata?.quote_id;
@@ -703,9 +626,7 @@ export async function POST(req: NextRequest) {
           const customerUid = paymentIntentSucceeded.metadata?.customerUid;
 
           if (!quoteId || !proposalId || !customerUid) {
-            console.error(
-              `[WEBHOOK ERROR] Quote payment missing metadata: quoteId=${quoteId}, proposalId=${proposalId}, customerUid=${customerUid}`
-            );
+
             return NextResponse.json({
               received: true,
               message: 'Quote payment metadata incomplete.',
@@ -751,12 +672,6 @@ export async function POST(req: NextRequest) {
             // Extract amount from PaymentIntent if proposal amount is missing
             const proposalAmount = proposal.totalAmount || proposal.price;
             const finalAmount = proposalAmount || paymentIntentSucceeded.amount / 100;
-
-            console.log('[WEBHOOK] Amount calculation:', {
-              proposalAmount,
-              paymentIntentAmount: paymentIntentSucceeded.amount / 100,
-              finalAmount,
-            });
 
             // Create order in auftraege collection
             const orderData = {
@@ -865,16 +780,12 @@ export async function POST(req: NextRequest) {
               updatedAt: new Date().toISOString(),
             });
 
-            console.log(
-              `[WEBHOOK LOG] Quote payment processed successfully for quote ${quoteId}, created order ${orderId}`
-            );
-
             return NextResponse.json({
               received: true,
               message: `Quote payment processed for quote ${quoteId}, order ${orderId} created`,
             });
           } catch (error) {
-            console.error(`[WEBHOOK ERROR] Quote payment processing failed:`, error);
+
             return NextResponse.json({
               received: true,
               message: 'Quote payment processing failed.',
@@ -889,9 +800,7 @@ export async function POST(req: NextRequest) {
         if (!tempJobDraftId || !firebaseUserId) {
           const errorKey = `missing_draft_metadata_${paymentIntentSucceeded.id}`;
           if (shouldLogError(errorKey)) {
-            console.error(
-              `[WEBHOOK ERROR] Fehlende Metadaten im PI ${paymentIntentSucceeded.id}. tempJobDraftId: ${tempJobDraftId}, firebaseUserId: ${firebaseUserId}`
-            );
+
           }
           // Wichtig: Trotzdem 200 an Stripe senden, um Wiederholungen zu vermeiden, aber den Fehler loggen.
           return NextResponse.json({
@@ -912,9 +821,7 @@ export async function POST(req: NextRequest) {
             const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
 
             if (tempJobDraftSnapshot.data()?.status === 'converted') {
-              console.log(
-                `[WEBHOOK LOG] Job-Entwurf ${tempJobDraftId} wurde bereits konvertiert. Überspringe.`
-              );
+
               return;
             }
             if (!tempJobDraftSnapshot.exists) {
@@ -950,9 +857,7 @@ export async function POST(req: NextRequest) {
                 const hoursPerDay = durationMatch ? parseFloat(durationMatch[1]) : 8; // Fallback auf 8 Stunden
 
                 correctedJobTotalCalculatedHours = hoursPerDay * daysDiff;
-                console.log(
-                  `[WEBHOOK CORRECTION] Multi-Tag Auftrag korrigiert: ${daysDiff} Tage × ${hoursPerDay}h = ${correctedJobTotalCalculatedHours}h`
-                );
+
               }
             }
 
@@ -1035,24 +940,14 @@ export async function POST(req: NextRequest) {
                 orderData.selectedAnbieterId, // Provider ID
                 orderNotificationData
               );
-              console.log(
-                `[WEBHOOK LOG] Regular Order Notifications gesendet für Order ${newOrderId}`
-              );
+
             } catch (notificationError) {
-              console.error(
-                '[WEBHOOK ERROR] Regular Order Notification failed:',
-                notificationError
-              );
+
             }
           } else {
-            console.log(
-              '[WEBHOOK LOG] Order creation was skipped or failed - no notifications sent'
-            );
+
           }
 
-          console.log(
-            `[WEBHOOK LOG] Transaktion für Job ${tempJobDraftId} erfolgreich abgeschlossen.`
-          );
         } catch (dbError: unknown) {
           // dbError ist hier vom Typ unknown
           let dbErrorMessage = 'Unbekannter Datenbankfehler bei der Job-Konvertierung.';
@@ -1061,7 +956,7 @@ export async function POST(req: NextRequest) {
           }
           const errorKey = `db_job_conversion_${tempJobDraftId}`;
           if (shouldLogError(errorKey)) {
-            console.error(`[WEBHOOK ERROR] Fehler in der Transaktion:`, dbError);
+
           }
           return NextResponse.json({
             received: true,
@@ -1076,7 +971,7 @@ export async function POST(req: NextRequest) {
       default:
         // Es ist wichtig, für unbehandelte Events trotzdem 200 OK zu senden,
         // damit Stripe nicht versucht, sie erneut zu senden.
-        console.log(`[WEBHOOK LOG] Unbehandelter Event-Typ ${event.type}.`);
+
     }
 
     return NextResponse.json({ received: true });
@@ -1087,7 +982,7 @@ export async function POST(req: NextRequest) {
     }
     const errorKey = `webhook_general_error`;
     if (shouldLogError(errorKey)) {
-      console.error('[WEBHOOK ERROR] Fehler beim Verarbeiten des Webhooks:', error);
+
     }
     return NextResponse.json({ received: false, error: errorMessage }, { status: 500 });
   }

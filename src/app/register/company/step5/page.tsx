@@ -182,10 +182,7 @@ export default function Step5CompanyPage() {
             const newUrl = URL.createObjectURL(fileFromContext);
             setLocalPreview(newUrl);
           } catch (e: unknown) {
-            console.error(PAGE_ERROR, 'Preview Fehler (Init Step5)', {
-              error: e instanceof Error ? e.message : String(e),
-              fileName: fileFromContext?.name,
-            });
+
           }
         }
       } else {
@@ -211,10 +208,7 @@ export default function Step5CompanyPage() {
   const mapCategoryToMcc = useCallback(
     (category: string | null | undefined): string | undefined => {
       if (!category || category.trim() === '') {
-        console.warn(
-          PAGE_WARN,
-          `[mapCategoryToMcc] Leere oder fehlende Kategorie. Verwende Fallback MCC.`
-        );
+
         return '5999';
       }
       switch (category) {
@@ -243,10 +237,7 @@ export default function Step5CompanyPage() {
         case 'Tiere & Pflanzen':
           return '0742';
         default:
-          console.warn(
-            PAGE_WARN,
-            `[mapCategoryToMcc] Kein spezifischer MCC für Kategorie "${category}" gefunden. Verwende Fallback MCC.`
-          );
+
           return '5999';
       }
     },
@@ -275,7 +266,7 @@ export default function Step5CompanyPage() {
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-              console.error(PAGE_ERROR, 'Canvas 2D Context nicht bekommen.');
+
               setIsConvertingImage(false);
               resolve(file);
               return;
@@ -295,7 +286,7 @@ export default function Step5CompanyPage() {
                   });
                   resolve(webpFile);
                 } else {
-                  console.error(PAGE_ERROR, 'Fehler bei canvas.toBlob, Blob ist null.');
+
                   resolve(file);
                 }
               },
@@ -304,7 +295,7 @@ export default function Step5CompanyPage() {
             );
           };
           img.onerror = () => {
-            console.error(PAGE_ERROR, 'Bild konnte nicht geladen werden für Konvertierung.');
+
             setIsConvertingImage(false);
             resolve(file);
           };
@@ -316,7 +307,7 @@ export default function Step5CompanyPage() {
           }
         };
         reader.onerror = () => {
-          console.error(PAGE_ERROR, 'Datei konnte nicht gelesen werden für Konvertierung.');
+
           setIsConvertingImage(false);
           resolve(file);
         };
@@ -368,11 +359,7 @@ export default function Step5CompanyPage() {
           try {
             localPreviewSetter(URL.createObjectURL(processedFile));
           } catch (urlError: unknown) {
-            console.error(
-              PAGE_ERROR,
-              '[Step5] Fehler beim Erstellen der ObjectURL für Preview:',
-              urlError instanceof Error ? urlError.message : String(urlError)
-            );
+
             localPreviewSetter(null);
           }
         }
@@ -415,9 +402,6 @@ export default function Step5CompanyPage() {
       }
 
       // WICHTIG: Logging des Tokens vor dem Senden
-      console.log(
-        `[CLIENT] Sende ${fileNameForLog} mit ID Token (Anfang: ${idToken.substring(0, 30)}...)`
-      );
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
@@ -651,7 +635,7 @@ export default function Step5CompanyPage() {
       let clientIpAddress = ''; // Initialisieren als leerer String
 
       try {
-        console.log('[Step5] Versuche, IP über Firebase Function zu erhalten...');
+
         const ipResult = await getClientIpFunction({});
         if (
           ipResult.data?.ip &&
@@ -659,28 +643,18 @@ export default function Step5CompanyPage() {
           ipResult.data.ip.length >= 7
         ) {
           clientIpAddress = ipResult.data.ip;
-          console.log(`[Step5] IP von Firebase Function erhalten: ${clientIpAddress}`);
+
         } else {
-          console.warn(
-            PAGE_WARN,
-            `[Step5] Ungültige IP von Firebase Function erhalten:`,
-            ipResult.data
-          );
+
         }
       } catch (ipLookupError: unknown) {
-        console.warn(
-          PAGE_WARN,
-          '[Step5] Fehler beim Ermitteln der Client IP via Firebase Function:',
-          ipLookupError
-        );
+
       }
 
       // Fallback, wenn die Firebase Function fehlschlägt oder keine gültige IP liefert
       if (!clientIpAddress) {
         try {
-          console.log(
-            '[Step5] Firebase Function fehlgeschlagen. Versuche Fallback über ipify.org...'
-          );
+
           const response = await fetch('https://api.ipify.org?format=json');
           if (!response.ok) {
             throw new Error(`ipify.org antwortete mit Status: ${response.status}`);
@@ -688,21 +662,15 @@ export default function Step5CompanyPage() {
           const ipData = await response.json();
           if (ipData.ip) {
             clientIpAddress = ipData.ip;
-            console.log(`[Step5] IP von ipify.org erhalten: ${clientIpAddress}`);
+
           }
         } catch (fallbackError: unknown) {
-          console.error(
-            PAGE_ERROR,
-            '[Step5] Fallback zur IP-Ermittlung ist ebenfalls fehlgeschlagen:',
-            fallbackError
-          );
+
         }
       }
 
       if (!clientIpAddress && process.env.NODE_ENV === 'development') {
-        console.warn(
-          'WARNUNG: Keine echte IP gefunden. Verwende eine öffentliche Placeholder-IP für den Stripe-Test.'
-        );
+
         clientIpAddress = '8.8.8.8'; // Eine gültige öffentliche IP für Tests
       }
 
@@ -1062,15 +1030,10 @@ export default function Step5CompanyPage() {
         setFormError(
           `Problem bei Stripe: ${result.data.message || 'Unbekannter Fehler.'} ${result.data.missingFields ? `Fehlende Felder: ${result.data.missingFields.join(', ')}` : ''}`
         );
-        console.error(
-          PAGE_ERROR,
-          '[Step5] Stripe-Kontoerstellung Callable Function meldete Fehler:',
-          result.data.message,
-          result.data.missingFields
-        );
+
       }
     } catch (error: unknown) {
-      console.error(PAGE_ERROR, '[Step5] Fehler im Registrierungsprozess:', error);
+
       let specificErrorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
 
       if (error && typeof error === 'object' && 'code' in error && 'message' in error) {

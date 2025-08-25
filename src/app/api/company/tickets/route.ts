@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Fehler beim Laden der Company Tickets:', error);
+
     return NextResponse.json({ success: false, error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }
@@ -90,10 +90,10 @@ export async function POST(request: NextRequest) {
           `Ticket "${title}" erstellt`,
           'System'
         );
-        console.log(`Test-Notification erstellt für User ${customerUid} - neues Ticket`);
+
       }
     } catch (notificationError) {
-      console.error('Fehler beim Erstellen der Test-Notification:', notificationError);
+
       // Nicht weiterleiten, da Ticket-Erstellung erfolgreich war
     }
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       ticket,
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen des Company Tickets:', error);
+
     return NextResponse.json(
       { success: false, error: 'Fehler beim Erstellen des Tickets' },
       { status: 500 }

@@ -11,8 +11,6 @@ export async function GET(req: NextRequest) {
     const errorCode = searchParams.get('errorCode');
     const errorMessage = searchParams.get('errorMessage');
 
-    console.error('❌ WebForm Error Callback:', { webFormId, errorCode, errorMessage });
-
     // Hier könnten wir zusätzliche Fehlerbehandlung machen:
     // - Fehler in der Datenbank protokollieren
     // - Benutzer über den Fehler informieren
@@ -28,7 +26,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ WebForm Error Callback Processing Error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten des Error Callbacks' },
       { status: 500 }

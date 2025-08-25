@@ -31,11 +31,6 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('DATEV token refresh failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData,
-      });
 
       // Parse error for specific error types
       let errorMessage = 'Token refresh failed';
@@ -76,7 +71,7 @@ export async function POST(request: NextRequest) {
       scope: tokenData.scope,
     });
   } catch (error) {
-    console.error('Error refreshing DATEV token:', error);
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

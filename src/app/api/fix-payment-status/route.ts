@@ -10,8 +10,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'paymentIntentId and orderId required' }, { status: 400 });
     }
 
-    console.log(`[FIX PAYMENT] Processing payment ${paymentIntentId} for order ${orderId}`);
-
     // Get the order
     const orderRef = db.collection('auftraege').doc(orderId);
     const orderSnapshot = await orderRef.get();
@@ -75,8 +73,6 @@ export async function POST(req: NextRequest) {
     // Execute batch
     await batch.commit();
 
-    console.log(`[FIX PAYMENT] Updated ${updates.length} time entries to transferred`);
-
     return NextResponse.json({
       success: true,
       message: `Fixed ${updates.length} time entries`,
@@ -86,7 +82,7 @@ export async function POST(req: NextRequest) {
       entryIds: entryIds,
     });
   } catch (error: unknown) {
-    console.error('[FIX PAYMENT ERROR]', error);
+
     let errorMessage = 'Unknown error';
     if (error instanceof Error) {
       errorMessage = error.message;
@@ -126,7 +122,7 @@ export async function GET(req: NextRequest) {
       entries: pendingEntries,
     });
   } catch (error: unknown) {
-    console.error('[FIX PAYMENT CHECK ERROR]', error);
+
     let errorMessage = 'Unknown error';
     if (error instanceof Error) {
       errorMessage = error.message;

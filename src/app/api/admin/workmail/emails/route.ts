@@ -6,7 +6,6 @@ import Imap from 'imap';
 
 // Quoted-Printable Decoder für E-Mail-Inhalte
 function decodeQuotedPrintable(encoded: string): string {
-  console.log('🚀 [WorkMail API] Decoding quoted-printable content...');
 
   if (!encoded || typeof encoded !== 'string') {
     return encoded || '';
@@ -94,7 +93,6 @@ function decodeQuotedPrintable(encoded: string): string {
     return String.fromCharCode(parseInt(hex, 16));
   });
 
-  console.log('✅ [WorkMail API] Quoted-printable decoding completed');
   return decoded;
 }
 
@@ -143,7 +141,7 @@ async function verifyAdminAuth(): Promise<any> {
     const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
     return payload;
   } catch (error) {
-    console.error('Auth verification error:', error);
+
     return null;
   }
 }
@@ -165,28 +163,19 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
         },
       };
 
-      console.log('🔄 Connecting to AWS WorkMail IMAP...', {
-        email: credentials.email,
-        host: imapConfig.host,
-        port: imapConfig.port,
-      });
-
       const imap = new Imap(imapConfig);
       const emails: any[] = [];
 
       imap.once('ready', () => {
-        console.log('✅ IMAP connected successfully');
 
         imap.openBox(folder, true, (err: any, box: any) => {
           if (err) {
-            console.error('❌ Error opening mailbox:', err);
+
             return reject(err);
           }
 
-          console.log(`📬 Mailbox opened: ${box.name}, Messages: ${box.messages.total}`);
-
           if (box.messages.total === 0) {
-            console.log('📭 No messages found in mailbox');
+
             imap.end();
             return resolve({
               emails: [],
@@ -200,7 +189,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 
           // Hole die neuesten E-Mails
           const range = Math.max(1, box.messages.total - limit + 1) + ':' + box.messages.total;
-          console.log(`📧 Fetching messages ${range} from ${folder}`);
 
           const fetch = imap.seq.fetch(range, {
             bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)', 'TEXT', '1.2'],
@@ -233,19 +221,10 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                   // Quoted-Printable Dekodierung anwenden
                   let decodedContent = decodeQuotedPrintable(originalBuffer);
 
-                  console.log('📧 [WorkMail API] TEXT Content processing:');
-                  console.log('🔍 Original length:', originalBuffer.length);
-                  console.log('🔧 Decoded length:', decodedContent.length);
-
                   // KRITISCH: Euro-Symbol-Bereinigung auch für TEXT-Content!
-                  console.log('🔧 [API] Applying Euro symbol fixes to decodedContent...');
 
                   // DEBUG: Vorher-Analyse
                   const beforeClean = decodedContent.substring(0, 500);
-                  console.log(
-                    '🎯 [API DEBUG] Content before cleaning (first 500 chars):',
-                    beforeClean
-                  );
 
                   // Suche nach Euro-Symbolen vor der Bereinigung
                   const euroBefore = [];
@@ -260,12 +239,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                       });
                     }
                   }
-                  console.log(
-                    '🎯 [API DEBUG] Found',
-                    euroBefore.length,
-                    'Euro symbols before cleaning:',
-                    euroBefore
-                  );
 
                   decodedContent = decodedContent
                     .replace(/â ï¸ Close Match/g, '⚠️ Close Match')
@@ -295,10 +268,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 
                   // DEBUG: Nachher-Analyse
                   const afterClean = decodedContent.substring(0, 500);
-                  console.log(
-                    '🎯 [API DEBUG] Content after cleaning (first 500 chars):',
-                    afterClean
-                  );
 
                   // Suche nach verbleibenden Euro-Symbolen
                   const euroAfter = [];
@@ -313,13 +282,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                       });
                     }
                   }
-                  console.log(
-                    '🎯 [API DEBUG] Remaining Euro symbols after cleaning:',
-                    euroAfter.length,
-                    euroAfter
-                  );
-
-                  console.log('✅ [API] Euro symbol fixes applied to TEXT content');
 
                   // KRITISCH: HTML-Section aus Raw-Content extrahieren!
                   const htmlSectionMatch = decodedContent.match(
@@ -335,10 +297,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                       let extractedHtml = decodeQuotedPrintable(htmlBodyMatch[1].trim());
 
                       // DEBUG: HTML Content vor Bereinigung
-                      console.log(
-                        '🎯 [API DEBUG] HTML before cleaning (first 300 chars):',
-                        extractedHtml.substring(0, 300)
-                      );
 
                       // KRITISCH: Sofortige â-Reparatur direkt nach HTML-Extraktion!
                       extractedHtml = extractedHtml
@@ -368,15 +326,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                         .replace(/[\u2026]/g, '...'); // Ellipsis
 
                       // DEBUG: HTML Content nach Bereinigung
-                      console.log(
-                        '🎯 [API DEBUG] HTML after cleaning (first 300 chars):',
-                        extractedHtml.substring(0, 300)
-                      );
-
-                      console.log(
-                        '✅ [API] HTML extracted and â-characters fixed:',
-                        extractedHtml.substring(0, 200)
-                      );
 
                       // NUR den extrahierten und reparierten HTML-Content verwenden
                       email.htmlContent = extractedHtml;
@@ -449,9 +398,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 
                       email.textContent = cleanTextFromHtml.substring(0, 500);
 
-                      console.log('✅ [API] HTML content extracted and assigned to email object');
-                      console.log('📝 [API] TextContent length:', email.textContent?.length || 0);
-                      console.log('🌐 [API] HTMLContent length:', email.htmlContent?.length || 0);
                       // Weiter verarbeiten, kein früher Return!
                     }
                   }
@@ -459,16 +405,12 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                   // Fallback: Wenn KEIN HTML gefunden wurde, textContent setzen
                   if (!email.htmlContent) {
                     email.textContent = decodedContent;
-                    console.log('📝 [API] No HTML found, using text content only');
+
                   }
                 } else if (info.which === 'HTML' || info.which.includes('HTML')) {
                   // HTML-Content verarbeiten
                   const originalBuffer = buffer.trim();
                   const decodedHtmlContent = decodeQuotedPrintable(originalBuffer);
-
-                  console.log('🌐 [WorkMail API] HTML Content processing:');
-                  console.log('🔍 HTML Original length:', originalBuffer.length);
-                  console.log('🔧 HTML Decoded length:', decodedHtmlContent.length);
 
                   email.htmlContent = decodedHtmlContent;
                   // Wenn kein textContent vorhanden, HTML als Fallback verwenden
@@ -570,8 +512,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
                     ?.substring(5) // Entferne "Date:" prefix
                     ?.trim();
 
-                  console.log('📅 [WorkMail API] Date parsing:', dateLine);
-
                   email.receivedAt = dateLine
                     ? new Date(dateLine).toISOString()
                     : new Date().toISOString();
@@ -592,12 +532,12 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
           });
 
           fetch.once('error', (err: any) => {
-            console.error('❌ Fetch error:', err);
+
             reject(err);
           });
 
           fetch.once('end', () => {
-            console.log(`✅ IMAP fetch completed, emails found: ${emails.length}`);
+
             imap.end();
 
             // Sortiere E-Mails nach Datum (neueste zuerst)
@@ -618,24 +558,24 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
       });
 
       imap.once('error', (err: any) => {
-        console.error('❌ IMAP connection error:', err);
+
         reject(err);
       });
 
       imap.once('end', () => {
-        console.log('🔚 IMAP connection ended');
+
       });
 
       // Timeout für IMAP-Verbindung
       setTimeout(() => {
-        console.log('⏰ IMAP connection timeout');
+
         imap.end();
         reject(new Error('IMAP connection timeout'));
       }, 15000); // 15 Sekunden Timeout
 
       imap.connect();
     } catch (error) {
-      console.error('❌ fetchWorkmailEmailsViaIMAP error:', error);
+
       reject(error);
     }
   });
@@ -643,7 +583,6 @@ async function fetchWorkmailEmailsViaIMAP(credentials: any, folder = 'INBOX', li
 
 async function getWorkmailEmailsViaSSO(adminEmail: string, folder = 'INBOX', limit = 50) {
   try {
-    console.log('🔄 Generating WorkMail SSO integration for:', adminEmail);
 
     // Generate SSO URL for WorkMail access
     const ssoUrl = `${WORKMAIL_CONFIG.webInterface}?organization=${WORKMAIL_CONFIG.organization}&user=${encodeURIComponent(adminEmail)}`;
@@ -691,7 +630,6 @@ async function getWorkmailEmailsViaSSO(adminEmail: string, folder = 'INBOX', lim
       },
     ];
 
-    console.log('✅ WorkMail SSO integration ready');
     return {
       emails: ssoEmails,
       totalCount: ssoEmails.length,
@@ -704,7 +642,7 @@ async function getWorkmailEmailsViaSSO(adminEmail: string, folder = 'INBOX', lim
       workmailWebInterface: WORKMAIL_CONFIG.webInterface,
     };
   } catch (error) {
-    console.error('❌ WorkMail SSO error:', error);
+
     throw error;
   }
 }
@@ -716,19 +654,12 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const method = searchParams.get('method') || 'imap'; // 'imap' oder 'sso'
 
-    console.log('🔄 Starting WorkMail integration...', {
-      folder,
-      limit,
-      method,
-      timestamp: new Date().toISOString(),
-    });
-
     // JWT Token Verification for Admin Dashboard (Cookie-based)
     const cookies = request.headers.get('cookie');
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-      console.error('❌ Missing admin token cookie');
+
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -738,12 +669,10 @@ export async function GET(request: Request) {
       const { payload } = await jwtVerify(token, JWT_SECRET_BYTES);
       const adminEmail = payload.email as string;
 
-      console.log('✅ JWT Cookie verified for admin:', { email: adminEmail, method });
-
       // Find admin credentials
       const adminConfig = WORKMAIL_ADMIN_MAPPING[adminEmail];
       if (!adminConfig) {
-        console.error('❌ Admin not found in WorkMail mapping:', adminEmail);
+
         return NextResponse.json(
           { error: 'Admin not configured for WorkMail access' },
           { status: 403 }
@@ -753,26 +682,18 @@ export async function GET(request: Request) {
       let result;
 
       if (method === 'imap' && adminConfig.password) {
-        console.log('📧 Using IMAP method for real email retrieval');
+
         try {
           result = await fetchWorkmailEmailsViaIMAP(adminConfig, folder, limit);
-          console.log('✅ IMAP emails retrieved successfully');
+
         } catch (imapError) {
-          console.warn('⚠️ IMAP failed, falling back to SSO:', imapError);
+
           result = await getWorkmailEmailsViaSSO(adminEmail, folder, limit);
         }
       } else {
-        console.log('🔐 Using SSO method for WorkMail access');
+
         result = await getWorkmailEmailsViaSSO(adminEmail, folder, limit);
       }
-
-      console.log('📊 WorkMail response summary:', {
-        emailCount: result.emails?.length || 0,
-        totalCount: result.totalCount,
-        unreadCount: result.unreadCount,
-        source: result.source,
-        folder: result.folder,
-      });
 
       return NextResponse.json({
         success: true,
@@ -786,11 +707,11 @@ export async function GET(request: Request) {
         },
       });
     } catch (jwtError) {
-      console.error('❌ JWT verification failed:', jwtError);
+
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-    console.error('❌ WorkMail API error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error',

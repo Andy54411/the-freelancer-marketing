@@ -20,7 +20,6 @@ export function setupStripeNetworkInterception() {
         url.includes('sentry_key=') ||
         (url.includes('stripe.com') && url.includes('/api/'))
       ) {
-        console.log('🔇 Stripe Analytics/Sentry-Request intercepted:', url.slice(0, 100));
 
         // Simuliere immer erfolgreiche Response für Sentry-Requests
         return new Response(JSON.stringify({ status: 'ok' }), {
@@ -40,7 +39,7 @@ export function setupStripeNetworkInterception() {
           url.includes('errors.stripe.com') &&
           (response.status === 429 || response.status === 400)
         ) {
-          console.log(`🔇 Stripe Sentry Response intercepted: ${response.status}`);
+
           return new Response(JSON.stringify({ status: 'ok' }), {
             status: 200,
             statusText: 'OK',
@@ -54,7 +53,7 @@ export function setupStripeNetworkInterception() {
       } catch (error) {
         // Bei Stripe-Fehlern nicht weiterwerfen
         if (url.includes('stripe.com')) {
-          console.log('🔇 Stripe Network-Fehler intercepted:', error);
+
           return new Response('{"status": "ok"}', {
             status: 200,
             headers: new Headers({
@@ -84,10 +83,7 @@ export function setupStripeErrorHandler() {
         errorMessage.includes('400') ||
         (error && error.name === 'TypeError' && errorMessage.includes('fetch'))
       ) {
-        console.log(
-          '🔇 Stripe Unhandled Promise Rejection suppressed:',
-          errorMessage.slice(0, 150)
-        );
+
         event.preventDefault();
       }
     });
@@ -104,7 +100,7 @@ export function setupStripeErrorHandler() {
         (errorMessage.includes('429') && source.includes('universal-link-modal')) ||
         (errorMessage.includes('400') && source.includes('universal-link-modal'))
       ) {
-        console.log('🔇 Stripe Global Error suppressed:', errorMessage.slice(0, 150));
+
         event.preventDefault();
       }
     });

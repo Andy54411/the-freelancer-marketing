@@ -47,14 +47,14 @@ export default function InventorySelector({
     setLoading(true);
     try {
       const items = await InventoryService.getInventoryItems(companyId);
-      console.log('Geladene Inventar-Items:', items); // Debug-Log
+       // Debug-Log
       // Alle Items anzeigen, nur discontinued ausschließen
       const availableItems = items.filter(item => item.status !== 'discontinued');
-      console.log('Verfügbare Items nach Filter:', availableItems); // Debug-Log
+       // Debug-Log
       setInventoryItems(availableItems);
       setFilteredItems(availableItems);
     } catch (error) {
-      console.error('Fehler beim Laden der Inventar-Items:', error);
+
     } finally {
       setLoading(false);
     }

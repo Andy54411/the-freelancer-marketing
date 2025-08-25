@@ -32,12 +32,12 @@ const generateEmailTemplate = (deliveryNote: any, pdfUrl: string) => {
           <h1>Taskilo</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">Ihr Lieferschein ist bereit</p>
         </div>
-        
+
         <div class="content">
           <h2 style="color: #333; margin-top: 0;">Hallo ${deliveryNote.customerName},</h2>
-          
+
           <p>wir freuen uns, Ihnen mitteilen zu können, dass Ihre Bestellung bearbeitet und versandbereit ist.</p>
-          
+
           <div class="delivery-info">
             <h3>Lieferinformationen</h3>
             <p><strong>Lieferschein-Nr.:</strong> ${deliveryNote.deliveryNoteNumber}</p>
@@ -45,38 +45,38 @@ const generateEmailTemplate = (deliveryNote: any, pdfUrl: string) => {
             ${deliveryNote.orderNumber ? `<p><strong>Ihre Bestellung:</strong> ${deliveryNote.orderNumber}</p>` : ''}
             <p><strong>Anzahl Positionen:</strong> ${deliveryNote.items.length}</p>
           </div>
-          
+
           <p>Im Anhang finden Sie den detaillierten Lieferschein als PDF-Dokument.</p>
-          
+
           <div style="text-align: center;">
             <a href="${pdfUrl}" class="button">📄 Lieferschein als PDF öffnen</a>
           </div>
-          
+
           <p><strong>Wichtige Hinweise:</strong></p>
           <ul style="color: #666; line-height: 1.6;">
             <li>Bitte prüfen Sie die gelieferten Artikel bei Erhalt auf Vollständigkeit und Beschädigungen</li>
             <li>Bewahren Sie diesen Lieferschein für Ihre Unterlagen auf</li>
             <li>Bei Fragen oder Problemen kontaktieren Sie uns gerne</li>
           </ul>
-          
+
           <p>Wir bedanken uns für Ihr Vertrauen und stehen Ihnen für Rückfragen jederzeit zur Verfügung.</p>
-          
+
           <p style="margin-top: 30px;">
             Mit freundlichen Grüßen<br>
             <strong style="color: #14ad9f;">Ihr Taskilo Team</strong>
           </p>
         </div>
-        
+
         <div class="footer">
           <p><strong>Taskilo</strong></p>
           <p>Musterstraße 123 • 12345 Musterstadt • Deutschland</p>
           <p>E-Mail: info@taskilo.de • Web: www.taskilo.de</p>
-          
+
           <div class="social-links">
             <a href="mailto:info@taskilo.de">✉ E-Mail</a>
             <a href="https://www.taskilo.de">🌐 Website</a>
           </div>
-          
+
           <p style="margin-top: 20px; font-size: 11px;">
             Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht direkt auf diese E-Mail.
             Bei Fragen verwenden Sie bitte unsere offizielle E-Mail-Adresse.
@@ -174,7 +174,7 @@ Diese E-Mail wurde automatisch generiert.
         pdfBuffer = Buffer.from(await pdfResponse.arrayBuffer());
       }
     } catch (error) {
-      console.warn('PDF konnte nicht für Anhang geladen werden:', error);
+
     }
 
     // E-Mail-Optionen
@@ -211,7 +211,7 @@ Diese E-Mail wurde automatisch generiert.
         lastEmailId: info.messageId,
       });
     } catch (updateError) {
-      console.warn('Versandstatus konnte nicht aktualisiert werden:', updateError);
+
     }
 
     return NextResponse.json({
@@ -221,7 +221,7 @@ Diese E-Mail wurde automatisch generiert.
       pdfIncluded: !!pdfBuffer,
     });
   } catch (error) {
-    console.error('Fehler beim E-Mail-Versand:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Versenden der E-Mail',

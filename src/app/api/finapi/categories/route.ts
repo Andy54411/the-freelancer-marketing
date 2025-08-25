@@ -29,8 +29,6 @@ export async function GET(request: NextRequest) {
       undefined // order
     );
 
-    console.log('Categories retrieved:', response.categories?.length || 0);
-
     return NextResponse.json({
       success: true,
       data: response.categories,
@@ -47,7 +45,7 @@ export async function GET(request: NextRequest) {
       totalCount: response.categories?.length || 0,
     });
   } catch (error: any) {
-    console.error('finAPI categories error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -141,7 +139,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error: any) {
-    console.error('finAPI categories POST error:', error);
+
     return NextResponse.json(
       {
         success: false,

@@ -141,7 +141,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
 
       setReminders(mockReminders);
     } catch (error) {
-      console.error('Fehler beim Laden der Mahnungen:', error);
+
       toast.error('Mahnungen konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -226,7 +226,7 @@ export function ReminderComponent({ companyId }: ReminderComponentProps) {
 
       toast.success('Mahnung wurde erstellt');
     } catch (error) {
-      console.error('Fehler beim Erstellen der Mahnung:', error);
+
       toast.error('Mahnung konnte nicht erstellt werden');
     }
   };

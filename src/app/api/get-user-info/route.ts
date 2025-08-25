@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Direkte Abfrage der users Collection
     const userDoc = await db.collection('users').doc(firebaseUserId).get();
-    
+
     if (!userDoc.exists) {
       return NextResponse.json(
         { error: 'User nicht gefunden in users collection.' },
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userData = userDoc.data();
-    
+
     // Auch companies collection checken
     let companyData: any = null;
     try {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         .where('ownerUserId', '==', firebaseUserId)
         .limit(1)
         .get();
-      
+
       if (!companiesQuery.empty) {
         const companyDoc = companiesQuery.docs[0];
         companyData = {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         };
       }
     } catch (error) {
-      console.log('Error getting company data:', error);
+
     }
 
     // Auch stripe_accounts collection checken
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         stripeAccountData = stripeAccountDoc.data();
       }
     } catch (error) {
-      console.log('Error getting stripe account data:', error);
+
     }
 
     const response = {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       userData: userData,
       companyData: companyData,
       stripeAccountData: stripeAccountData,
-      
+
       // Sammle alle möglichen Stripe Account IDs
       possibleStripeAccountIds: {
         fromUsers: userData?.stripeAccountId,
@@ -72,11 +72,10 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    console.log('User Info Response:', response);
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Get User Info Error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Laden der User-Informationen.' },
       { status: 500 }

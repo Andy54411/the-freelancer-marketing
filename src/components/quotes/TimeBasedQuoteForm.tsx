@@ -237,7 +237,7 @@ export default function TimeBasedQuoteForm({
     try {
       await onSubmit(formData);
     } catch (error) {
-      console.error('Fehler beim Senden des Angebots:', error);
+
     }
   };
 

@@ -68,24 +68,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Optional: Leite den Benutzer nach dem Logout weiter
       router.push('/login');
     } catch (error) {
-      console.error('Fehler beim Abmelden: ', error);
+
       // Hier könnten Sie dem Benutzer eine Fehlermeldung anzeigen
     }
   };
 
   useEffect(() => {
-    console.log('AuthContext: Setting up onAuthStateChanged listener');
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
-      console.log('AuthContext: onAuthStateChanged triggered with user:', fbUser?.uid || 'null');
+
       try {
         if (fbUser) {
           // Token aktualisieren, um die neuesten Claims zu erhalten.
           const idTokenResult = await fbUser.getIdTokenResult(true);
           setFirebaseUser(fbUser);
-          console.log('AuthContext: Set firebaseUser to:', fbUser.uid);
 
           // Debug: Claims loggen
-          console.log('AuthContext: Custom Claims:', idTokenResult.claims);
 
           if (!db) {
             throw new Error('Firestore DB-Instanz ist nicht initialisiert.');
@@ -113,9 +111,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const finalRole = roleFromClaim || roleFromDb;
 
             // Debug: Rollen loggen
-            console.log('AuthContext: Role from claim:', roleFromClaim);
-            console.log('AuthContext: Role from DB:', roleFromDb);
-            console.log('AuthContext: Final role:', finalRole);
 
             setUser({
               uid: fbUser.uid,
@@ -129,9 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // NEU: Initialisiere User Presence nach erfolgreicher Authentifizierung
             userPresence.initializePresence(fbUser.uid).catch(console.error);
           } else {
-            console.warn(
-              `AuthContext: Benutzer ${fbUser.uid} ist authentifiziert, aber das Firestore-Dokument wurde nicht gefunden.`
-            );
+
             // Auch hier den Claim berücksichtigen, falls das DB-Dokument fehlt.
             const roleFromClaim = idTokenResult.claims.master
               ? 'master'
@@ -145,8 +138,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                       ? 'kunde'
                       : 'kunde';
 
-            console.log('AuthContext: Fallback role from claim:', roleFromClaim);
-
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
@@ -157,7 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             userPresence.initializePresence(fbUser.uid).catch(console.error);
           }
         } else {
-          console.log('AuthContext: No user found, setting user and firebaseUser to null');
+
           setUser(null);
           setFirebaseUser(null);
 
@@ -165,14 +156,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           userPresence.cleanupPresence();
         }
       } catch (error) {
-        console.error(
-          'AuthContext: Fehler beim Abrufen des Benutzerprofils oder der Claims.',
-          error
-        );
+
         setUser(null);
         setFirebaseUser(null);
       } finally {
-        console.log('AuthContext: Setting loading to false');
+
         setLoading(false);
       }
     });
@@ -182,9 +170,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Effekt für die Weiterleitung nach erfolgreichem Login
   useEffect(() => {
-    console.log(
-      `AuthContext: Login-Effekt ausgeführt - loading: ${loading}, user: ${user ? user.email : 'null'}, isRedirecting: ${isRedirecting}, pathname: ${pathname}`
-    );
 
     // Nur ausführen, wenn der Ladevorgang abgeschlossen ist, ein Benutzer vorhanden ist und wir nicht bereits weiterleiten
     if (!loading && user && !isRedirecting) {
@@ -193,10 +178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const registrationRedirectTo = sessionStorage.getItem('registrationRedirectTo');
 
       if (justRegistered === 'true' && registrationRedirectTo) {
-        console.log(
-          'AuthContext: Benutzer gerade registriert, weiterleiten zu:',
-          registrationRedirectTo
-        );
+
         // Cleanup der sessionStorage items
         sessionStorage.removeItem('justRegistered');
         sessionStorage.removeItem('registrationRedirectTo');
@@ -231,9 +213,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (shouldRedirect && targetPath) {
-        console.log(
-          `AuthContext: Weiterleitung von ${pathname} zu ${targetPath} für Rolle ${user.role}`
-        );
+
         setIsRedirecting(true);
         router.push(targetPath);
       }
@@ -253,9 +233,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     // HINZUGEFÜGT: Zusätzliche Sicherheitsprüfung für die DB-Instanz.
     if (!db) {
-      console.error(
-        '[AuthContext] Firestore DB ist nicht für den Listener für ungelesene Nachrichten verfügbar.'
-      );
+
       setUnreadMessagesCount(0);
       setRecentChats([]);
       return;
@@ -298,7 +276,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setRecentChats(chatsData);
       },
       error => {
-        console.error('[AuthContext] Fehler beim Abhören der Chats:', error);
+
         setUnreadMessagesCount(0);
         setRecentChats([]);
       }

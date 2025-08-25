@@ -16,11 +16,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[GET-ACCOUNT] Looking for user:', firebaseUserId);
-
     // Direkt aus users collection
     const userDoc = await db.collection('users').doc(firebaseUserId).get();
-    
+
     if (!userDoc.exists) {
       return NextResponse.json(
         { error: 'User nicht gefunden in users collection.' },
@@ -38,8 +36,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[GET-ACCOUNT] Found stripeAccountId:', stripeAccountId);
-
     return NextResponse.json({
       success: true,
       firebaseUserId,
@@ -53,7 +49,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[GET-ACCOUNT] Error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Laden der Account-Informationen.' },
       { status: 500 }

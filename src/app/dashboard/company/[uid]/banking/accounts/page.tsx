@@ -27,12 +27,10 @@ export default function BankingAccountsPage() {
   const loadFinAPIAccounts = useCallback(async () => {
     try {
       if (!user?.uid) {
-        console.log('No user found, cannot load accounts');
+
         setAccounts([]);
         return;
       }
-
-      console.log('Loading finAPI accounts for user:', user.uid);
 
       // Use enhanced accounts API that includes local storage
       const response = await fetch(
@@ -47,7 +45,7 @@ export default function BankingAccountsPage() {
       const data = await response.json();
 
       if (data.success && data.accounts) {
-        console.log(`Loaded ${data.accounts.length} accounts (${data.source || 'unknown'})`);
+
         setAccounts(data.accounts);
 
         // Set accounts grouped by bank if available
@@ -73,16 +71,16 @@ export default function BankingAccountsPage() {
 
         // Show success message if accounts were loaded from live API
         if (data.source === 'finapi_live' && refreshing) {
-          console.log('✅ Accounts refreshed from finAPI');
+
         }
       } else {
-        console.warn('finAPI returned no accounts or failed');
+
         setAccounts([]);
         setAccountsByBank({});
         setBankingOverview(null);
       }
     } catch (error) {
-      console.error('finAPI Accounts Fehler:', error);
+
       setAccounts([]);
       setAccountsByBank({});
       setBankingOverview(null);

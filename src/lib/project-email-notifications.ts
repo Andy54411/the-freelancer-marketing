@@ -53,9 +53,6 @@ export class ProjectEmailNotificationService {
     details: Array<{ email: string; success: boolean; error?: string }>;
   }> {
     try {
-      console.log(
-        `📧 [ProjectEmailService] Suche Unternehmen für Subcategory: ${projectData.subcategory}`
-      );
 
       // 1. Finde alle Unternehmen in der users Collection (user_type: 'firma') mit der entsprechenden Subcategory
       const firmUsersQuery = await db
@@ -70,14 +67,8 @@ export class ProjectEmailNotificationService {
         .where('selectedSubcategory', '==', projectData.subcategory)
         .get();
 
-      console.log(
-        `📊 [ProjectEmailService] Gefunden: ${firmUsersQuery.docs.length} User-Companies + ${companiesQuery.docs.length} Companies`
-      );
-
       if (firmUsersQuery.docs.length === 0 && companiesQuery.docs.length === 0) {
-        console.log(
-          `⚠️ [ProjectEmailService] Keine Unternehmen für Subcategory ${projectData.subcategory} gefunden`
-        );
+
         return {
           success: true,
           sentCount: 0,
@@ -125,10 +116,6 @@ export class ProjectEmailNotificationService {
         (company, index, arr) => arr.findIndex(c => c.email === company.email) === index
       );
 
-      console.log(
-        `📧 [ProjectEmailService] Bereite E-Mails vor für ${uniqueCompanies.length} eindeutige Unternehmen`
-      );
-
       if (uniqueCompanies.length === 0) {
         return {
           success: true,
@@ -166,23 +153,16 @@ export class ProjectEmailNotificationService {
             const company = uniqueCompanies[i + index];
 
             if (result.success) {
-              console.log(
-                `✅ [ProjectEmailService] E-Mail gesendet an ${company.companyName} (${company.email})`
-              );
+
               return { email: company.email, success: true };
             } else {
-              console.error(
-                `❌ [ProjectEmailService] E-Mail fehlgeschlagen an ${company.companyName}: ${result.error}`
-              );
+
               return { email: company.email, success: false, error: result.error };
             }
           } catch (error) {
             const company = uniqueCompanies[i + index];
             const errorMsg = error instanceof Error ? error.message : 'Unbekannter Fehler';
-            console.error(
-              `❌ [ProjectEmailService] Exception beim Senden an ${company.companyName}:`,
-              error
-            );
+
             return { email: company.email, success: false, error: errorMsg };
           }
         });
@@ -199,10 +179,6 @@ export class ProjectEmailNotificationService {
       const sentCount = results.filter(r => r.success).length;
       const failedCount = results.filter(r => !r.success).length;
 
-      console.log(
-        `📊 [ProjectEmailService] E-Mail-Versand abgeschlossen: ${sentCount} erfolgreich, ${failedCount} fehlgeschlagen`
-      );
-
       return {
         success: sentCount > 0,
         sentCount,
@@ -210,7 +186,7 @@ export class ProjectEmailNotificationService {
         details: results,
       };
     } catch (error) {
-      console.error('❌ [ProjectEmailService] Fehler beim E-Mail-Versand:', error);
+
       return {
         success: false,
         sentCount: 0,
@@ -289,80 +265,80 @@ export class ProjectEmailNotificationService {
             <div class="logo">Taskilo</div>
             <p class="header-text">Neue Projektanfrage verfügbar!</p>
           </div>
-          
+
           <div class="content">
             <h1 class="project-title">${projectData.title}</h1>
-            
+
             <p>Hallo ${company.companyName},</p>
-            
+
             <p>es gibt eine neue Projektanfrage in Ihrer Fachrichtung <strong>${projectData.subcategory}</strong>!</p>
-            
+
             <div class="info-grid">
               <div class="info-item">
                 <div class="info-label">Kategorie</div>
                 <div class="info-value">${projectData.category} → ${projectData.subcategory}</div>
               </div>
-              
+
               <div class="info-item">
                 <div class="info-label">Budget</div>
                 <div class="info-value">${budgetText}</div>
               </div>
-              
+
               <div class="info-item">
                 <div class="info-label">Standort</div>
                 <div class="info-value">${projectData.location || 'Nicht angegeben'}</div>
               </div>
-              
+
               <div class="info-item">
                 <div class="info-label">Zeitrahmen</div>
                 <div class="info-value">${dateText}</div>
               </div>
-              
+
               <div class="info-item">
                 <div class="info-label">Priorität</div>
                 <div class="info-value">${urgencyText}</div>
               </div>
             </div>
-            
+
             <div class="description">
               <div class="info-label">Projektbeschreibung</div>
               <p>${projectData.description}</p>
             </div>
-            
+
             <div style="text-align: center;">
               <a href="https://taskilo.de/dashboard/company/${company.id}/quotes/incoming/${projectData.projectId}" class="cta-button">
                 Angebot abgeben
               </a>
             </div>
-            
+
             <p style="margin-top: 30px; color: #666; font-size: 14px;">
               <strong>Schnell sein lohnt sich!</strong> Frühe Angebote haben oft bessere Erfolgschancen.
             </p>
-            
+
             <p style="color: #666; font-size: 14px;">
               <strong>Tipp:</strong> Erstellen Sie ein detailliertes Angebot mit transparenter Preisgestaltung und realistischen Zeitplänen.
             </p>
           </div>
-          
+
           <div class="footer">
             <p><strong>Bitte antworten Sie nicht auf diese E-Mail</strong> - wir erhalten Ihre Anfrage nicht.</p>
             <p>Benötigen Sie Hilfe? Besuchen Sie unser <a href="https://taskilo.de/dashboard/company/${company.id}/support">Support-Center</a>, dort können Sie ein Ticket erstellen.</p>
             <p><a href="https://taskilo.de/dashboard/company/${company.id}/settings">Präferenzen verwalten</a></p>
-            
+
             <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
-            
+
             <p style="font-size: 12px; color: #888; line-height: 1.5;">
               Diese E-Mail wurde automatisch von Taskilo generiert.<br>
               Sie erhalten diese E-Mails, weil Sie sich für die Kategorie "${projectData.subcategory}" registriert haben.
             </p>
-            
+
             <p style="font-size: 11px; color: #888; margin-top: 15px;">
               <strong>The Freelancer Marketing Ltd.</strong><br>
               Sinasi Bei, 69 KINGS RESORT BLOCK C, Flat/Office A2<br>
               8015, Paphos Cyprus<br>
               Registrierungsnummer: HE 458650 | VAT: CY60058879W<br>
-              <a href="https://taskilo.de/impressum">Impressum</a> | 
-              <a href="https://taskilo.de/datenschutz">Datenschutz</a> | 
+              <a href="https://taskilo.de/impressum">Impressum</a> |
+              <a href="https://taskilo.de/datenschutz">Datenschutz</a> |
               <a href="mailto:support@taskilo.de">Support</a>
             </p>
           </div>

@@ -121,7 +121,7 @@ export default function CreateAdminWorkspacePage() {
           router.push('/admin/login');
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+
         router.push('/admin/login');
       } finally {
         setAuthLoading(false);
@@ -167,13 +167,9 @@ export default function CreateAdminWorkspacePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('=== WORKSPACE CREATION DEBUG ===');
-    console.log('Admin User object:', adminUser);
-    console.log('Form data:', formData);
-
     // Use the admin user's email/ID
     if (!adminUser?.id && !adminUser?.email) {
-      console.warn('No admin user found - authentication required');
+
       toast.error('Sie müssen als Admin angemeldet sein');
       return;
     }
@@ -210,23 +206,20 @@ export default function CreateAdminWorkspacePage() {
         updatedAt: new Date(),
       };
 
-      console.log('Creating workspace with final data:', workspace);
-
       const result = await adminWorkspaceService.createWorkspace(workspace);
-      console.log('Workspace creation result:', result);
 
       toast.success('Admin Workspace erfolgreich erstellt');
 
       // Navigate to workspace detail page if we have the workspace ID
       if (result?.id) {
-        console.log('Navigating to workspace:', result.id);
+
         router.push(`/dashboard/admin/workspace/${result.id}`);
       } else {
-        console.log('No workspace ID returned, going to main page');
+
         router.push(`/dashboard/admin/workspace`);
       }
     } catch (error) {
-      console.error('FULL Error creating workspace:', error);
+
       toast.error(`Fehler beim Erstellen des Workspace: ${error.message}`);
     } finally {
       setLoading(false);

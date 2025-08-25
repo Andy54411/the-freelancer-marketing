@@ -14,14 +14,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('📊 Loading stored banking data for user:', userId);
-
     // Get user banking data from Firestore
     const userDocRef = db.collection('users').doc(userId);
     const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
-      console.log('ℹ️ User document not found:', userId);
+
       return NextResponse.json({
         success: true,
         connections: [],
@@ -37,12 +35,6 @@ export async function GET(request: NextRequest) {
 
     const userData = userDoc.data();
     const bankingData = userData?.banking || {};
-
-    console.log('📊 Raw banking data:', {
-      connections: Object.keys(bankingData.connections || {}).length,
-      accounts: Object.keys(bankingData.accounts || {}).length,
-      totalBalance: bankingData.totalBalance,
-    });
 
     // Transform connections data
     const connections = Object.entries(bankingData.connections || {}).map(
@@ -119,12 +111,6 @@ export async function GET(request: NextRequest) {
       isSetup: bankingData.isSetup || false,
     };
 
-    console.log('✅ Banking data loaded successfully:', {
-      connections: connections.length,
-      accounts: accounts.length,
-      totalBalance: stats.totalBalance,
-    });
-
     return NextResponse.json({
       success: true,
       connections,
@@ -138,7 +124,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Error loading banking data:', error);
+
     return NextResponse.json(
       {
         error: 'Failed to load banking data',

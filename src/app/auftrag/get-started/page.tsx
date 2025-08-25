@@ -59,17 +59,6 @@ export default function GetStartedPage() {
       !!(isSubcategoryFormValid && subcategoryData && Object.keys(subcategoryData).length > 0),
     ];
 
-    console.log('DEBUG Steps:', {
-      customerType: !!customerType,
-      selectedCategory: !!selectedCategory,
-      selectedSubcategory: !!selectedSubcategory,
-      isSubcategoryFormValid,
-      subcategoryDataValid: !!(subcategoryData && Object.keys(subcategoryData).length > 0),
-      subcategoryDataKeys: subcategoryData ? Object.keys(subcategoryData) : [],
-      completedCount: stepsCompleted.filter(Boolean).length,
-      totalSteps: TOTAL_STEPS,
-    });
-
     return stepsCompleted.filter(Boolean).length;
   }, [
     customerType,

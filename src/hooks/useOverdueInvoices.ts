@@ -62,10 +62,9 @@ export const useOverdueInvoices = (companyId: string) => {
           }
         });
 
-        console.log('[useOverdueInvoices] Gefundene überfällige Rechnungen:', overdue);
         setOverdueInvoices(overdue);
       } catch (err: any) {
-        console.error('Fehler beim Laden der überfälligen Rechnungen:', err);
+
         setError(err.message || 'Fehler beim Laden der überfälligen Rechnungen');
       } finally {
         setLoading(false);

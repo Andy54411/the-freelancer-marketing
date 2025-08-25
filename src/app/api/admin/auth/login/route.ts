@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       message: `Admin-Login erfolgreich. WorkMail SSO aktiviert für ${workmailEmail}`,
     });
   } catch (error) {
-    console.error('Admin login error:', error);
+
     return NextResponse.json({ error: 'Anmeldung fehlgeschlagen' }, { status: 500 });
   }
 }

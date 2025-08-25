@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'userUid erforderlich' }, { status: 400 });
     }
 
-    console.log(`Erstelle sofortige Admin-Notification für User: ${userUid}`);
-
     // Erstelle Notification direkt über Admin-Rechte
     const notification = {
       userId: userUid,
@@ -36,15 +34,13 @@ export async function POST(request: NextRequest) {
     // Temporäre Lösung: Nutze den direkten Firebase Admin-Zugang
     const docRef = await addDoc(collection(db, 'notifications'), notification);
 
-    console.log(`Notification erfolgreich erstellt mit ID: ${docRef.id}`);
-
     return NextResponse.json({
       success: true,
       message: 'Notification erfolgreich erstellt',
       notificationId: docRef.id,
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen der Admin-Notification:', error);
+
     return NextResponse.json(
       {
         success: false,

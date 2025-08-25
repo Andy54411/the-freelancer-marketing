@@ -15,15 +15,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[API /release-platform-funds] Starting platform funds release...');
 
     const body = await request.json();
     const { orderId, paymentIntentIds } = body;
-
-    console.log('[API /release-platform-funds] Request data:', {
-      orderId,
-      paymentIntentIds,
-    });
 
     // Validierung
     if (
@@ -89,7 +83,6 @@ export async function POST(request: NextRequest) {
     // Gehe durch alle PaymentIntents und erstelle Transfers an Provider
     for (const paymentIntentId of paymentIntentIds) {
       try {
-        console.log(`[API /release-platform-funds] Processing PaymentIntent: ${paymentIntentId}`);
 
         // Hole PaymentIntent Details um Provider Account ID zu bekommen
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -103,10 +96,6 @@ export async function POST(request: NextRequest) {
         if (companyReceives <= 0) {
           throw new Error('Invalid company amount in PaymentIntent metadata');
         }
-
-        console.log(
-          `[API /release-platform-funds] Creating transfer: ${companyReceives} cents to ${providerStripeAccountId}`
-        );
 
         // Erstelle Transfer vom Platform Account zum Provider Account
         const transfer = await stripe.transfers.create({
@@ -123,8 +112,6 @@ export async function POST(request: NextRequest) {
           description: `Platform-Freigabe für Auftrag ${orderId} - zusätzliche Stunden`,
         });
 
-        console.log(`[API /release-platform-funds] Successfully created transfer: ${transfer.id}`);
-
         completedTransfers.push({
           paymentIntentId,
           transferId: transfer.id,
@@ -132,7 +119,6 @@ export async function POST(request: NextRequest) {
           status: 'completed', // Transfers sind normalerweise sofort completed
         });
       } catch (error: any) {
-        console.error(`[API /release-platform-funds] Error processing ${paymentIntentId}:`, error);
 
         failedTransfers.push({
           paymentIntentId,
@@ -195,10 +181,6 @@ export async function POST(request: NextRequest) {
       'timeTracking.lastUpdated': new Date(),
     });
 
-    console.log(
-      `[API /release-platform-funds] Successfully completed ${completedTransfers.length} transfers`
-    );
-
     return NextResponse.json({
       success: true,
       completedTransfers,
@@ -210,16 +192,13 @@ export async function POST(request: NextRequest) {
     let errorMessage = 'Interner Serverfehler beim Freigeben der Platform-Gelder.';
 
     if (error instanceof Stripe.errors.StripeError) {
-      console.error(
-        '[API /release-platform-funds] StripeError:',
-        JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-      );
+
       errorMessage = `Stripe Platform-Freigabe Fehler: ${error.message}`;
     } else if (error instanceof Error) {
-      console.error('[API /release-platform-funds] Error:', error.message);
+
       errorMessage = `Platform-Freigabe Fehler: ${error.message}`;
     } else {
-      console.error('[API /release-platform-funds] Unknown error:', error);
+
     }
 
     return NextResponse.json(

@@ -20,8 +20,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
-    console.log('🔄 Syncing existing finAPI connections for user:', userId);
-
     // SCHRITT 1: finAPI Client-Credentials Token holen
     const baseUrl = getFinApiBaseUrl(credentialType);
     const credentials = getFinApiCredentials(credentialType);
@@ -47,7 +45,6 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ Client credentials token obtained');
 
     // SCHRITT 2: User Token holen
     const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36);
@@ -68,7 +65,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!userTokenResponse.ok) {
-      console.log('⚠️ User not found in finAPI - no existing connections');
+
       return NextResponse.json({
         success: true,
         found: false,
@@ -78,7 +75,6 @@ export async function POST(request: NextRequest) {
 
     const userTokenData = await userTokenResponse.json();
     const userAccessToken = userTokenData.access_token;
-    console.log('✅ User token obtained - checking for existing connections');
 
     // SCHRITT 3: Bankverbindungen abrufen
     const connectionsResponse = await fetch(`${baseUrl}/api/v2/bankConnections`, {
@@ -94,17 +90,10 @@ export async function POST(request: NextRequest) {
 
     const connectionsData = await connectionsResponse.json();
     const connections = connectionsData.connections || [];
-    console.log('📊 Found', connections.length, 'existing bank connections');
 
     // Debug: Log connection structure
     if (connections.length > 0) {
-      console.log('🔍 Connection sample:', {
-        id: connections[0].id,
-        bankId: connections[0].bankId,
-        bank: connections[0].bank,
-        accountIds: connections[0].accountIds,
-        updateStatus: connections[0].updateStatus,
-      });
+
     }
 
     if (connections.length === 0) {
@@ -129,7 +118,6 @@ export async function POST(request: NextRequest) {
 
     const accountsData = await accountsResponse.json();
     const accounts = accountsData.accounts || [];
-    console.log('💳 Found', accounts.length, 'existing accounts');
 
     // SCHRITT 5: Speichere gefundene Verbindungen
     const syncedAccounts: any[] = [];
@@ -155,12 +143,7 @@ export async function POST(request: NextRequest) {
       };
 
       await storeBankConnection(userId, bankConnectionData);
-      console.log('✅ Synced bank connection:', {
-        bank: bank.name,
-        connectionId: connection.id,
-        bankId: bankConnectionData.bankId,
-        accounts: connection.accountIds?.length || 0,
-      });
+
     }
 
     // Speichere Konten
@@ -231,7 +214,7 @@ export async function POST(request: NextRequest) {
 
     if (storedAccounts.length > 0) {
       await storeBankAccounts(userId, storedAccounts);
-      console.log('✅ Synced', storedAccounts.length, 'accounts from existing connections');
+
     }
 
     return NextResponse.json({
@@ -243,7 +226,7 @@ export async function POST(request: NextRequest) {
       message: `Successfully synced ${connections.length} existing bank connections with ${accounts.length} accounts`,
     });
   } catch (error: any) {
-    console.error('❌ Error syncing existing connections:', error);
+
     return NextResponse.json(
       {
         error: 'Failed to sync existing connections',

@@ -64,7 +64,7 @@ const MaurerForm: React.FC<MaurerFormProps> = ({ data, onDataChange, onValidatio
         // Setze die Beschreibung im Registration-Context
         if (description && description.trim()) {
           setDescription(description.trim());
-          console.log('Setting description from Maurer form data:', description.trim());
+
         }
       }
 

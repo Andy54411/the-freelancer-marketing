@@ -171,7 +171,7 @@ export async function getOnboardingProgress(
 
     return null;
   } catch (error) {
-    console.error('Error getting onboarding progress:', error);
+
     return null;
   }
 }
@@ -226,7 +226,7 @@ export async function updateOnboardingStep(
 
     await updateDoc(progressRef, updateData);
   } catch (error) {
-    console.error('Error updating onboarding step:', error);
+
     throw error;
   }
 }
@@ -245,7 +245,7 @@ export async function completeOnboarding(companyUid: string): Promise<void> {
       stepsCompleted: [1, 2, 3, 4, 5],
     });
   } catch (error) {
-    console.error('Error completing onboarding:', error);
+
     throw error;
   }
 }
@@ -273,7 +273,7 @@ export async function approveCompanyOnboarding(
       profileStatus: 'approved',
     });
   } catch (error) {
-    console.error('Error approving company onboarding:', error);
+
     throw error;
   }
 }
@@ -302,7 +302,7 @@ export async function rejectCompanyOnboarding(
       rejectionReason: reason,
     });
   } catch (error) {
-    console.error('Error rejecting company onboarding:', error);
+
     throw error;
   }
 }
@@ -323,7 +323,7 @@ export async function canAccessDashboard(companyUid: string): Promise<boolean> {
     const allowedStatuses = ['approved', 'grandfathered'];
     return allowedStatuses.includes(progress.status);
   } catch (error) {
-    console.error('Error checking dashboard access:', error);
+
     // Allow access on error (safe fallback)
     return true;
   }
@@ -348,7 +348,7 @@ export async function requiresOnboarding(companyUid: string): Promise<boolean> {
       statusesRequiringOnboarding.includes(progress.status)
     );
   } catch (error) {
-    console.error('Error checking onboarding requirement:', error);
+
     // Don't require onboarding on error (safe fallback)
     return false;
   }
@@ -400,7 +400,7 @@ export async function getAllCompaniesWithOnboardingStatus(): Promise<any[]> {
 
     return companiesWithProgress;
   } catch (error) {
-    console.error('Error getting companies with onboarding status:', error);
+
     return [];
   }
 }

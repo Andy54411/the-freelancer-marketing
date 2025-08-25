@@ -69,12 +69,10 @@ export function UserProfileSettingsForm({
             jobCity: '',
             jobCountry: '',
           });
-          console.warn(
-            `UserProfileSettingsForm: Nutzerdokument für UID ${targetUid} nicht gefunden. Initialisiere leeres Profil.`
-          );
+
         }
       } catch (error) {
-        console.error('UserProfileSettingsForm: Fehler beim Laden der Profildaten:', error);
+
         setErrorMessage('Fehler beim Laden deines Profils. Bitte versuche es später erneut.');
       } finally {
         setIsLoading(false);
@@ -83,7 +81,7 @@ export function UserProfileSettingsForm({
 
     const unsubscribeAuth = onAuthStateChanged(auth, user => {
       if (!user) {
-        console.warn('UserProfileSettingsForm: Kein Nutzer eingeloggt.');
+
         setIsLoading(false);
 
         return;
@@ -93,9 +91,7 @@ export function UserProfileSettingsForm({
       if (user.uid === targetUid) {
         loadUserData(user, targetUid);
       } else {
-        console.warn(
-          `UserProfileSettingsForm: UID-Mismatch. Angemeldet als ${user.uid}, Komponente ist für ${targetUid}.`
-        );
+
         setIsLoading(false);
       }
     });
@@ -129,10 +125,10 @@ export function UserProfileSettingsForm({
         updatedAt: new Date(),
       });
       setSaveStatus('success');
-      console.log('UserProfileSettingsForm: Profildaten erfolgreich gespeichert!');
+
       if (onSaveSuccess) onSaveSuccess();
     } catch (error) {
-      console.error('UserProfileSettingsForm: Fehler beim Speichern der Profildaten:', error);
+
       setSaveStatus('error');
       const msg = 'Fehler beim Speichern deines Profils. Bitte versuche es erneut.';
       setErrorMessage(msg);

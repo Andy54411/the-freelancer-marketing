@@ -44,7 +44,7 @@ export class UserPresenceService {
     this.setupVisibilityChangeHandler();
 
     this.isInitialized = true;
-    console.log(`[UserPresence] Initialized for user: ${userId}`);
+
   }
 
   // Startet den Timer für regelmäßige Aktivitätsupdates
@@ -89,13 +89,13 @@ export class UserPresenceService {
           });
         }
       } catch (error) {
-        console.warn('[UserPresence] Visibility change error:', error);
+
       }
     };
 
     // TEMPORÄR DEAKTIVIERT: Vereinfachte beforeunload-Behandlung ohne API-Call
     const handleBeforeUnload = () => {
-      console.log('[UserPresence] beforeunload triggered - TEMPORARILY DISABLED for debugging');
+
       /*
       if (this.userId) {
         try {
@@ -105,7 +105,7 @@ export class UserPresenceService {
           navigator.sendBeacon('/api/user-offline', data);
         } catch (error) {
           // Ignoriere Beacon-Fehler, da es nur ein Backup ist
-          console.debug('[UserPresence] Beacon failed (normal on some browsers)');
+
         }
       }
       */
@@ -120,8 +120,6 @@ export class UserPresenceService {
   // Beendet die Presence-Überwachung
   async cleanupPresence(): Promise<void> {
     if (!this.userId) return;
-
-    console.log(`[UserPresence] Cleaning up presence for user: ${this.userId}`);
 
     // Stoppe den Aktivitäts-Timer
     if (this.intervalId) {
@@ -140,9 +138,9 @@ export class UserPresenceService {
           lastSeen: serverTimestamp(),
           status: 'offline',
         });
-        console.log(`[UserPresence] Successfully set user ${this.userId} offline`);
+
       } else {
-        console.log(`[UserPresence] User already logged out, skipping offline status update`);
+
       }
     } catch (error) {
       // Ignoriere Permission-Fehler beim Cleanup nach Logout
@@ -152,17 +150,15 @@ export class UserPresenceService {
         'code' in error &&
         error.code === 'PERMISSION_DENIED'
       ) {
-        console.log(
-          `[UserPresence] Permission denied during cleanup (user likely logged out) - this is normal`
-        );
+
       } else {
-        console.error('[UserPresence] Error setting user offline:', error);
+
       }
     }
 
     this.isInitialized = false;
     this.userId = null;
-    console.log('[UserPresence] Cleanup completed');
+
   }
 
   // Holt den aktuellen Status eines Benutzers

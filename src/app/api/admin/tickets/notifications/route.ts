@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Benachrichtigungen versendet' });
   } catch (error) {
-    console.error('Notification error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Versenden der Benachrichtigungen' },
       { status: 500 }
@@ -228,7 +228,7 @@ function getCustomerEmailBody(type: string, ticket: any, comment?: string): stri
         </div>
         <div class="content">
           <h2>${getCustomerSubject(type, ticket)}</h2>
-          
+
           ${
             type === 'created'
               ? `
@@ -245,7 +245,7 @@ function getCustomerEmailBody(type: string, ticket: any, comment?: string): stri
             <p>es gibt ein Update zu Ihrem Support-Ticket.</p>
           `
           }
-          
+
           <div class="ticket-info">
             <h3>Ticket-Details:</h3>
             <p><strong>Ticket-ID:</strong> #${ticket.id.slice(-8)}</p>
@@ -254,7 +254,7 @@ function getCustomerEmailBody(type: string, ticket: any, comment?: string): stri
             <p><strong>Priorität:</strong> ${ticket.priority.toUpperCase()}</p>
             ${comment ? `<p><strong>Letztes Update:</strong> ${comment}</p>` : ''}
           </div>
-          
+
           ${
             type === 'resolved'
               ? `
@@ -264,7 +264,7 @@ function getCustomerEmailBody(type: string, ticket: any, comment?: string): stri
             <p>Sie können den aktuellen Status Ihres Tickets jederzeit in Ihrem Taskilo-Dashboard einsehen.</p>
           `
           }
-          
+
           <a href="${baseUrl}/dashboard/user/tickets" class="btn">Ticket anzeigen</a>
         </div>
         <div class="footer">
@@ -309,9 +309,9 @@ function getAdminEmailBody(
         </div>
         <div class="content">
           <h2>${getAdminSubject(type, ticket)}</h2>
-          
+
           ${ticket.priority === 'urgent' ? '<div class="urgent">🚨 DRINGENDE PRIORITÄT - Sofortige Bearbeitung erforderlich!</div>' : ''}
-          
+
           <div class="ticket-info ${ticket.priority === 'urgent' || ticket.priority === 'high' ? 'priority-' + ticket.priority : ''}">
             <h3>Ticket-Informationen:</h3>
             <p><strong>ID:</strong> ${ticket.id}</p>
@@ -323,9 +323,9 @@ function getAdminEmailBody(
             ${updatedBy ? `<p><strong>Aktualisiert von:</strong> ${updatedBy}</p>` : ''}
             ${comment ? `<p><strong>Kommentar:</strong> ${comment}</p>` : ''}
           </div>
-          
+
           <a href="${dashboardUrl}" class="btn">Im Admin-Dashboard öffnen</a>
-          
+
           <p><small>Diese E-Mail wurde automatisch vom Taskilo Ticket-System generiert.</small></p>
         </div>
       </div>
@@ -364,9 +364,9 @@ function getUrgentEmailBody(type: string, ticket: any, comment?: string): string
             <p><strong>Zeit:</strong> ${new Date().toLocaleString('de-DE')}</p>
             ${comment ? `<p><strong>Details:</strong> ${comment}</p>` : ''}
           </div>
-          
+
           <p><strong>Dieses Ticket erfordert sofortige Bearbeitung!</strong></p>
-          
+
           <a href="https://taskilo.de/dashboard/admin/tickets" class="btn">SOFORT BEARBEITEN</a>
         </div>
       </div>

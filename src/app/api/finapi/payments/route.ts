@@ -29,8 +29,6 @@ export async function GET(request: NextRequest) {
       undefined // perPage - removing problematic parameter
     );
 
-    console.log('Payments retrieved:', response.payments?.length || 0);
-
     return NextResponse.json({
       success: true,
       data: response.payments,
@@ -50,7 +48,7 @@ export async function GET(request: NextRequest) {
       totalCount: response.payments?.length || 0,
     });
   } catch (error: any) {
-    console.error('finAPI payments error:', error);
+
     return NextResponse.json(
       {
         success: false,
@@ -128,7 +126,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   } catch (error: any) {
-    console.error('finAPI payments POST error:', error);
+
     return NextResponse.json(
       {
         success: false,

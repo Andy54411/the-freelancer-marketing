@@ -10,7 +10,6 @@ import { db } from '@/firebase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('🎯 Taskilo Advertising Analytics API called');
 
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -154,7 +153,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Taskilo Advertising Analytics error:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler',
@@ -170,7 +169,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('🎯 Creating custom analytics report via Taskilo Advertising...');
 
     const body = await request.json();
     const { companyId, reportType, dateRange, metrics, dimensions, filters } = body;
@@ -202,7 +200,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ Custom report creation error:', error);
+
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen des Custom Reports',

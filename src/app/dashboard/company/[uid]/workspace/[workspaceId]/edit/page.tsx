@@ -68,7 +68,7 @@ export default function EditWorkspacePage() {
           tags: workspaceData.tags || [],
         });
       } catch (error) {
-        console.error('Error loading workspace:', error);
+
         router.push(`/dashboard/company/${companyId}/workspace`);
       } finally {
         setLoading(false);
@@ -110,7 +110,7 @@ export default function EditWorkspacePage() {
       // Navigate back to workspace overview
       router.push(`/dashboard/company/${companyId}/workspace`);
     } catch (error) {
-      console.error('Error updating workspace:', error);
+
       // TODO: Show error toast
     } finally {
       setSaving(false);
@@ -131,7 +131,7 @@ export default function EditWorkspacePage() {
       await WorkspaceService.deleteWorkspace(workspace.id);
       router.push(`/dashboard/company/${companyId}/workspace`);
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+
       // TODO: Show error toast
     }
   };

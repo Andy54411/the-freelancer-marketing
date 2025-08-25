@@ -258,7 +258,7 @@ const IncomingOrdersPage = () => {
 
       toast.success('Auftrag erfolgreich abgeschlossen! Geld wird zur Auszahlung freigegeben.');
     } catch (error: any) {
-      console.error('Error completing order:', error);
+
       toast.error(error.message || 'Fehler beim Abschließen des Auftrags');
       throw error;
     }

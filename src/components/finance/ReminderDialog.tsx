@@ -139,7 +139,7 @@ Mit freundlichen Grüßen`,
       toast.success('Mahnung erfolgreich versendet!');
       onClose();
     } catch (error) {
-      console.error('Fehler beim Versenden der Mahnung:', error);
+
       toast.error('Fehler beim Versenden der Mahnung');
     } finally {
       setIsLoading(false);

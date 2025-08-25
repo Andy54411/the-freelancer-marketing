@@ -9,7 +9,6 @@ import { DatevCookieManager } from '@/lib/datev-cookie-manager';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[DATEV Cookie Refresh] Processing token refresh request...');
 
     const { refresh_token, company_id } = await request.json();
 
@@ -19,8 +18,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    console.log('[DATEV Cookie Refresh] Refreshing token for company:', company_id);
 
     // Get DATEV configuration
     const config = getDatevConfig();
@@ -32,8 +29,6 @@ export async function POST(request: NextRequest) {
       client_id: config.clientId,
       client_secret: config.clientSecret,
     });
-
-    console.log('[DATEV Cookie Refresh] Calling DATEV token endpoint...');
 
     // Call DATEV token refresh endpoint
     const response = await fetch(config.tokenUrl, {
@@ -47,11 +42,6 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[DATEV Cookie Refresh] Token refresh failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
 
       return NextResponse.json(
         {
@@ -63,11 +53,6 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenData = await response.json();
-    console.log('[DATEV Cookie Refresh] New tokens received:', {
-      hasAccessToken: !!tokenData.access_token,
-      hasRefreshToken: !!tokenData.refresh_token,
-      expiresIn: tokenData.expires_in,
-    });
 
     // Calculate expiration timestamp
     const expiresAt = Date.now() + tokenData.expires_in * 1000;
@@ -82,7 +67,7 @@ export async function POST(request: NextRequest) {
       token_type: tokenData.token_type || 'Bearer',
     });
   } catch (error) {
-    console.error('[DATEV Cookie Refresh] Error:', error);
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

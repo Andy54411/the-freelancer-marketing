@@ -99,14 +99,8 @@ export class OrderNotificationService {
         db.collection('notifications').add(customerNotification),
       ]);
 
-      console.log(`✅ Order-Notifications erstellt für Auftrag ${orderId}:`, {
-        provider: providerUid,
-        customer: customerUid,
-        subcategory: orderData.subcategory,
-        amount: orderData.amount,
-      });
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Order-Notifications:', error);
+
       throw error;
     }
   }
@@ -165,11 +159,8 @@ export class OrderNotificationService {
 
       await db.collection('notifications').add(notification);
 
-      console.log(
-        `✅ Order-Status-Notification erstellt: ${status} für User ${targetUserUid}, Order ${orderId}`
-      );
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Order-Status-Notification:', error);
+
       throw error;
     }
   }
@@ -203,9 +194,8 @@ export class OrderNotificationService {
 
       await db.collection('notifications').add(testNotification);
 
-      console.log(`✅ Test-Order-Notification erstellt für User ${userUid}`);
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Test-Order-Notification:', error);
+
       throw error;
     }
   }

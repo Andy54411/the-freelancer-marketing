@@ -82,16 +82,12 @@ function B2BCheckoutForm({
     event.preventDefault();
 
     if (!stripe || !elements) {
-      console.error('[B2B PAYMENT] Stripe oder Elements nicht geladen');
+
       const errorMsg = 'B2B-Zahlungssystem ist noch nicht bereit. Bitte versuchen Sie es erneut.';
       setMessage(errorMsg);
       onError(errorMsg);
       return;
     }
-
-    console.log('[B2B PAYMENT] Starting B2B payment process...');
-    console.log('[B2B PAYMENT] Project:', projectData.projectTitle);
-    console.log('[B2B PAYMENT] Amount:', projectData.amount, 'cents');
 
     setIsLoading(true);
     onProcessing(true);
@@ -99,17 +95,15 @@ function B2BCheckoutForm({
 
     try {
       // Schritt 1: Elements validieren
-      console.log('[B2B PAYMENT] Validating payment elements...');
+
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-        console.error('[B2B PAYMENT] Element submission error:', submitError);
+
         setMessage(submitError.message || 'Fehler bei der Validierung der B2B-Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der B2B-Zahlungsdaten');
         return;
       }
-
-      console.log('[B2B PAYMENT] Elements validation successful, confirming B2B payment...');
 
       // Schritt 2: B2B Payment bestätigen mit echten Kundendaten
       // Da phone und address: 'auto' in PaymentElement gesetzt sind, lassen wir Stripe diese verwalten
@@ -118,11 +112,6 @@ function B2BCheckoutForm({
         // Keine manual billing_details nötig, da PaymentElement sie automatisch verwaltet
       };
 
-      console.log(
-        '[B2B PAYMENT] Calling stripe.confirmPayment with client secret:',
-        clientSecret?.substring(0, 20) + '...'
-      );
-
       const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
         elements,
         clientSecret,
@@ -130,33 +119,25 @@ function B2BCheckoutForm({
         redirect: 'if_required', // Nur bei 3D Secure umleiten
       });
 
-      console.log('[B2B PAYMENT] confirmPayment result:', {
-        error: confirmError?.message,
-        paymentIntentStatus: paymentIntent?.status,
-        paymentIntentId: paymentIntent?.id,
-      });
-
       if (confirmError) {
-        console.error('[B2B PAYMENT] Confirm payment error:', confirmError);
+
         const errorMessage = confirmError.message || 'Fehler bei der B2B-Zahlungsbestätigung';
         setMessage(errorMessage);
         onError(errorMessage);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log(
-          '[B2B PAYMENT] 🎉 B2B Payment succeeded! Webhook should be triggered automatically.'
-        );
+
         setMessage(
           'B2B-Zahlung erfolgreich abgeschlossen! Das Projekt wird automatisch als bezahlt markiert.'
         );
         onSuccess(paymentIntent.id);
       } else {
-        console.warn('[B2B PAYMENT] Unexpected payment status:', paymentIntent?.status);
+
         const errorMessage = `Unerwarteter B2B-Zahlungsstatus: ${paymentIntent?.status || 'unbekannt'}`;
         setMessage(errorMessage);
         onError(errorMessage);
       }
     } catch (error) {
-      console.error('[B2B PAYMENT] Payment processing error:', error);
+
       const errorMessage =
         error instanceof Error ? error.message : 'Unbekannter Fehler bei der B2B-Zahlung';
       setMessage(errorMessage);
@@ -322,15 +303,11 @@ export default function B2BPaymentComponent({
   useEffect(() => {
     const loadRealCustomerData = async () => {
       if (!customerData.customerId || customerData.customerId === 'anonymous') {
-        console.warn('[B2B PAYMENT] Keine gültige Customer ID vorhanden');
+
         return;
       }
 
       try {
-        console.log(
-          '[B2B PAYMENT] Lade echte Kundendaten aus Firebase für:',
-          customerData.customerId
-        );
 
         const { getFirestore, doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('@/firebase/clients');
@@ -339,17 +316,6 @@ export default function B2BPaymentComponent({
 
         if (customerDoc.exists()) {
           const userData = customerDoc.data();
-          console.log('[B2B PAYMENT] Echte Kundendaten geladen:', {
-            companyName: userData.companyName,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            email: userData.email,
-            phoneNumber: userData.phoneNumber,
-            street: userData.street,
-            city: userData.city,
-            postalCode: userData.postalCode,
-            country: userData.country,
-          });
 
           const realData = {
             companyName:
@@ -374,12 +340,12 @@ export default function B2BPaymentComponent({
           };
 
           setRealCustomerData(realData);
-          console.log('[B2B PAYMENT] ✅ Echte Kundendaten gesetzt:', realData);
+
         } else {
-          console.warn('[B2B PAYMENT] Kunde nicht in Firebase gefunden:', customerData.customerId);
+
         }
       } catch (error) {
-        console.error('[B2B PAYMENT] Fehler beim Laden der Kundendaten:', error);
+
       }
     };
 
@@ -392,10 +358,8 @@ export default function B2BPaymentComponent({
 
     const createB2BPayment = async () => {
       setIsCreatingPayment(true);
-      console.log('[B2B PAYMENT] Creating B2B Payment Intent with real customer data...');
 
       try {
-        console.log('[B2B PAYMENT] Using real customer data:', realCustomerData);
 
         const response = await fetch('/api/b2b/create-project-payment', {
           method: 'POST',
@@ -425,17 +389,14 @@ export default function B2BPaymentComponent({
         const data = await response.json();
 
         if (data.success && data.clientSecret) {
-          console.log(
-            '[B2B PAYMENT] B2B Payment Intent created successfully:',
-            data.paymentIntentId
-          );
+
           setClientSecret(data.clientSecret);
         } else {
-          console.error('[B2B PAYMENT] B2B Payment Intent creation failed:', data);
+
           onError(data.error || 'Fehler beim Erstellen der B2B-Zahlung');
         }
       } catch (error) {
-        console.error('[B2B PAYMENT] Network error creating B2B Payment Intent:', error);
+
         onError('Netzwerkfehler beim Erstellen der B2B-Zahlung');
       } finally {
         setIsCreatingPayment(false);

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error) {
-      console.error('❌ Google Ads OAuth error:', error);
+
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${state}/taskilo-advertising?error=oauth_failed&platform=google-ads`
       );
@@ -27,8 +27,6 @@ export async function GET(request: NextRequest) {
     const companyId = state;
     const googleAdsService = new GoogleAdsClientService();
     const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/multi-platform-advertising/auth/google-ads/callback`;
-
-    console.log('🔄 Exchanging Google Ads authorization code for tokens...');
 
     // Exchange code for tokens
     const tokenResult = await googleAdsService.exchangeCodeForTokens(code, redirectUri);
@@ -77,14 +75,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log('✅ Google Ads connection established successfully');
-
     // Redirect back to dashboard with success
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/company/${companyId}/taskilo-advertising?success=connected&platform=google-ads`
     );
   } catch (error: any) {
-    console.error('❌ Google Ads OAuth callback error:', error);
 
     const companyId = new URL(request.url).searchParams.get('state');
     return NextResponse.redirect(

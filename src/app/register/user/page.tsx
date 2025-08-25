@@ -28,7 +28,7 @@ async function linkJobToUser(
   const ERROR_CONTEXT = `${PAGE_ERROR} linkJobToUser (${actionType}):`;
 
   if (!jobId || !userId) {
-    console.warn(WARN_CONTEXT, 'jobId oder userId fehlt, keine Verknüpfung möglich.');
+
     return;
   }
   try {
@@ -39,13 +39,9 @@ async function linkJobToUser(
       kundeId: userId,
       status: 'draft_authenticated_user',
     });
-    console.log(LOG_CONTEXT, `Job ${jobId} erfolgreich mit User ${userId} verknüpft.`);
+
   } catch (error: unknown) {
-    console.error(
-      ERROR_CONTEXT,
-      `Fehler beim Verknüpfen von Job ${jobId} mit User ${userId}:`,
-      error
-    );
+
   }
 }
 
@@ -132,7 +128,7 @@ function UserRegisterFormContent() {
           setPostalCode(currentPostalCode);
           setCountry(currentCountry); // Setzt den Ländercode (z.B. DE)
         } else {
-          console.warn(PAGE_WARN, 'Keine Adresskomponenten im ausgewählten Ort gefunden.');
+
         }
       });
     }
@@ -150,18 +146,17 @@ function UserRegisterFormContent() {
   // useEffect für direkte Weiterleitung nach erfolgreicher Registrierung
   useEffect(() => {
     if (registrationSuccess) {
-      console.log(PAGE_LOG, '✅ Registrierung erfolgreich! Weiterleitung zur Bestätigungsseite...');
 
       // Extrahiere die Unterkategorie aus den searchParams für den korrekten Pfad
       const redirectTo = searchParams?.get('redirectTo');
 
       if (redirectTo) {
         // Wenn eine redirectTo URL existiert, verwende diese direkt
-        console.log(PAGE_LOG, '🔄 Weiterleitung zu redirectTo URL:', redirectTo);
+
         window.location.replace(redirectTo);
       } else {
         // Fallback: Versuche zur Standard-Bestätigungsseite zu navigieren
-        console.warn(PAGE_LOG, '⚠️ Keine redirectTo URL gefunden, verwende Fallback');
+
         window.location.replace('/auftrag/get-started');
       }
     }
@@ -172,7 +167,7 @@ function UserRegisterFormContent() {
 
     // Verhindere mehrfache Registrierung
     if (loading || registrationSuccess) {
-      console.log(PAGE_LOG, 'Registrierung bereits in Bearbeitung oder abgeschlossen');
+
       return;
     }
 
@@ -199,7 +194,6 @@ function UserRegisterFormContent() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      console.log(PAGE_LOG, 'Benutzer registriert:', user.uid);
 
       // KORREKTUR: Setze das sessionStorage-Flag SOFORT nach der erfolgreichen
       // Authentifizierung, um die Race Condition mit dem AuthContext zu gewinnen.
@@ -220,7 +214,6 @@ function UserRegisterFormContent() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      console.log(PAGE_LOG, 'Benutzerdaten in Firestore geschrieben.');
 
       // KORREKTUR: Adressdaten aus dieser Seite in die persönlichen Adressfelder
       // des Registration-Context schreiben, da dies die Rechnungsadresse des Nutzers ist.
@@ -236,15 +229,10 @@ function UserRegisterFormContent() {
       registration.setEmail(email); // E-Mail wird bereits für Auth verwendet, aber auch im Context nützlich
       registration.setPhoneNumber(`${selectedCountryCode}${phone.replace(/\D/g, '')}`);
 
-      console.log(
-        PAGE_LOG,
-        'Persönliche Adress- und Kontaktdaten in Registration-Context geschrieben.'
-      );
-
       // Setze den Erfolgszustand, anstatt direkt weiterzuleiten.
       setRegistrationSuccess(true);
     } catch (err: unknown) {
-      console.error(PAGE_ERROR, 'Registrierungsfehler:', err);
+
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as AuthError;
         if (firebaseError.code === 'auth/email-already-in-use') {
@@ -272,7 +260,6 @@ function UserRegisterFormContent() {
     redirectToUrl?: string | null
   ) => {
     setIsLoginPopupOpen(false);
-    console.log(PAGE_LOG, 'Login via Popup erfolgreich für User:', loggedInUser.uid);
 
     let finalRedirectUrl = redirectToUrl;
     if (redirectToUrl) {
@@ -287,18 +274,13 @@ function UserRegisterFormContent() {
         }
         finalRedirectUrl = urlObj.toString(); // Sicherstellen, dass alle bestehenden Parameter erhalten bleiben
       } catch (urlParseError) {
-        console.error(
-          PAGE_ERROR,
-          'Fehler beim Parsen der redirectTo URL nach Popup-Login:',
-          urlParseError
-        );
+
         finalRedirectUrl = `/auftrag/get-started`; // Fallback
       }
     } else {
       finalRedirectUrl = `/auftrag/get-started`;
     }
 
-    console.log(PAGE_LOG, `Weiterleitung nach Popup-Login zu: ${finalRedirectUrl}`);
     // Die Verwendung von router.push() kann zu Race-Conditions führen, bei denen die Zielseite
     // die Authentifizierung prüft, bevor der globale Auth-Status aktualisiert wurde.
     // Ein vollständiger Reload stellt sicher, dass der Status beim Laden der neuen Seite korrekt ist.

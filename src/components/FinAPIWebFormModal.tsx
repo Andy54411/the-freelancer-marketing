@@ -55,17 +55,15 @@ export default function FinAPIWebFormModal({
         return;
       }
 
-      console.log('finAPI WebForm message received:', event.data);
-
       if (event.data.type === 'BANK_CONNECTION_SUCCESS') {
-        console.log('Bank connection successful:', event.data.bankConnectionId);
+
         onSuccess(event.data.bankConnectionId);
         onClose();
       } else if (event.data.type === 'BANK_CONNECTION_ERROR') {
-        console.error('Bank connection failed:', event.data.error);
+
         onError(event.data.error || 'Bank-Verbindung fehlgeschlagen');
       } else if (event.data.type === 'WEBFORM_CANCELLED') {
-        console.log('WebForm cancelled by user');
+
         onClose();
       }
     };
@@ -104,7 +102,7 @@ export default function FinAPIWebFormModal({
         clearInterval(checkClosed);
         setIsLoading(false);
         // Popup was closed - assume cancelled unless we got a success message
-        console.log('WebForm popup was closed');
+
       }
     }, 1000);
 

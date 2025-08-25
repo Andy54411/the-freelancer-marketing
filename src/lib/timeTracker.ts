@@ -49,9 +49,8 @@ export class TimeTracker {
         approvalRequests: [],
       });
 
-      console.log('[TimeTracker] Initialized time tracking for order:', orderId);
     } catch (error) {
-      console.error('[TimeTracker] Error initializing time tracking:', error);
+
       throw error;
     }
   }
@@ -100,9 +99,7 @@ export class TimeTracker {
           const companyData = companyDoc.data();
           if (companyData.hourlyRate && companyData.hourlyRate > 0) {
             hourlyRateInEuros = companyData.hourlyRate;
-            console.log(
-              `[TimeTracker] Verwende Firmen-Stundensatz (companies): ${hourlyRateInEuros}€/h (Provider: ${providerId})`
-            );
+
           }
         }
 
@@ -115,9 +112,7 @@ export class TimeTracker {
             const userData = userDoc.data();
             if (userData.hourlyRate && userData.hourlyRate > 0) {
               hourlyRateInEuros = userData.hourlyRate;
-              console.log(
-                `[TimeTracker] Verwende User-Stundensatz (users fallback): ${hourlyRateInEuros}€/h (Provider: ${providerId})`
-              );
+
             }
           }
         }
@@ -125,9 +120,6 @@ export class TimeTracker {
 
       // 3. LETZTER FALLBACK: Manueller Input per Popup
       if (hourlyRateInEuros === null) {
-        console.warn(
-          `[TimeTracker] Kein Stundensatz für Provider ${providerId} gefunden - zeige Eingabe-Popup`
-        );
 
         const userInput = prompt(
           `⚠️ STUNDENSATZ ERFORDERLICH\n\n` +
@@ -139,7 +131,6 @@ export class TimeTracker {
 
         if (userInput && !isNaN(parseFloat(userInput))) {
           hourlyRateInEuros = parseFloat(userInput);
-          console.log(`[TimeTracker] Manuell eingegebener Stundensatz: ${hourlyRateInEuros}€/h`);
 
           // Optional: Speichere den Stundensatz in der users Collection für zukünftige Verwendung
           if (providerId) {
@@ -149,11 +140,9 @@ export class TimeTracker {
                 hourlyRateUpdatedAt: serverTimestamp(),
                 hourlyRateUpdatedBy: 'manual_input',
               });
-              console.log(
-                `[TimeTracker] Stundensatz ${hourlyRateInEuros}€/h für Provider ${providerId} gespeichert`
-              );
+
             } catch (error) {
-              console.warn('[TimeTracker] Konnte Stundensatz nicht speichern:', error);
+
             }
           }
         } else {
@@ -165,7 +154,6 @@ export class TimeTracker {
 
       // Auto-initialisiere TimeTracking falls nicht vorhanden
       if (!orderData.timeTracking) {
-        console.log('[TimeTracker] Auto-initializing time tracking for order:', orderId);
 
         // Verwende korrekte Werte aus Live-Daten
         const totalPrice =
@@ -187,11 +175,8 @@ export class TimeTracker {
           const hoursPerDay = parseFloat(String(orderData.jobDurationString || 8)); // Stunden pro Tag aus jobDurationString
           originalPlannedHours = totalDays * hoursPerDay;
 
-          console.log(
-            `[TimeTracker] Mehrtägiger Auftrag: ${totalDays} Tage × ${hoursPerDay}h = ${originalPlannedHours}h`
-          );
         } else {
-          console.log(`[TimeTracker] Eintägiger Auftrag: ${originalPlannedHours}h`);
+
         }
 
         // hourlyRateInEuros ist bereits oben geholt worden
@@ -235,15 +220,6 @@ export class TimeTracker {
         const correctHourlyRateInCents = Math.round(hourlyRateInEuros * 100); // Verwende den geholtenen Firmen-Stundensatz
 
         // Debug: Log zur Überprüfung
-        console.log('[TimeTracker] Billing calculation:', {
-          hours: entry.hours,
-          travelCost: entry.travelCost || 0,
-          hourlyRateInCents: correctHourlyRateInCents,
-          hoursAmount: Math.round(entry.hours * correctHourlyRateInCents),
-          totalAmount: Math.round(entry.hours * correctHourlyRateInCents) + (entry.travelCost || 0),
-          hourlyRateInEuros: correctHourlyRateInCents / 100,
-          source: 'company.hourlyRate (not stored timeTracking.hourlyRate)',
-        });
 
         // Berechne billableAmount: Stunden × Stundensatz + Anfahrtskosten
         const hoursAmount = Math.round(entry.hours * correctHourlyRateInCents);
@@ -264,10 +240,9 @@ export class TimeTracker {
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
-      console.log('[TimeTracker] Time entry logged:', entryId);
       return entryId;
     } catch (error) {
-      console.error('[TimeTracker] Error logging time entry:', error);
+
       throw error;
     }
   }
@@ -317,9 +292,8 @@ export class TimeTracker {
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
-      console.log('[TimeTracker] Time entry deleted:', entryId);
     } catch (error) {
-      console.error('[TimeTracker] Error deleting time entry:', error);
+
       throw error;
     }
   }
@@ -353,7 +327,7 @@ export class TimeTracker {
 
       return sortedEntries;
     } catch (error) {
-      console.error('[TimeTracker] Error getting time entries:', error);
+
       throw error;
     }
   }
@@ -431,10 +405,9 @@ export class TimeTracker {
         approvalRequests: updatedApprovalRequests,
       });
 
-      console.log('[TimeTracker] Submitted for customer approval:', approvalRequestId);
       return approvalRequestId;
     } catch (error) {
-      console.error('[TimeTracker] Error submitting for approval:', error);
+
       throw error;
     }
   }
@@ -501,9 +474,8 @@ export class TimeTracker {
         completedAt: serverTimestamp(),
       });
 
-      console.log('[TimeTracker] Complete order approval processed:', orderId);
     } catch (error) {
-      console.error('[TimeTracker] Error processing complete order approval:', error);
+
       throw error;
     }
   }
@@ -612,9 +584,8 @@ export class TimeTracker {
 
       await updateDoc(orderRef, updateData);
 
-      console.log('[TimeTracker] Customer approval processed:', approvalRequestId);
     } catch (error) {
-      console.error('[TimeTracker] Error processing customer approval:', error);
+
       throw error;
     }
   }
@@ -685,14 +656,6 @@ export class TimeTracker {
         throw new Error('Provider Stripe Connect Account ID not found');
       }
 
-      console.log('[TimeTracker] Creating Platform Hold authorization for additional hours:', {
-        orderId,
-        totalAmount,
-        customerStripeId,
-        providerStripeAccountId,
-        approvedEntriesCount: approvedEntries.length,
-      });
-
       // Erstelle Platform Hold PaymentIntent über unsere API
       const response = await fetch('/api/bill-additional-hours', {
         method: 'POST',
@@ -751,14 +714,6 @@ export class TimeTracker {
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
-      console.log('[TimeTracker] Platform Hold PaymentIntent authorized successfully:', {
-        paymentIntentId: paymentData.paymentIntentId,
-        customerPays: paymentData.customerPays,
-        companyReceives: paymentData.companyReceives,
-        platformFee: paymentData.platformFee,
-        platformHoldStatus: 'held',
-      });
-
       return {
         paymentIntentId: paymentData.paymentIntentId,
         customerPays: paymentData.customerPays,
@@ -768,7 +723,7 @@ export class TimeTracker {
         escrowStatus: 'authorized', // Legacy compatibility
       };
     } catch (error) {
-      console.error('[TimeTracker] Error authorizing escrow for additional hours:', error);
+
       throw error;
     }
   }
@@ -821,9 +776,8 @@ export class TimeTracker {
         await this.releasePlatformFunds(orderId);
       }
 
-      console.log('[TimeTracker] Customer marked project as complete:', orderId);
     } catch (error) {
-      console.error('[TimeTracker] Error marking project complete by customer:', error);
+
       throw error;
     }
   }
@@ -876,9 +830,8 @@ export class TimeTracker {
         await this.releasePlatformFunds(orderId);
       }
 
-      console.log('[TimeTracker] Provider marked project as complete:', orderId);
     } catch (error) {
-      console.error('[TimeTracker] Error marking project complete by provider:', error);
+
       throw error;
     }
   }
@@ -909,14 +862,9 @@ export class TimeTracker {
         .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
 
       if (platformHoldPaymentIntents.length === 0) {
-        console.log('[TimeTracker] No platform hold funds to release for order:', orderId);
+
         return;
       }
-
-      console.log('[TimeTracker] Releasing platform funds:', {
-        orderId,
-        paymentIntentIds: platformHoldPaymentIntents,
-      });
 
       // Rufe Platform-Freigabe API auf
       const response = await fetch('/api/release-platform-funds', {
@@ -937,12 +885,8 @@ export class TimeTracker {
 
       const releaseData = await response.json();
 
-      console.log('[TimeTracker] Platform funds released successfully:', {
-        transferredCount: releaseData.completedTransfers.length,
-        totalTransferred: releaseData.totalTransferred,
-      });
     } catch (error) {
-      console.error('[TimeTracker] Error releasing platform funds:', error);
+
       throw error;
     }
   }
@@ -1014,51 +958,11 @@ export class TimeTracker {
         const providerUserData = providerUserDoc.data();
         const fallbackStripeAccountId = providerUserData?.stripeAccountId;
 
-        console.log(
-          '[TimeTracker] Provider Stripe Connect Setup missing - Detaillierte Diagnose:',
-          {
-            orderId,
-            providerId: orderData.selectedAnbieterId,
-            companiesDoc: providerDoc.exists()
-              ? {
-                companyName: providerData?.companyName,
-                hasStripeConnectAccountId: !!providerData?.stripeConnectAccountId,
-                stripeConnectAccountId: providerData?.stripeConnectAccountId,
-                stripeConnectStatus: providerData?.stripeConnectStatus || 'not_started',
-              }
-              : 'NO_COMPANIES_DOC',
-            usersDoc: providerUserDoc.exists()
-              ? {
-                userType: providerUserData?.user_type,
-                hasStripeAccountId: !!providerUserData?.stripeAccountId,
-                stripeAccountId: providerUserData?.stripeAccountId,
-              }
-              : 'NO_USERS_DOC',
-            fallbackAccountId: fallbackStripeAccountId,
-          }
-        );
-
         // Falls Fallback verfügbar, verwende ihn
         if (fallbackStripeAccountId) {
-          console.log(
-            '[TimeTracker] Using fallback Stripe Account ID from users collection:',
-            fallbackStripeAccountId
-          );
 
           // Fortsetzung mit der gefundenen ID - Migration wird Server-seitig in der API behandelt
           const providerStripeAccountIdFallback = fallbackStripeAccountId;
-
-          console.log(
-            '[TimeTracker] Creating Stripe PaymentIntent for additional hours (with fallback):',
-            {
-              orderId,
-              totalAmount,
-              customerStripeId,
-              providerStripeAccountId: providerStripeAccountIdFallback,
-              approvedEntriesCount: approvedEntries.length,
-              usedFallback: true,
-            }
-          );
 
           // Erstelle PaymentIntent über unsere API (mit Fallback ID)
           const response = await fetch('/api/bill-additional-hours', {
@@ -1076,14 +980,13 @@ export class TimeTracker {
 
           if (!response.ok) {
             const errorData = await response.json();
-            console.error('[TimeTracker] API Error creating PaymentIntent (fallback):', errorData);
 
             // Spezielle Behandlung für Stripe Connect Probleme
             if (
               errorData.error?.includes('Stripe Connect') ||
               errorData.error?.includes('account')
             ) {
-              console.error('[TimeTracker] Stripe Connect Setup Problem detected');
+
               throw new Error(
                 `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
                 `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
@@ -1137,14 +1040,6 @@ export class TimeTracker {
             },
           });
 
-          console.log('[TimeTracker] PaymentIntent created successfully (with fallback):', {
-            paymentIntentId: paymentData.paymentIntentId,
-            customerPays: paymentData.customerPays,
-            companyReceives: paymentData.companyReceives,
-            platformFee: paymentData.platformFee,
-            clientSecret: paymentData.clientSecret,
-          });
-
           return {
             paymentIntentId: paymentData.paymentIntentId,
             customerPays: paymentData.customerPays,
@@ -1166,21 +1061,6 @@ export class TimeTracker {
         );
       }
 
-      console.log('[TimeTracker] Creating Stripe PaymentIntent for additional hours:', {
-        orderId,
-        totalAmount,
-        customerStripeId,
-        providerStripeAccountId,
-        approvedEntriesCount: approvedEntries.length,
-        approvedEntryIds: approvedEntries.map(e => e.id),
-        requestBody: {
-          orderId,
-          approvedEntryIds: approvedEntries.map(e => e.id),
-          customerStripeId,
-          providerStripeAccountId,
-        },
-      });
-
       // Erstelle PaymentIntent über unsere API
       const response = await fetch('/api/bill-additional-hours', {
         method: 'POST',
@@ -1195,26 +1075,8 @@ export class TimeTracker {
         }),
       });
 
-      console.log('[TimeTracker] API Response status:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries()),
-      });
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[TimeTracker] API Error creating PaymentIntent - DETAILED:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorText,
-          requestBody: {
-            orderId,
-            approvedEntryIds: approvedEntries.map(e => e.id),
-            customerStripeId,
-            providerStripeAccountId,
-          },
-        });
 
         let errorData: any;
         try {
@@ -1225,7 +1087,7 @@ export class TimeTracker {
 
         // Spezielle Behandlung für Stripe Connect Probleme
         if (errorData.error?.includes('Stripe Connect') || errorData.error?.includes('account')) {
-          console.error('[TimeTracker] Stripe Connect Setup Problem detected');
+
           throw new Error(
             `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
             `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
@@ -1238,16 +1100,6 @@ export class TimeTracker {
       }
 
       const paymentData = await response.json();
-
-      console.log('[TimeTracker] Payment Data received - DETAILED:', {
-        paymentData,
-        hasClientSecret: !!paymentData.clientSecret,
-        clientSecretLength: paymentData.clientSecret?.length || 0,
-        paymentIntentId: paymentData.paymentIntentId,
-        customerPays: paymentData.customerPays,
-        companyReceives: paymentData.companyReceives,
-        platformFee: paymentData.platformFee,
-      });
 
       // Markiere NEUE Einträge als billing_pending, aktualisiere BEREITS billing_pending Einträge
       const updatedTimeEntries = orderData.timeTracking.timeEntries.map(entry => {
@@ -1289,14 +1141,6 @@ export class TimeTracker {
         },
       });
 
-      console.log('[TimeTracker] PaymentIntent created successfully:', {
-        paymentIntentId: paymentData.paymentIntentId,
-        customerPays: paymentData.customerPays,
-        companyReceives: paymentData.companyReceives,
-        platformFee: paymentData.platformFee,
-        clientSecret: paymentData.clientSecret,
-      });
-
       return {
         paymentIntentId: paymentData.paymentIntentId,
         customerPays: paymentData.customerPays,
@@ -1305,7 +1149,7 @@ export class TimeTracker {
         clientSecret: paymentData.clientSecret,
       };
     } catch (error) {
-      console.error('[TimeTracker] Error billing approved hours:', error);
+
       throw error;
     }
   }
@@ -1373,7 +1217,7 @@ export class TimeTracker {
 
       return stats;
     } catch (error) {
-      console.error('[TimeTracker] Error getting provider stats:', error);
+
       throw error;
     }
   }
@@ -1434,7 +1278,7 @@ export class TimeTracker {
 
       return requests;
     } catch (error) {
-      console.error('Error fetching pending approval requests:', error);
+
       throw error;
     }
   }
@@ -1572,7 +1416,7 @@ export class TimeTracker {
         },
       };
     } catch (error) {
-      console.error('[TimeTracker] Error getting approval status:', error);
+
       throw error;
     }
   }
@@ -1591,7 +1435,7 @@ export class TimeTracker {
       }
       return null;
     } catch (error) {
-      console.error('Error fetching order details:', error);
+
       throw error;
     }
   } /**
@@ -1683,24 +1527,13 @@ export class TimeTracker {
           const correctHourlyRateInCents = Math.round(hourlyRateInEuros * 100);
 
           // Debug: Log zur Überprüfung
-          console.log('[TimeTracker] Billing recalculation on update:', {
-            hours: updatedEntry.hours,
-            travelCost: updatedEntry.travelCost || 0,
-            hourlyRateInCents: correctHourlyRateInCents,
-            hoursAmount: Math.round(updatedEntry.hours * correctHourlyRateInCents),
-            totalAmount:
-              Math.round(updatedEntry.hours * correctHourlyRateInCents) +
-              (updatedEntry.travelCost || 0),
-            hourlyRateInEuros: correctHourlyRateInCents / 100,
-            entryId: entryId,
-          });
 
           // Berechne billableAmount: Stunden × Stundensatz + Anfahrtskosten
           const hoursAmount = Math.round(updatedEntry.hours * correctHourlyRateInCents);
           const travelCostAmount = updatedEntry.travelCost || 0;
           updatedEntry.billableAmount = hoursAmount + travelCostAmount;
         } else {
-          console.warn('[TimeTracker] Company not found for billableAmount calculation on update');
+
         }
       }
 
@@ -1716,9 +1549,8 @@ export class TimeTracker {
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
-      console.log('[TimeTracker] Time entry updated:', entryId);
     } catch (error) {
-      console.error('[TimeTracker] Error updating time entry:', error);
+
       throw error;
     }
   }
@@ -1784,22 +1616,13 @@ export class TimeTracker {
         });
       }
 
-      console.log(
-        `[TimeTracker] Successfully migrated Stripe Account ID for provider ${providerId}:`,
-        {
-          accountId: stripeAccountId,
-          from: 'users',
-          to: 'companies',
-        }
-      );
-
       return {
         success: true,
         message: `Stripe Account ID ${stripeAccountId} erfolgreich migriert`,
         migratedAccountId: stripeAccountId,
       };
     } catch (error) {
-      console.error('[TimeTracker] Error migrating provider Stripe account:', error);
+
       return {
         success: false,
         message: `Fehler bei der Migration: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
@@ -1900,7 +1723,7 @@ export class TimeTracker {
         debugInfo,
       };
     } catch (error) {
-      console.error('[TimeTracker] Error diagnosing provider Stripe setup:', error);
+
       throw error;
     }
   }
@@ -1997,8 +1820,6 @@ export class TimeTracker {
         approvalRequests: updatedApprovalRequests,
       });
 
-      console.log('[TimeTracker] Customer-initiated approval request created:', approvalRequestId);
-
       return {
         success: true,
         approvalRequestId,
@@ -2007,7 +1828,7 @@ export class TimeTracker {
         totalAmount,
       };
     } catch (error) {
-      console.error('[TimeTracker] Error creating customer-initiated approval:', error);
+
       return {
         success: false,
         message: `Fehler beim Einreichen zur Freigabe: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
@@ -2081,12 +1902,6 @@ export class TimeTracker {
         'timeTracking.lastUpdated': serverTimestamp(),
       });
 
-      console.log('[TimeTracker] Direct approval of logged additional hours:', {
-        orderId,
-        approvedHours,
-        totalAmount,
-      });
-
       return {
         success: true,
         message: `✅ ${approvedHours.toFixed(1)} zusätzliche Stunden wurden erfolgreich freigegeben und sind jetzt zur Bezahlung bereit!`,
@@ -2094,7 +1909,7 @@ export class TimeTracker {
         totalAmount,
       };
     } catch (error) {
-      console.error('[TimeTracker] Error approving logged additional hours:', error);
+
       return {
         success: false,
         message: `Fehler bei der Freigabe: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,

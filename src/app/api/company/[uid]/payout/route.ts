@@ -21,8 +21,6 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
     const { uid } = params;
     const body: PayoutRequest = await request.json();
 
-    console.log('💰 Payout Request:', { uid, body });
-
     // 1. Prüfe alle abgeschlossenen Orders für diese Company
     const ordersRef = adminDb.collection('auftraege');
     const completedOrdersQuery = ordersRef
@@ -108,20 +106,8 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       );
 
       stripePayoutId = payout.id;
-      console.log('✅ Stripe Payout created:', {
-        payoutId: payout.id,
-        amount: payoutAmount / 100,
-        currency: 'EUR',
-        estimatedArrival: payout.arrival_date,
-        status: payout.status,
-      });
+
     } catch (stripeError: any) {
-      console.error('❌ Stripe Payout failed:', {
-        error: stripeError.message,
-        code: stripeError.code,
-        amount: payoutAmount,
-        stripeAccountId: stripeAccountId,
-      });
 
       return NextResponse.json(
         {
@@ -162,13 +148,6 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       description: body.description || `Auszahlung für ${orderIds.length} abgeschlossene Aufträge`,
     });
 
-    console.log('✅ Payout processed successfully:', {
-      companyId: uid,
-      amount: payoutAmount / 100,
-      orderCount: orderIds.length,
-      stripePayoutId: stripePayoutId,
-    });
-
     return NextResponse.json({
       success: true,
       message: 'Payout request processed successfully',
@@ -183,7 +162,7 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       },
     });
   } catch (error: any) {
-    console.error('❌ Payout request error:', error);
+
     return NextResponse.json(
       { error: 'Failed to process payout request', details: error.message },
       { status: 500 }
@@ -238,7 +217,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
       orders: orders,
     });
   } catch (error: any) {
-    console.error('❌ Get available payout error:', error);
+
     return NextResponse.json(
       { error: 'Failed to get available payout amount', details: error.message },
       { status: 500 }

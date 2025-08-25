@@ -40,9 +40,6 @@ export const sendConsentToGTM = (consent: {
   };
 
   // Debug logging
-  console.log('🍪 Cookie Consent Update:', consent);
-  console.log('🏷️ GTM Consent Update:', consentUpdate);
-  console.log('🌐 DataLayer before update:', window.dataLayer);
 
   // Method 1: GTM DataLayer Event
   window.dataLayer.push({
@@ -53,15 +50,13 @@ export const sendConsentToGTM = (consent: {
   // Method 2: Direct gtag consent update (primary method)
   if (typeof (window as any).gtag !== 'undefined') {
     (window as any).gtag('consent', 'update', consentUpdate);
-    console.log('✅ gtag consent update sent');
+
   } else {
-    console.log('❌ gtag not available');
+
   }
 
   // Method 3: Alternative DataLayer push format
   window.dataLayer.push(['consent', 'update', consentUpdate]);
-
-  console.log('� DataLayer after update:', window.dataLayer);
 
   // Sende einzelne Consent-Events für jeden Typ
   if (consent.analytics) {
@@ -102,7 +97,6 @@ export const sendConsentToGTM = (consent: {
     timestamp: new Date().toISOString(),
   });
 
-  console.log('DSGVO-Consent an GTM gesendet:', consentWithTimestamp);
 };
 
 /**
@@ -116,7 +110,7 @@ export const hasAnalyticsConsent = (): boolean => {
       return consentObj.analytics === true;
     }
   } catch (e) {
-    console.error('Fehler beim Prüfen des Analytics-Consents:', e);
+
   }
   return false;
 };
@@ -132,7 +126,7 @@ export const hasMarketingConsent = (): boolean => {
       return consentObj.marketing === true;
     }
   } catch (e) {
-    console.error('Fehler beim Prüfen des Marketing-Consents:', e);
+
   }
   return false;
 };
@@ -148,7 +142,7 @@ export const hasFunctionalConsent = (): boolean => {
       return consentObj.functional === true;
     }
   } catch (e) {
-    console.error('Fehler beim Prüfen des Functional-Consents:', e);
+
   }
   return false;
 };
@@ -162,7 +156,7 @@ export const trackPageViewWithConsent = (pageData?: {
   page_path?: string;
 }) => {
   if (!hasAnalyticsConsent()) {
-    console.log('Page View nicht gesendet - kein Analytics-Consent');
+
     return;
   }
 
@@ -186,7 +180,7 @@ export const trackButtonClickWithConsent = (buttonData: {
   button_class?: string;
 }) => {
   if (!hasAnalyticsConsent()) {
-    console.log('Button Click nicht gesendet - kein Analytics-Consent');
+
     return;
   }
 
@@ -211,7 +205,7 @@ export const trackFormSubmitWithConsent = (formData: {
   form_action?: string;
 }) => {
   if (!hasAnalyticsConsent()) {
-    console.log('Form Submit nicht gesendet - kein Analytics-Consent');
+
     return;
   }
 
@@ -237,7 +231,7 @@ export const trackPurchaseWithConsent = (purchaseData: {
   items: any[];
 }) => {
   if (!hasAnalyticsConsent()) {
-    console.log('Purchase nicht gesendet - kein Analytics-Consent');
+
     return;
   }
 
@@ -265,7 +259,7 @@ export const trackServiceBookingWithConsent = (serviceData: {
   provider_name?: string;
 }) => {
   if (!hasAnalyticsConsent()) {
-    console.log('Service Booking nicht gesendet - kein Analytics-Consent');
+
     return;
   }
 
@@ -308,7 +302,6 @@ export const removeTrackingCookies = () => {
     }
   });
 
-  console.log('Tracking-Cookies entfernt');
 };
 
 /**
@@ -333,5 +326,4 @@ export const revokeAllConsents = () => {
     timestamp: new Date().toISOString(),
   });
 
-  console.log('Alle Cookie-Consents widerrufen');
 };

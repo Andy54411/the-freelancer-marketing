@@ -113,7 +113,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
 
         setQuotes(mockQuotes);
       } catch (error) {
-        console.error('Fehler beim Laden der Angebote:', error);
+
         toast.error('Angebote konnten nicht geladen werden');
       } finally {
         setLoading(false);

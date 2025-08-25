@@ -111,7 +111,7 @@ class TaskiloAIAssistant {
 
     if (category) {
       return {
-        response: `Perfekt! Ich erkenne, dass Sie Hilfe im Bereich "${category}" benötigen. 
+        response: `Perfekt! Ich erkenne, dass Sie Hilfe im Bereich "${category}" benötigen.
 
 🎯 **Lassen Sie uns Ihren Auftrag optimal gestalten:**
 
@@ -164,7 +164,7 @@ Beschreiben Sie mir nun bitte Ihr konkretes Projekt. Was genau soll gemacht werd
     const analysis = this.analyzeDescription(message);
 
     return {
-      response: `Danke für die ausführliche Beschreibung! 
+      response: `Danke für die ausführliche Beschreibung!
 
 📋 **Ich habe verstanden:**
 ${analysis.summary}
@@ -334,7 +334,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
 
 💡 **Verfügbare Aktionen:**
 • Projekt-Status abrufen
-• Termine verwalten  
+• Termine verwalten
 • Kommunikation koordinieren
 • Zahlungen abwickeln
 • Bewertungen abgeben`,
@@ -456,7 +456,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
       });
       return orderRef.id;
     } catch (error) {
-      console.error('Error creating order:', error);
+
       return 'temp-' + Date.now();
     }
   }
@@ -513,7 +513,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         providerName: 'ProService München',
       }));
     } catch (error) {
-      console.error('Error loading projects:', error);
+
       return [];
     }
   }
@@ -525,7 +525,7 @@ Gibt es spezielle Fragen zu einem Projekt?`,
         timestamp: new Date(),
       });
     } catch (error) {
-      console.error('Error saving conversation:', error);
+
     }
   }
 }
@@ -543,7 +543,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Project Assistant API Error:', error);
+
     return NextResponse.json({ error: 'Interner Server-Fehler' }, { status: 500 });
   }
 }

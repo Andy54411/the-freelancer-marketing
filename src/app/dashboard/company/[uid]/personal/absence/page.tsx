@@ -139,13 +139,13 @@ export default function PersonalAbsencePage() {
 
         setVacationBalances(balances);
       } catch (error) {
-        console.warn('⚠️ Fehler beim Laden der Abwesenheitsdaten:', error);
+
         // Keine Mock-Daten verwenden - zeige leere Listen für echte Daten
         setAbsenceRequests([]);
         setVacationBalances([]);
       }
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Abwesenheitsdaten:', error);
+
       toast.error('Fehler beim Laden der Abwesenheitsdaten');
     } finally {
       setLoading(false);
@@ -206,7 +206,7 @@ export default function PersonalAbsencePage() {
       setAbsenceRequests(prev => [createdRequest, ...prev]);
       toast.success('Abwesenheitsantrag erstellt');
     } catch (error) {
-      console.error('❌ Erstellungsfehler:', error);
+
       toast.error('Fehler beim Erstellen des Antrags');
     }
   };
@@ -242,7 +242,7 @@ export default function PersonalAbsencePage() {
       // Lade Daten neu um Urlaubssalden zu aktualisieren
       await loadAbsenceData();
     } catch (error) {
-      console.error('❌ Genehmigungsfehler:', error);
+
       toast.error('Fehler beim Verarbeiten des Antrags');
     }
   };
@@ -259,7 +259,7 @@ export default function PersonalAbsencePage() {
       URL.revokeObjectURL(url);
       toast.success('Abwesenheitsdaten exportiert');
     } catch (error) {
-      console.error('❌ Export-Fehler:', error);
+
       toast.error('Fehler beim Export');
     }
   };

@@ -104,7 +104,7 @@ export default function PayoutOverviewPage() {
       const data = await response.json();
       setHistoryData(data);
     } catch (err) {
-      console.error('Error loading payout history:', err);
+
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
     } finally {
       setHistoryLoading(false);
@@ -128,7 +128,7 @@ export default function PayoutOverviewPage() {
       const data = await response.json();
       setAvailableData(data);
     } catch (err) {
-      console.error('Error loading available payouts:', err);
+
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
     } finally {
       setLoading(false);
@@ -183,7 +183,7 @@ export default function PayoutOverviewPage() {
         setSuccess(null);
       }, 3000);
     } catch (err) {
-      console.error('Payout request error:', err);
+
       setError(err instanceof Error ? err.message : 'Auszahlung fehlgeschlagen');
     } finally {
       setPayoutLoading(false);
@@ -220,7 +220,7 @@ export default function PayoutOverviewPage() {
     }
     // Fallback
     else {
-      console.log('Unknown date format:', dateInput);
+
       return 'Unbekannt';
     }
 

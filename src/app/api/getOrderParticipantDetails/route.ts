@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       try {
         await auth.verifyIdToken(idToken);
       } catch (authError) {
-        console.error('Token verification failed:', authError);
+
         return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
       }
     }
@@ -58,18 +58,10 @@ export async function POST(request: NextRequest) {
     try {
       const providerId = orderData?.selectedAnbieterId || orderData?.providerFirebaseUid;
       if (providerId) {
-        console.log('🔍 Fetching provider data for ID:', providerId);
+
         const providerDoc = await db.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           const providerData = providerDoc.data();
-          console.log('📋 Provider data found:', {
-            companyName: providerData?.companyName,
-            displayName: providerData?.displayName,
-            name: providerData?.name,
-            firstName: providerData?.firstName,
-            lastName: providerData?.lastName,
-            originalName: provider.name,
-          });
 
           // For providers, prioritize companyName for businesses, then displayName, then constructed name
           const providerName =
@@ -88,25 +80,18 @@ export async function POST(request: NextRequest) {
             providerData?.avatarUrl ||
             null;
         } else {
-          console.log('❌ Provider document does not exist for ID:', providerId);
+
         }
       } else {
-        console.log('❌ No provider ID found in order data');
+
       }
 
       const customerId = orderData?.kundeId || orderData?.customerFirebaseUid;
       if (customerId) {
-        console.log('🔍 Fetching customer data for ID:', customerId);
+
         const customerDoc = await db.collection('users').doc(customerId).get();
         if (customerDoc.exists) {
           const customerData = customerDoc.data();
-          console.log('📋 Customer data found:', {
-            displayName: customerData?.displayName,
-            name: customerData?.name,
-            firstName: customerData?.firstName,
-            lastName: customerData?.lastName,
-            originalName: customer.name,
-          });
 
           // For customers, prioritize displayName, then constructed name from firstName/lastName
           const customerName =
@@ -124,13 +109,13 @@ export async function POST(request: NextRequest) {
             customerData?.avatarUrl ||
             null;
         } else {
-          console.log('❌ Customer document does not exist for ID:', customerId);
+
         }
       } else {
-        console.log('❌ No customer ID found in order data');
+
       }
     } catch (error) {
-      console.log('Could not fetch additional user details:', error);
+
       // Continue with basic info from order
     }
 
@@ -140,7 +125,7 @@ export async function POST(request: NextRequest) {
       customer,
     });
   } catch (error) {
-    console.error('Error fetching order participant details:', error);
+
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -7,7 +7,7 @@ import { QuoteNotificationService } from '@/lib/quote-notifications';
 function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecret) {
-    console.error('STRIPE_SECRET_KEY ist nicht gesetzt');
+
     return null;
   }
   return new Stripe(stripeSecret, {
@@ -32,8 +32,6 @@ export async function POST(
     const body = await request.json();
     const { action } = body;
     const { uid: companyId, quoteId } = params;
-
-    console.log('[Quote Payment API] Request:', { companyId, quoteId, action });
 
     // Lade Quote-Details
     const quoteRef = db.collection('quotes').doc(quoteId);
@@ -61,12 +59,6 @@ export async function POST(
         const totalAmount = parseFloat(quoteData.response.totalAmount);
         const provisionRate = 0.05; // 5% Provision für Taskilo
         const provisionAmount = Math.round(totalAmount * provisionRate * 100); // In Cents
-
-        console.log('[Quote Payment API] Calculating provision:', {
-          totalAmount,
-          provisionRate,
-          provisionAmount: provisionAmount / 100,
-        });
 
         // Erstelle Payment Intent für Provision (ohne Connect Features für Tests)
         const paymentIntent = await stripe.paymentIntents.create({
@@ -157,9 +149,9 @@ export async function POST(
                   subcategory: quoteData.projectSubcategory || quoteData.projectTitle || 'Service',
                 }
               );
-              console.log(`✅ Contact-Exchange-Notifications gesendet für Quote ${quoteId}`);
+
             } catch (notificationError) {
-              console.error('❌ Fehler bei Contact-Exchange-Notifications:', notificationError);
+
               // Notification-Fehler sollten das Payment nicht rückgängig machen
             }
           }
@@ -177,12 +169,7 @@ export async function POST(
         return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
     }
   } catch (error) {
-    console.error('[Quote Payment API] Error Details:', {
-      error: error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      params: { uid: params?.uid, quoteId: params?.quoteId },
-    });
+
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler',

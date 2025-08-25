@@ -88,8 +88,6 @@ export class FinAPISDKServiceFixed {
       );
     }
 
-    console.log('Getting new finAPI client token...');
-
     const authApi = this.getAuthApi();
     const tokenResponse = await authApi.getToken(
       'client_credentials',
@@ -101,7 +99,6 @@ export class FinAPISDKServiceFixed {
     const expirySeconds = tokenResponse.expiresIn ? tokenResponse.expiresIn * 0.9 : 3600;
     this.clientTokenExpiry = new Date(Date.now() + expirySeconds * 1000);
 
-    console.log('SUCCESS: finAPI client token obtained');
     return this.clientToken;
   }
 
@@ -121,8 +118,6 @@ export class FinAPISDKServiceFixed {
       throw new Error('finAPI admin credentials are not configured.');
     }
 
-    console.log('Getting new finAPI admin client token...');
-
     const authApi = new AuthorizationApi(
       createConfiguration({
         baseServer: this.adminServerConfig,
@@ -139,7 +134,6 @@ export class FinAPISDKServiceFixed {
     const expirySeconds = tokenResponse.expiresIn ? tokenResponse.expiresIn * 0.9 : 3600;
     this.adminClientTokenExpiry = new Date(Date.now() + expirySeconds * 1000);
 
-    console.log('SUCCESS: finAPI admin client token obtained');
     return this.adminClientToken;
   }
 
@@ -147,7 +141,6 @@ export class FinAPISDKServiceFixed {
    * Get user access token
    */
   async getUserToken(userId: string, password: string): Promise<string> {
-    console.log('Getting finAPI user token for:', userId);
 
     if (!this.config.credentials.clientId || !this.config.credentials.clientSecret) {
       throw new Error('finAPI sandbox credentials are not configured for user token generation.');
@@ -157,12 +150,6 @@ export class FinAPISDKServiceFixed {
       const authApi = this.getAuthApi();
 
       // DEBUG: Log the request details
-      console.log('DEBUG: Token request details:', {
-        grant_type: 'password',
-        client_id: this.config.credentials.clientId.substring(0, 10) + '...',
-        username: userId,
-        environment: this.config.environment,
-      });
 
       const tokenResponse = await authApi.getToken(
         'password',
@@ -172,16 +159,13 @@ export class FinAPISDKServiceFixed {
         password
       );
 
-      console.log('SUCCESS: finAPI user token obtained for:', userId);
       return tokenResponse.accessToken;
     } catch (error: any) {
-      console.error('FAILED: Could not get user token for:', userId);
-      console.error('Error details:', error.body || error.message);
 
       // More detailed error analysis
       if (error.body && error.body.errors) {
         for (const err of error.body.errors) {
-          console.error('finAPI Error:', err.code, '-', err.message);
+
         }
       }
 
@@ -247,7 +231,7 @@ export class FinAPISDKServiceFixed {
       const token = await this.getClientToken();
       return { success: true, token: `${token.substring(0, 20)}...` };
     } catch (error: any) {
-      console.error('ERROR: finAPI credential test failed:', error);
+
       return {
         success: false,
         error: error.message || 'Unknown error',
@@ -259,7 +243,6 @@ export class FinAPISDKServiceFixed {
    * Create finAPI user for Taskilo user
    */
   async createUser(userId: string, password: string, email?: string): Promise<User> {
-    console.log('Creating finAPI user:', userId);
 
     try {
       const usersApi = await this.getUsersApi();
@@ -271,14 +254,12 @@ export class FinAPISDKServiceFixed {
         isAutoUpdateEnabled: true,
       });
 
-      console.log('SUCCESS: New finAPI user created:', user.id);
       return user;
     } catch (error: any) {
-      console.log('WARNING: User creation failed:', error.status, error.message);
 
       // User already exists - this is actually OK for our use case
       if (error.status === 422 && error.message?.includes('already exists')) {
-        console.log('INFO: User already exists, will attempt authentication');
+
         return {
           id: userId,
           password: password,
@@ -300,14 +281,10 @@ export class FinAPISDKServiceFixed {
     password: string,
     email?: string
   ): Promise<{ user: User; userToken: string }> {
-    console.log('Getting or creating technical finAPI user account for:', userId);
-    console.log(
-      'NOTE: This is only a technical account - user will login to their BANK, not finAPI'
-    );
 
     // Step 1: Try to authenticate existing user first
     try {
-      console.log('STEP 1: Trying to authenticate existing user:', userId);
+
       const userToken = await this.getUserToken(userId, password);
 
       // User exists and authentication successful
@@ -318,10 +295,8 @@ export class FinAPISDKServiceFixed {
         isAutoUpdateEnabled: true,
       };
 
-      console.log('SUCCESS: Successfully authenticated existing finAPI user:', userId);
       return { user, userToken };
     } catch (authError: any) {
-      console.log('INFO: Authentication failed, checking error type');
 
       // For "Bad credentials", the user likely doesn't exist yet - try to create
       const errorMessage = authError.message || '';
@@ -330,25 +305,21 @@ export class FinAPISDKServiceFixed {
 
       if (isBadCredentials) {
         try {
-          console.log(
-            'STEP 2: Bad credentials likely means user not found, creating new user:',
-            userId
-          );
+
           const user = await this.createUser(userId, password, email);
 
           // Wait a moment for user creation to be fully processed
-          console.log('Waiting for user creation to be processed...');
+
           await new Promise(resolve => setTimeout(resolve, 1000));
 
           // Try multiple approaches for getting user token
-          console.log('Getting authentication token for new user');
+
           let userToken: string;
 
           try {
             // Approach 1: Normal user token request
             userToken = await this.getUserToken(userId, password);
           } catch (tokenError: any) {
-            console.log('Normal token request failed, trying with fresh client token...');
 
             // Approach 2: Refresh client token and try again
             this.clientToken = null; // Force refresh
@@ -357,7 +328,7 @@ export class FinAPISDKServiceFixed {
             try {
               userToken = await this.getUserToken(userId, password);
             } catch (tokenError2: any) {
-              console.error('Both token approaches failed:', tokenError2.message);
+
               throw new Error(
                 `User was created successfully but token retrieval failed. ` +
                   `This might be a client permissions issue. Original error: ${tokenError.message}`
@@ -365,23 +336,17 @@ export class FinAPISDKServiceFixed {
             }
           }
 
-          console.log('SUCCESS: New finAPI user created and authenticated:', userId);
           return { user, userToken };
         } catch (createError: any) {
           // If creation fails with "already exists", then we have a password mismatch
           if (createError.status === 422 && createError.message?.includes('already exists')) {
-            console.error('ERROR: User exists but password mismatch for:', userId);
+
             throw new Error(
               `finAPI user '${userId}' exists but authentication failed. ` +
                 `The user was created with a different password. Since finAPI doesn't allow ` +
                 `password updates, you need to use a different user ID or contact support.`
             );
           }
-
-          console.error('ERROR: User creation failed after authentication failure:', {
-            status: createError.status,
-            message: createError.message,
-          });
 
           throw new Error(
             `Failed to create finAPI user '${userId}' after authentication failed. ` +
@@ -391,10 +356,6 @@ export class FinAPISDKServiceFixed {
       }
 
       // For other authentication errors, provide detailed info
-      console.error('ERROR: Unexpected user authentication error:', {
-        status: authError.status,
-        message: authError.message,
-      });
 
       throw new Error(
         `Failed to authenticate finAPI user '${userId}'. Status: ${authError.status}, ` +
@@ -419,8 +380,6 @@ export class FinAPISDKServiceFixed {
       redirectUrl?: string;
     } = {}
   ): Promise<{ id: string; url: string; expiresAt?: string }> {
-    console.log('Creating WebForm 2.0 for bank connection...');
-    console.log('IMPORTANT: finAPI WebForm is triggered by 451 response, not direct creation!');
 
     if (!options.bankId) {
       throw new Error('Bank ID is required for WebForm creation');
@@ -430,8 +389,6 @@ export class FinAPISDKServiceFixed {
 
     // If user token is not available, FALLBACK to client token approach
     if (!userTokenOrUserId || userTokenOrUserId.startsWith('taskilo_')) {
-      console.log('FALLBACK: No valid user token - attempting WebForm with client token');
-      console.log('NOTE: This may require different flow or manual user interaction');
 
       // Use WebForm 2.0 direct URL approach as fallback
       return await this.createWebFormFallback(options);
@@ -448,8 +405,6 @@ export class FinAPISDKServiceFixed {
 
       const bankInterface = bank.interfaces[0];
       const requiredCredentials = bankInterface.loginCredentials || [];
-
-      console.log('Bank requires credentials:', requiredCredentials.map(c => c.label).join(', '));
 
       // Create dummy credentials to trigger WebForm (will cause 451)
       const dummyCredentials = requiredCredentials.map(cred => ({
@@ -474,11 +429,9 @@ export class FinAPISDKServiceFixed {
           'Bank connection import succeeded without WebForm - this should not happen for non-licensed clients'
         );
       } catch (importError: any) {
-        console.log('Bank connection import response:', importError.status, importError.message);
 
         // Check if this is the expected 451 error with WebForm
         if (importError.status === 451) {
-          console.log('SUCCESS: Got 451 response - WebForm is required!');
 
           // Parse the WebForm ID from the error message
           const webFormId = importError.body?.message || importError.message;
@@ -508,23 +461,16 @@ export class FinAPISDKServiceFixed {
             webFormUrl += '?' + urlParams.toString();
           }
 
-          console.log('SUCCESS: WebForm URL created:', webFormUrl);
-
           return {
             id: webFormId.toString(),
             url: webFormUrl,
             expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
           };
         } else {
-          console.error(
-            'ERROR: Bank connection import failed with unexpected error:',
-            importError.status,
-            importError.message
-          );
 
           // If 401 or user token issue, try fallback
           if (importError.status === 401 || importError.status === 403) {
-            console.log('FALLBACK: User token issue, trying fallback approach');
+
             return await this.createWebFormFallback(options);
           }
 
@@ -532,11 +478,10 @@ export class FinAPISDKServiceFixed {
         }
       }
     } catch (error: any) {
-      console.error('WebForm creation failed:', error.message);
 
       // If it's a user token problem, try fallback
       if (error.message.includes('token') || error.message.includes('auth')) {
-        console.log('FALLBACK: Token issue detected, trying fallback approach');
+
         return await this.createWebFormFallback(options);
       }
 
@@ -556,15 +501,12 @@ export class FinAPISDKServiceFixed {
     };
     redirectUrl?: string;
   }): Promise<{ id: string; url: string; expiresAt?: string }> {
-    console.log('Using CORRECTED WebForm fallback approach...');
-    console.log('IMPORTANT: Using /webForm/{token} structure, not /webForm?parameters');
 
     // Generate a fallback WebForm ID
     const fallbackId = `fallback_${Date.now()}`;
 
     // Generate 128-character token like finAPI uses
     const webFormToken = this.generateWebFormToken();
-    console.log('Generated WebForm token:', webFormToken.substring(0, 20) + '...');
 
     // CORRECT URL structure: /webForm/{token}
     const baseWebFormUrl = `${this.baseUrl}/webForm/${webFormToken}`;
@@ -585,11 +527,6 @@ export class FinAPISDKServiceFixed {
     const webFormUrl = urlParams.toString()
       ? `${baseWebFormUrl}?${urlParams.toString()}`
       : baseWebFormUrl;
-
-    console.log('✅ CORRECTED WebForm URL:', webFormUrl);
-    console.log('NOTE: This uses correct /webForm/{token} structure');
-    console.log('WARNING: Token is dummy - will show "invalid webFormToken" message');
-    console.log('For production: Use real WebForm 2.0 API to get valid token');
 
     return {
       id: fallbackId,
@@ -613,7 +550,6 @@ export class FinAPISDKServiceFixed {
 
   // Other methods remain the same as original...
   async listBanks(search?: string, location?: string, page = 1, perPage = 20): Promise<Bank[]> {
-    console.log('Listing banks with client credentials...');
 
     const banksApi = await this.getBanksApi();
     const response = await banksApi.getAndSearchAllBanks(
@@ -628,7 +564,6 @@ export class FinAPISDKServiceFixed {
       perPage
     );
 
-    console.log(`SUCCESS: Found ${response.banks?.length || 0} banks`);
     return response.banks || [];
   }
 }

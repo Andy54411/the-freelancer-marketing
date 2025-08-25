@@ -10,7 +10,6 @@ import { db } from '@/firebase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[DATEV Accounts] Processing request...');
 
     // Extract company ID from URL or headers
     const url = new URL(request.url);
@@ -21,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // If no cookie-based token, try to get from Firestore
     if (!authHeader && companyId) {
-      console.log('[DATEV Accounts] No cookie token, checking Firestore for company:', companyId);
+
       try {
         const tokenDoc = await db
           .collection('users')
@@ -37,18 +36,18 @@ export async function GET(request: NextRequest) {
           // Check if token is still valid (with 5-minute buffer)
           if (expiresAt && expiresAt.getTime() > Date.now() + 300000 && tokenData) {
             authHeader = `${tokenData.token_type || 'Bearer'} ${tokenData.access_token}`;
-            console.log('[DATEV Accounts] Using Firestore token');
+
           } else {
-            console.log('[DATEV Accounts] Firestore token expired');
+
           }
         }
       } catch (firestoreError) {
-        console.error('[DATEV Accounts] Firestore token retrieval failed:', firestoreError);
+
       }
     }
 
     if (!authHeader) {
-      console.log('[DATEV Accounts] No auth header available - authentication required');
+
       return Response.json(
         {
           error: 'DATEV authentication required - please re-authenticate',
@@ -80,12 +79,6 @@ export async function GET(request: NextRequest) {
       } catch {
         errorData = { message: errorText };
       }
-
-      console.error('DATEV Master Clients API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData,
-      });
 
       // Handle specific errors
       if (response.status === 401) {
@@ -120,7 +113,6 @@ export async function GET(request: NextRequest) {
     const data = JSON.parse(responseText);
     return Response.json(data);
   } catch (error) {
-    console.error('Error in DATEV clients API route:', error);
 
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }

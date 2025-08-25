@@ -111,14 +111,8 @@ export class QuoteNotificationService {
         db.collection('notifications').add(customerNotification),
       ]);
 
-      console.log(`✅ Quote-Request-Notifications erstellt für Quote ${quoteId}:`, {
-        provider: providerUid,
-        customer: customerUid,
-        subcategory: quoteData.subcategory,
-        budget: budgetText,
-      });
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Quote-Request-Notifications:', error);
+
       throw error;
     }
   }
@@ -161,11 +155,8 @@ export class QuoteNotificationService {
 
       await db.collection('notifications').add(notification);
 
-      console.log(
-        `✅ Quote-Response-Notification erstellt für Quote ${quoteId}, Customer: ${customerUid}`
-      );
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Quote-Response-Notification:', error);
+
       throw error;
     }
   }
@@ -240,11 +231,8 @@ export class QuoteNotificationService {
 
       await db.collection('notifications').add(notification);
 
-      console.log(
-        `✅ Quote-Status-Notification erstellt: ${status} für User ${targetUserUid}, Quote ${quoteId}`
-      );
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Quote-Status-Notification:', error);
+
       throw error;
     }
   }
@@ -281,11 +269,8 @@ export class QuoteNotificationService {
 
       await db.collection('notifications').add(notification);
 
-      console.log(
-        `✅ Payment-Required-Notification erstellt für Quote ${quoteId}, Customer: ${customerUid}`
-      );
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Payment-Required-Notification:', error);
+
       throw error;
     }
   }
@@ -346,13 +331,8 @@ export class QuoteNotificationService {
         db.collection('notifications').add(customerNotification),
       ]);
 
-      console.log(`✅ Contact-Exchange-Notifications erstellt für Quote ${quoteId}:`, {
-        provider: providerUid,
-        customer: customerUid,
-        subcategory: quoteData.subcategory,
-      });
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Contact-Exchange-Notifications:', error);
+
       throw error;
     }
   }

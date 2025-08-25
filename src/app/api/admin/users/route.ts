@@ -42,7 +42,7 @@ export async function GET(_request: NextRequest) {
       ),
     });
   } catch (error) {
-    console.error('Get users error:', error);
+
     return NextResponse.json({ error: 'Fehler beim Laden der Benutzer' }, { status: 500 });
   }
 }

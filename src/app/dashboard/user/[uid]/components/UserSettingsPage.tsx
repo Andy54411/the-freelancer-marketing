@@ -105,7 +105,7 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
         newProfilePictureURL = await getDownloadURL(fileRef);
         toast.success('Profilbild erfolgreich hochgeladen!');
       } catch (uploadError: any) {
-        console.error('Fehler beim Hochladen des Profilbilds:', uploadError);
+
         toast.error(
           `Fehler beim Hochladen des Profilbilds: ${uploadError.message || 'Unbekannter Fehler'}`
         );
@@ -138,7 +138,7 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
       }
       onDataSaved(); // Callback aufrufen, um Daten in der übergeordneten Seite neu zu laden
     } catch (error: unknown) {
-      console.error('Fehler beim Speichern der Benutzereinstellungen:', error);
+
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler.';
       toast.error(`Fehler: ${message}`);
     } finally {
@@ -176,7 +176,7 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
           prev ? { ...prev, oldPassword: '', newPassword: '', confirmNewPassword: '' } : null
         );
       } catch (error: any) {
-        console.error('Fehler beim Ändern des Passworts:', error);
+
         if (error.code === 'auth/wrong-password') {
           toast.error('Das alte Passwort ist nicht korrekt.');
         } else {

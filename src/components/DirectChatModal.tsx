@@ -134,7 +134,7 @@ export default function DirectChatModal({
           guaranteeHours = userData?.responseTimeGuaranteeHours || 24;
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Provider-Garantie:', error);
+
       }
 
       // Starte Response Time Tracking
@@ -158,7 +158,7 @@ export default function DirectChatModal({
 
       setNewMessage('');
     } catch (error) {
-      console.error('Fehler beim Senden der Nachricht:', error);
+
     } finally {
       setSending(false);
     }

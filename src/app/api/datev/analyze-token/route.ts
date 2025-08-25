@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Token analysis error:', error);
+
     return NextResponse.json({
       error: 'analysis_failed',
       message: error instanceof Error ? error.message : 'Unknown error'

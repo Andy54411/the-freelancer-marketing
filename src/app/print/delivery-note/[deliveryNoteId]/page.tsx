@@ -26,7 +26,7 @@ export default function PrintDeliveryNotePage() {
       }
       setDeliveryNote(note);
     } catch (error) {
-      console.error('Fehler beim Laden des Lieferscheins:', error);
+
       setError('Fehler beim Laden des Lieferscheins');
     } finally {
       setLoading(false);

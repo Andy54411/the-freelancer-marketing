@@ -148,7 +148,7 @@ export default function IntegrationsPage({ params }: { params: Promise<{ uid: st
         lastFullSync: new Date(Date.now() - 45 * 60 * 1000), // 45 min ago
       });
     } catch (error) {
-      console.error('Error loading integration data:', error);
+
       toast.error('Fehler beim Laden der Integrations-Daten');
     } finally {
       setLoading(false);

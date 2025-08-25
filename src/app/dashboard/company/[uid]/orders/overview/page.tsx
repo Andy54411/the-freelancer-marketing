@@ -128,7 +128,7 @@ const CompanyOrdersOverviewPage = () => {
             setQuoteRequests([]);
           }
         } catch (quoteErr) {
-          console.log('Angebotsanfragen noch nicht verfügbar:', quoteErr);
+
           setQuoteRequests([]);
         }
       } catch (err: any) {

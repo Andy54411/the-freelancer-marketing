@@ -17,15 +17,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV Cookie Status] Checking connection status for company:', companyId);
-
     // Get tokens from HTTP-only cookies (Server-Side)
     const cookieStore = await cookies();
     const cookieName = getDatevCookieName(companyId);
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV Cookie Status] No token cookie found:', cookieName);
+
       return NextResponse.json({
         isConnected: false,
         connectedAt: null,
@@ -46,15 +44,8 @@ export async function POST(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
 
-      console.log('✅ [DATEV Cookie Status] Token data found:', {
-        hasAccessToken: !!tokenData.access_token,
-        hasRefreshToken: !!tokenData.refresh_token,
-        connectedAt: tokenData.connected_at
-          ? new Date(tokenData.connected_at).toISOString()
-          : 'unknown',
-      });
     } catch (parseError) {
-      console.error('❌ [DATEV Cookie Status] Failed to parse token cookie:', parseError);
+
       return NextResponse.json({
         isConnected: false,
         connectedAt: null,
@@ -74,12 +65,6 @@ export async function POST(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
     const isExpired = now >= expiresAt;
 
-    console.log('🔍 [DATEV Cookie Status] Token expiration check:', {
-      now: new Date(now).toISOString(),
-      expiresAt: new Date(expiresAt).toISOString(),
-      isExpired,
-    });
-
     return NextResponse.json({
       isConnected: !isExpired,
       connectedAt: tokenData.connected_at ? new Date(tokenData.connected_at).toISOString() : null,
@@ -93,7 +78,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ [DATEV Cookie Status] Unexpected error:', error);
+
     return NextResponse.json({
       isConnected: false,
       connectedAt: null,

@@ -121,11 +121,11 @@ const ProviderProfilePage = () => {
           const reviewsSnapshot = await getDocs(reviewsQuery);
           setReviews(reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Review));
         } catch (reviewError) {
-          console.log('Keine Bewertungen gefunden oder Index noch nicht verfügbar:', reviewError);
+
           setReviews([]); // Setze leere Array wenn keine Bewertungen gefunden werden
         }
       } catch (err) {
-        console.error('Fehler beim Laden des Profils:', err);
+
         setError('Fehler beim Laden des Profils.');
       } finally {
         setLoading(false);

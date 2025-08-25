@@ -47,7 +47,7 @@ export default function InvoiceDetailPage() {
 
       setInvoice(invoiceData);
     } catch (err) {
-      console.error('Fehler beim Laden der Rechnung:', err);
+
       setError('Fehler beim Laden der Rechnung');
     } finally {
       setLoading(false);
@@ -104,14 +104,14 @@ export default function InvoiceDetailPage() {
       let sequentialNumber = invoice.sequentialNumber;
 
       if (!invoiceNumber) {
-        console.log('🔢 Generiere Rechnungsnummer beim Finalisieren...');
+
         try {
           const result = await FirestoreInvoiceService.getNextInvoiceNumber(uid);
           invoiceNumber = result.formattedNumber;
           sequentialNumber = result.sequentialNumber;
-          console.log('✅ Rechnungsnummer generiert:', invoiceNumber);
+
         } catch (error) {
-          console.error('❌ Fehler beim Generieren der Rechnungsnummer:', error);
+
           toast.error('Fehler beim Generieren der Rechnungsnummer');
           return;
         }
@@ -143,7 +143,7 @@ export default function InvoiceDetailPage() {
 
       toast.success(`Rechnung ${invoiceNumber} wurde finalisiert!`);
     } catch (error) {
-      console.error('Fehler beim Finalisieren:', error);
+
       toast.error('Fehler beim Finalisieren der Rechnung');
     } finally {
       setUpdating(false);
@@ -163,7 +163,6 @@ export default function InvoiceDetailPage() {
 
     setDownloadingPdf(true);
     try {
-      console.log('🚀 Starte React-basierte PDF-Generation...');
 
       // Call our modern PDF API endpoint
       const response = await fetch('/api/generate-invoice-pdf', {
@@ -185,7 +184,6 @@ export default function InvoiceDetailPage() {
 
       // Check if we got a PDF directly (Development with Puppeteer)
       if (contentType?.includes('application/pdf')) {
-        console.log('✅ PDF erfolgreich vom Server erhalten');
 
         const pdfBlob = await response.blob();
         const pdfUrl = window.URL.createObjectURL(pdfBlob);
@@ -211,7 +209,6 @@ export default function InvoiceDetailPage() {
         const responseData = await response.json();
 
         if (responseData.success && responseData.printUrl && responseData.useClientPrint) {
-          console.log('🖨️ Verwende React Print-Seite für PDF-Generation:', responseData.printUrl);
 
           // Open our React-based print page in a new window
           const printWindow = window.open(responseData.printUrl, '_blank', 'width=1200,height=800');
@@ -243,7 +240,6 @@ export default function InvoiceDetailPage() {
       // If we get here, something unexpected happened
       throw new Error('Unerwartetes Response-Format vom PDF-Service');
     } catch (error) {
-      console.error('❌ Fehler bei PDF-Generation:', error);
 
       // Ultimate fallback: browser print
       toast.error('PDF-Service nicht verfügbar. Verwende Browser-Druck als Fallback.', {

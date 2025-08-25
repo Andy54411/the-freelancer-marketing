@@ -48,7 +48,7 @@ export default function AdminDashboardPage() {
         setStats(data);
       }
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+
     } finally {
       setLoading(false);
     }

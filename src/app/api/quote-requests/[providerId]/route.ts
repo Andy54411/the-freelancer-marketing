@@ -33,7 +33,7 @@ export async function GET(
       count: quoteRequests.length,
     });
   } catch (error) {
-    console.error('Fehler beim Abrufen der Angebotsanfragen:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Angebotsanfragen' },
       { status: 500 }

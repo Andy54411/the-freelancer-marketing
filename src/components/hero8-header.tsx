@@ -43,7 +43,6 @@ export const HeroHeader = () => {
   useEffect(() => {
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, async user => {
-      console.log('HeroHeader: Auth state changed:', user?.uid);
 
       if (user) {
         setUser({
@@ -60,24 +59,20 @@ export const HeroHeader = () => {
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log('HeroHeader: User data from Firestore:', userData);
 
             if (userData.profilePictureFirebaseUrl) {
-              console.log(
-                'HeroHeader: Setting profile picture URL:',
-                userData.profilePictureFirebaseUrl
-              );
+
               setProfilePictureUrl(userData.profilePictureFirebaseUrl);
             } else {
-              console.log('HeroHeader: No profilePictureFirebaseUrl found');
+
               setProfilePictureUrl(null);
             }
           } else {
-            console.log('HeroHeader: User document not found');
+
             setProfilePictureUrl(null);
           }
         } catch (error) {
-          console.error('HeroHeader: Error loading profile picture:', error);
+
           setProfilePictureUrl(null);
         }
       } else {
@@ -110,7 +105,7 @@ export const HeroHeader = () => {
       await signOut(auth);
       window.location.href = '/';
     } catch (error) {
-      console.error('Logout error:', error);
+
     }
   };
 

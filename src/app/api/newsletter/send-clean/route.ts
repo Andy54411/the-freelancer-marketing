@@ -19,8 +19,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Empfänger-E-Mail erforderlich' }, { status: 400 });
     }
 
-    console.log('📧 Newsletter-Versand über Resend:', recipient);
-
     const resend = await getResendClient();
 
     // Newsletter über Resend versenden
@@ -41,20 +39,20 @@ export async function POST(request: NextRequest) {
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
             <h1>📬 Taskilo Newsletter</h1>
           </div>
-          
+
           <div style="background: white; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;">
             <h2 style="color: #667eea;">Willkommen bei Taskilo!</h2>
-            
+
             <p>Vielen Dank für Ihr Interesse an unserem Newsletter. Wir halten Sie über alle Neuigkeiten und Updates auf dem Laufenden.</p>
-            
+
             <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
               <h3 style="margin: 0 0 10px 0; color: #1e40af;">🚀 Neuigkeiten</h3>
               <p style="margin: 0;">Bleiben Sie dran für spannende Updates zu Taskilo!</p>
             </div>
-            
+
             <p>Ihr Taskilo Team 🎉</p>
           </div>
-          
+
           <div style="text-align: center; color: #666; font-size: 14px; margin-top: 20px;">
             <p>© ${new Date().getFullYear()} Taskilo - Powered by Resend</p>
           </div>
@@ -64,7 +62,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('❌ Resend Newsletter Fehler:', error);
+
       return NextResponse.json(
         {
           success: false,
@@ -74,8 +72,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ Newsletter erfolgreich versendet:', data);
-
     return NextResponse.json({
       success: true,
       message: '📧 Newsletter erfolgreich über Resend versendet!',
@@ -83,7 +79,7 @@ export async function POST(request: NextRequest) {
       service: 'Resend',
     });
   } catch (error) {
-    console.error('🚨 Newsletter API Fehler:', error);
+
     return NextResponse.json(
       {
         success: false,

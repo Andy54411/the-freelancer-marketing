@@ -15,12 +15,9 @@ export async function GET(req: NextRequest) {
     const bankId = searchParams.get('bankId');
     const userId = searchParams.get('userId');
 
-    console.log('✅ WebForm Success Callback:', { webFormId, connectionId, bankId, userId });
-
     // Real finAPI WebForm success - Automatische Speicherung in Firestore
     if (connectionId && userId) {
       try {
-        console.log('💾 Speichere Bank-Verbindung automatisch:', { connectionId, userId });
 
         // Hole Bank-Verbindung von finAPI mit korrekten Credentials
         const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36); // Consistent ID
@@ -46,7 +43,7 @@ export async function GET(req: NextRequest) {
 
           // Hole und speichere Konten
           if (connection.accountIds && connection.accountIds.length > 0) {
-            console.log('💰 Speichere Konten automatisch:', connection.accountIds.length);
+
             const accounts = await finapiService.getAccounts(userToken, connection.accountIds);
 
             // Konvertiere finAPI Accounts zu StoredBankAccount Format
@@ -73,10 +70,9 @@ export async function GET(req: NextRequest) {
             await storeBankAccounts(userId, storedAccounts);
           }
 
-          console.log('✅ Bank-Daten erfolgreich in Firestore gespeichert');
         }
       } catch (error) {
-        console.error('❌ Fehler beim Speichern der Bank-Daten:', error);
+
         // Weiter zum Redirect - Speicher-Fehler soll User nicht blockieren
       }
     }
@@ -89,7 +85,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
-    console.error('❌ WebForm Success Callback Error:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten des Success Callbacks' },
       { status: 500 }

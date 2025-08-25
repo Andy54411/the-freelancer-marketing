@@ -18,8 +18,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV Disconnect] Clearing tokens for company:', companyId);
-
     // Clear the HTTP-only token cookie
     const cookieStore = await cookies();
     const cookieName = getDatevCookieName(companyId);
@@ -39,11 +37,9 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
-    console.log('✅ [DATEV Disconnect] Token cookie cleared for company:', companyId);
-
     return response;
   } catch (error) {
-    console.error('❌ [DATEV Disconnect] Error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',

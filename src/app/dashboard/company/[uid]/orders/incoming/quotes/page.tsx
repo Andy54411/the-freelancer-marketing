@@ -67,7 +67,7 @@ export default function IncomingQuotesPage() {
         setQuotes(data.quotes);
       }
     } catch (error) {
-      console.error('Error fetching incoming quotes:', error);
+
       setError('Fehler beim Laden der Angebots-Anfragen');
     } finally {
       setLoading(false);

@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('❌ Client token request failed:', errorText);
+
       return NextResponse.json(
         { error: 'Client authentication failed', details: errorText },
         { status: 401 }
@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
     }
 
     const clientTokenData = await tokenResponse.json();
-    console.log('✅ Client credentials token obtained');
 
     // Step 2: Create or get finAPI user (FIXED - persistent user ID and password)
     // Use Firebase UID as finAPI user ID with consistent format (max 36 chars)
@@ -84,7 +83,6 @@ export async function POST(req: NextRequest) {
 
     if (!userTokenResponse.ok) {
       // User doesn't exist, create them
-      console.log('🔄 Creating new finAPI user:', finapiUserId);
 
       const createUserResponse = await fetch(`${baseUrl}/api/v2/users`, {
         method: 'POST',
@@ -101,14 +99,12 @@ export async function POST(req: NextRequest) {
 
       if (!createUserResponse.ok) {
         const errorText = await createUserResponse.text();
-        console.error('❌ User creation failed:', errorText);
+
         return NextResponse.json(
           { error: 'User creation failed', details: errorText },
           { status: 500 }
         );
       }
-
-      console.log('✅ finAPI user created:', finapiUserId);
 
       // Now get token for the newly created user
       const newUserTokenResponse = await fetch(`${baseUrl}/api/v2/oauth/token`, {
@@ -139,8 +135,6 @@ export async function POST(req: NextRequest) {
       const userTokenData = await userTokenResponse.json();
       userAccessToken = userTokenData.access_token;
     }
-
-    console.log('✅ User access token obtained for:', finapiUserId);
 
     // Step 3: Generate Web Form for Bank Connection Import
     try {
@@ -174,11 +168,6 @@ export async function POST(req: NextRequest) {
 
       if (!webFormResponse.ok) {
         const errorText = await webFormResponse.text();
-        console.error('❌ Web Form Response Error:', {
-          status: webFormResponse.status,
-          statusText: webFormResponse.statusText,
-          error: errorText,
-        });
 
         return NextResponse.json(
           {
@@ -195,7 +184,6 @@ export async function POST(req: NextRequest) {
       }
 
       const webFormData = await webFormResponse.json();
-      console.log('✅ Web Form created:', webFormData.url);
 
       return NextResponse.json({
         success: true,
@@ -224,7 +212,7 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch (webFormError: any) {
-      console.error('❌ Web Form creation failed:', webFormError);
+
       return NextResponse.json(
         {
           error: 'Web Form Erstellung fehlgeschlagen',
@@ -235,7 +223,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('Bank connection web form error:', error);
+
     return NextResponse.json(
       {
         error: 'Internal server error during web form creation',
@@ -292,7 +280,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Get bank connections error:', error);
 
     return NextResponse.json(
       {

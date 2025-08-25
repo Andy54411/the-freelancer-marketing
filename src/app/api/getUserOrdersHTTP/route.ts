@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
     } catch (error) {
-      console.error('[getUserOrdersHTTP] Token verification failed:', error);
+
       return NextResponse.json(
         {
           success: false,
@@ -36,13 +36,11 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log('[getUserOrdersHTTP] Suche Orders für User:', userId, 'Type:', userType);
-
     // Query je nach userType mit mehreren möglichen Feldern
     let query;
     if (userType === 'customer') {
       // Suche sowohl in kundeId als auch customerFirebaseUid
-      console.log('[getUserOrdersHTTP] Suche Kunden-Orders...');
+
       const kundeIdQuery = db.collection('auftraege').where('kundeId', '==', userId);
       const customerUidQuery = db
         .collection('auftraege')
@@ -77,16 +75,6 @@ export async function POST(request: Request) {
           seenOrderIds.add(doc.id);
         }
       });
-
-      console.log('[getUserOrdersHTTP] Gefunden:', orders.length, 'Orders für Customer');
-      console.log(
-        '[getUserOrdersHTTP] Orders:',
-        orders.map(o => ({
-          id: o.id,
-          kundeId: o.kundeId,
-          customerFirebaseUid: o.customerFirebaseUid,
-        }))
-      );
 
       return NextResponse.json({
         success: true,
@@ -129,15 +117,12 @@ export async function POST(request: Request) {
       orders.push(mappedOrder);
     });
 
-    console.log('[getUserOrdersHTTP] Gefunden:', orders.length, 'Orders');
-    console.log('[getUserOrdersHTTP] Orders:', orders);
-
     return NextResponse.json({
       success: true,
       orders: orders,
     });
   } catch (error) {
-    console.error('[getUserOrdersHTTP] Fehler:', error);
+
     return NextResponse.json(
       {
         success: false,

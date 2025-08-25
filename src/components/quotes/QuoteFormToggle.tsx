@@ -23,8 +23,7 @@ export default function QuoteFormToggle({
   const [activeForm, setActiveForm] = useState<FormType>('standard');
 
   const handleSubmit = async (data: any) => {
-    console.log('🔄 QuoteFormToggle handleSubmit called with:', data);
-    console.log('📋 Form type:', activeForm);
+
     await onSubmit(data);
   };
 

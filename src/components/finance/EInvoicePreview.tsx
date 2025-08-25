@@ -172,7 +172,7 @@ function parseZUGFeRDData(xmlContent: string): ParsedInvoiceData | null {
       lineItems,
     };
   } catch (error) {
-    console.error('Fehler beim Parsen der ZUGFeRD-Daten:', error);
+
     return null;
   }
 }

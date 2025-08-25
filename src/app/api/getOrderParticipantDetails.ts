@@ -2,10 +2,10 @@
 
 export const getOrderParticipantDetails = async (orderId: string, idToken: string) => {
   // Use local API route in development, Cloud Function in production
-  const isLocalDevelopment = process.env.NODE_ENV === 'development' || 
+  const isLocalDevelopment = process.env.NODE_ENV === 'development' ||
                            typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  
-  const apiUrl = isLocalDevelopment 
+
+  const apiUrl = isLocalDevelopment
     ? '/api/getOrderParticipantDetails'
     : `${process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL}/getOrderParticipantDetails`;
 

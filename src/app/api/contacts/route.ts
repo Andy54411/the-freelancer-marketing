@@ -65,12 +65,6 @@ export async function GET(request: Request) {
     const active = url.searchParams.get('active');
     const format = url.searchParams.get('format'); // 'simple' for email list only
 
-    console.log('[API /contacts] GET request received', {
-      category,
-      active,
-      format,
-    });
-
     let filteredContacts = TASKILO_CONTACTS;
 
     // Filter by category if specified
@@ -111,7 +105,6 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('[API /contacts] Error in GET:', error);
 
     return NextResponse.json(
       {
@@ -128,7 +121,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    console.log('[API /contacts] POST request received:', body);
 
     // For now, return method not allowed as contacts are statically defined
     return NextResponse.json(
@@ -145,7 +137,6 @@ export async function POST(request: Request) {
       { status: 501 }
     );
   } catch (error) {
-    console.error('[API /contacts] Error in POST:', error);
 
     return NextResponse.json(
       {

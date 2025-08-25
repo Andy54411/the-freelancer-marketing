@@ -148,7 +148,7 @@ export default function BillingHistory({ orderId, customerId, providerId }: Bill
 
       setBillingEntries(filteredEntries);
     } catch (error) {
-      console.error('Error loading billing history:', error);
+
     } finally {
       setLoading(false);
     }

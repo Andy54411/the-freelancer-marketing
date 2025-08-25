@@ -20,18 +20,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV Documents] Fetching documents for company:', companyId, {
-      documentId,
-      search,
-    });
-
     // Get tokens from HTTP-only cookies
     const cookieStore = await cookies();
     const cookieName = `datev_tokens_${companyId}`;
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV Documents] No token cookie found');
+
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -47,7 +42,7 @@ export async function GET(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-      console.error('❌ [DATEV Documents] Failed to parse token cookie:', parseError);
+
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -59,7 +54,7 @@ export async function GET(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-      console.log('⚠️ [DATEV Documents] Tokens expired');
+
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -87,8 +82,6 @@ export async function GET(request: NextRequest) {
       apiUrl += `?${urlParams.toString()}`;
     }
 
-    console.log('🌐 [DATEV Documents] Fetching documents...', { apiUrl });
-
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -99,11 +92,6 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [DATEV Documents] API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
 
       // Handle specific token errors that require clearing tokens
       if (response.status === 401) {
@@ -124,7 +112,6 @@ export async function GET(request: NextRequest) {
               errorDescription.includes('Token malformed') ||
               errorDescription.includes('invalid_token')))
         ) {
-          console.warn('⚠️ [DATEV Documents] Invalid token detected, clearing cookie...');
 
           // Clear the invalid token cookie
           const response = NextResponse.json(
@@ -163,18 +150,13 @@ export async function GET(request: NextRequest) {
 
     const documents = await response.json();
 
-    console.log('✅ [DATEV Documents] Documents fetched successfully:', {
-      hasData: !!documents,
-      documentCount: Array.isArray(documents) ? documents.length : 'single document',
-    });
-
     return NextResponse.json({
       success: true,
       data: documents,
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('❌ [DATEV Documents] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -211,19 +193,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV Documents] Uploading document for company:', companyId, {
-      fileName: documentFile.name,
-      fileSize: documentFile.size,
-      fileType: documentFile.type,
-    });
-
     // Get tokens from HTTP-only cookies
     const cookieStore = await cookies();
     const cookieName = `datev_tokens_${companyId}`;
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV Documents] No token cookie found');
+
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -239,7 +215,7 @@ export async function POST(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-      console.error('❌ [DATEV Documents] Failed to parse token cookie:', parseError);
+
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -251,7 +227,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-      console.log('⚠️ [DATEV Documents] Tokens expired');
+
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -272,13 +248,12 @@ export async function POST(request: NextRequest) {
           datevFormData.append(key, metadata[key]);
         });
       } catch (metadataError) {
-        console.warn('⚠️ [DATEV Documents] Invalid metadata JSON, skipping:', metadataError);
+
       }
     }
 
     // Upload document to DATEV API
     const config = getDatevConfig();
-    console.log('🌐 [DATEV Documents] Uploading document...');
 
     const response = await fetch(`${config.apiBaseUrl}/accounting/v2.0/documents`, {
       method: 'POST',
@@ -292,11 +267,6 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [DATEV Documents] API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
 
       return NextResponse.json(
         {
@@ -310,18 +280,13 @@ export async function POST(request: NextRequest) {
 
     const uploadResult = await response.json();
 
-    console.log('✅ [DATEV Documents] Document uploaded successfully:', {
-      hasData: !!uploadResult,
-      documentId: uploadResult?.documentId || 'unknown',
-    });
-
     return NextResponse.json({
       success: true,
       data: uploadResult,
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('❌ [DATEV Documents] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -362,15 +327,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    console.log('[DATEV Documents] Updating document for company:', finalCompanyId, { documentId });
-
     // Get tokens from HTTP-only cookies
     const cookieStore = await cookies();
     const cookieName = `datev_tokens_${finalCompanyId}`;
     const tokenCookie = cookieStore.get(cookieName);
 
     if (!tokenCookie?.value) {
-      console.log('❌ [DATEV Documents] No token cookie found');
+
       return NextResponse.json(
         {
           error: 'no_tokens',
@@ -386,7 +349,7 @@ export async function PUT(request: NextRequest) {
       const decodedData = Buffer.from(tokenCookie.value, 'base64').toString('utf-8');
       tokenData = JSON.parse(decodedData);
     } catch (parseError) {
-      console.error('❌ [DATEV Documents] Failed to parse token cookie:', parseError);
+
       return NextResponse.json(
         { error: 'invalid_tokens', message: 'Ungültige Token-Daten.' },
         { status: 401 }
@@ -398,7 +361,7 @@ export async function PUT(request: NextRequest) {
     const expiresAt = tokenData.connected_at + tokenData.expires_in * 1000;
 
     if (now >= expiresAt) {
-      console.log('⚠️ [DATEV Documents] Tokens expired');
+
       return NextResponse.json(
         {
           error: 'token_expired',
@@ -410,7 +373,6 @@ export async function PUT(request: NextRequest) {
 
     // Update document via DATEV API
     const config = getDatevConfig();
-    console.log('🌐 [DATEV Documents] Updating document...');
 
     const response = await fetch(`${config.apiBaseUrl}/accounting/v2.0/documents/${documentId}`, {
       method: 'PUT',
@@ -424,11 +386,6 @@ export async function PUT(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ [DATEV Documents] API request failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
 
       return NextResponse.json(
         {
@@ -442,18 +399,13 @@ export async function PUT(request: NextRequest) {
 
     const updateResult = await response.json();
 
-    console.log('✅ [DATEV Documents] Document updated successfully:', {
-      hasData: !!updateResult,
-      documentId: updateResult?.documentId || documentId,
-    });
-
     return NextResponse.json({
       success: true,
       data: updateResult,
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('❌ [DATEV Documents] Unexpected error:', error);
+
     return NextResponse.json(
       {
         error: 'internal_server_error',

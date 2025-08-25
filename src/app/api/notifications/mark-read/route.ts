@@ -52,20 +52,16 @@ export async function PATCH(request: NextRequest) {
         readAt: new Date().toISOString(),
       });
 
-      console.log(
-        `✅ Benachrichtigung ${notificationId} als gelesen markiert für Benutzer ${userId}`
-      );
-
       return NextResponse.json({
         success: true,
         message: 'Benachrichtigung als gelesen markiert',
       });
     } catch (authError) {
-      console.error('Auth-Fehler:', authError);
+
       return NextResponse.json({ error: 'Ungültiges Auth-Token' }, { status: 401 });
     }
   } catch (error) {
-    console.error('Fehler beim Markieren der Benachrichtigung:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',
@@ -121,21 +117,17 @@ export async function POST(request: NextRequest) {
 
       await batch.commit();
 
-      console.log(
-        `✅ ${snapshot.size} Benachrichtigungen als gelesen markiert für Benutzer ${userId}`
-      );
-
       return NextResponse.json({
         success: true,
         message: `${snapshot.size} Benachrichtigungen als gelesen markiert`,
         marked: snapshot.size,
       });
     } catch (authError) {
-      console.error('Auth-Fehler:', authError);
+
       return NextResponse.json({ error: 'Ungültiges Auth-Token' }, { status: 401 });
     }
   } catch (error) {
-    console.error('Fehler beim Markieren aller Benachrichtigungen:', error);
+
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',

@@ -61,7 +61,7 @@ export default function WorkspaceDetailPage() {
 
         setWorkspace(workspaceData);
       } catch (error) {
-        console.error('Error loading workspace:', error);
+
         router.push(`/dashboard/company/${companyId}/workspace`);
       } finally {
         setLoading(false);
@@ -80,7 +80,7 @@ export default function WorkspaceDetailPage() {
         setWorkspace(updatedWorkspace);
       }
     } catch (error) {
-      console.error('Error updating workspace:', error);
+
     }
   };
 
@@ -91,7 +91,7 @@ export default function WorkspaceDetailPage() {
       await WorkspaceService.deleteWorkspace(workspaceId);
       router.push(`/dashboard/company/${companyId}/workspace`);
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+
     }
   };
 

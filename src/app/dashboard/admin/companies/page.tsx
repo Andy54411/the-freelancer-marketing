@@ -39,7 +39,7 @@ export default function AdminCompaniesPage() {
         setCompanies(data.companies || []);
       }
     } catch (error) {
-      console.error('Failed to load companies:', error);
+
     } finally {
       setLoading(false);
     }

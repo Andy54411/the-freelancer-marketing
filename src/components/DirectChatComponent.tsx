@@ -71,7 +71,7 @@ export default function DirectChatComponent({
         setLoading(false);
       },
       error => {
-        console.error('Fehler beim Laden der Nachrichten:', error);
+
         setLoading(false);
       }
     );
@@ -118,7 +118,7 @@ export default function DirectChatComponent({
 
       setNewMessage('');
     } catch (error) {
-      console.error('Fehler beim Senden der Nachricht:', error);
+
     } finally {
       setSending(false);
     }

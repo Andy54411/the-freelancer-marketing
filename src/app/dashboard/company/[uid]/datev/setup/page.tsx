@@ -14,12 +14,9 @@ interface DatevSetupPageProps {
 export default async function DatevSetupPage({ params }: DatevSetupPageProps) {
   const { uid } = await params;
 
-  console.log('📋 [DATEV Setup Page] Rendering with UID:', uid, 'Type:', typeof uid);
-  console.log('📋 [DATEV Setup Page] Raw params:', JSON.stringify(await params));
-
   // Additional validation
   if (!uid || uid === 'unknown' || uid.trim() === '') {
-    console.error('❌ [DATEV Setup Page] Invalid UID detected:', uid);
+
   }
 
   return (

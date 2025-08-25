@@ -404,7 +404,7 @@ export default function MultiPlatformAdvertisingDashboard({
         ]);
       }
     } catch (error: any) {
-      console.error('Dashboard loading error:', error);
+
       setError('Fehler beim Laden der Dashboard-Daten');
     } finally {
       setIsLoading(false);
@@ -424,7 +424,7 @@ export default function MultiPlatformAdvertisingDashboard({
         }
       }
     } catch (error: any) {
-      console.error(`Error connecting to ${platform}:`, error);
+
       setError(`Fehler beim Verbinden mit ${platform}`);
     }
   };

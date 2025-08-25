@@ -41,7 +41,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
 
       return false;
     } catch (error) {
-      console.error('Login failed:', error);
+
       return false;
     }
   };
@@ -89,7 +89,7 @@ export function StaffAuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(null);
     } catch (error) {
-      console.error('Logout failed:', error);
+
     }
   };
 

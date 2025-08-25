@@ -40,10 +40,10 @@ export const GoogleMapsLoaderProvider: React.FC<GoogleMapsLoaderProviderProps> =
       .then(loadedGoogle => {
         setGoogle(loadedGoogle);
         setIsLoaded(true);
-        console.log('[GoogleMapsLoaderProvider] Google Maps API erfolgreich geladen.');
+
       })
       .catch(e => {
-        console.error('[GoogleMapsLoaderProvider] Fehler beim Laden der Google Maps API:', e);
+
       });
   }, []); // Der leere Array sorgt dafür, dass dies nur einmal ausgeführt wird
 

@@ -69,7 +69,7 @@ export default function AdminWorkspaceDetailPage() {
           router.push('/admin/login');
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+
         router.push('/admin/login');
       } finally {
         setAuthLoading(false);
@@ -107,7 +107,7 @@ export default function AdminWorkspaceDetailPage() {
       await adminWorkspaceService.updateWorkspaceWithRealtime(workspaceId, updates);
       // State will be updated automatically through realtime subscription
     } catch (error) {
-      console.error('Error updating workspace:', error);
+
     }
   };
 
@@ -118,7 +118,7 @@ export default function AdminWorkspaceDetailPage() {
       await adminWorkspaceService.deleteWorkspace(workspaceId);
       router.push(`/dashboard/admin/workspace`);
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+
     }
   };
 

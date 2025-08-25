@@ -77,7 +77,6 @@ export class FinanceService {
    */
   static async getFinanceStats(companyId: string): Promise<FinanceStats> {
     try {
-      console.log('🔄 FinanceService: Lade Finanzstatistiken für Company:', companyId);
 
       // Lade echte Auftragsdaten aus Firebase
       const [orders, invoices, payments, expenses] = await Promise.all([
@@ -86,15 +85,6 @@ export class FinanceService {
         this.getPayments(companyId),
         this.getExpenses(companyId),
       ]);
-
-      console.log('📊 FinanceService: Geladene echte Daten:', {
-        ordersCount: orders.length,
-        invoicesCount: invoices.length,
-        paymentsCount: payments.length,
-        expensesCount: expenses.length,
-        ordersRevenue:
-          orders.reduce((sum, order) => sum + (order.totalAmountPaidByBuyer || 0), 0) / 100,
-      });
 
       // 🔄 KOMBINATION: Berechne Gesamtumsatz aus BEIDEN Quellen
 
@@ -117,20 +107,6 @@ export class FinanceService {
 
       // 3. GESAMTUMSATZ = Aufträge + Rechnungen
       const totalRevenue = ordersRevenue + invoicesRevenue;
-
-      console.log('💰 Umsatz-Aufschlüsselung:', {
-        ordersRevenue: `${ordersRevenue.toFixed(2)} €`,
-        invoicesRevenue: `${invoicesRevenue.toFixed(2)} €`,
-        totalRevenue: `${totalRevenue.toFixed(2)} €`,
-        ordersCount: orders.filter(
-          o =>
-            o.status === 'ABGESCHLOSSEN' ||
-            o.status === 'COMPLETED' ||
-            o.status === 'BEZAHLT' ||
-            o.status === 'zahlung_erhalten_clearing'
-        ).length,
-        invoicesCount: invoices.filter(inv => inv.status === 'paid').length,
-      });
 
       // Berechne Ausgaben aus expense records und invoice system
       const expenseFromRecords = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -188,10 +164,9 @@ export class FinanceService {
         lastUpdate: new Date(),
       };
 
-      console.log('💰 FinanceService: Berechnete Statistiken:', stats);
       return stats;
     } catch (error) {
-      console.error('Fehler beim Laden der Finanzstatistiken:', error);
+
       throw error;
     }
   }
@@ -200,7 +175,6 @@ export class FinanceService {
    * Lädt alle Rechnungen für ein Unternehmen
    */
   private static async getInvoices(companyId: string): Promise<InvoiceData[]> {
-    console.log('📄 FinanceService: Lade Rechnungen für Company:', companyId);
 
     const invoicesQuery = query(
       collection(db, 'invoices'),
@@ -218,16 +192,6 @@ export class FinanceService {
         id: doc.id,
         createdAt: data.createdAt?.toDate?.() || new Date(),
       } as InvoiceData);
-    });
-
-    console.log('✅ FinanceService: Rechnungen geladen:', {
-      count: invoices.length,
-      invoices: invoices.map(inv => ({
-        id: inv.id,
-        status: inv.status,
-        total: inv.total,
-        invoiceNumber: inv.invoiceNumber,
-      })),
     });
 
     return invoices;
@@ -264,7 +228,7 @@ export class FinanceService {
 
       return payments;
     } catch (error) {
-      console.error('Fehler beim Laden der Zahlungen:', error);
+
       return [];
     }
   }
@@ -300,7 +264,7 @@ export class FinanceService {
 
       return expenses;
     } catch (error) {
-      console.error('Fehler beim Laden der Ausgaben:', error);
+
       return [];
     }
   }
@@ -310,7 +274,6 @@ export class FinanceService {
    */
   private static async getCompanyOrders(companyId: string): Promise<OrderRecord[]> {
     try {
-      console.log('📄 FinanceService: Lade Aufträge für Company:', companyId);
 
       const ordersQuery = query(
         collection(db, 'auftraege'),
@@ -338,18 +301,9 @@ export class FinanceService {
         });
       });
 
-      console.log('✅ FinanceService: Aufträge geladen:', {
-        count: orders.length,
-        ordersWithRevenue: orders.filter(
-          o => o.totalAmountPaidByBuyer && o.totalAmountPaidByBuyer > 0
-        ).length,
-        totalRevenue: orders.reduce((sum, o) => sum + (o.totalAmountPaidByBuyer || 0), 0) / 100,
-        statuses: [...new Set(orders.map(o => o.status))],
-      });
-
       return orders;
     } catch (error) {
-      console.error('Fehler beim Laden der Aufträge:', error);
+
       return [];
     }
   }
@@ -526,7 +480,7 @@ export class FinanceService {
         createdAt: Timestamp.now(),
       });
     } catch (error) {
-      console.error('Fehler beim Erstellen der Zahlung:', error);
+
       throw error;
     }
   }
@@ -543,7 +497,7 @@ export class FinanceService {
         createdAt: Timestamp.now(),
       });
     } catch (error) {
-      console.error('Fehler beim Erstellen der Ausgabe:', error);
+
       throw error;
     }
   }
@@ -557,7 +511,7 @@ export class FinanceService {
 
       await updateDoc(doc(db, 'payments', id), updates);
     } catch (error) {
-      console.error('Fehler beim Aktualisieren der Zahlung:', error);
+
       throw error;
     }
   }
@@ -571,7 +525,7 @@ export class FinanceService {
 
       await updateDoc(doc(db, 'expenses', id), updates);
     } catch (error) {
-      console.error('Fehler beim Aktualisieren der Ausgabe:', error);
+
       throw error;
     }
   }
@@ -585,7 +539,7 @@ export class FinanceService {
 
       await deleteDoc(doc(db, 'payments', id));
     } catch (error) {
-      console.error('Fehler beim Löschen der Zahlung:', error);
+
       throw error;
     }
   }
@@ -599,7 +553,7 @@ export class FinanceService {
 
       await deleteDoc(doc(db, 'expenses', id));
     } catch (error) {
-      console.error('Fehler beim Löschen der Ausgabe:', error);
+
       throw error;
     }
   }
