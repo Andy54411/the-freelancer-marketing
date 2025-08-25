@@ -25,7 +25,7 @@ interface Step1Data {
 }
 
 const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
-  const { updateStepData, stepData, goToNextStep } = useOnboarding();
+  const { updateStepData, stepData, goToNextStep, saveCurrentStep } = useOnboarding();
   const { user } = useAuth();
 
   const [formData, setFormData] = useState<Step1Data>({
@@ -124,7 +124,15 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
     }
 
     try {
-      await updateStepData(1, formData);
+      // 1. Lokal updaten (kein Firestore!)
+      updateStepData(1, formData);
+
+      // 2. Einmal in Firestore speichern
+      await saveCurrentStep();
+
+      // 3. Zum nächsten Step
+      goToNextStep();
+
       console.log('✅ Step 1 erfolgreich gespeichert');
     } catch (error) {
       console.error('❌ Fehler beim Speichern:', error);

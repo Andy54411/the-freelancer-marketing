@@ -47,7 +47,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (!companyId || !user) return;
 
       try {
-
         // SIMPLIFIED: Use user document directly instead of subcollection
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
@@ -77,7 +76,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           const stepNumber = initialStep || parseInt(currentStepFromData) || 1;
           setCurrentStep(stepNumber);
         } else {
-
           // Create initial onboarding status for new companies
           const initialStatus: CompanyOnboardingStatus = {
             uid: companyId,
@@ -102,7 +100,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           setOnboardingStatus(initialStatus);
         }
       } catch (error) {
-
         // Fallback: Set default status to prevent app crash
         const fallbackStatus: CompanyOnboardingStatus = {
           uid: companyId,
@@ -231,7 +228,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   // OPTIMIZED: Helper function to serialize stepData for Firestore (prevent data bloat)
   const serializeStepData = useCallback((data: Record<number, any>) => {
     const serialized: Record<string, any> = {};
-    
+
     // Clear existing step data to prevent accumulation
     const stepKeys = ['step1', 'step2', 'step3', 'step4', 'step5'];
     stepKeys.forEach(key => {
@@ -299,53 +296,31 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const saveCurrentStep = useCallback(async (): Promise<void> => {
     if (!user || !companyId) return;
 
-    setIsSaving(true);
     try {
-      const completion = getOverallCompletion();
-      const isCompleted = completion === 100;
-      const serializedStepData = serializeStepData(stepData);
+      setIsSaving(true);
 
-      // SIMPLIFIED: Save directly to user document instead of subcollection
-      await updateDoc(doc(db, 'users', user.uid), {
-        onboardingCurrentStep: currentStep.toString(),
-        onboardingStepData: serializedStepData,
-        onboardingCompletionPercentage: completion,
-        onboardingCompleted: isCompleted,
-        onboardingLastUpdated: serverTimestamp(),
-      });
-
-      // Update local state
-      const newStatus: CompanyOnboardingStatus['status'] = isCompleted
-        ? 'completed'
-        : 'in_progress';
-
-      const updatedStatus: CompanyOnboardingStatus = {
-        ...onboardingStatus!,
-        currentStep: currentStep.toString(),
-        stepData: serializedStepData,
-        completionPercentage: completion,
-        status: newStatus,
+      // FIRESTORE-SAVE REDUZIERT: Nur minimale Updates, keine redundanten Writes
+      const minimalUpdates: any = {
+        onboardingCurrentStep: String(currentStep),
+        onboardingLastSaved: serverTimestamp(),
       };
 
-      setOnboardingStatus(updatedStatus);
+      // Nur aktuellen Step-Data speichern (nicht alle Steps)
+      if (stepData[currentStep]) {
+        minimalUpdates[`onboardingStep${currentStep}Data`] = stepData[currentStep];
+      }
+
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, minimalUpdates);
+
       setLastSaved(new Date());
-
+      console.log(`✅ Step ${currentStep} erfolgreich gespeichert`);
     } catch (error) {
-
+      console.error(`❌ Fehler beim Speichern von Step ${currentStep}:`, error);
     } finally {
       setIsSaving(false);
     }
-  }, [
-    user,
-    companyId,
-    currentStep,
-    stepData,
-    onboardingStatus,
-    getOverallCompletion,
-    getStepCompletion,
-    validateStep,
-    serializeStepData,
-  ]);
+  }, [user, companyId, currentStep, stepData]);
 
   const goToStep = useCallback(
     (step: number): void => {
@@ -360,7 +335,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     if (!user || !companyId) return;
 
     try {
-
       // CRITICAL FIX: Load existing user data FIRST to preserve registration fields
       const userDocRef = doc(db, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
@@ -372,12 +346,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       // Step 1: Erweiterte Unternehmensdaten (4 Felder - KEINE Registration-Duplikate)
       if (stepData[1]?.businessType)
         onboardingUpdates.businessType = String(stepData[1].businessType);
-      if (stepData[1]?.employees) 
-        onboardingUpdates.employees = String(stepData[1].employees);
-      if (stepData[1]?.website) 
-        onboardingUpdates.website = String(stepData[1].website);
-      if (stepData[1]?.description) 
-        onboardingUpdates.description = String(stepData[1].description);
+      if (stepData[1]?.employees) onboardingUpdates.employees = String(stepData[1].employees);
+      if (stepData[1]?.website) onboardingUpdates.website = String(stepData[1].website);
+      if (stepData[1]?.description) onboardingUpdates.description = String(stepData[1].description);
 
       // Manager Zusatzdaten (nur erweiterte Felder, KEINE Registration-Duplikate)
       if (stepData[1]?.managerData?.position) {
@@ -392,14 +363,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         onboardingUpdates.kleinunternehmer = String(stepData[2].kleinunternehmer);
       if (stepData[2]?.profitMethod)
         onboardingUpdates.profitMethod = String(stepData[2].profitMethod);
-      if (stepData[2]?.priceInput)
-        onboardingUpdates.priceInput = String(stepData[2].priceInput);
-      if (stepData[2]?.taxRate)
-        onboardingUpdates.taxRate = String(stepData[2].taxRate);
+      if (stepData[2]?.priceInput) onboardingUpdates.priceInput = String(stepData[2].priceInput);
+      if (stepData[2]?.taxRate) onboardingUpdates.taxRate = String(stepData[2].taxRate);
 
       // Step 3: Profil & Service-Details (8 Felder - KEINE hourlyRate Duplikate)
-      if (stepData[3]?.companyLogo) 
-        onboardingUpdates.companyLogo = String(stepData[3].companyLogo);
+      if (stepData[3]?.companyLogo) onboardingUpdates.companyLogo = String(stepData[3].companyLogo);
       if (stepData[3]?.profileBannerImage)
         onboardingUpdates.profileBannerImage = String(stepData[3].profileBannerImage);
       if (stepData[3]?.publicDescription)
@@ -512,9 +480,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         profileComplete: true,
         profileStatus: 'pending_review',
       });
-
     } catch (error) {
-
       throw error;
     }
   }, [user, companyId, stepData, serializeStepData]);
@@ -551,6 +517,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   const updateStepData = useCallback((step: number, data: any) => {
+    // Nur lokal speichern, NICHT in Firestore!
     setStepData(prev => ({
       ...prev,
       [step]: { ...prev[step], ...data },
