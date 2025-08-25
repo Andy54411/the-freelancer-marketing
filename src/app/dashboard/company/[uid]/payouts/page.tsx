@@ -150,13 +150,26 @@ export default function PayoutOverviewPage() {
     if (!dateInput) return 'Unbekannt';
     
     let date: Date;
-    if (dateInput.toDate && typeof dateInput.toDate === 'function') {
+    
+    // Firebase Timestamp mit _seconds und _nanoseconds
+    if (dateInput._seconds) {
+      date = new Date(dateInput._seconds * 1000);
+    }
+    // Firestore Timestamp mit toDate() Methode
+    else if (dateInput.toDate && typeof dateInput.toDate === 'function') {
       date = dateInput.toDate();
-    } else if (dateInput instanceof Date) {
+    } 
+    // Standard Date Object
+    else if (dateInput instanceof Date) {
       date = dateInput;
-    } else if (typeof dateInput === 'string' || typeof dateInput === 'number') {
+    } 
+    // String oder Number
+    else if (typeof dateInput === 'string' || typeof dateInput === 'number') {
       date = new Date(dateInput);
-    } else {
+    } 
+    // Fallback
+    else {
+      console.log('Unknown date format:', dateInput);
       return 'Unbekannt';
     }
 
