@@ -292,9 +292,8 @@ export async function POST(request: NextRequest) {
       currency: currency,
       customer: stripeCustomerId,
       application_fee_amount: totalApplicationFee, // Die Gesamtgebühr für eure Plattform
-      transfer_data: {
-        destination: connectedAccountId, // Der Restbetrag geht an den Dienstleister
-      },
+      // ✅ CONTROLLED PAYOUT: Keine transfer_data = Geld bleibt auf Platform für manuelle Auszahlung
+      // ENTFERNT: transfer_data für kontrollierte Payouts
       confirm: false, // PaymentIntent wird NICHT sofort bestätigt
       setup_future_usage: 'off_session', // Karte für zukünftige Zahlungen speichern
       automatic_payment_methods: {
