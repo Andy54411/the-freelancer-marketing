@@ -39,15 +39,16 @@ export async function POST(request: NextRequest) {
 
     // Get provider details
     const provider = {
-      id: orderData?.selectedAnbieterId || '',
-      name: orderData?.providerName || 'Unbekannter Anbieter',
+      id: orderData?.selectedAnbieterId || orderData?.providerFirebaseUid || '',
+      name: orderData?.providerName || orderData?.companyName || 'Unbekannter Anbieter',
       avatarUrl: null,
     };
 
     // Get customer details
     const customer = {
-      id: orderData?.kundeId || '',
+      id: orderData?.kundeId || orderData?.customerFirebaseUid || '',
       name:
+        orderData?.customerName ||
         `${orderData?.customerFirstName || ''} ${orderData?.customerLastName || ''}`.trim() ||
         'Unbekannter Kunde',
       avatarUrl: null,
@@ -55,22 +56,78 @@ export async function POST(request: NextRequest) {
 
     // Try to get additional details from users collections if needed
     try {
-      if (orderData?.selectedAnbieterId) {
-        const providerDoc = await db.collection('users').doc(orderData.selectedAnbieterId).get();
+      const providerId = orderData?.selectedAnbieterId || orderData?.providerFirebaseUid;
+      if (providerId) {
+        console.log('🔍 Fetching provider data for ID:', providerId);
+        const providerDoc = await db.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           const providerData = providerDoc.data();
-          provider.name = providerData?.displayName || providerData?.name || provider.name;
-          provider.avatarUrl = providerData?.photoURL || providerData?.avatarUrl || null;
+          console.log('📋 Provider data found:', {
+            companyName: providerData?.companyName,
+            displayName: providerData?.displayName,
+            name: providerData?.name,
+            firstName: providerData?.firstName,
+            lastName: providerData?.lastName,
+            originalName: provider.name,
+          });
+
+          // For providers, prioritize companyName for businesses, then displayName, then constructed name
+          const providerName =
+            providerData?.companyName ||
+            providerData?.displayName ||
+            providerData?.name ||
+            (providerData?.firstName && providerData?.lastName
+              ? `${providerData.firstName} ${providerData.lastName}`.trim()
+              : '') ||
+            provider.name;
+
+          provider.name = providerName;
+          provider.avatarUrl =
+            providerData?.profilePictureURL ||
+            providerData?.photoURL ||
+            providerData?.avatarUrl ||
+            null;
+        } else {
+          console.log('❌ Provider document does not exist for ID:', providerId);
         }
+      } else {
+        console.log('❌ No provider ID found in order data');
       }
 
-      if (orderData?.kundeId) {
-        const customerDoc = await db.collection('users').doc(orderData.kundeId).get();
+      const customerId = orderData?.kundeId || orderData?.customerFirebaseUid;
+      if (customerId) {
+        console.log('🔍 Fetching customer data for ID:', customerId);
+        const customerDoc = await db.collection('users').doc(customerId).get();
         if (customerDoc.exists) {
           const customerData = customerDoc.data();
-          customer.name = customerData?.displayName || customerData?.name || customer.name;
-          customer.avatarUrl = customerData?.photoURL || customerData?.avatarUrl || null;
+          console.log('📋 Customer data found:', {
+            displayName: customerData?.displayName,
+            name: customerData?.name,
+            firstName: customerData?.firstName,
+            lastName: customerData?.lastName,
+            originalName: customer.name,
+          });
+
+          // For customers, prioritize displayName, then constructed name from firstName/lastName
+          const customerName =
+            customerData?.displayName ||
+            customerData?.name ||
+            (customerData?.firstName && customerData?.lastName
+              ? `${customerData.firstName} ${customerData.lastName}`.trim()
+              : '') ||
+            customer.name;
+
+          customer.name = customerName;
+          customer.avatarUrl =
+            customerData?.profilePictureURL ||
+            customerData?.photoURL ||
+            customerData?.avatarUrl ||
+            null;
+        } else {
+          console.log('❌ Customer document does not exist for ID:', customerId);
         }
+      } else {
+        console.log('❌ No customer ID found in order data');
       }
     } catch (error) {
       console.log('Could not fetch additional user details:', error);

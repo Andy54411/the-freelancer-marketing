@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { User as FiUser, ArrowRight, Star, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { userPresence } from '@/lib/userPresence';
+import { db } from '@/firebase/clients';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 interface UserInfoCardProps {
   userId: string;
-  userName: string;
-  userAvatarUrl?: string | null;
+  userName: string; // Fallback nur
+  userAvatarUrl?: string | null; // Fallback nur
   userRole: 'customer' | 'provider';
   className?: string;
 }
@@ -19,10 +21,26 @@ interface UserPresence {
   status: string;
 }
 
+interface UserData {
+  companyName?: string;
+  displayName?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  profilePictureURL?: string;
+  photoURL?: string;
+  avatarUrl?: string;
+}
+
+interface ReviewData {
+  rating: number;
+  totalReviews: number;
+}
+
 const UserInfoCard: React.FC<UserInfoCardProps> = ({
   userId,
-  userName,
-  userAvatarUrl,
+  userName: fallbackUserName,
+  userAvatarUrl: fallbackAvatarUrl,
   userRole,
   className,
 }) => {
@@ -30,9 +48,118 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
   const [lastSeen, setLastSeen] = useState<any>(null);
   const [status, setStatus] = useState<string>('offline');
 
-  // A company/provider might have a public-facing profile, a customer usually does not.
-  const profileLink = userRole === 'provider' ? `/profile/${userId}` : null;
-  const roleDisplay = userRole === 'customer' ? 'Kunde' : 'Anbieter';
+  // Echte Daten aus Firestore
+  const [realUserName, setRealUserName] = useState<string>(fallbackUserName);
+  const [realAvatarUrl, setRealAvatarUrl] = useState<string | null>(fallbackAvatarUrl || null);
+  const [rating, setRating] = useState<number>(0);
+  const [reviewCount, setReviewCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Lade echte Daten aus Firestore
+  useEffect(() => {
+    const loadRealUserData = async () => {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        console.log('🔍 UserInfoCard: Loading data for userId:', userId);
+
+        // 1. Lade User-Daten aus users collection
+        const userDocRef = doc(db, 'users', userId);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data() as UserData;
+          console.log('✅ UserInfoCard: User data found:', userData);
+
+          // Prioritäre Namens-Auswahl basierend auf userRole
+          let displayName = fallbackUserName;
+
+          if (userRole === 'provider') {
+            // Für Provider: companyName > displayName > name > firstName lastName
+            displayName =
+              userData.companyName ||
+              userData.displayName ||
+              userData.name ||
+              (userData.firstName && userData.lastName
+                ? `${userData.firstName} ${userData.lastName}`
+                : '') ||
+              fallbackUserName;
+          } else {
+            // Für Customer: displayName > name > firstName lastName > companyName
+            displayName =
+              userData.displayName ||
+              userData.name ||
+              (userData.firstName && userData.lastName
+                ? `${userData.firstName} ${userData.lastName}`
+                : '') ||
+              userData.companyName ||
+              fallbackUserName;
+          }
+
+          setRealUserName(displayName);
+
+          // Avatar URL setzen - verschiedene Felder prüfen
+          const avatarUrl =
+            userData.profilePictureURL ||
+            userData.photoURL ||
+            userData.avatarUrl ||
+            fallbackAvatarUrl;
+          setRealAvatarUrl(avatarUrl || null);
+
+          console.log('✅ UserInfoCard: Final user data:', {
+            displayName,
+            avatarUrl,
+            userRole,
+          });
+        } else {
+          console.log('❌ UserInfoCard: No user document found for:', userId);
+        }
+
+        // 2. Lade Review-Daten für Provider
+        if (userRole === 'provider') {
+          const reviewsQuery = query(
+            collection(db, 'reviews'),
+            where('selectedAnbieterId', '==', userId)
+          );
+
+          const reviewSnapshot = await getDocs(reviewsQuery);
+
+          if (!reviewSnapshot.empty) {
+            let totalRating = 0;
+            let totalReviews = 0;
+
+            reviewSnapshot.forEach(doc => {
+              const reviewData = doc.data();
+              if (reviewData.rating && typeof reviewData.rating === 'number') {
+                totalRating += reviewData.rating;
+                totalReviews++;
+              }
+            });
+
+            const averageRating = totalReviews > 0 ? totalRating / totalReviews : 0;
+            setRating(Math.round(averageRating * 10) / 10); // Auf 1 Dezimalstelle runden
+            setReviewCount(totalReviews);
+
+            console.log('✅ UserInfoCard: Review data loaded:', {
+              averageRating,
+              totalReviews,
+            });
+          } else {
+            console.log('📝 UserInfoCard: No reviews found for provider:', userId);
+          }
+        }
+      } catch (error) {
+        console.error('❌ UserInfoCard: Error loading user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRealUserData();
+  }, [userId, userRole, fallbackUserName, fallbackAvatarUrl]);
 
   // Online Status Tracking
   useEffect(() => {
@@ -54,6 +181,10 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
     // Cleanup function
     return unsubscribe;
   }, [userId]);
+
+  // Profile Link Generator
+  const profileLink = userRole === 'provider' ? `/anbieter/${userId}` : null;
+  const roleDisplay = userRole === 'customer' ? 'Kunde' : 'Anbieter';
 
   // Helper-Funktion für "Zuletzt gesehen" Text mit robuster Date-Behandlung
   const getLastSeenText = (lastSeen: any, isOnline: boolean) => {
@@ -115,10 +246,10 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
       <div className="flex items-center gap-4 mb-4">
         {/* Avatar */}
         <div className="relative">
-          {userAvatarUrl ? (
+          {realAvatarUrl ? (
             <Image
-              src={userAvatarUrl}
-              alt={`Profilbild von ${userName}`}
+              src={realAvatarUrl}
+              alt={`Profilbild von ${realUserName}`}
               width={60}
               height={60}
               className="rounded-full object-cover ring-2 ring-gray-100"
@@ -142,41 +273,48 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
 
         {/* Benutzer Info */}
         <div className="flex-1">
-          <h3 className="font-semibold text-lg text-gray-900 mb-1">{userName}</h3>
+          {isLoading ? (
+            <div className="animate-pulse">
+              <div className="h-5 bg-gray-200 rounded w-32 mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
+            </div>
+          ) : (
+            <>
+              <h3 className="font-semibold text-lg text-gray-900 mb-1">{realUserName}</h3>
 
-          {/* Role und Bewertung */}
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className={cn(
-                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                userRole === 'provider'
-                  ? 'bg-[#14ad9f] bg-opacity-10 text-[#14ad9f]'
-                  : 'bg-blue-100 text-blue-800'
-              )}
-            >
-              {roleDisplay}
-            </span>
-            {userRole === 'provider' && (
-              <div className="flex items-center gap-1">
-                <Star size={14} className="text-yellow-400 fill-current" />
-                <span className="text-sm text-gray-600">4.8</span>
+              {/* Role und Bewertung */}
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className={cn(
+                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                    userRole === 'provider'
+                      ? 'bg-[#14ad9f] bg-opacity-10 text-[#14ad9f]'
+                      : 'bg-blue-100 text-blue-800'
+                  )}
+                >
+                  {userRole === 'provider' ? 'Anbieter' : 'Auftraggeber'}
+                </span>
+                {userRole === 'provider' && reviewCount > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Star size={14} className="text-yellow-400 fill-current" />
+                    <span className="text-sm text-gray-600">{rating}</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Online-Status Text */}
-          <div className="flex items-center gap-1">
-            <Circle
-              size={8}
-              className={cn('fill-current', isOnline ? 'text-green-500' : 'text-gray-400')}
-            />
-            <span
-              className={cn('text-xs', isOnline ? 'text-green-600 font-medium' : 'text-gray-500')}
-            >
-              {getLastSeenText(lastSeen, isOnline)}
-            </span>
-          </div>
+            </>
+          )}
         </div>
+      </div>
+
+      {/* Online-Status Text */}
+      <div className="flex items-center gap-1 mb-4">
+        <Circle
+          size={8}
+          className={cn('fill-current', isOnline ? 'text-green-500' : 'text-gray-400')}
+        />
+        <span className={cn('text-xs', isOnline ? 'text-green-600 font-medium' : 'text-gray-500')}>
+          {getLastSeenText(lastSeen, isOnline)}
+        </span>
       </div>
 
       {/* Profil Link für Provider */}

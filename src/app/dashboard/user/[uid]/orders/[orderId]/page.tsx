@@ -20,7 +20,7 @@ import {
   FiCheckCircle,
 } from 'react-icons/fi'; // FiUser hinzugefügt
 
-import UserInfoCard from '@/components/UserInfoCard'; // Importiere die neue, generische Komponente
+import UserInfoCard from '@/components/UserInfoCard';
 
 // Die Chat-Komponente
 import ChatComponent from '@/components/ChatComponent';
@@ -50,7 +50,7 @@ interface OrderData {
   customerName: string;
   customerAvatarUrl?: string | null;
   orderDate?: { _seconds: number; _nanoseconds: number } | string; // Mapped from paidAt or createdAt
-  priceInCents: number; // Mapped from jobCalculatedPriceInCents
+  priceInCents: number; // Mapped from totalAmountPaidByBuyer as primary source
   status: string;
   selectedCategory?: string; // Direkt aus Firestore, optional gemacht
   selectedSubcategory?: string; // Direkt aus Firestore, optional gemacht
@@ -197,7 +197,7 @@ export default function OrderDetailPage() {
           customerName: customerDetails.name,
           customerAvatarUrl: customerDetails.avatarUrl,
           orderDate: data.paidAt || data.createdAt,
-          priceInCents: data.jobCalculatedPriceInCents || 0,
+          priceInCents: data.totalAmountPaidByBuyer || data.jobCalculatedPriceInCents || 0,
           status: data.status || 'unbekannt',
           selectedCategory: data.selectedCategory,
           selectedSubcategory: data.selectedSubcategory,
@@ -206,6 +206,10 @@ export default function OrderDetailPage() {
           jobDateFrom: data.jobDateFrom,
           jobDateTo: data.jobDateTo,
           jobTimePreference: data.jobTimePreference,
+          totalAmountPaidByBuyer: data.totalAmountPaidByBuyer,
+          companyNetAmount: data.companyNetAmount,
+          platformFeeAmount: data.platformFeeAmount,
+          companyStripeAccountId: data.companyStripeAccountId,
         };
         setOrder(orderData);
         console.log('✅ Order data loaded successfully');
