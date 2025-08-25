@@ -460,13 +460,50 @@ export const createStripeAccountIfComplete = onCall(
       accountParams.settings = { ...accountParams.settings, branding: { icon: payloadFromClient.profilePictureFileId } };
     }
 
-    let account: Stripe.Account;
+    let account: Stripe.Account | undefined;
     try {
       // --- ERWEITERTES LOGGING START ---
       loggerV2.info(">>>> VERSUCHE, STRIPE KONTO ZU ERSTELLEN mit Parametern (detailliert):", { params: JSON.stringify(accountParams, null, 2) });
       // --- ERWEITERTES LOGGING ENDE ---
-      account = await localStripe.accounts.create(accountParams);
-      loggerV2.info(`✅✅✅ ERFOLG! Stripe Account ${account.id} wurde erstellt.`);
+      
+      // RETRY MECHANISM: Exponentielles Backoff für Rate-Limiting-Probleme
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          account = await localStripe.accounts.create(accountParams);
+          loggerV2.info(`✅✅✅ ERFOLG! Stripe Account ${account.id} wurde erstellt.`);
+          break; // Erfolg - verlasse die Retry-Schleife
+        } catch (retryError: any) {
+          retryCount++;
+          
+          // Prüfe ob es ein Rate-Limiting-Error ist (mehrere Varianten)
+          const isRateLimitError = 
+            retryError.type === 'RateLimitError' || 
+            retryError.code === 'rate_limit' ||
+            (retryError.message && retryError.message.includes('too quickly')) ||
+            (retryError.message && retryError.message.includes('creation attempts per second'));
+          
+          if (isRateLimitError && retryCount <= maxRetries) {
+            const backoffDelay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+            loggerV2.warn(`⚠️ Rate Limit erreicht, Retry ${retryCount}/${maxRetries} nach ${backoffDelay}ms...`, {
+              errorType: retryError.type,
+              errorCode: retryError.code,
+              errorMessage: retryError.message
+            });
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
+            continue;
+          }
+          
+          // Wenn es kein Rate-Limiting-Error ist oder max retries erreicht, werfe den Fehler
+          throw retryError;
+        }
+      }
+      
+      if (!account) {
+        throw new Error("Account creation failed after retries");
+      }
 
     } catch (e: any) {
       // Check if it's a Stripe error by looking for a `type` property
