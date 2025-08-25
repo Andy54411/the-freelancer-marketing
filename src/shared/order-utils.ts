@@ -131,7 +131,8 @@ export function formatOrderForChat(order: OrderData): string {
       in_progress: 'In Bearbeitung',
       draft: 'Entwurf',
     };
-    return statusMap[status?.toLowerCase() || ''] || status || 'Unbekannt';
+    const safeStatus = typeof status === 'string' ? status.toLowerCase() : '';
+    return statusMap[safeStatus] || status || 'Unbekannt';
   };
 
   return `
