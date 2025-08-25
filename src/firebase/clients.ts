@@ -54,6 +54,25 @@ const getClientApp = (): FirebaseApp => {
 const app = getClientApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// PERFORMANCE-OPTIMIERUNG: Firestore Settings für bessere Performance
+import {
+  enableNetwork,
+  disableNetwork,
+  enableMultiTabIndexedDbPersistence,
+} from 'firebase/firestore';
+
+// Aktiviere Offline-Persistenz und Multi-Tab Support
+if (typeof window !== 'undefined') {
+  enableMultiTabIndexedDbPersistence(db).catch(err => {
+    if (err.code === 'failed-precondition') {
+      console.log('🔥 Firestore: Multi-tab persistence failed - andere Tabs offen');
+    } else if (err.code === 'unimplemented') {
+      console.log('🔥 Firestore: Persistence nicht unterstützt in diesem Browser');
+    }
+  });
+}
+
 const realtimeDb = getDatabase(app); // NEU: Realtime Database
 const storage = getStorage(app);
 const functions = getFunctions(app, functionsRegion);
@@ -64,41 +83,35 @@ if (process.env.NODE_ENV === 'development') {
   // Ein globales Flag, um zu verhindern, dass die Verbindung zu den Emulatoren
   // bei jedem Hot-Reload erneut versucht wird, was zu Fehlern führen würde.
   if (!(global as any)._firebaseEmulatorsConnected) {
-
     // Auth Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST) {
       connectAuthEmulator(auth, `http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`, {
         disableWarnings: true,
       });
-
     }
 
     // Firestore Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST) {
       const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST.split(':');
       connectFirestoreEmulator(db, host, parseInt(portStr, 10));
-
     }
 
     // Storage Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST) {
       const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST.split(':');
       connectStorageEmulator(storage, host, parseInt(portStr, 10));
-
     }
 
     // Functions Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
       const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST.split(':');
       connectFunctionsEmulator(functions, host, parseInt(portStr, 10));
-
     }
 
     // Realtime Database Emulator
     if (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST) {
       const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST.split(':');
       connectDatabaseEmulator(realtimeDb, host, parseInt(portStr, 10));
-
     }
 
     (global as any)._firebaseEmulatorsConnected = true;

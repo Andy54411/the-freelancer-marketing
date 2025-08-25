@@ -312,12 +312,7 @@ const OnboardingStep2: React.FC<OnboardingStep2Props> = ({ companyUid }) => {
             </button>
             <button
               type="button"
-              onClick={async () => {
-                await handleNext();
-                if (isFormValid) {
-                  goToNextStep();
-                }
-              }}
+              onClick={handleNext}
               disabled={!isFormValid}
               className={`px-6 py-2 text-white rounded-lg transition-colors ${
                 isFormValid ? 'bg-[#14ad9f] hover:bg-[#129488]' : 'bg-gray-300 cursor-not-allowed'

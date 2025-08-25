@@ -119,7 +119,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     loadOnboardingStatus();
   }, [companyId, user, initialStep]);
 
-  // Auto-save functionality (Stripe-style)
+  // Auto-save functionality - DEAKTIVIERT wegen Performance-Problemen
+  // Stattdessen: Manuelles Speichern nur beim Step-Wechsel
+  /*
   useEffect(() => {
     if (!user || !companyId || Object.keys(stepData).length === 0) return;
 
@@ -129,6 +131,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
     return () => clearTimeout(saveTimer);
   }, [stepData, companyId, user]);
+  */
 
   // Validation functions
   const validateStep = useCallback((step: number, data: any): boolean => {
@@ -417,10 +420,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       // Onboarding completion metadata - ALWAYS SET
       onboardingUpdates.onboardingCompleted = true;
       onboardingUpdates.onboardingCompletedAt = serverTimestamp();
+      onboardingUpdates.onboardingCompletionPercentage = 100;
       onboardingUpdates.profileComplete = true;
       onboardingUpdates.profileStatus = 'pending_review';
 
-      // Update main user document with ONLY the onboarding fields that have values
+      // Update main user document with ALL onboarding fields AND completion metadata
       await updateDoc(userDocRef, onboardingUpdates);
 
       // Update company document with onboarding completion AND profile data
@@ -472,18 +476,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       await updateDoc(doc(db, 'companies', companyId), companyUpdateData);
 
-      // SIMPLIFIED: Mark onboarding as completed in user document (no external library needed)
-      await updateDoc(doc(db, 'users', user.uid), {
-        onboardingCompleted: true,
-        onboardingCompletedAt: serverTimestamp(),
-        onboardingCompletionPercentage: 100,
-        profileComplete: true,
-        profileStatus: 'pending_review',
-      });
+      console.log('✅ Onboarding erfolgreich abgeschlossen - alle Daten gespeichert');
     } catch (error) {
+      console.error('❌ Fehler beim Abschließen des Onboardings:', error);
       throw error;
     }
-  }, [user, companyId, stepData, serializeStepData]);
+  }, [user, companyId, stepData]);
 
   // Helper functions
   const isStepCompleted = useCallback(

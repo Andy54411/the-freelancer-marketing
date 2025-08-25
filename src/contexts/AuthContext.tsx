@@ -68,15 +68,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Optional: Leite den Benutzer nach dem Logout weiter
       router.push('/login');
     } catch (error) {
-
       // Hier könnten Sie dem Benutzer eine Fehlermeldung anzeigen
     }
   };
 
   useEffect(() => {
-
     const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
-
       try {
         if (fbUser) {
           // Token aktualisieren, um die neuesten Claims zu erhalten.
@@ -124,7 +121,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // NEU: Initialisiere User Presence nach erfolgreicher Authentifizierung
             userPresence.initializePresence(fbUser.uid).catch(console.error);
           } else {
-
             // Auch hier den Claim berücksichtigen, falls das DB-Dokument fehlt.
             const roleFromClaim = idTokenResult.claims.master
               ? 'master'
@@ -148,7 +144,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             userPresence.initializePresence(fbUser.uid).catch(console.error);
           }
         } else {
-
           setUser(null);
           setFirebaseUser(null);
 
@@ -156,11 +151,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           userPresence.cleanupPresence();
         }
       } catch (error) {
-
         setUser(null);
         setFirebaseUser(null);
       } finally {
-
         setLoading(false);
       }
     });
@@ -170,7 +163,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Effekt für die Weiterleitung nach erfolgreichem Login
   useEffect(() => {
-
     // Nur ausführen, wenn der Ladevorgang abgeschlossen ist, ein Benutzer vorhanden ist und wir nicht bereits weiterleiten
     if (!loading && user && !isRedirecting) {
       // KORREKTUR: Überprüfe, ob der Benutzer gerade registriert wurde und eine spezifische Weiterleitung hat
@@ -178,7 +170,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const registrationRedirectTo = sessionStorage.getItem('registrationRedirectTo');
 
       if (justRegistered === 'true' && registrationRedirectTo) {
-
         // Cleanup der sessionStorage items
         sessionStorage.removeItem('justRegistered');
         sessionStorage.removeItem('registrationRedirectTo');
@@ -213,7 +204,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (shouldRedirect && targetPath) {
-
         setIsRedirecting(true);
         router.push(targetPath);
       }
@@ -233,12 +223,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     // HINZUGEFÜGT: Zusätzliche Sicherheitsprüfung für die DB-Instanz.
     if (!db) {
-
       setUnreadMessagesCount(0);
       setRecentChats([]);
       return;
     }
 
+    // TEMPORÄR DEAKTIVIERT: Chat Real-time Subscriptions wegen Performance-Problemen
+    // TODO: Implementiere effizientes Chat-Loading für Header
+    /*
     const chatsRef = collection(db, 'chats');
     // Diese eine Abfrage holt die 5 neuesten, aktiven Chats.
     const recentChatsQuery = query(
@@ -276,17 +268,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setRecentChats(chatsData);
       },
       error => {
-
+        console.error('🔥 Firestore onSnapshot Error (Chat loading):', error);
         setUnreadMessagesCount(0);
         setRecentChats([]);
       }
     );
 
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
+    return unsubscribe;
+    */
+
+    // Placeholder für Chat-Daten ohne Real-time Subscription
+    setUnreadMessagesCount(0);
+    setRecentChats([]);
+    return () => {}; // Leere cleanup function
   }, [user]); // Abhängig vom Benutzerobjekt
 
   // HINWEIS: `useMemo` wird verwendet, um unnötige Neurenderungen von abhängigen Komponenten zu vermeiden.
