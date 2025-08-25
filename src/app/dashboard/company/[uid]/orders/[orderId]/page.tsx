@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { db, functions, auth } from '@/firebase/clients';
 import { httpsCallable } from 'firebase/functions';
@@ -70,6 +70,7 @@ export default function CompanyOrderDetailPage() {
   const { user: currentUser, loading: authLoading } = useAuth(); // KORREKTUR: 'user' aus dem AuthContext verwenden
 
   const [order, setOrder] = useState<OrderData | null>(null);
+  const [timeTrackingData, setTimeTrackingData] = useState<any>(null);
   const [loadingOrder, setLoadingOrder] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -109,154 +110,139 @@ export default function CompanyOrderDetailPage() {
       return;
     }
 
-    const fetchOrder = async () => {
-      setLoadingOrder(true);
-      setError(null);
-      let orderDataFromDb;
-      try {
-        const orderDocRef = doc(db, 'auftraege', orderId);
-        const orderDocSnap = await getDoc(orderDocRef);
+    // REALTIME: Setup Firestore onSnapshot listener
+    const orderDocRef = doc(db, 'auftraege', orderId);
 
-        if (!orderDocSnap.exists()) {
-          setError('Auftrag nicht gefunden.');
+    const unsubscribe = onSnapshot(
+      orderDocRef,
+      async docSnapshot => {
+        try {
+          setLoadingOrder(true);
+          setError(null);
+
+          if (!docSnapshot.exists()) {
+            setError('Auftrag nicht gefunden.');
+            setLoadingOrder(false);
+            return;
+          }
+
+          const orderDataFromDb = docSnapshot.data();
+
+          // --- Erweiterte Validierung für B2B-Aufträge ---
+          const isProvider = orderDataFromDb.selectedAnbieterId === companyUid;
+          const isCustomer = orderDataFromDb.customerFirebaseUid === companyUid;
+
+          if (!isProvider && !isCustomer) {
+            setError(
+              `Zugriff verweigert: Dieser Auftrag (${orderId}) gehört weder Ihnen als Anbieter (${orderDataFromDb.selectedAnbieterId}) noch als Kunde (${orderDataFromDb.customerFirebaseUid}) zu. Ihre ID: ${companyUid}.`
+            );
+            setLoadingOrder(false);
+            return;
+          }
+
+          // Setze die Rolle für die UI
+          setUserRole(isProvider ? 'provider' : 'customer');
+
+          // Fetch participant details
+          const getOrderParticipantDetails = httpsCallable<
+            { orderId: string },
+            { provider: ParticipantDetails; customer: ParticipantDetails }
+          >(functions, 'getOrderParticipantDetails');
+
+          const result = await getOrderParticipantDetails({ orderId });
+          const { provider: providerDetails, customer: customerDetails } = result.data;
+
+          const orderData: OrderData = {
+            id: orderId,
+            serviceTitle: orderDataFromDb.selectedSubcategory || 'Dienstleistung',
+            providerId: orderDataFromDb.selectedAnbieterId,
+            providerName: providerDetails.name,
+            providerAvatarUrl: providerDetails.avatarUrl,
+            customerId: orderDataFromDb.kundeId,
+            customerName: customerDetails.name,
+            customerAvatarUrl: customerDetails.avatarUrl,
+            orderDate: (() => {
+              const dateField =
+                orderDataFromDb.paidAt ||
+                orderDataFromDb.createdAt ||
+                orderDataFromDb.lastUpdated ||
+                orderDataFromDb.lastUpdatedAt;
+
+              if (!dateField) return undefined;
+
+              if (dateField && typeof dateField === 'object' && 'toDate' in dateField) {
+                return dateField.toDate().toISOString();
+              }
+
+              if (dateField && typeof dateField === 'object' && '_seconds' in dateField) {
+                return new Date(dateField._seconds * 1000).toISOString();
+              }
+
+              if (typeof dateField === 'string') {
+                return dateField;
+              }
+
+              return undefined;
+            })(),
+            priceInCents:
+              orderDataFromDb.jobCalculatedPriceInCents ||
+              orderDataFromDb.totalAmountPaidByBuyer ||
+              0,
+            status: orderDataFromDb.status || 'unbekannt',
+            selectedCategory: orderDataFromDb.selectedCategory,
+            selectedSubcategory: orderDataFromDb.selectedSubcategory,
+            jobTotalCalculatedHours:
+              orderDataFromDb.jobTotalCalculatedHours ||
+              (() => {
+                const priceInEur =
+                  (orderDataFromDb.jobCalculatedPriceInCents ||
+                    orderDataFromDb.totalAmountPaidByBuyer ||
+                    0) / 100;
+                const standardHourlyRate = 42;
+                return Math.round(priceInEur / standardHourlyRate);
+              })(),
+            jobDurationString: orderDataFromDb.jobDurationString,
+            beschreibung: orderDataFromDb.description,
+            jobDateFrom: orderDataFromDb.jobDateFrom,
+            jobDateTo: orderDataFromDb.jobDateTo,
+            jobTimePreference: orderDataFromDb.jobTimePreference,
+          };
+
+          setOrder(orderData);
+          console.log('✅ REALTIME COMPANY: Order data updated:', orderData.status);
+        } catch (err: any) {
+          console.error('❌ REALTIME COMPANY: Error processing order update:', err);
+          if (err.code === 'permission-denied') {
+            setError(
+              'Zugriff auf Teilnehmerdetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support.'
+            );
+          } else {
+            setError(
+              `Fehler beim Laden der Teilnehmerdetails: ${err.message || 'Unbekannter Fehler'}`
+            );
+          }
+        } finally {
           setLoadingOrder(false);
-          return;
         }
-        orderDataFromDb = orderDocSnap.data();
-      } catch (err: any) {
-        // --- NEU: Spezifische Fehlerbehandlung für 'permission-denied' ---
-        // Dieser Fehler tritt auf, wenn die Firestore-Regeln den Zugriff verweigern.
-        if (err.code === 'permission-denied') {
-          console.error(
-            'Fehler beim Laden des Auftrags: Zugriff verweigert. Dies deutet auf inkonsistente Daten hin (Anbieter-ID im Auftrag stimmt nicht mit dem angemeldeten Benutzer überein).'
-          );
+      },
+      error => {
+        console.error('❌ REALTIME COMPANY: Firestore listener error:', error);
+        if (error.code === 'permission-denied') {
           setError(
             'Zugriff auf diesen Auftrag verweigert. Die Auftragsdaten sind möglicherweise einem anderen Anbieter zugeordnet.'
           );
-          setLoadingOrder(false);
-          return;
-        }
-
-        console.error('Fehler beim Laden des Auftrags:', err);
-        if (err.code === 'permission-denied') {
-          setError(
-            'Zugriff auf diesen Auftrag verweigert. Dies liegt wahrscheinlich an inkonsistenten Auftragsdaten (z.B. eine fehlende Anbieter-ID). Bitte kontaktieren Sie den Support.'
-          );
         } else {
-          setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
+          setError(`Verbindungsfehler: ${error.message}`);
         }
         setLoadingOrder(false);
-        return;
       }
+    );
 
-      // --- Erweiterte Validierung für B2B-Aufträge ---
-      // Ein Unternehmen kann sowohl Kunde als auch Anbieter sein
-      const isProvider = orderDataFromDb.selectedAnbieterId === companyUid;
-      const isCustomer = orderDataFromDb.customerFirebaseUid === companyUid;
-
-      if (!isProvider && !isCustomer) {
-        setError(
-          `Zugriff verweigert: Dieser Auftrag (${orderId}) gehört weder Ihnen als Anbieter (${orderDataFromDb.selectedAnbieterId}) noch als Kunde (${orderDataFromDb.customerFirebaseUid}) zu. Ihre ID: ${companyUid}.`
-        );
-        setLoadingOrder(false);
-        return;
-      }
-
-      // Setze die Rolle für die UI
-      setUserRole(isProvider ? 'provider' : 'customer');
-
-      // Step 2: Fetch participant details with its own error handling
-      // KORREKTUR: Verwende die neue, sichere Cloud Function
-      try {
-        const getOrderParticipantDetails = httpsCallable<
-          { orderId: string },
-          { provider: ParticipantDetails; customer: ParticipantDetails }
-        >(functions, 'getOrderParticipantDetails');
-
-        const result = await getOrderParticipantDetails({ orderId });
-        const { provider: providerDetails, customer: customerDetails } = result.data;
-
-        const orderData: OrderData = {
-          id: orderId,
-          serviceTitle: orderDataFromDb.selectedSubcategory || 'Dienstleistung',
-          providerId: orderDataFromDb.selectedAnbieterId,
-          providerName: providerDetails.name, // Name aus der Cloud Function
-          providerAvatarUrl: providerDetails.avatarUrl,
-          customerId: orderDataFromDb.kundeId,
-          customerName: customerDetails.name, // Name aus der Cloud Function
-          customerAvatarUrl: customerDetails.avatarUrl,
-          // Korrigiertes Date-Mapping für Firestore Timestamps
-          orderDate: (() => {
-            // Priorität: paidAt -> createdAt -> lastUpdated -> lastUpdatedAt
-            const dateField =
-              orderDataFromDb.paidAt ||
-              orderDataFromDb.createdAt ||
-              orderDataFromDb.lastUpdated ||
-              orderDataFromDb.lastUpdatedAt;
-
-            if (!dateField) return undefined;
-
-            // Firestore Timestamp hat toDate() Methode
-            if (dateField && typeof dateField === 'object' && 'toDate' in dateField) {
-              return dateField.toDate().toISOString();
-            }
-
-            // Firestore Timestamp als Object mit _seconds
-            if (dateField && typeof dateField === 'object' && '_seconds' in dateField) {
-              return new Date(dateField._seconds * 1000).toISOString();
-            }
-
-            // String ISO Date
-            if (typeof dateField === 'string') {
-              return dateField;
-            }
-
-            return undefined;
-          })(),
-          priceInCents:
-            orderDataFromDb.jobCalculatedPriceInCents ||
-            orderDataFromDb.totalAmountPaidByBuyer ||
-            0,
-          status: orderDataFromDb.status || 'unbekannt',
-          selectedCategory: orderDataFromDb.selectedCategory,
-          selectedSubcategory: orderDataFromDb.selectedSubcategory,
-          jobTotalCalculatedHours:
-            orderDataFromDb.jobTotalCalculatedHours ||
-            (() => {
-              // Fallback: Berechne Stunden basierend auf Preis (Standard B2B Rate 42€/h)
-              const priceInEur =
-                (orderDataFromDb.jobCalculatedPriceInCents ||
-                  orderDataFromDb.totalAmountPaidByBuyer ||
-                  0) / 100;
-              const standardHourlyRate = 42; // B2B Standard Rate
-              return Math.round(priceInEur / standardHourlyRate);
-            })(),
-          jobDurationString: orderDataFromDb.jobDurationString,
-          beschreibung: orderDataFromDb.description,
-          jobDateFrom: orderDataFromDb.jobDateFrom,
-          jobDateTo: orderDataFromDb.jobDateTo,
-          jobTimePreference: orderDataFromDb.jobTimePreference,
-        };
-
-        console.log('Constructed orderData object:', orderData);
-        setOrder(orderData);
-      } catch (err: any) {
-        console.error('Fehler beim Laden der Teilnehmerdetails:', err);
-        if (err.code === 'permission-denied') {
-          setError(
-            'Zugriff auf Teilnehmerdetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support.'
-          );
-        } else {
-          setError(
-            `Fehler beim Laden der Teilnehmerdetails: ${err.message || 'Unbekannter Fehler'}`
-          );
-        }
-      } finally {
-        setLoadingOrder(false);
-      }
+    // Cleanup function
+    return () => {
+      console.log('🔄 REALTIME COMPANY: Cleaning up order listener');
+      unsubscribe();
     };
-
-    fetchOrder();
   }, [authLoading, currentUser, orderId, router, companyUid]);
 
   const overallLoading = loadingOrder || authLoading; // Gesamt-Ladezustand
@@ -334,12 +320,12 @@ export default function CompanyOrderDetailPage() {
     if (!order) return;
 
     const confirmation = window.confirm(
-      'Sind Sie sicher, dass Sie diesen Auftrag als erledigt markieren möchten?\n\n' +
-        'Nach der Markierung:\n' +
-        '• Auftrag wird als "PROVIDER_COMPLETED" markiert\n' +
-        '• Kunde muss den Abschluss bestätigen und bewerten\n' +
-        '• Geld wird erst nach Kundenbestätigung freigegeben\n' +
-        '• Der Kunde erhält eine Benachrichtigung'
+      'Haben Sie den Auftrag erfolgreich abgeschlossen?\n\n' +
+        'Was passiert als nächstes:\n' +
+        '• Der Kunde wird über den Abschluss benachrichtigt\n' +
+        '• Der Kunde bestätigt die Arbeit und gibt eine Bewertung ab\n' +
+        '• Nach der Kundenbestätigung wird Ihnen das Geld ausgezahlt\n' +
+        '• Sie erhalten eine E-Mail sobald die Auszahlung erfolgt ist'
     );
 
     if (!confirmation) return;
@@ -648,7 +634,10 @@ export default function CompanyOrderDetailPage() {
                   <p>
                     <strong>Dauer:</strong>{' '}
                     {(() => {
-                      // Berechne korrekte Stunden basierend auf Datum
+                      // FESTANGEBOT: Verwende die gleiche Datenquelle wie HoursBillingOverview
+                      // Da es ein Festangebot ist, sind es die ursprünglich geplanten Stunden
+
+                      // Mehrere Tage?
                       if (
                         order.jobDateFrom &&
                         order.jobDateTo &&
@@ -663,10 +652,15 @@ export default function CompanyOrderDetailPage() {
                         const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
                         const totalHours = totalDays * hoursPerDay;
                         return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
-                      } else {
-                        const hours = order.jobTotalCalculatedHours || 'N/A';
-                        return `${hours} Stunden`;
                       }
+
+                      // Festangebot: jobDurationString ist meist der ursprüngliche Buchungswert
+                      if (order.jobDurationString && order.jobDurationString !== '0') {
+                        return `${order.jobDurationString} Stunden`;
+                      }
+
+                      // Als allerletzter Fallback: Standard 8h für Festangebote
+                      return '8 Stunden (Festangebot)';
                     })()}
                   </p>
                   <p>
@@ -722,7 +716,7 @@ export default function CompanyOrderDetailPage() {
                     orderId={orderId}
                     customerName={order.customerName}
                     originalPlannedHours={(() => {
-                      // Berechne korrekte Stunden basierend auf Datum
+                      // FESTANGEBOT: Verwende die gleiche Logik wie die Dauer-Anzeige
                       if (
                         order.jobDateFrom &&
                         order.jobDateTo &&
@@ -737,12 +731,16 @@ export default function CompanyOrderDetailPage() {
                         const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
                         return totalDays * hoursPerDay;
                       } else {
-                        return order.jobTotalCalculatedHours || 8;
+                        // FESTANGEBOT: Verwende jobDurationString, nicht jobTotalCalculatedHours
+                        if (order.jobDurationString && order.jobDurationString !== '0') {
+                          return parseFloat(String(order.jobDurationString));
+                        }
+                        return 8; // Festangebot Standard
                       }
                     })()}
                     hourlyRate={(() => {
-                      // Berechne korrekten Stundensatz
-                      const totalHours = (() => {
+                      // FESTANGEBOT: Berechne echten Stundensatz aus Preis und geplanten Stunden
+                      const plannedHours = (() => {
                         if (
                           order.jobDateFrom &&
                           order.jobDateTo &&
@@ -757,10 +755,16 @@ export default function CompanyOrderDetailPage() {
                           const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
                           return totalDays * hoursPerDay;
                         } else {
-                          return order.jobTotalCalculatedHours || 8;
+                          // FESTANGEBOT: Verwende jobDurationString, nicht jobTotalCalculatedHours
+                          if (order.jobDurationString && order.jobDurationString !== '0') {
+                            return parseFloat(String(order.jobDurationString));
+                          }
+                          return 8; // Festangebot Standard
                         }
                       })();
-                      return totalHours > 0 ? order.priceInCents / 100 / totalHours : 50;
+
+                      // Echter Stundensatz: Gesamtpreis ÷ geplante Stunden
+                      return plannedHours > 0 ? order.priceInCents / 100 / plannedHours : 50;
                     })()}
                     onTimeSubmitted={() => {
                       // Optional: Reload order data or show success message
@@ -771,7 +775,7 @@ export default function CompanyOrderDetailPage() {
               )}
 
               {/* Auftrag abschließen - Box für aktive Aufträge */}
-              {order.status === 'AKTIV' && isViewerProvider && (
+              {order.status === 'AKTIV' && isViewerProvider && !successMessage && (
                 <div className="bg-white shadow rounded-lg p-6">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
@@ -783,18 +787,17 @@ export default function CompanyOrderDetailPage() {
                       </h3>
                       <p className="mt-1 text-sm text-gray-600">
                         Haben Sie die Arbeit erfolgreich abgeschlossen? Markieren Sie den Auftrag
-                        als erledigt. Der Kunde muss dann den Abschluss bestätigen und bewerten,
-                        bevor das Geld freigegeben wird.
+                        als erledigt, damit der Kunde die Leistung bewerten und freigeben kann.
                       </p>
-                      <div className="mt-3 p-3 bg-amber-50 rounded-md">
-                        <h4 className="text-sm font-medium text-amber-800">
-                          Was passiert beim Markieren:
+                      <div className="mt-3 p-3 bg-blue-50 rounded-md">
+                        <h4 className="text-sm font-medium text-blue-800">
+                          So läuft der Abschluss ab:
                         </h4>
-                        <ul className="mt-1 text-sm text-amber-700 list-disc list-inside">
-                          <li>Auftrag wird als &ldquo;erledigt&rdquo; markiert</li>
-                          <li>Kunde erhält Benachrichtigung zur Bestätigung</li>
-                          <li>Kunde muss bewerten und Abschluss bestätigen</li>
-                          <li>Geld wird erst nach Kundenbestätigung freigegeben</li>
+                        <ul className="mt-1 text-sm text-blue-700 list-disc list-inside">
+                          <li>Kunde wird über den Abschluss benachrichtigt</li>
+                          <li>Kunde bewertet Ihre Leistung</li>
+                          <li>Nach der Bewertung erfolgt die Auszahlung</li>
+                          <li>Sie erhalten eine E-Mail über die Auszahlung</li>
                         </ul>
                       </div>
                     </div>
@@ -836,25 +839,25 @@ export default function CompanyOrderDetailPage() {
                     </div>
                     <div className="ml-4">
                       <h3 className="text-lg font-semibold text-gray-900">
-                        Wartet auf Kundenbestätigung
+                        Auftrag abgeschlossen - Warten auf Kundenbewertung
                       </h3>
                       <p className="mt-1 text-sm text-gray-600">
-                        Sie haben den Auftrag als erledigt markiert. Der Kunde wurde benachrichtigt
-                        und muss jetzt den Abschluss bestätigen und eine Bewertung abgeben.
+                        Perfekt! Sie haben den Auftrag erfolgreich abgeschlossen. Der Kunde wurde
+                        benachrichtigt und wird Ihre Leistung nun bewerten.
                       </p>
-                      <div className="mt-3 p-3 bg-amber-50 rounded-md">
-                        <h4 className="text-sm font-medium text-amber-800">Nächste Schritte:</h4>
-                        <ul className="mt-1 text-sm text-amber-700 list-disc list-inside">
-                          <li>Kunde prüft die erledigte Arbeit</li>
-                          <li>Kunde gibt Bewertung ab (1-5 Sterne + Text)</li>
-                          <li>Kunde bestätigt den Abschluss</li>
-                          <li>Geld wird für Ihre Auszahlung freigegeben</li>
+                      <div className="mt-3 p-3 bg-green-50 rounded-md">
+                        <h4 className="text-sm font-medium text-green-800">Was passiert jetzt:</h4>
+                        <ul className="mt-1 text-sm text-green-700 list-disc list-inside">
+                          <li>Kunde bewertet Ihre Arbeit (1-5 Sterne)</li>
+                          <li>Nach der Bewertung wird das Geld ausgezahlt</li>
+                          <li>Sie erhalten eine E-Mail über die Auszahlung</li>
+                          <li>Die Bewertung erscheint in Ihrem Profil</li>
                         </ul>
                       </div>
                       <div className="mt-3 p-3 bg-blue-50 rounded-md">
                         <p className="text-blue-700 text-sm">
-                          💡 <strong>Tipp:</strong> Die Auszahlung erfolgt automatisch 1-2 Werktage
-                          nach der Kundenbestätigung.
+                          � <strong>Auszahlung:</strong> Erfolgt automatisch 1-2 Werktage nach der
+                          Kundenbewertung auf Ihr Bankkonto.
                         </p>
                       </div>
                     </div>

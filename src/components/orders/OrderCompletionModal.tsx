@@ -134,18 +134,6 @@ const OrderCompletionModal: React.FC<OrderCompletionModalProps> = ({
                     {(order.totalAmountPaidByBuyer / 100).toFixed(2)}€
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Auszahlung an Anbieter:</span>
-                  <span className="font-medium text-green-600">
-                    {(order.companyNetAmount / 100).toFixed(2)}€
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Platform-Gebühr:</span>
-                  <span className="text-gray-500">
-                    {(order.platformFeeAmount / 100).toFixed(2)}€
-                  </span>
-                </div>
               </CardContent>
             </Card>
 

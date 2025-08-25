@@ -4,8 +4,9 @@
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth, UserProfile } from '@/contexts/AuthContext';
-import { functions } from '@/firebase/clients';
+import { functions, db } from '@/firebase/clients';
 import { httpsCallable } from 'firebase/functions';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { getSingleOrder } from '@/app/api/getSingleOrder';
 import { getOrderParticipantDetails } from '@/app/api/getOrderParticipantDetails';
 
@@ -115,7 +116,6 @@ export default function OrderDetailPage() {
   useEffect(() => {
     // Warten, bis der Auth-Status endgültig geklärt ist.
     if (authLoading) {
-      // KORREKTUR: Den 'loading'-State aus dem AuthContext verwenden
       return;
     }
 
@@ -134,8 +134,99 @@ export default function OrderDetailPage() {
       return;
     }
 
-    fetchOrder();
-  }, [authLoading, currentUser, orderId, router]);
+    // REALTIME: Setup Firestore onSnapshot listener
+    const orderDocRef = doc(db, 'auftraege', orderId);
+
+    const unsubscribe = onSnapshot(
+      orderDocRef,
+      async docSnapshot => {
+        try {
+          setLoadingOrder(true);
+          setError(null);
+
+          if (!docSnapshot.exists()) {
+            setError('Auftrag nicht gefunden.');
+            setLoadingOrder(false);
+            return;
+          }
+
+          const data = docSnapshot.data();
+          console.log('🔥 REALTIME: Raw Firestore data:', {
+            orderId,
+            status: data.status,
+            selectedAnbieterId: data.selectedAnbieterId,
+            kundeId: data.kundeId,
+          });
+
+          // Check authorization
+          if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
+            setError('Keine Berechtigung für diesen Auftrag.');
+            setLoadingOrder(false);
+            return;
+          }
+
+          // Get participant details (still using API for now, but could be made realtime too)
+          const idToken = await firebaseUser?.getIdToken();
+          if (!idToken) {
+            throw new Error('No authentication token available');
+          }
+
+          const { provider: providerDetails, customer: customerDetails } =
+            await getOrderParticipantDetails(orderId, idToken);
+
+          const orderData: OrderData = {
+            id: orderId, // Use the orderId from params, not from data
+            serviceTitle: data.selectedSubcategory || 'Dienstleistung',
+            providerId: data.selectedAnbieterId,
+            providerName: providerDetails.name,
+            providerAvatarUrl: providerDetails.avatarUrl,
+            customerId: data.kundeId,
+            customerName: customerDetails.name,
+            customerAvatarUrl: customerDetails.avatarUrl,
+            orderDate: data.paidAt || data.createdAt,
+            priceInCents: data.totalAmountPaidByBuyer || data.jobCalculatedPriceInCents || 0,
+            status: data.status || 'unbekannt', // This is the DIRECT Firestore data!
+            selectedCategory: data.selectedCategory,
+            selectedSubcategory: data.selectedSubcategory,
+            jobTotalCalculatedHours: data.jobTotalCalculatedHours,
+            jobDurationString: data.jobDurationString, // Add this field
+            beschreibung: data.description,
+            jobDateFrom: data.jobDateFrom,
+            jobDateTo: data.jobDateTo,
+            jobTimePreference: data.jobTimePreference,
+            totalAmountPaidByBuyer: data.totalAmountPaidByBuyer,
+            companyNetAmount: data.companyNetAmount,
+            platformFeeAmount: data.platformFeeAmount,
+            companyStripeAccountId: data.companyStripeAccountId,
+          };
+
+          setOrder(orderData);
+          console.log('✅ REALTIME: Order data updated:', {
+            orderId,
+            status: orderData.status,
+            rawStatus: data.status,
+            timestamp: new Date().toISOString(),
+          });
+        } catch (err: any) {
+          console.error('❌ REALTIME: Error processing order update:', err);
+          setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
+        } finally {
+          setLoadingOrder(false);
+        }
+      },
+      error => {
+        console.error('❌ REALTIME: Firestore listener error:', error);
+        setError(`Verbindungsfehler: ${error.message}`);
+        setLoadingOrder(false);
+      }
+    );
+
+    // Cleanup function
+    return () => {
+      console.log('🔄 REALTIME: Cleaning up order listener');
+      unsubscribe();
+    };
+  }, [authLoading, currentUser, orderId, router, firebaseUser]);
 
   // Payment Modal State Monitor
   useEffect(() => {
@@ -154,85 +245,11 @@ export default function OrderDetailPage() {
   };
 
   const handleOrderCompleted = () => {
-    // Reload order data after completion
-    fetchOrder();
+    // Order data wird automatisch über Realtime Listener aktualisiert
     setSuccessMessage(
       'Auftrag erfolgreich abgeschlossen! Das Geld wurde an den Anbieter ausgezahlt.'
     );
   };
-
-  // NEU: Die Logik zum Laden des Auftrags in eine useCallback-Funktion extrahiert,
-  // damit wir sie nach einer Aktion erneut aufrufen können.
-  const fetchOrder = useCallback(
-    async (retryCount = 0) => {
-      if (!currentUser || !orderId) return;
-
-      setLoadingOrder(true);
-      setError(null);
-      try {
-        // Get ID token for authentication
-        const idToken = await firebaseUser?.getIdToken();
-        if (!idToken) {
-          throw new Error('No authentication token available');
-        }
-
-        // Use the new API instead of direct Firestore access
-        const data = await getSingleOrder(orderId, idToken);
-
-        if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
-          throw new Error('Keine Berechtigung für diesen Auftrag.');
-        }
-
-        // Use the new API instead of Cloud Function
-        const { provider: providerDetails, customer: customerDetails } =
-          await getOrderParticipantDetails(orderId, idToken);
-
-        const orderData: OrderData = {
-          id: data.id,
-          serviceTitle: data.selectedSubcategory || 'Dienstleistung',
-          providerId: data.selectedAnbieterId,
-          providerName: providerDetails.name,
-          providerAvatarUrl: providerDetails.avatarUrl,
-          customerId: data.kundeId,
-          customerName: customerDetails.name,
-          customerAvatarUrl: customerDetails.avatarUrl,
-          orderDate: data.paidAt || data.createdAt,
-          priceInCents: data.totalAmountPaidByBuyer || data.jobCalculatedPriceInCents || 0,
-          status: data.status || 'unbekannt',
-          selectedCategory: data.selectedCategory,
-          selectedSubcategory: data.selectedSubcategory,
-          jobTotalCalculatedHours: data.jobTotalCalculatedHours,
-          beschreibung: data.description,
-          jobDateFrom: data.jobDateFrom,
-          jobDateTo: data.jobDateTo,
-          jobTimePreference: data.jobTimePreference,
-          totalAmountPaidByBuyer: data.totalAmountPaidByBuyer,
-          companyNetAmount: data.companyNetAmount,
-          platformFeeAmount: data.platformFeeAmount,
-          companyStripeAccountId: data.companyStripeAccountId,
-        };
-        setOrder(orderData);
-        console.log('✅ Order data loaded successfully');
-      } catch (err: any) {
-        console.error('❌ Fehler beim Laden des Auftrags:', err);
-
-        // Retry-Logik für transiente Fehler nach Bezahlung
-        if (
-          retryCount < 3 &&
-          (err.message?.includes('network') || err.message?.includes('timeout'))
-        ) {
-          console.log(`🔄 Retrying fetchOrder (attempt ${retryCount + 1}/3)...`);
-          setTimeout(() => fetchOrder(retryCount + 1), 1000 * (retryCount + 1));
-          return;
-        }
-
-        setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
-      } finally {
-        setLoadingOrder(false);
-      }
-    },
-    [currentUser, orderId]
-  );
 
   // NEU: Beispiel-Handler für den "Auftrag annehmen"-Button
   const handleAcceptOrder = async () => {
@@ -559,7 +576,8 @@ export default function OrderDetailPage() {
                     <p>
                       <strong>Dauer:</strong>{' '}
                       {(() => {
-                        // Berechne korrekte Stunden basierend auf Datum
+                        // Prioritätsbasierte Dauer-Berechnung
+                        // 1. Wenn mehrere Tage: Berechne Gesamtstunden
                         if (
                           order.jobDateFrom &&
                           order.jobDateTo &&
@@ -574,11 +592,28 @@ export default function OrderDetailPage() {
                           const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
                           const totalHours = totalDays * hoursPerDay;
                           return `${totalDays} Tag${totalDays !== 1 ? 'e' : ''} (${totalHours} Stunden gesamt)`;
-                        } else {
-                          const hours =
-                            order.jobTotalCalculatedHours || order.jobDurationString || 'N/A';
-                          return `${hours} Stunden`;
                         }
+
+                        // 2. jobTotalCalculatedHours verwenden (höchste Priorität)
+                        if (order.jobTotalCalculatedHours && order.jobTotalCalculatedHours > 0) {
+                          return `${order.jobTotalCalculatedHours} Stunden`;
+                        }
+
+                        // 3. jobDurationString verwenden
+                        if (order.jobDurationString && order.jobDurationString !== '0') {
+                          return `${order.jobDurationString} Stunden`;
+                        }
+
+                        // 4. Fallback: Aus Preis schätzen (bei 50€/Stunde)
+                        if (order.priceInCents && order.priceInCents > 0) {
+                          const estimatedHours = Math.round(order.priceInCents / 100 / 50);
+                          if (estimatedHours > 0) {
+                            return `${estimatedHours} Stunden `;
+                          }
+                        }
+
+                        // 5. Letzter Fallback
+                        return 'Nicht angegeben';
                       })()}
                     </p>
                     <p>
@@ -612,7 +647,7 @@ export default function OrderDetailPage() {
                         </div>
                       )}
 
-                    {/* Order Completion Button für Kunden */}
+                    {/* Order Completion Button für Kunden bei accepted */}
                     {currentUser.uid === order.customerId && order.status === 'accepted' && (
                       <div className="md:col-span-2 mt-4">
                         <button
@@ -628,6 +663,34 @@ export default function OrderDetailPage() {
                         </p>
                       </div>
                     )}
+
+                    {/* Order Review/Confirm Button für Kunden bei PROVIDER_COMPLETED */}
+                    {currentUser.uid === order.customerId &&
+                      order.status === 'PROVIDER_COMPLETED' && (
+                        <div className="md:col-span-2 mt-4">
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                            <h3 className="text-lg font-semibold text-green-800 mb-2 flex items-center gap-2">
+                              <FiCheckCircle className="h-5 w-5" />
+                              Auftrag wurde vom Anbieter abgeschlossen
+                            </h3>
+                            <p className="text-green-700 text-sm mb-3">
+                              Der Anbieter hat den Auftrag als erledigt markiert. Bitte prüfen Sie
+                              die Arbeit und bestätigen Sie den Abschluss.
+                            </p>
+                          </div>
+                          <button
+                            onClick={handleCompleteOrder}
+                            className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-4 rounded transition-colors flex items-center justify-center gap-2"
+                          >
+                            <FiCheckCircle className="h-5 w-5" />
+                            Auftrag bestätigen & bewerten
+                          </button>
+                          <p className="text-sm text-gray-600 mt-2 text-center">
+                            Nach der Bestätigung wird das Geld an den Anbieter ausgezahlt und Sie
+                            können eine Bewertung abgeben.
+                          </p>
+                        </div>
+                      )}
                   </div>
                 </div>
 

@@ -165,18 +165,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
   useEffect(() => {
     if (!userId) return;
 
-    // Für Firmen: Zeige standardmäßig Offline, da diese meist nicht dauerhaft online sind
-    const isCompanyUser = userRole === 'provider';
-
-    if (isCompanyUser) {
-      // Für Firmen: Setze realistischen Offline-Status
-      setIsOnline(false);
-      setStatus('offline');
-      setLastSeen(null);
-      return; // Früher Ausstieg - keine Realtime-Überwachung für Firmen
-    }
-
-    // Für reguläre Kunden: Verwende Realtime Presence
+    // Für alle Benutzer: Verwende Realtime Presence
     const unsubscribe = userPresence.getUserPresence(userId, presence => {
       if (presence) {
         setIsOnline(presence.isOnline);
