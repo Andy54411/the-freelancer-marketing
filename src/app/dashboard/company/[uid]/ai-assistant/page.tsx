@@ -188,7 +188,9 @@ export default function CompanyAIAssistantPage() {
       description: 'Donnerstag 14-16 Uhr: 2.3x mehr Kundenanfragen',
       type: 'insight',
       action: 'Verfügbarkeit anpassen',
-      actionFunction: () =>
+      actionFunction: () => console.log('Verfügbarkeit anpassen'),
+    },
+  ];
 
   const handleQuickAction = async (action: string) => {
     setIsGenerating(true);

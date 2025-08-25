@@ -167,11 +167,9 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
       const fetchOrders = async () => {
         setLoadingOrders(true);
         try {
-
           const result = await callHttpsFunction('getProviderOrders', { providerId: uid }, 'GET');
 
           if (result.orders && result.orders.length > 0) {
-
             // KORREKTUR: Transformiere die Daten für die DataTable
             const transformedOrders = result.orders.map((order: any) => ({
               ...order,
@@ -187,16 +185,13 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
           } else {
             setOrders([]);
           }
-
         } catch (error) {
-
         } finally {
           setLoadingOrders(false);
         }
       };
       fetchOrders();
     } else {
-
       setLoadingOrders(false);
     }
   }, [uid, isAuthorized, authUser?.uid]);
@@ -210,7 +205,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
           const metrics = await calculateCompanyMetrics(uid);
           setCompanyMetrics(metrics);
         } catch (error) {
-
         } finally {
           setLoadingMetrics(false);
         }
@@ -335,7 +329,12 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
         return (
           <SettingsComponent
             userData={userData}
-            onDataSaved={() =>
+            onDataSaved={() => {
+              // Reload data when settings are saved
+              window.location.reload();
+            }}
+          />
+        );
 
       default:
         return null;
