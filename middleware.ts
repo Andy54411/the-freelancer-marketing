@@ -52,11 +52,20 @@ async function checkCompanyOnboardingStatus(request: NextRequest) {
       return null; // Continue to onboarding
     }
 
-    // Import onboarding check functions
-    const { canAccessDashboard, requiresOnboarding } = await import('@/lib/onboarding-progress');
+    // SIMPLIFIED: Check onboarding directly from harmonized user document
+    const { doc, getDoc } = await import('firebase/firestore');
+    const { db } = await import('@/firebase/clients');
 
-    // Check if onboarding is required
-    const needsOnboarding = await requiresOnboarding(companyUid);
+    const userDoc = await getDoc(doc(db, 'users', companyUid));
+
+    if (!userDoc.exists()) {
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
+
+    const userData = userDoc.data();
+
+    // Check if onboarding is required (harmonized system)
+    const needsOnboarding = !userData.onboardingCompleted;
 
     if (needsOnboarding) {
       // Redirect to onboarding welcome page
@@ -65,11 +74,11 @@ async function checkCompanyOnboardingStatus(request: NextRequest) {
       );
     }
 
-    // Check if company can access dashboard
-    const canAccess = await canAccessDashboard(companyUid);
+    // Check if profile is approved (harmonized system)
+    const isApproved = userData.profileStatus === 'approved';
 
-    if (!canAccess) {
-      // Redirect to onboarding or pending page
+    if (!isApproved) {
+      // Redirect to pending page
       return NextResponse.redirect(
         new URL(`/dashboard/company/${companyUid}/onboarding/welcome?status=pending`, request.url)
       );

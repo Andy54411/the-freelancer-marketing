@@ -181,9 +181,7 @@ export default function Step5CompanyPage() {
           try {
             const newUrl = URL.createObjectURL(fileFromContext);
             setLocalPreview(newUrl);
-          } catch (e: unknown) {
-
-          }
+          } catch (e: unknown) {}
         }
       } else {
         if (currentLocalPreview) {
@@ -208,7 +206,6 @@ export default function Step5CompanyPage() {
   const mapCategoryToMcc = useCallback(
     (category: string | null | undefined): string | undefined => {
       if (!category || category.trim() === '') {
-
         return '5999';
       }
       switch (category) {
@@ -237,7 +234,6 @@ export default function Step5CompanyPage() {
         case 'Tiere & Pflanzen':
           return '0742';
         default:
-
           return '5999';
       }
     },
@@ -266,7 +262,6 @@ export default function Step5CompanyPage() {
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-
               setIsConvertingImage(false);
               resolve(file);
               return;
@@ -286,7 +281,6 @@ export default function Step5CompanyPage() {
                   });
                   resolve(webpFile);
                 } else {
-
                   resolve(file);
                 }
               },
@@ -295,7 +289,6 @@ export default function Step5CompanyPage() {
             );
           };
           img.onerror = () => {
-
             setIsConvertingImage(false);
             resolve(file);
           };
@@ -307,7 +300,6 @@ export default function Step5CompanyPage() {
           }
         };
         reader.onerror = () => {
-
           setIsConvertingImage(false);
           resolve(file);
         };
@@ -359,7 +351,6 @@ export default function Step5CompanyPage() {
           try {
             localPreviewSetter(URL.createObjectURL(processedFile));
           } catch (urlError: unknown) {
-
             localPreviewSetter(null);
           }
         }
@@ -635,7 +626,6 @@ export default function Step5CompanyPage() {
       let clientIpAddress = ''; // Initialisieren als leerer String
 
       try {
-
         const ipResult = await getClientIpFunction({});
         if (
           ipResult.data?.ip &&
@@ -643,18 +633,13 @@ export default function Step5CompanyPage() {
           ipResult.data.ip.length >= 7
         ) {
           clientIpAddress = ipResult.data.ip;
-
         } else {
-
         }
-      } catch (ipLookupError: unknown) {
-
-      }
+      } catch (ipLookupError: unknown) {}
 
       // Fallback, wenn die Firebase Function fehlschlägt oder keine gültige IP liefert
       if (!clientIpAddress) {
         try {
-
           const response = await fetch('https://api.ipify.org?format=json');
           if (!response.ok) {
             throw new Error(`ipify.org antwortete mit Status: ${response.status}`);
@@ -662,15 +647,11 @@ export default function Step5CompanyPage() {
           const ipData = await response.json();
           if (ipData.ip) {
             clientIpAddress = ipData.ip;
-
           }
-        } catch (fallbackError: unknown) {
-
-        }
+        } catch (fallbackError: unknown) {}
       }
 
       if (!clientIpAddress && process.env.NODE_ENV === 'development') {
-
         clientIpAddress = '8.8.8.8'; // Eine gültige öffentliche IP für Tests
       }
 
@@ -1010,9 +991,8 @@ export default function Step5CompanyPage() {
           stepCompletedAt: {},
         });
 
-        // NEU: Onboarding Progress initialisieren für neue Registration
-        const { initializeOnboardingProgress } = await import('@/lib/onboarding-progress');
-        await initializeOnboardingProgress(currentAuthUserUID, 'new_registration');
+        // SUCCESS: Registration abgeschlossen - harmonisiertes System ist bereits konfiguriert
+        console.log('✅ Registration abgeschlossen (harmonisiertes System)');
 
         setCurrentStepMessage('Weiterleitung zum Onboarding...');
         setIsRedirecting(true);
@@ -1030,10 +1010,8 @@ export default function Step5CompanyPage() {
         setFormError(
           `Problem bei Stripe: ${result.data.message || 'Unbekannter Fehler.'} ${result.data.missingFields ? `Fehlende Felder: ${result.data.missingFields.join(', ')}` : ''}`
         );
-
       }
     } catch (error: unknown) {
-
       let specificErrorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
 
       if (error && typeof error === 'object' && 'code' in error && 'message' in error) {

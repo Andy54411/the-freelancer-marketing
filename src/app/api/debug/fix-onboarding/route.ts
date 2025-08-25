@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeOnboardingProgress } from '@/lib/onboarding-progress';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,8 +11,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (markAsGrandfathered) {
-      // Mark existing company as grandfathered (no onboarding needed)
-      await initializeOnboardingProgress(companyUid, 'existing_grandfathered');
+      // Mark existing company as grandfathered (no onboarding needed) - HARMONIZED SYSTEM
+      await updateDoc(doc(db, 'users', companyUid), {
+        onboardingCompleted: true,
+        onboardingCompletedAt: serverTimestamp(),
+        profileComplete: true,
+        profileStatus: 'approved',
+      });
 
       return NextResponse.json({
         success: true,
@@ -20,8 +26,15 @@ export async function POST(request: NextRequest) {
         status: 'grandfathered',
       });
     } else {
-      // Initialize normal onboarding
-      await initializeOnboardingProgress(companyUid, 'new_registration');
+      // Initialize normal onboarding - HARMONIZED SYSTEM
+      await updateDoc(doc(db, 'users', companyUid), {
+        onboardingCompleted: false,
+        onboardingCurrentStep: '1',
+        onboardingCompletionPercentage: 0,
+        onboardingStartedAt: serverTimestamp(),
+        profileComplete: false,
+        profileStatus: 'pending_review',
+      });
 
       return NextResponse.json({
         success: true,
@@ -31,7 +44,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',
