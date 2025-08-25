@@ -138,11 +138,9 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
           `${result.data.questions?.length || 0} Fragen generiert für bessere Projektplanung!`
         );
       } else {
-
         throw new Error(result.error || 'Fehler beim Generieren der Fragen');
       }
     } catch (error) {
-
       toast.error('Fehler beim Generieren der Fragen');
     } finally {
       setLoading(false);
@@ -178,7 +176,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         );
       }
     } catch (error) {
-
       toast.error('Fehler beim Erstellen des Projekts');
     } finally {
       setLoading(false);
@@ -231,10 +228,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
           ...prev,
           [projectIndex]: [...currentProviders, provider],
         };
-        return newState;
-      }
-    });
-
         return newState;
       }
     });
@@ -346,15 +339,12 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
             // Speichere Bundle-ID vom ersten Projekt für nachfolgende Projekte
             if (successCount === 1 && result.bundleId) {
               createdBundleId = result.bundleId;
-
             }
           } else {
             errorCount++;
-
           }
         } catch (error) {
           errorCount++;
-
         }
       }
 
@@ -379,7 +369,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         toast.error(`❌ Fehler beim Erstellen der Projekte. Versuche es erneut.`);
       }
     } catch (error) {
-
       toast.error('Fehler beim Erstellen der Projekte');
     } finally {
       setLoading(false);
@@ -445,7 +434,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         throw new Error(result.error || 'Fehler beim Erstellen des Projekts');
       }
     } catch (error) {
-
       toast.error('Fehler beim Erstellen des Projekts');
     } finally {
       setLoading(false);
@@ -480,11 +468,9 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         setProjectIdeas(result.data);
         toast.success('Projektideen erfolgreich generiert!');
       } else {
-
         throw new Error(result.error || 'Ungültige Antwort von der KI');
       }
     } catch (error) {
-
       toast.error('Fehler beim Generieren der Projektideen');
     } finally {
       setLoading(false);
@@ -498,9 +484,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
     // Wenn projectIndex gegeben ist, zeige Dienstleister-Auswahl für dieses spezifische Projekt
     if (projectIndex !== undefined) {
       setShowProviderSelection(projectIndex);
-
     } else {
-
     }
 
     try {
@@ -532,11 +516,9 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
 
         toast.success('Passende Dienstleister gefunden!');
       } else {
-
         throw new Error('Ungültige Antwort von der KI');
       }
     } catch (error) {
-
       toast.error('Fehler beim Finden der Dienstleister');
     } finally {
       setLoading(false);
@@ -574,7 +556,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         throw new Error('Ungültige Antwort von der KI');
       }
     } catch (error) {
-
       toast.error('Fehler bei der Beratung');
     } finally {
       setLoading(false);
@@ -1295,11 +1276,9 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                                         : 'bg-[#14ad9f] hover:bg-[#129488] text-white'
                                     }`}
                                     onClick={() => {
-
                                       if (showProviderSelection !== null) {
                                         toggleProviderSelection(showProviderSelection, provider);
                                       } else {
-
                                       }
                                     }}
                                   >

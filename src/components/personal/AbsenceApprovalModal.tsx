@@ -9,22 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, XCircle, Clock, User, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface AbsenceRequest {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  type: 'VACATION' | 'SICK' | 'PERSONAL' | 'TRAINING' | 'OTHER';
-  startDate: string;
-  endDate: string;
-  days: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reason?: string;
-  notes?: string;
-  requestedAt?: string;
-  approvedBy?: string;
-  approvedAt?: string;
-}
+import { type AbsenceRequest } from '@/services/personalService';
 
 interface AbsenceApprovalModalProps {
   isOpen: boolean;
@@ -66,13 +51,11 @@ export function AbsenceApprovalModal({
   };
 
   const handleAction = async (action: 'APPROVED' | 'REJECTED') => {
-    if (action === 'REJECTED' && !notes.trim()) {
-      toast.error('Bitte geben Sie einen Grund für die Ablehnung an');
-      return;
-    }
+    if (!request.id) return;
 
     try {
       setLoading(true);
+      setSelectedAction(action);
 
       // Hier würde der API-Call zur Genehmigung/Ablehnung erfolgen
       // await PersonalService.processAbsenceRequest(request.id, action, notes);
@@ -88,7 +71,33 @@ export function AbsenceApprovalModal({
       setNotes('');
       setSelectedAction(null);
     } catch (error) {
+      console.error('Error processing absence request:', error);
+      toast.error('Fehler beim Verarbeiten des Antrags');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const handleSubmit = async () => {
+    if (!selectedAction || !request.id) return;
+
+    try {
+      setLoading(true);
+
+      // Hier würde der API-Call zur Genehmigung/Ablehnung erfolgen
+      // await PersonalService.processAbsenceRequest(request.id, selectedAction, notes);
+
+      toast.success(
+        selectedAction === 'APPROVED'
+          ? 'Abwesenheitsantrag wurde genehmigt'
+          : 'Abwesenheitsantrag wurde abgelehnt'
+      );
+
+      onRequestProcessed(request.id, selectedAction, notes);
+      onClose();
+      setNotes('');
+      setSelectedAction(null);
+    } catch (error) {
       toast.error('Fehler beim Verarbeiten des Antrags');
     } finally {
       setLoading(false);
@@ -230,7 +239,6 @@ export function AbsenceApprovalModal({
               disabled={loading}
               variant="destructive"
               className="flex-1"
-              onMouseEnter={() => setSelectedAction('REJECTED')}
             >
               <XCircle className="h-4 w-4 mr-2" />
               {loading && selectedAction === 'REJECTED' ? 'Ablehnen...' : 'Ablehnen'}
@@ -240,7 +248,6 @@ export function AbsenceApprovalModal({
               onClick={() => handleAction('APPROVED')}
               disabled={loading}
               className="flex-1 bg-green-600 hover:bg-green-700"
-              onMouseEnter={() => setSelectedAction('APPROVED')}
             >
               <CheckCircle className="h-4 w-4 mr-2" />
               {loading && selectedAction === 'APPROVED' ? 'Genehmigen...' : 'Genehmigen'}

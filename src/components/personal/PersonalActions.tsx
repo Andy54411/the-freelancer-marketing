@@ -29,28 +29,12 @@ import {
   Phone,
   MapPin,
 } from 'lucide-react';
-import { type Employee } from '@/services/personalService';
+import { type Employee, type AbsenceRequest } from '@/services/personalService';
 import { AddEmployeeModal } from './AddEmployeeModal';
 import { EditEmployeeModal } from './EditEmployeeModal';
 import { DeleteEmployeeModal } from './DeleteEmployeeModal';
 import { CreateAbsenceRequestModal } from './CreateAbsenceRequestModal';
 import { AbsenceApprovalModal } from './AbsenceApprovalModal';
-
-interface AbsenceRequest {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  type: 'VACATION' | 'SICK' | 'PERSONAL' | 'TRAINING' | 'OTHER';
-  startDate: string;
-  endDate: string;
-  days: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  reason?: string;
-  notes?: string;
-  requestedAt?: string;
-  approvedBy?: string;
-  approvedAt?: string;
-}
 
 interface PersonalActionsProps {
   companyId: string;
@@ -103,7 +87,6 @@ export function PersonalActions({
 
   const handleViewEmployee = (employee: Employee) => {
     // Hier könnte eine Detailansicht geöffnet werden
-
   };
 
   // Absence Actions
@@ -112,8 +95,11 @@ export function PersonalActions({
   };
 
   const handleApproveAbsenceRequest = (request: AbsenceRequest) => {
-    setSelectedAbsenceRequest(request);
-    setShowAbsenceApproval(true);
+    // Nur Requests mit gültiger ID können bearbeitet werden
+    if (request.id) {
+      setSelectedAbsenceRequest(request);
+      setShowAbsenceApproval(true);
+    }
   };
 
   // Export/Import Actions
@@ -149,7 +135,6 @@ export function PersonalActions({
         reader.onload = e => {
           const csv = e.target?.result as string;
           // Hier würde die CSV-Import-Logik implementiert werden
-
         };
         reader.readAsText(file);
       }
