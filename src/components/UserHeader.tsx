@@ -196,15 +196,28 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
           const userData = userDocSnap.data() as FirestoreUserData;
           setFirestoreUserData(userData);
 
-          // Prüfe, ob ein Profilbild in Firestore verfügbar ist
-          if (userData.profilePictureURL || userData.profilePictureFirebaseUrl) {
-            const profileUrl = userData.profilePictureURL || userData.profilePictureFirebaseUrl;
-            if (profileUrl) {
-              setProfilePictureURLFromStorage(profileUrl);
-            } else {
-              // Fallback auf Storage, wenn URL leer ist
-              loadProfilePictureFromStorage(uid);
+          let profileUrl: string | null = null;
+
+          // Für Firmen: Lade Profilbild aus companies collection
+          if (userData.user_type === 'firma') {
+            try {
+              const companyDocRef = doc(db, 'companies', uid);
+              const companyDocSnap = await getDoc(companyDocRef);
+              if (companyDocSnap.exists()) {
+                const companyData = companyDocSnap.data();
+                profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
+              }
+            } catch (error) {
+              console.warn('Could not load company profile picture:', error);
             }
+          } else {
+            // Für Privatnutzer: Lade aus users collection
+            profileUrl = userData.profilePictureURL || userData.profilePictureFirebaseUrl || null;
+          }
+
+          // Setze Profilbild oder fallback auf Storage
+          if (profileUrl) {
+            setProfilePictureURLFromStorage(profileUrl);
           } else {
             // Fallback auf Storage, wenn kein Bild in Firestore
             loadProfilePictureFromStorage(uid);
