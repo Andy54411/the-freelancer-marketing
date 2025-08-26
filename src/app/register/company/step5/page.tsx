@@ -838,10 +838,19 @@ export default function Step5CompanyPage() {
           companyPublicProfileData.companyRegisterPublic = companyRegister;
       }
 
+      console.log('📝 Creating users document...', {
+        uid: currentAuthUserUID,
+        user_type: userPrivateData.user_type,
+        email: userPrivateData.email,
+      });
+
       await setDoc(doc(db, 'users', currentAuthUserUID), userPrivateData, { merge: true });
+      console.log('✅ Users document created successfully');
+
       await setDoc(doc(db, 'companies', currentAuthUserUID), companyPublicProfileData, {
         merge: true,
       });
+      console.log('✅ Companies document created successfully');
 
       setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');
 
@@ -920,6 +929,7 @@ export default function Step5CompanyPage() {
       }
 
       if (result.data.success) {
+        console.log('🔧 Updating users document with Stripe data...');
         const userUpdateAfterStripe: UserStripeUpdateData = {
           stripeAccountId: result.data.accountId,
           stripeRepresentativePersonId: result.data.personId || deleteField(),
@@ -932,16 +942,19 @@ export default function Step5CompanyPage() {
             : 'pending',
         };
         await updateDoc(doc(db, 'users', currentAuthUserUID), { ...userUpdateAfterStripe });
+        console.log('✅ Users document updated with Stripe data');
 
         setCurrentStepMessage('Onboarding-System wird vorbereitet...');
 
         // SIMPLIFIED: Setze Onboarding-Status direkt im Hauptdokument (harmonisiert)
+        console.log('🔧 Setting onboarding status...');
         await updateDoc(doc(db, 'users', currentAuthUserUID), {
           onboardingStartedAt: serverTimestamp(),
           onboardingCurrentStep: '1',
           onboardingStepData: {},
           onboardingCompletionPercentage: 0,
         });
+        console.log('✅ Onboarding status set successfully');
 
         // SUCCESS: Registration abgeschlossen - harmonisiertes System ist bereits konfiguriert
         console.log('✅ Registration abgeschlossen (harmonisiertes System)');
