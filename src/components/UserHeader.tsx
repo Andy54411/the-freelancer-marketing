@@ -88,6 +88,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const [notifications, setNotifications] = useState<NotificationPreview[]>([]); // NEU
   const [workspaces, setWorkspaces] = useState<any[]>([]); // For Quick Note functionality
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false); // NEW: Verhindert Redirect-Loops
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const searchDropdownContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -189,47 +190,103 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         setFirestoreUserData(null);
         return;
       }
+
+      console.log(`🔍 Loading Firestore data for uid: ${uid}`);
+
       try {
-        const userDocRef = doc(db, 'users', uid);
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-          const userData = userDocSnap.data() as FirestoreUserData;
-          setFirestoreUserData(userData);
+        let userData: any = null;
+        let profileUrl: string | null = null;
 
-          let profileUrl: string | null = null;
+        // 1. IMMER zuerst users collection prüfen
+        try {
+          const userDocRef = doc(db, 'users', uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            userData = userDocSnap.data() as FirestoreUserData;
+            console.log(`✅ Users collection data loaded:`, userData);
+          } else {
+            console.log(`⚠️ No data found in users collection for uid: ${uid}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error loading from users collection:`, error);
+        }
 
-          // Für Firmen: Lade Profilbild aus companies collection
-          if (userData.user_type === 'firma') {
-            try {
-              const companyDocRef = doc(db, 'companies', uid);
-              const companyDocSnap = await getDoc(companyDocRef);
-              if (companyDocSnap.exists()) {
-                const companyData = companyDocSnap.data();
-                profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
-              }
-            } catch (error) {
-              console.warn('Could not load company profile picture:', error);
+        // 2. Für Firmen AUCH companies collection prüfen und Daten kombinieren
+        if (userData?.user_type === 'firma') {
+          try {
+            const companyDocRef = doc(db, 'companies', uid);
+            const companyDocSnap = await getDoc(companyDocRef);
+            if (companyDocSnap.exists()) {
+              const companyData = companyDocSnap.data();
+              console.log(`✅ Companies collection data loaded:`, companyData);
+
+              // Kombiniere userData mit wichtigen Company-Feldern für Auth
+              userData = {
+                ...userData,
+                companyName: companyData.companyName,
+                profileComplete: companyData.profileComplete,
+                onboardingCompleted: companyData.onboardingCompleted,
+              };
+
+              profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
+            } else {
+              console.log(`⚠️ No data found in companies collection for firma user: ${uid}`);
             }
-          } else {
-            // Für Privatnutzer: Lade aus users collection
-            profileUrl = userData.profilePictureURL || userData.profilePictureFirebaseUrl || null;
+          } catch (error) {
+            console.error(`❌ Error loading from companies collection:`, error);
           }
+        } else if (userData) {
+          // Für Privatnutzer: Lade Profilbild aus users collection
+          profileUrl = userData.profilePictureURL || userData.profilePictureFirebaseUrl || null;
+        }
 
-          // Setze Profilbild oder fallback auf Storage
-          if (profileUrl) {
-            setProfilePictureURLFromStorage(profileUrl);
-          } else {
-            // Fallback auf Storage, wenn kein Bild in Firestore
-            loadProfilePictureFromStorage(uid);
+        // 3. Fallback: Wenn KEINE Daten in users gefunden, versuche companies collection direkt
+        if (!userData) {
+          try {
+            console.log(`🔄 Fallback: Checking companies collection directly for uid: ${uid}`);
+            const companyDocRef = doc(db, 'companies', uid);
+            const companyDocSnap = await getDoc(companyDocRef);
+            if (companyDocSnap.exists()) {
+              const companyData = companyDocSnap.data();
+              console.log(`✅ Found company data as fallback:`, companyData);
+
+              // Erstelle minimalen userData aus company data
+              userData = {
+                uid: uid,
+                user_type: 'firma',
+                email: companyData.email || companyData['step1.email'] || '',
+                firstName: companyData.firstName || companyData['step1.firstName'] || '',
+                lastName: companyData.lastName || companyData['step1.lastName'] || '',
+                companyName: companyData.companyName,
+                profileComplete: companyData.profileComplete,
+                onboardingCompleted: companyData.onboardingCompleted,
+              };
+
+              profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
+            }
+          } catch (error) {
+            console.error(`❌ Error in fallback companies check:`, error);
           }
+        }
+
+        // 4. Setze final userData
+        if (userData) {
+          console.log(`✅ Final userData set:`, userData);
+          setFirestoreUserData(userData);
         } else {
+          console.log(`❌ No userData found in any collection for uid: ${uid}`);
           setFirestoreUserData(null);
-          // Fallback auf Storage
+        }
+
+        // 5. Setze Profilbild oder fallback auf Storage
+        if (profileUrl) {
+          setProfilePictureURLFromStorage(profileUrl);
+        } else {
           loadProfilePictureFromStorage(uid);
         }
       } catch (error) {
+        console.error(`❌ Critical error in loadFirestoreUserData:`, error);
         setFirestoreUserData(null);
-        // Fallback auf Storage bei Fehler
         loadProfilePictureFromStorage(uid);
       }
     },
@@ -258,15 +315,33 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     return () => unsubscribe();
   }, [currentUid, router, loadFirestoreUserData]);
 
-  // Smart Redirect basierend auf user_type - KORRIGIERTE LOGIK
+  // Smart Redirect basierend auf user_type - KORRIGIERTE LOGIK mit Loop-Schutz
   useEffect(() => {
+    // Verhindere Redirect wenn bereits umgeleitet wird
+    if (isRedirecting) {
+      console.log('� REDIRECT: Bereits am Umleiten, überspringe...');
+      return;
+    }
+
+    console.log('�🔍 Redirect Check:', {
+      currentUser: currentUser?.uid,
+      currentUid: currentUid,
+      firestoreUserData: firestoreUserData,
+      userType: firestoreUserData?.user_type,
+      currentPath: window.location.pathname,
+      isRedirecting,
+    });
+
     if (currentUser?.uid && firestoreUserData && currentUser.uid === currentUid) {
       const currentPath = window.location.pathname;
       const userType = firestoreUserData.user_type;
 
+      console.log(`🎯 REDIRECT CHECK: userType="${userType}", path="${currentPath}"`);
+
       // Wenn Firma-User auf /dashboard/user/ ist → redirect zu /dashboard/company/
       if (userType === 'firma' && currentPath.startsWith('/dashboard/user/')) {
         console.log(`🔄 FIRMA USER auf USER DASHBOARD ERKANNT! Umleitung zu Company Dashboard...`);
+        setIsRedirecting(true);
         router.replace(`/dashboard/company/${currentUser.uid}`);
         return;
       }
@@ -274,11 +349,32 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       // Wenn Normal-User auf /dashboard/company/ ist → redirect zu /dashboard/user/
       if (userType !== 'firma' && currentPath.startsWith('/dashboard/company/')) {
         console.log(`🔄 USER auf COMPANY DASHBOARD ERKANNT! Umleitung zu User Dashboard...`);
+        setIsRedirecting(true);
         router.replace(`/dashboard/user/${currentUser.uid}`);
         return;
       }
+
+      console.log(
+        `✅ REDIRECT: Keine Umleitung nötig für userType="${userType}" auf path="${currentPath}"`
+      );
+    } else {
+      console.log(
+        `⏳ REDIRECT: Warte auf Daten... currentUser=${!!currentUser?.uid}, firestoreUserData=${!!firestoreUserData}, uid match=${currentUser?.uid === currentUid}`
+      );
     }
-  }, [currentUser?.uid, currentUid, firestoreUserData, router]);
+  }, [currentUser?.uid, currentUid, firestoreUserData, router, isRedirecting]);
+
+  // Reset isRedirecting nach kurzer Zeit falls Redirect fehlschlägt
+  useEffect(() => {
+    if (isRedirecting) {
+      const timeout = setTimeout(() => {
+        console.log('⏰ REDIRECT TIMEOUT: Setze isRedirecting zurück nach 2 Sekunden');
+        setIsRedirecting(false);
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isRedirecting]);
 
   // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
   useEffect(() => {

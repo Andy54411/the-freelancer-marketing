@@ -102,6 +102,11 @@ export default function SettingsPage() {
     companyData: companyData,
     combinedData: combinedData,
     userType: userData?.user_type,
+    languages: {
+      inUserData: userData?.languages || userData?.['step2.languages'],
+      inCompanyData: companyData?.languages || companyData?.['step2.languages'],
+      inCombined: combinedData?.languages || combinedData?.['step2.languages'],
+    },
   });
 
   return <SettingsComponent userData={combinedData} onDataSaved={handleDataSaved} />;

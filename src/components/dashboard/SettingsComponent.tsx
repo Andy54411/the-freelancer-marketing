@@ -225,6 +225,15 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         }
         return current === undefined || current === null ? fallback : (current as T);
       };
+
+      // DEBUG: Check languages specifically
+      console.log('🗣️ Languages Debug:', {
+        'step2.languages': get('step2.languages', 'NOT_FOUND'),
+        languages: get('languages', 'NOT_FOUND'),
+        combined: get('step2.languages', get('languages', 'BOTH_NOT_FOUND')),
+        userData: userData,
+      });
+
       setForm({
         uid: userData.uid,
         email: userData.email,
@@ -627,9 +636,19 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       'step3.taxNumber': updatedForm.step3.taxNumber,
       'step3.vatId': updatedForm.step3.vatId,
       'step3.companyRegister': updatedForm.step3.companyRegister,
+      'step3.districtCourt': updatedForm.step3.districtCourt,
+      'step3.ust': updatedForm.step3.ust,
+      'step3.profitMethod': updatedForm.step3.profitMethod,
+      'step3.taxMethod': updatedForm.step3.taxMethod,
+      'step3.defaultTaxRate': updatedForm.step3.defaultTaxRate,
+      'step3.accountingSystem': updatedForm.step3.accountingSystem,
+      'step3.priceInput': updatedForm.step3.priceInput,
+      'step3.lastInvoiceNumber': updatedForm.step3.lastInvoiceNumber,
       'step4.accountHolder': updatedForm.step4.accountHolder,
       'step4.iban': updatedForm.step4.iban,
       'step4.bankCountry': updatedForm.step4.bankCountry,
+      'step4.bic': updatedForm.step4.bic,
+      'step4.bankName': updatedForm.step4.bankName,
       firstName: updatedForm.step1.firstName,
       lastName: updatedForm.step1.lastName,
       phoneNumber: updatedForm.step1.phoneNumber,
@@ -648,6 +667,24 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       companyPhoneNumberForBackend: updatedForm.step2.companyPhoneNumber,
       iban: updatedForm.step4.iban,
       accountHolder: updatedForm.step4.accountHolder,
+      bankCountry: updatedForm.step4.bankCountry,
+      bic: updatedForm.step4.bic,
+      bankName: updatedForm.step4.bankName,
+      taxNumber: updatedForm.step3.taxNumber,
+      vatId: updatedForm.step3.vatId,
+      companyRegister: updatedForm.step3.companyRegister,
+      districtCourt: updatedForm.step3.districtCourt,
+      ust: updatedForm.step3.ust,
+      profitMethod: updatedForm.step3.profitMethod,
+      taxMethod: updatedForm.step3.taxMethod,
+      defaultTaxRate: updatedForm.step3.defaultTaxRate,
+      accountingSystem: updatedForm.step3.accountingSystem,
+      priceInput: updatedForm.step3.priceInput,
+      lastInvoiceNumber: updatedForm.step3.lastInvoiceNumber,
+      hourlyRate: Number(updatedForm.step3.hourlyRate) || null,
+      languages: updatedForm.step2.languages,
+      description: updatedForm.step2.description,
+      employees: updatedForm.step2.employees,
       legalForm: updatedForm.step2.legalForm,
       selectedCategory: updatedForm.step2.industry,
       industryMcc:
