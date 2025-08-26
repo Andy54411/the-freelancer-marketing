@@ -154,9 +154,7 @@ export default function ProfilePage() {
       if (userDoc.exists()) {
         setUserProfile(userDoc.data() as UserProfileData);
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleBookingConfirm = async (
@@ -166,7 +164,6 @@ export default function ProfilePage() {
     description: string
   ) => {
     try {
-
       // Prüfe ob Profile verfügbar ist
       if (!profile) {
         throw new Error('Provider-Profil nicht verfügbar');
@@ -175,7 +172,6 @@ export default function ProfilePage() {
       setIsBookingModalOpen(false);
       setIsCreateOrderModalOpen(true);
     } catch (error) {
-
       alert('Fehler bei der Buchung. Bitte versuchen Sie es erneut.');
     }
   };
@@ -231,9 +227,7 @@ export default function ProfilePage() {
         if (userDoc.exists()) {
           setUserProfile(userDoc.data() as UserProfileData);
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     };
 
     fetchUserProfile();
@@ -396,7 +390,13 @@ export default function ProfilePage() {
 
             setProfile({
               id: companyId,
-              companyName: companyData.companyName || 'Unbekannte Firma',
+              companyName:
+                companyData.companyName ||
+                companyData.step2?.companyName ||
+                companyData.step1?.companyName ||
+                companyData.firstName
+                  ? `${companyData.firstName} ${companyData.lastName || ''}`.trim()
+                  : companyData.email?.split('@')[0] || 'Unbenanntes Unternehmen',
               description: companyData.description || companyData.publicDescription || '',
               selectedSubcategory: companyData.selectedSubcategory,
               selectedCategory: companyData.selectedCategory,
@@ -426,7 +426,6 @@ export default function ProfilePage() {
           }
         }
       } catch (err) {
-
         setError('Fehler beim Laden des Firmenprofils');
       } finally {
         setLoading(false);
@@ -477,9 +476,7 @@ export default function ProfilePage() {
               : null
           );
         }
-
       } catch (error) {
-
         setReviews([]);
       } finally {
         setReviewsLoading(false);

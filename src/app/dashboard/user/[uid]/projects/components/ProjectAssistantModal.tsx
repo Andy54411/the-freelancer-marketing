@@ -1139,7 +1139,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                     <div className="grid gap-4">
                       {providerRecommendations.map((provider, index) => {
                         const companyName =
-                          provider.companyName || provider.name || 'Unbekannte Firma';
+                          provider.companyName || provider.name || 'Unbenannter Anbieter';
                         const description = provider.description || 'Keine Beschreibung verfügbar';
                         const services = provider.services || [];
 

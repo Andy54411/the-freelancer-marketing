@@ -8,6 +8,7 @@ import CompanySidebar from '@/components/dashboard/CompanySidebar';
 import CompanyMobileSidebar from '@/components/dashboard/CompanyMobileSidebar';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
+import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 as FiLoader } from 'lucide-react';
 import {
   Grid as FiGrid,
@@ -33,6 +34,9 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+
+  // AuthContext für zusätzliche Fallback-Daten
+  const { user } = useAuth();
 
   const toggleExpanded = (itemValue: string) => {
     setExpandedItems(prev =>
@@ -83,19 +87,52 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     return view;
   }, [pathname, view]);
 
-  // Unternehmensdaten für die Header-Komponente vorbereiten
+  // Unternehmensdaten für die Header-Komponente vorbereiten - VERBESSERTE FALLBACK-LOGIK
   const companyDataForHeader = useMemo(() => {
     if (!uid) return null;
+
+    // Verschiedene Datenquellen für den Firmennamen prüfen
+    let companyName = 'Unbekannte Firma'; // Standard-Fallback
+
+    // 1. Priorität: step2.companyName (aus Onboarding)
+    if (isNonEmptyString(userData?.step2?.companyName)) {
+      companyName = userData.step2.companyName;
+    }
+    // 2. Priorität: direktes companyName Feld
+    else if (isNonEmptyString(userData?.companyName)) {
+      companyName = userData.companyName;
+    }
+    // 3. Priorität: Firmenname aus step1 (falls vorhanden)
+    else if (isNonEmptyString(userData?.step1?.companyName)) {
+      companyName = userData.step1.companyName;
+    }
+    // 4. Priorität: AuthContext User-Daten (Name als Firmenname)
+    else if (user && isNonEmptyString(user.firstName) && isNonEmptyString(user.lastName)) {
+      companyName = `${user.firstName} ${user.lastName}`;
+    } else if (user && isNonEmptyString(user.firstName)) {
+      companyName = user.firstName;
+    }
+    // 5. Priorität: E-Mail als letzter Fallback (vor "Unbekannte Firma")
+    else if (user && isNonEmptyString(user.email)) {
+      companyName = user.email.split('@')[0]; // Nutze Teil vor @
+    }
+
+    console.log('🏢 Company Name Resolution:', {
+      step2CompanyName: userData?.step2?.companyName,
+      directCompanyName: userData?.companyName,
+      step1CompanyName: userData?.step1?.companyName,
+      userFirstName: user?.firstName,
+      userLastName: user?.lastName,
+      userEmail: user?.email,
+      finalCompanyName: companyName,
+    });
+
     return {
       uid: uid,
-      companyName: isNonEmptyString(userData?.step2?.companyName)
-        ? userData.step2.companyName
-        : isNonEmptyString(userData?.companyName)
-          ? userData.companyName
-          : 'Unbekannte Firma',
+      companyName: companyName,
       logoUrl: undefined,
     };
-  }, [uid, userData]);
+  }, [uid, userData, user]);
 
   // Navigation handler
   const handleNavigation = useCallback(
