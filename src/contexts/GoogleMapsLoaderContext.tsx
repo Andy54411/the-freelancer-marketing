@@ -28,11 +28,18 @@ export const GoogleMapsLoaderProvider: React.FC<GoogleMapsLoaderProviderProps> =
   const [google, setGoogle] = useState<typeof window.google | null>(null);
 
   useEffect(() => {
+    // Prüfe ob Google Maps bereits geladen ist
+    if (window.google?.maps?.places) {
+      setGoogle(window.google);
+      setIsLoaded(true);
+      return;
+    }
+
     const loader = new Loader({
-      apiKey: process.env.NEXT_PUBLIC_Maps_API_KEY!,
+      apiKey: process.env.NEXT_PUBLIC_MAPS_API_KEY!,
       version: 'weekly',
-      // WICHTIG: Hier alle benötigten Libraries auf einmal angeben
-      libraries: ['maps', 'places', 'marker'],
+      // WICHTIG: Hier alle benötigten Libraries auf einmal angeben - mit korrekten Namen
+      libraries: ['places', 'marker'] as any,
     });
 
     loader
@@ -40,10 +47,10 @@ export const GoogleMapsLoaderProvider: React.FC<GoogleMapsLoaderProviderProps> =
       .then(loadedGoogle => {
         setGoogle(loadedGoogle);
         setIsLoaded(true);
-
+        console.log('✅ Google Maps erfolgreich mit @googlemaps/js-api-loader geladen');
       })
       .catch(e => {
-
+        console.error('❌ Fehler beim Laden von Google Maps:', e);
       });
   }, []); // Der leere Array sorgt dafür, dass dies nur einmal ausgeführt wird
 

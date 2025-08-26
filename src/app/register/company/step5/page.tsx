@@ -836,10 +836,15 @@ export default function Step5CompanyPage() {
         }
       }
 
-      // Null-Werte für undefined bereinigen
-      Object.keys(companyData).forEach(key => {
+      // Null-Werte für undefined bereinigen und Datenvalidierung
+      const cleanedCompanyData = { ...companyData };
+
+      Object.keys(cleanedCompanyData).forEach(key => {
+        const value = cleanedCompanyData[key];
+
+        // Entferne undefined Werte, aber behalte wichtige optionale Felder
         if (
-          companyData[key] === undefined &&
+          value === undefined &&
           key !== 'ownershipPercentage' &&
           key !== 'isActualDirector' &&
           key !== 'isActualOwner' &&
@@ -847,14 +852,26 @@ export default function Step5CompanyPage() {
           key !== 'isActualExecutive' &&
           key !== 'masterCraftsmanCertificateStripeId'
         ) {
-          companyData[key] = null;
+          cleanedCompanyData[key] = null;
+        }
+
+        // Validiere verschachtelte Objekte
+        if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+          // Prüfe auf gültige Objekt-Struktur
+          try {
+            JSON.stringify(value);
+          } catch (error) {
+            console.warn(`⚠️ Ungültiges Objekt für Feld ${key}, setze auf null:`, error);
+            cleanedCompanyData[key] = null;
+          }
         }
       });
 
-      console.log('📝 Creating companies document only...', {
+      console.log('📝 Creating companies document with validated data...', {
         uid: currentAuthUserUID,
         email: email!,
-        companyName: companyData.companyName,
+        companyName: cleanedCompanyData.companyName,
+        hasRequiredFields: !!(cleanedCompanyData.companyName && cleanedCompanyData.legalForm),
       });
 
       // WICHTIG 1: User-Type für Company korrekt setzen
@@ -866,9 +883,26 @@ export default function Step5CompanyPage() {
       });
       console.log('✅ Users document updated with company type');
 
-      // WICHTIG 2: Companies document erstellen
-      await setDoc(doc(db, 'companies', currentAuthUserUID), companyData, { merge: true });
-      console.log('✅ Companies document created successfully');
+      // WICHTIG 2: Companies document mit validierten Daten erstellen
+      try {
+        await setDoc(doc(db, 'companies', currentAuthUserUID), cleanedCompanyData, { merge: true });
+        console.log('✅ Companies document created successfully');
+      } catch (firestoreError) {
+        console.error('❌ Firestore Write Error:', firestoreError);
+
+        // Fallback: Erstelle nur minimal erforderliche Daten
+        const minimalCompanyData = {
+          uid: currentAuthUserUID,
+          email: email!,
+          companyName: cleanedCompanyData.companyName,
+          legalForm: cleanedCompanyData.legalForm,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        await setDoc(doc(db, 'companies', currentAuthUserUID), minimalCompanyData, { merge: true });
+        console.log('✅ Minimal companies document created as fallback');
+      }
 
       setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');
 
