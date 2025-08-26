@@ -444,7 +444,7 @@ export const deleteCompanyAccount = onCall(
     try {
       logger.info(`[Action] Admin ${adminUid} startet Löschvorgang für Firma ${companyId}.`);
 
-      const companyRef = db.collection("users").doc(companyId);
+      const companyRef = db.collection("companies").doc(companyId);
       const companyDoc = await companyRef.get();
 
       if (!companyDoc.exists) {
@@ -548,26 +548,18 @@ export const updateCompanyStatus = onCall(
 
       const db = getDb();
 
-      // Update both users and companies collections
-      const batch = db.batch();
+      // ❌ ARCHITEKTUR-KORREKTUR: NUR companies collection updaten!
+      // users collection darf KEINE Firmendaten enthalten!
 
-      const userRef = db.collection('users').doc(companyId);
       const companyRef = db.collection('companies').doc(companyId);
-
-      batch.update(userRef, {
-        status: status,
-        updatedAt: FieldValue.serverTimestamp()
-      });
-
-      batch.update(companyRef, {
+      
+      await companyRef.update({
         status: status,
         isActive: status === 'active',
         updatedAt: FieldValue.serverTimestamp()
       });
 
-      await batch.commit();
-
-      logger.info(`[updateCompanyStatus] Successfully updated company ${companyId} status to ${status}`);
+      logger.info(`[updateCompanyStatus] Successfully updated company ${companyId} status to ${status} (ONLY in companies collection)`);
       return {
         success: true,
         message: `Company status updated to ${status}`,

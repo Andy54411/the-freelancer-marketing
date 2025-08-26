@@ -160,9 +160,20 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     // Check required fields
     if (rules.required) {
       for (const field of rules.required) {
-        if (!data[field] || data[field] === '') {
+        const value = data[field];
+        // Handle different data types properly
+        if (value === null || value === undefined) {
           return false;
         }
+        // For strings, empty string is invalid
+        if (typeof value === 'string' && value === '') {
+          return false;
+        }
+        // For arrays, empty array is invalid
+        if (Array.isArray(value) && value.length === 0) {
+          return false;
+        }
+        // For numbers and booleans, 0 and false are valid values
       }
     }
 
@@ -194,6 +205,15 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
           } else if (typeof data[field] === 'string') {
             if (data[field].length < minLength) return false;
           }
+        }
+      }
+    }
+
+    // Check conditional validators
+    if (rules.conditional) {
+      for (const [field, validator] of Object.entries(rules.conditional)) {
+        if (!validator(data)) {
+          return false;
         }
       }
     }

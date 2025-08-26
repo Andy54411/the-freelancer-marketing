@@ -649,8 +649,8 @@ export const createStripeAccountIfComplete = onCall(
             rawError: JSON.stringify(e.raw) // Vollständiges Raw-Objekt als String loggen
           });
           // --- ERWEITERTES LOGGING ENDE ---
-          // Optional: Speichern Sie den Fehler im Nutzerdokument, um ihn später zu behandeln.
-          await userDocRef.update({
+          // ❌ COMPANIES ONLY: Fehler werden nur in companies collection gespeichert
+          await companyDocRef.update({
             stripeAccountError: `Personen-Erstellung fehlgeschlagen: ${e.raw?.message || e.message}`
           });
         }
@@ -927,12 +927,14 @@ export const updateStripeCompanyDetails = onCall(
         loggerV2.info(`Stripe Account ${stripeAccountId} (Typ: ${currentBusinessType}) aktualisiert.`);
       }
 
-      // Firestore-Daten ebenfalls aktualisieren, um Konsistenz zu wahren
+      // ✅ COMPANIES ONLY: Firestore-Daten in companies collection aktualisieren
+      const db = getDb();
+      const companyDocRefForUpdate = db.collection('companies').doc(request.auth!.uid);
       const firestoreUpdatePayload: { [key: string]: any } = {
         "step4.iban": updatePayloadFromClient.iban ? `****${updatePayloadFromClient.iban.slice(-4)}` : undefined,
         "step4.accountHolder": updatePayloadFromClient.accountHolder || undefined,
       };
-      await userDocRef.set(firestoreUpdatePayload, { merge: true });
+      await companyDocRefForUpdate.set(firestoreUpdatePayload, { merge: true });
 
       if (currentBusinessType === 'company') {
         let personIdToUpdate: string | undefined = currentFirestoreUserData.stripeRepresentativePersonId;
