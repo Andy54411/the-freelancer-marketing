@@ -500,6 +500,14 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       onboardingUpdates.profileComplete = true;
       onboardingUpdates.profileStatus = 'pending_review';
 
+      // CRITICAL FIX: Add step structures for Firebase Functions
+      // Functions expect step1, step2, step3, step4 structures
+      if (stepData[1]) onboardingUpdates.step1 = stepData[1];
+      if (stepData[2]) onboardingUpdates.step2 = stepData[2];
+      if (stepData[3]) onboardingUpdates.step3 = stepData[3];
+      if (stepData[4]) onboardingUpdates.step4 = stepData[4];
+      if (stepData[5]) onboardingUpdates.step5 = stepData[5];
+
       // Update main user document with ALL onboarding fields AND completion metadata
       await updateDoc(userDocRef, onboardingUpdates);
 

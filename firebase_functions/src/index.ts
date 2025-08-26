@@ -64,7 +64,7 @@ export const updateCompanyStatus = callableGeneral.updateCompanyStatus;
 export const searchProvidersBySubcategory = callableGeneral.searchProvidersBySubcategory;
 
 // HTTP General Requests
-export const migrateExistingUsersToCompanies = httpGeneral.migrateExistingUsersToCompanies;
+// export const migrateExistingUsersToCompanies = httpGeneral.migrateExistingUsersToCompanies; // DEAKTIVIERT: Companies Creation
 export const syncCompanyToUserData = httpGeneral.syncCompanyToUserData;
 export const searchCompanyProfiles = httpGeneral.searchCompanyProfiles;
 export const getDataForSubcategory = httpGeneral.getDataForSubcategory;
@@ -77,8 +77,8 @@ export const uploadStripeFile = httpFileUploads.uploadStripeFile;
 
 // Firestore Triggers
 export const createUserProfile = triggersFirestore.createUserProfile;
-export const updateUserProfile = triggersFirestore.updateUserProfile;
-export const syncCompanyToUserOnUpdate = triggersFirestore.syncCompanyToUserOnUpdate;
+export const updateUserProfile = triggersFirestore.updateUserProfile; // REPARIERT: Endlosschleife behoben
+// export const syncCompanyToUserOnUpdate = triggersFirestore.syncCompanyToUserOnUpdate; // DEAKTIVIERT: Companies Collection Trigger
 export const createStripeCustomAccountOnUserUpdate = triggersFirestore.createStripeCustomAccountOnUserUpdate;
 
 // Order Callables
@@ -104,7 +104,7 @@ export const getProviderOrders = getProviderOrdersModule.getProviderOrders;
 export const populateChatUserDetails = triggersChat.populateChatUserDetails;
 export const onUserUpdatePropagateToChats = triggersChat.onUserUpdatePropagateToChats;
 export const onChatUpdateManageUserDetails = triggersChat.onChatUpdateManageUserDetails;
-export const onCompanyUpdatePropagateToChats = triggersChat.onCompanyUpdatePropagateToChats;
+// export const onCompanyUpdatePropagateToChats = triggersChat.onCompanyUpdatePropagateToChats; // DEAKTIVIERT: Companies Collection Trigger
 
 // Other HTTP and Triggers
 export const backfillChatUserDetails = httpMigrations.backfillChatUserDetails;

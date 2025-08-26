@@ -168,6 +168,7 @@ export const createUserProfile = onDocumentCreated("users/{userId}", async (even
 
 export const updateUserProfile = onDocumentUpdated("users/{userId}", async (event) => {
   const userId = event.params.userId;
+  const snapshotBefore = event.data?.before;
   const snapshotAfter = event.data?.after;
   if (!snapshotAfter) {
     loggerV2.warn(`[updateUserProfile] Kein Daten-Snapshot nach Update für User ${userId}. Abbruch.`);
@@ -175,8 +176,37 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
   }
   const db = getDb();
   const userData = snapshotAfter.data() as FirmaUserData;
+  const previousData = snapshotBefore?.data() as FirmaUserData;
+  
   if (typeof userData !== "object" || userData === null) {
     loggerV2.warn(`[updateUserProfile] Userdaten für ${userId} nach Update ungültig. Abbruch.`);
+    return null;
+  }
+
+  // CRITICAL: Verhindere Endlosschleife - Zeit-basierte Prevention
+  const currentTime = Date.now();
+  const lastUpdate = (userData as any)?.profileLastUpdatedAt?._seconds * 1000 || 0;
+  
+  // Wenn das letzte Update weniger als 10 Sekunden her ist, breche ab
+  if (currentTime - lastUpdate < 10000) {
+    loggerV2.info(`[updateUserProfile] ${userId}: Update zu kürzlich (${Math.round((currentTime - lastUpdate)/1000)}s), Trigger-Loop verhindert.`);
+    return null;
+  }
+
+  // Prüfe ob relevante User-Felder geändert wurden
+  const relevantFieldsChanged = (
+    previousData?.companyName !== userData?.companyName ||
+    previousData?.step2?.companyName !== userData?.step2?.companyName ||
+    previousData?.selectedCategory !== userData?.selectedCategory ||
+    previousData?.selectedSubcategory !== userData?.selectedSubcategory ||
+    previousData?.hourlyRate !== userData?.hourlyRate ||
+    previousData?.lat !== userData?.lat ||
+    previousData?.lng !== userData?.lng ||
+    previousData?.radiusKm !== userData?.radiusKm
+  );
+
+  if (!relevantFieldsChanged) {
+    loggerV2.info(`[updateUserProfile] ${userId}: Keine relevanten Felder geändert, Update übersprungen.`);
     return null;
   }
 
@@ -404,15 +434,40 @@ export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{u
   const userId = event.params.userId;
   loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);
   const db = getDb();
-  // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt,
-  // daher ist keine manuelle isEmulated-Prüfung mehr nötig.
-  const stripeKey = STRIPE_SECRET_KEY_TRIGGERS.value();
-  const localStripe = getStripeInstance(stripeKey);
+  
+  // ENDLOSSCHLEIFE PREVENTION: Prüfe ob das Update vom Trigger selbst kommt
+  const before = event.data?.before.data() as FirmaUserData;
   const after = event.data?.after.data() as FirmaUserData;
+  
   if (!after) {
     loggerV2.warn(`Keine Daten nach Update für ${userId}.`);
     return null;
   }
+
+  // CRITICAL: Verhindere Trigger-Loop - wenn nur Stripe-Felder geändert wurden, breche ab
+  const onlyStripeFieldsChanged = (
+    before?.stripeAccountId !== after?.stripeAccountId ||
+    (before as any)?.stripeDetailsSubmitted !== (after as any)?.stripeDetailsSubmitted ||
+    (before as any)?.stripeAccountCreationDate !== (after as any)?.stripeAccountCreationDate ||
+    (before as any)?.stripeAccountError !== (after as any)?.stripeAccountError ||
+    (before as any)?.stripeRepresentativePersonId !== (after as any)?.stripeRepresentativePersonId
+  ) && (
+    // Keine relevanten Benutzerdaten wurden geändert
+    before?.email === after?.email &&
+    before?.step1?.email === after?.step1?.email &&
+    before?.step2?.companyName === after?.step2?.companyName &&
+    before?.step4?.iban === after?.step4?.iban
+  );
+
+  if (onlyStripeFieldsChanged) {
+    loggerV2.info(`${userId}: Nur Stripe-Felder geändert, Trigger-Loop verhindert.`);
+    return null;
+  }
+
+  // Die Logik für den Emulator-Modus wird von defineSecret gehandhabt,
+  // daher ist keine manuelle isEmulated-Prüfung mehr nötig.
+  const stripeKey = STRIPE_SECRET_KEY_TRIGGERS.value();
+  const localStripe = getStripeInstance(stripeKey);
 
   if (after.stripeAccountId && after.common?.createdByCallable === "true") {
     loggerV2.info(`${userId} hat bereits Stripe-Konto via Callable erstellt. Fallback-Trigger bricht ab.`);
