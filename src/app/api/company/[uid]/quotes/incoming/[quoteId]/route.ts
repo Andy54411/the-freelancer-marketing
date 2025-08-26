@@ -20,7 +20,6 @@ export async function GET(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (error) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -50,12 +49,16 @@ export async function GET(
         if (userDoc.exists) {
           const userData = userDoc.data();
           if (userData) {
+            // Check if this user is a company by checking companies collection
+            const companyDoc = await db.collection('companies').doc(userDoc.id).get();
+            const isCompany = companyDoc.exists;
+
             customerInfo = {
               name:
                 userData.companyName ||
                 userData.firstName + ' ' + userData.lastName ||
                 'Unbekannter Kunde',
-              type: userData.user_type === 'firma' ? 'company' : 'user',
+              type: isCompany ? 'company' : 'user',
               email: userData.email,
               phone: userData.phone,
               avatar: userData.avatar || null,
@@ -64,11 +67,8 @@ export async function GET(
           }
         } else {
           // Customer not found in users collection
-
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     }
 
     // Find the company's proposal if it exists
@@ -164,7 +164,6 @@ export async function GET(
       },
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -188,7 +187,6 @@ export async function PATCH(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (error) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -267,9 +265,7 @@ export async function PATCH(
             }
           );
         }
-
       } catch (notificationError) {
-
         // Angebot trotzdem erfolgreich, auch wenn Notification fehlschlägt
       }
 
@@ -290,7 +286,6 @@ export async function PATCH(
       });
     }
   } catch (error) {
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

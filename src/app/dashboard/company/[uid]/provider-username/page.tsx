@@ -128,7 +128,9 @@ const UserProfilePage = () => {
         setProfile({ ...userData, uid: userDoc.id }); // UID hinzufügen
 
         // Beispiel: Lade Dienstleistungen (Gigs) des Nutzers, falls es ein Anbieter ist
-        if (userData.user_type === 'firma') {
+        // Check if user is a company by checking companies collection
+        const companyDoc = await getDoc(doc(db, 'companies', userDoc.id));
+        if (companyDoc.exists()) {
           const servicesRef = collection(db, 'services'); // Oder wie deine Sammlung heißt
           const servicesQuery = query(
             servicesRef,
@@ -152,7 +154,6 @@ const UserProfilePage = () => {
         const reviewsSnapshot = await getDocs(reviewsQuery);
         setReviews(reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Review));
       } catch (err) {
-
         setError('Fehler beim Laden des Profils.');
       } finally {
         setLoading(false);
@@ -212,7 +213,7 @@ const UserProfilePage = () => {
                   {profile.displayName || profile.username}
                   {profile.isOnline && <span className="w-3 h-3 bg-green-500 rounded-full"></span>}
                 </h1>
-                {profile.user_type === 'firma' && profile.companyName && (
+                {profile.companyName && (
                   <p className="text-md text-gray-600">{profile.companyName}</p>
                 )}
 

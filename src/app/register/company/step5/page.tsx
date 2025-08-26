@@ -726,21 +726,19 @@ export default function Step5CompanyPage() {
       // NEUE 2-COLLECTION ARCHITEKTUR
       // ========================================
 
-      // USERS COLLECTION: Nur Authentifizierung + Basis-Profildaten (KEINE FIRMENDATEN!)
-      const userBasicData: Record<string, unknown> = {
-        uid: currentAuthUserUID,
-        email: email!,
-        user_type: 'firma',
-        firstName: firstName?.trim() || '',
-        lastName: lastName?.trim() || '',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
+      // KEIN USERS DOCUMENT ÜBERSCHREIBEN!
+      // Companies gehören AUSSCHLIESSLICH in die companies Collection
+      // Das users Document wurde bereits vom Firebase Auth Trigger erstellt
 
       // COMPANIES COLLECTION: Alle Firmendaten + Stripe + Onboarding
       const companyData: Record<string, unknown> = {
         uid: currentAuthUserUID,
         owner_uid: currentAuthUserUID, // Referenz zum User
+
+        // Owner Daten (für User-Referenz)
+        ownerEmail: email!,
+        ownerFirstName: firstName?.trim() || '',
+        ownerLastName: lastName?.trim() || '',
 
         // Persönliche Daten (für Stripe)
         phoneNumber: normalizedPersonalPhoneNumber || null,
@@ -853,18 +851,22 @@ export default function Step5CompanyPage() {
         }
       });
 
-      console.log('📝 Creating documents with 2-collection architecture...', {
+      console.log('📝 Creating companies document only...', {
         uid: currentAuthUserUID,
-        user_type: userBasicData.user_type,
-        email: userBasicData.email,
+        email: email!,
         companyName: companyData.companyName,
       });
 
-      // Erstelle users document (Basis-Authentifizierung)
-      await setDoc(doc(db, 'users', currentAuthUserUID), userBasicData, { merge: true });
-      console.log('✅ Users document created successfully');
+      // WICHTIG 1: User-Type für Company korrekt setzen
+      await updateDoc(doc(db, 'users', currentAuthUserUID), {
+        user_type: 'firma',
+        firstName: firstName?.trim() || '',
+        lastName: lastName?.trim() || '',
+        updatedAt: serverTimestamp(),
+      });
+      console.log('✅ Users document updated with company type');
 
-      // Erstelle companies document (Alle Firmendaten)
+      // WICHTIG 2: Companies document erstellen
       await setDoc(doc(db, 'companies', currentAuthUserUID), companyData, { merge: true });
       console.log('✅ Companies document created successfully');
 

@@ -215,7 +215,6 @@ export async function POST(request: Request) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-
       return NextResponse.json(
         { error: 'Die Server-Konfiguration ist unvollständig. Der API-Schlüssel fehlt.' },
         { status: 500 }
@@ -600,14 +599,13 @@ export async function POST(request: Request) {
         break;
 
       case 'findProviders':
-        // Echte Dienstleister aus Firebase users collection laden
+        // Query companies collection directly - no legacy support needed
         try {
           const { title, category, services } = data;
 
-          // Query Firebase users collection für Firmen/Dienstleister
-          const usersRef = db.collection('users');
-          let query = usersRef
-            .where('user_type', '==', 'firma')
+          // Query Firebase companies collection für Firmen/Dienstleister
+          const companiesRef = db.collection('companies');
+          let query = companiesRef
             .where('onboardingCompleted', '==', true)
             .where('profileStatus', 'in', ['active', 'pending_review']);
 
@@ -649,23 +647,18 @@ export async function POST(request: Request) {
             query = query.where('industry', 'in', searchCategories);
           }
 
-          const usersSnapshot = await query.limit(20).get();
+          // Execute query
+          const companiesSnapshot = await query.limit(20).get();
 
           // Prüfe ob Ergebnisse gefunden wurden, sonst verwende Fallback
-          let finalSnapshot = usersSnapshot;
-
-          if (usersSnapshot.empty) {
-
+          if (companiesSnapshot.docs.length === 0) {
             // Fallback: Suche ohne Kategorie-Filter
-            const fallbackQuery = usersRef
-              .where('user_type', '==', 'firma')
+            const fallbackCompanies = await companiesRef
               .where('onboardingCompleted', '==', true)
-              .limit(10);
+              .limit(10)
+              .get();
 
-            const fallbackSnapshot = await fallbackQuery.get();
-
-            if (fallbackSnapshot.empty) {
-
+            if (fallbackCompanies.docs.length === 0) {
               return NextResponse.json({
                 success: true,
                 data: [],
@@ -674,12 +667,12 @@ export async function POST(request: Request) {
               });
             }
 
-            finalSnapshot = fallbackSnapshot;
+            companiesSnapshot.docs.push(...fallbackCompanies.docs);
           }
 
           // Konvertiere Firebase-Daten zu Dienstleister-Format mit echten Bewertungen und Projekten
           const providers = await Promise.all(
-            finalSnapshot.docs.map(async doc => {
+            companiesSnapshot.docs.map(async doc => {
               const userData = doc.data();
 
               try {
@@ -755,7 +748,6 @@ export async function POST(request: Request) {
                     null,
                 };
               } catch (error) {
-
                 // Fallback zu Basis-Daten bei Fehlern
                 return {
                   id: doc.id,
@@ -813,61 +805,65 @@ export async function POST(request: Request) {
             message: `${providers.length} passende Dienstleister gefunden`,
           });
         } catch (error) {
-
+          console.error('Error finding providers:', error);
           return NextResponse.json(
             { error: 'Fehler beim Abrufen der Dienstleister aus der Datenbank' },
             { status: 500 }
           );
         }
+        break;
 
       default:
-        return NextResponse.json({ error: 'Unbekannte Aktion' }, { status: 400 });
+        // Standard KI-Verarbeitung für andere Actions
+        try {
+          const result = await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemContext}\n\n${prompt}` }],
+              },
+            ],
+            generationConfig,
+            safetySettings,
+          });
+
+          const response = result.response;
+          const text = response.text();
+
+          // Versuche JSON zu parsen, falls es sich um strukturierte Daten handelt
+          let parsedResponse;
+          try {
+            // Extrahiere JSON aus Code-Blöcken falls vorhanden
+            const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            const jsonText = jsonMatch ? jsonMatch[1] : text;
+
+            parsedResponse = JSON.parse(jsonText);
+          } catch {
+            // Falls kein JSON parsbar ist, versuche direktes Parsen
+            try {
+              parsedResponse = JSON.parse(text);
+            } catch {
+              parsedResponse = { text: text };
+            }
+          }
+
+          return NextResponse.json({
+            success: true,
+            data: parsedResponse,
+            action: action,
+          });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+
+          return NextResponse.json(
+            { error: 'Ein interner Serverfehler ist aufgetreten.' },
+            { status: 500 }
+          );
+        }
+        break;
     }
-
-    // Standard KI-Verarbeitung für andere Actions
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `${systemContext}\n\n${prompt}` }],
-        },
-      ],
-      generationConfig,
-      safetySettings,
-    });
-
-    const response = result.response;
-    const text = response.text();
-
-    // Versuche JSON zu parsen, falls es sich um strukturierte Daten handelt
-    let parsedResponse;
-    try {
-      // Extrahiere JSON aus Code-Blöcken falls vorhanden
-      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      const jsonText = jsonMatch ? jsonMatch[1] : text;
-
-      parsedResponse = JSON.parse(jsonText);
-    } catch {
-      // Falls kein JSON parsbar ist, versuche direktes Parsen
-      try {
-        parsedResponse = JSON.parse(text);
-      } catch {
-        parsedResponse = { text: text };
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: parsedResponse,
-      action: action,
-    });
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
-
-    return NextResponse.json(
-      { error: 'Ein interner Serverfehler ist aufgetreten.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Ein unbekannter Fehler ist aufgetreten.' }, { status: 500 });
   }
 }

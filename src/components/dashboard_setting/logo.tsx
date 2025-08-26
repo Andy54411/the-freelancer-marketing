@@ -54,14 +54,12 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
         if (userDocSnap.exists()) {
           const userData = userDocSnap.data();
 
-          // Für Firmen: Lade projectImages aus companies collection
-          if (userData.user_type === 'firma') {
-            const companyDocRef = doc(db, 'companies', uid);
-            const companyDocSnap = await getDoc(companyDocRef);
-            if (companyDocSnap.exists()) {
-              const companyData = companyDocSnap.data();
-              setProjectImages(companyData.projectImages || []);
-            }
+          // Check for company data in companies collection
+          const companyDocRef = doc(db, 'companies', uid);
+          const companyDocSnap = await getDoc(companyDocRef);
+          if (companyDocSnap.exists()) {
+            const companyData = companyDocSnap.data();
+            setProjectImages(companyData.projectImages || []);
           } else {
             // Für Privatnutzer: Lade aus users collection
             setProjectImages(userData.projectImages || []);

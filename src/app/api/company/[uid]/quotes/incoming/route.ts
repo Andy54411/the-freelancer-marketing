@@ -8,7 +8,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -17,15 +16,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-
     } catch (error) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if the user is authorized to access this company's data
     if (decodedToken.uid !== uid) {
-
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -33,7 +29,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const companyDoc = await db.collection('users').doc(uid).get();
     if (!companyDoc.exists) {
-
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
@@ -42,7 +37,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Get company's service subcategory to filter relevant projects
     const companyUserDoc = await db.collection('users').doc(uid).get();
     if (!companyUserDoc.exists) {
-
       return NextResponse.json({ error: 'Company user data not found' }, { status: 404 });
     }
 
@@ -51,7 +45,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       companyUserData?.onboarding?.selectedSubcategory || companyUserData?.selectedSubcategory;
 
     if (!selectedSubcategory) {
-
       return NextResponse.json({
         success: true,
         quotes: [],
@@ -70,12 +63,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .collection('project_requests')
         .where('status', 'in', ['open', 'responded', 'accepted', 'active', 'payment_pending'])
         .get();
-
     } catch (error) {
-
       // Ultra-simple fallback - get all project_requests
       projectRequestsSnapshot = await db.collection('project_requests').get();
-
     }
 
     const quotes: any[] = [];
@@ -98,9 +88,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         );
         if (isDirectlySelected) {
           isRelevantForCompany = true;
-
         } else {
-
         }
       }
       // Case 2: Public request - no specific companies selected, match by subcategory
@@ -110,15 +98,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         if (subcategoryMatches) {
           isRelevantForCompany = true;
-
         } else {
-
         }
       }
 
       // Skip if not relevant for this company
       if (!isRelevantForCompany) {
-
         continue;
       }
 
@@ -133,12 +118,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           if (userDoc.exists) {
             const userData = userDoc.data();
             if (userData) {
+              // Check if this user is a company by checking companies collection
+              const companyDoc = await db.collection('companies').doc(userDoc.id).get();
+              const isCompany = companyDoc.exists;
+
               customerInfo = {
                 name:
                   userData.companyName ||
                   userData.firstName + ' ' + userData.lastName ||
                   'Unbekannter Kunde',
-                type: userData.user_type === 'firma' ? 'company' : 'user',
+                type: isCompany ? 'company' : 'user',
                 email: userData.email,
                 phone: userData.phone,
                 avatar: userData.avatar || null,
@@ -147,11 +136,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             }
           } else {
             // Customer not found in users collection
-
           }
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
 
       // Check if this company has already submitted a proposal
@@ -235,7 +221,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       quotes,
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

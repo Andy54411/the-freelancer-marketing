@@ -38,7 +38,6 @@ export default function UserSettingsDashboardPage() {
         setError('Benutzerdaten nicht gefunden.');
       }
     } catch (err: any) {
-
       setError(`Fehler beim Laden der Daten: ${err.message || 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);
@@ -96,11 +95,12 @@ export default function UserSettingsDashboardPage() {
       <main className="flex-1 overflow-y-auto pt-[var(--global-header-height)]">
         {' '}
         {/* Hauptinhaltsbereich, der scrollbar ist, mit Padding */}
-        {userData?.user_type === 'firma' ? (
+        {/* Check if user has company data by checking for company-specific fields */}
+        {userData?.companyName || userData?.selectedCategory ? (
           <SettingsComponent userData={userData} onDataSaved={handleDataSaved} />
-        ) : userData?.user_type === 'kunde' ? (
+        ) : (
           <UserSettingsPage userData={userData} onDataSaved={handleDataSaved} />
-        ) : null}
+        )}
       </main>
     </div>
   );

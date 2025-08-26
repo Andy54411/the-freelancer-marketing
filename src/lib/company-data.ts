@@ -52,12 +52,12 @@ export async function getCompanyData(id: string): Promise<CompanyData | null> {
 /**
  * Ruft die IDs aller Firmen-Konten ab.
  * Diese Funktion wird für `generateStaticParams` verwendet, um Seiten zur Build-Zeit vorab zu generieren.
- * Ein Firmen-Konto wird durch `user_type === 'firma'` im 'users'-Dokument identifiziert.
+ * Ein Firmen-Konto wird durch die Existenz in der 'companies'-Collection identifiziert.
  * @returns Ein Promise, das ein Array von Objekten mit der Firmen-ID auflöst.
  */
 export async function getAllCompanyIds(): Promise<{ id: string }[]> {
-  const usersRef = db.collection('users');
-  const snapshot = await usersRef.where('user_type', '==', 'firma').get();
+  const companiesRef = db.collection('companies');
+  const snapshot = await companiesRef.get();
 
   if (snapshot.empty) {
     return [];

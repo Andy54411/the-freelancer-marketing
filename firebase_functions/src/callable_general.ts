@@ -196,11 +196,12 @@ export const createTemporaryJobDraft = onCall(
       }
 
       const anbieterData = anbieterUserDoc.data();
-      if (anbieterData?.user_type !== 'firma') {
+      
+      // Check if provider has company data by checking companies collection
+      const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
+      if (!anbieterCompanyDoc.exists) {
         throw new HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
       }
-
-      const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
 
       // Priorität: companies collection für Unternehmensdaten, users für Auth-Daten
       const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : anbieterData;

@@ -131,14 +131,15 @@ export async function getChatParticipantDetails(db: Firestore, userId: string): 
     }
     const userData = userDoc.data()!;
 
-    if (userData.user_type === 'firma') {
-      const companyDoc = await db.collection("companies").doc(userId).get();
-      const companyData = companyDoc.exists ? companyDoc.data() : null;
+    // Check if user is a company by checking companies collection directly
+    const companyDoc = await db.collection("companies").doc(userId).get();
+    if (companyDoc.exists) {
+      const companyData = companyDoc.data()!;
       // For companies, the name and avatar come from the 'companies' document.
       return {
         id: userId,
-        name: companyData?.companyName || getUserDisplayName(userData, UNKNOWN_PROVIDER_NAME),
-        avatarUrl: companyData?.profilePictureURL || null,
+        name: companyData.companyName || getUserDisplayName(userData, UNKNOWN_PROVIDER_NAME),
+        avatarUrl: companyData.profilePictureURL || null,
       };
     }
     // For regular users, use their personal details.

@@ -61,8 +61,11 @@ export const onUserUpdatePropagateToChats = onDocumentUpdated("users/{userId}", 
         return null;
     }
 
-    // If the user is a company, their chat details are managed by onCompanyUpdatePropagateToChats.
-    if (afterData.user_type === 'firma') {
+    const db = getDb();
+    
+    // If the user is a company (check companies collection), their chat details are managed by onCompanyUpdatePropagateToChats.
+    const companyDoc = await db.collection("companies").doc(userId).get();
+    if (companyDoc.exists) {
         loggerV2.info(`[onUserUpdatePropagateToChats] User ${userId} is a company. Profile updates are handled by the company trigger. Exiting.`);
         return null;
     }
@@ -81,7 +84,6 @@ export const onUserUpdatePropagateToChats = onDocumentUpdated("users/{userId}", 
 
     loggerV2.info(`[onUserUpdatePropagateToChats] User ${userId} updated. Name: '${oldName}' -> '${newName}', Avatar: '${oldAvatar}' -> '${newAvatar}'. Propagating changes to chats.`);
 
-    const db = getDb();
     const chatsRef = db.collection("chats");
     const querySnapshot = await chatsRef.where("users", "array-contains", userId).get();
 

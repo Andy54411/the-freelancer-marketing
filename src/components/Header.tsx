@@ -79,9 +79,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Debug: Log state changes
-  useEffect(() => {
-
-  }, [profilePictureURLFromStorage, currentUser?.photoURL, currentUser?.uid]);
+  useEffect(() => {}, [profilePictureURLFromStorage, currentUser?.photoURL, currentUser?.uid]);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false); // State für Such-Dropdown
   const [isInboxDropdownOpen, setIsInboxDropdownOpen] = useState(false); // NEU: State für Posteingang-Dropdown
@@ -143,9 +141,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                       otherUserData.photoURL ||
                       null;
                   }
-                } catch (error) {
-
-                }
+                } catch (error) {}
               }
 
               // Bestimme den korrekten Link zum Posteingang basierend auf dem Benutzertyp
@@ -170,7 +166,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           setRecentChats(chatsData);
         },
         error => {
-
           setUnreadMessagesCount(0);
           setRecentChats([]);
         }
@@ -182,13 +177,10 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
   // Effekt zur Überwachung des Authentifizierungsstatus
   useEffect(() => {
-
     const unsubscribe = auth.onAuthStateChanged(user => {
-
       setCurrentUser(user);
     });
     return () => {
-
       unsubscribe();
     };
   }, []);
@@ -207,7 +199,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       return;
     }
     try {
-
       // Versuche zuerst die Firestore-Benutzerdaten zu laden, um die direkte URL zu bekommen
       const userDocRef = doc(db, 'users', uid);
       const userDocSnap = await getDoc(userDocRef);
@@ -217,12 +208,10 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         // TEST: Versuche die URL direkt zu testen
         const testUrl = userData.profilePictureFirebaseUrl;
         if (testUrl) {
-
           // Versuche die Firebase Storage URL direkt ohne Encoding zu verwenden
           const directUrl = testUrl
             .replace(/user_uploads%2F/, 'user_uploads/')
             .replace(/%2F/g, '/');
-
         }
 
         const profilePictureUrl =
@@ -232,7 +221,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           // NEUE LOGIK: Verwende die Storage getDownloadURL Methode für bessere Kompatibilität
           if (userData.profilePictureURL && !userData.profilePictureURL.startsWith('http')) {
             try {
-
               const imageRef = storageRef(storage, userData.profilePictureURL);
               const downloadUrl = await getDownloadURL(imageRef);
 
@@ -240,9 +228,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
               setImageLoadError(false);
 
               return;
-            } catch (storageError) {
-
-            }
+            } catch (storageError) {}
           }
 
           // Fallback: Verwende die direkte URL
@@ -250,7 +236,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           if (!profilePictureUrl.startsWith('http')) {
             // Falls es nur ein Pfad ist, füge die Firebase Storage Base URL hinzu
             finalUrl = `https://storage.googleapis.com/tilvo-f142f.firebasestorage.app/${encodeURIComponent(profilePictureUrl)}`;
-
           }
           setProfilePictureURLFromStorage(finalUrl);
           setImageLoadError(false); // Reset error state when new image is set
@@ -258,7 +243,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
           return;
         }
       } else {
-
       }
 
       // Fallback: Suche im Storage (für Rückwärtskompatibilität)
@@ -288,7 +272,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
         }
       }
     } catch (error) {
-
       setProfilePictureURLFromStorage(null); // Fehlerfall
     }
   }, []);
@@ -299,7 +282,6 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       return;
     }
     try {
-
       const userDocRef = doc(db, 'users', uid);
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
@@ -307,23 +289,18 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
         setFirestoreUserData(userData);
       } else {
-
         setFirestoreUserData(null);
       }
     } catch (error) {
-
       setFirestoreUserData(null);
     }
   }, []);
 
   useEffect(() => {
-
     if (currentUser?.uid) {
-
       loadProfilePictureFromStorage(currentUser.uid);
       loadFirestoreUserData(currentUser.uid);
     } else {
-
       setProfilePictureURLFromStorage(null); // Benutzer abgemeldet oder UID nicht vorhanden
       setFirestoreUserData(null);
     }
@@ -408,9 +385,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
       setIsProfileDropdownOpen(false);
       setFirestoreUserData(null); // Firestore-Daten beim Logout zurücksetzen
       router.push('/'); // Weiterleitung zur Startseite nach dem Logout
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
   // NEU: Gefilterte Kategorien basierend auf dem Suchbegriff
   const filteredCategories = useMemo(() => {
@@ -627,11 +602,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         alt="Avatar"
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
                         onError={e => {
-
                           setImageLoadError(true);
                         }}
                         onLoad={() => {
-
                           setImageLoadError(false);
                         }}
                       />
@@ -667,9 +640,9 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         </p>
                       </div>
                       <hr />
-                      {/* --- DYNAMISCHE LINKS BASIEREND AUF USER_TYPE --- */}
-                      {firestoreUserData?.user_type === 'firma' ? (
-                        // Links für 'firma'
+                      {/* --- DYNAMISCHE LINKS BASIEREND AUF COMPANY STATUS --- */}
+                      {firestoreUserData && (firestoreUserData as any).companyName ? (
+                        // Links für Companies
                         <>
                           <button
                             onClick={() => {

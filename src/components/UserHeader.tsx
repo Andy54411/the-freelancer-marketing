@@ -211,8 +211,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
           console.error(`❌ Error loading from users collection:`, error);
         }
 
-        // 2. Für Firmen AUCH companies collection prüfen und Daten kombinieren
-        if (userData?.user_type === 'firma') {
+        // 2. Check companies collection for company data
+        if (userData) {
           try {
             const companyDocRef = doc(db, 'companies', uid);
             const companyDocSnap = await getDoc(companyDocRef);
@@ -230,12 +230,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
               profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
             } else {
-              console.log(`⚠️ No data found in companies collection for firma user: ${uid}`);
+              console.log(`⚠️ No data found in companies collection for user: ${uid}`);
             }
           } catch (error) {
             console.error(`❌ Error loading from companies collection:`, error);
           }
-        } else if (userData) {
+        }
+
+        if (userData && !profileUrl) {
           // Für Privatnutzer: Lade Profilbild aus users collection
           profileUrl = userData.profilePictureURL || userData.profilePictureFirebaseUrl || null;
         }
@@ -399,7 +401,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   // Load workspaces for Quick Note functionality
   useEffect(() => {
-    if (currentUser?.uid && firestoreUserData?.user_type === 'firma') {
+    if (currentUser?.uid && firestoreUserData?.companyName) {
       const loadWorkspaces = async () => {
         try {
           const workspaceData = await WorkspaceService.getWorkspaces(currentUser.uid);
@@ -638,18 +640,16 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             {/* Icons und Benutzerprofil */}
             <div className="flex items-center space-x-4">
               {/* Quick Note Dialog - nur für Company-Benutzer */}
-              {currentUser?.uid &&
-                firestoreUserData?.user_type === 'firma' &&
-                workspaces.length > 0 && (
-                  <QuickNoteDialog
-                    workspaces={workspaces}
-                    companyId={currentUser.uid}
-                    userId={currentUser.uid}
-                    onNoteAdded={() => {
-                      // Optional: Refresh workspaces after note is added
-                    }}
-                  />
-                )}
+              {currentUser?.uid && firestoreUserData?.companyName && workspaces.length > 0 && (
+                <QuickNoteDialog
+                  workspaces={workspaces}
+                  companyId={currentUser.uid}
+                  userId={currentUser.uid}
+                  onNoteAdded={() => {
+                    // Optional: Refresh workspaces after note is added
+                  }}
+                />
+              )}
 
               {/* NEU: Glocken-Icon mit Hover-Dropdown und Badge */}
               <div
@@ -873,9 +873,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                         </p>
                       </div>
                       <hr />
-                      {/* --- DYNAMISCHE LINKS BASIEREND AUF USER_TYPE --- */}
-                      {firestoreUserData?.user_type === 'firma' ? (
-                        // Links für 'firma'
+                      {/* --- DYNAMISCHE LINKS BASIEREND AUF COMPANY STATUS --- */}
+                      {firestoreUserData?.companyName ? (
+                        // Links für Companies
                         <>
                           <Link
                             href={`/dashboard/company/${currentUser.uid}`}
@@ -1015,4 +1015,5 @@ interface FirestoreUserData {
   user_type?: 'kunde' | 'firma' | 'admin';
   profilePictureURL?: string; // Firebase Storage URL
   profilePictureFirebaseUrl?: string; // Alternative field name
+  companyName?: string; // Company name for business accounts
 }

@@ -120,11 +120,9 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           if (userDocSnap.exists()) {
             setLoggedInUserProfile(userDocSnap.data() as UserProfileData);
           } else {
-
             setLoggedInUserProfile(null);
           }
         } catch (error) {
-
           setChatError('Fehler beim Laden des Benutzerprofils');
         } finally {
           setUserProfileLoading(false);
@@ -175,7 +173,6 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           setMessages(fetchedMessages);
         }
       } catch (error) {
-
         setChatError('Fehler beim Laden der Nachrichten');
       } finally {
         setChatLoading(false);
@@ -241,8 +238,8 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     let senderName: string = loggedInUserProfile.firstName || 'Unbekannt';
     let senderType: 'kunde' | 'anbieter' = 'kunde';
 
-    // Prüfung auf 'firma' als user_type
-    if (loggedInUserProfile.user_type === 'firma') {
+    // Check if user is a company by presence of company name
+    if (loggedInUserProfile.companyName) {
       senderType = 'anbieter';
       senderName = loggedInUserProfile.companyName || loggedInUserProfile.firstName || 'Anbieter';
     }
@@ -284,7 +281,6 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
       setNewMessageText(''); // Eingabefeld nach erfolgreichem Senden leeren
     } catch (error) {
-
       setChatError('Fehler beim Senden der Nachricht');
     } finally {
       setIsSendingMessage(false); // Sende-Vorgang beenden

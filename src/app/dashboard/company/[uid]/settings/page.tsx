@@ -29,12 +29,10 @@ export default function SettingsPage() {
           const userDocData = userDoc.data();
           setUserData(userDocData);
 
-          // Für Firmen: Lade auch Company-Daten
-          if (userDocData.user_type === 'firma') {
-            const companyDoc = await getDoc(doc(db, 'companies', uid));
-            if (companyDoc.exists()) {
-              setCompanyData(companyDoc.data());
-            }
+          // Check if user is a company by checking companies collection
+          const companyDoc = await getDoc(doc(db, 'companies', uid));
+          if (companyDoc.exists()) {
+            setCompanyData(companyDoc.data());
           }
         }
       } catch (error) {
@@ -79,12 +77,10 @@ export default function SettingsPage() {
           const userDocData = userDoc.data();
           setUserData(userDocData);
 
-          // Für Firmen: Lade auch Company-Daten neu
-          if (userDocData.user_type === 'firma') {
-            const companyDoc = await getDoc(doc(db, 'companies', uid));
-            if (companyDoc.exists()) {
-              setCompanyData(companyDoc.data());
-            }
+          // Check if user is a company by checking companies collection
+          const companyDoc = await getDoc(doc(db, 'companies', uid));
+          if (companyDoc.exists()) {
+            setCompanyData(companyDoc.data());
           }
         }
       } catch (error) {
@@ -94,7 +90,7 @@ export default function SettingsPage() {
   };
 
   // Kombiniere user und company Daten für Settings Component
-  const combinedData = userData?.user_type === 'firma' ? { ...userData, ...companyData } : userData;
+  const combinedData = companyData ? { ...userData, ...companyData } : userData;
 
   // DEBUG: Log combined data structure
   console.log('🔍 Settings Data Debug:', {

@@ -53,22 +53,14 @@ export class ProjectEmailNotificationService {
     details: Array<{ email: string; success: boolean; error?: string }>;
   }> {
     try {
-
-      // 1. Finde alle Unternehmen in der users Collection (user_type: 'firma') mit der entsprechenden Subcategory
-      const firmUsersQuery = await db
-        .collection('users')
-        .where('user_type', '==', 'firma')
-        .where('selectedSubcategory', '==', projectData.subcategory)
-        .get();
-
-      // 2. Finde alle Unternehmen in der users Collection mit der entsprechenden Subcategory
+      // 1. Finde alle Unternehmen in der companies Collection mit der entsprechenden Subcategory
       const companiesQuery = await db
-        .collection('users')
+        .collection('companies')
         .where('selectedSubcategory', '==', projectData.subcategory)
         .get();
 
-      if (firmUsersQuery.docs.length === 0 && companiesQuery.docs.length === 0) {
-
+      // 2. Only check companies collection - no legacy support needed
+      if (companiesQuery.docs.length === 0) {
         return {
           success: true,
           sentCount: 0,
@@ -85,28 +77,17 @@ export class ProjectEmailNotificationService {
         source: 'users' | 'companies';
       }> = [];
 
-      // Aus users Collection (user_type: 'firma')
-      firmUsersQuery.docs.forEach(doc => {
-        const data = doc.data();
-        if (data.email && data.companyName) {
-          companies.push({
-            email: data.email,
-            companyName: data.companyName,
-            id: doc.id,
-            source: 'users',
-          });
-        }
-      });
-
-      // Aus users Collection
+      // Aus companies Collection
       companiesQuery.docs.forEach(doc => {
         const data = doc.data();
-        if (data.email && data.companyName) {
+        const email = data.ownerEmail || data.email;
+        const companyName = data.companyName;
+        if (email && companyName) {
           companies.push({
-            email: data.email,
-            companyName: data.companyName,
+            email: email,
+            companyName: companyName,
             id: doc.id,
-            source: 'users',
+            source: 'companies',
           });
         }
       });
@@ -153,10 +134,8 @@ export class ProjectEmailNotificationService {
             const company = uniqueCompanies[i + index];
 
             if (result.success) {
-
               return { email: company.email, success: true };
             } else {
-
               return { email: company.email, success: false, error: result.error };
             }
           } catch (error) {
@@ -186,7 +165,6 @@ export class ProjectEmailNotificationService {
         details: results,
       };
     } catch (error) {
-
       return {
         success: false,
         sentCount: 0,

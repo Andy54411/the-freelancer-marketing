@@ -13,29 +13,24 @@ export interface CompanyListData {
  * Fetches a list of all company accounts from Firestore.
  * This is the server-side equivalent of the `/api/companies` route.
  */
-export async function getAllCompanies(): Promise<CompanyListData[]> {
-  const usersRef = db.collection('users');
-  const snapshot = await usersRef
-    .where('user_type', '==', 'firma')
-    .orderBy('createdAt', 'desc')
-    .get();
+export async function getCompaniesData(): Promise<CompanyListData[]> {
+  const companiesSnapshot = await db.collection('companies').get();
 
-  if (snapshot.empty) {
+  if (companiesSnapshot.empty) {
     return [];
   }
 
-  const companiesPromises = snapshot.docs.map(async userDoc => {
-    const userData = userDoc.data();
-    const createdAt = userData.createdAt as Timestamp;
-
+  return companiesSnapshot.docs.map(doc => {
+    const data = doc.data();
     return {
-      id: userDoc.id,
-      companyName: userData.companyName || 'Unbekanntes Unternehmen',
-      email: userData.email || 'Keine E-Mail',
-      createdAt: createdAt ? createdAt.toDate().toISOString() : new Date(0).toISOString(),
-      stripeAccountId: userData.stripeAccountId || null,
+      id: doc.id,
+      companyName: data.companyName || 'Unbenanntes Unternehmen',
+      email: data.ownerEmail || data.email || '',
+      createdAt:
+        data.createdAt instanceof Timestamp
+          ? data.createdAt.toDate().toISOString()
+          : new Date().toISOString(),
+      stripeAccountId: data.stripeAccountId || null,
     };
   });
-
-  return Promise.all(companiesPromises);
 }

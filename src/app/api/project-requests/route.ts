@@ -9,7 +9,6 @@ import { ProjectEmailNotificationService } from '@/lib/project-email-notificatio
  */
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
 
     // Support für AI Project Creation Format
@@ -28,7 +27,6 @@ export async function POST(request: NextRequest) {
       subcategory = projectData.category; // AI Format nutzt category als subcategory
 
       if (!projectData.title || !projectData.description || !projectData.category || !customerUid) {
-
         return NextResponse.json(
           { error: 'Titel, Beschreibung, Kategorie und Kunde sind erforderlich' },
           { status: 400 }
@@ -73,7 +71,6 @@ export async function POST(request: NextRequest) {
       subcategory = body.subcategory;
 
       if (!body.title || !body.description || !body.category || !customerUid) {
-
         return NextResponse.json(
           { error: 'Titel, Beschreibung, Kategorie und Kunde sind erforderlich' },
           { status: 400 }
@@ -138,22 +135,17 @@ export async function POST(request: NextRequest) {
 
             return { success: true, providerId };
           } catch (error) {
-
             return { success: false, providerId, error };
           }
         });
 
         await Promise.allSettled(directNotificationPromises);
-
-      } catch (directNotificationError) {
-
-      }
+      } catch (directNotificationError) {}
     }
 
     // 2. Standard E-Mail und Public Notifications (immer ausführen für öffentliche Subcategory)
     if (subcategory) {
       try {
-
         const emailService = ProjectEmailNotificationService.getInstance();
         const emailResult = await emailService.notifyCompaniesAboutNewProject({
           projectId: docRef.id,
@@ -179,32 +171,29 @@ export async function POST(request: NextRequest) {
         });
 
         if (emailResult.failedCount > 0) {
-
         }
 
         // 3. ÖFFENTLICHE FIRESTORE-NOTIFICATIONS: Erstelle Notifications für relevante Unternehmen (zusätzlich zu direkten)
 
         try {
-          // Finde alle Unternehmen mit der entsprechenden Subcategory
-          const firmUsersQuery = await db
-            .collection('users')
-            .where('user_type', '==', 'firma')
+          // Query companies collection directly - no legacy support needed
+          const companiesQuery = await db
+            .collection('companies')
             .where('subcategories', 'array-contains', subcategory)
             .get();
 
-          const publicNotificationPromises = firmUsersQuery.docs.map(async firmDoc => {
+          const publicNotificationPromises = companiesQuery.docs.map(async companyDoc => {
             try {
-              const firmData = firmDoc.data();
+              const companyData = companyDoc.data();
 
               // Skip falls dieses Unternehmen bereits eine direkte Notification erhalten hat
-              if (selectedProviders.length > 0 && selectedProviders.includes(firmDoc.id)) {
-
-                return { success: true, companyId: firmDoc.id, skipped: true };
+              if (selectedProviders.length > 0 && selectedProviders.includes(companyDoc.id)) {
+                return { success: true, companyId: companyDoc.id, skipped: true };
               }
 
               // Erstelle Firestore-Notification für jedes relevante Unternehmen
               await db.collection('notifications').add({
-                userId: firmDoc.id,
+                userId: companyDoc.id,
                 type: 'new_project_available',
                 title: 'Neue Projektanfrage verfügbar',
                 message: `Neues Projekt in der Kategorie "${subcategory}": ${projectRequestData.title}`,
@@ -218,10 +207,10 @@ export async function POST(request: NextRequest) {
                 priority: 'medium',
               });
 
-              return { success: true, companyId: firmDoc.id };
+              return { success: true, companyId: companyDoc.id };
             } catch (error) {
-
-              return { success: false, companyId: firmDoc.id, error };
+              console.error('Error creating notification for company:', companyDoc.id, error);
+              return { success: false, companyId: companyDoc.id, error };
             }
           });
 
@@ -229,12 +218,8 @@ export async function POST(request: NextRequest) {
           const successfulPublicNotifications = publicNotificationResults.filter(
             result => result.status === 'fulfilled' && result.value.success && !result.value.skipped
           ).length;
-
-        } catch (notificationError) {
-
-        }
+        } catch (notificationError) {}
       } catch (emailError) {
-
         // Projekt wurde trotzdem erfolgreich erstellt, auch wenn E-Mails fehlschlagen
       }
     }
@@ -245,7 +230,6 @@ export async function POST(request: NextRequest) {
       message: 'Projektanfrage erfolgreich erstellt',
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Erstellen der Projektanfrage' },
       { status: 500 }
@@ -259,7 +243,6 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-
     const { searchParams } = new URL(request.url);
     const customerUid = searchParams.get('customerUid');
     const status = searchParams.get('status');
@@ -301,7 +284,6 @@ export async function GET(request: NextRequest) {
       total: snapshot.size,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Abrufen der Projektanfragen' }, { status: 500 });
   }
 }

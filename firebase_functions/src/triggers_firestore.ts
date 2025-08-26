@@ -109,7 +109,7 @@ export const createUserProfile = onDocumentCreated("users/{userId}", async (even
       displayName: userData.displayName || null,
       photoURL: userData.photoURL || null,
       createdAt: userData.createdAt || FieldValue.serverTimestamp(),
-      user_type: userData.user_type || 'firma',
+      user_type: userData.user_type || 'kunde', // FIXED: Standard ist 'kunde', nicht 'firma'
       // Auth Flags
       needsOnboarding: userData.needsOnboarding !== false,
       hasOnboardingStarted: userData.hasOnboardingStarted || false,

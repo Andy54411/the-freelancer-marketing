@@ -335,14 +335,15 @@ export const createStripeAccountIfComplete = onCall(
     }
     loggerV2.info('[DEBUG] Punkt 2: Nutzerdokument aus Firestore geladen OK.');
 
-    if (existingFirestoreUserData.user_type !== "firma") {
-      throw new HttpsError("failed-precondition", "Nur Nutzer vom Typ 'Firma' können Stripe-Konten erstellen.");
-    }
-    loggerV2.info('[DEBUG] Punkt 4: Nutzer ist Typ "Firma" OK.');
-
-    // Für Firmen: Prüfe und verwende companies collection
+    // Check if user has company data by checking companies collection
     const companyDocRef = db.collection("companies").doc(userId);
     const companyDocSnapshot = await companyDocRef.get();
+    if (!companyDocSnapshot.exists) {
+      throw new HttpsError("failed-precondition", "Nur Firmen können Stripe-Konten erstellen.");
+    }
+    loggerV2.info('[DEBUG] Punkt 4: Nutzer ist eine Firma OK.');
+
+    // Use companies collection for company data
     if (!companyDocSnapshot.exists) {
       throw new HttpsError("not-found", `Firmendokument ${userId} nicht gefunden.`);
     }
@@ -846,12 +847,13 @@ export const updateStripeCompanyDetails = onCall(
       const currentFirestoreUserData = userDoc.data() as any;
       if (!currentFirestoreUserData) throw new HttpsError("internal", "Nutzerdaten nicht lesbar.");
       
-      if (currentFirestoreUserData.user_type !== "firma") {
+      // Check if user has company data by checking companies collection  
+      const companyDoc = await companyDocRef.get();
+      if (!companyDoc.exists) {
         throw new HttpsError("failed-precondition", "Nur Firmen können Stripe-Company-Details aktualisieren.");
       }
 
-      // Für Firmen: Lade Daten aus companies collection
-      const companyDoc = await companyDocRef.get();
+      // Use companies collection for company data
       if (!companyDoc.exists) throw new HttpsError("not-found", "Firmenprofil nicht gefunden.");
       const currentCompanyData = companyDoc.data() as any;
       if (!currentCompanyData) throw new HttpsError("internal", "Firmendaten nicht lesbar.");
@@ -1249,11 +1251,11 @@ export const getStripeAccountStatus = onCall(
     const userDoc = await db.collection('users').doc(userId).get();
     const userData = userDoc.data();
     
-    // Prüfe zuerst, ob es eine Firma ist, dann schaue in companies collection
+    // Check for stripe account in users collection first
     let accountId = userData?.stripeAccountId;
     
-    if (!accountId && userData?.user_type === "firma") {
-      // Für Firmen: Schaue in companies collection
+    if (!accountId) {
+      // Check companies collection for stripe account
       const companyDoc = await db.collection('companies').doc(userId).get();
       const companyData = companyDoc.data();
       accountId = companyData?.stripeAccountId;

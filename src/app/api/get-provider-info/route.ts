@@ -40,42 +40,38 @@ export async function POST(request: NextRequest) {
               stripeAccountId: providerData?.stripeAccountId,
               companyName: providerData?.companyName || providerData?.name,
               ownerUserId: providerData?.ownerUserId,
-              email: providerData?.email
+              email: providerData?.email,
             };
           }
         }
       }
     }
 
-    // Wenn firebaseUserId gegeben, hole Provider direkt aus users collection
+    // Wenn firebaseUserId gegeben, hole Provider aus companies collection oder users collection (legacy)
     if (!providerInfo && firebaseUserId) {
-      const userDoc = await db.collection('users').doc(firebaseUserId).get();
+      // FIXED: Check companies collection first
+      const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
 
-      if (userDoc.exists) {
-        const userData = userDoc.data();
-        if (userData && userData.user_type === 'firma') {
-          providerInfo = {
-            providerId: userDoc.id,
-            stripeAccountId: userData?.stripeAccountId,
-            companyName: userData?.companyName || userData?.name,
-            ownerUserId: userData?.uid,
-            email: userData?.email
-          };
-        }
+      if (companyDoc.exists) {
+        const companyData = companyDoc.data();
+        providerInfo = {
+          providerId: companyDoc.id,
+          stripeAccountId: companyData?.stripeAccountId,
+          companyName: companyData?.companyName || companyData?.name,
+          ownerUserId: companyData?.owner_uid || companyData?.uid,
+          email: companyData?.ownerEmail || companyData?.email,
+        };
+      } else {
+        // Only companies collection is used - no legacy fallback needed
       }
     }
 
     if (!providerInfo) {
-      return NextResponse.json(
-        { error: 'Provider nicht gefunden.' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Provider nicht gefunden.' }, { status: 404 });
     }
 
     return NextResponse.json(providerInfo);
-
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Laden der Provider-Informationen.' },
       { status: 500 }

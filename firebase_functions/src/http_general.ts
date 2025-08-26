@@ -1,8 +1,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import { logger as loggerV2 } from 'firebase-functions/v2';
 import { getDb, FieldValue, getUserDisplayName, getAuthInstance } from './helpers'; // FieldValue import is correct
-import { UNKNOWN_PROVIDER_NAME, UNNAMED_COMPANY } from './constants';
-import { geohashForLocation } from 'geofire-common';
+import { UNKNOWN_PROVIDER_NAME } from './constants';
 
 export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1", cors: true, timeoutSeconds: 540, memory: "1GiB", cpu: 1 }, async (req, res) => {
   // --- NEU: Authentifizierung und Autorisierung ---
@@ -28,64 +27,32 @@ export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1
   // --- ENDE: Authentifizierung und Autorisierung ---
   const db = getDb();
   try {
-    // Query only for 'firma' users to make it more efficient
-    const usersSnapshot = await db.collection("users").where("user_type", "==", "firma").get();
-    if (usersSnapshot.empty) {
-      res.status(200).send("No 'firma' users found to migrate.");
+    // Query companies collection directly - no legacy needed
+    const companiesSnapshot = await db.collection("companies").get();
+    
+    if (companiesSnapshot.empty) {
+      res.status(200).send("No companies found to migrate.");
       return;
     }
+    
     let migratedCount = 0;
     let batch = db.batch();
     let writeCountInBatch = 0;
 
-    // Helper to find the first non-empty, non-null value from a list of potential sources.
-    const pickFirst = <T>(...args: (T | null | undefined)[]) => args.find((v) => v) ?? null;
+    // Process companies from companies collection
+    for (const companyDoc of companiesSnapshot.docs) {
+      const companyData = companyDoc.data();
+      const companyId = companyDoc.id;
 
-    for (const userDoc of usersSnapshot.docs) {
-      const userData = userDoc.data();
-      const userId = userDoc.id;
-
-      // --- Robust data sourcing logic (from triggers_firestore.ts) ---
-      const lat = pickFirst(userData.lat);
-      const lng = pickFirst(userData.lng);
-      let geohash: string | null = null;
-      if (typeof lat === 'number' && typeof lng === 'number') {
-        geohash = geohashForLocation([lat, lng]);
-      }
-
-      const postalCode = pickFirst(userData.companyPostalCodeForBackend, userData.step2?.postalCode, userData.step2?.companyPostalCode);
-      const companyName = pickFirst(userData.companyName, userData.step2?.companyName) || UNNAMED_COMPANY;
-      const companyCity = pickFirst(userData.companyCityForBackend, userData.step2?.city);
-      const hourlyRate = pickFirst(userData.hourlyRate, userData.step3?.hourlyRate);
-      const profilePictureURL = pickFirst(userData.profilePictureFirebaseUrl, userData.step3?.profilePictureURL);
-      const industryMcc = pickFirst(userData.industryMcc, userData.step2?.industryMcc);
-      // --- End of robust data sourcing logic ---
-
-      const companyData = {
-        uid: userId,
-        user_type: "firma",
-        companyName: companyName,
-        postalCode: postalCode, // For display purposes
-        companyPostalCodeForBackend: postalCode, // For querying
-        companyCity: companyCity,
-        selectedCategory: userData.selectedCategory || null,
-        selectedSubcategory: userData.selectedSubcategory || null,
-        stripeAccountId: userData.stripeAccountId || null,
-        hourlyRate: Number(hourlyRate) || null,
-        lat: lat,
-        lng: lng,
-        radiusKm: Number(userData.radiusKm) || null,
-        geohash: geohash,
-        profilePictureURL: profilePictureURL,
-        industryMcc: industryMcc,
-        description: userData.description || "",
-        createdAt: userData.createdAt || FieldValue.serverTimestamp(), // Preserve original creation date
-        updatedAt: FieldValue.serverTimestamp(), // Always set a fresh update timestamp
-        profileLastUpdatedAt: userData.profileLastUpdatedAt || FieldValue.serverTimestamp(),
+      // Company data is already in correct format in companies collection
+      // Just ensure updatedAt timestamp is current
+      const updatedCompanyData = {
+        ...companyData,
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
-      const companyRef = db.collection("companies").doc(userId);
-      batch.set(companyRef, companyData, { merge: true });
+      const companyRef = db.collection("companies").doc(companyId);
+      batch.set(companyRef, updatedCompanyData, { merge: true });
       migratedCount++;
       writeCountInBatch++;
 
@@ -96,6 +63,7 @@ export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1
         writeCountInBatch = 0;
       }
     }
+    
     if (writeCountInBatch > 0) {
       await batch.commit();
       loggerV2.info(`Committed the final batch of ${writeCountInBatch} migrations.`);
@@ -147,15 +115,12 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
       return;
     }
 
-    // KORREKTUR: Die Abfrage wird effizienter und zuverlässiger gestaltet.
-    // Wir fügen `where("user_type", "==", "firma")` hinzu, um sicherzustellen, dass wir nur aktive
-    // Firmenkonten abrufen. Dies macht die zweite Abfrage der 'users'-Collection überflüssig,
-    // was die Funktion beschleunigt und die Komplexität reduziert.
+    // FIXED: Query companies collection without user_type filter (not needed in companies collection)
+    // Companies collection only contains companies, so no user_type filter needed
     let query: FirebaseFirestore.Query = db.collection("companies");
 
     // Wende die obligatorischen Filter an.
     query = query
-      .where("user_type", "==", "firma") // Stellt sicher, dass es sich um ein Firmenprofil handelt.
       .where("companyPostalCodeForBackend", "==", postalCode as string) // KORREKTUR: Das Feld 'postalCode' existiert nicht. Verwende das korrekte Feld 'companyPostalCodeForBackend'.
       .where("selectedSubcategory", "==", selectedSubcategory as string);
 

@@ -8,7 +8,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -17,15 +16,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-
     } catch (error) {
-
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if the user is authorized to access this company's data
     if (decodedToken.uid !== uid) {
-
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -33,7 +29,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const companyDoc = await db.collection('users').doc(uid).get();
     if (!companyDoc.exists) {
-
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
@@ -42,7 +37,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Also get user data to find email
     const userDoc = await db.collection('users').doc(uid).get();
     if (!userDoc.exists) {
-
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -50,7 +44,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const customerEmail = userData?.email;
 
     if (!customerEmail) {
-
       return NextResponse.json({ error: 'No email found for user' }, { status: 400 });
     }
 
@@ -90,35 +83,27 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       } | null = null;
 
       if (quoteData.providerId) {
-
-        // First try to get user data
-        const providerUserDoc = await db.collection('users').doc(quoteData.providerId).get();
-        if (providerUserDoc.exists) {
-          const providerUserData = providerUserDoc.data();
-          if (providerUserData && providerUserData.user_type === 'firma') {
-            // It's a company
-            providerInfo = {
-              name:
-                providerUserData.companyName ||
-                providerUserData.onboarding?.companyName ||
-                'Unbekanntes Unternehmen',
-              type: 'company',
-              email: providerUserData.email || '',
-              avatar: providerUserData.profilePictureURL || providerUserData.companyLogo || null,
-              uid: quoteData.providerId,
-            };
-          } else if (providerUserData) {
-            // It's an individual
-            providerInfo = {
-              name:
-                `${providerUserData.firstName || ''} ${providerUserData.lastName || ''}`.trim() ||
-                'Unbekannter Anbieter',
-              type: 'user',
-              email: providerUserData.email || '',
-              avatar: providerUserData.photoURL || providerUserData.profilePictureURL || null,
-              uid: quoteData.providerId,
-            };
-          }
+        // FIXED: First try companies collection, then users as fallback
+        const companyDoc = await db.collection('companies').doc(quoteData.providerId).get();
+        if (companyDoc.exists) {
+          const companyData = companyDoc.data();
+          // It's a company from companies collection
+          providerInfo = {
+            name: companyData?.companyName || 'Unbekanntes Unternehmen',
+            type: 'company',
+            email: companyData?.ownerEmail || companyData?.email || '',
+            avatar: companyData?.profilePictureURL || companyData?.companyLogo || null,
+            uid: quoteData.providerId,
+          };
+        } else {
+          // No company found - provider no longer exists
+          providerInfo = {
+            name: 'Unbekannter Anbieter',
+            type: 'company',
+            email: '',
+            avatar: null,
+            uid: quoteData.providerId,
+          };
         }
       }
 
@@ -154,7 +139,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       quotes,
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

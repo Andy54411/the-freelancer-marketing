@@ -353,12 +353,12 @@ export async function migrateLegacyCompanies(): Promise<{
   let totalCount = 0;
 
   try {
-    // Get all existing companies (user_type: "firma")
-    const companiesQuery = query(collection(db, 'users'), where('user_type', '==', 'firma'));
+    // Only use companies collection - no legacy migration needed
+    const companiesSnapshot = await getDocs(collection(db, 'companies'));
 
-    const companiesSnapshot = await getDocs(companiesQuery);
     totalCount = companiesSnapshot.docs.length;
 
+    // Process companies from companies collection
     for (const companyDoc of companiesSnapshot.docs) {
       try {
         const companyData = companyDoc.data() as ExistingCompanyUser;
