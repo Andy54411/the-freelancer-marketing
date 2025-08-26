@@ -12,6 +12,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [userData, setUserData] = useState<any | null>(null);
+  const [companyData, setCompanyData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,12 +23,22 @@ export default function SettingsPage() {
       }
 
       try {
+        // Lade Auth-Daten aus users collection
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (userDoc.exists()) {
-          setUserData(userDoc.data());
+          const userDocData = userDoc.data();
+          setUserData(userDocData);
+
+          // Für Firmen: Lade auch Company-Daten
+          if (userDocData.user_type === 'firma') {
+            const companyDoc = await getDoc(doc(db, 'companies', uid));
+            if (companyDoc.exists()) {
+              setCompanyData(companyDoc.data());
+            }
+          }
         }
       } catch (error) {
-
+        console.error('Error loading user/company data:', error);
       } finally {
         setLoading(false);
       }
@@ -59,17 +70,39 @@ export default function SettingsPage() {
     );
   }
 
-  const handleDataSaved = () => {
-
+  const handleDataSaved = async () => {
     // Benutzerdaten neu laden nach dem Speichern
     if (uid) {
-      getDoc(doc(db, 'users', uid)).then(userDoc => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', uid));
         if (userDoc.exists()) {
-          setUserData(userDoc.data());
+          const userDocData = userDoc.data();
+          setUserData(userDocData);
+
+          // Für Firmen: Lade auch Company-Daten neu
+          if (userDocData.user_type === 'firma') {
+            const companyDoc = await getDoc(doc(db, 'companies', uid));
+            if (companyDoc.exists()) {
+              setCompanyData(companyDoc.data());
+            }
+          }
         }
-      });
+      } catch (error) {
+        console.error('Error reloading data:', error);
+      }
     }
   };
 
-  return <SettingsComponent userData={userData} onDataSaved={handleDataSaved} />;
+  // Kombiniere user und company Daten für Settings Component
+  const combinedData = userData?.user_type === 'firma' ? { ...userData, ...companyData } : userData;
+
+  // DEBUG: Log combined data structure
+  console.log('🔍 Settings Data Debug:', {
+    userData: userData,
+    companyData: companyData,
+    combinedData: combinedData,
+    userType: userData?.user_type,
+  });
+
+  return <SettingsComponent userData={combinedData} onDataSaved={handleDataSaved} />;
 }

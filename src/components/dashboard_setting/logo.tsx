@@ -25,11 +25,7 @@ export interface LogoFormProps {
 }
 
 const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
-  // DEBUGGING: console.log für initiale fileUrl
-
-  const [fileUrl, setFileUrl] = useState<string | null>(formData?.step3?.profilePictureURL || null);
-  // DEBUGGING: console.log für initialen projectImages (kann leer sein)
-
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [projectImages, setProjectImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<number>(0);
@@ -40,16 +36,39 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
   const user = auth.currentUser;
   const uid = user?.uid || '';
 
+  // Update fileUrl when formData changes
+  useEffect(() => {
+    const profileUrl = formData?.step3?.profilePictureURL || null;
+    setFileUrl(profileUrl);
+    console.log('🖼️ Logo Form - Profile URL updated:', profileUrl);
+  }, [formData?.step3?.profilePictureURL]);
+
   useEffect(() => {
     if (!uid) return;
     const fetchProjectImagesFromFirestore = async () => {
-      const userDocRef = doc(db, 'users', uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        // DEBUGGING: console.log für projectImages aus Firestore
+      try {
+        // Prüfe zuerst user_type aus users collection
+        const userDocRef = doc(db, 'users', uid);
+        const userDocSnap = await getDoc(userDocRef);
 
-        setProjectImages(userData.projectImages || []);
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+
+          // Für Firmen: Lade projectImages aus companies collection
+          if (userData.user_type === 'firma') {
+            const companyDocRef = doc(db, 'companies', uid);
+            const companyDocSnap = await getDoc(companyDocRef);
+            if (companyDocSnap.exists()) {
+              const companyData = companyDocSnap.data();
+              setProjectImages(companyData.projectImages || []);
+            }
+          } else {
+            // Für Privatnutzer: Lade aus users collection
+            setProjectImages(userData.projectImages || []);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading project images:', error);
       }
     };
     fetchProjectImagesFromFirestore();
