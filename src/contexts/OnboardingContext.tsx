@@ -410,13 +410,25 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   const submitOnboarding = useCallback(async (): Promise<void> => {
-    if (!user || !companyId) return;
+    console.log('🚀 submitOnboarding started');
+
+    if (!user || !companyId) {
+      console.error('❌ submitOnboarding failed: Missing user or companyId', {
+        user: !!user,
+        companyId,
+      });
+      return;
+    }
 
     try {
+      console.log('📊 stepData:', stepData);
+
       // CRITICAL FIX: Load existing user data FIRST to preserve registration fields
       const userDocRef = doc(db, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
       const existingUserData = userDocSnap.exists() ? userDocSnap.data() : {};
+
+      console.log('📝 Processing step data...');
 
       // HARMONIZED: Only set the 13 cleaned onboarding fields (NO Registration duplicates)
       const onboardingUpdates: any = {};
@@ -509,7 +521,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (stepData[5]) onboardingUpdates.step5 = stepData[5];
 
       // Update main user document with ALL onboarding fields AND completion metadata
+      console.log('💾 Updating user document with onboarding data...');
       await updateDoc(userDocRef, onboardingUpdates);
+      console.log('✅ User document updated successfully');
 
       // REMOVED: Companies collection update - collection deleted
       // Companies collection is no longer used, all data is in users collection
@@ -518,12 +532,20 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       console.log('✅ Onboarding erfolgreich abgeschlossen (harmonisiertes System)');
 
       // Set cookies for middleware
+      console.log('🍪 Setting completion cookies...');
       document.cookie = `taskilo_onboarding_complete=true; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
       document.cookie = `taskilo_profile_status=pending_review; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
+      console.log('🍪 Cookies set successfully');
 
       // Update onboarding status
     } catch (error) {
       console.error('❌ Fehler beim Abschließen des Onboardings:', error);
+      console.error('📊 Error details:', {
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        userUid: user?.uid,
+        companyId,
+        stepDataKeys: Object.keys(stepData),
+      });
       throw error;
     }
   }, [user, companyId, stepData]);
