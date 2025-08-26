@@ -908,64 +908,62 @@ export default function Step5CompanyPage() {
       });
       console.log('✅ Users document updated with company type');
 
-      // WICHTIG 2: Companies document mit validierten Daten erstellen
+      // WICHTIG 2: Companies document mit schrittweiser Erstellung (robusterer Ansatz)
       try {
-        // Erster Versuch: Vollständige Daten
-        await setDoc(doc(db, 'companies', currentAuthUserUID), cleanedCompanyData, { merge: true });
-        console.log('✅ Companies document created successfully');
-      } catch (firestoreError) {
-        console.error('❌ Firestore Write Error Details:', {
-          error: firestoreError,
-          errorMessage: firestoreError?.message,
-          errorCode: firestoreError?.code,
-          dataKeys: Object.keys(cleanedCompanyData),
-          problematicFields: Object.keys(cleanedCompanyData).filter(key => {
-            const value = cleanedCompanyData[key];
-            return (
-              value === undefined ||
-              (typeof value === 'object' &&
-                value !== null &&
-                !(value instanceof Date) &&
-                !(value as any)?.toDate)
-            );
-          }),
-        });
-
-        // Fallback: Erstelle nur minimal erforderliche Daten ohne komplexe Objekte
-        const minimalCompanyData = {
+        // Schritt 1: Nur die absolut notwendigen Basisdaten
+        const coreData = {
           uid: currentAuthUserUID,
           email: email!,
           companyName: cleanedCompanyData.companyName || 'Unbekannt',
           legalForm: cleanedCompanyData.legalForm || 'Einzelunternehmen',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        await setDoc(doc(db, 'companies', currentAuthUserUID), coreData);
+        console.log('✅ Core company document created');
+
+        // Schritt 2: Erweiterte Daten hinzufügen (nur sichere primitive Werte)
+        const extendedData = {
           companyCity: cleanedCompanyData.companyCity || null,
           companyPostalCode: cleanedCompanyData.companyPostalCode || null,
           companyCountry: cleanedCompanyData.companyCountry || 'DE',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          companyStreet: cleanedCompanyData.companyStreet || null,
+          companyHouseNumber: cleanedCompanyData.companyHouseNumber || null,
+          companyPhoneNumber: cleanedCompanyData.companyPhoneNumber || null,
+          companyWebsite: cleanedCompanyData.companyWebsite || null,
           status: 'pending_verification',
           profileComplete: false,
+          updatedAt: serverTimestamp(),
         };
 
-        try {
-          await setDoc(doc(db, 'companies', currentAuthUserUID), minimalCompanyData, {
-            merge: true,
-          });
-          console.log('✅ Minimal companies document created as fallback');
-        } catch (fallbackError) {
-          console.error('❌ Even minimal document creation failed:', fallbackError);
+        await updateDoc(doc(db, 'companies', currentAuthUserUID), extendedData);
+        console.log('✅ Extended company data added successfully');
+      } catch (firestoreError) {
+        console.error('❌ Firestore Write Error Details:', {
+          error: firestoreError,
+          errorMessage: (firestoreError as any)?.message,
+          errorCode: (firestoreError as any)?.code,
+        });
 
-          // Letzter Fallback: Nur die absolut notwendigsten Daten
+        // Absoluter Fallback: Nur Minimum ohne serverTimestamp
+        try {
           const ultraMinimalData = {
             uid: currentAuthUserUID,
             email: email!,
             companyName: 'Temp Company',
             createdAt: new Date().toISOString(),
+            status: 'error_during_creation',
           };
 
           await setDoc(doc(db, 'companies', currentAuthUserUID), ultraMinimalData);
-          console.log('✅ Ultra-minimal companies document created');
+          console.log('✅ Ultra-minimal companies document created as final fallback');
+        } catch (finalError) {
+          console.error('❌ Final fallback also failed:', finalError);
+          // Wir werfen hier nicht, um den Registrierungsprozess nicht zu blockieren
         }
       }
+
       setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');
 
       const dataForStripeCallable: CreateStripeAccountClientData = {
