@@ -511,54 +511,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       // Update main user document with ALL onboarding fields AND completion metadata
       await updateDoc(userDocRef, onboardingUpdates);
 
-      // Update company document with onboarding completion AND profile data
-      // FIXED: Only update fields that are actually provided, preserve existing data
-      const companyUpdateData: any = {
-        // Onboarding completion
-        onboardingCompleted: true,
-        onboardingCompletedAt: serverTimestamp(),
-        profileComplete: true,
-      };
-
-      // Only add fields if they have values in onboarding data (don't overwrite with empty strings)
-      if (onboardingUpdates.companyName) {
-        companyUpdateData.companyName = onboardingUpdates.companyName;
-      }
-      if (onboardingUpdates.city) {
-        companyUpdateData.city = onboardingUpdates.city;
-      }
-      if (onboardingUpdates.country) {
-        companyUpdateData.country = onboardingUpdates.country;
-      }
-      if (onboardingUpdates.street) {
-        companyUpdateData.street = onboardingUpdates.street;
-      }
-      if (onboardingUpdates.postalCode) {
-        companyUpdateData.postalCode = onboardingUpdates.postalCode;
-      }
-      if (onboardingUpdates.phone) {
-        companyUpdateData.phone = onboardingUpdates.phone;
-      }
-      if (onboardingUpdates.email) {
-        companyUpdateData.email = onboardingUpdates.email;
-      }
-      if (onboardingUpdates.publicDescription) {
-        companyUpdateData.publicDescription = onboardingUpdates.publicDescription;
-      }
-      if (onboardingUpdates.hourlyRate) {
-        companyUpdateData.hourlyRate = onboardingUpdates.hourlyRate;
-      }
-      if (onboardingUpdates.selectedCategory) {
-        companyUpdateData.selectedCategory = onboardingUpdates.selectedCategory;
-      }
-      if (onboardingUpdates.selectedSubcategory) {
-        companyUpdateData.selectedSubcategory = onboardingUpdates.selectedSubcategory;
-      }
-      if (onboardingUpdates.industry) {
-        companyUpdateData.industry = onboardingUpdates.industry;
-      }
-
-      await updateDoc(doc(db, 'companies', companyId), companyUpdateData);
+      // REMOVED: Companies collection update - collection deleted
+      // Companies collection is no longer used, all data is in users collection
 
       // SUCCESS: Onboarding abgeschlossen - nur harmonisiertes System verwenden
       console.log('✅ Onboarding erfolgreich abgeschlossen (harmonisiertes System)');
