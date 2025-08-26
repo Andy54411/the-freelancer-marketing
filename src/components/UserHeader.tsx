@@ -104,7 +104,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
     // KORREKTUR: Prüfe Auth-Status bevor Query ausgeführt wird
     if (!auth.currentUser) {
-
       setUnreadNotificationsCount(0);
       setNotifications([]);
       return () => {};
@@ -112,7 +111,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
     // KORREKTUR: Stelle sicher, dass der aktuelle User dem UID entspricht
     if (auth.currentUser.uid !== uid) {
-
       setUnreadNotificationsCount(0);
       setNotifications([]);
       return () => {};
@@ -151,9 +149,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
         // KORREKTUR: Verwende warn statt error für permission-denied, um Console-Spam zu reduzieren
         if (error.code === 'permission-denied') {
-
         } else {
-
         }
 
         // Fallback: Setze leere Arrays bei Fehlern (ohne weitere Console-Ausgaben)
@@ -183,7 +179,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         setProfilePictureURLFromStorage(null);
       }
     } catch (error) {
-
       setProfilePictureURLFromStorage(null);
     }
   }, []);
@@ -215,13 +210,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             loadProfilePictureFromStorage(uid);
           }
         } else {
-
           setFirestoreUserData(null);
           // Fallback auf Storage
           loadProfilePictureFromStorage(uid);
         }
       } catch (error) {
-
         setFirestoreUserData(null);
         // Fallback auf Storage bei Fehler
         loadProfilePictureFromStorage(uid);
@@ -236,11 +229,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       // Explizite Typisierung für 'user'
       setCurrentUser(user);
       if (user?.uid) {
-        // Ensure the user UID matches the URL UID for security
-        if (user.uid !== currentUid) {
-          router.replace(`/dashboard/user/${user.uid}`); // Redirect to correct user dashboard
-          return;
-        }
+        // Lade zuerst die Firestore-Daten, dann prüfe Redirect
         loadFirestoreUserData(user.uid);
       } else {
         setProfilePictureURLFromStorage(null);
@@ -255,6 +244,18 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     });
     return () => unsubscribe();
   }, [currentUid, router, loadFirestoreUserData]);
+
+  // Smart Redirect basierend auf user_type NACH dem Laden der Firestore-Daten
+  useEffect(() => {
+    if (currentUser?.uid && firestoreUserData && currentUser.uid !== currentUid) {
+      // Ensure the user UID matches the URL UID for security - redirect to CORRECT dashboard type
+      const dashboardType = firestoreUserData.user_type === 'firma' ? 'company' : 'user';
+      console.log(
+        `🔄 Smart Redirect: user_type=${firestoreUserData.user_type} → /dashboard/${dashboardType}/${currentUser.uid}`
+      );
+      router.replace(`/dashboard/${dashboardType}/${currentUser.uid}`);
+    }
+  }, [currentUser?.uid, currentUid, firestoreUserData, router]);
 
   // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
   useEffect(() => {
@@ -279,7 +280,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
           const workspaceData = await WorkspaceService.getWorkspaces(currentUser.uid);
           setWorkspaces(workspaceData);
         } catch (error) {
-
           setWorkspaces([]);
         }
       };
@@ -377,7 +377,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     try {
       const user = auth.currentUser;
       if (!user) {
-
         return;
       }
 
@@ -396,16 +395,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Fehler beim Markieren der Benachrichtigung');
       }
-
     } catch (error) {
-
       // Fallback zur direkten Firebase-Methode
       try {
         const notificationRef = doc(db, 'notifications', notificationId);
         await updateDoc(notificationRef, { isRead: true });
-      } catch (fallbackError) {
-
-      }
+      } catch (fallbackError) {}
     }
   };
 
@@ -414,7 +409,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     try {
       const user = auth.currentUser;
       if (!user) {
-
         return;
       }
 
@@ -434,10 +428,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
 
       const result = await response.json();
-
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleLogout = useCallback(async () => {
@@ -446,9 +437,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       setIsProfileDropdownOpen(false);
       setFirestoreUserData(null);
       router.push('/');
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }, [router]);
 
   const filteredCategories = useMemo(() => {
