@@ -41,10 +41,22 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
   const totalSteps = onboardingSteps.length;
 
-  // Load onboarding status
+  // Load onboarding status mit Rate-Limiting
   useEffect(() => {
+    let lastLoadTime = 0;
+    const RATE_LIMIT_MS = 5000; // Maximal alle 5 Sekunden laden
+
     const loadOnboardingStatus = async () => {
       if (!companyId || !user) return;
+
+      const now = Date.now();
+      if (now - lastLoadTime < RATE_LIMIT_MS) {
+        console.log('🚫 OnboardingContext: Rate-limited - zu schnelle Aufrufe verhindert');
+        return;
+      }
+      lastLoadTime = now;
+
+      console.log('🔄 OnboardingContext: Lade Onboarding-Status...');
 
       try {
         // SIMPLIFIED: Use user document directly instead of subcollection
@@ -190,17 +202,61 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (!rules) return 0;
 
       const requiredFields = rules.required || [];
-      const completedFields = requiredFields.filter(field => data[field] && data[field] !== '');
 
-      return requiredFields.length > 0 ? (completedFields.length / requiredFields.length) * 100 : 0;
+      // Erweiterte Validierung: berücksichtigt auch 0 als gültigen Wert und conditional fields
+      const completedFields = requiredFields.filter(field => {
+        const value = data[field];
+
+        // Für Zahlen: 0 ist gültig
+        if (typeof value === 'number') return true;
+
+        // Für Booleans: false ist gültig
+        if (typeof value === 'boolean') return true;
+
+        // Für Strings: nicht leer
+        if (typeof value === 'string') return value.length > 0;
+
+        // Für Arrays: nicht leer
+        if (Array.isArray(value)) return value.length > 0;
+
+        // Andere Werte: truthy
+        return !!value;
+      });
+
+      // Zusätzlich conditional fields überprüfen
+      let conditionalFieldsValid = 0;
+      let totalConditionalFields = 0;
+
+      if (rules.conditional) {
+        for (const [field, validator] of Object.entries(rules.conditional)) {
+          totalConditionalFields++;
+          if (validator(data)) {
+            conditionalFieldsValid++;
+          }
+        }
+      }
+
+      const totalFields = requiredFields.length + totalConditionalFields;
+      const completedTotal = completedFields.length + conditionalFieldsValid;
+
+      return totalFields > 0 ? (completedTotal / totalFields) * 100 : 100;
     },
     [stepData]
   );
 
   const getOverallCompletion = useCallback((): number => {
     const stepCompletions = Array.from({ length: totalSteps }, (_, i) => getStepCompletion(i + 1));
-    return stepCompletions.reduce((sum, completion) => sum + completion, 0) / totalSteps;
-  }, [getStepCompletion, totalSteps]);
+    const overallCompletion =
+      stepCompletions.reduce((sum, completion) => sum + completion, 0) / totalSteps;
+
+    console.log('📊 Overall Completion Debug:', {
+      stepCompletions,
+      overallCompletion,
+      stepData,
+    });
+
+    return overallCompletion;
+  }, [getStepCompletion, totalSteps, stepData]);
 
   const canGoNext = useCallback((): boolean => {
     return validateStep(currentStep, stepData[currentStep] || {});
@@ -296,10 +352,28 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     return serialized;
   }, []);
 
+  // Rate-limiting für saveCurrentStep
+  const [lastSaveTime, setLastSaveTime] = useState(0);
+  const SAVE_THROTTLE_MS = 2000; // Minimum 2 Sekunden zwischen Saves
+
   const saveCurrentStep = useCallback(async (): Promise<void> => {
     if (!user || !companyId) return;
 
+    const now = Date.now();
+    if (now - lastSaveTime < SAVE_THROTTLE_MS) {
+      console.log(
+        `� saveCurrentStep throttled - last save was ${now - lastSaveTime}ms ago (min: ${SAVE_THROTTLE_MS}ms)`
+      );
+      return;
+    }
+
+    console.log(
+      `�💾 saveCurrentStep called for step ${currentStep} - Timestamp: ${new Date().toISOString()}`
+    );
+    console.trace('📍 saveCurrentStep call stack:'); // DEBUG: Stack trace to see what's calling this
+
     try {
+      setLastSaveTime(now);
       setIsSaving(true);
 
       // FIRESTORE-SAVE REDUZIERT: Nur minimale Updates, keine redundanten Writes
@@ -311,19 +385,20 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       // Nur aktuellen Step-Data speichern (nicht alle Steps)
       if (stepData[currentStep]) {
         minimalUpdates[`onboardingStep${currentStep}Data`] = stepData[currentStep];
+        console.log(`📊 Saving step ${currentStep} data:`, stepData[currentStep]);
       }
 
       const userDocRef = doc(db, 'users', user.uid);
       await updateDoc(userDocRef, minimalUpdates);
 
       setLastSaved(new Date());
-      console.log(`✅ Step ${currentStep} erfolgreich gespeichert`);
+      console.log(`✅ Step ${currentStep} erfolgreich in Firestore gespeichert`);
     } catch (error) {
       console.error(`❌ Fehler beim Speichern von Step ${currentStep}:`, error);
     } finally {
       setIsSaving(false);
     }
-  }, [user, companyId, currentStep, stepData]);
+  }, [user, companyId, currentStep, stepData, lastSaveTime]);
 
   const goToStep = useCallback(
     (step: number): void => {
@@ -480,6 +555,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       // SUCCESS: Onboarding abgeschlossen - nur harmonisiertes System verwenden
       console.log('✅ Onboarding erfolgreich abgeschlossen (harmonisiertes System)');
 
+      // Set cookies for middleware
+      document.cookie = `taskilo_onboarding_complete=true; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
+      document.cookie = `taskilo_profile_status=pending_review; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
+
       // Update onboarding status
     } catch (error) {
       console.error('❌ Fehler beim Abschließen des Onboardings:', error);
@@ -519,11 +598,17 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   const updateStepData = useCallback((step: number, data: any) => {
+    console.log(
+      `📝 updateStepData called for step ${step} - Timestamp: ${new Date().toISOString()}:`,
+      data
+    );
+    console.trace('📍 updateStepData call stack:'); // DEBUG: Stack trace to see what's calling this
     // Nur lokal speichern, NICHT in Firestore!
     setStepData(prev => ({
       ...prev,
       [step]: { ...prev[step], ...data },
     }));
+    console.log(`✅ Step ${step} data locally updated`);
   }, []);
 
   const value: OnboardingContextType = {

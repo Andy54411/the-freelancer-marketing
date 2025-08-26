@@ -348,7 +348,6 @@ export async function migrateLegacyCompanies(): Promise<{
   errors: number;
   total: number;
 }> {
-
   let successCount = 0;
   let errorCount = 0;
   let totalCount = 0;
@@ -378,11 +377,9 @@ export async function migrateLegacyCompanies(): Promise<{
 
         // Special log for real example "Mietkoch Andy"
         if (companyData.companyName === 'Mietkoch Andy') {
-
         }
       } catch (error) {
         errorCount++;
-
       }
     }
 
@@ -392,7 +389,6 @@ export async function migrateLegacyCompanies(): Promise<{
       total: totalCount,
     };
   } catch (error) {
-
     throw error;
   }
 }
@@ -401,7 +397,6 @@ export async function migrateLegacyCompanies(): Promise<{
  * Migrate a single company by UID (for testing)
  */
 export async function migrateSingleCompany(companyUid: string): Promise<OnboardingProgress> {
-
   try {
     // This would be replaced with actual Firestore call
     // const companyDoc = await getDoc(doc(db, 'users', companyUid));
@@ -475,7 +470,6 @@ export async function migrateSingleCompany(companyUid: string): Promise<Onboardi
 
     return onboardingProgress;
   } catch (error) {
-
     throw error;
   }
 }
@@ -495,6 +489,7 @@ export async function runMigrationFromAdmin(): Promise<string> {
 /**
  * Check completion status for a specific company in real-time
  * This function checks existing companies and determines if they need onboarding
+ * UPDATED: Uses harmonized system (main user document) instead of subcollections
  */
 export async function checkCompanyOnboardingStatus(companyUid: string): Promise<{
   needsOnboarding: boolean;
@@ -503,36 +498,14 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
   onboardingProgress?: OnboardingProgress;
 }> {
   try {
-    // First check if they already have onboarding progress using the new system
-    const onboardingRef = doc(db, 'users', companyUid, 'onboarding', 'progress');
-    const onboardingSnap = await getDoc(onboardingRef);
+    console.log(`🔍 Checking onboarding status for company: ${companyUid}`);
 
-    if (onboardingSnap.exists()) {
-      const onboardingData = onboardingSnap.data() as OnboardingProgress;
-
-      // Check if it's a grandfathered company (no onboarding needed)
-      if (onboardingData.status === 'grandfathered') {
-        return {
-          needsOnboarding: false,
-          completionPercentage: 100,
-          currentStep: 5,
-          onboardingProgress: onboardingData,
-        };
-      }
-
-      return {
-        needsOnboarding: onboardingData.completionPercentage < 100,
-        completionPercentage: onboardingData.completionPercentage,
-        currentStep: findNextIncompleteStep(onboardingData),
-        onboardingProgress: onboardingData,
-      };
-    }
-
-    // If no onboarding progress exists, check their legacy data
+    // HARMONIZED SYSTEM: Check main user document
     const userRef = doc(db, 'users', companyUid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
+      console.log(`❌ User document not found for: ${companyUid}`);
       return {
         needsOnboarding: true,
         completionPercentage: 0,
@@ -540,101 +513,53 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
       };
     }
 
-    const userData = userSnap.data() as ExistingCompanyUser;
+    const userData = userSnap.data();
+    console.log(`📊 User data found:`, {
+      onboardingCompleted: userData.onboardingCompleted,
+      onboardingCurrentStep: userData.onboardingCurrentStep,
+      onboardingStatus: userData.onboardingStatus,
+    });
 
-    // Prüfe ob es eine bestehende Company ist (vor dem neuen Onboarding-System)
-    const createdDate = userData.createdAt?.toDate?.() || new Date();
-    const isOldCompany = createdDate < new Date('2024-12-01'); // Companies vor December 2024
-
-    if (isOldCompany) {
-      // Markiere alte Companies als "grandfathered" - brauchen kein Onboarding
-      const grandfatheredProgress = {
-        uid: companyUid,
-        status: 'grandfathered' as const,
-        currentStep: 5,
-        completionPercentage: 100,
-        lastActivity: new Date(),
-        stepsCompleted: [1, 2, 3, 4, 5],
-        requiresApproval: false,
-        isLegacyCompany: true,
-        registrationMethod: 'existing_grandfathered' as const,
-        stepValidations: {},
-        stepCompletionData: {
-          step1: {
-            personalDataComplete: true,
-            addressComplete: true,
-            phoneVerified: true,
-            directorDataComplete: true,
-            tosAccepted: true,
-          },
-          step2: {
-            companyDataComplete: true,
-            legalFormSet: true,
-            websiteProvided: true,
-            accountingSetup: true,
-            bankingComplete: true,
-          },
-          step3: {
-            profilePictureUploaded: true,
-            publicDescriptionComplete: true,
-            skillsAdded: true,
-            portfolioAdded: true,
-            servicePackagesCreated: true,
-            hourlyRateSet: true,
-            faqsCreated: true,
-          },
-          step4: {
-            categoriesSelected: true,
-            workingHoursSet: true,
-            instantBookingConfigured: true,
-            responseTimeSet: true,
-            locationConfigured: true,
-          },
-          step5: {
-            allDataComplete: true,
-            documentsUploaded: true,
-            stripeAccountCreated: true,
-            verificationSubmitted: true,
-            readyForApproval: true,
-          },
-        },
-        startedAt: userData.createdAt || new Date(),
-        stepCompletedAt: {},
-        registrationCompletedAt: userData.createdAt || new Date(),
-        lastAutoSave: new Date(),
-      };
-
-      // Clean the progress object to remove undefined values before saving
-      const cleanedProgress = cleanForFirestore(grandfatheredProgress);
-
-      // Auto-create grandfathered onboarding progress
-      await setDoc(onboardingRef, cleanedProgress);
-
+    // Check if onboarding is completed using harmonized system
+    if (userData.onboardingCompleted === true) {
+      console.log(`✅ Onboarding completed for: ${companyUid}`);
       return {
         needsOnboarding: false,
         completionPercentage: 100,
         currentStep: 5,
-        onboardingProgress: grandfatheredProgress,
       };
     }
 
-    // Calculate completion based on existing data for newer companies
-    const calculatedProgress = calculateRealCompletion(userData);
+    // Calculate completion percentage from step data
+    let completionPercentage = 0;
+    let filledSteps = 0;
+    const totalSteps = 5;
 
-    // Clean the progress object to remove undefined values before saving
-    const cleanedProgress = cleanForFirestore(calculatedProgress);
+    // Check each step data
+    for (let i = 1; i <= 5; i++) {
+      const stepData = userData[`onboardingStep${i}Data`];
+      if (stepData && Object.keys(stepData).length > 0) {
+        filledSteps++;
+      }
+    }
 
-    // Auto-create onboarding progress if it doesn't exist
-    await setDoc(onboardingRef, cleanedProgress);
+    completionPercentage = Math.round((filledSteps / totalSteps) * 100);
+    const currentStep = parseInt(userData.onboardingCurrentStep) || 1;
+
+    console.log(`📈 Completion calculated:`, {
+      filledSteps,
+      totalSteps,
+      completionPercentage,
+      currentStep,
+    });
 
     return {
-      needsOnboarding: calculatedProgress.completionPercentage < 100,
-      completionPercentage: calculatedProgress.completionPercentage,
-      currentStep: findNextIncompleteStep(calculatedProgress),
-      onboardingProgress: calculatedProgress,
+      needsOnboarding: !userData.onboardingCompleted,
+      completionPercentage,
+      currentStep,
     };
   } catch (error) {
-
+    console.error(`❌ Error checking onboarding status for ${companyUid}:`, error);
     return {
       needsOnboarding: true,
       completionPercentage: 0,

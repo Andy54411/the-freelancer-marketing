@@ -116,27 +116,47 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
   };
 
   // Speichern und weiter
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleNext = async () => {
+    if (isSaving) {
+      console.log('🔄 Speichervorgang bereits aktiv - ignoriere weiteren Click');
+      return; // Verhindere mehrfache Clicks
+    }
+
     const missingFields = validateForm();
     if (missingFields.length > 0) {
       alert(`Bitte füllen Sie folgende Pflichtfelder aus: ${missingFields.join(', ')}`);
       return;
     }
 
+    console.log('🚀 Step 1 handleNext gestartet...');
+    setIsSaving(true);
+
     try {
-      // 1. Lokal updaten (kein Firestore!)
+      // 1. Nur lokal updaten (KEIN Firestore!)
+      console.log('📝 Lokale Daten aktualisieren...');
       updateStepData(1, formData);
 
-      // 2. Einmal in Firestore speichern
+      // 2. Kurz warten damit lokale Updates verarbeitet werden
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 3. EINMAL in Firestore speichern
+      console.log('💾 Firestore speichern...');
       await saveCurrentStep();
 
-      // 3. Zum nächsten Step
+      // 4. Zum nächsten Step (OHNE weitere Speicherung)
+      console.log('➡️ Zum nächsten Step navigieren...');
       goToNextStep();
 
-      console.log('✅ Step 1 erfolgreich gespeichert');
+      console.log('✅ Step 1 erfolgreich abgeschlossen');
     } catch (error) {
       console.error('❌ Fehler beim Speichern:', error);
       alert('Fehler beim Speichern der Daten. Bitte versuchen Sie es erneut.');
+    } finally {
+      // Sofort zurücksetzen - keine Verzögerung
+      setIsSaving(false);
+      console.log('🔓 isSaving zurückgesetzt');
     }
   };
 
@@ -343,12 +363,18 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
             <button
               type="button"
               onClick={handleNext}
-              disabled={!isFormValid}
-              className={`px-6 py-2 text-white rounded-lg transition-colors ${
-                isFormValid ? 'bg-[#14ad9f] hover:bg-[#129488]' : 'bg-gray-300 cursor-not-allowed'
+              disabled={!isFormValid || isSaving}
+              style={{ pointerEvents: !isFormValid || isSaving ? 'none' : 'auto' }}
+              className={`px-6 py-2 text-white rounded-lg transition-colors flex items-center gap-2 ${
+                isFormValid && !isSaving
+                  ? 'bg-[#14ad9f] hover:bg-[#129488] cursor-pointer'
+                  : 'bg-gray-300 cursor-not-allowed'
               }`}
             >
-              Weiter
+              {isSaving && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              )}
+              {isSaving ? 'Speichert...' : 'Weiter'}
             </button>
           </div>
         </div>

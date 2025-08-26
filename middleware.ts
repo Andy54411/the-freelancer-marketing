@@ -1,11 +1,36 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 
-export default function middleware(request: NextRequest) {
+// Add edge runtime for middleware
+export const runtime = 'edge';
+
+// Middleware-Logs
+function logMiddleware(message: string, request: NextRequest, additionalData?: any) {
+  const timestamp = new Date().toISOString();
+  const url = request.nextUrl.pathname;
+  const method = request.method;
+  const userAgent = request.headers.get('user-agent')?.substring(0, 100) || 'Unknown';
+
+  console.log(`[MIDDLEWARE ${timestamp}] ${message}`, {
+    url,
+    method,
+    userAgent,
+    ...additionalData,
+  });
+}
+
+export default async function middleware(request: NextRequest) {
+  logMiddleware('Middleware ausgeführt', request);
+
   // Company Dashboard Onboarding Protection (nach Dokumentation)
   if (request.nextUrl.pathname.startsWith('/dashboard/company/')) {
+    logMiddleware('Company Dashboard Zugriff erkannt', request);
     const onboardingCheck = checkCompanyOnboardingStatus(request);
-    if (onboardingCheck) return onboardingCheck;
+    if (onboardingCheck) {
+      logMiddleware('Company Dashboard blockiert - Umleitung zu Onboarding', request);
+      return onboardingCheck;
+    }
+    logMiddleware('Company Dashboard Zugriff erlaubt', request);
   }
 
   // Admin Authentication Protection
@@ -13,13 +38,16 @@ export default function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/dashboard/admin') &&
     !request.nextUrl.pathname.startsWith('/dashboard/admin/login')
   ) {
+    logMiddleware('Admin Dashboard Zugriff erkannt', request);
     // Check if admin session exists
     const adminToken = request.cookies.get('taskilo_admin_session')?.value;
 
     if (!adminToken) {
+      logMiddleware('Admin Dashboard blockiert - kein Token', request);
       // Redirect to login page if no session
       return NextResponse.redirect(new URL('/dashboard/admin/login', request.url));
     }
+    logMiddleware('Admin Dashboard Zugriff erlaubt', request);
   }
 
   // Skip internationalization for admin routes and API routes
@@ -39,55 +67,77 @@ export default function middleware(request: NextRequest) {
 
 async function checkCompanyOnboardingStatus(request: NextRequest) {
   try {
+    logMiddleware('Onboarding-Status wird geprüft', request);
+
     // Get user UID from path
     const pathSegments = request.nextUrl.pathname.split('/');
     const companyUid = pathSegments[3]; // /dashboard/company/[uid]/...
 
     if (!companyUid) {
+      logMiddleware('Kein Company UID gefunden - Umleitung zu Login', request);
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
     // Allow onboarding pages (nicht blockieren)
     if (pathSegments[4] === 'onboarding') {
+      logMiddleware('Onboarding-Seite erkannt - Zugriff erlaubt', request, { companyUid });
       return null; // Continue to onboarding
     }
 
-    // SIMPLIFIED: Check onboarding directly from harmonized user document
-    const { doc, getDoc } = await import('firebase/firestore');
-    const { db } = await import('@/firebase/clients');
+    // ALTERNATIVE: Check onboarding status from cookies (falls verfügbar)
+    const onboardingComplete = request.cookies.get('taskilo_onboarding_complete')?.value;
+    const profileStatus = request.cookies.get('taskilo_profile_status')?.value;
 
-    const userDoc = await getDoc(doc(db, 'users', companyUid));
+    logMiddleware('Cookie-basierte Prüfung', request, {
+      companyUid,
+      onboardingComplete,
+      profileStatus,
+    });
 
-    if (!userDoc.exists()) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
+    // If no cookies available, allow access (safer fallback)
+    if (!onboardingComplete) {
+      logMiddleware('Keine Onboarding-Cookies gefunden - Zugriff erlaubt (Fallback)', request, {
+        companyUid,
+      });
+      return null;
     }
 
-    const userData = userDoc.data();
-
-    // Check if onboarding is required (harmonized system)
-    const needsOnboarding = !userData.onboardingCompleted;
+    // Check if onboarding is required
+    const needsOnboarding = onboardingComplete !== 'true';
 
     if (needsOnboarding) {
-      // Redirect to onboarding welcome page
+      logMiddleware('Onboarding erforderlich (Cookie) - Umleitung zu Onboarding', request, {
+        companyUid,
+      });
       return NextResponse.redirect(
         new URL(`/dashboard/company/${companyUid}/onboarding/welcome`, request.url)
       );
     }
 
-    // FIXED: Nach Onboarding-Abschluss Zugang erlauben (auch bei pending_review)
-    // Nur bei 'rejected' blockieren
-    const isRejected = userData.profileStatus === 'rejected';
+    // Check profile status
+    const isRejected = profileStatus === 'rejected';
 
     if (isRejected) {
-      // Redirect to pending page with rejection info
+      logMiddleware(
+        'Profil abgelehnt (Cookie) - Umleitung zu Onboarding mit Rejection-Status',
+        request,
+        {
+          companyUid,
+          profileStatus,
+        }
+      );
       return NextResponse.redirect(
         new URL(`/dashboard/company/${companyUid}/onboarding/welcome?status=rejected`, request.url)
       );
     }
 
-    // Allow access for completed onboarding (approved OR pending_review)
+    logMiddleware('Dashboard-Zugriff vollständig erlaubt (Cookie)', request, {
+      companyUid,
+      profileStatus,
+    });
     return null; // Continue to dashboard
   } catch (error) {
+    logMiddleware('Middleware Fehler beim Onboarding-Check', request, { error: error.message });
     console.error('Middleware onboarding check error:', error);
     // Allow access on error (safe fallback)
     return null;

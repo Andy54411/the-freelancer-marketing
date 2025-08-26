@@ -83,6 +83,15 @@ export default function OnboardingStep5() {
   const completionPercentage = Math.round(getOverallCompletion());
   const canComplete = missingFields.length === 0 && step5Data.documentsCompleted;
 
+  // Debugging für Completion-Berechnung
+  console.log('📊 Step 5 Completion Debug:', {
+    missingFields,
+    completionPercentage,
+    canComplete,
+    documentsCompleted: step5Data.documentsCompleted,
+    stepData: stepData,
+  });
+
   const handleSubmit = async () => {
     if (!canComplete || isOffline) return;
 

@@ -59,6 +59,8 @@ export default function OnboardingStep3() {
   const updateField = (field: keyof Step3Data, value: any) => {
     const updatedData = { ...step3Data, [field]: value };
     setStep3Data(updatedData);
+    // Nur lokal updaten - KEIN automatisches Firestore-Save!
+    // Firestore-Save erfolgt nur beim Step-Wechsel oder manuell
     updateStepData(3, updatedData);
   };
 
@@ -204,38 +206,10 @@ export default function OnboardingStep3() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="companyLogo">Firmen-Logo</Label>
-              <div className="flex items-center gap-3">
-                <input
-                  id="companyLogo"
-                  type="file"
-                  accept="image/*"
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      // TODO: Upload zu Firebase Storage und URL speichern
-                      updateField('companyLogo', URL.createObjectURL(file));
-                    }
-                  }}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => document.getElementById('companyLogo')?.click()}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-md flex items-center gap-2"
-                >
-                  <Camera className="h-4 w-4" />
-                  Logo hochladen
-                </button>
-                {step3Data.companyLogo && (
-                  <span className="text-sm text-green-600">✓ Logo hochgeladen</span>
-                )}
-              </div>
-            </div>
+            {/* Logo-Upload entfernt - wird bereits in der Registrierung hochgeladen */}
             <div>
               <Label htmlFor="profileBannerImage">Banner-Bild</Label>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-3">
                 <input
                   id="profileBannerImage"
                   type="file"
@@ -243,22 +217,37 @@ export default function OnboardingStep3() {
                   onChange={e => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // TODO: Upload zu Firebase Storage und URL speichern
-                      updateField('profileBannerImage', URL.createObjectURL(file));
+                      const imageUrl = URL.createObjectURL(file);
+                      updateField('profileBannerImage', imageUrl);
                     }
                   }}
                   className="hidden"
                 />
-                <button
-                  type="button"
-                  onClick={() => document.getElementById('profileBannerImage')?.click()}
-                  className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-md flex items-center gap-2"
-                >
-                  <Camera className="h-4 w-4" />
-                  Banner hochladen
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('profileBannerImage')?.click()}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-md flex items-center gap-2"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Banner hochladen
+                  </button>
+                  {step3Data.profileBannerImage && (
+                    <span className="text-sm text-green-600">✓ Banner hochgeladen</span>
+                  )}
+                </div>
+                {/* Banner-Vorschau */}
                 {step3Data.profileBannerImage && (
-                  <span className="text-sm text-green-600">✓ Banner hochgeladen</span>
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-600 mb-2">Vorschau:</p>
+                    <div className="relative w-full h-48 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden">
+                      <img
+                        src={step3Data.profileBannerImage}
+                        alt="Banner Vorschau"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

@@ -62,6 +62,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // NEU: Cleanup Presence VOR dem Logout
       await userPresence.cleanupPresence();
 
+      // Clear middleware cookies
+      document.cookie =
+        'taskilo_onboarding_complete=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Strict';
+      document.cookie =
+        'taskilo_profile_status=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Strict';
+
       await signOut(auth);
       setUser(null);
       setFirebaseUser(null);
@@ -117,6 +123,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               lastName: profileData.lastName,
               profilePictureURL: profileData.profilePictureURL || undefined,
             });
+
+            // Set middleware cookies for onboarding check
+            if (finalRole === 'firma') {
+              const onboardingCompleted = profileData.onboardingCompleted || false;
+              const profileStatus = profileData.profileStatus || 'pending_review';
+
+              document.cookie = `taskilo_onboarding_complete=${onboardingCompleted}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
+              document.cookie = `taskilo_profile_status=${profileStatus}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
+            }
 
             // NEU: Initialisiere User Presence nach erfolgreicher Authentifizierung
             userPresence.initializePresence(fbUser.uid).catch(console.error);

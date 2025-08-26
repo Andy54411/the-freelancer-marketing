@@ -268,6 +268,41 @@ export const createStripeAccountIfComplete = onCall(
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
 
+    // Rate-limiting für Stripe Account Creation
+    const now = Date.now();
+    const authUserId = request.auth?.uid;
+    const lastCallKey = `stripe_account_create_${authUserId}`;
+    
+    // Firestore DB initialisieren
+    const rateLimitDb = getDb();
+    
+    // Rate-Limiting mit Firestore
+    const rateLimitRef = rateLimitDb.collection('rate_limits').doc(lastCallKey);
+    const rateLimitDoc = await rateLimitRef.get();
+    
+    if (rateLimitDoc.exists) {
+      const lastCall = rateLimitDoc.data()?.lastCall || 0;
+      const timeSinceLastCall = now - lastCall;
+      const MIN_INTERVAL = 30000; // 30 Sekunden minimum zwischen Aufrufen
+      
+      if (timeSinceLastCall < MIN_INTERVAL) {
+        loggerV2.warn(`[RATE_LIMIT] createStripeAccount für ${authUserId} blockiert - letzter Aufruf vor ${timeSinceLastCall}ms (min: ${MIN_INTERVAL}ms)`);
+        throw new HttpsError(
+          'resource-exhausted',
+          `Zu viele Stripe-Account-Erstellungsversuche. Bitte warten Sie ${Math.ceil((MIN_INTERVAL - timeSinceLastCall) / 1000)} Sekunden.`
+        );
+      }
+    }
+    
+    // Update rate limit
+    await rateLimitRef.set({ 
+      lastCall: now, 
+      uid: authUserId,
+      timestamp: FieldValue.serverTimestamp()
+    });
+
+    loggerV2.info(`[RATE_LIMIT] Rate limit check passed für ${authUserId}`);
+
     const stripeKey = STRIPE_SECRET_KEY.value();
     const frontendUrlValue = process.env.FRONTEND_URL || 'https://taskilo.de';
 

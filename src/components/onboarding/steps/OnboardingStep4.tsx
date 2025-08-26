@@ -6,7 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { MapPin, Clock, Car } from 'lucide-react';
 
@@ -14,11 +20,11 @@ import { MapPin, Clock, Car } from 'lucide-react';
 interface Step4Data {
   // Service-Bereich
   serviceAreas?: string[];
-  
+
   // Verfügbarkeit
   availabilityType: 'flexible' | 'fixed' | 'on-demand';
   advanceBookingHours: number;
-  
+
   // Reise & Logistik
   travelCosts: boolean;
   travelCostPerKm?: number;
@@ -27,7 +33,7 @@ interface Step4Data {
 
 export default function OnboardingStep4() {
   const { stepData, updateStepData, goToNextStep, goToPreviousStep } = useOnboarding();
-  
+
   const [step4Data, setStep4Data] = useState<Step4Data>(
     stepData[4] || {
       availabilityType: 'flexible',
@@ -55,27 +61,30 @@ export default function OnboardingStep4() {
 
   const removeServiceArea = (index: number) => {
     const currentAreas = step4Data.serviceAreas || [];
-    updateField('serviceAreas', currentAreas.filter((_, i) => i !== index));
+    updateField(
+      'serviceAreas',
+      currentAreas.filter((_, i) => i !== index)
+    );
   };
 
   const handleNext = () => {
     goToNextStep();
   };
 
-  const isValid = step4Data.availabilityType && 
-                 step4Data.advanceBookingHours > 0 && 
-                 step4Data.maxTravelDistance > 0 &&
-                 (!step4Data.travelCosts || (step4Data.travelCosts && step4Data.travelCostPerKm));
+  const isValid =
+    step4Data.availabilityType &&
+    step4Data.advanceBookingHours > 0 &&
+    step4Data.maxTravelDistance > 0 &&
+    (!step4Data.travelCosts ||
+      (step4Data.travelCosts &&
+        typeof step4Data.travelCostPerKm === 'number' &&
+        step4Data.travelCostPerKm >= 0));
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Service-Bereich & Verfügbarkeit
-        </h1>
-        <p className="text-gray-600">
-          Definieren Sie Ihren Service-Bereich und Ihre Verfügbarkeit
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Service-Bereich & Verfügbarkeit</h1>
+        <p className="text-gray-600">Definieren Sie Ihren Service-Bereich und Ihre Verfügbarkeit</p>
       </div>
 
       <div className="space-y-6">
@@ -91,22 +100,29 @@ export default function OnboardingStep4() {
             <p className="text-sm text-gray-600">
               Geben Sie spezifische Städte oder Gebiete an, in denen Sie Ihre Services anbieten.
             </p>
-            
+
             <div className="flex gap-2">
               <Input
                 placeholder="Stadt oder Gebiet hinzufügen"
                 value={newServiceArea}
-                onChange={(e) => setNewServiceArea(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && addServiceArea()}
+                onChange={e => setNewServiceArea(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && addServiceArea()}
               />
-              <Button onClick={addServiceArea} size="sm" className="bg-[#14ad9f] hover:bg-[#129488]">
+              <Button
+                onClick={addServiceArea}
+                size="sm"
+                className="bg-[#14ad9f] hover:bg-[#129488]"
+              >
                 Hinzufügen
               </Button>
             </div>
 
             <div className="flex flex-wrap gap-2">
               {(step4Data.serviceAreas || []).map((area, index) => (
-                <div key={index} className="flex items-center bg-[#14ad9f] text-white px-3 py-1 rounded-full text-sm">
+                <div
+                  key={index}
+                  className="flex items-center bg-[#14ad9f] text-white px-3 py-1 rounded-full text-sm"
+                >
                   {area}
                   <button
                     onClick={() => removeServiceArea(index)}
@@ -131,9 +147,11 @@ export default function OnboardingStep4() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="availabilityType">Verfügbarkeitstyp *</Label>
-              <Select 
-                value={step4Data.availabilityType} 
-                onValueChange={(value: 'flexible' | 'fixed' | 'on-demand') => updateField('availabilityType', value)}
+              <Select
+                value={step4Data.availabilityType}
+                onValueChange={(value: 'flexible' | 'fixed' | 'on-demand') =>
+                  updateField('availabilityType', value)
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Wählen Sie Ihren Verfügbarkeitstyp" />
@@ -168,7 +186,7 @@ export default function OnboardingStep4() {
                 type="number"
                 placeholder="24"
                 value={step4Data.advanceBookingHours}
-                onChange={(e) => updateField('advanceBookingHours', Number(e.target.value))}
+                onChange={e => updateField('advanceBookingHours', Number(e.target.value))}
                 min="1"
                 max="720"
               />
@@ -192,7 +210,7 @@ export default function OnboardingStep4() {
               <Checkbox
                 id="travelCosts"
                 checked={step4Data.travelCosts}
-                onCheckedChange={(checked) => updateField('travelCosts', checked)}
+                onCheckedChange={checked => updateField('travelCosts', checked)}
               />
               <Label htmlFor="travelCosts">Reisekosten berechnen *</Label>
             </div>
@@ -205,14 +223,17 @@ export default function OnboardingStep4() {
                   type="number"
                   step="0.01"
                   placeholder="0.50"
-                  value={step4Data.travelCostPerKm || ''}
-                  onChange={(e) => updateField('travelCostPerKm', Number(e.target.value))}
+                  value={step4Data.travelCostPerKm === 0 ? '0' : step4Data.travelCostPerKm || ''}
+                  onChange={e => {
+                    const value = e.target.value;
+                    if (value === '' || value === '0' || !isNaN(Number(value))) {
+                      updateField('travelCostPerKm', value === '' ? '' : Number(value));
+                    }
+                  }}
                   min="0"
                   max="5"
                 />
-                <p className="text-sm text-gray-500 mt-1">
-                  Empfohlen: 0,30 - 0,60 € pro Kilometer
-                </p>
+                <p className="text-sm text-gray-500 mt-1">Empfohlen: 0,30 - 0,60 € pro Kilometer</p>
               </div>
             )}
 
@@ -223,7 +244,7 @@ export default function OnboardingStep4() {
                 type="number"
                 placeholder="50"
                 value={step4Data.maxTravelDistance}
-                onChange={(e) => updateField('maxTravelDistance', Number(e.target.value))}
+                onChange={e => updateField('maxTravelDistance', Number(e.target.value))}
                 min="1"
                 max="500"
               />
@@ -242,8 +263,11 @@ export default function OnboardingStep4() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Verfügbarkeitstyp:</span>
                 <span className="font-medium">
-                  {step4Data.availabilityType === 'flexible' ? 'Flexibel' :
-                   step4Data.availabilityType === 'fixed' ? 'Feste Zeiten' : 'Auf Abruf'}
+                  {step4Data.availabilityType === 'flexible'
+                    ? 'Flexibel'
+                    : step4Data.availabilityType === 'fixed'
+                      ? 'Feste Zeiten'
+                      : 'Auf Abruf'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -253,10 +277,7 @@ export default function OnboardingStep4() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Reisekosten:</span>
                 <span className="font-medium">
-                  {step4Data.travelCosts ? 
-                    `${step4Data.travelCostPerKm || 0} €/km` : 
-                    'Keine'
-                  }
+                  {step4Data.travelCosts ? `${step4Data.travelCostPerKm || 0} €/km` : 'Keine'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -268,7 +289,10 @@ export default function OnboardingStep4() {
                   <span className="text-gray-600">Service-Gebiete:</span>
                   <div className="mt-1">
                     {step4Data.serviceAreas.map((area, index) => (
-                      <span key={index} className="inline-block bg-[#14ad9f] text-white px-2 py-1 rounded text-xs mr-1 mb-1">
+                      <span
+                        key={index}
+                        className="inline-block bg-[#14ad9f] text-white px-2 py-1 rounded text-xs mr-1 mb-1"
+                      >
                         {area}
                       </span>
                     ))}
@@ -282,14 +306,10 @@ export default function OnboardingStep4() {
 
       {/* Navigation */}
       <div className="flex justify-between pt-6">
-        <Button 
-          variant="outline" 
-          onClick={goToPreviousStep}
-          className="px-6"
-        >
+        <Button variant="outline" onClick={goToPreviousStep} className="px-6">
           Zurück
         </Button>
-        <Button 
+        <Button
           onClick={handleNext}
           disabled={!isValid}
           className="px-6 bg-[#14ad9f] hover:bg-[#129488] text-white disabled:bg-gray-300"

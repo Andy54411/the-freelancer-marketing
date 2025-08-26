@@ -111,11 +111,15 @@ export const stepValidationRules: Record<number, ValidationRule> = {
     },
   },
   3: {
-    // Harmonisierte Step 3: Profil & Branding (alle optional für Basis-Onboarding)
-    required: [], // Alles optional für erweiterte Profil-Details
+    // Harmonisierte Step 3: Profil & Branding
+    required: ['skills'], // Mindestens Skills sollten ausgefüllt werden
     validators: {
+      skills: (value: string[]) => Array.isArray(value) && value.length > 0,
       companyLogo: (value: string) => !value || value.length > 0, // Wenn gesetzt, dann gültig
       profileBannerImage: (value: string) => !value || value.length > 0, // Wenn gesetzt, dann gültig
+    },
+    minLength: {
+      skills: 1, // Mindestens 1 Skill
     },
   },
   4: {
@@ -132,7 +136,7 @@ export const stepValidationRules: Record<number, ValidationRule> = {
       travelCostPerKm: (data: any) => {
         // Wenn travelCosts aktiviert ist, dann ist travelCostPerKm required
         if (data.travelCosts === true) {
-          return !!(data.travelCostPerKm && data.travelCostPerKm > 0);
+          return typeof data.travelCostPerKm === 'number' && data.travelCostPerKm >= 0;
         }
         return true; // Nicht required wenn travelCosts false
       },
