@@ -200,12 +200,16 @@ export const createTemporaryJobDraft = onCall(
         throw new HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
       }
 
-      const anbieterCompanyDoc = await db.collection('users').doc(jobDetails.selectedAnbieterId).get();
+      const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
 
-      const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : anbieterUserDoc.data();
+      // Priorität: companies collection für Unternehmensdaten, users für Auth-Daten
+      const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : anbieterData;
       providerName = getUserDisplayName(companyData, getUserDisplayName(anbieterData, UNKNOWN_PROVIDER_NAME));
 
-      if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
+      // Stripe Account ID zuerst aus companies, dann aus users
+      if (companyData && companyData.stripeAccountId && typeof companyData.stripeAccountId === 'string' && companyData.stripeAccountId.startsWith('acct_')) {
+        anbieterStripeAccountId = companyData.stripeAccountId;
+      } else if (anbieterData && anbieterData.stripeAccountId && typeof anbieterData.stripeAccountId === 'string' && anbieterData.stripeAccountId.startsWith('acct_')) {
         anbieterStripeAccountId = anbieterData.stripeAccountId;
       } else {
         throw new HttpsError('failed-precondition', "Stripe Connect Konto des Anbieters ist nicht korrekt eingerichtet.");
@@ -788,7 +792,7 @@ export const updateCompanyStatus = onCall(
       const batch = db.batch();
 
       const userRef = db.collection('users').doc(companyId);
-      const companyRef = db.collection('users').doc(companyId);
+      const companyRef = db.collection('companies').doc(companyId);
 
       batch.update(userRef, {
         status: status,
@@ -841,45 +845,10 @@ export const searchProvidersBySubcategory = onCall(
       const providers: any[] = [];
       const hourlyRates: number[] = [];
 
-      // Search in users collection
-      try {
-        const usersQuery = await db
-          .collection('users')
-          .where('selectedSubcategory', '==', subcategory)
-          .get();
-
-        logger.info(`[searchProvidersBySubcategory] Found ${usersQuery.docs.length} providers in users collection`);
-
-        for (const doc of usersQuery.docs) {
-          const data = doc.data();
-          const provider = {
-            id: doc.id,
-            name: `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Unbekannter Anbieter',
-            companyName: data.companyName || '',
-            description: data.publicDescription || '',
-            hourlyRate: data.hourlyRate || 0,
-            rating: null, // Can be calculated from reviews later
-            profilePictureURL: data.profilePictureURL || '',
-            location: `${data.personalCity || ''}, ${data.personalCountry || ''}`.trim().replace(/^,\s*/, ''),
-            source: 'users',
-            category: data.selectedCategory || '',
-            subcategory: data.selectedSubcategory || '',
-          };
-          
-          providers.push(provider);
-          
-          if (typeof data.hourlyRate === 'number' && data.hourlyRate > 0) {
-            hourlyRates.push(data.hourlyRate);
-          }
-        }
-      } catch (error) {
-        logger.warn(`[searchProvidersBySubcategory] Error searching users collection: ${error}`);
-      }
-
       // Search in companies collection
       try {
         const companiesQuery = await db
-          .collection('users')
+          .collection('companies')
           .where('selectedSubcategory', '==', subcategory)
           .get();
 

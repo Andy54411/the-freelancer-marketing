@@ -93,145 +93,191 @@ interface FirmaUserData {
 }
 
 export const createUserProfile = onDocumentCreated("users/{userId}", async (event) => {
-  const snapshot = event.data;
-  const userId = event.params.userId;
-  if (!snapshot || !snapshot.data) {
-    loggerV2.warn(`[createUserProfile] User data for ${userId} is undefined. Skipping.`);
-    return null;
+  // Nur minimales User-Profil erstellen für Auth-Zwecke
+  if (!event.data) {
+    loggerV2.warn('No data in user creation event');
+    return;
   }
-  const db = getDb();
-  const userData = snapshot.data() as FirmaUserData;
-  loggerV2.info(`[createUserProfile Trigger] Verarbeite User ${userId}. Quelldaten (userData):`, JSON.stringify(userData, null, 2));
 
-  if (userData.user_type === "firma") {
-    // Helper to find the first non-empty, non-null value from a list of potential sources.
-    const pickFirst = <T>(...args: (T | null | undefined)[]) => args.find((v) => v) ?? null;
+  const userId = event.params.userId;
+  const userData = event.data.data() as Record<string, unknown>;
 
-    const lat = pickFirst(userData.lat);
-    const lng = pickFirst(userData.lng);
-    let geohash: string | null = null;
-    if (typeof lat === 'number' && typeof lng === 'number') {
-      geohash = geohashForLocation([lat, lng]);
-    }
+  loggerV2.info('👤 Creating minimal user profile for auth', { userId });
 
-    const postalCode = pickFirst(userData.companyPostalCodeForBackend, userData.step2?.postalCode, userData.step2?.companyPostalCode);
-    const companyName = pickFirst(userData.companyName, userData.step2?.companyName) || UNNAMED_COMPANY;
-    const companyCity = pickFirst(userData.companyCityForBackend, userData.step2?.city);
-    const hourlyRate = pickFirst(userData.hourlyRate, userData.step3?.hourlyRate);
-    const profilePictureURL = pickFirst(userData.profilePictureFirebaseUrl, userData.step3?.profilePictureURL);
-    const industryMcc = pickFirst(userData.industryMcc, userData.step2?.industryMcc);
+  try {
+    const db = await getDb();
 
-    const companyData: Record<string, unknown> = {
+    // Minimale User-Daten für Auth
+    const minimalUserData = {
       uid: userId,
-      user_type: "firma",
-      companyName: companyName,
-      postalCode: postalCode,
-      companyPostalCodeForBackend: postalCode,
-      companyCity: companyCity,
-      selectedCategory: userData.selectedCategory || null,
-      selectedSubcategory: userData.selectedSubcategory || null,
-      stripeAccountId: userData.stripeAccountId || null, // HINZUGEFÜGT
-      hourlyRate: Number(hourlyRate) || null,
-      lat: lat,
-      lng: lng,
-      radiusKm: Number(userData.radiusKm) || null,
-      geohash: geohash,
-      profilePictureURL: profilePictureURL,
-      industryMcc: industryMcc,
-      description: userData.description || "",
-      // Stripe-Statusfelder für die Anbietersuche synchronisieren
-      stripeChargesEnabled: userData.stripeChargesEnabled ?? false,
-      stripePayoutsEnabled: userData.stripePayoutsEnabled ?? false,
-      stripeDetailsSubmitted: userData.stripeDetailsSubmitted ?? false,
-
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      profileLastUpdatedAt: FieldValue.serverTimestamp(),
+      email: userData.email || null,
+      displayName: userData.displayName || null,
+      photoURL: userData.photoURL || null,
+      createdAt: userData.createdAt || FieldValue.serverTimestamp(),
+      user_type: userData.user_type || 'firma',
+      // Auth Flags
+      needsOnboarding: userData.needsOnboarding !== false,
+      hasOnboardingStarted: userData.hasOnboardingStarted || false,
+      onboardingCompleted: userData.onboardingCompleted || false,
+      profileComplete: userData.profileComplete || false,
     };
 
-    const finalCompanyData = cleanAndNormalizeCompanyData(companyData);
-    loggerV2.info(`[createUserProfile] Schreibe companyData-Objekt für ${userId}:`, JSON.stringify(finalCompanyData, null, 2));
+    await db.collection("users").doc(userId).set(minimalUserData, { merge: true });
+    loggerV2.info('✅ Minimal user profile created successfully', { userId });
 
-    try {
-      await db.collection("users").doc(userId).set(finalCompanyData, { merge: true });
-      loggerV2.info(`[createUserProfile] Company-Dokument für ${userId} erstellt/gemerged.`);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        loggerV2.error(`[createUserProfile] Fehler bei Company-Dokument für ${userId}:`, error.message, error);
-      } else {
-        loggerV2.error(`[createUserProfile] Fehler bei Company-Dokument für ${userId}:`, String(error));
-      }
-    }
+  } catch (error) {
+    loggerV2.error('❌ Error creating minimal user profile:', error);
   }
-  return null;
+});
+
+// 🔧 NEUE COMPANIES COLLECTION TRIGGER
+export const createCompanyProfile = onDocumentCreated("companies/{companyId}", async (event) => {
+  if (!event.data) {
+    loggerV2.warn('No data in company creation event');
+    return;
+  }
+
+  const companyId = event.params.companyId;
+  const companyData = event.data.data() as FirmaUserData;
+
+  loggerV2.info('🏢 Processing company profile creation', { companyId });
+
+  try {
+    const db = await getDb();
+
+    // Vollständige Company-Daten verarbeiten
+    const finalCompanyData = cleanAndNormalizeCompanyData(companyData as unknown as Record<string, unknown>);
+
+    if (finalCompanyData.companyName === null || finalCompanyData.companyName === undefined) {
+      finalCompanyData.companyName = UNNAMED_COMPANY;
+    }
+
+    // Geohash für Location berechnen
+    if (typeof finalCompanyData.lat === 'number' && typeof finalCompanyData.lng === 'number') {
+      const lat = finalCompanyData.lat as number;
+      const lng = finalCompanyData.lng as number;
+      finalCompanyData.geohash = geohashForLocation([lat, lng]);
+    }
+
+    // Final company document
+    finalCompanyData.createdAt = FieldValue.serverTimestamp();
+    finalCompanyData.lastUpdated = FieldValue.serverTimestamp();
+
+    // Save to companies collection
+    await db.collection("companies").doc(companyId).set(finalCompanyData, { merge: true });
+    loggerV2.info('✅ Company profile created successfully', { companyId });
+
+  } catch (error) {
+    loggerV2.error('❌ Error creating company profile:', error);
+  }
 });
 
 export const updateUserProfile = onDocumentUpdated("users/{userId}", async (event) => {
   const userId = event.params.userId;
-  const snapshotBefore = event.data?.before;
   const snapshotAfter = event.data?.after;
+  
   if (!snapshotAfter) {
     loggerV2.warn(`[updateUserProfile] Kein Daten-Snapshot nach Update für User ${userId}. Abbruch.`);
     return null;
   }
-  const db = getDb();
-  const userData = snapshotAfter.data() as FirmaUserData;
+  
+  const userData = snapshotAfter.data() as Record<string, unknown>;
+  
+  // 🔧 SAUBERE TRENNUNG: Nur minimal Auth-Updates in users collection
+  loggerV2.info(`[updateUserProfile] Minimale Auth-Updates für User ${userId}`);
+
+  try {
+    const db = await getDb();
+
+    // Nur essentielle Auth-Flags updateDoc
+    const authUpdates: Record<string, unknown> = {
+      lastAuthUpdate: FieldValue.serverTimestamp(),
+    };
+
+    // Nur wenn Auth-relevante Felder sich geändert haben
+    if (userData.onboardingCompleted || userData.profileComplete) {
+      loggerV2.info(`[updateUserProfile] Auth flags updated für ${userId}`);
+    }
+
+    await db.collection("users").doc(userId).update(authUpdates);
+    loggerV2.info('✅ Minimal user auth update completed', { userId });
+
+  } catch (error) {
+    loggerV2.error('❌ Error updating user auth:', error);
+  }
+  
+  return null;
+});
+
+// 🔧 NEUE COMPANIES UPDATE TRIGGER
+export const updateCompanyProfile = onDocumentUpdated("companies/{companyId}", async (event) => {
+  const companyId = event.params.companyId;
+  const snapshotBefore = event.data?.before;
+  const snapshotAfter = event.data?.after;
+  
+  if (!snapshotAfter) {
+    loggerV2.warn(`[updateCompanyProfile] Kein Daten-Snapshot nach Update für Company ${companyId}. Abbruch.`);
+    return null;
+  }
+  
+  const db = await getDb();
+  const companyData = snapshotAfter.data() as FirmaUserData;
   const previousData = snapshotBefore?.data() as FirmaUserData;
   
-  if (typeof userData !== "object" || userData === null) {
-    loggerV2.warn(`[updateUserProfile] Userdaten für ${userId} nach Update ungültig. Abbruch.`);
+  if (typeof companyData !== "object" || companyData === null) {
+    loggerV2.warn(`[updateCompanyProfile] Company-Daten für ${companyId} nach Update ungültig. Abbruch.`);
     return null;
   }
 
   // CRITICAL: Verhindere Endlosschleife - Zeit-basierte Prevention
   const currentTime = Date.now();
-  const lastUpdate = (userData as any)?.profileLastUpdatedAt?._seconds * 1000 || 0;
+  const lastUpdate = (companyData as any)?.profileLastUpdatedAt?._seconds * 1000 || 0;
   
   // Wenn das letzte Update weniger als 10 Sekunden her ist, breche ab
   if (currentTime - lastUpdate < 10000) {
-    loggerV2.info(`[updateUserProfile] ${userId}: Update zu kürzlich (${Math.round((currentTime - lastUpdate)/1000)}s), Trigger-Loop verhindert.`);
+    loggerV2.info(`[updateCompanyProfile] ${companyId}: Update zu kürzlich (${Math.round((currentTime - lastUpdate)/1000)}s), Trigger-Loop verhindert.`);
     return null;
   }
 
-  // Prüfe ob relevante User-Felder geändert wurden
+  // Prüfe ob relevante Company-Felder geändert wurden
   const relevantFieldsChanged = (
-    previousData?.companyName !== userData?.companyName ||
-    previousData?.step2?.companyName !== userData?.step2?.companyName ||
-    previousData?.selectedCategory !== userData?.selectedCategory ||
-    previousData?.selectedSubcategory !== userData?.selectedSubcategory ||
-    previousData?.hourlyRate !== userData?.hourlyRate ||
-    previousData?.lat !== userData?.lat ||
-    previousData?.lng !== userData?.lng ||
-    previousData?.radiusKm !== userData?.radiusKm
+    previousData?.companyName !== companyData?.companyName ||
+    previousData?.step2?.companyName !== companyData?.step2?.companyName ||
+    previousData?.selectedCategory !== companyData?.selectedCategory ||
+    previousData?.selectedSubcategory !== companyData?.selectedSubcategory ||
+    previousData?.hourlyRate !== companyData?.hourlyRate ||
+    previousData?.lat !== companyData?.lat ||
+    previousData?.lng !== companyData?.lng ||
+    previousData?.radiusKm !== companyData?.radiusKm
   );
 
   if (!relevantFieldsChanged) {
-    loggerV2.info(`[updateUserProfile] ${userId}: Keine relevanten Felder geändert, Update übersprungen.`);
+    loggerV2.info(`[updateCompanyProfile] ${companyId}: Keine relevanten Felder geändert, Update übersprungen.`);
     return null;
   }
 
-  loggerV2.info(`[updateUserProfile Trigger] Verarbeite User ${userId}. Quelldaten (userData):`, JSON.stringify(userData, null, 2));
+  loggerV2.info(`[updateCompanyProfile Trigger] Verarbeite Company ${companyId}. Quelldaten:`, JSON.stringify(companyData, null, 2));
 
-  if (userData.user_type === "firma") {
+  try {
     // Helper to find the first non-empty, non-null value from a list of potential sources.
     const pickFirst = <T>(...args: (T | null | undefined)[]) => args.find((v) => v) ?? null;
 
-    const lat = pickFirst(userData.lat);
-    const lng = pickFirst(userData.lng);
+    const lat = pickFirst(companyData.lat);
+    const lng = pickFirst(companyData.lng);
     let geohash: string | null = null;
     if (typeof lat === 'number' && typeof lng === 'number') {
       geohash = geohashForLocation([lat, lng]);
     }
 
-    const postalCode = pickFirst(userData.companyPostalCodeForBackend, userData.step2?.postalCode, userData.step2?.companyPostalCode);
-    const companyName = pickFirst(userData.companyName, userData.step2?.companyName);
-    const companyCity = pickFirst(userData.companyCityForBackend, userData.step2?.city);
-    const hourlyRate = pickFirst(userData.hourlyRate, userData.step3?.hourlyRate);
-    const profilePictureURL = pickFirst(userData.profilePictureFirebaseUrl, userData.step3?.profilePictureURL);
-    const industryMcc = pickFirst(userData.industryMcc, userData.step2?.industryMcc);
+    const postalCode = pickFirst(companyData.companyPostalCodeForBackend, companyData.step2?.postalCode, companyData.step2?.companyPostalCode);
+    const companyName = pickFirst(companyData.companyName, companyData.step2?.companyName);
+    const companyCity = pickFirst(companyData.companyCityForBackend, companyData.step2?.city);
+    const hourlyRate = pickFirst(companyData.hourlyRate, companyData.step3?.hourlyRate);
+    const profilePictureURL = pickFirst(companyData.profilePictureFirebaseUrl, companyData.step3?.profilePictureURL);
+    const industryMcc = pickFirst(companyData.industryMcc, companyData.step2?.industryMcc);
 
     const companyDataUpdate: Record<string, unknown> = {
-      uid: userId,
+      uid: companyId,
       user_type: "firma",
       updatedAt: FieldValue.serverTimestamp(),
       profileLastUpdatedAt: FieldValue.serverTimestamp(),
@@ -240,28 +286,28 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
       postalCode: postalCode,
       companyPostalCodeForBackend: postalCode,
       companyCity: companyCity,
-      selectedCategory: userData.selectedCategory || null,
-      selectedSubcategory: userData.selectedSubcategory || null,
-      stripeAccountId: userData.stripeAccountId || null, // HINZUGEFÜGT
+      selectedCategory: companyData.selectedCategory || null,
+      selectedSubcategory: companyData.selectedSubcategory || null,
+      stripeAccountId: companyData.stripeAccountId || null,
       hourlyRate: Number(hourlyRate) || null,
       lat: lat,
       lng: lng,
-      radiusKm: Number(userData.radiusKm) || null,
+      radiusKm: Number(companyData.radiusKm) || null,
       geohash: geohash,
       profilePictureURL: profilePictureURL,
       industryMcc: industryMcc,
-      description: userData.description || "",
+      description: companyData.description || "",
       // Stripe-Statusfelder für die Anbietersuche synchronisieren
-      stripeChargesEnabled: userData.stripeChargesEnabled ?? false,
-      stripePayoutsEnabled: userData.stripePayoutsEnabled ?? false,
-      stripeDetailsSubmitted: userData.stripeDetailsSubmitted ?? false,
+      stripeChargesEnabled: companyData.stripeChargesEnabled ?? false,
+      stripePayoutsEnabled: companyData.stripePayoutsEnabled ?? false,
+      stripeDetailsSubmitted: companyData.stripeDetailsSubmitted ?? false,
     };
 
-    const companyDocBefore = await db.collection("users").doc(userId).get();
+    const companyDocBefore = await db.collection("companies").doc(companyId).get();
     if (companyDocBefore.exists && companyDocBefore.data()?.createdAt) {
       companyDataUpdate.createdAt = companyDocBefore.data()?.createdAt;
-    } else if (userData.createdAt) {
-      companyDataUpdate.createdAt = userData.createdAt;
+    } else if (companyData.createdAt) {
+      companyDataUpdate.createdAt = companyData.createdAt;
     } else {
       if (!companyDataUpdate.createdAt && !companyDocBefore.exists) {
         companyDataUpdate.createdAt = FieldValue.serverTimestamp();
@@ -269,21 +315,19 @@ export const updateUserProfile = onDocumentUpdated("users/{userId}", async (even
     }
 
     const finalCompanyDataUpdate = cleanAndNormalizeCompanyData(companyDataUpdate);
-    loggerV2.info(`[updateUserProfile] Schreibe companyDataUpdate-Objekt für ${userId}:`, JSON.stringify(finalCompanyDataUpdate, null, 2));
+    loggerV2.info(`[updateCompanyProfile] Schreibe companyDataUpdate-Objekt für ${companyId}:`, JSON.stringify(finalCompanyDataUpdate, null, 2));
 
-    try {
-      await db.collection("users").doc(userId).set(finalCompanyDataUpdate, { merge: true });
-      loggerV2.info(`[updateUserProfile] Company-Dokument für ${userId} aktualisiert.`);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        loggerV2.error(`[updateUserProfile] Fehler Company-Dokument für ${userId}:`, error.message, error);
-      } else {
-        loggerV2.error(`[updateUserProfile] Fehler Company-Dokument für ${userId}:`, String(error));
-      }
+    await db.collection("companies").doc(companyId).set(finalCompanyDataUpdate, { merge: true });
+    loggerV2.info(`[updateCompanyProfile] Company-Dokument für ${companyId} erfolgreich aktualisiert.`);
+
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      loggerV2.error(`[updateCompanyProfile] Fehler Company-Dokument für ${companyId}:`, error.message, error);
+    } else {
+      loggerV2.error(`[updateCompanyProfile] Fehler Company-Dokument für ${companyId}:`, String(error));
     }
-  } else {
-    loggerV2.info(`[updateUserProfile] User ${userId} Typ '${userData.user_type}', kein Update für companies Dokument.`);
   }
+  
   return null;
 });
 
@@ -430,6 +474,78 @@ export const syncCompanyToUserOnUpdate = onDocumentUpdated("companies/{companyId
   }
 });
 
+// 🔧 NEUE STRIPE TRIGGER für companies collection
+export const createStripeCustomAccountOnCompanyUpdate = onDocumentUpdated("companies/{companyId}", async (event) => {
+  const companyId = event.params.companyId;
+  loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnCompanyUpdate' (V2) für ${companyId}.`);
+
+  const afterData = event.data?.after.data();
+
+  if (!afterData) {
+    loggerV2.warn(`No after data for company ${companyId}`);
+    return null;
+  }
+
+  // Prüfen ob Stripe Account erstellt werden muss
+  const hasStripeAccount = afterData.stripeAccountId;
+  const shouldCreateStripeAccount = !hasStripeAccount && (
+    afterData.onboardingCompleted === true ||
+    afterData.profileComplete === true ||
+    afterData.step2?.companyName
+  );
+
+  if (!shouldCreateStripeAccount) {
+    loggerV2.info(`No Stripe account creation needed for company ${companyId}`);
+    return null;
+  }
+
+  loggerV2.info(`Creating Stripe account for company ${companyId}`);
+
+  try {
+    const stripe = getStripeInstance(STRIPE_SECRET_KEY_TRIGGERS.value());
+    const db = await getDb();
+
+    // Create Stripe Express account für company
+    const account = await stripe.accounts.create({
+      type: 'express',
+      country: 'DE',
+      email: afterData.email,
+      business_type: 'company',
+      company: {
+        name: afterData.companyName || afterData.step2?.companyName || 'Unbekannte Firma',
+      },
+      business_profile: {
+        mcc: afterData.industryMcc || afterData.step2?.industryMcc || '7399',
+        name: afterData.companyName || afterData.step2?.companyName || 'Unbekannte Firma',
+        product_description: afterData.description || 'Professionelle Dienstleistungen',
+        support_email: afterData.email,
+        url: afterData.website || afterData.step1?.website || undefined,
+      },
+      settings: {
+        payouts: {
+          schedule: {
+            interval: 'daily',
+          },
+        },
+      },
+    });
+
+    // Save Stripe account ID to companies collection
+    await db.collection('companies').doc(companyId).update({
+      stripeAccountId: account.id,
+      stripeAccountCreatedAt: FieldValue.serverTimestamp(),
+    });
+
+    loggerV2.info(`✅ Stripe account ${account.id} created for company ${companyId}`);
+
+  } catch (error) {
+    loggerV2.error(`❌ Error creating Stripe account for company ${companyId}:`, error);
+  }
+
+  return null;
+});
+
+// Legacy: Behalte den alten users trigger für Kompatibilität
 export const createStripeCustomAccountOnUserUpdate = onDocumentUpdated("users/{userId}", async (event) => {
   const userId = event.params.userId;
   loggerV2.info(`Firestore Trigger 'createStripeCustomAccountOnUserUpdate' (V2) für ${userId}.`);

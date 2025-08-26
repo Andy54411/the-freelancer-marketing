@@ -59,30 +59,38 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       console.log('🔄 OnboardingContext: Lade Onboarding-Status...');
 
       try {
-        // SIMPLIFIED: Use user document directly instead of subcollection
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+        // 🔧 SAUBERE TRENNUNG: Lade Onboarding aus companies collection
+        const companyDoc = await getDoc(doc(db, 'companies', companyId));
+
+        if (companyDoc.exists()) {
+          const companyData = companyDoc.data();
 
           // Check if onboarding is completed
-          const isCompleted = userData.onboardingCompleted === true;
-          const currentStepFromData = userData.onboardingCurrentStep || '1';
-          const stepDataFromUser = userData.onboardingStepData || {};
+          const isCompleted = companyData.onboardingCompleted === true;
+          const currentStepFromData = companyData.onboardingCurrentStep || '1';
+
+          // Load step data from companies collection
+          const stepDataFromCompany: Record<number, any> = {};
+          ['step1', 'step2', 'step3', 'step4', 'step5'].forEach((stepKey, index) => {
+            if (companyData[stepKey]) {
+              stepDataFromCompany[index + 1] = companyData[stepKey];
+            }
+          });
 
           const status: CompanyOnboardingStatus = {
             uid: companyId,
             status: isCompleted ? 'completed' : 'pending_onboarding',
-            completedSteps: userData.onboardingCompletedSteps || [],
+            completedSteps: companyData.onboardingCompletedSteps || [],
             currentStep: currentStepFromData,
-            startedAt: userData.onboardingStartedAt || new Date(),
-            registrationCompletedAt: userData.createdAt || new Date(),
+            startedAt: companyData.onboardingStartedAt?.toDate() || new Date(),
+            registrationCompletedAt: companyData.createdAt?.toDate() || new Date(),
             registrationMethod: 'new_registration',
-            stepData: stepDataFromUser,
-            completionPercentage: userData.onboardingCompletionPercentage || 0,
+            stepData: stepDataFromCompany,
+            completionPercentage: companyData.onboardingCompletionPercentage || 0,
           };
 
           setOnboardingStatus(status);
-          setStepData(stepDataFromUser);
+          setStepData(stepDataFromCompany);
 
           // Set current step based on saved progress or initialStep
           const stepNumber = initialStep || parseInt(currentStepFromData) || 1;
@@ -101,11 +109,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
             completionPercentage: 0,
           };
 
-          // Save initial status to user document
-          await updateDoc(doc(db, 'users', user.uid), {
+          // Save initial status to companies document (nicht users)
+          await updateDoc(doc(db, 'companies', companyId), {
             onboardingStartedAt: serverTimestamp(),
             onboardingCurrentStep: '1',
-            onboardingStepData: {},
             onboardingCompletionPercentage: 0,
           });
 
@@ -376,23 +383,26 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       setLastSaveTime(now);
       setIsSaving(true);
 
-      // FIRESTORE-SAVE REDUZIERT: Nur minimale Updates, keine redundanten Writes
-      const minimalUpdates: any = {
+      // 🔧 SAUBERE TRENNUNG: Speichere in companies collection
+      const companyUpdates: any = {
         onboardingCurrentStep: String(currentStep),
         onboardingLastSaved: serverTimestamp(),
       };
 
-      // Nur aktuellen Step-Data speichern (nicht alle Steps)
+      // Nur aktuellen Step-Data speichern
       if (stepData[currentStep]) {
-        minimalUpdates[`onboardingStep${currentStep}Data`] = stepData[currentStep];
-        console.log(`📊 Saving step ${currentStep} data:`, stepData[currentStep]);
+        companyUpdates[`step${currentStep}`] = stepData[currentStep];
+        console.log(
+          `📊 Saving step ${currentStep} data to companies collection:`,
+          stepData[currentStep]
+        );
       }
 
-      const userDocRef = doc(db, 'users', user.uid);
-      await updateDoc(userDocRef, minimalUpdates);
+      const companyDocRef = doc(db, 'companies', companyId);
+      await updateDoc(companyDocRef, companyUpdates);
 
       setLastSaved(new Date());
-      console.log(`✅ Step ${currentStep} erfolgreich in Firestore gespeichert`);
+      console.log(`✅ Step ${currentStep} erfolgreich in companies collection gespeichert`);
     } catch (error) {
       console.error(`❌ Fehler beim Speichern von Step ${currentStep}:`, error);
     } finally {
@@ -410,7 +420,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   const submitOnboarding = useCallback(async (): Promise<void> => {
-    console.log('🚀 submitOnboarding started');
+    console.log('🚀 submitOnboarding started - using companies collection');
 
     if (!user || !companyId) {
       console.error('❌ submitOnboarding failed: Missing user or companyId', {
@@ -423,113 +433,120 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     try {
       console.log('📊 stepData:', stepData);
 
-      // CRITICAL FIX: Load existing user data FIRST to preserve registration fields
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      const existingUserData = userDocSnap.exists() ? userDocSnap.data() : {};
+      // 🔧 SAUBERE TRENNUNG: Alle Onboarding-Daten in companies collection
+      const companyDocRef = doc(db, 'companies', companyId);
+      const companyDocSnap = await getDoc(companyDocRef);
+      const existingCompanyData = companyDocSnap.exists() ? companyDocSnap.data() : {};
 
-      console.log('📝 Processing step data...');
+      console.log('📝 Processing step data for companies collection...');
 
-      // HARMONIZED: Only set the 13 cleaned onboarding fields (NO Registration duplicates)
-      const onboardingUpdates: any = {};
+      // Alle Onboarding-Daten gehen in companies collection
+      const companyUpdates: any = {};
 
-      // Step 1: Erweiterte Unternehmensdaten (4 Felder - KEINE Registration-Duplikate)
-      if (stepData[1]?.businessType)
-        onboardingUpdates.businessType = String(stepData[1].businessType);
-      if (stepData[1]?.employees) onboardingUpdates.employees = String(stepData[1].employees);
-      if (stepData[1]?.website) onboardingUpdates.website = String(stepData[1].website);
-      if (stepData[1]?.description) onboardingUpdates.description = String(stepData[1].description);
+      // Step 1: Erweiterte Unternehmensdaten
+      if (stepData[1]?.businessType) companyUpdates.businessType = String(stepData[1].businessType);
+      if (stepData[1]?.employees) companyUpdates.employees = String(stepData[1].employees);
+      if (stepData[1]?.website) companyUpdates.website = String(stepData[1].website);
+      if (stepData[1]?.description) companyUpdates.description = String(stepData[1].description);
 
-      // Manager Zusatzdaten (nur erweiterte Felder, KEINE Registration-Duplikate)
+      // Manager Zusatzdaten
       if (stepData[1]?.managerData?.position) {
-        onboardingUpdates.managerPosition = String(stepData[1].managerData.position);
+        companyUpdates.managerPosition = String(stepData[1].managerData.position);
       }
       if (stepData[1]?.managerData?.nationality) {
-        onboardingUpdates.managerNationality = String(stepData[1].managerData.nationality);
+        companyUpdates.managerNationality = String(stepData[1].managerData.nationality);
       }
 
-      // Step 2: Steuerliche Zusatzeinstellungen (4 Felder - KEINE taxNumber/vatId Duplikate)
+      // Step 2: Steuerliche Zusatzeinstellungen
       if (stepData[2]?.kleinunternehmer)
-        onboardingUpdates.kleinunternehmer = String(stepData[2].kleinunternehmer);
-      if (stepData[2]?.profitMethod)
-        onboardingUpdates.profitMethod = String(stepData[2].profitMethod);
-      if (stepData[2]?.priceInput) onboardingUpdates.priceInput = String(stepData[2].priceInput);
-      if (stepData[2]?.taxRate) onboardingUpdates.taxRate = String(stepData[2].taxRate);
+        companyUpdates.kleinunternehmer = String(stepData[2].kleinunternehmer);
+      if (stepData[2]?.profitMethod) companyUpdates.profitMethod = String(stepData[2].profitMethod);
+      if (stepData[2]?.priceInput) companyUpdates.priceInput = String(stepData[2].priceInput);
+      if (stepData[2]?.taxRate) companyUpdates.taxRate = String(stepData[2].taxRate);
 
-      // Step 3: Profil & Service-Details (8 Felder - KEINE hourlyRate Duplikate)
-      if (stepData[3]?.companyLogo) onboardingUpdates.companyLogo = String(stepData[3].companyLogo);
+      // Step 3: Profil & Service-Details
+      if (stepData[3]?.companyLogo) companyUpdates.companyLogo = String(stepData[3].companyLogo);
       if (stepData[3]?.profileBannerImage)
-        onboardingUpdates.profileBannerImage = String(stepData[3].profileBannerImage);
+        companyUpdates.profileBannerImage = String(stepData[3].profileBannerImage);
       if (stepData[3]?.publicDescription)
-        onboardingUpdates.publicDescription = String(stepData[3].publicDescription);
+        companyUpdates.publicDescription = String(stepData[3].publicDescription);
       if (stepData[3]?.instantBooking !== undefined)
-        onboardingUpdates.instantBooking = Boolean(stepData[3].instantBooking);
+        companyUpdates.instantBooking = Boolean(stepData[3].instantBooking);
       if (stepData[3]?.responseTimeGuarantee)
-        onboardingUpdates.responseTimeGuarantee = Number(stepData[3].responseTimeGuarantee);
+        companyUpdates.responseTimeGuarantee = Number(stepData[3].responseTimeGuarantee);
       if (Array.isArray(stepData[3]?.skills) && stepData[3].skills.length > 0) {
-        onboardingUpdates.skills = stepData[3].skills;
+        companyUpdates.skills = stepData[3].skills;
       }
       if (Array.isArray(stepData[3]?.specialties) && stepData[3].specialties.length > 0) {
-        onboardingUpdates.specialties = stepData[3].specialties;
+        companyUpdates.specialties = stepData[3].specialties;
       }
       if (Array.isArray(stepData[3]?.languages) && stepData[3].languages.length > 0) {
-        onboardingUpdates.languages = stepData[3].languages;
+        companyUpdates.languages = stepData[3].languages;
       }
       if (Array.isArray(stepData[3]?.servicePackages) && stepData[3].servicePackages.length > 0) {
-        onboardingUpdates.servicePackages = stepData[3].servicePackages;
+        companyUpdates.servicePackages = stepData[3].servicePackages;
       }
       if (Array.isArray(stepData[3]?.portfolio) && stepData[3].portfolio.length > 0) {
-        onboardingUpdates.portfolio = stepData[3].portfolio;
+        companyUpdates.portfolio = stepData[3].portfolio;
       }
       if (Array.isArray(stepData[3]?.faqs) && stepData[3].faqs.length > 0) {
-        onboardingUpdates.faqs = stepData[3].faqs;
+        companyUpdates.faqs = stepData[3].faqs;
       }
 
-      // Step 4: Service-Bereich & Verfügbarkeit (5 Felder - KEINE Category/Location Duplikate)
+      // Step 4: Service-Bereich & Verfügbarkeit
       if (Array.isArray(stepData[4]?.serviceAreas) && stepData[4].serviceAreas.length > 0) {
-        onboardingUpdates.serviceAreas = stepData[4].serviceAreas;
+        companyUpdates.serviceAreas = stepData[4].serviceAreas;
       }
       if (stepData[4]?.availabilityType)
-        onboardingUpdates.availabilityType = String(stepData[4].availabilityType);
+        companyUpdates.availabilityType = String(stepData[4].availabilityType);
       if (stepData[4]?.advanceBookingHours)
-        onboardingUpdates.advanceBookingHours = Number(stepData[4].advanceBookingHours);
+        companyUpdates.advanceBookingHours = Number(stepData[4].advanceBookingHours);
       if (stepData[4]?.travelCosts !== undefined)
-        onboardingUpdates.travelCosts = Boolean(stepData[4].travelCosts);
+        companyUpdates.travelCosts = Boolean(stepData[4].travelCosts);
       if (stepData[4]?.travelCostPerKm)
-        onboardingUpdates.travelCostPerKm = Number(stepData[4].travelCostPerKm);
+        companyUpdates.travelCostPerKm = Number(stepData[4].travelCostPerKm);
       if (stepData[4]?.maxTravelDistance)
-        onboardingUpdates.maxTravelDistance = Number(stepData[4].maxTravelDistance);
+        companyUpdates.maxTravelDistance = Number(stepData[4].maxTravelDistance);
 
-      // Step 5: Finale Bestätigung (1 Feld)
+      // Step 5: Finale Bestätigung
       if (stepData[5]?.documentsCompleted !== undefined)
-        onboardingUpdates.documentsCompleted = Boolean(stepData[5].documentsCompleted);
+        companyUpdates.documentsCompleted = Boolean(stepData[5].documentsCompleted);
 
-      // Onboarding completion metadata - ALWAYS SET
-      onboardingUpdates.onboardingCompleted = true;
-      onboardingUpdates.onboardingCompletedAt = serverTimestamp();
-      onboardingUpdates.onboardingCompletionPercentage = 100;
-      onboardingUpdates.onboardingCurrentStep = 'completed'; // Mark as completed
-      onboardingUpdates.profileComplete = true;
-      onboardingUpdates.profileStatus = 'pending_review';
+      // Onboarding completion metadata
+      companyUpdates.onboardingCompleted = true;
+      companyUpdates.onboardingCompletedAt = serverTimestamp();
+      companyUpdates.onboardingCompletionPercentage = 100;
+      companyUpdates.onboardingCurrentStep = 'completed';
+      companyUpdates.profileComplete = true;
+      companyUpdates.profileStatus = 'pending_review';
 
-      // CRITICAL FIX: Add step structures for Firebase Functions
-      // Functions expect step1, step2, step3, step4 structures
-      if (stepData[1]) onboardingUpdates.step1 = stepData[1];
-      if (stepData[2]) onboardingUpdates.step2 = stepData[2];
-      if (stepData[3]) onboardingUpdates.step3 = stepData[3];
-      if (stepData[4]) onboardingUpdates.step4 = stepData[4];
-      if (stepData[5]) onboardingUpdates.step5 = stepData[5];
+      // Step structures für Functions
+      if (stepData[1]) companyUpdates.step1 = stepData[1];
+      if (stepData[2]) companyUpdates.step2 = stepData[2];
+      if (stepData[3]) companyUpdates.step3 = stepData[3];
+      if (stepData[4]) companyUpdates.step4 = stepData[4];
+      if (stepData[5]) companyUpdates.step5 = stepData[5];
 
-      // Update main user document with ALL onboarding fields AND completion metadata
-      console.log('💾 Updating user document with onboarding data...');
-      await updateDoc(userDocRef, onboardingUpdates);
-      console.log('✅ User document updated successfully');
+      // Update companies document mit allen Onboarding-Daten
+      console.log('💾 Updating companies document with all onboarding data...');
+      await updateDoc(companyDocRef, companyUpdates);
+      console.log('✅ Companies document updated successfully');
 
-      // REMOVED: Companies collection update - collection deleted
-      // Companies collection is no longer used, all data is in users collection
+      // 🔧 MINIMAL UPDATE: Nur completion flags in users document
+      const userDocRef = doc(db, 'users', user.uid);
+      const userMinimalUpdates = {
+        onboardingCompleted: true,
+        onboardingCompletedAt: serverTimestamp(),
+        profileComplete: true,
+        profileStatus: 'pending_review',
+      };
 
-      // SUCCESS: Onboarding abgeschlossen - nur harmonisiertes System verwenden
-      console.log('✅ Onboarding erfolgreich abgeschlossen (harmonisiertes System)');
+      console.log('💾 Updating users document with minimal completion flags...');
+      await updateDoc(userDocRef, userMinimalUpdates);
+      console.log('✅ Users document updated with minimal flags');
+
+      // SUCCESS: Onboarding abgeschlossen - companies collection updated
+      console.log('✅ Onboarding erfolgreich abgeschlossen (saubere 2-Collection Trennung)');
 
       // Set cookies for middleware
       console.log('🍪 Setting completion cookies...');

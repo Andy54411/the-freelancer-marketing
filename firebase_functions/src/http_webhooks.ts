@@ -294,8 +294,8 @@ export const stripeWebhookHandler = onRequest(
                                     if (proposal) {
                                         logger.info(`[stripeWebhookHandler] Found proposal from company ${proposal.companyUid}`);
                                         
-                                        // Get provider details from users collection
-                                        const providerRef = db.collection('users').doc(proposal.companyUid);
+                                        // Get provider details from companies collection
+                                        const providerRef = db.collection('companies').doc(proposal.companyUid);
                                         const providerDoc = await providerRef.get();
                                         
                                         let providerName = 'Unbekannter Anbieter';
@@ -651,20 +651,36 @@ export const stripeWebhookHandler = onRequest(
                     // Finde den Benutzer in Firestore anhand der Stripe Account ID und aktualisiere seinen Status
                     if (account.id) {
                         try {
-                            const usersRef = db.collection('users');
-                            const querySnapshot = await usersRef.where('stripeAccountId', '==', account.id).limit(1).get();
+                            // Prüfe zuerst companies collection
+                            const companiesRef = db.collection('companies');
+                            let querySnapshot = await companiesRef.where('stripeAccountId', '==', account.id).limit(1).get();
 
                             if (!querySnapshot.empty) {
-                                const userDoc = querySnapshot.docs[0];
-                                await userDoc.ref.update({
+                                const companyDoc = querySnapshot.docs[0];
+                                await companyDoc.ref.update({
                                     stripeChargesEnabled: account.charges_enabled,
                                     stripePayoutsEnabled: account.payouts_enabled,
                                     stripeDetailsSubmitted: account.details_submitted,
                                     stripeAccountStatusUpdatedAt: FieldValue.serverTimestamp(),
                                 });
-                                logger.info(`[stripeWebhookHandler] Firestore-Benutzer ${userDoc.id} (Stripe Acc: ${account.id}) aktualisiert mit neuem Account-Status.`);
+                                logger.info(`[stripeWebhookHandler] Firestore-Company ${companyDoc.id} (Stripe Acc: ${account.id}) aktualisiert mit neuem Account-Status.`);
                             } else {
-                                logger.warn(`[stripeWebhookHandler] Kein Benutzer in Firestore gefunden für Stripe Account ID: ${account.id}`);
+                                // Fallback: Prüfe users collection für Legacy-Kompatibilität
+                                const usersRef = db.collection('users');
+                                querySnapshot = await usersRef.where('stripeAccountId', '==', account.id).limit(1).get();
+
+                                if (!querySnapshot.empty) {
+                                    const userDoc = querySnapshot.docs[0];
+                                    await userDoc.ref.update({
+                                        stripeChargesEnabled: account.charges_enabled,
+                                        stripePayoutsEnabled: account.payouts_enabled,
+                                        stripeDetailsSubmitted: account.details_submitted,
+                                        stripeAccountStatusUpdatedAt: FieldValue.serverTimestamp(),
+                                    });
+                                    logger.info(`[stripeWebhookHandler] Firestore-User ${userDoc.id} (Stripe Acc: ${account.id}) aktualisiert mit neuem Account-Status.`);
+                                } else {
+                                    logger.warn(`[stripeWebhookHandler] Kein Benutzer in Firestore gefunden für Stripe Account ID: ${account.id}`);
+                                }
                             }
                         } catch (dbError: any) {
                             logger.error(`[stripeWebhookHandler] Fehler beim Aktualisieren des Benutzerstatus in Firestore für Account ${account.id}:`, dbError);

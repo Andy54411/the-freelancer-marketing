@@ -128,9 +128,21 @@ export const getUserOrders = onRequest(
                 
                 if (data.selectedAnbieterId && !providerName) {
                     try {
-                        const providerDoc = await db.collection('users').doc(data.selectedAnbieterId).get();
+                        // Versuche zuerst companies collection für Unternehmensdaten
+                        let providerDoc = await db.collection('companies').doc(data.selectedAnbieterId).get();
+                        let providerData;
+                        
                         if (providerDoc.exists) {
-                            const providerData = providerDoc.data();
+                            providerData = providerDoc.data();
+                        } else {
+                            // Fallback: users collection für Legacy-Kompatibilität
+                            providerDoc = await db.collection('users').doc(data.selectedAnbieterId).get();
+                            if (providerDoc.exists) {
+                                providerData = providerDoc.data();
+                            }
+                        }
+                        
+                        if (providerData) {
                             providerName = providerData?.companyName || providerData?.firstName + ' ' + providerData?.lastName || 'Unbekannter Anbieter';
                             freelancerAvatarUrl = providerData?.profileImageUrl || freelancerAvatarUrl;
                         }

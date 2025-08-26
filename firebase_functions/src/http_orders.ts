@@ -385,9 +385,21 @@ export const getUserOrdersHTTP = onRequest(
                 // Get user data
                 let userData = null;
                 if (userType === 'customer' && orderData.selectedAnbieterId) {
-                    const userDoc = await db.collection('users').doc(orderData.selectedAnbieterId).get();
+                    // Versuche zuerst companies collection für Provider-Daten
+                    let userDoc = await db.collection('companies').doc(orderData.selectedAnbieterId).get();
+                    let data;
+                    
                     if (userDoc.exists) {
-                        const data = userDoc.data();
+                        data = userDoc.data();
+                    } else {
+                        // Fallback: users collection für Legacy-Kompatibilität
+                        userDoc = await db.collection('users').doc(orderData.selectedAnbieterId).get();
+                        if (userDoc.exists) {
+                            data = userDoc.data();
+                        }
+                    }
+                    
+                    if (data) {
                         userData = {
                             uid: userDoc.id,
                             firstName: data?.firstName || '',

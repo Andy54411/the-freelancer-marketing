@@ -132,7 +132,7 @@ export async function getChatParticipantDetails(db: Firestore, userId: string): 
     const userData = userDoc.data()!;
 
     if (userData.user_type === 'firma') {
-      const companyDoc = await db.collection("users").doc(userId).get();
+      const companyDoc = await db.collection("companies").doc(userId).get();
       const companyData = companyDoc.exists ? companyDoc.data() : null;
       // For companies, the name and avatar come from the 'companies' document.
       return {

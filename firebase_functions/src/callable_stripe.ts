@@ -1299,11 +1299,24 @@ export const getProviderStripeAccountId = onCall(
     }
     try {
       const db = getDb();
-      const userDoc = await db.collection('users').doc(providerId).get();
-      if (!userDoc.exists) {
+      // Versuche zuerst companies collection für Provider-Daten
+      let userDoc = await db.collection('companies').doc(providerId).get();
+      let userData;
+      
+      if (userDoc.exists) {
+        userData = userDoc.data();
+      } else {
+        // Fallback: users collection für Legacy-Kompatibilität
+        userDoc = await db.collection('users').doc(providerId).get();
+        if (userDoc.exists) {
+          userData = userDoc.data();
+        }
+      }
+      
+      if (!userData) {
         return { accountId: null };
       }
-      const userData = userDoc.data();
+      
       return { accountId: userData?.stripeAccountId || null };
     } catch (error) {
       loggerV2.error(`Fehler beim Abrufen der Stripe-Konto-ID für Anbieter ${providerId}:`, error);

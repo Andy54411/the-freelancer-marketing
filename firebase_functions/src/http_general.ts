@@ -84,7 +84,7 @@ export const migrateExistingUsersToCompanies = onRequest({ region: "europe-west1
         profileLastUpdatedAt: userData.profileLastUpdatedAt || FieldValue.serverTimestamp(),
       };
 
-      const companyRef = db.collection("users").doc(userId);
+      const companyRef = db.collection("companies").doc(userId);
       batch.set(companyRef, companyData, { merge: true });
       migratedCount++;
       writeCountInBatch++;
@@ -119,7 +119,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
     // --- Ende Logging ---
 
     if (id && typeof id === "string") {
-      const companyDoc = await db.collection("users").doc(id).get();
+      const companyDoc = await db.collection("companies").doc(id).get();
       if (!companyDoc.exists) {
         res.status(404).json({ message: "Anbieter nicht gefunden" });
         return;
@@ -151,7 +151,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
     // Wir fügen `where("user_type", "==", "firma")` hinzu, um sicherzustellen, dass wir nur aktive
     // Firmenkonten abrufen. Dies macht die zweite Abfrage der 'users'-Collection überflüssig,
     // was die Funktion beschleunigt und die Komplexität reduziert.
-    let query: FirebaseFirestore.Query = db.collection("users");
+    let query: FirebaseFirestore.Query = db.collection("companies");
 
     // Wende die obligatorischen Filter an.
     query = query
@@ -303,7 +303,7 @@ export const syncCompanyToUserData = onRequest({ region: "europe-west1", cors: t
     let companiesSnapshot;
     if (companyId) {
       // Sync specific company
-      const companyDoc = await db.collection("users").doc(companyId).get();
+      const companyDoc = await db.collection("companies").doc(companyId).get();
       if (!companyDoc.exists) {
         res.status(404).send(`Company with ID ${companyId} not found.`);
         return;
@@ -311,7 +311,7 @@ export const syncCompanyToUserData = onRequest({ region: "europe-west1", cors: t
       companiesSnapshot = { docs: [companyDoc], empty: false };
     } else {
       // Sync all companies
-      companiesSnapshot = await db.collection("users").where("user_type", "==", "firma").get();
+      companiesSnapshot = await db.collection("companies").where("user_type", "==", "firma").get();
     }
 
     if (companiesSnapshot.empty) {

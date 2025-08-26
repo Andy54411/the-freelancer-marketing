@@ -722,12 +722,29 @@ export default function Step5CompanyPage() {
         `${resolvedCompanyStreet}${resolvedCompanyStreet && resolvedCompanyHouseNumber ? ' ' : ''}${resolvedCompanyHouseNumber}`.trim();
       const frontendAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://taskilo.de';
 
-      const userPrivateData: Record<string, unknown> = {
+      // ========================================
+      // NEUE 2-COLLECTION ARCHITEKTUR
+      // ========================================
+
+      // USERS COLLECTION: Nur Authentifizierung + Basis-Profildaten
+      const userBasicData: Record<string, unknown> = {
         uid: currentAuthUserUID,
         email: email!,
         user_type: 'firma',
         firstName: firstName?.trim() || '',
-        lastName: lastName?.trim() || '', // Persönliche Daten
+        lastName: lastName?.trim() || '',
+        profilePictureURL: profilePicResult.firebaseStorageUrl || null,
+        profilePictureStripeFileId: profilePicResult.stripeFileId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      // COMPANIES COLLECTION: Alle Firmendaten + Stripe + Onboarding
+      const companyData: Record<string, unknown> = {
+        uid: currentAuthUserUID,
+        owner_uid: currentAuthUserUID, // Referenz zum User
+
+        // Persönliche Daten (für Stripe)
         phoneNumber: normalizedPersonalPhoneNumber || null,
         dateOfBirth: dateOfBirth || null,
         personalStreet: personalStreet || null,
@@ -738,25 +755,30 @@ export default function Step5CompanyPage() {
         isManagingDirectorOwner: isManagingDirectorOwner ?? true,
         ownershipPercentage:
           ownershipPercentage !== undefined ? ownershipPercentage : deleteField(),
-        isActualDirector: isActualDirector ?? deleteField(), // Daten zur wirtschaftlich berechtigten Person
-        isActualOwner: isActualOwner ?? deleteField(), // (falls abweichend)
+        isActualDirector: isActualDirector ?? deleteField(),
+        isActualOwner: isActualOwner ?? deleteField(),
         actualOwnershipPercentage: actualOwnershipPercentage ?? deleteField(),
         isActualExecutive: isActualExecutive ?? deleteField(),
         actualRepresentativeTitle: actualRepresentativeTitle || null,
+
+        // Banking
         iban: iban || '',
         accountHolder: accountHolder?.trim() || '',
         bankCountry: companyCountry || personalCountry || 'DE',
+
+        // Stripe Dokumente
         identityFrontUrlStripeId: idFrontResult.stripeFileId,
         identityBackUrlStripeId: idBackResult.stripeFileId,
         businessLicenseStripeId: businessLicResult.stripeFileId,
         masterCraftsmanCertificateStripeId: masterCertStripeFileId || deleteField(),
-        // Firebase Storage URLs für Admin-Dashboard
         identityFrontFirebaseUrl: idFrontResult.firebaseStorageUrl || null,
         identityBackFirebaseUrl: idBackResult.firebaseStorageUrl || null,
         businessLicenseFirebaseUrl: businessLicResult.firebaseStorageUrl || null,
         masterCraftsmanCertificateFirebaseUrl: masterCertResult?.firebaseStorageUrl || null,
+
+        // Firmendaten
         companyName: companyName || '',
-        legalForm: legalForm || null, // Firmendaten
+        legalForm: legalForm || null,
         companyAddressLine1ForBackend: fullCompanyAddressForFirestore,
         companyCityForBackend: companyCity || null,
         companyPostalCodeForBackend: companyPostalCode || null,
@@ -766,28 +788,58 @@ export default function Step5CompanyPage() {
         companyRegisterForBackend: companyRegister || null,
         taxNumberForBackend: taxNumber || null,
         vatIdForBackend: vatId || null,
-        lat: lat ?? null,
-        lng: lng ?? null,
+
+        // Öffentliche Profildaten
+        postalCode: companyPostalCode || null,
+        taskiloProfileUrl: `${frontendAppUrl}/profile/${currentAuthUserUID}`,
+        description: '',
         hourlyRate: Number(hourlyRate) || 0,
-        radiusKm: radiusKm ?? 30,
         selectedCategory: selectedCategory || '',
         selectedSubcategory: selectedSubcategory || '',
         industryMcc: derivedMcc || null,
-        profilePictureStripeFileId: profilePicResult.stripeFileId,
-        profilePictureFirebaseUrl: profilePicResult.firebaseStorageUrl || null,
+        lat: lat ?? null,
+        lng: lng ?? null,
+        radiusKm: radiusKm ?? 30,
+
+        // Firmendetails für öffentliches Profil
+        companyWebsite: companyWebsite || null,
+        companyPhoneNumber: normalizedCompanyPhoneNumber || null,
+        companyStreet: companyStreet || null,
+        companyHouseNumber: companyHouseNumber || null,
+        companyPostalCode: companyPostalCode || null,
+        companyCity: companyCity || null,
+        companyCountry: companyCountry || null,
+
+        // Legal & Compliance
         common: {
           tosAcceptanceIp: clientIpAddress,
           tosAcceptanceUserAgent:
             typeof navigator !== 'undefined' ? navigator.userAgent : 'UserAgentNotAvailable',
           registrationCompletedAt: new Date().toISOString(),
         },
+
+        // Timestamps
+        profileLastUpdatedAt: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
-      Object.keys(userPrivateData).forEach(key => {
+      // Company Register nur für bestimmte Rechtsformen
+      if (
+        legalForm?.toLowerCase().includes('gmbh') ||
+        legalForm?.toLowerCase().includes('ug') ||
+        legalForm?.toLowerCase().includes('ag') ||
+        legalForm?.toLowerCase().includes('e.k.')
+      ) {
+        if (companyRegister?.trim()) {
+          companyData.companyRegisterPublic = companyRegister;
+        }
+      }
+
+      // Null-Werte für undefined bereinigen
+      Object.keys(companyData).forEach(key => {
         if (
-          userPrivateData[key] === undefined &&
+          companyData[key] === undefined &&
           key !== 'ownershipPercentage' &&
           key !== 'isActualDirector' &&
           key !== 'isActualOwner' &&
@@ -795,61 +847,23 @@ export default function Step5CompanyPage() {
           key !== 'isActualExecutive' &&
           key !== 'masterCraftsmanCertificateStripeId'
         ) {
-          userPrivateData[key] = null;
+          companyData[key] = null;
         }
       });
 
-      // Erstelle individuelle Profil-URL - muss identisch mit Stripe-URL sein
-      const individualProfileUrl = `${frontendAppUrl}/profile/${currentAuthUserUID}`;
-
-      const companyPublicProfileData: Record<string, unknown> = {
+      console.log('📝 Creating documents with 2-collection architecture...', {
         uid: currentAuthUserUID,
-        companyName: companyName || '',
-        postalCode: companyPostalCode || null,
-        taskiloProfileUrl: individualProfileUrl,
-        description: '',
-        hourlyRate: Number(hourlyRate) || 0,
-        profilePictureURL: profilePicResult.firebaseStorageUrl || null,
-        selectedCategory: selectedCategory || '',
-        selectedSubcategory: selectedSubcategory || '',
-        industryMcc: derivedMcc || null,
-        lat: lat ?? null,
-        lng: lng ?? null,
-        radiusKm: radiusKm ?? 30,
-        profileLastUpdatedAt: serverTimestamp(),
-        // Firmendetails für das öffentliche Profil
-        companyWebsite: companyWebsite || null,
-        companyPhoneNumber: normalizedCompanyPhoneNumber || null,
-        legalForm: legalForm || null,
-        companyStreet: companyStreet || null,
-        companyHouseNumber: companyHouseNumber || null,
-        companyPostalCode: companyPostalCode || null,
-        companyCity: companyCity || null,
-        companyCountry: companyCountry || null,
-      };
-
-      if (
-        legalForm?.toLowerCase().includes('gmbh') ||
-        legalForm?.toLowerCase().includes('ug') ||
-        legalForm?.toLowerCase().includes('ag') ||
-        legalForm?.toLowerCase().includes('e.k.')
-      ) {
-        if (companyRegister?.trim())
-          companyPublicProfileData.companyRegisterPublic = companyRegister;
-      }
-
-      console.log('📝 Creating users document...', {
-        uid: currentAuthUserUID,
-        user_type: userPrivateData.user_type,
-        email: userPrivateData.email,
+        user_type: userBasicData.user_type,
+        email: userBasicData.email,
+        companyName: companyData.companyName,
       });
 
-      await setDoc(doc(db, 'users', currentAuthUserUID), userPrivateData, { merge: true });
+      // Erstelle users document (Basis-Authentifizierung)
+      await setDoc(doc(db, 'users', currentAuthUserUID), userBasicData, { merge: true });
       console.log('✅ Users document created successfully');
 
-      await setDoc(doc(db, 'companies', currentAuthUserUID), companyPublicProfileData, {
-        merge: true,
-      });
+      // Erstelle companies document (Alle Firmendaten)
+      await setDoc(doc(db, 'companies', currentAuthUserUID), companyData, { merge: true });
       console.log('✅ Companies document created successfully');
 
       setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');
@@ -929,8 +943,8 @@ export default function Step5CompanyPage() {
       }
 
       if (result.data.success) {
-        console.log('🔧 Updating users document with Stripe data...');
-        const userUpdateAfterStripe: UserStripeUpdateData = {
+        console.log('🔧 Updating companies document with Stripe data...');
+        const companyStripeUpdate: UserStripeUpdateData = {
           stripeAccountId: result.data.accountId,
           stripeRepresentativePersonId: result.data.personId || deleteField(),
           stripeAccountDetailsSubmitted: result.data.detailsSubmitted ?? false,
@@ -941,20 +955,34 @@ export default function Step5CompanyPage() {
             ? 'details_submitted'
             : 'pending',
         };
-        await updateDoc(doc(db, 'users', currentAuthUserUID), { ...userUpdateAfterStripe });
-        console.log('✅ Users document updated with Stripe data');
+        // Update companies collection (wo alle Firmendaten liegen)
+        await updateDoc(doc(db, 'companies', currentAuthUserUID), { ...companyStripeUpdate });
+        console.log('✅ Companies document updated with Stripe data');
 
         setCurrentStepMessage('Onboarding-System wird vorbereitet...');
 
-        // SIMPLIFIED: Setze Onboarding-Status direkt im Hauptdokument (harmonisiert)
-        console.log('🔧 Setting onboarding status...');
+        // 🔧 SAUBERE 2-COLLECTION TRENNUNG:
+
+        // 1. USERS COLLECTION: Nur Basis-Onboarding-Flag für AuthContext
+        console.log('🔧 Setting basic onboarding flag in users collection...');
         await updateDoc(doc(db, 'users', currentAuthUserUID), {
+          hasOnboardingStarted: true,
+          needsOnboarding: true,
+        });
+        console.log('✅ Users collection: Basic onboarding flag set');
+
+        // 2. COMPANIES COLLECTION: Vollständige Onboarding-Daten für Functions
+        console.log('🔧 Setting complete onboarding data in companies collection...');
+        await updateDoc(doc(db, 'companies', currentAuthUserUID), {
           onboardingStartedAt: serverTimestamp(),
           onboardingCurrentStep: '1',
           onboardingStepData: {},
           onboardingCompletionPercentage: 0,
+          onboardingCompleted: false,
+          profileComplete: false,
+          profileStatus: 'pending_onboarding',
         });
-        console.log('✅ Onboarding status set successfully');
+        console.log('✅ Companies collection: Complete onboarding data set');
 
         // SUCCESS: Registration abgeschlossen - harmonisiertes System ist bereits konfiguriert
         console.log('✅ Registration abgeschlossen (harmonisiertes System)');

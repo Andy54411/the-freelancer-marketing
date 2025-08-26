@@ -92,10 +92,21 @@ export const trackCustomerMessage = onDocumentCreated(
         // Hole Provider-Garantie-Stunden
         let guaranteeHours = 24; // Default
         
-        // Versuche users Collection
-        const providerDoc = await db.collection('users').doc(providerId).get();
+        // Versuche zuerst companies Collection für Provider-Daten
+        let providerDoc = await db.collection('companies').doc(providerId).get();
+        let providerData;
+        
         if (providerDoc.exists) {
-          const providerData = providerDoc.data();
+          providerData = providerDoc.data();
+        } else {
+          // Fallback: users collection für Legacy-Kompatibilität
+          providerDoc = await db.collection('users').doc(providerId).get();
+          if (providerDoc.exists) {
+            providerData = providerDoc.data();
+          }
+        }
+        
+        if (providerData) {
           guaranteeHours = providerData?.responseTimeGuaranteeHours || 24;
         }
         
@@ -228,8 +239,8 @@ async function updateProviderStats(providerId: string): Promise<void> {
       lastUpdated: Timestamp.now()
     };
 
-    // Aktualisiere Provider-Dokument in users Collection
-    const providerDocRef = db.collection('users').doc(providerId);
+    // Aktualisiere Provider-Dokument in companies Collection
+    const providerDocRef = db.collection('companies').doc(providerId);
     const providerDoc = await providerDocRef.get();
     
     if (providerDoc.exists) {

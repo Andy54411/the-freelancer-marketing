@@ -59,9 +59,21 @@ export const onQuoteCreated = onDocumentCreated('quotes/{quoteId}', async (event
     // Get provider name
     let providerName = 'Anbieter';
     try {
-      const providerDoc = await db.collection('users').doc(providerId).get();
+      // Versuche zuerst companies collection für Unternehmensdaten
+      let providerDoc = await db.collection('companies').doc(providerId).get();
+      let providerData;
+      
       if (providerDoc.exists) {
-        const providerData = providerDoc.data();
+        providerData = providerDoc.data();
+      } else {
+        // Fallback: users collection für Legacy-Kompatibilität
+        providerDoc = await db.collection('users').doc(providerId).get();
+        if (providerDoc.exists) {
+          providerData = providerDoc.data();
+        }
+      }
+      
+      if (providerData) {
         providerName = providerData?.companyName || 'Anbieter';
       }
     } catch (error) {
@@ -165,9 +177,21 @@ export const onQuoteStatusChanged = onDocumentUpdated('quotes/{quoteId}', async 
     let providerName = 'Anbieter';
     
     try {
-      const providerDoc = await db.collection('users').doc(providerId).get();
+      // Versuche zuerst companies collection für Unternehmensdaten
+      let providerDoc = await db.collection('companies').doc(providerId).get();
+      let providerData;
+      
       if (providerDoc.exists) {
-        const providerData = providerDoc.data();
+        providerData = providerDoc.data();
+      } else {
+        // Fallback: users collection für Legacy-Kompatibilität
+        providerDoc = await db.collection('users').doc(providerId).get();
+        if (providerDoc.exists) {
+          providerData = providerDoc.data();
+        }
+      }
+      
+      if (providerData) {
         providerName = providerData?.companyName || 'Anbieter';
       }
     } catch (error) {
