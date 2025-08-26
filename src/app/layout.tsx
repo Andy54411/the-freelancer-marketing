@@ -8,6 +8,9 @@ import { AnalyticsProvider } from '@/contexts/AnalyticsContext';
 import { CookieConsentProvider } from '@/contexts/CookieConsentContext';
 import { AlertProvider } from '@/components/ui/AlertProvider';
 import Chatbot from '@/components/Chatbot';
+import ConditionalFooter from '@/components/ConditionalFooter';
+import ConditionalChatbot from '@/components/ConditionalChatbot';
+import SmoothRedirectOverlay from '@/components/SmoothRedirectOverlay';
 // import { FooterSection } from '@/components/FooterSection';
 // import GoogleAnalytics from '@/components/GoogleAnalytics'; // Removed to avoid conflicts with GTM
 import CookieBanner from '@/components/CookieBanner';
@@ -171,8 +174,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <AlertProvider>
                 <Providers>
                   {children}
-                  <Footer />
-                  <Chatbot />
+                  <SmoothRedirectOverlay />
+                  <ConditionalFooter />
+                  <ConditionalChatbot />
                   <CookieBanner />
                   {/* GoogleAnalytics removed - GTM handles all analytics */}
                   <Analytics />

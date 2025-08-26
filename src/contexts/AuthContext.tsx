@@ -2,7 +2,7 @@
 
 import { type User as FirebaseUser, onAuthStateChanged, signOut } from '@/firebase/clients';
 import { createContext, useState, useEffect, useContext, ReactNode, useMemo } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { orderBy, limit } from 'firebase/firestore'; // NEU: orderBy und limit importieren
 import { auth, db } from '@/firebase/clients';
@@ -53,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [recentChats, setRecentChats] = useState<HeaderChatPreview[]>([]); // NEU: State für die letzten Chats
 
-  const router = useRouter();
   const pathname = usePathname();
 
   // NEU: Logout-Funktion implementieren
@@ -72,7 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setFirebaseUser(null);
       // Optional: Leite den Benutzer nach dem Logout weiter
-      router.push('/login');
+      window.location.href = '/login';
     } catch (error) {
       // Hier könnten Sie dem Benutzer eine Fehlermeldung anzeigen
     }
@@ -91,12 +90,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (!db) {
             throw new Error('Firestore DB-Instanz ist nicht initialisiert.');
           }
+
+          // Versuche zuerst users collection
           const userDocRef = doc(db, 'users', fbUser.uid);
           const userDocSnap = await getDoc(userDocRef);
 
-          if (userDocSnap.exists()) {
-            const profileData = userDocSnap.data();
+          let profileData: any = null;
+          let userFound = false;
 
+          if (userDocSnap.exists()) {
+            profileData = userDocSnap.data();
+            userFound = true;
+          } else {
+            // FALLBACK: Prüfe companies collection (wie UserHeader)
+            const companyDocRef = doc(db, 'companies', fbUser.uid);
+            const companyDocSnap = await getDoc(companyDocRef);
+
+            if (companyDocSnap.exists()) {
+              profileData = companyDocSnap.data();
+              userFound = true;
+            }
+          }
+
+          if (userFound && profileData) {
             // Rollenbestimmung: Custom Claim hat Vorrang.
             const roleFromClaim = idTokenResult.claims.master
               ? 'master'
@@ -178,9 +194,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Effekt für die Weiterleitung nach erfolgreichem Login
   useEffect(() => {
-    // Nur ausführen, wenn der Ladevorgang abgeschlossen ist, ein Benutzer vorhanden ist und wir nicht bereits weiterleiten
+    // Nur für Registration-Redirects (spezielle Parameter-Behandlung)
     if (!loading && user && !isRedirecting) {
-      // KORREKTUR: Überprüfe, ob der Benutzer gerade registriert wurde und eine spezifische Weiterleitung hat
       const justRegistered = sessionStorage.getItem('justRegistered');
       const registrationRedirectTo = sessionStorage.getItem('registrationRedirectTo');
 
@@ -193,41 +208,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         window.location.assign(registrationRedirectTo);
         return;
       }
-
-      // ERWEITERTE WEITERLEITUNGSLOGIK
-      let shouldRedirect = false;
-      let targetPath = '';
-
-      // Master/Support werden von allen öffentlichen Seiten weitergeleitet
-      if (user.role === 'master' || user.role === 'support') {
-        if (pathname === '/' || pathname === '/login' || pathname === '/register') {
-          shouldRedirect = true;
-          targetPath = '/dashboard/admin'; // Master/Support-Dashboard
-        }
-      }
-      // Firmen werden auch von der Startseite weitergeleitet
-      else if (user.role === 'firma') {
-        if (pathname === '/' || pathname === '/login' || pathname === '/register') {
-          shouldRedirect = true;
-          targetPath = `/dashboard/company/${user.uid}`; // Firmen-Dashboard
-        }
-      }
-      // Kunden nur von Login/Register-Seiten
-      else if (pathname === '/login' || pathname === '/register') {
-        shouldRedirect = true;
-        targetPath = `/dashboard/user/${user.uid}`; // Kunden-Dashboard
-      }
-
-      if (shouldRedirect && targetPath) {
-        setIsRedirecting(true);
-        router.push(targetPath);
-      }
     }
     // Wenn der Ladevorgang abgeschlossen ist und kein Benutzer vorhanden ist, das Flag zurücksetzen
     else if (!loading && !user) {
       setIsRedirecting(false);
     }
-  }, [user, loading, router, pathname, isRedirecting]);
+  }, [user, loading, pathname, isRedirecting]);
 
   // NEU: Chat-Listener für eingeloggte Benutzer
   useEffect(() => {

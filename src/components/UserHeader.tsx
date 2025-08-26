@@ -338,19 +338,25 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
       console.log(`🎯 REDIRECT CHECK: userType="${userType}", path="${currentPath}"`);
 
-      // Wenn Firma-User auf /dashboard/user/ ist → redirect zu /dashboard/company/
+      // Wenn Firma-User auf /dashboard/user/ ist → SOFORTIGER redirect zu /dashboard/company/
       if (userType === 'firma' && currentPath.startsWith('/dashboard/user/')) {
-        console.log(`🔄 FIRMA USER auf USER DASHBOARD ERKANNT! Umleitung zu Company Dashboard...`);
+        console.log(
+          `🔄 FIRMA USER auf USER DASHBOARD ERKANNT! SOFORTIGE Umleitung zu Company Dashboard...`
+        );
         setIsRedirecting(true);
-        router.replace(`/dashboard/company/${currentUser.uid}`);
+        // Verwende window.location.href für sofortigen, zuverlässigen Redirect
+        window.location.href = `/dashboard/company/${currentUser.uid}`;
         return;
       }
 
-      // Wenn Normal-User auf /dashboard/company/ ist → redirect zu /dashboard/user/
+      // Wenn Normal-User auf /dashboard/company/ ist → SOFORTIGER redirect zu /dashboard/user/
       if (userType !== 'firma' && currentPath.startsWith('/dashboard/company/')) {
-        console.log(`🔄 USER auf COMPANY DASHBOARD ERKANNT! Umleitung zu User Dashboard...`);
+        console.log(
+          `🔄 USER auf COMPANY DASHBOARD ERKANNT! SOFORTIGE Umleitung zu User Dashboard...`
+        );
         setIsRedirecting(true);
-        router.replace(`/dashboard/user/${currentUser.uid}`);
+        // Verwende window.location.href für sofortigen, zuverlässigen Redirect
+        window.location.href = `/dashboard/user/${currentUser.uid}`;
         return;
       }
 
@@ -362,7 +368,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         `⏳ REDIRECT: Warte auf Daten... currentUser=${!!currentUser?.uid}, firestoreUserData=${!!firestoreUserData}, uid match=${currentUser?.uid === currentUid}`
       );
     }
-  }, [currentUser?.uid, currentUid, firestoreUserData, router, isRedirecting]);
+  }, [currentUser?.uid, currentUid, firestoreUserData, isRedirecting]);
 
   // Reset isRedirecting nach kurzer Zeit falls Redirect fehlschlägt
   useEffect(() => {
