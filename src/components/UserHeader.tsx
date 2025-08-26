@@ -245,15 +245,25 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     return () => unsubscribe();
   }, [currentUid, router, loadFirestoreUserData]);
 
-  // Smart Redirect basierend auf user_type NACH dem Laden der Firestore-Daten
+  // Smart Redirect basierend auf user_type - KORRIGIERTE LOGIK
   useEffect(() => {
-    if (currentUser?.uid && firestoreUserData && currentUser.uid !== currentUid) {
-      // Ensure the user UID matches the URL UID for security - redirect to CORRECT dashboard type
-      const dashboardType = firestoreUserData.user_type === 'firma' ? 'company' : 'user';
-      console.log(
-        `🔄 Smart Redirect: user_type=${firestoreUserData.user_type} → /dashboard/${dashboardType}/${currentUser.uid}`
-      );
-      router.replace(`/dashboard/${dashboardType}/${currentUser.uid}`);
+    if (currentUser?.uid && firestoreUserData && currentUser.uid === currentUid) {
+      const currentPath = window.location.pathname;
+      const userType = firestoreUserData.user_type;
+
+      // Wenn Firma-User auf /dashboard/user/ ist → redirect zu /dashboard/company/
+      if (userType === 'firma' && currentPath.startsWith('/dashboard/user/')) {
+        console.log(`🔄 FIRMA USER auf USER DASHBOARD ERKANNT! Umleitung zu Company Dashboard...`);
+        router.replace(`/dashboard/company/${currentUser.uid}`);
+        return;
+      }
+
+      // Wenn Normal-User auf /dashboard/company/ ist → redirect zu /dashboard/user/
+      if (userType !== 'firma' && currentPath.startsWith('/dashboard/company/')) {
+        console.log(`🔄 USER auf COMPANY DASHBOARD ERKANNT! Umleitung zu User Dashboard...`);
+        router.replace(`/dashboard/user/${currentUser.uid}`);
+        return;
+      }
     }
   }, [currentUser?.uid, currentUid, firestoreUserData, router]);
 
