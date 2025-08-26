@@ -951,12 +951,21 @@ export default function Step5CompanyPage() {
 
         // Kurze Verzögerung bevor Weiterleitung für bessere UX
         setTimeout(() => {
+          console.log('🔄 Registration Step 5 - Weiterleitung wird ausgeführt');
+          console.log(
+            '📍 Target URL:',
+            `/dashboard/company/${currentAuthUserUID}/onboarding/welcome`
+          );
+          console.log('👤 Current User UID:', currentAuthUserUID);
+
           alert(
             'Registrierung abgeschlossen! Sie werden nun durch unser Onboarding-System geführt, um Ihr Firmenprofil zu vervollständigen.'
           );
           if (resetRegistrationData) resetRegistrationData();
           // NEU: Redirect zum Onboarding anstatt Dashboard (nach Dokumentation)
           router.push(`/dashboard/company/${currentAuthUserUID}/onboarding/welcome`);
+
+          console.log('✅ router.push executed for company onboarding');
         }, 1500);
       } else {
         setFormError(
