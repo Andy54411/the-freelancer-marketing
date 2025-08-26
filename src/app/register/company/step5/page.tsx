@@ -836,7 +836,7 @@ export default function Step5CompanyPage() {
         }
       }
 
-      // Null-Werte für undefined bereinigen und Datenvalidierung
+      // Null-Werte für undefined bereinigen und erweiterte Datenvalidierung
       const cleanedCompanyData = { ...companyData };
 
       Object.keys(cleanedCompanyData).forEach(key => {
@@ -855,18 +855,43 @@ export default function Step5CompanyPage() {
           cleanedCompanyData[key] = null;
         }
 
-        // Validiere verschachtelte Objekte
+        // Validiere und bereinige verschachtelte Objekte
         if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+          // Prüfe ob es ein Firestore Timestamp ist
+          if ((value as any)?.toDate && typeof (value as any).toDate === 'function') {
+            // Firestore Timestamp - behalten
+            return;
+          }
+
           // Prüfe auf gültige Objekt-Struktur
           try {
             JSON.stringify(value);
+
+            // Spezielle Behandlung für 'common' Objekt
+            if (key === 'common') {
+              // Bereinige das common Objekt
+              const commonObj = value as any;
+              const cleanCommon = {
+                tosAcceptanceIp: String(commonObj.tosAcceptanceIp || ''),
+                tosAcceptanceUserAgent: String(commonObj.tosAcceptanceUserAgent || ''),
+                registrationCompletedAt: String(
+                  commonObj.registrationCompletedAt || new Date().toISOString()
+                ),
+              };
+              cleanedCompanyData[key] = cleanCommon;
+            }
           } catch (error) {
             console.warn(`⚠️ Ungültiges Objekt für Feld ${key}, setze auf null:`, error);
             cleanedCompanyData[key] = null;
           }
         }
-      });
 
+        // Validiere kritische String-Felder
+        if (typeof value === 'string' && value.length > 10000) {
+          console.warn(`⚠️ String zu lang für Feld ${key}, kürze auf 10000 Zeichen`);
+          cleanedCompanyData[key] = value.substring(0, 10000);
+        }
+      });
       console.log('📝 Creating companies document with validated data...', {
         uid: currentAuthUserUID,
         email: email!,
@@ -885,25 +910,62 @@ export default function Step5CompanyPage() {
 
       // WICHTIG 2: Companies document mit validierten Daten erstellen
       try {
+        // Erster Versuch: Vollständige Daten
         await setDoc(doc(db, 'companies', currentAuthUserUID), cleanedCompanyData, { merge: true });
         console.log('✅ Companies document created successfully');
       } catch (firestoreError) {
-        console.error('❌ Firestore Write Error:', firestoreError);
+        console.error('❌ Firestore Write Error Details:', {
+          error: firestoreError,
+          errorMessage: firestoreError?.message,
+          errorCode: firestoreError?.code,
+          dataKeys: Object.keys(cleanedCompanyData),
+          problematicFields: Object.keys(cleanedCompanyData).filter(key => {
+            const value = cleanedCompanyData[key];
+            return (
+              value === undefined ||
+              (typeof value === 'object' &&
+                value !== null &&
+                !(value instanceof Date) &&
+                !(value as any)?.toDate)
+            );
+          }),
+        });
 
-        // Fallback: Erstelle nur minimal erforderliche Daten
+        // Fallback: Erstelle nur minimal erforderliche Daten ohne komplexe Objekte
         const minimalCompanyData = {
           uid: currentAuthUserUID,
           email: email!,
-          companyName: cleanedCompanyData.companyName,
-          legalForm: cleanedCompanyData.legalForm,
+          companyName: cleanedCompanyData.companyName || 'Unbekannt',
+          legalForm: cleanedCompanyData.legalForm || 'Einzelunternehmen',
+          companyCity: cleanedCompanyData.companyCity || null,
+          companyPostalCode: cleanedCompanyData.companyPostalCode || null,
+          companyCountry: cleanedCompanyData.companyCountry || 'DE',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
+          status: 'pending_verification',
+          profileComplete: false,
         };
 
-        await setDoc(doc(db, 'companies', currentAuthUserUID), minimalCompanyData, { merge: true });
-        console.log('✅ Minimal companies document created as fallback');
-      }
+        try {
+          await setDoc(doc(db, 'companies', currentAuthUserUID), minimalCompanyData, {
+            merge: true,
+          });
+          console.log('✅ Minimal companies document created as fallback');
+        } catch (fallbackError) {
+          console.error('❌ Even minimal document creation failed:', fallbackError);
 
+          // Letzter Fallback: Nur die absolut notwendigsten Daten
+          const ultraMinimalData = {
+            uid: currentAuthUserUID,
+            email: email!,
+            companyName: 'Temp Company',
+            createdAt: new Date().toISOString(),
+          };
+
+          await setDoc(doc(db, 'companies', currentAuthUserUID), ultraMinimalData);
+          console.log('✅ Ultra-minimal companies document created');
+        }
+      }
       setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');
 
       const dataForStripeCallable: CreateStripeAccountClientData = {
