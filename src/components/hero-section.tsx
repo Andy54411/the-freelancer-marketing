@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { HeroHeader } from '@/components/hero8-header';
 import { InfiniteSlider } from '@/components/ui/infinite-slider';
@@ -21,6 +22,7 @@ export default function HeroSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // Hinzufügen für Fehlerbehandlung
   const { trackEvent, trackNavigation } = useAnalyticsContext();
+  const router = useRouter();
 
   const handleSearchClick = () => {
     trackEvent('hero_cta_click', 'user_engagement', 'search_help');
@@ -30,6 +32,8 @@ export default function HeroSection() {
   const handleProviderClick = () => {
     trackEvent('hero_cta_click', 'user_engagement', 'become_provider');
     trackNavigation('provider_registration', 'hero_section');
+    // Navigiere zur Anbieter-Registrierung mit Next.js Router
+    router.push('/register/company');
   };
 
   useEffect(() => {
@@ -88,7 +92,6 @@ export default function HeroSection() {
 
         setNewCompanies(limitedCompanies);
       } catch (err) {
-
         // Bei Timeout oder anderen Fehlern - verwende leere Liste statt Fehlermeldung für bessere UX
         setNewCompanies([]);
       } finally {
@@ -134,15 +137,12 @@ export default function HeroSection() {
                   </Button>
                   <Button
                     key={2}
-                    asChild
                     size="lg"
                     variant="outline"
                     className="w-full sm:w-auto px-5 text-base border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                     onClick={handleProviderClick}
                   >
-                    <Link href="#link">
-                      <span className="text-nowrap">Hilfe anbieten</span>
-                    </Link>
+                    <span className="text-nowrap">Hilfe anbieten</span>
                   </Button>
                 </div>
               </div>
@@ -155,7 +155,6 @@ export default function HeroSection() {
                   alt="Taskilo Hero"
                   loading="lazy"
                   onError={e => {
-
                     e.currentTarget.style.display = 'none';
                   }}
                   style={{
@@ -214,7 +213,6 @@ export default function HeroSection() {
                                   style={{ objectFit: 'contain' }}
                                   loading="lazy"
                                   onError={e => {
-
                                     // Verstecke das Bild und den Container bei Fehlern
                                     const target = e.currentTarget as HTMLImageElement;
                                     const container = target.closest('.flex') as HTMLElement;

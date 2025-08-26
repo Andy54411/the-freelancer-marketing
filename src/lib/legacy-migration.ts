@@ -489,7 +489,7 @@ export async function runMigrationFromAdmin(): Promise<string> {
 /**
  * Check completion status for a specific company in real-time
  * This function checks existing companies and determines if they need onboarding
- * UPDATED: Uses harmonized system (main user document) instead of subcollections
+ * UPDATED: Uses companies collection instead of users collection
  */
 export async function checkCompanyOnboardingStatus(companyUid: string): Promise<{
   needsOnboarding: boolean;
@@ -500,12 +500,12 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
   try {
     console.log(`🔍 Checking onboarding status for company: ${companyUid}`);
 
-    // HARMONIZED SYSTEM: Check main user document
-    const userRef = doc(db, 'users', companyUid);
-    const userSnap = await getDoc(userRef);
+    // 🔧 HARMONISIERT: Check companies collection (not users!)
+    const companyRef = doc(db, 'companies', companyUid);
+    const companySnap = await getDoc(companyRef);
 
-    if (!userSnap.exists()) {
-      console.log(`❌ User document not found for: ${companyUid}`);
+    if (!companySnap.exists()) {
+      console.log(`❌ Company document not found for: ${companyUid}`);
       return {
         needsOnboarding: true,
         completionPercentage: 0,
@@ -513,16 +513,17 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
       };
     }
 
-    const userData = userSnap.data();
-    console.log(`📊 User data found:`, {
-      onboardingCompleted: userData.onboardingCompleted,
-      onboardingCurrentStep: userData.onboardingCurrentStep,
-      onboardingStatus: userData.onboardingStatus,
+    const companyData = companySnap.data();
+    console.log(`📊 Company data found:`, {
+      onboardingCompleted: companyData.onboardingCompleted,
+      onboardingCurrentStep: companyData.onboardingCurrentStep,
+      profileStatus: companyData.profileStatus,
+      profileComplete: companyData.profileComplete,
     });
 
-    // Check if onboarding is completed using harmonized system
-    if (userData.onboardingCompleted === true) {
-      console.log(`✅ Onboarding completed for: ${companyUid}`);
+    // Check if onboarding is completed using companies collection
+    if (companyData.onboardingCompleted === true) {
+      console.log(`✅ Onboarding completed for company: ${companyUid}`);
       return {
         needsOnboarding: false,
         completionPercentage: 100,
@@ -530,23 +531,23 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
       };
     }
 
-    // Calculate completion percentage from step data
+    // Calculate completion percentage from step data in companies collection
     let completionPercentage = 0;
     let filledSteps = 0;
     const totalSteps = 5;
 
-    // Check each step data
+    // Check each step data in companies collection (step1, step2, etc.)
     for (let i = 1; i <= 5; i++) {
-      const stepData = userData[`onboardingStep${i}Data`];
+      const stepData = companyData[`step${i}`];
       if (stepData && Object.keys(stepData).length > 0) {
         filledSteps++;
       }
     }
 
     completionPercentage = Math.round((filledSteps / totalSteps) * 100);
-    const currentStep = parseInt(userData.onboardingCurrentStep) || 1;
+    const currentStep = parseInt(companyData.onboardingCurrentStep) || 1;
 
-    console.log(`📈 Completion calculated:`, {
+    console.log(`📈 Completion calculated from companies collection:`, {
       filledSteps,
       totalSteps,
       completionPercentage,
@@ -554,7 +555,7 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
     });
 
     return {
-      needsOnboarding: !userData.onboardingCompleted,
+      needsOnboarding: !companyData.onboardingCompleted,
       completionPercentage,
       currentStep,
     };

@@ -72,7 +72,6 @@ export default function FooterSection() {
         );
       }
     } catch (error) {
-
       setMessage('❌ Netzwerkfehler. Bitte prüfen Sie Ihre Internetverbindung.');
     } finally {
       setIsLoading(false);
@@ -90,7 +89,7 @@ export default function FooterSection() {
       items: [
         {
           title: 'Features',
-          href: '#features',
+          href: '/features#features',
         },
         {
           title: 'Demnächst',
