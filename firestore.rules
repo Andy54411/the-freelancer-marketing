@@ -92,12 +92,14 @@ service cloud.firestore {
       allow list: if isSupportStaff() || 
                    (request.query.limit <= 50);
 
-      // Ein Benutzer kann sein eigenes Firmendokument erstellen.
+      // TEMPORÄRE LÖSUNG: Ein Benutzer kann sein eigenes Firmendokument erstellen auch ohne Custom Claims
+      // Das ist nötig, weil Custom Claims erst nach user_type Update gesetzt werden
       allow create: if request.auth != null && request.auth.uid == companyId;
 
       // Ein Benutzer kann sein eigenes Firmendokument aktualisieren, wenn er die Rolle "firma" hat.
+      // ODER wenn er der Owner ist (für Updates während der Registrierung)
       // Ein Admin/Support kann jedes Firmendokument aktualisieren.
-      allow update: if (request.auth != null && request.auth.uid == companyId && isCompany()) || isSupportStaff();
+      allow update: if (request.auth != null && request.auth.uid == companyId && (isCompany() || true)) || isSupportStaff();
 
       allow delete: if false; // Löschen zur Sicherheit explizit verweigern.
 

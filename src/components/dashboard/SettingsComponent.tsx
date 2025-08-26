@@ -373,7 +373,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       });
 
       // Debug-Logging für gemappte Formularwerte
-
     }
   }, [userData]);
 
@@ -487,7 +486,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       const downloadURL = await getDownloadURL(fileRef);
       return downloadURL;
     } catch (error: unknown) {
-
       toast.error(
         `Fehler beim Hochladen von ${fileName}: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );
@@ -584,7 +582,19 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       return;
     }
 
-    const firestoreUpdateData: { [key: string]: any } = {
+    // KRITISCHE KORREKTUR: Trenne Benutzerdaten von Firmendaten
+
+    // 1. BENUTZER-DATEN für users collection (nur persönliche Daten)
+    const userUpdateData: { [key: string]: any } = {
+      firstName: updatedForm.step1.firstName,
+      lastName: updatedForm.step1.lastName,
+      email: updatedForm.step1.email,
+      phoneNumber: updatedForm.step1.phoneNumber,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // 2. FIRMA-DATEN für companies collection (alle step1-4 + business Daten)
+    const companyUpdateData: { [key: string]: any } = {
       'step1.firstName': updatedForm.step1.firstName,
       'step1.lastName': updatedForm.step1.lastName,
       'step1.phoneNumber': updatedForm.step1.phoneNumber,
@@ -657,45 +667,49 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       profileBannerImage: (updatedForm as any).publicProfile?.profileBannerImage || '',
       businessLicense: (updatedForm as any).publicProfile?.businessLicense || '',
       certifications: (updatedForm as any).publicProfile?.certifications || [],
-      updatedAt: serverTimestamp(),
+      updatedAt: new Date().toISOString(),
     };
 
+    // Bilder und Stripe-Files zu company-Daten hinzufügen
     if (profilePictureFirebaseDownloadUrl) {
-      firestoreUpdateData['step3.profilePictureURL'] = profilePictureFirebaseDownloadUrl;
-      firestoreUpdateData['profilePictureURL'] = profilePictureFirebaseDownloadUrl;
-      firestoreUpdateData['profilePictureFirebaseUrl'] = profilePictureFirebaseDownloadUrl;
+      companyUpdateData['step3.profilePictureURL'] = profilePictureFirebaseDownloadUrl;
+      companyUpdateData['profilePictureURL'] = profilePictureFirebaseDownloadUrl;
+      companyUpdateData['profilePictureFirebaseUrl'] = profilePictureFirebaseDownloadUrl;
+      // Auch zu user-Daten für Profilbild
+      userUpdateData['profilePictureURL'] = profilePictureFirebaseDownloadUrl;
     } else if (form.profilePictureFile === null) {
-      firestoreUpdateData['step3.profilePictureURL'] = null;
-      firestoreUpdateData['profilePictureURL'] = null;
-      firestoreUpdateData['profilePictureFirebaseUrl'] = null;
+      companyUpdateData['step3.profilePictureURL'] = null;
+      companyUpdateData['profilePictureURL'] = null;
+      companyUpdateData['profilePictureFirebaseUrl'] = null;
+      userUpdateData['profilePictureURL'] = null;
     }
 
     if (uploadedStripeFileIds.businessLicenseStripeFileId !== undefined) {
-      firestoreUpdateData['step3.businessLicenseURL'] =
+      companyUpdateData['step3.businessLicenseURL'] =
         uploadedStripeFileIds.businessLicenseStripeFileId;
-      firestoreUpdateData['businessLicenseStripeId'] =
+      companyUpdateData['businessLicenseStripeId'] =
         uploadedStripeFileIds.businessLicenseStripeFileId;
     }
     if (uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId !== undefined) {
-      firestoreUpdateData['step3.masterCraftsmanCertificateURL'] =
+      companyUpdateData['step3.masterCraftsmanCertificateURL'] =
         uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId;
-      firestoreUpdateData['masterCraftsmanCertificateStripeId'] =
+      companyUpdateData['masterCraftsmanCertificateStripeId'] =
         uploadedStripeFileIds.masterCraftsmanCertificateStripeFileId;
     }
     if (uploadedStripeFileIds.identityFrontStripeFileId !== undefined) {
-      firestoreUpdateData['step3.identityFrontUrl'] =
-        uploadedStripeFileIds.identityFrontStripeFileId;
-      firestoreUpdateData['identityFrontUrlStripeId'] =
+      companyUpdateData['step3.identityFrontUrl'] = uploadedStripeFileIds.identityFrontStripeFileId;
+      companyUpdateData['identityFrontUrlStripeId'] =
         uploadedStripeFileIds.identityFrontStripeFileId;
     }
     if (uploadedStripeFileIds.identityBackStripeFileId !== undefined) {
-      firestoreUpdateData['step3.identityBackUrl'] = uploadedStripeFileIds.identityBackStripeFileId;
-      firestoreUpdateData['identityBackUrlStripeId'] =
-        uploadedStripeFileIds.identityBackStripeFileId;
+      companyUpdateData['step3.identityBackUrl'] = uploadedStripeFileIds.identityBackStripeFileId;
+      companyUpdateData['identityBackUrlStripeId'] = uploadedStripeFileIds.identityBackStripeFileId;
     }
 
     try {
-      await updateDoc(doc(db, 'users', updatedForm.uid), firestoreUpdateData);
+      // KRITISCHE KORREKTUR: Separate Updates für users und companies
+      await updateDoc(doc(db, 'users', updatedForm.uid), userUpdateData);
+      await updateDoc(doc(db, 'companies', updatedForm.uid), companyUpdateData);
       toast.success('Profildaten in Firestore gespeichert!');
 
       if (form.profilePictureFile && profilePictureFirebaseDownloadUrl) {
@@ -714,7 +728,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       toast.success('Profildaten erfolgreich gespeichert!');
       onDataSaved();
     } catch (error: unknown) {
-
       let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
       if (error && typeof error === 'object' && 'message' in error) {
         // Use the specific message from the backend (which now includes the Stripe error)

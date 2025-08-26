@@ -58,14 +58,16 @@ export const submitReview = callableGeneral.submitReview;
 export const replyToReview = callableGeneral.replyToReview;
 export const getReviewsByProvider = callableGeneral.getReviewsByProvider;
 export const deleteCompanyAccount = callableGeneral.deleteCompanyAccount;
-export const syncSpecificCompanyToUser = callableGeneral.syncSpecificCompanyToUser;
-export const syncSpecificUserToCompany = callableGeneral.syncSpecificUserToCompany;
+// DEAKTIVIERT: Keine Synchronisation zwischen users und companies collections
+// export const syncSpecificCompanyToUser = callableGeneral.syncSpecificCompanyToUser;
+// export const syncSpecificUserToCompany = callableGeneral.syncSpecificUserToCompany;
 export const updateCompanyStatus = callableGeneral.updateCompanyStatus;
 export const searchProvidersBySubcategory = callableGeneral.searchProvidersBySubcategory;
 
 // HTTP General Requests
 // export const migrateExistingUsersToCompanies = httpGeneral.migrateExistingUsersToCompanies; // DEAKTIVIERT: Companies Creation
-export const syncCompanyToUserData = httpGeneral.syncCompanyToUserData;
+// DEAKTIVIERT: Keine Synchronisation zwischen users und companies collections
+// export const syncCompanyToUserData = httpGeneral.syncCompanyToUserData;
 export const searchCompanyProfiles = httpGeneral.searchCompanyProfiles;
 export const getDataForSubcategory = httpGeneral.getDataForSubcategory;
 export const createJobPosting = httpGeneral.createJobPosting;
@@ -79,7 +81,8 @@ export const uploadStripeFile = httpFileUploads.uploadStripeFile;
 export const createUserProfile = triggersFirestore.createUserProfile;
 export const updateUserProfile = triggersFirestore.updateUserProfile; // REPARIERT: Endlosschleife behoben
 // export const syncCompanyToUserOnUpdate = triggersFirestore.syncCompanyToUserOnUpdate; // DEAKTIVIERT: Companies Collection Trigger
-export const createStripeCustomAccountOnUserUpdate = triggersFirestore.createStripeCustomAccountOnUserUpdate;
+// DEAKTIVIERT: Keine automatische Stripe-Account-Erstellung basierend auf User-Updates
+// export const createStripeCustomAccountOnUserUpdate = triggersFirestore.createStripeCustomAccountOnUserUpdate;
 
 // Order Callables
 export const acceptOrder = callableOrders.acceptOrder;

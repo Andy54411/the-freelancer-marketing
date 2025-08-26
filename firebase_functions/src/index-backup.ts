@@ -78,7 +78,8 @@ export const uploadStripeFile = httpFileUploads.uploadStripeFile;
 export const createUserProfile = triggersFirestore.createUserProfile;
 export const updateUserProfile = triggersFirestore.updateUserProfile;
 export const syncCompanyToUserOnUpdate = triggersFirestore.syncCompanyToUserOnUpdate;
-export const createStripeCustomAccountOnUserUpdate = triggersFirestore.createStripeCustomAccountOnUserUpdate;
+// DEAKTIVIERT: Funktion existiert nicht mehr
+// export const createStripeCustomAccountOnUserUpdate = triggersFirestore.createStripeCustomAccountOnUserUpdate;
 
 // Order Callables
 export const acceptOrder = callableOrders.acceptOrder;

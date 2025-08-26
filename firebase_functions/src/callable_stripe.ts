@@ -323,6 +323,7 @@ export const createStripeAccountIfComplete = onCall(
     }
     loggerV2.info('[DEBUG] Punkt 1: Basis-Infos (userId, IP) OK.');
 
+    // Für Firmen sollten Stripe-Daten in companies collection gespeichert werden
     const userDocRef = db.collection("users").doc(userId);
     const userDocSnapshot = await userDocRef.get();
     if (!userDocSnapshot.exists) {
@@ -334,15 +335,26 @@ export const createStripeAccountIfComplete = onCall(
     }
     loggerV2.info('[DEBUG] Punkt 2: Nutzerdokument aus Firestore geladen OK.');
 
-    if (existingFirestoreUserData.stripeAccountId?.startsWith('acct_')) {
-      throw new HttpsError("already-exists", "Nutzer hat bereits ein Stripe-Konto.");
-    }
-    loggerV2.info('[DEBUG] Punkt 3: Kein bestehendes Stripe-Konto gefunden, fahre fort OK.');
-
     if (existingFirestoreUserData.user_type !== "firma") {
       throw new HttpsError("failed-precondition", "Nur Nutzer vom Typ 'Firma' können Stripe-Konten erstellen.");
     }
     loggerV2.info('[DEBUG] Punkt 4: Nutzer ist Typ "Firma" OK.');
+
+    // Für Firmen: Prüfe und verwende companies collection
+    const companyDocRef = db.collection("companies").doc(userId);
+    const companyDocSnapshot = await companyDocRef.get();
+    if (!companyDocSnapshot.exists) {
+      throw new HttpsError("not-found", `Firmendokument ${userId} nicht gefunden.`);
+    }
+    const existingCompanyData = companyDocSnapshot.data() as any;
+    if (!existingCompanyData) {
+      throw new HttpsError("internal", "Fehler beim Lesen der Firmendaten aus Firestore.");
+    }
+
+    if (existingCompanyData.stripeAccountId?.startsWith('acct_')) {
+      throw new HttpsError("already-exists", "Firma hat bereits ein Stripe-Konto.");
+    }
+    loggerV2.info('[DEBUG] Punkt 3: Kein bestehendes Stripe-Konto in companies gefunden, fahre fort OK.');
 
     const { businessType, companyStructure } = mapLegalFormToStripeBusinessInfo(payloadFromClient.legalForm);
     loggerV2.info(`[DEBUG] Punkt 5: Rechtsform gemappt. Typ: ${businessType}, Struktur: ${companyStructure}`);
@@ -624,7 +636,8 @@ export const createStripeAccountIfComplete = onCall(
         try {
           loggerV2.info("Versuche, eine Person für das Firmenkonto zu erstellen...", { accountId: account.id });
           const person = await localStripe.accounts.createPerson(account.id, personPayload);
-          await userDocRef.update({ stripeRepresentativePersonId: person.id });
+          // KRITISCHER FIX: Stripe-Person-ID für Firmen in companies collection speichern
+          await companyDocRef.update({ stripeRepresentativePersonId: person.id });
           loggerV2.info(`Person ${person.id} erfolgreich für Konto ${account.id} erstellt.`);
         } catch (e: any) {
           // Loggen Sie den Fehler, aber fahren Sie fort, anstatt das Konto zu löschen.
@@ -686,7 +699,8 @@ export const createStripeAccountIfComplete = onCall(
       "step4.iban": payloadFromClient.iban ? `****${payloadFromClient.iban.slice(-4)}` : null, // Nur die letzten 4 Ziffern speichern
       "step4.accountHolder": payloadFromClient.accountHolder || null,
     };
-    await userDocRef.update(firestoreUpdateData);
+    // KRITISCHER FIX: Stripe-Daten für Firmen in companies collection speichern, NICHT in users
+    await companyDocRef.update(firestoreUpdateData);
 
     const finalAccountData = await localStripe.accounts.retrieve(account.id);
     const finalMissingFields: string[] = [];
@@ -820,15 +834,29 @@ export const updateStripeCompanyDetails = onCall(
     const frontendUrlValue = process.env.FRONTEND_URL || 'https://taskilo.de';
     const userId = request.auth.uid;
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
+    
+    // Für updateStripeCompanyDetails sollten wir die companies collection verwenden
     const userDocRef = db.collection("users").doc(userId);
+    const companyDocRef = db.collection("companies").doc(userId);
 
     try {
+      // Prüfe zuerst user_type in users collection
       const userDoc = await userDocRef.get();
       if (!userDoc.exists) throw new HttpsError("not-found", "Benutzerprofil nicht gefunden.");
       const currentFirestoreUserData = userDoc.data() as any;
       if (!currentFirestoreUserData) throw new HttpsError("internal", "Nutzerdaten nicht lesbar.");
+      
+      if (currentFirestoreUserData.user_type !== "firma") {
+        throw new HttpsError("failed-precondition", "Nur Firmen können Stripe-Company-Details aktualisieren.");
+      }
 
-      const stripeAccountId = currentFirestoreUserData.stripeAccountId as string | undefined;
+      // Für Firmen: Lade Daten aus companies collection
+      const companyDoc = await companyDocRef.get();
+      if (!companyDoc.exists) throw new HttpsError("not-found", "Firmenprofil nicht gefunden.");
+      const currentCompanyData = companyDoc.data() as any;
+      if (!currentCompanyData) throw new HttpsError("internal", "Firmendaten nicht lesbar.");
+
+      const stripeAccountId = currentCompanyData.stripeAccountId as string | undefined;
       if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
         throw new HttpsError("failed-precondition", "Stripe-Konto ID ist nicht vorhanden oder ungültig.");
       }
@@ -970,7 +998,8 @@ export const updateStripeCompanyDetails = onCall(
             const createPersonPayload = { ...personDataToUpdate } as Stripe.AccountCreatePersonParams;
             const createdPerson = await localStripe.accounts.createPerson(stripeAccountId, createPersonPayload);
             personIdToUpdate = createdPerson.id;
-            await userDocRef.update({ stripeRepresentativePersonId: personIdToUpdate });
+            // KRITISCHER FIX: Stripe-Person-ID für Firmen in companies collection speichern
+            await companyDocRef.update({ stripeRepresentativePersonId: personIdToUpdate });
             loggerV2.info(`Stripe Person ${personIdToUpdate} für Account ${stripeAccountId} NEU erstellt via Update-Funktion.`);
           } else if (personIdToUpdate) {
             await localStripe.accounts.updatePerson(stripeAccountId, personIdToUpdate, personDataToUpdate);
@@ -979,11 +1008,8 @@ export const updateStripeCompanyDetails = onCall(
         }
       }
 
-      await userDocRef.update({ stripeAccountError: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() });
-      const companyDocRef = db.collection("users").doc(userId);
-      if ((await companyDocRef.get()).exists) {
-        await companyDocRef.set({ stripeAccountError: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      }
+      // KRITISCHER FIX: Stripe Account Errors für Firmen in companies collection löschen
+      await companyDocRef.update({ stripeAccountError: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp() });
 
       const refreshedAccountAfterUpdate = await localStripe.accounts.retrieve(stripeAccountId);
       let accountLinkUrlResponse: string | undefined = undefined;
@@ -1220,7 +1246,16 @@ export const getStripeAccountStatus = onCall(
     const db = getDb();
     const userDoc = await db.collection('users').doc(userId).get();
     const userData = userDoc.data();
-    const accountId = userData?.stripeAccountId;
+    
+    // Prüfe zuerst, ob es eine Firma ist, dann schaue in companies collection
+    let accountId = userData?.stripeAccountId;
+    
+    if (!accountId && userData?.user_type === "firma") {
+      // Für Firmen: Schaue in companies collection
+      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyData = companyDoc.data();
+      accountId = companyData?.stripeAccountId;
+    }
 
     if (!accountId) {
       return { success: false, message: "Keine Stripe-Konto-ID für diesen Nutzer gefunden." };

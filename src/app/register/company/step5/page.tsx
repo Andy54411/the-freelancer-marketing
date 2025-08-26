@@ -726,15 +726,13 @@ export default function Step5CompanyPage() {
       // NEUE 2-COLLECTION ARCHITEKTUR
       // ========================================
 
-      // USERS COLLECTION: Nur Authentifizierung + Basis-Profildaten
+      // USERS COLLECTION: Nur Authentifizierung + Basis-Profildaten (KEINE FIRMENDATEN!)
       const userBasicData: Record<string, unknown> = {
         uid: currentAuthUserUID,
         email: email!,
         user_type: 'firma',
         firstName: firstName?.trim() || '',
         lastName: lastName?.trim() || '',
-        profilePictureURL: profilePicResult.firebaseStorageUrl || null,
-        profilePictureStripeFileId: profilePicResult.stripeFileId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -800,6 +798,10 @@ export default function Step5CompanyPage() {
         lat: lat ?? null,
         lng: lng ?? null,
         radiusKm: radiusKm ?? 30,
+
+        // Profile Picture (GEHÖRT ZUR FIRMA!)
+        profilePictureURL: profilePicResult.firebaseStorageUrl || null,
+        profilePictureStripeFileId: profilePicResult.stripeFileId,
 
         // Firmendetails für öffentliches Profil
         companyWebsite: companyWebsite || null,

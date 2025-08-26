@@ -75,18 +75,31 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
 
       // DEBUGGING: console.log für URL nach Logo-Upload
 
-      await updateDoc(doc(db, 'users', uid), {
-        profilePictureURL: url,
-        profilePictureFirebaseUrl: url, // Sicherstellen, dass dies auch aktualisiert wird
-        'step3.profilePictureURL': url, // Sicherstellen, dass step3 auch aktualisiert wird
-      });
+      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userData = userDoc.data();
+      const userType = userData?.user_type;
+
+      if (userType === 'firma') {
+        // Für Firmen: Schreibe in companies collection
+        await updateDoc(doc(db, 'companies', uid), {
+          profilePictureURL: url,
+          profilePictureFirebaseUrl: url,
+          'step3.profilePictureURL': url,
+        });
+      } else {
+        // Für normale Kunden: Schreibe in users collection (ohne step3 da das Firmendaten sind)
+        await updateDoc(doc(db, 'users', uid), {
+          profilePictureURL: url,
+          profilePictureFirebaseUrl: url,
+        });
+      }
 
       setFileUrl(url);
       handleChange('step3.profilePictureURL', url);
       window.dispatchEvent(new CustomEvent('profilePictureUpdated', { detail: url }));
       setUploadSuccess(true);
     } catch (err: unknown) {
-
       let errorMessage = 'Fehler beim Hochladen des Logos.';
       if (err instanceof Error) {
         errorMessage = `Fehler beim Hochladen des Logos: ${err.message}`;
@@ -152,14 +165,24 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
 
       // DEBUGGING: console.log für alle Projektbild-URLs, die in Firestore gespeichert werden
 
-      await updateDoc(doc(db, 'users', uid), {
-        projectImages: newProjectImagesUrls,
-      });
+      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userData = userDoc.data();
+      const userType = userData?.user_type;
+
+      if (userType === 'firma') {
+        // Für Firmen: Schreibe in companies collection
+        await updateDoc(doc(db, 'companies', uid), {
+          projectImages: newProjectImagesUrls,
+        });
+      } else {
+        // Für normale Kunden: Projektbilder gehören eigentlich nicht zu Kunden
+        console.warn('Projektbilder sind nur für Firmen relevant');
+      }
 
       setProjectImages(newProjectImagesUrls);
       setUploadSuccess(true);
     } catch (err: unknown) {
-
       let errorMessage = 'Fehler beim Hochladen von Projektbildern.';
       if (err instanceof Error) {
         errorMessage = `Fehler beim Hochladen von Projektbildern: ${err.message}`;
@@ -187,14 +210,24 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
 
       // DEBUGGING: console.log für aktualisierte Projektbild-URLs nach dem Löschen
 
-      await updateDoc(doc(db, 'users', uid), {
-        projectImages: updatedProjectImages,
-      });
+      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userData = userDoc.data();
+      const userType = userData?.user_type;
+
+      if (userType === 'firma') {
+        // Für Firmen: Schreibe in companies collection
+        await updateDoc(doc(db, 'companies', uid), {
+          projectImages: updatedProjectImages,
+        });
+      } else {
+        // Für normale Kunden: Projektbilder gehören eigentlich nicht zu Kunden
+        console.warn('Projektbilder sind nur für Firmen relevant');
+      }
 
       setProjectImages(updatedProjectImages);
       setUploadSuccess(true);
     } catch (err: unknown) {
-
       let errorMessage = 'Fehler beim Löschen des Bildes.';
       if (err instanceof Error) {
         errorMessage = `Fehler beim Löschen des Bildes: ${err.message}`;
@@ -232,11 +265,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
         />
         {fileUrl && (
           <div className="mt-4">
-            <img 
-              src={fileUrl} 
-              alt="Logo Preview" 
-              className="max-w-xs max-h-32 object-contain"
-            />
+            <img src={fileUrl} alt="Logo Preview" className="max-w-xs max-h-32 object-contain" />
           </div>
         )}
       </div>
