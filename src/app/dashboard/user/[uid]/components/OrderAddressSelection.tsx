@@ -127,7 +127,7 @@ const OrderAddressSelection: React.FC<OrderAddressSelectionProps> = ({
   };
 
   const handleProviderSelect = (provider: AnbieterDetails) => {
-     // <--- NEU
+    // <--- NEU
     setSelectedProvider(provider); // Setzt den internen State
     onProviderSelect(provider); // Informiert CreateOrderModal über die Auswahl
   };

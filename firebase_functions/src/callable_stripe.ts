@@ -268,9 +268,14 @@ export const createStripeAccountIfComplete = onCall(
   async (request: CallableRequest<CreateStripeAccountCallableData>): Promise<CreateStripeAccountCallableResult> => {
     loggerV2.info('[createStripeAccountIfComplete] Aufgerufen mit Payload:', JSON.stringify(request.data));
 
+    // Authentifizierung prüfen BEVOR rate limiting
+    if (!request.auth?.uid) {
+      throw new HttpsError("unauthenticated", "Nutzer nicht authentifiziert.");
+    }
+
     // Rate-limiting für Stripe Account Creation
     const now = Date.now();
-    const authUserId = request.auth?.uid;
+    const authUserId = request.auth.uid; // Jetzt sicher, dass es nicht undefined ist
     const lastCallKey = `stripe_account_create_${authUserId}`;
     
     // Firestore DB initialisieren

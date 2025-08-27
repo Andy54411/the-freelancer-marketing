@@ -3,10 +3,12 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import OnboardingWelcome from '@/components/onboarding/OnboardingWelcome';
+import { OnboardingProvider } from '@/contexts/OnboardingContext';
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface CompanyOnboardingWelcomePageProps {}
 
 export default function CompanyOnboardingWelcomePage(): JSX.Element {
@@ -16,7 +18,7 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const companyUid = params.uid as string;
+  const companyUid = params?.uid as string;
 
   useEffect(() => {
     async function checkAuthorization() {
@@ -35,7 +37,10 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
         }
 
         const companyData = companyDoc.data();
-        const isOwner = companyData.ownerUid === user.uid;
+        const isOwner =
+          companyData.owner_uid === user.uid ||
+          companyData.ownerUid === user.uid ||
+          companyData.uid === user.uid;
         const isMember = companyData.members?.includes(user.uid);
 
         if (!isOwner && !isMember) {
@@ -45,7 +50,6 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
 
         setIsAuthorized(true);
       } catch (error) {
-
         router.push('/dashboard');
       } finally {
         setIsLoading(false);
@@ -73,10 +77,9 @@ export default function CompanyOnboardingWelcomePage(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <OnboardingWelcome
-        companyUid={companyUid}
-        onStartOnboarding={handleStartOnboarding}
-      />
+      <OnboardingProvider companyId={companyUid}>
+        <OnboardingWelcome companyUid={companyUid} onStartOnboarding={handleStartOnboarding} />
+      </OnboardingProvider>
     </div>
   );
 }

@@ -899,14 +899,7 @@ export default function Step5CompanyPage() {
         hasRequiredFields: !!(cleanedCompanyData.companyName && cleanedCompanyData.legalForm),
       });
 
-      // WICHTIG 1: User-Type für Company korrekt setzen
-      await updateDoc(doc(db, 'users', currentAuthUserUID), {
-        user_type: 'firma',
-        firstName: firstName?.trim() || '',
-        lastName: lastName?.trim() || '',
-        updatedAt: serverTimestamp(),
-      });
-      console.log('✅ Users document updated with company type');
+      // ENTFERNT: Kein Update der users Collection mehr!
 
       // WICHTIG 2: Companies document mit schrittweiser Erstellung (robusterer Ansatz)
       try {
@@ -1059,17 +1052,9 @@ export default function Step5CompanyPage() {
 
         setCurrentStepMessage('Onboarding-System wird vorbereitet...');
 
-        // 🔧 SAUBERE 2-COLLECTION TRENNUNG:
+        // 🔧 NUR COMPANIES COLLECTION - KEINE users Updates!
 
-        // 1. USERS COLLECTION: Nur Basis-Onboarding-Flag für AuthContext
-        console.log('🔧 Setting basic onboarding flag in users collection...');
-        await updateDoc(doc(db, 'users', currentAuthUserUID), {
-          hasOnboardingStarted: true,
-          needsOnboarding: true,
-        });
-        console.log('✅ Users collection: Basic onboarding flag set');
-
-        // 2. COMPANIES COLLECTION: Vollständige Onboarding-Daten für Functions
+        // COMPANIES COLLECTION: Vollständige Onboarding-Daten
         console.log('🔧 Setting complete onboarding data in companies collection...');
         await updateDoc(doc(db, 'companies', currentAuthUserUID), {
           onboardingStartedAt: serverTimestamp(),

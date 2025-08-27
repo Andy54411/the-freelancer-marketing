@@ -36,7 +36,7 @@ export const GoogleMapsLoaderProvider: React.FC<GoogleMapsLoaderProviderProps> =
     }
 
     const loader = new Loader({
-      apiKey: process.env.NEXT_PUBLIC_MAPS_API_KEY!,
+      apiKey: process.env.NEXT_PUBLIC_Maps_API_KEY!,
       version: 'weekly',
       // WICHTIG: Hier alle benötigten Libraries auf einmal angeben - mit korrekten Namen
       libraries: ['places', 'marker'] as any,

@@ -30,9 +30,7 @@ const LocationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
       });
 
       autocompleteRef.current = autocomplete;
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }, []);
 
   // Update profile location from selected place
@@ -103,7 +101,6 @@ const LocationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
         setIsLoadingPlaces(false);
       });
     } catch (error) {
-
       setIsLoadingPlaces(false);
     }
   };
@@ -129,7 +126,7 @@ const LocationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
       }
 
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_Maps_API_KEY}&libraries=places`;
       script.onload = initializeAutocomplete;
       document.head.appendChild(script);
     };
@@ -272,7 +269,7 @@ const LocationTab: React.FC<ProfileTabProps> = ({ profile, setProfile }) => {
       )}
 
       {/* API Key Info */}
-      {!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
+      {!process.env.NEXT_PUBLIC_Maps_API_KEY && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-center gap-2 text-yellow-800">
             <FiMapPin size={16} />

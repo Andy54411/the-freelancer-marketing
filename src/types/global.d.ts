@@ -34,7 +34,7 @@ declare module 'my-custom-api' {
 // Typisierung für Umgebungsvariablen
 declare namespace _NodeJS {
   interface ProcessEnv {
-    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: string; // API_KEY als Umgebungsvariable
+    NEXT_PUBLIC_Maps_API_KEY: string; // API_KEY als Umgebungsvariable
   }
 }
 

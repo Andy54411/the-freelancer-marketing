@@ -44,13 +44,26 @@ export default function Step2CompanyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: process.env.NEXT_PUBLIC_Maps_API_KEY!,
+  // Debug Google Maps API Key
+  const googleMapsApiKey = process.env.NEXT_PUBLIC_Maps_API_KEY;
+  console.log('🗺️ Google Maps API Key exists:', !!googleMapsApiKey);
+  console.log('🗺️ Google Maps API Key length:', googleMapsApiKey?.length || 0);
+
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: googleMapsApiKey!,
     libraries,
+    preventGoogleFontsLoading: true,
   });
 
-  useEffect(() => {
+  // Debug Google Maps Loading
+  if (loadError) {
+    console.error('❌ Google Maps Load Error:', loadError);
+  }
+  if (isLoaded) {
+    console.log('✅ Google Maps loaded successfully');
+  }
 
+  useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -79,11 +92,9 @@ export default function Step2CompanyPage() {
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
     autocompleteRef.current = autocomplete;
-
   }, []);
 
   const onPlaceChanged = () => {
-
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
 
@@ -126,7 +137,6 @@ export default function Step2CompanyPage() {
           setLocalLng(newLng);
           registration.setLat(newLat);
           registration.setLng(newLng);
-
         } else {
           setLocalLat(null);
           setLocalLng(null);
@@ -134,7 +144,6 @@ export default function Step2CompanyPage() {
           registration.setLng(null);
         }
       } else {
-
       }
     }
   };
@@ -203,7 +212,6 @@ export default function Step2CompanyPage() {
   };
 
   const handleNext = () => {
-
     if (
       !registration.companyName?.trim() ||
       !registration.companyStreet?.trim() ||

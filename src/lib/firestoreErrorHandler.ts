@@ -21,6 +21,14 @@ export function setupFirestoreErrorHandler() {
       return; // Diese eine Warnung ist harmlos
     }
 
+    // Alle Google Maps Deprecation-Warnungen unterdrücken
+    if (
+      message.includes('google.maps.') &&
+      (message.includes('is deprecated') || message.includes('is not available to new customers'))
+    ) {
+      return; // Google Maps Deprecation-Warnungen unterdrücken
+    }
+
     originalWarn.apply(console, args);
   };
 
