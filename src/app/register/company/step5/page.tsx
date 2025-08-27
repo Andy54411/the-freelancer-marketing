@@ -939,9 +939,6 @@ export default function Step5CompanyPage() {
           // 🔧 FIX: userType hinzufügen für Kunde vs. Firma Unterscheidung
           userType: 'company', // Immer 'company' da dies die Firmen-Registrierung ist
           accountType: 'business', // Alternative Bezeichnung
-          // 🔧 FIX: IBAN und Banking-Daten hinzufügen
-          iban: cleanedCompanyData.iban || iban || null,
-          accountHolder: cleanedCompanyData.accountHolder || accountHolder || null,
           // 🔧 DEBUG: hourlyRate in extendedData prüfen
           hourlyRate: (() => {
             const rate = Number(cleanedCompanyData.hourlyRate) || Number(hourlyRate) || 0;
@@ -962,26 +959,6 @@ export default function Step5CompanyPage() {
           profileComplete: false,
           updatedAt: serverTimestamp(),
         };
-
-        console.log('🔧 DEBUG: extendedData vor Firebase Write:', extendedData);
-        console.log(
-          '🔧 DEBUG: IBAN Werte - Context iban:',
-          iban,
-          'cleanedCompanyData.iban:',
-          cleanedCompanyData.iban
-        );
-        console.log(
-          '🔧 DEBUG: AccountHolder Werte - Context accountHolder:',
-          accountHolder,
-          'cleanedCompanyData.accountHolder:',
-          cleanedCompanyData.accountHolder
-        );
-        console.log(
-          '🔧 DEBUG: HourlyRate Werte - Context hourlyRate:',
-          hourlyRate,
-          'cleanedCompanyData.hourlyRate:',
-          cleanedCompanyData.hourlyRate
-        );
 
         await updateDoc(doc(db, 'companies', currentAuthUserUID), extendedData);
         console.log('✅ Extended company data added successfully');

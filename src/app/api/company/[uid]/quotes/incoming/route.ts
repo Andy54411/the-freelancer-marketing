@@ -25,19 +25,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get company data to verify it exists and get additional info
-
-    const companyDoc = await db.collection('users').doc(uid).get();
+    // Get company data to verify it exists and get additional info - Try companies collection first
+    let companyDoc = await db.collection('companies').doc(uid).get();
     if (!companyDoc.exists) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+      // Fallback to users collection
+      companyDoc = await db.collection('users').doc(uid).get();
+      if (!companyDoc.exists) {
+        return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+      }
     }
 
     const companyData = companyDoc.data();
 
-    // Get company's service subcategory to filter relevant projects
-    const companyUserDoc = await db.collection('users').doc(uid).get();
+    // Get company's service subcategory to filter relevant projects - Try companies collection first
+    let companyUserDoc = await db.collection('companies').doc(uid).get();
     if (!companyUserDoc.exists) {
-      return NextResponse.json({ error: 'Company user data not found' }, { status: 404 });
+      // Fallback to users collection
+      companyUserDoc = await db.collection('users').doc(uid).get();
+      if (!companyUserDoc.exists) {
+        return NextResponse.json({ error: 'Company user data not found' }, { status: 404 });
+      }
     }
 
     const companyUserData = companyUserDoc.data();

@@ -208,12 +208,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   const [showManagingDirectorPersonalModal, setShowManagingDirectorPersonalModal] = useState(false);
 
   useEffect(() => {
-    console.log('🔍 Settings useEffect triggered:', { userData: !!userData, form: !!form });
-
-    // Nur ausführen wenn userData vorhanden ist und form noch nicht gesetzt
-    if (userData && !form) {
-      console.log('📝 Initializing form with userData:', userData);
-
+    if (userData) {
       // Debug-Logging für Datenbank-Struktur
 
       const get = <T,>(path: string, fallback: T): T => {
@@ -388,10 +383,9 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         identityBackFile: null,
       });
 
-      console.log('✅ Form initialized successfully');
       // Debug-Logging für gemappte Formularwerte
     }
-  }, [userData, form]); // userData und form als Dependencies
+  }, [userData]);
 
   const handleChange = (path: string, value: string | number | boolean | File | null) => {
     setForm(prevForm => {

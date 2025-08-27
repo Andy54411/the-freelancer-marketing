@@ -38,31 +38,38 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
   const user = auth.currentUser;
   const uid = user?.uid || '';
 
-  // Verwende die aktuellen Werte direkt aus formData ohne useEffect
-  const currentFileUrl = fileUrl || formData?.step3?.profilePictureURL || null;
-  const currentBannerUrl = bannerUrl || formData?.profileBannerImage || null;
+  // Update fileUrl when formData changes
+  useEffect(() => {
+    const profileUrl = formData?.step3?.profilePictureURL || null;
+    setFileUrl(profileUrl);
+    console.log('🖼️ Logo Form - Profile URL updated:', profileUrl);
+  }, [formData?.step3?.profilePictureURL]);
+
+  // Update bannerUrl when formData changes
+  useEffect(() => {
+    const bannerImageUrl = formData?.profileBannerImage || null;
+    setBannerUrl(bannerImageUrl);
+    console.log('🎨 Logo Form - Banner URL updated:', bannerImageUrl);
+  }, [formData?.profileBannerImage]);
 
   useEffect(() => {
     if (!uid) return;
-
-    let isMounted = true; // Prevent state updates if component unmounts
-
     const fetchProjectImagesFromFirestore = async () => {
       try {
         // Prüfe zuerst user_type aus users collection
         const userDocRef = doc(db, 'users', uid);
         const userDocSnap = await getDoc(userDocRef);
 
-        if (userDocSnap.exists() && isMounted) {
+        if (userDocSnap.exists()) {
           const userData = userDocSnap.data();
 
           // Check for company data in companies collection
           const companyDocRef = doc(db, 'companies', uid);
           const companyDocSnap = await getDoc(companyDocRef);
-          if (companyDocSnap.exists() && isMounted) {
+          if (companyDocSnap.exists()) {
             const companyData = companyDocSnap.data();
             setProjectImages(companyData.projectImages || []);
-          } else if (isMounted) {
+          } else {
             // Für Privatnutzer: Lade aus users collection
             setProjectImages(userData.projectImages || []);
           }
@@ -71,13 +78,8 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
         console.error('Error loading project images:', error);
       }
     };
-
     fetchProjectImagesFromFirestore();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [uid]); // Nur bei UID-Änderung laden
+  }, [uid]);
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -87,40 +89,22 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     setUploadSuccess(false);
 
     const storageInstance = getStorage();
-
-    // KRITISCHE KORREKTUR: Prüfe user_type und verwende richtigen Pfad
-    const userDoc = await getDoc(doc(db, 'users', uid));
-    const userData = userDoc.data();
-    const userType = userData?.user_type;
+    const folderRef = ref(storageInstance, `profilePictures/${uid}`);
 
     try {
-      let folderPath: string;
-      let filePath: string;
-
-      if (userType === 'firma') {
-        // Für Firmen: companies/ Pfad verwenden
-        folderPath = `companies/${uid}`;
-        filePath = `companies/${uid}/logo.jpg`;
-      } else {
-        // Für normale Kunden: profilePictures/ Pfad verwenden
-        folderPath = `profilePictures/${uid}`;
-        filePath = `profilePictures/${uid}/profilePicture.jpg`;
-      }
-
-      const folderRef = ref(storageInstance, folderPath);
       const list = await listAll(folderRef);
+      await Promise.all(list.items.map(item => deleteObject(item)));
 
-      // Lösche alte Logo-Dateien (logo.jpg oder profilePicture.jpg)
-      const logoFiles = list.items.filter(
-        item => item.name === 'logo.jpg' || item.name === 'profilePicture.jpg'
-      );
-      await Promise.all(logoFiles.map(item => deleteObject(item)));
-
-      const fileRef = ref(storageInstance, filePath);
+      const fileRef = ref(storageInstance, `profilePictures/${uid}/profilePicture.jpg`);
       await uploadBytesResumable(fileRef, file);
-      const url = await getDownloadURL(fileRef);
+      const url = await getDownloadURL(fileRef); // Dies sollte die korrekte Firebase Storage URL sein
 
-      console.log('✅ Logo-Upload erfolgreich:', url, 'für userType:', userType);
+      // DEBUGGING: console.log für URL nach Logo-Upload
+
+      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userData = userDoc.data();
+      const userType = userData?.user_type;
 
       if (userType === 'firma') {
         // Für Firmen: Schreibe in companies collection
@@ -130,7 +114,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           'step3.profilePictureURL': url,
         });
       } else {
-        // Für normale Kunden: Schreibe in users collection
+        // Für normale Kunden: Schreibe in users collection (ohne step3 da das Firmendaten sind)
         await updateDoc(doc(db, 'users', uid), {
           profilePictureURL: url,
           profilePictureFirebaseUrl: url,
@@ -217,11 +201,6 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     setUploadError(null);
     setUploadSuccess(false);
 
-    // Prüfe user_type einmal am Anfang
-    const userDoc = await getDoc(doc(db, 'users', uid));
-    const userData = userDoc.data();
-    const userType = userData?.user_type;
-
     // Validierung der Dateitypen
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     const invalidFiles = Array.from(files).filter(file => !allowedTypes.includes(file.type));
@@ -235,20 +214,9 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     }
 
     const storageInstance = getStorage();
+    const folderRef = ref(storageInstance, `projectImages/${uid}`);
 
     try {
-      let folderPath: string;
-
-      if (userType === 'firma') {
-        // Für Firmen: companies/ Pfad verwenden
-        folderPath = `companies/${uid}/projects`;
-      } else {
-        // Für normale Kunden: projectImages/ Pfad verwenden
-        folderPath = `projectImages/${uid}`;
-      }
-
-      const folderRef = ref(storageInstance, folderPath);
-
       const currentList = await listAll(folderRef);
       if (currentList.items.length + files.length > 5) {
         setUploadError('Maximal 5 Projektbilder erlaubt.');
@@ -257,14 +225,8 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
 
       setUploading(true);
       const uploads = Array.from(files).map(file => {
-        const fileRefPath =
-          userType === 'firma'
-            ? `companies/${uid}/projects/${file.name}`
-            : `projectImages/${uid}/${file.name}`;
-        const fileRef = ref(storageInstance, fileRefPath);
+        const fileRef = ref(storageInstance, `projectImages/${uid}/${file.name}`);
         const uploadTask = uploadBytesResumable(fileRef, file);
-
-        console.log('📤 Uploading project image to:', fileRefPath, 'für userType:', userType);
 
         return new Promise<string>((resolve, reject) => {
           uploadTask.on(
@@ -287,12 +249,12 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
       const uploadedUrls = await Promise.all(uploads);
       const newProjectImagesUrls = [...projectImages, ...uploadedUrls];
 
-      console.log(
-        '✅ Projektbilder-Upload erfolgreich:',
-        newProjectImagesUrls,
-        'für userType:',
-        userType
-      );
+      // DEBUGGING: console.log für alle Projektbild-URLs, die in Firestore gespeichert werden
+
+      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userData = userDoc.data();
+      const userType = userData?.user_type;
 
       if (userType === 'firma') {
         // Für Firmen: Schreibe in companies collection
@@ -387,13 +349,9 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           onChange={handleLogoUpload}
           className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         />
-        {currentFileUrl && (
+        {fileUrl && (
           <div className="mt-4">
-            <img
-              src={currentFileUrl}
-              alt="Logo Preview"
-              className="max-w-xs max-h-32 object-contain"
-            />
+            <img src={fileUrl} alt="Logo Preview" className="max-w-xs max-h-32 object-contain" />
           </div>
         )}
       </div>
@@ -420,15 +378,11 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
             Banner wird hochgeladen...
           </div>
         )}
-        {currentBannerUrl && !uploadingBanner && (
+        {bannerUrl && !uploadingBanner && (
           <div className="mt-4">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Banner-Vorschau:</p>
             <div className="relative w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <img
-                src={currentBannerUrl}
-                alt="Banner Preview"
-                className="w-full h-full object-cover"
-              />
+              <img src={bannerUrl} alt="Banner Preview" className="w-full h-full object-cover" />
             </div>
           </div>
         )}

@@ -16,51 +16,28 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔍 Settings page useEffect:', { uid, user: !!user, userUid: user?.uid });
-
     const loadUserData = async () => {
       if (!uid || !user || user.uid !== uid) {
-        console.log('❌ Settings page - authorization failed:', {
-          uid,
-          user: !!user,
-          userUid: user?.uid,
-        });
         setLoading(false);
         return;
       }
-
-      console.log('📡 Settings page - loading data for uid:', uid);
 
       try {
         // Lade Auth-Daten aus users collection
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (userDoc.exists()) {
           const userDocData = userDoc.data();
-          console.log('✅ Settings page - user data loaded:', userDocData);
           setUserData(userDocData);
-        } else {
-          console.log('❌ Settings page - no user data found');
-        }
 
-        // IMMER auch companies collection prüfen (für Firmen)
-        const companyDoc = await getDoc(doc(db, 'companies', uid));
-        if (companyDoc.exists()) {
-          const companyDocData = companyDoc.data();
-          console.log('✅ Settings page - company data loaded:', companyDocData);
-          setCompanyData(companyDocData);
-
-          // FALLBACK: Wenn keine user data vorhanden, verwende company data als user data
-          if (!userDoc.exists()) {
-            console.log('🔄 Settings page - using company data as fallback for user data');
-            setUserData(companyDocData);
+          // Check if user is a company by checking companies collection
+          const companyDoc = await getDoc(doc(db, 'companies', uid));
+          if (companyDoc.exists()) {
+            setCompanyData(companyDoc.data());
           }
-        } else {
-          console.log('⚠️ Settings page - no company data found');
         }
       } catch (error) {
-        console.error('❌ Settings page - error loading data:', error);
+        console.error('Error loading user/company data:', error);
       } finally {
-        console.log('✅ Settings page - loading complete');
         setLoading(false);
       }
     };
@@ -85,12 +62,6 @@ export default function SettingsPage() {
       });
     }
   }, [userData, companyData]);
-
-  console.log('🚀 Settings page render:', {
-    loading,
-    userData: !!userData,
-    companyData: !!companyData,
-  });
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {

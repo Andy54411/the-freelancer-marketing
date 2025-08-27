@@ -242,7 +242,7 @@ export default function ProfilePage() {
       }
 
       try {
-        let userData = null;
+        let userData: any = null;
 
         // Priorität 1: Lade aus der companies Collection (Hauptquelle für Unternehmensdaten)
         const companyDocRef = doc(db, 'companies', companyId);

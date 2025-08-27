@@ -485,20 +485,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (stepData[2]?.taxRate) companyUpdates.taxRate = String(stepData[2].taxRate);
 
       // Step 3: Profil & Service-Details
-      console.log('🎨 Step 3 Data Debug:', {
-        step3Exists: !!stepData[3],
-        step3Data: stepData[3],
-        profileBannerImage: stepData[3]?.profileBannerImage,
-        companyLogo: stepData[3]?.companyLogo,
-      });
-
       if (stepData[3]?.companyLogo) companyUpdates.companyLogo = String(stepData[3].companyLogo);
-      if (stepData[3]?.profileBannerImage) {
+      if (stepData[3]?.profileBannerImage)
         companyUpdates.profileBannerImage = String(stepData[3].profileBannerImage);
-        console.log('✅ Banner-Bild wird gespeichert:', stepData[3].profileBannerImage);
-      } else {
-        console.log('❌ Kein Banner-Bild in stepData[3] gefunden');
-      }
       if (stepData[3]?.publicDescription)
         companyUpdates.publicDescription = String(stepData[3].publicDescription);
       if (stepData[3]?.instantBooking !== undefined)
