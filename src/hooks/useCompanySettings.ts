@@ -52,11 +52,21 @@ export function useCompanySettings(userId?: string) {
         setLoading(true);
         setError(null);
 
-        const userDoc = await getDoc(doc(db, 'users', userId));
+        // Für Firmen: Erst companies collection prüfen
+        const companyDoc = await getDoc(doc(db, 'companies', userId));
+        let userData: any = null;
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+        if (companyDoc.exists()) {
+          userData = companyDoc.data();
+        } else {
+          // Fallback: users collection
+          const userDoc = await getDoc(doc(db, 'users', userId));
+          if (userDoc.exists()) {
+            userData = userDoc.data();
+          }
+        }
 
+        if (userData) {
           const companySettings: CompanySettings = {
             // Firmendaten
             companyName: userData.companyName || userData.step2?.companyName || '',
@@ -106,7 +116,6 @@ export function useCompanySettings(userId?: string) {
           setError('Unternehmensdaten nicht gefunden');
         }
       } catch (err) {
-
         setError('Fehler beim Laden der Unternehmenseinstellungen');
       } finally {
         setLoading(false);

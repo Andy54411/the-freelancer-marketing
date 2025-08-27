@@ -61,16 +61,16 @@ export function useCompanyDashboard() {
           getDoc(companyDocRef),
         ]);
 
-        if (!userSnap.exists()) {
-
+        // Für Firmen: Prüfe zuerst Company-Daten, dann User-Daten als Fallback
+        if (!companySnap.exists() && !userSnap.exists()) {
           setUserData(null);
           setMissingFields([]);
           return;
         }
 
-        // Beginne mit den Basis-Benutzerdaten und mische die Firmendaten hinzu.
+        // Beginne mit den Basis-Firmendaten und mische die User-Daten hinzu (umgekehrt zu vorher).
         const data = {
-          ...userSnap.data(),
+          ...(userSnap.exists() ? userSnap.data() : {}),
           ...(companySnap.exists() ? companySnap.data() : {}),
         } as RawFirestoreUserData;
 
@@ -109,7 +109,6 @@ export function useCompanyDashboard() {
           setView('settings');
         }
       } catch (error) {
-
         // Optional: Einen Fehlerstatus setzen, um ihn in der UI anzuzeigen.
       } finally {
         setIsChecking(false);

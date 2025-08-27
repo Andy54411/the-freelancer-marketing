@@ -96,37 +96,41 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
 
       // FALLBACK: Falls stripeAccountId undefined ist, versuche direkten DB-Zugriff
       if (!provider.stripeAccountId) {
-
         try {
           // Direkter Firestore-Zugriff um stripeAccountId zu holen
           const { doc, getDoc } = await import('firebase/firestore');
           const { db } = await import('@/firebase/clients');
 
-          const userDoc = await getDoc(doc(db, 'users', provider.id));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
+          // KRITISCHE KORREKTUR: Erst companies, dann users Collection prüfen
+          let userData: any = null;
 
+          // 1. Prüfe companies Collection
+          const companyDoc = await getDoc(doc(db, 'companies', provider.id));
+          if (companyDoc.exists()) {
+            userData = companyDoc.data();
+          } else {
+            // 2. Fallback: users Collection
+            const userDoc = await getDoc(doc(db, 'users', provider.id));
+            if (userDoc.exists()) {
+              userData = userDoc.data();
+            }
+          }
+
+          if (userData) {
             // Verwende die direkt geladene stripeAccountId
             if (userData.stripeAccountId?.startsWith('acct_')) {
-
               // Überschreibe die provider stripeAccountId für diese Session
               provider.stripeAccountId = userData.stripeAccountId;
-            } else {
-
             }
-          } else {
-
           }
         } catch (fallbackError) {
-
+          console.error('Fehler beim Laden der Provider Stripe Account ID:', fallbackError);
         }
       } else {
-
       }
 
       // Prüfe ob Provider Stripe Account vorhanden und gültig ist
       if (!provider.stripeAccountId || !provider.stripeAccountId.startsWith('acct_')) {
-
         alert(
           'B2B Payment nicht möglich: Provider hat kein konfiguriertes Stripe Connect Konto. ' +
             'Bitte kontaktieren Sie den Anbieter oder verwenden Sie eine andere Zahlungsmethode.'
@@ -176,7 +180,6 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
       setCurrentStep('stripe-payment');
       setIsB2BPaymentOpen(true);
     } catch (error) {
-
       alert(
         `Zahlung fehlgeschlagen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );
@@ -186,7 +189,6 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   };
 
   const handleStripePaymentSuccess = async (paymentIntentId: string) => {
-
     // KORREKT: Webhook erstellt die Order automatisch - kein Frontend-Order-Creation
     // Der Webhook verarbeitet den payment_intent.succeeded Event und erstellt die Order
 
@@ -197,7 +199,6 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
   };
 
   const handleStripePaymentError = (errorMessage: string) => {
-
     alert(`Zahlung fehlgeschlagen: ${errorMessage}`);
     setCurrentStep('payment'); // Zurück zum Payment Step
   };

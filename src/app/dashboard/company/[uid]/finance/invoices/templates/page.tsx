@@ -33,16 +33,28 @@ export default function InvoiceTemplatesPage() {
 
       try {
         setLoading(true);
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+
+        // Für Firmen: Erst companies collection prüfen
+        const companyDoc = await getDoc(doc(db, 'companies', uid));
+        let userData: any = null;
+
+        if (companyDoc.exists()) {
+          userData = companyDoc.data();
+        } else {
+          // Fallback: users collection
+          const userDoc = await getDoc(doc(db, 'users', uid));
+          if (userDoc.exists()) {
+            userData = userDoc.data();
+          }
+        }
+
+        if (userData) {
           const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
           if (preferredTemplate && INVOICE_TEMPLATES.some(t => t.id === preferredTemplate)) {
             setSelectedTemplate(preferredTemplate);
           }
         }
       } catch (error) {
-
       } finally {
         setLoading(false);
       }
@@ -127,8 +139,9 @@ export default function InvoiceTemplatesPage() {
       setSaving(true);
 
       // Save template preference to database
-      const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, {
+      // Für Firmen: Immer in companies collection speichern
+      const companyRef = doc(db, 'companies', uid);
+      await updateDoc(companyRef, {
         preferredInvoiceTemplate: selectedTemplate,
         updatedAt: new Date(),
       });
@@ -139,7 +152,6 @@ export default function InvoiceTemplatesPage() {
       toast.success('Template-Einstellung erfolgreich gespeichert!');
       router.push('../invoices'); // Back to invoices page
     } catch (error) {
-
       toast.error('Fehler beim Speichern der Template-Einstellung');
     } finally {
       setSaving(false);

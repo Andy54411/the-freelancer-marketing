@@ -119,9 +119,22 @@ export default function CreateInvoicePage() {
 
       try {
         setTemplateLoading(true);
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+
+        // Für Firmen: Erst companies collection prüfen
+        const companyDoc = await getDoc(doc(db, 'companies', uid));
+        let userData: any = null;
+
+        if (companyDoc.exists()) {
+          userData = companyDoc.data();
+        } else {
+          // Fallback: users collection
+          const userDoc = await getDoc(doc(db, 'users', uid));
+          if (userDoc.exists()) {
+            userData = userDoc.data();
+          }
+        }
+
+        if (userData) {
           const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
           if (preferredTemplate) {
             setSelectedTemplate(preferredTemplate);
@@ -138,7 +151,6 @@ export default function CreateInvoicePage() {
           }
         }
       } catch (error) {
-
         // Fallback to localStorage on error
         if (typeof window !== 'undefined') {
           const savedTemplate = localStorage.getItem('selectedInvoiceTemplate') as InvoiceTemplate;
@@ -198,7 +210,6 @@ export default function CreateInvoicePage() {
 
         setCustomers(loadedCustomers);
       } catch (error) {
-
       } finally {
         setLoadingCustomers(false);
       }
@@ -318,7 +329,6 @@ export default function CreateInvoicePage() {
   // Funktion zum Prüfen ob eine Rechnungsnummer bereits existiert
   const checkInvoiceNumberExists = async (invoiceNumber: string): Promise<boolean> => {
     try {
-
       const allInvoices = await FirestoreInvoiceService.getInvoicesByCompany(uid);
       const exists = allInvoices.some(
         invoice => invoice.invoiceNumber === invoiceNumber || invoice.number === invoiceNumber
@@ -326,7 +336,6 @@ export default function CreateInvoicePage() {
 
       return exists;
     } catch (error) {
-
       return false;
     }
   };
@@ -334,13 +343,11 @@ export default function CreateInvoicePage() {
   // Funktion zum Generieren der nächsten Rechnungsnummer - nutzt den korrekten Service
   const generateNextInvoiceNumber = async () => {
     try {
-
       const { sequentialNumber, formattedNumber } =
         await FirestoreInvoiceService.getNextInvoiceNumber(uid);
 
       return { number: formattedNumber, sequentialNumber };
     } catch (error) {
-
       // Fallback
       const year = new Date().getFullYear();
       const randomNumber = Math.floor(Math.random() * 1000) + 1;
@@ -353,7 +360,6 @@ export default function CreateInvoicePage() {
     e.preventDefault();
 
     if (isSubmitting) {
-
       return;
     }
 
@@ -363,7 +369,6 @@ export default function CreateInvoicePage() {
       // Validation
 
       if (!formData.customerName || !formData.issueDate || !formData.dueDate) {
-
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         setIsSubmitting(false);
         return;
@@ -373,14 +378,11 @@ export default function CreateInvoicePage() {
       if (action === 'finalize') {
         // Prüfe ob bereits eine Rechnungsnummer vorhanden ist (bei Draft-Bearbeitung)
         if (!formData.invoiceNumber) {
-
           // Generiere neue Rechnungsnummer nur wenn keine vorhanden ist
         } else {
-
           // Prüfe ob die vorhandene Rechnungsnummer eindeutig ist
           const numberExists = await checkInvoiceNumberExists(formData.invoiceNumber);
           if (numberExists) {
-
             toast.error(
               `Rechnungsnummer ${formData.invoiceNumber} ist bereits vergeben. Bitte verwenden Sie eine andere Nummer.`
             );
@@ -394,7 +396,6 @@ export default function CreateInvoicePage() {
         item => item.description && item.quantity > 0 && item.unitPrice > 0
       );
       if (!hasValidItems) {
-
         toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
         setIsSubmitting(false);
         return;
@@ -408,16 +409,12 @@ export default function CreateInvoicePage() {
 
       // Nur für finale Rechnungen eine echte Rechnungsnummer generieren (wenn nicht bereits vorhanden)
       if (action === 'finalize' && !finalInvoiceNumber) {
-
         const result = await generateNextInvoiceNumber();
         finalInvoiceNumber = result.number;
         sequentialNumber = result.sequentialNumber;
-
       } else if (action === 'finalize' && finalInvoiceNumber) {
-
       } else {
         // Für Entwürfe keine Rechnungsnummer setzen
-
       }
 
       const newInvoice = {
@@ -487,10 +484,8 @@ export default function CreateInvoicePage() {
 
       router.push(`/dashboard/company/${uid}/finance/invoices`);
     } catch (error) {
-
       // Detaillierte Fehleranalyse
       if (error.code) {
-
         if (error.code === 'permission-denied') {
           toast.error('Berechtigung verweigert - bitte kontaktieren Sie den Support');
         } else if (error.code === 'network-request-failed') {
@@ -502,7 +497,6 @@ export default function CreateInvoicePage() {
         toast.error('Unbekannter Fehler beim Speichern der Rechnung');
       }
     } finally {
-
       setIsSubmitting(false);
     }
   };

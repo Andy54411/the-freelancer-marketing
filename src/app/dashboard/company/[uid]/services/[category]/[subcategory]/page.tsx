@@ -158,9 +158,7 @@ export default function CompanyServiceSubcategoryPage() {
         const data = firmaDoc.docs[0].data();
         setCompanyName(data.companyName || 'Unbekanntes Unternehmen');
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   // Chat mit Provider öffnen
@@ -180,6 +178,13 @@ export default function CompanyServiceSubcategoryPage() {
         limit(20) // Reduziertes Limit für bessere Performance
       );
 
+      // KRITISCHE KORREKTUR: Auch companies Collection für Anbieter durchsuchen
+      const companiesCollectionRef = collection(db, 'companies');
+      const companiesQuery = query(
+        companiesCollectionRef,
+        limit(20) // Reduziertes Limit für bessere Performance
+      );
+
       // Query für Users/Freelancer mit besserer Fehlerbehandlung
       const userCollectionRef = collection(db, 'users');
       const userQuery = query(
@@ -188,13 +193,17 @@ export default function CompanyServiceSubcategoryPage() {
         limit(20) // Reduziertes Limit für bessere Performance
       );
 
-      const [firmSnapshot, userSnapshot] = await Promise.all([
+      const [firmSnapshot, companiesSnapshot, userSnapshot] = await Promise.all([
         getDocs(firmQuery).catch(error => {
-
+          console.error('Fehler beim Laden der Firma-Collection:', error);
+          return { docs: [] };
+        }),
+        getDocs(companiesQuery).catch(error => {
+          console.error('Fehler beim Laden der Companies-Collection:', error);
           return { docs: [] };
         }),
         getDocs(userQuery).catch(error => {
-
+          console.error('Fehler beim Laden der Users-Collection:', error);
           return { docs: [] };
         }),
       ]);
@@ -235,6 +244,42 @@ export default function CompanyServiceSubcategoryPage() {
           return data?.isActive !== false;
         });
 
+      // KRITISCHE KORREKTUR: Companies Collection verarbeiten
+      const companiesProviders: Provider[] = ((companiesSnapshot.docs || []) as any[])
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            companyName: data.companyName,
+            profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
+            profilePictureURL: data.profilePictureURL,
+            photoURL: data.photoURL,
+            bio: data.description || data.bio,
+            location: data.location
+              ? data.location
+              : `${data.companyCity || ''}, ${data.companyCountry || ''}`
+                  .trim()
+                  .replace(/^,\s*/, ''),
+            skills: data.services || data.skills || [],
+            selectedCategory: data.selectedCategory,
+            selectedSubcategory: data.selectedSubcategory,
+            rating: data.averageRating || 0,
+            reviewCount: data.reviewCount || 0,
+            completedJobs: data.completedJobs || 0,
+            isCompany: true,
+            priceRange: data.priceRange,
+            responseTime: data.responseTime,
+            hourlyRate: data.hourlyRate,
+          };
+        })
+        .filter((provider: Provider) => {
+          const data = ((companiesSnapshot.docs || []) as any[])
+            .find(doc => doc.id === provider.id)
+            ?.data();
+          // Zeige Provider wenn isActive nicht explizit false ist
+          return data?.isActive !== false;
+        });
+
       const userProviders: Provider[] = (userSnapshot.docs || []).map(doc => {
         const data = doc.data();
         return {
@@ -255,7 +300,7 @@ export default function CompanyServiceSubcategoryPage() {
         };
       });
 
-      const allProviders = [...firmProviders, ...userProviders];
+      const allProviders = [...firmProviders, ...companiesProviders, ...userProviders];
 
       // Log specifically Mietkoch providers
       const mietkochers = allProviders.filter(
@@ -273,7 +318,6 @@ export default function CompanyServiceSubcategoryPage() {
             provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase();
 
           if (matches) {
-
           }
 
           return matches;
@@ -287,7 +331,6 @@ export default function CompanyServiceSubcategoryPage() {
         );
 
         if (skillsMatch) {
-
         }
 
         return skillsMatch;
@@ -322,9 +365,7 @@ export default function CompanyServiceSubcategoryPage() {
       });
 
       setProviders(filteredProviders);
-
     } catch (error) {
-
       // Zeige leere Liste bei Fehlern
       setProviders([]);
     } finally {

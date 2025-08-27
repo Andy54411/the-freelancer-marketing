@@ -59,9 +59,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
         try {
           const oldImageRef = storageRef(storage, profile.photoURL);
           await deleteObject(oldImageRef);
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
 
       const uploadTask = uploadBytesResumable(storageReference, file);
@@ -73,7 +71,6 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
           setUploadProgress(progress);
         },
         error => {
-
           toast.error('Fehler beim Upload des Profilbilds');
           setIsUploadingProfileImage(false);
         },
@@ -84,25 +81,36 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
             // Update Profile State
             setProfile(prev => (prev ? { ...prev, photoURL: downloadURL } : null));
 
-            // Update in Firestore
+            // Update in Firestore - KRITISCH: Da wir in /dashboard/company/ sind, ist es eine Firma
             const userRef = doc(db, 'users', profile.uid);
-            await updateDoc(userRef, {
-              profilePictureURL: downloadURL,
-              photoURL: downloadURL,
-            });
+            const companyRef = doc(db, 'companies', profile.uid);
+
+            // Für Company-Dashboard: Schreibe in companies collection (primär) und users collection (fallback)
+            await Promise.all([
+              updateDoc(companyRef, {
+                profilePictureURL: downloadURL,
+                photoURL: downloadURL,
+                profilePictureFirebaseUrl: downloadURL,
+              }),
+              updateDoc(userRef, {
+                profilePictureURL: downloadURL,
+                photoURL: downloadURL,
+              }).catch(() => {
+                // Ignore if users doc doesn't exist for companies
+                console.log('Users doc not found for company, continuing...');
+              }),
+            ]);
 
             toast.success('Profilbild erfolgreich hochgeladen!');
             setIsUploadingProfileImage(false);
             setUploadProgress(0);
           } catch (error) {
-
             toast.error('Fehler beim Speichern des Profilbilds');
             setIsUploadingProfileImage(false);
           }
         }
       );
     } catch (error) {
-
       toast.error('Fehler beim Upload');
       setIsUploadingProfileImage(false);
     }
@@ -122,16 +130,28 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
       // Update Profile State
       setProfile(prev => (prev ? { ...prev, photoURL: '/default-avatar.png' } : null));
 
-      // Update in Firestore
+      // Update in Firestore - KRITISCH: Da wir in /dashboard/company/ sind, ist es eine Firma
       const userRef = doc(db, 'users', profile.uid);
-      await updateDoc(userRef, {
-        profilePictureURL: '/default-avatar.png',
-        photoURL: '/default-avatar.png',
-      });
+      const companyRef = doc(db, 'companies', profile.uid);
+
+      // Für Company-Dashboard: Schreibe in companies collection (primär) und users collection (fallback)
+      await Promise.all([
+        updateDoc(companyRef, {
+          profilePictureURL: '/default-avatar.png',
+          photoURL: '/default-avatar.png',
+          profilePictureFirebaseUrl: '/default-avatar.png',
+        }),
+        updateDoc(userRef, {
+          profilePictureURL: '/default-avatar.png',
+          photoURL: '/default-avatar.png',
+        }).catch(() => {
+          // Ignore if users doc doesn't exist for companies
+          console.log('Users doc not found for company, continuing...');
+        }),
+      ]);
 
       toast.success('Profilbild entfernt');
     } catch (error) {
-
       toast.error('Fehler beim Entfernen des Profilbilds');
     }
   };

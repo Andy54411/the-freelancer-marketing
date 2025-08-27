@@ -1096,7 +1096,7 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
 
     // Keine zentrale Validierung mehr - alle Formulare verwenden lokale Validierung
     onDataChange(formData);
-  }, [formData]); // onDataChange entfernt um Endlosschleife zu vermeiden
+  }, [JSON.stringify(formData)]); // Verwende JSON.stringify für Deep Comparison um Endlosschleife zu vermeiden
 
   const handleDataChange = (newData: SubcategoryData) => {
     setFormData(newData);
@@ -1109,7 +1109,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
   };
 
   const handleNextClick = () => {
-
     // Extrahiere die Beschreibung aus den Formulardaten
     let description = '';
     if (formData) {
@@ -1129,7 +1128,6 @@ const SubcategoryFormManager: React.FC<SubcategoryFormManagerProps> = ({
       // Setze die Beschreibung im Registration-Context
       if (description && setDescription) {
         setDescription(description);
-
       }
     }
 

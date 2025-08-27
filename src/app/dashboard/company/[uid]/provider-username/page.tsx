@@ -111,20 +111,36 @@ const UserProfilePage = () => {
       setLoading(true);
       setError(null);
       try {
-        // Annahme: Du suchst Nutzerprofile anhand des 'username' Feldes.
-        // Wenn du nach UID suchst, müsstest du den Pfad anpassen und `doc(db, 'users', username)` verwenden.
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('username', '==', username), limit(1));
-        const querySnapshot = await getDocs(q);
+        // KRITISCHE KORREKTUR: Erst companies, dann users Collection für Username-Suche
+        let userDoc: any = null;
+        let userData: UserProfile | null = null;
 
-        if (querySnapshot.empty) {
+        // 1. Prüfe companies Collection für Username
+        const companiesRef = collection(db, 'companies');
+        const companiesQuery = query(companiesRef, where('username', '==', username), limit(1));
+        const companiesSnapshot = await getDocs(companiesQuery);
+
+        if (!companiesSnapshot.empty) {
+          userDoc = companiesSnapshot.docs[0];
+          userData = userDoc.data() as UserProfile;
+        } else {
+          // 2. Fallback: users Collection für Username
+          const usersRef = collection(db, 'users');
+          const usersQuery = query(usersRef, where('username', '==', username), limit(1));
+          const usersSnapshot = await getDocs(usersQuery);
+
+          if (!usersSnapshot.empty) {
+            userDoc = usersSnapshot.docs[0];
+            userData = userDoc.data() as UserProfile;
+          }
+        }
+
+        if (!userDoc || !userData) {
           setError('Benutzerprofil nicht gefunden.');
           setLoading(false);
           return;
         }
 
-        const userDoc = querySnapshot.docs[0];
-        const userData = userDoc.data() as UserProfile;
         setProfile({ ...userData, uid: userDoc.id }); // UID hinzufügen
 
         // Beispiel: Lade Dienstleistungen (Gigs) des Nutzers, falls es ein Anbieter ist
