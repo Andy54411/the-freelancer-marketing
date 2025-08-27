@@ -11,31 +11,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'companyUid parameter is required' }, { status: 400 });
     }
 
-    // SIMPLIFIED: Check harmonized user document only
-    const userDoc = await getDoc(doc(db, 'users', companyUid));
-    const userData = userDoc.exists() ? userDoc.data() : null;
+    // 🔧 SAUBERE TRENNUNG: Check companies collection only
+    const companyDoc = await getDoc(doc(db, 'companies', companyUid));
+    const companyData = companyDoc.exists() ? companyDoc.data() : null;
 
     const recommendations: string[] = [];
 
     // Add recommendations based on findings
-    if (!userDoc.exists()) {
-      recommendations.push('❌ User document missing - company does not exist');
+    if (!companyDoc.exists()) {
+      recommendations.push('❌ Company document missing - company does not exist');
     } else {
-      if (userData?.onboardingCompleted) {
+      if (companyData?.onboardingCompleted) {
         recommendations.push('✅ Onboarding completed successfully');
       } else {
-        const currentStep = userData?.onboardingCurrentStep || '1';
-        const percentage = userData?.onboardingCompletionPercentage || 0;
+        const currentStep = companyData?.onboardingCurrentStep || '1';
+        const percentage = companyData?.onboardingCompletionPercentage || 0;
         recommendations.push(
           `⏳ Onboarding in progress - Step ${currentStep} (${percentage}% complete)`
         );
       }
 
-      if (userData?.profileStatus === 'approved') {
+      if (companyData?.profileStatus === 'approved') {
         recommendations.push('✅ Profile approved and ready');
-      } else if (userData?.profileStatus === 'pending_review') {
+      } else if (companyData?.profileStatus === 'pending_review') {
         recommendations.push('⏳ Profile pending admin review');
-      } else if (userData?.profileStatus === 'rejected') {
+      } else if (companyData?.profileStatus === 'rejected') {
         recommendations.push('❌ Profile rejected - needs attention');
       }
     }
@@ -44,19 +44,19 @@ export async function GET(request: NextRequest) {
       companyUid,
       timestamp: new Date().toISOString(),
 
-      // Harmonized System (Main Document)
-      harmonizedSystem: {
-        exists: userDoc.exists(),
-        companyName: userData?.companyName,
-        userType: userData?.user_type,
-        onboardingCompleted: userData?.onboardingCompleted,
-        onboardingCurrentStep: userData?.onboardingCurrentStep,
-        onboardingCompletionPercentage: userData?.onboardingCompletionPercentage,
-        profileComplete: userData?.profileComplete,
-        profileStatus: userData?.profileStatus,
-        createdAt: userData?.createdAt?.toDate?.()?.toISOString(),
-        onboardingStartedAt: userData?.onboardingStartedAt?.toDate?.()?.toISOString(),
-        onboardingCompletedAt: userData?.onboardingCompletedAt?.toDate?.()?.toISOString(),
+      // Companies Collection (Main Document)
+      companiesSystem: {
+        exists: companyDoc.exists(),
+        companyName: companyData?.companyName,
+        userType: companyData?.user_type,
+        onboardingCompleted: companyData?.onboardingCompleted,
+        onboardingCurrentStep: companyData?.onboardingCurrentStep,
+        onboardingCompletionPercentage: companyData?.onboardingCompletionPercentage,
+        profileComplete: companyData?.profileComplete,
+        profileStatus: companyData?.profileStatus,
+        createdAt: companyData?.createdAt?.toDate?.()?.toISOString(),
+        onboardingStartedAt: companyData?.onboardingStartedAt?.toDate?.()?.toISOString(),
+        onboardingCompletedAt: companyData?.onboardingCompletedAt?.toDate?.()?.toISOString(),
       },
 
       recommendations,
