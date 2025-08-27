@@ -65,15 +65,20 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   const updateField = (field: keyof Step3Data, value: any) => {
+    console.log('🔄 updateField called:', { field, value, type: typeof value });
     const updatedData = { ...step3Data, [field]: value };
     setStep3Data(updatedData);
+    console.log('📊 Updated Step3Data:', updatedData);
     // Nur lokal updaten - KEIN automatisches Firestore-Save!
     // Firestore-Save erfolgt nur beim Step-Wechsel oder manuell
     updateStepData(3, updatedData);
+    console.log('💾 OnboardingContext updated with step 3 data');
   };
 
   // Banner-Bild Upload zu Firebase Storage
   const handleBannerUpload = async (file: File) => {
+    console.log('🎯 Banner-Upload gestartet:', { fileName: file.name, fileSize: file.size });
+
     if (!user?.uid) {
       console.error('Kein authentifizierter Benutzer gefunden');
       return;
@@ -84,15 +89,18 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
     try {
       const storage = getStorage();
       const fileRef = ref(storage, `companies/${user.uid}/banner.jpg`);
+      console.log('📤 Uploading to:', `companies/${user.uid}/banner.jpg`);
+
       const uploadTask = uploadBytesResumable(fileRef, file);
 
       await uploadTask;
       const downloadURL = await getDownloadURL(fileRef);
 
+      console.log('✅ Banner-Upload erfolgreich:', downloadURL);
       updateField('profileBannerImage', downloadURL);
-      console.log('Banner erfolgreich hochgeladen:', downloadURL);
+      console.log('💾 Banner URL gespeichert in Step3Data:', downloadURL);
     } catch (error) {
-      console.error('Fehler beim Banner-Upload:', error);
+      console.error('❌ Fehler beim Banner-Upload:', error);
     } finally {
       setIsUploadingBanner(false);
     }

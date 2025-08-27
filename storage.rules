@@ -68,6 +68,15 @@ service firebase.storage {
                    (isDelete() || (isUpload() && isValidImageType()));
     }
 
+    // Company Files (Banner, Logos etc.) - Firmen können ihre eigenen Dateien verwalten
+    // Pfad: companies/{companyId}/{fileName} 
+    // Diese Regel entspricht der companies collection in Firestore
+    match /companies/{companyId}/{allPaths=**} {
+      allow read: if true; // Öffentlicher Lesezugriff für Company-Dateien (Banner, Logos)
+      allow write: if request.auth != null && request.auth.uid == companyId && 
+                   (isDelete() || (isUpload() && isValidImageType()));
+    }
+
     // Profilbilder - ein Benutzer kann seine eigenen Profilbilder lesen und schreiben.
     // Für Uploads: nur erlaubte Bildtypen. Für Löschen: alle Dateitypen erlaubt.
     // ÖFFENTLICHER LESEZUGRIFF für alle Profilbilder (für Hero-Section und Anbietersuche)
