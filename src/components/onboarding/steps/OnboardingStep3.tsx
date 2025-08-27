@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Camera, Upload, Plus, Trash2, Users, Star, MessageCircle } from 'lucide-react';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Harmonisierte Step3Data Interface
 interface Step3Data {
@@ -54,11 +56,13 @@ interface OnboardingStep3Props {
 
 export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
   const { stepData, updateStepData, goToNextStep, goToPreviousStep } = useOnboarding();
+  const { user } = useAuth();
 
   const [step3Data, setStep3Data] = useState<Step3Data>(stepData[3] || {});
 
   const [newSkill, setNewSkill] = useState('');
   const [newSpecialty, setNewSpecialty] = useState('');
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   const updateField = (field: keyof Step3Data, value: any) => {
     const updatedData = { ...step3Data, [field]: value };
@@ -66,6 +70,32 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
     // Nur lokal updaten - KEIN automatisches Firestore-Save!
     // Firestore-Save erfolgt nur beim Step-Wechsel oder manuell
     updateStepData(3, updatedData);
+  };
+
+  // Banner-Bild Upload zu Firebase Storage
+  const handleBannerUpload = async (file: File) => {
+    if (!user?.uid) {
+      console.error('Kein authentifizierter Benutzer gefunden');
+      return;
+    }
+
+    setIsUploadingBanner(true);
+
+    try {
+      const storage = getStorage();
+      const fileRef = ref(storage, `companies/${user.uid}/banner.jpg`);
+      const uploadTask = uploadBytesResumable(fileRef, file);
+
+      await uploadTask;
+      const downloadURL = await getDownloadURL(fileRef);
+
+      updateField('profileBannerImage', downloadURL);
+      console.log('Banner erfolgreich hochgeladen:', downloadURL);
+    } catch (error) {
+      console.error('Fehler beim Banner-Upload:', error);
+    } finally {
+      setIsUploadingBanner(false);
+    }
   };
 
   const addSkill = () => {
@@ -218,11 +248,10 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
                   id="profileBannerImage"
                   type="file"
                   accept="image/*"
-                  onChange={e => {
+                  onChange={async e => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const imageUrl = URL.createObjectURL(file);
-                      updateField('profileBannerImage', imageUrl);
+                      await handleBannerUpload(file);
                     }
                   }}
                   className="hidden"
@@ -231,12 +260,13 @@ export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
                   <button
                     type="button"
                     onClick={() => document.getElementById('profileBannerImage')?.click()}
-                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-md flex items-center gap-2"
+                    disabled={isUploadingBanner}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-md flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Camera className="h-4 w-4" />
-                    Banner hochladen
+                    {isUploadingBanner ? 'Wird hochgeladen...' : 'Banner hochladen'}
                   </button>
-                  {step3Data.profileBannerImage && (
+                  {step3Data.profileBannerImage && !isUploadingBanner && (
                     <span className="text-sm text-green-600">✓ Banner hochgeladen</span>
                   )}
                 </div>

@@ -319,15 +319,32 @@ export default function SubcategoryPage() {
   };
 
   const getBannerImage = (provider: Provider) => {
-    // Hole das Banner-Bild aus verschiedenen möglichen Feldern
+    // 🔧 FIX: Da Banner-Bilder derzeit als Blob-URLs gespeichert werden (nicht gültig),
+    // verwenden wir kategorie-spezifische Banner-Bilder
+
+    // Zuerst versuchen wir ein echtes Banner-Bild (falls es jemals korrekt hochgeladen wird)
     const bannerImage =
       (provider as any).profileBannerImage || (provider as any).step3?.profileBannerImage;
 
-    // Wenn kein Banner-Bild verfügbar ist, verwende das Profilbild als Fallback
-    return bannerImage &&
-      bannerImage !== 'blob:https://taskilo.de/743c0de7-d5ce-42d6-b0bd-0e43d05abe66'
-      ? bannerImage
-      : getProfileImage(provider);
+    if (bannerImage && !bannerImage.startsWith('blob:')) {
+      return bannerImage;
+    }
+
+    // Kategorie-spezifische Banner-Bilder als Fallback
+    const categoryBanners = {
+      'Hotel & Gastronomie': '/images/banners/gastronomy-banner.jpg',
+      Handwerk: '/images/banners/handwerk-banner.jpg',
+      'IT & Technik': '/images/banners/it-banner.jpg',
+      'Marketing & Vertrieb': '/images/banners/marketing-banner.jpg',
+      default: '/images/banners/default-service-banner.jpg',
+    };
+
+    const categoryBanner =
+      categoryBanners[provider.selectedCategory as keyof typeof categoryBanners] ||
+      categoryBanners.default;
+
+    // Fallback auf Profilbild wenn kein Banner existiert
+    return categoryBanner || getProfileImage(provider);
   };
 
   const getProviderName = (provider: Provider) => {
