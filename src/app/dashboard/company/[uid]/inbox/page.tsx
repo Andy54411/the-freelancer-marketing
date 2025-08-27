@@ -52,6 +52,46 @@ export default function CompanyInboxPage() {
   const [selectedOrderStatus, setSelectedOrderStatus] = useState<string | null>(null);
   const [loadingOrderStatus, setLoadingOrderStatus] = useState(false);
 
+  // Hilfsfunktion zum Laden von Benutzerdaten mit Collection-Fallback
+  const fetchUserData = async (userId: string) => {
+    try {
+      // Zuerst in companies Collection suchen
+      const companyDocRef = doc(db, 'companies', userId);
+      const companyDocSnap = await getDoc(companyDocRef);
+
+      if (companyDocSnap.exists()) {
+        const companyData = companyDocSnap.data();
+        return {
+          name: companyData.companyName || companyData.name || UNKNOWN_USER_NAME,
+          avatarUrl: companyData.bannerUrl || companyData.avatarUrl || null,
+        };
+      }
+
+      // Fallback zu users Collection
+      const userDocRef = doc(db, 'users', userId);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        return {
+          name: userData.name || UNKNOWN_USER_NAME,
+          avatarUrl: userData.avatarUrl || null,
+        };
+      }
+
+      return {
+        name: UNKNOWN_USER_NAME,
+        avatarUrl: null,
+      };
+    } catch (error) {
+      console.error('Fehler beim Laden der Benutzerdaten:', error);
+      return {
+        name: UNKNOWN_USER_NAME,
+        avatarUrl: null,
+      };
+    }
+  };
+
   useEffect(() => {
     if (!currentUser?.uid) {
       setLoadingChats(false);
@@ -100,16 +140,32 @@ export default function CompanyInboxPage() {
       // Normale Chats abonnieren
       const unsubscribeChats = onSnapshot(
         chatsQuery,
-        snapshot => {
-          const normalChats = snapshot.docs.map(chatDoc => {
+        async snapshot => {
+          const normalChatsPromises = snapshot.docs.map(async chatDoc => {
             const chatData = chatDoc.data();
             const otherUserId = chatData.users.find((id: string) => id !== currentUser.uid);
+
+            let otherUserData = {
+              name: UNKNOWN_USER_NAME,
+              avatarUrl: null,
+            };
+
+            // Versuche zuerst die gespeicherten userDetails zu verwenden
             const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
+            if (userDetails && userDetails.name && userDetails.name !== UNKNOWN_USER_NAME) {
+              otherUserData = {
+                name: userDetails.name,
+                avatarUrl: userDetails.avatarUrl || null,
+              };
+            } else if (otherUserId) {
+              // Fallback: Lade Daten mit Collection-Fallback
+              otherUserData = await fetchUserData(otherUserId);
+            }
 
             const otherUser: OtherUser = {
               id: otherUserId,
-              name: userDetails?.name || UNKNOWN_USER_NAME,
-              avatarUrl: userDetails?.avatarUrl || null,
+              name: otherUserData.name,
+              avatarUrl: otherUserData.avatarUrl,
             };
 
             return {
@@ -127,12 +183,13 @@ export default function CompanyInboxPage() {
             };
           });
 
+          const normalChats = await Promise.all(normalChatsPromises);
+
           // Aktualisiere normale Chats
           allChats.splice(0, allChats.length, ...normalChats);
           checkCompletion();
         },
         err => {
-
           checkCompletion();
         }
       );
@@ -140,15 +197,29 @@ export default function CompanyInboxPage() {
       // Direkte Chats abonnieren
       const unsubscribeDirectChats = onSnapshot(
         directChatsQuery,
-        snapshot => {
-          const directChats = snapshot.docs.map(chatDoc => {
+        async snapshot => {
+          const directChatsPromises = snapshot.docs.map(async chatDoc => {
             const chatData = chatDoc.data();
             const otherUserId = chatData.participants.find((id: string) => id !== currentUser.uid);
 
+            let otherUserData = {
+              name: UNKNOWN_USER_NAME,
+              avatarUrl: null,
+            };
+
+            // Versuche zuerst die gespeicherten participantNames zu verwenden
+            const participantName = chatData.participantNames?.[otherUserId];
+            if (participantName && participantName !== UNKNOWN_USER_NAME) {
+              otherUserData.name = participantName;
+            } else if (otherUserId) {
+              // Fallback: Lade Daten mit Collection-Fallback
+              otherUserData = await fetchUserData(otherUserId);
+            }
+
             const otherUser: OtherUser = {
               id: otherUserId,
-              name: chatData.participantNames?.[otherUserId] || UNKNOWN_USER_NAME,
-              avatarUrl: null,
+              name: otherUserData.name,
+              avatarUrl: otherUserData.avatarUrl,
             };
 
             return {
@@ -166,12 +237,13 @@ export default function CompanyInboxPage() {
             };
           });
 
+          const directChats = await Promise.all(directChatsPromises);
+
           // Füge direkte Chats hinzu
           allChats.push(...directChats);
           checkCompletion();
         },
         err => {
-
           checkCompletion();
         }
       );
@@ -207,7 +279,6 @@ export default function CompanyInboxPage() {
           setError('Zugehöriger Auftrag für diesen Chat nicht gefunden.');
         }
       } catch (err) {
-
         setError('Fehler beim Laden des Auftragsstatus.');
       } finally {
         setLoadingOrderStatus(false);

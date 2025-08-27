@@ -8,7 +8,7 @@ import * as admin from "firebase-admin";
 import Stripe from "stripe";
 import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { UNKNOWN_USER_NAME, UNKNOWN_PROVIDER_NAME } from "./constants";
+import { UNKNOWN_USER_NAME } from "./constants";
 
 // --- Instanz-Variablen für Lazy Loading ---
 // Diese Variablen speichern die initialisierten Instanzen, um zu verhindern,
@@ -125,25 +125,31 @@ export function getUserDisplayName(userData: UserLike | null | undefined, fallba
  */
 export async function getChatParticipantDetails(db: Firestore, userId: string): Promise<ParticipantDetails> {
   try {
-    const userDoc = await db.collection("users").doc(userId).get();
-    if (!userDoc.exists) {
-      return { id: userId, name: UNKNOWN_USER_NAME, avatarUrl: null };
-    }
-    const userData = userDoc.data()!;
-
-    // Check if user is a company by checking companies collection directly
+    // Check companies collection first for B2B users
     const companyDoc = await db.collection("companies").doc(userId).get();
     if (companyDoc.exists) {
       const companyData = companyDoc.data()!;
       // For companies, the name and avatar come from the 'companies' document.
       return {
         id: userId,
-        name: companyData.companyName || getUserDisplayName(userData, UNKNOWN_PROVIDER_NAME),
-        avatarUrl: companyData.profilePictureURL || null,
+        name: companyData.companyName || companyData.name || UNKNOWN_USER_NAME,
+        avatarUrl: companyData.bannerUrl || companyData.profilePictureURL || null,
       };
     }
-    // For regular users, use their personal details.
-    return { id: userId, name: getUserDisplayName(userData), avatarUrl: userData.profilePictureURL || userData.profilePictureFirebaseUrl || null };
+
+    // Fallback to users collection for B2C users
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data()!;
+      return { 
+        id: userId, 
+        name: getUserDisplayName(userData), 
+        avatarUrl: userData.profilePictureURL || userData.profilePictureFirebaseUrl || null 
+      };
+    }
+
+    // If user doesn't exist in either collection
+    return { id: userId, name: UNKNOWN_USER_NAME, avatarUrl: null };
   } catch (error: any) {
     logger.error(`[getChatParticipantDetails] Error fetching details for user ${userId}:`, error);
     return { id: userId, name: UNKNOWN_USER_NAME, avatarUrl: null };
