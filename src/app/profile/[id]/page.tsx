@@ -242,13 +242,25 @@ export default function ProfilePage() {
       }
 
       try {
-        // Priorität 1: Lade aus dem users-Dokument (Hauptquelle für Unternehmensdaten)
-        const userDocRef = doc(db, 'users', companyId);
-        const userDoc = await getDoc(userDocRef);
+        let userData = null;
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
+        // Priorität 1: Lade aus der companies Collection (Hauptquelle für Unternehmensdaten)
+        const companyDocRef = doc(db, 'companies', companyId);
+        const companyDoc = await getDoc(companyDocRef);
 
+        if (companyDoc.exists()) {
+          userData = companyDoc.data();
+        } else {
+          // Fallback: Lade aus der users Collection
+          const userDocRef = doc(db, 'users', companyId);
+          const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            userData = userDoc.data();
+          }
+        }
+
+        if (userData) {
           // Extrahiere Profilbild aus verschiedenen möglichen Quellen
           const profilePicture =
             userData.profilePictureFirebaseUrl ||

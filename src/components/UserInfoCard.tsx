@@ -190,11 +190,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
         }
 
         // 3. Bestimme Profil-URL
-        if (userRole === 'provider') {
-          setProfileUrl(`/provider/${userId}`);
-        } else {
-          setProfileUrl(`/user/${userId}`);
-        }
+        setProfileUrl(`/profile/${userId}`);
       } catch (error) {
         console.error('Fehler beim Laden der UserInfoCard-Daten:', error);
       } finally {
@@ -219,13 +215,13 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
 
   const sizeClasses = {
     sm: {
-      avatar: 'w-10 h-10',
+      avatar: 'w-12 h-12',
       container: 'p-3',
-      text: 'text-sm',
-      title: 'text-base font-medium',
+      text: 'text-xs',
+      title: 'text-sm font-medium',
     },
     md: {
-      avatar: 'w-15 h-15',
+      avatar: 'w-16 h-16',
       container: 'p-4',
       text: 'text-sm',
       title: 'text-lg font-semibold',

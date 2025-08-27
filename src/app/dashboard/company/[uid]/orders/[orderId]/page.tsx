@@ -209,9 +209,7 @@ export default function CompanyOrderDetailPage() {
           };
 
           setOrder(orderData);
-
         } catch (err: any) {
-
           if (err.code === 'permission-denied') {
             setError(
               'Zugriff auf Teilnehmerdetails verweigert. Dies kann an fehlenden Berechtigungen (Custom Claims) für Ihr Firmenkonto liegen. Bitte kontaktieren Sie den Support.'
@@ -226,7 +224,6 @@ export default function CompanyOrderDetailPage() {
         }
       },
       error => {
-
         if (error.code === 'permission-denied') {
           setError(
             'Zugriff auf diesen Auftrag verweigert. Die Auftragsdaten sind möglicherweise einem anderen Anbieter zugeordnet.'
@@ -240,7 +237,6 @@ export default function CompanyOrderDetailPage() {
 
     // Cleanup function
     return () => {
-
       unsubscribe();
     };
   }, [authLoading, currentUser, orderId, router, companyUid]);
@@ -291,7 +287,6 @@ export default function CompanyOrderDetailPage() {
 
       setOrder(prev => (prev ? { ...prev, status: 'AKTIV' } : null));
     } catch (err: any) {
-
       // Bessere Error-Messages für verschiedene Fehlertypen
       let errorMessage = 'Fehler beim Annehmen des Auftrags.';
       if (err.message?.includes('Failed to fetch')) {
@@ -375,7 +370,6 @@ export default function CompanyOrderDetailPage() {
         'Auftrag als erledigt markiert! Der Kunde wurde benachrichtigt und muss jetzt den Abschluss bestätigen und bewerten. Das Geld wird nach der Kundenbestätigung freigegeben.'
       );
     } catch (err: any) {
-
       setActionError(err.message || 'Fehler beim Abschließen des Auftrags.');
     } finally {
       setIsActionLoading(false);
@@ -397,7 +391,6 @@ export default function CompanyOrderDetailPage() {
       await rejectOrderCallable({ orderId: order.id, reason: reason.trim() });
       setOrder(prev => (prev ? { ...prev, status: 'abgelehnt_vom_anbieter' } : null));
     } catch (err: any) {
-
       let message = err.message || 'Fehler beim Ablehnen des Auftrags.';
       if (err.details) {
         message += ` Details: ${JSON.stringify(err.details)}`;
@@ -413,7 +406,6 @@ export default function CompanyOrderDetailPage() {
     if (!orderId) return;
 
     try {
-
       // Import TimeTracker dynamisch
       const { TimeTracker } = await import('@/lib/timeTracker');
 
@@ -438,9 +430,7 @@ export default function CompanyOrderDetailPage() {
       setPaymentAmount(billingResult.customerPays);
       setPaymentHours(paymentHours);
       setShowInlinePayment(true);
-
     } catch (error) {
-
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
 
       if (
@@ -457,7 +447,6 @@ export default function CompanyOrderDetailPage() {
   };
 
   const handlePaymentSuccess = async () => {
-
     setShowInlinePayment(false);
 
     // Success-Nachricht anzeigen
@@ -470,7 +459,6 @@ export default function CompanyOrderDetailPage() {
       // Order data neu laden nach erfolgreichem Payment
       window.location.reload();
     } catch (error) {
-
       setSuccessMessage(
         'Zahlung erfolgreich, aber Daten-Update fehlgeschlagen. Seite wird neu geladen...'
       );
@@ -483,7 +471,6 @@ export default function CompanyOrderDetailPage() {
   };
 
   const handlePaymentCancel = () => {
-
     setShowInlinePayment(false);
   };
 
@@ -749,7 +736,6 @@ export default function CompanyOrderDetailPage() {
                     })()}
                     onTimeSubmitted={() => {
                       // Optional: Reload order data or show success message
-
                     }}
                   />
                 </div>
@@ -956,8 +942,15 @@ export default function CompanyOrderDetailPage() {
                 <UserInfoCard
                   userId={cardUser.id}
                   userName={cardUser.name}
-                  userAvatarUrl={cardUser.avatarUrl}
+                  userAvatarUrl={cardUser.avatarUrl || undefined}
                   userRole={cardUser.role}
+                  showReviews={true}
+                  showSkills={true}
+                  showLanguages={true}
+                  showLinkButton={true}
+                  linkText="Profil ansehen"
+                  layout="vertical"
+                  size="lg"
                 />
               </div>
             </div>
@@ -975,11 +968,9 @@ export default function CompanyOrderDetailPage() {
             isOpen={showInlinePayment}
             onClose={handlePaymentCancel}
             onSuccess={(paymentIntentId: string) => {
-
               handlePaymentSuccess();
             }}
             onError={(error: string) => {
-
               handlePaymentCancel();
             }}
           />
