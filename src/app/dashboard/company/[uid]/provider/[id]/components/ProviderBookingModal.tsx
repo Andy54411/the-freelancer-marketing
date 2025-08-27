@@ -569,11 +569,11 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
           projectData={b2bProjectData}
           customerData={{
             customerId: user?.uid || 'anonymous',
-            companyName: '', // Wird aus Firebase geladen
+            companyName: '', // Wird aus Firebase geladen basierend auf customerId
             name: `${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'Taskilo Kunde',
-            email: user?.email || '',
-            phone: '', // Wird aus Firebase geladen
-            address: undefined, // Wird aus Firebase geladen
+            email: user?.email || 'kunde@taskilo.de',
+            phone: '', // Wird aus Firebase geladen basierend auf customerId
+            address: undefined, // Wird aus Firebase geladen basierend auf customerId
           }}
           isOpen={isB2BPaymentOpen}
           onClose={() => {

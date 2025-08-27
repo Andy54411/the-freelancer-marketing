@@ -82,7 +82,6 @@ function B2BCheckoutForm({
     event.preventDefault();
 
     if (!stripe || !elements) {
-
       const errorMsg = 'B2B-Zahlungssystem ist noch nicht bereit. Bitte versuchen Sie es erneut.';
       setMessage(errorMsg);
       onError(errorMsg);
@@ -99,7 +98,6 @@ function B2BCheckoutForm({
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-
         setMessage(submitError.message || 'Fehler bei der Validierung der B2B-Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der B2B-Zahlungsdaten');
         return;
@@ -120,24 +118,20 @@ function B2BCheckoutForm({
       });
 
       if (confirmError) {
-
         const errorMessage = confirmError.message || 'Fehler bei der B2B-Zahlungsbestätigung';
         setMessage(errorMessage);
         onError(errorMessage);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-
         setMessage(
           'B2B-Zahlung erfolgreich abgeschlossen! Das Projekt wird automatisch als bezahlt markiert.'
         );
         onSuccess(paymentIntent.id);
       } else {
-
         const errorMessage = `Unerwarteter B2B-Zahlungsstatus: ${paymentIntent?.status || 'unbekannt'}`;
         setMessage(errorMessage);
         onError(errorMessage);
       }
     } catch (error) {
-
       const errorMessage =
         error instanceof Error ? error.message : 'Unbekannter Fehler bei der B2B-Zahlung';
       setMessage(errorMessage);
@@ -303,20 +297,38 @@ export default function B2BPaymentComponent({
   useEffect(() => {
     const loadRealCustomerData = async () => {
       if (!customerData.customerId || customerData.customerId === 'anonymous') {
-
+        // Fallback für anonyme Kunden mit Standarddaten
+        const fallbackData = {
+          companyName: customerData.companyName || 'B2B Kunde',
+          name: customerData.name || 'B2B Kunde',
+          email: customerData.email || 'kunde@beispiel.de',
+          phone: customerData.phone,
+          address: customerData.address,
+        };
+        setRealCustomerData(fallbackData);
         return;
       }
 
       try {
-
         const { getFirestore, doc, getDoc } = await import('firebase/firestore');
         const { db } = await import('@/firebase/clients');
 
-        const customerDoc = await getDoc(doc(db, 'users', customerData.customerId));
+        // KRITISCHE KORREKTUR: Erst companies, dann users Collection prüfen
+        let userData: any = null;
 
-        if (customerDoc.exists()) {
-          const userData = customerDoc.data();
+        // 1. Prüfe companies Collection für Company Dashboard Benutzer
+        const companyDoc = await getDoc(doc(db, 'companies', customerData.customerId));
+        if (companyDoc.exists()) {
+          userData = companyDoc.data();
+        } else {
+          // 2. Fallback: users Collection für normale Benutzer
+          const customerDoc = await getDoc(doc(db, 'users', customerData.customerId));
+          if (customerDoc.exists()) {
+            userData = customerDoc.data();
+          }
+        }
 
+        if (userData) {
           const realData = {
             companyName:
               userData.companyName ||
@@ -327,7 +339,7 @@ export default function B2BPaymentComponent({
               userData.companyName ||
               'B2B Kunde',
             email: userData.email || '',
-            phone: userData.phoneNumber || undefined,
+            phone: userData.phoneNumber || userData.phone || undefined,
             address:
               userData.street && userData.city && userData.postalCode
                 ? {
@@ -340,12 +352,28 @@ export default function B2BPaymentComponent({
           };
 
           setRealCustomerData(realData);
-
         } else {
-
+          // Fallback wenn Dokument nicht existiert
+          const fallbackData = {
+            companyName: customerData.companyName || 'B2B Kunde',
+            name: customerData.name || 'B2B Kunde',
+            email: customerData.email || 'kunde@beispiel.de',
+            phone: customerData.phone,
+            address: customerData.address,
+          };
+          setRealCustomerData(fallbackData);
         }
       } catch (error) {
-
+        console.error('Fehler beim Laden der Kundendaten:', error);
+        // Fallback bei Fehler
+        const fallbackData = {
+          companyName: customerData.companyName || 'B2B Kunde',
+          name: customerData.name || 'B2B Kunde',
+          email: customerData.email || 'kunde@beispiel.de',
+          phone: customerData.phone,
+          address: customerData.address,
+        };
+        setRealCustomerData(fallbackData);
       }
     };
 
@@ -360,7 +388,6 @@ export default function B2BPaymentComponent({
       setIsCreatingPayment(true);
 
       try {
-
         const response = await fetch('/api/b2b/create-project-payment', {
           method: 'POST',
           headers: {
@@ -389,14 +416,11 @@ export default function B2BPaymentComponent({
         const data = await response.json();
 
         if (data.success && data.clientSecret) {
-
           setClientSecret(data.clientSecret);
         } else {
-
           onError(data.error || 'Fehler beim Erstellen der B2B-Zahlung');
         }
       } catch (error) {
-
         onError('Netzwerkfehler beim Erstellen der B2B-Zahlung');
       } finally {
         setIsCreatingPayment(false);

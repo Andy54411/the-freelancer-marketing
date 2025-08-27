@@ -1,0 +1,1935 @@
+{
+  "totalFiles": 1001,
+  "scannedFiles": 989,
+  "usersCollectionUsages": [
+    {
+      "file": "src/app/api/b2b/create-project-payment/route.ts",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 139,
+          "context": "      try {\n        // Load customer data from Firebase (with error handling for API permissions)\n        const customerDoc = await getDoc(doc(db, 'users', customerFirebaseId));\n        const customerData = customerDoc.exists() ? customerDoc.data() : null;\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 171,
+          "context": "        try {\n          await setDoc(\n            doc(db, 'users', customerFirebaseId),\n            {\n              stripeCustomerId: customerStripeId,"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 139,
+          "context": "      try {\n        // Load customer data from Firebase (with error handling for API permissions)\n        const customerDoc = await getDoc(doc(db, 'users', customerFirebaseId));\n        const customerData = customerDoc.exists() ? customerDoc.data() : null;\n"
+        }
+      ],
+      "totalUsages": 3
+    },
+    {
+      "file": "src/app/auftrag/get-started/[unterkategorie]/BestaetigungsPage/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 189,
+          "context": "        const { db } = await import('@/firebase/clients');\n\n        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 189,
+          "context": "        const { db } = await import('@/firebase/clients');\n\n        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/components/CompanyProfileManager.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 113,
+          "context": "      // Update both companies and users collections for consistency\n      const companyRef = doc(db, 'companies', profile.uid);\n      const userRef = doc(db, 'users', profile.uid);\n\n      const profileData = {"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/components/profile/ProfileImageUpload.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 85,
+          "context": "\n            // Update in Firestore - KRITISCH: Da wir in /dashboard/company/ sind, ist es eine Firma\n            const userRef = doc(db, 'users', profile.uid);\n            const companyRef = doc(db, 'companies', profile.uid);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 134,
+          "context": "\n      // Update in Firestore - KRITISCH: Da wir in /dashboard/company/ sind, ist es eine Firma\n      const userRef = doc(db, 'users', profile.uid);\n      const companyRef = doc(db, 'companies', profile.uid);\n"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/finance/invoices/create/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 131,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 131,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/finance/invoices/templates/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 45,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 45,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/profile/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 35,
+          "context": "        // Load both user and company data\n        const [userDoc, companyDoc] = await Promise.all([\n          getDoc(doc(db, 'users', uid)),\n          getDoc(doc(db, 'companies', uid)),\n        ]);"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 77,
+          "context": "      // Load both user and company data\n      const [userDoc, companyDoc] = await Promise.all([\n        getDoc(doc(db, 'users', uid)),\n        getDoc(doc(db, 'companies', uid)),\n      ]);"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 35,
+          "context": "        // Load both user and company data\n        const [userDoc, companyDoc] = await Promise.all([\n          getDoc(doc(db, 'users', uid)),\n          getDoc(doc(db, 'companies', uid)),\n        ]);"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 77,
+          "context": "      // Load both user and company data\n      const [userDoc, companyDoc] = await Promise.all([\n        getDoc(doc(db, 'users', uid)),\n        getDoc(doc(db, 'companies', uid)),\n      ]);"
+        }
+      ],
+      "totalUsages": 4
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 113,
+          "context": "          } else {\n            // 2. Fallback: users Collection\n            const userDoc = await getDoc(doc(db, 'users', provider.id));\n            if (userDoc.exists()) {\n              userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 113,
+          "context": "          } else {\n            // 2. Fallback: users Collection\n            const userDoc = await getDoc(doc(db, 'users', provider.id));\n            if (userDoc.exists()) {\n              userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/provider/[id]/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 159,
+          "context": "      } else {\n        // Falls nicht in firma gefunden, in users suchen\n        const userDoc = await getDoc(doc(db, 'users', providerId));\n\n        if (userDoc.exists()) {"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 240,
+          "context": "\n    try {\n      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));\n      if (userDoc.exists()) {\n        const data = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 159,
+          "context": "      } else {\n        // Falls nicht in firma gefunden, in users suchen\n        const userDoc = await getDoc(doc(db, 'users', providerId));\n\n        if (userDoc.exists()) {"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 240,
+          "context": "\n    try {\n      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));\n      if (userDoc.exists()) {\n        const data = userDoc.data();"
+        }
+      ],
+      "totalUsages": 4
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/provider/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 101,
+          "context": "        } else {\n          // Fallback: in der users Collection suchen\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const userData = userDoc.data() as ProviderProfile;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 101,
+          "context": "        } else {\n          // Fallback: in der users Collection suchen\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const userData = userDoc.data() as ProviderProfile;"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/provider-username/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "collection\\(db,\\s*['\"`]users['\"`]",
+          "match": "collection(db, 'users'",
+          "lineNumber": 128,
+          "context": "        } else {\n          // 2. Fallback: users Collection für Username\n          const usersRef = collection(db, 'users');\n          const usersQuery = query(usersRef, where('username', '==', username), limit(1));\n          const usersSnapshot = await getDocs(usersQuery);"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/services/[category]/[subcategory]/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "collection\\(db,\\s*['\"`]users['\"`]",
+          "match": "collection(db, 'users'",
+          "lineNumber": 189,
+          "context": "\n      // Query für Users/Freelancer mit besserer Fehlerbehandlung\n      const userCollectionRef = collection(db, 'users');\n      const userQuery = query(\n        userCollectionRef,"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/settings/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 36,
+          "context": "      try {\n        // Lade Auth-Daten aus users collection\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 122,
+          "context": "    if (uid) {\n      try {\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 36,
+          "context": "      try {\n        // Lade Auth-Daten aus users collection\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 122,
+          "context": "    if (uid) {\n      try {\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 4
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/components/CompanyProfileManager.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 129,
+          "context": "    setSaving(true);\n    try {\n      const userRef = doc(db, 'users', profile.uid);\n      await updateDoc(userRef, {\n        username: profile.username,"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/components/ProfilePictureUploadModal.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 61,
+          "context": "\n      // Update Firestore\n      const userDocRef = doc(db, 'users', currentUser.uid);\n      await updateDoc(userDocRef, {\n        profilePictureURL: downloadURL,"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/components/UserProfileSettingsForm.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 46,
+          "context": "    const loadUserData = async (user: FirebaseAuthUser, targetUid: string) => {\n      try {\n        const userDocRef = doc(db, 'users', targetUid);\n        const docSnap = await getDoc(userDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 122,
+          "context": "\n    try {\n      const userDocRef = doc(db, 'users', currentUser.uid);\n      await updateDoc(userDocRef, {\n        ...profileData,"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/components/UserSettingsPage.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 131,
+          "context": "\n    try {\n      await updateDoc(doc(db, 'users', form.uid), firestoreUpdateData);\n      toast.success('Benutzereinstellungen erfolgreich gespeichert!');\n      // NEU: Event auslösen, um andere Komponenten (wie den Header) zu informieren"
+        },
+        {
+          "pattern": "updateDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "updateDoc(doc(db, 'users'",
+          "lineNumber": 131,
+          "context": "\n    try {\n      await updateDoc(doc(db, 'users', form.uid), firestoreUpdateData);\n      toast.success('Benutzereinstellungen erfolgreich gespeichert!');\n      // NEU: Event auslösen, um andere Komponenten (wie den Header) zu informieren"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 96,
+          "context": "\n    try {\n      const userDocRef = doc(db, 'users', user.uid);\n      const userDocSnap = await getDoc(userDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 176,
+          "context": "          providerIdsToFetch.map(async providerId => {\n            try {\n              const userDocRef = doc(db, 'users', providerId);\n              const userDocSnap = await getDoc(userDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 350,
+          "context": "    if (!currentUser) return;\n    try {\n      const userDocRef = doc(db, 'users', currentUser.uid);\n      // Validierung auf eindeutigen Namen (außer bei der bearbeiteten Adresse selbst)\n      if ("
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 384,
+          "context": "    if (!currentUser || !userProfile) return;\n    try {\n      const userDocRef = doc(db, 'users', currentUser.uid);\n      const updatedAddresses =\n        userProfile.savedAddresses?.map(addr =>"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 419,
+          "context": "    if (confirm('Sind Sie sicher, dass Sie diese Adresse entfernen möchten?')) {\n      try {\n        const userDocRef = doc(db, 'users', currentUser.uid);\n        const addressToDelete = userProfile.savedAddresses?.find(addr => addr.id === addressId);\n"
+        }
+      ],
+      "totalUsages": 5
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/projects/[projectId]/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 269,
+          "context": "\n              // Lade Company-Daten aus der users collection (nach Migration)\n              const companyDocRef = doc(db, 'users', providerId);\n              const companyDoc = await getDoc(companyDocRef);\n              const companyData = companyDoc.exists() ? companyDoc.data() : {};"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/provider/[id]/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 115,
+          "context": "        } else {\n          // Fallback: Versuche in der users Collection\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const data = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 115,
+          "context": "        } else {\n          // Fallback: Versuche in der users Collection\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const data = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/settings/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 32,
+          "context": "    setError(null);\n    try {\n      const userDocRef = doc(db, 'users', uid);\n      const userDocSnap = await getDoc(userDocRef);\n"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/debug/auth-status/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 72,
+          "context": "        // Test user document\n        try {\n          const userDocRef = doc(db, 'users', uid);\n          const userDocSnap = await getDoc(userDocRef);\n          info.firestoreTest.userDoc = {"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/print/invoice/[invoiceId]/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 44,
+          "context": "        if (data.companyId) {\n          try {\n            const userDoc = await getDoc(doc(db, 'users', data.companyId));\n            if (userDoc.exists()) {\n              const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 44,
+          "context": "        if (data.companyId) {\n          try {\n            const userDoc = await getDoc(doc(db, 'users', data.companyId));\n            if (userDoc.exists()) {\n              const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/profile/[id]/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 151,
+          "context": "\n    try {\n      const userDocRef = doc(db, 'users', currentUser.uid);\n      const userDoc = await getDoc(userDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 224,
+          "context": "\n      try {\n        const userDocRef = doc(db, 'users', currentUser.uid);\n        const userDoc = await getDoc(userDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 246,
+          "context": "      try {\n        // Priorität 1: Lade aus dem users-Dokument (Hauptquelle für Unternehmensdaten)\n        const userDocRef = doc(db, 'users', companyId);\n        const userDoc = await getDoc(userDocRef);\n"
+        }
+      ],
+      "totalUsages": 3
+    },
+    {
+      "file": "src/app/provider/[id]/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 101,
+          "context": "        } else {\n          // Fallback: in der users Collection suchen\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const userData = userDoc.data() as ProviderProfile;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 101,
+          "context": "        } else {\n          // Fallback: in der users Collection suchen\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const userData = userDoc.data() as ProviderProfile;"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/register/user/page.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 202,
+          "context": "      sessionStorage.setItem('justRegistered', 'true');\n\n      await setDoc(doc(db, 'users', user.uid), {\n        uid: user.uid,\n        user_type: 'kunde',"
+        },
+        {
+          "pattern": "setDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "setDoc(doc(db, 'users'",
+          "lineNumber": 202,
+          "context": "      sessionStorage.setItem('justRegistered', 'true');\n\n      await setDoc(doc(db, 'users', user.uid), {\n        uid: user.uid,\n        user_type: 'kunde',"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/B2BPaymentComponent.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 331,
+          "context": "        } else {\n          // 2. Fallback: users Collection für normale Benutzer\n          const customerDoc = await getDoc(doc(db, 'users', customerData.customerId));\n          if (customerDoc.exists()) {\n            userData = customerDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 331,
+          "context": "        } else {\n          // 2. Fallback: users Collection für normale Benutzer\n          const customerDoc = await getDoc(doc(db, 'users', customerData.customerId));\n          if (customerDoc.exists()) {\n            userData = customerDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/ChatComponent.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 118,
+          "context": "        setUserProfileLoading(true);\n        try {\n          const userDocRef = doc(db, 'users', currentUser.uid); // This is a one-time read, which is fine.\n          const userDocSnap = await getDoc(userDocRef);\n          if (userDocSnap.exists()) {"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/components/DirectChatModal.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 131,
+          "context": "      try {\n        // Verwende users Collection als Hauptcollection\n        const userDoc = await getDoc(doc(db, 'users', providerId));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 131,
+          "context": "      try {\n        // Verwende users Collection als Hauptcollection\n        const userDoc = await getDoc(doc(db, 'users', providerId));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/Header.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 126,
+          "context": "              if (otherUserId) {\n                try {\n                  const otherUserDocRef = doc(db, 'users', otherUserId);\n                  const otherUserDoc = await getDoc(otherUserDocRef);\n                  if (otherUserDoc.exists()) {"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 204,
+          "context": "    try {\n      // Versuche zuerst die Firestore-Benutzerdaten zu laden, um die direkte URL zu bekommen\n      const userDocRef = doc(db, 'users', uid);\n      const userDocSnap = await getDoc(userDocRef);\n      if (userDocSnap.exists()) {"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 286,
+          "context": "    }\n    try {\n      const userDocRef = doc(db, 'users', uid);\n      const userDocSnap = await getDoc(userDocRef);\n      if (userDocSnap.exists()) {"
+        }
+      ],
+      "totalUsages": 3
+    },
+    {
+      "file": "src/components/InlinePaymentComponent.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 68,
+          "context": "        const { db } = await import('@/firebase/clients');\n\n        const customerDoc = await getDoc(doc(db, 'users', customerId));\n\n        if (customerDoc.exists()) {"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 68,
+          "context": "        const { db } = await import('@/firebase/clients');\n\n        const customerDoc = await getDoc(doc(db, 'users', customerId));\n\n        if (customerDoc.exists()) {"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/PopupModal.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 33,
+          "context": "\n    const fetchUserDocs = async () => {\n      const userDocRef = doc(db, 'users', uid);\n      const userDocSnap = await getDoc(userDocRef);\n      if (userDocSnap.exists()) {"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 62,
+          "context": "      const url = await getDownloadURL(fileRef);\n\n      const userDocRef = doc(db, 'users', uid);\n      await updateDoc(userDocRef, {\n        [`step3.identity${side === 'front' ? 'FrontUrl' : 'BackUrl'}`]: url,"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/UserHeader.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 202,
+          "context": "        // 1. IMMER zuerst users collection prüfen\n        try {\n          const userDocRef = doc(db, 'users', uid);\n          const userDocSnap = await getDoc(userDocRef);\n          if (userDocSnap.exists()) {"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/components/UserInfoCard.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 69,
+          "context": "\n        // 1. Lade User-Daten aus users collection\n        const userDocRef = doc(db, 'users', userId);\n        const userDocSnap = await getDoc(userDocRef);\n"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/components/app-sidebar.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 69,
+          "context": "\n    try {\n      const userDocRef = doc(db, 'users', userUid);\n      const userDoc = await getDoc(userDocRef);\n"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/components/dashboard/SettingsComponent.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 756,
+          "context": "    try {\n      // KRITISCHE KORREKTUR: Separate Updates für users und companies\n      await updateDoc(doc(db, 'users', updatedForm.uid), userUpdateData);\n      await updateDoc(doc(db, 'companies', updatedForm.uid), companyUpdateData);\n      toast.success('Profildaten in Firestore gespeichert!');"
+        },
+        {
+          "pattern": "updateDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "updateDoc(doc(db, 'users'",
+          "lineNumber": 756,
+          "context": "    try {\n      // KRITISCHE KORREKTUR: Separate Updates für users und companies\n      await updateDoc(doc(db, 'users', updatedForm.uid), userUpdateData);\n      await updateDoc(doc(db, 'companies', updatedForm.uid), companyUpdateData);\n      toast.success('Profildaten in Firestore gespeichert!');"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/dashboard_setting/logo.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 53,
+          "context": "      try {\n        // Prüfe zuerst user_type aus users collection\n        const userDocRef = doc(db, 'users', uid);\n        const userDocSnap = await getDoc(userDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 92,
+          "context": "\n    // KRITISCHE KORREKTUR: Prüfe user_type und verwende richtigen Pfad\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 134,
+          "context": "      } else {\n        // Für normale Kunden: Schreibe in users collection\n        await updateDoc(doc(db, 'users', uid), {\n          profilePictureURL: url,\n          profilePictureFirebaseUrl: url,"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 181,
+          "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 221,
+          "context": "\n    // Prüfe user_type einmal am Anfang\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 338,
+          "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 92,
+          "context": "\n    // KRITISCHE KORREKTUR: Prüfe user_type und verwende richtigen Pfad\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 181,
+          "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 221,
+          "context": "\n    // Prüfe user_type einmal am Anfang\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 338,
+          "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "updateDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "updateDoc(doc(db, 'users'",
+          "lineNumber": 134,
+          "context": "      } else {\n        // Für normale Kunden: Schreibe in users collection\n        await updateDoc(doc(db, 'users', uid), {\n          profilePictureURL: url,\n          profilePictureFirebaseUrl: url,"
+        }
+      ],
+      "totalUsages": 11
+    },
+    {
+      "file": "src/components/finance/InvoiceTemplatePicker.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 105,
+          "context": "      // Save to database if userId is provided\n      if (userId) {\n        const userRef = doc(db, 'users', userId);\n        await updateDoc(userRef, {\n          preferredInvoiceTemplate: template,"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/components/hero8-header.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 57,
+          "context": "        // Load profile picture from Firestore\n        try {\n          const userDocRef = doc(db, 'users', user.uid);\n          const userDoc = await getDoc(userDocRef);\n"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/components/onboarding/steps/OnboardingStep1.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 51,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 51,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/onboarding/steps/OnboardingStep1_OLD.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 49,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 49,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/onboarding/steps/OnboardingStep2.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 42,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 42,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/onboarding/steps/OnboardingStep2_OLD.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 99,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 99,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/onboarding/steps/OnboardingStep3_OLD.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 107,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 107,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/onboarding/steps/OnboardingStep4_OLD.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 79,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 79,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/onboarding/steps/OnboardingStep5_OLD.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 44,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 44,
+          "context": "\n      try {\n        const userDoc = await getDoc(doc(db, 'users', user.uid));\n        if (userDoc.exists()) {\n          const userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/ui/avatar.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 58,
+          "context": "\n      const db = getFirestore();\n      const userDocRef = doc(db, 'users', user.uid);\n      const snap = await getDoc(userDocRef);\n      const data = snap.data();"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/contexts/AuthContext.tsx",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 95,
+          "context": "\n          // Versuche zuerst users collection\n          const userDocRef = doc(db, 'users', fbUser.uid);\n          const userDocSnap = await getDoc(userDocRef);\n"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/hooks/useCompanyDashboard.ts",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 56,
+          "context": "      try {\n        // Lade Benutzer- und Firmendaten gleichzeitig, um die Ladezeit zu optimieren\n        const userDocRef = doc(db, 'users', uid);\n        const companyDocRef = doc(db, 'companies', uid);\n"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/hooks/useCompanySettings.ts",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 63,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', userId));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 63,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', userId));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/lib/legacy-migration.ts",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 374,
+          "context": "\n        // Create onboarding progress document\n        await setDoc(doc(db, 'users', companyDoc.id, 'onboarding', 'progress'), cleanedProgress);\n\n        successCount++;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 402,
+          "context": "  try {\n    // This would be replaced with actual Firestore call\n    // const companyDoc = await getDoc(doc(db, 'users', companyUid));\n    // const companyData = companyDoc.data() as ExistingCompanyUser;\n"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 402,
+          "context": "  try {\n    // This would be replaced with actual Firestore call\n    // const companyDoc = await getDoc(doc(db, 'users', companyUid));\n    // const companyData = companyDoc.data() as ExistingCompanyUser;\n"
+        },
+        {
+          "pattern": "setDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "setDoc(doc(db, 'users'",
+          "lineNumber": 374,
+          "context": "\n        // Create onboarding progress document\n        await setDoc(doc(db, 'users', companyDoc.id, 'onboarding', 'progress'), cleanedProgress);\n\n        successCount++;"
+        }
+      ],
+      "totalUsages": 4
+    },
+    {
+      "file": "src/lib/responseTimeTracker.ts",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 177,
+          "context": "\n      // Aktualisiere Provider-Dokument (verwende users als Hauptcollection)\n      const providerDocRef = doc(db, 'users', providerId);\n      const providerDoc = await getDoc(providerDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 188,
+          "context": "      } else {\n        // Versuche auch in users Collection\n        const userDocRef = doc(db, 'users', providerId);\n        const userDoc = await getDoc(userDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 211,
+          "context": "    try {\n      // Verwende users Collection als Hauptcollection\n      const providerDoc = await getDoc(doc(db, 'users', providerId));\n\n      if (providerDoc.exists()) {"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 211,
+          "context": "    try {\n      // Verwende users Collection als Hauptcollection\n      const providerDoc = await getDoc(doc(db, 'users', providerId));\n\n      if (providerDoc.exists()) {"
+        }
+      ],
+      "totalUsages": 4
+    },
+    {
+      "file": "src/lib/timeTracker.ts",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 108,
+          "context": "        // 2. Fallback: Suche in users Collection (nur wenn nicht in companies gefunden)\n        if (hourlyRateInEuros === null) {\n          const userRef = doc(db, 'users', providerId);\n          const userDoc = await getDoc(userRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 138,
+          "context": "          if (providerId) {\n            try {\n              await updateDoc(doc(db, 'users', providerId), {\n                hourlyRate: hourlyRateInEuros,\n                hourlyRateUpdatedAt: serverTimestamp(),"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 642,
+          "context": "\n      // Hole Kundendaten für Stripe Customer ID\n      const customerDoc = await getDoc(doc(db, 'users', orderData.customerFirebaseUid));\n      const customerData = customerDoc.data();\n      const customerStripeId = customerData?.stripeCustomerId;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 942,
+          "context": "\n      // Hole Kundendaten für Stripe Customer ID\n      const customerDoc = await getDoc(doc(db, 'users', orderData.customerFirebaseUid));\n      const customerData = customerDoc.data();\n      const customerStripeId = customerData?.stripeCustomerId;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 957,
+          "context": "      if (!providerStripeAccountId) {\n        // Versuche auch in der users Collection zu suchen (Fallback für alte Daten)\n        const providerUserDoc = await getDoc(doc(db, 'users', orderData.selectedAnbieterId));\n        const providerUserData = providerUserDoc.data();\n        const fallbackStripeAccountId = providerUserData?.stripeAccountId;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 1568,
+          "context": "    try {\n      // Hole beide Dokumente\n      const usersDoc = await getDoc(doc(db, 'users', providerId));\n      const companiesDoc = await getDoc(doc(db, 'companies', providerId));\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 1650,
+          "context": "\n      // Prüfe users collection (Fallback)\n      const usersDoc = await getDoc(doc(db, 'users', providerId));\n      const usersData = usersDoc.data();\n"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 642,
+          "context": "\n      // Hole Kundendaten für Stripe Customer ID\n      const customerDoc = await getDoc(doc(db, 'users', orderData.customerFirebaseUid));\n      const customerData = customerDoc.data();\n      const customerStripeId = customerData?.stripeCustomerId;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 942,
+          "context": "\n      // Hole Kundendaten für Stripe Customer ID\n      const customerDoc = await getDoc(doc(db, 'users', orderData.customerFirebaseUid));\n      const customerData = customerDoc.data();\n      const customerStripeId = customerData?.stripeCustomerId;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 957,
+          "context": "      if (!providerStripeAccountId) {\n        // Versuche auch in der users Collection zu suchen (Fallback für alte Daten)\n        const providerUserDoc = await getDoc(doc(db, 'users', orderData.selectedAnbieterId));\n        const providerUserData = providerUserDoc.data();\n        const fallbackStripeAccountId = providerUserData?.stripeAccountId;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 1568,
+          "context": "    try {\n      // Hole beide Dokumente\n      const usersDoc = await getDoc(doc(db, 'users', providerId));\n      const companiesDoc = await getDoc(doc(db, 'companies', providerId));\n"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 1650,
+          "context": "\n      // Prüfe users collection (Fallback)\n      const usersDoc = await getDoc(doc(db, 'users', providerId));\n      const usersData = usersDoc.data();\n"
+        },
+        {
+          "pattern": "updateDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "updateDoc(doc(db, 'users'",
+          "lineNumber": 138,
+          "context": "          if (providerId) {\n            try {\n              await updateDoc(doc(db, 'users', providerId), {\n                hourlyRate: hourlyRateInEuros,\n                hourlyRateUpdatedAt: serverTimestamp(),"
+        }
+      ],
+      "totalUsages": 13
+    },
+    {
+      "file": "src/lib/timeTrackingMigration.ts",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 66,
+          "context": "          } else {\n            // 2. Fallback: Suche in users Collection\n            const userRef = doc(db, 'users', providerId);\n            const userDoc = await getDoc(userRef);\n"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/services/datev-user-auth-service.ts",
+      "isCompanyDashboardRelevant": false,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 42,
+          "context": "  try {\n\n    const userRef = doc(db, 'users', firebaseUserId);\n    const userDoc = await getDoc(userRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 153,
+          "context": "  try {\n\n    const userRef = doc(db, 'users', firebaseUserId);\n    const userDoc = await getDoc(userRef);\n"
+        }
+      ],
+      "totalUsages": 2
+    }
+  ],
+  "potentialCompanyCollectionFiles": [
+    {
+      "file": "src/app/dashboard/company/[uid]/components/CompanyProfileManager.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 113,
+          "context": "      // Update both companies and users collections for consistency\n      const companyRef = doc(db, 'companies', profile.uid);\n      const userRef = doc(db, 'users', profile.uid);\n\n      const profileData = {"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/components/profile/ProfileImageUpload.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 85,
+          "context": "\n            // Update in Firestore - KRITISCH: Da wir in /dashboard/company/ sind, ist es eine Firma\n            const userRef = doc(db, 'users', profile.uid);\n            const companyRef = doc(db, 'companies', profile.uid);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 134,
+          "context": "\n      // Update in Firestore - KRITISCH: Da wir in /dashboard/company/ sind, ist es eine Firma\n      const userRef = doc(db, 'users', profile.uid);\n      const companyRef = doc(db, 'companies', profile.uid);\n"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/finance/invoices/create/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 131,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 131,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/finance/invoices/templates/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 45,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 45,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/profile/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 35,
+          "context": "        // Load both user and company data\n        const [userDoc, companyDoc] = await Promise.all([\n          getDoc(doc(db, 'users', uid)),\n          getDoc(doc(db, 'companies', uid)),\n        ]);"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 77,
+          "context": "      // Load both user and company data\n      const [userDoc, companyDoc] = await Promise.all([\n        getDoc(doc(db, 'users', uid)),\n        getDoc(doc(db, 'companies', uid)),\n      ]);"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 35,
+          "context": "        // Load both user and company data\n        const [userDoc, companyDoc] = await Promise.all([\n          getDoc(doc(db, 'users', uid)),\n          getDoc(doc(db, 'companies', uid)),\n        ]);"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 77,
+          "context": "      // Load both user and company data\n      const [userDoc, companyDoc] = await Promise.all([\n        getDoc(doc(db, 'users', uid)),\n        getDoc(doc(db, 'companies', uid)),\n      ]);"
+        }
+      ],
+      "totalUsages": 4
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 113,
+          "context": "          } else {\n            // 2. Fallback: users Collection\n            const userDoc = await getDoc(doc(db, 'users', provider.id));\n            if (userDoc.exists()) {\n              userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 113,
+          "context": "          } else {\n            // 2. Fallback: users Collection\n            const userDoc = await getDoc(doc(db, 'users', provider.id));\n            if (userDoc.exists()) {\n              userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/provider/[id]/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 159,
+          "context": "      } else {\n        // Falls nicht in firma gefunden, in users suchen\n        const userDoc = await getDoc(doc(db, 'users', providerId));\n\n        if (userDoc.exists()) {"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 240,
+          "context": "\n    try {\n      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));\n      if (userDoc.exists()) {\n        const data = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 159,
+          "context": "      } else {\n        // Falls nicht in firma gefunden, in users suchen\n        const userDoc = await getDoc(doc(db, 'users', providerId));\n\n        if (userDoc.exists()) {"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 240,
+          "context": "\n    try {\n      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));\n      if (userDoc.exists()) {\n        const data = userDoc.data();"
+        }
+      ],
+      "totalUsages": 4
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/provider/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 101,
+          "context": "        } else {\n          // Fallback: in der users Collection suchen\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const userData = userDoc.data() as ProviderProfile;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 101,
+          "context": "        } else {\n          // Fallback: in der users Collection suchen\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const userData = userDoc.data() as ProviderProfile;"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/provider-username/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "collection\\(db,\\s*['\"`]users['\"`]",
+          "match": "collection(db, 'users'",
+          "lineNumber": 128,
+          "context": "        } else {\n          // 2. Fallback: users Collection für Username\n          const usersRef = collection(db, 'users');\n          const usersQuery = query(usersRef, where('username', '==', username), limit(1));\n          const usersSnapshot = await getDocs(usersQuery);"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/services/[category]/[subcategory]/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "collection\\(db,\\s*['\"`]users['\"`]",
+          "match": "collection(db, 'users'",
+          "lineNumber": 189,
+          "context": "\n      // Query für Users/Freelancer mit besserer Fehlerbehandlung\n      const userCollectionRef = collection(db, 'users');\n      const userQuery = query(\n        userCollectionRef,"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/app/dashboard/company/[uid]/settings/page.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 36,
+          "context": "      try {\n        // Lade Auth-Daten aus users collection\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 122,
+          "context": "    if (uid) {\n      try {\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 36,
+          "context": "      try {\n        // Lade Auth-Daten aus users collection\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 122,
+          "context": "    if (uid) {\n      try {\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 4
+    },
+    {
+      "file": "src/app/dashboard/user/[uid]/components/CompanyProfileManager.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 129,
+          "context": "    setSaving(true);\n    try {\n      const userRef = doc(db, 'users', profile.uid);\n      await updateDoc(userRef, {\n        username: profile.username,"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/components/B2BPaymentComponent.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 331,
+          "context": "        } else {\n          // 2. Fallback: users Collection für normale Benutzer\n          const customerDoc = await getDoc(doc(db, 'users', customerData.customerId));\n          if (customerDoc.exists()) {\n            userData = customerDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 331,
+          "context": "        } else {\n          // 2. Fallback: users Collection für normale Benutzer\n          const customerDoc = await getDoc(doc(db, 'users', customerData.customerId));\n          if (customerDoc.exists()) {\n            userData = customerDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/dashboard/SettingsComponent.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 756,
+          "context": "    try {\n      // KRITISCHE KORREKTUR: Separate Updates für users und companies\n      await updateDoc(doc(db, 'users', updatedForm.uid), userUpdateData);\n      await updateDoc(doc(db, 'companies', updatedForm.uid), companyUpdateData);\n      toast.success('Profildaten in Firestore gespeichert!');"
+        },
+        {
+          "pattern": "updateDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "updateDoc(doc(db, 'users'",
+          "lineNumber": 756,
+          "context": "    try {\n      // KRITISCHE KORREKTUR: Separate Updates für users und companies\n      await updateDoc(doc(db, 'users', updatedForm.uid), userUpdateData);\n      await updateDoc(doc(db, 'companies', updatedForm.uid), companyUpdateData);\n      toast.success('Profildaten in Firestore gespeichert!');"
+        }
+      ],
+      "totalUsages": 2
+    },
+    {
+      "file": "src/components/dashboard_setting/logo.tsx",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 53,
+          "context": "      try {\n        // Prüfe zuerst user_type aus users collection\n        const userDocRef = doc(db, 'users', uid);\n        const userDocSnap = await getDoc(userDocRef);\n"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 92,
+          "context": "\n    // KRITISCHE KORREKTUR: Prüfe user_type und verwende richtigen Pfad\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 134,
+          "context": "      } else {\n        // Für normale Kunden: Schreibe in users collection\n        await updateDoc(doc(db, 'users', uid), {\n          profilePictureURL: url,\n          profilePictureFirebaseUrl: url,"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 181,
+          "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 221,
+          "context": "\n    // Prüfe user_type einmal am Anfang\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 338,
+          "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 92,
+          "context": "\n    // KRITISCHE KORREKTUR: Prüfe user_type und verwende richtigen Pfad\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 181,
+          "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 221,
+          "context": "\n    // Prüfe user_type einmal am Anfang\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 338,
+          "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+        },
+        {
+          "pattern": "updateDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "updateDoc(doc(db, 'users'",
+          "lineNumber": 134,
+          "context": "      } else {\n        // Für normale Kunden: Schreibe in users collection\n        await updateDoc(doc(db, 'users', uid), {\n          profilePictureURL: url,\n          profilePictureFirebaseUrl: url,"
+        }
+      ],
+      "totalUsages": 11
+    },
+    {
+      "file": "src/hooks/useCompanyDashboard.ts",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 56,
+          "context": "      try {\n        // Lade Benutzer- und Firmendaten gleichzeitig, um die Ladezeit zu optimieren\n        const userDocRef = doc(db, 'users', uid);\n        const companyDocRef = doc(db, 'companies', uid);\n"
+        }
+      ],
+      "totalUsages": 1
+    },
+    {
+      "file": "src/hooks/useCompanySettings.ts",
+      "isCompanyDashboardRelevant": true,
+      "usages": [
+        {
+          "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "doc(db, 'users'",
+          "lineNumber": 63,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', userId));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        },
+        {
+          "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+          "match": "getDoc(doc(db, 'users'",
+          "lineNumber": 63,
+          "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', userId));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+        }
+      ],
+      "totalUsages": 2
+    }
+  ],
+  "summary": {
+    "highPriority": [
+      {
+        "file": "src/app/dashboard/company/[uid]/components/CompanyProfileManager.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 113,
+            "context": "      // Update both companies and users collections for consistency\n      const companyRef = doc(db, 'companies', profile.uid);\n      const userRef = doc(db, 'users', profile.uid);\n\n      const profileData = {"
+          }
+        ],
+        "totalUsages": 1
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/components/profile/ProfileImageUpload.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 85,
+            "context": "\n            // Update in Firestore - KRITISCH: Da wir in /dashboard/company/ sind, ist es eine Firma\n            const userRef = doc(db, 'users', profile.uid);\n            const companyRef = doc(db, 'companies', profile.uid);\n"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 134,
+            "context": "\n      // Update in Firestore - KRITISCH: Da wir in /dashboard/company/ sind, ist es eine Firma\n      const userRef = doc(db, 'users', profile.uid);\n      const companyRef = doc(db, 'companies', profile.uid);\n"
+          }
+        ],
+        "totalUsages": 2
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/finance/invoices/create/page.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 131,
+            "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 131,
+            "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+          }
+        ],
+        "totalUsages": 2
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/finance/invoices/templates/page.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 45,
+            "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 45,
+            "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', uid));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+          }
+        ],
+        "totalUsages": 2
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/profile/page.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 35,
+            "context": "        // Load both user and company data\n        const [userDoc, companyDoc] = await Promise.all([\n          getDoc(doc(db, 'users', uid)),\n          getDoc(doc(db, 'companies', uid)),\n        ]);"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 77,
+            "context": "      // Load both user and company data\n      const [userDoc, companyDoc] = await Promise.all([\n        getDoc(doc(db, 'users', uid)),\n        getDoc(doc(db, 'companies', uid)),\n      ]);"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 35,
+            "context": "        // Load both user and company data\n        const [userDoc, companyDoc] = await Promise.all([\n          getDoc(doc(db, 'users', uid)),\n          getDoc(doc(db, 'companies', uid)),\n        ]);"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 77,
+            "context": "      // Load both user and company data\n      const [userDoc, companyDoc] = await Promise.all([\n        getDoc(doc(db, 'users', uid)),\n        getDoc(doc(db, 'companies', uid)),\n      ]);"
+          }
+        ],
+        "totalUsages": 4
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 113,
+            "context": "          } else {\n            // 2. Fallback: users Collection\n            const userDoc = await getDoc(doc(db, 'users', provider.id));\n            if (userDoc.exists()) {\n              userData = userDoc.data();"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 113,
+            "context": "          } else {\n            // 2. Fallback: users Collection\n            const userDoc = await getDoc(doc(db, 'users', provider.id));\n            if (userDoc.exists()) {\n              userData = userDoc.data();"
+          }
+        ],
+        "totalUsages": 2
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/provider/[id]/page.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 159,
+            "context": "      } else {\n        // Falls nicht in firma gefunden, in users suchen\n        const userDoc = await getDoc(doc(db, 'users', providerId));\n\n        if (userDoc.exists()) {"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 240,
+            "context": "\n    try {\n      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));\n      if (userDoc.exists()) {\n        const data = userDoc.data();"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 159,
+            "context": "      } else {\n        // Falls nicht in firma gefunden, in users suchen\n        const userDoc = await getDoc(doc(db, 'users', providerId));\n\n        if (userDoc.exists()) {"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 240,
+            "context": "\n    try {\n      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));\n      if (userDoc.exists()) {\n        const data = userDoc.data();"
+          }
+        ],
+        "totalUsages": 4
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/provider/page.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 101,
+            "context": "        } else {\n          // Fallback: in der users Collection suchen\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const userData = userDoc.data() as ProviderProfile;"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 101,
+            "context": "        } else {\n          // Fallback: in der users Collection suchen\n          const userDoc = await getDoc(doc(db, 'users', providerId));\n          if (userDoc.exists()) {\n            const userData = userDoc.data() as ProviderProfile;"
+          }
+        ],
+        "totalUsages": 2
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/provider-username/page.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "collection\\(db,\\s*['\"`]users['\"`]",
+            "match": "collection(db, 'users'",
+            "lineNumber": 128,
+            "context": "        } else {\n          // 2. Fallback: users Collection für Username\n          const usersRef = collection(db, 'users');\n          const usersQuery = query(usersRef, where('username', '==', username), limit(1));\n          const usersSnapshot = await getDocs(usersQuery);"
+          }
+        ],
+        "totalUsages": 1
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/services/[category]/[subcategory]/page.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "collection\\(db,\\s*['\"`]users['\"`]",
+            "match": "collection(db, 'users'",
+            "lineNumber": 189,
+            "context": "\n      // Query für Users/Freelancer mit besserer Fehlerbehandlung\n      const userCollectionRef = collection(db, 'users');\n      const userQuery = query(\n        userCollectionRef,"
+          }
+        ],
+        "totalUsages": 1
+      },
+      {
+        "file": "src/app/dashboard/company/[uid]/settings/page.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 36,
+            "context": "      try {\n        // Lade Auth-Daten aus users collection\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 122,
+            "context": "    if (uid) {\n      try {\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 36,
+            "context": "      try {\n        // Lade Auth-Daten aus users collection\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 122,
+            "context": "    if (uid) {\n      try {\n        const userDoc = await getDoc(doc(db, 'users', uid));\n        if (userDoc.exists()) {\n          const userDocData = userDoc.data();"
+          }
+        ],
+        "totalUsages": 4
+      },
+      {
+        "file": "src/components/B2BPaymentComponent.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 331,
+            "context": "        } else {\n          // 2. Fallback: users Collection für normale Benutzer\n          const customerDoc = await getDoc(doc(db, 'users', customerData.customerId));\n          if (customerDoc.exists()) {\n            userData = customerDoc.data();"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 331,
+            "context": "        } else {\n          // 2. Fallback: users Collection für normale Benutzer\n          const customerDoc = await getDoc(doc(db, 'users', customerData.customerId));\n          if (customerDoc.exists()) {\n            userData = customerDoc.data();"
+          }
+        ],
+        "totalUsages": 2
+      }
+    ],
+    "mediumPriority": [
+      {
+        "file": "src/components/dashboard/SettingsComponent.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 756,
+            "context": "    try {\n      // KRITISCHE KORREKTUR: Separate Updates für users und companies\n      await updateDoc(doc(db, 'users', updatedForm.uid), userUpdateData);\n      await updateDoc(doc(db, 'companies', updatedForm.uid), companyUpdateData);\n      toast.success('Profildaten in Firestore gespeichert!');"
+          },
+          {
+            "pattern": "updateDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "updateDoc(doc(db, 'users'",
+            "lineNumber": 756,
+            "context": "    try {\n      // KRITISCHE KORREKTUR: Separate Updates für users und companies\n      await updateDoc(doc(db, 'users', updatedForm.uid), userUpdateData);\n      await updateDoc(doc(db, 'companies', updatedForm.uid), companyUpdateData);\n      toast.success('Profildaten in Firestore gespeichert!');"
+          }
+        ],
+        "totalUsages": 2
+      },
+      {
+        "file": "src/components/dashboard_setting/logo.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 53,
+            "context": "      try {\n        // Prüfe zuerst user_type aus users collection\n        const userDocRef = doc(db, 'users', uid);\n        const userDocSnap = await getDoc(userDocRef);\n"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 92,
+            "context": "\n    // KRITISCHE KORREKTUR: Prüfe user_type und verwende richtigen Pfad\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 134,
+            "context": "      } else {\n        // Für normale Kunden: Schreibe in users collection\n        await updateDoc(doc(db, 'users', uid), {\n          profilePictureURL: url,\n          profilePictureFirebaseUrl: url,"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 181,
+            "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 221,
+            "context": "\n    // Prüfe user_type einmal am Anfang\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+          },
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 338,
+            "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 92,
+            "context": "\n    // KRITISCHE KORREKTUR: Prüfe user_type und verwende richtigen Pfad\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 181,
+            "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 221,
+            "context": "\n    // Prüfe user_type einmal am Anfang\n    const userDoc = await getDoc(doc(db, 'users', uid));\n    const userData = userDoc.data();\n    const userType = userData?.user_type;"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 338,
+            "context": "\n      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection\n      const userDoc = await getDoc(doc(db, 'users', uid));\n      const userData = userDoc.data();\n      const userType = userData?.user_type;"
+          },
+          {
+            "pattern": "updateDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "updateDoc(doc(db, 'users'",
+            "lineNumber": 134,
+            "context": "      } else {\n        // Für normale Kunden: Schreibe in users collection\n        await updateDoc(doc(db, 'users', uid), {\n          profilePictureURL: url,\n          profilePictureFirebaseUrl: url,"
+          }
+        ],
+        "totalUsages": 11
+      }
+    ],
+    "lowPriority": [
+      {
+        "file": "src/app/dashboard/user/[uid]/components/CompanyProfileManager.tsx",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 129,
+            "context": "    setSaving(true);\n    try {\n      const userRef = doc(db, 'users', profile.uid);\n      await updateDoc(userRef, {\n        username: profile.username,"
+          }
+        ],
+        "totalUsages": 1
+      },
+      {
+        "file": "src/hooks/useCompanyDashboard.ts",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 56,
+            "context": "      try {\n        // Lade Benutzer- und Firmendaten gleichzeitig, um die Ladezeit zu optimieren\n        const userDocRef = doc(db, 'users', uid);\n        const companyDocRef = doc(db, 'companies', uid);\n"
+          }
+        ],
+        "totalUsages": 1
+      },
+      {
+        "file": "src/hooks/useCompanySettings.ts",
+        "isCompanyDashboardRelevant": true,
+        "usages": [
+          {
+            "pattern": "doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "doc(db, 'users'",
+            "lineNumber": 63,
+            "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', userId));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+          },
+          {
+            "pattern": "getDoc\\(doc\\(db,\\s*['\"`]users['\"`]",
+            "match": "getDoc(doc(db, 'users'",
+            "lineNumber": 63,
+            "context": "        } else {\n          // Fallback: users collection\n          const userDoc = await getDoc(doc(db, 'users', userId));\n          if (userDoc.exists()) {\n            userData = userDoc.data();"
+          }
+        ],
+        "totalUsages": 2
+      }
+    ]
+  }
+}

@@ -9,7 +9,6 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-
     return null;
   }
 
@@ -62,7 +61,6 @@ interface B2BPaymentRequest {
 }
 
 export async function POST(request: NextRequest) {
-
   const stripe = getStripeInstance();
   if (!stripe) {
     return NextResponse.json({ error: 'B2B Payment Service nicht verfügbar' }, { status: 500 });
@@ -91,7 +89,6 @@ export async function POST(request: NextRequest) {
 
     // Validate Stripe Account ID format for B2B
     if (!providerStripeAccountId.startsWith('acct_')) {
-
       return NextResponse.json(
         {
           error: 'Ungültige Connected Account ID. Muss mit "acct_" beginnen.',
@@ -120,7 +117,6 @@ export async function POST(request: NextRequest) {
         );
       }
     } catch (stripeError: any) {
-
       return NextResponse.json(
         {
           error: 'Provider-Konto konnte nicht verifiziert werden',
@@ -135,9 +131,20 @@ export async function POST(request: NextRequest) {
 
     if (!customerStripeId) {
       try {
-        // Load customer data from Firebase (with error handling for API permissions)
-        const customerDoc = await getDoc(doc(db, 'users', customerFirebaseId));
-        const customerData = customerDoc.exists() ? customerDoc.data() : null;
+        // KRITISCHE KORREKTUR: Load customer data from Firebase (companies first, dann users fallback)
+        let customerData: any = null;
+
+        // 1. Prüfe companies Collection
+        const companyDoc = await getDoc(doc(db, 'companies', customerFirebaseId));
+        if (companyDoc.exists()) {
+          customerData = companyDoc.data();
+        } else {
+          // 2. Fallback: users Collection
+          const customerDoc = await getDoc(doc(db, 'users', customerFirebaseId));
+          if (customerDoc.exists()) {
+            customerData = customerDoc.data();
+          }
+        }
 
         // Fallback customer data if Firebase query fails
         const fallbackCustomerData = {
@@ -167,20 +174,23 @@ export async function POST(request: NextRequest) {
 
         // Try to save Stripe Customer ID back to Firebase (with error handling)
         try {
-          await setDoc(
-            doc(db, 'users', customerFirebaseId),
-            {
-              stripeCustomerId: customerStripeId,
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true }
-          );
-        } catch (firebaseError) {
+          // KRITISCHE KORREKTUR: Schreibe Stripe Customer ID in beide Collections
+          const updateData = {
+            stripeCustomerId: customerStripeId,
+            updatedAt: serverTimestamp(),
+          };
 
+          // Update companies collection (primär)
+          await setDoc(doc(db, 'companies', customerFirebaseId), updateData, { merge: true });
+
+          // Update users collection (fallback)
+          await setDoc(doc(db, 'users', customerFirebaseId), updateData, { merge: true });
+        } catch (firebaseError) {
+          console.error('Fehler beim Speichern der Stripe Customer ID:', firebaseError);
           // Continue without failing - not critical for payment
         }
-      } catch (firebaseError) {
-
+      } catch (customerError) {
+        console.error('Fehler beim Laden der Kundendaten:', customerError);
         // Create customer with fallback data
         const customer = await stripe.customers.create({
           email: billingDetails?.email || 'b2b-customer@taskilo.de',
@@ -289,7 +299,6 @@ export async function POST(request: NextRequest) {
     try {
       await setDoc(doc(db, 'b2b_payments', paymentIntent.id), b2bPaymentData);
     } catch (firebaseError) {
-
       // Continue without failing - payment intent is created, record can be recreated later
     }
 
@@ -315,7 +324,6 @@ export async function POST(request: NextRequest) {
       message: 'B2B Payment Intent erfolgreich erstellt',
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'B2B Payment konnte nicht erstellt werden',
