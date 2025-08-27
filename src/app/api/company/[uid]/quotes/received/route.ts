@@ -26,34 +26,74 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Get company data to verify it exists and get email for customer lookup
+    // For B2B quotes, check companies collection first, then users as fallback
+    let customerEmail: string | undefined;
 
-    const companyDoc = await db.collection('users').doc(uid).get();
-    if (!companyDoc.exists) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    // Try companies collection first (for B2B)
+    const companyDoc = await db.collection('companies').doc(uid).get();
+    if (companyDoc.exists) {
+      const companyData = companyDoc.data();
+      customerEmail = companyData?.email || companyData?.ownerEmail;
+      console.log(`Found company in 'companies' collection with email: ${customerEmail}`);
+    } else {
+      // Fallback to users collection (for B2C)
+      const userDoc = await db.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        customerEmail = userData?.email;
+        console.log(`Found company in 'users' collection with email: ${customerEmail}`);
+      } else {
+        return NextResponse.json({ error: 'Company not found in any collection' }, { status: 404 });
+      }
     }
-
-    const companyData = companyDoc.data();
-
-    // Also get user data to find email
-    const userDoc = await db.collection('users').doc(uid).get();
-    if (!userDoc.exists) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userData = userDoc.data();
-    const customerEmail = userData?.email;
 
     if (!customerEmail) {
-      return NextResponse.json({ error: 'No email found for user' }, { status: 400 });
+      return NextResponse.json({ error: 'No email found for company' }, { status: 400 });
     }
 
-    // Query for quotes where this company is the customer (received quotes)
+    console.log(`Searching quotes for company ${uid} with email ${customerEmail}`);
 
-    const quotesSnapshot = await db
-      .collection('quotes')
-      .where('customerEmail', '==', customerEmail)
-      .orderBy('createdAt', 'desc')
-      .get();
+    // Query for quotes where this company is the customer (received quotes)
+    // Use both customerEmail and customerUid for comprehensive search
+    let quotesSnapshot;
+
+    try {
+      // First try to find by customerUid (more reliable)
+      quotesSnapshot = await db
+        .collection('quotes')
+        .where('customerUid', '==', uid)
+        .orderBy('createdAt', 'desc')
+        .get();
+    } catch (error) {
+      console.warn('Could not query by customerUid, trying customerEmail:', error);
+      // Fallback to customerEmail query
+      quotesSnapshot = await db
+        .collection('quotes')
+        .where('customerEmail', '==', customerEmail)
+        .orderBy('createdAt', 'desc')
+        .get();
+    }
+
+    console.log(`Found ${quotesSnapshot.docs.length} quotes for company ${uid} as customer`);
+
+    // If no results with first query, try the other field
+    if (quotesSnapshot.docs.length === 0) {
+      try {
+        const fallbackSnapshot = await db
+          .collection('quotes')
+          .where('customerEmail', '==', customerEmail)
+          .orderBy('createdAt', 'desc')
+          .get();
+
+        console.log(`Fallback query found ${fallbackSnapshot.docs.length} quotes by email`);
+
+        if (fallbackSnapshot.docs.length > 0) {
+          quotesSnapshot = fallbackSnapshot;
+        }
+      } catch (error) {
+        console.warn('Fallback query also failed:', error);
+      }
+    }
 
     // Define quote type
     type QuoteWithProvider = {
