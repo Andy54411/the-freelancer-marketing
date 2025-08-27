@@ -103,7 +103,7 @@ function SelectItem({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
   // Verhindere leere Strings als value
-  const safeValue = value || undefined;
+  const safeValue = value || '';
 
   return (
     <SelectPrimitive.Item

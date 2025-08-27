@@ -48,7 +48,11 @@ interface Step3Data {
   }>;
 }
 
-export default function OnboardingStep3() {
+interface OnboardingStep3Props {
+  companyUid?: string;
+}
+
+export default function OnboardingStep3({ companyUid }: OnboardingStep3Props) {
   const { stepData, updateStepData, goToNextStep, goToPreviousStep } = useOnboarding();
 
   const [step3Data, setStep3Data] = useState<Step3Data>(stepData[3] || {});

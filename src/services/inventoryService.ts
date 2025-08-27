@@ -8,6 +8,7 @@ import {
   updateDoc,
   deleteDoc,
   query,
+  writeBatch,
   where,
   orderBy,
   serverTimestamp,
@@ -96,7 +97,6 @@ export class InventoryService {
    */
   static async getInventoryItems(companyId: string): Promise<InventoryItem[]> {
     try {
-
       const itemsQuery = query(
         collection(db, 'inventory'),
         where('companyId', '==', companyId),
@@ -107,7 +107,6 @@ export class InventoryService {
       const items: InventoryItem[] = [];
 
       querySnapshot.forEach(doc => {
-
         const data = doc.data();
         const currentStock = data.currentStock || 0;
         const reservedStock = data.reservedStock || 0;
@@ -141,6 +140,8 @@ export class InventoryService {
           notes: data.notes,
           // Berechnete Felder
           stockValue: currentStock * (data.purchasePrice || 0),
+          isLowStock: availableStock <= (data.minStock || 0),
+          isOutOfStock: availableStock <= 0,
         };
 
         items.push(item);
@@ -148,7 +149,6 @@ export class InventoryService {
 
       return items;
     } catch (error) {
-
       throw error;
     }
   }
@@ -203,9 +203,10 @@ export class InventoryService {
         dimensions: data.dimensions,
         notes: data.notes,
         stockValue: currentStock * (data.purchasePrice || 0),
+        isLowStock: availableStock <= (data.minStock || 0),
+        isOutOfStock: availableStock <= 0,
       };
     } catch (error) {
-
       return null;
     }
   }
@@ -232,7 +233,6 @@ export class InventoryService {
 
       return stats;
     } catch (error) {
-
       throw error;
     }
   }
@@ -282,7 +282,6 @@ export class InventoryService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -301,7 +300,6 @@ export class InventoryService {
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -348,7 +346,6 @@ export class InventoryService {
         createdBy: companyId,
       });
     } catch (error) {
-
       throw error;
     }
   }
@@ -370,7 +367,6 @@ export class InventoryService {
       const docRef = await addDoc(collection(db, 'stockMovements'), movement);
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   }
@@ -419,7 +415,6 @@ export class InventoryService {
 
       return movements;
     } catch (error) {
-
       throw error;
     }
   }
@@ -431,7 +426,6 @@ export class InventoryService {
     try {
       await deleteDoc(doc(db, 'inventory', itemId));
     } catch (error) {
-
       throw error;
     }
   }
@@ -445,7 +439,7 @@ export class InventoryService {
     items: { itemId: string; quantity: number }[]
   ): Promise<void> {
     try {
-      const batch = db.batch ? db.batch() : null;
+      const batch = writeBatch(db);
 
       for (const item of items) {
         const itemRef = doc(db, 'inventory', item.itemId);
@@ -498,7 +492,6 @@ export class InventoryService {
         await batch.commit();
       }
     } catch (error) {
-
       throw error;
     }
   }
@@ -512,14 +505,13 @@ export class InventoryService {
     items: { itemId: string; quantity: number }[]
   ): Promise<void> {
     try {
-      const batch = db.batch ? db.batch() : null;
+      const batch = writeBatch(db);
 
       for (const item of items) {
         const itemRef = doc(db, 'inventory', item.itemId);
         const currentItem = await this.getInventoryItem(companyId, item.itemId);
 
         if (!currentItem) {
-
           continue;
         }
 
@@ -562,7 +554,6 @@ export class InventoryService {
         await batch.commit();
       }
     } catch (error) {
-
       throw error;
     }
   }
@@ -576,14 +567,13 @@ export class InventoryService {
     items: { itemId: string; quantity: number }[]
   ): Promise<void> {
     try {
-      const batch = db.batch ? db.batch() : null;
+      const batch = writeBatch(db);
 
       for (const item of items) {
         const itemRef = doc(db, 'inventory', item.itemId);
         const currentItem = await this.getInventoryItem(companyId, item.itemId);
 
         if (!currentItem) {
-
           continue;
         }
 
@@ -631,7 +621,6 @@ export class InventoryService {
         await batch.commit();
       }
     } catch (error) {
-
       throw error;
     }
   }
@@ -661,7 +650,6 @@ export class InventoryService {
 
       return categories.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
-
       throw error;
     }
   }

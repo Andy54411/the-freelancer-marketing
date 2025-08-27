@@ -31,7 +31,11 @@ interface Step4Data {
   maxTravelDistance: number;
 }
 
-export default function OnboardingStep4() {
+interface OnboardingStep4Props {
+  companyUid?: string;
+}
+
+export default function OnboardingStep4({ companyUid }: OnboardingStep4Props) {
   const { stepData, updateStepData, goToNextStep, goToPreviousStep } = useOnboarding();
 
   const [step4Data, setStep4Data] = useState<Step4Data>(

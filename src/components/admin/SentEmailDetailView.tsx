@@ -37,7 +37,7 @@ export default function SentEmailDetailView({ email, onBack, onDelete }: SentEma
     setIsDeleting(true);
     try {
       const response = await fetch(
-        `/api/admin/workmail/emails/sent?messageId=${encodeURIComponent(email.messageId)}`,
+        `/api/admin/workmail/emails/sent?messageId=${encodeURIComponent(email.messageId || '')}`,
         {
           method: 'DELETE',
         }
@@ -50,7 +50,6 @@ export default function SentEmailDetailView({ email, onBack, onDelete }: SentEma
       alert('E-Mail wurde erfolgreich gelöscht.');
       onDelete?.(); // Trigger parent refresh
     } catch (error) {
-
       alert('Fehler beim Löschen der E-Mail.');
     } finally {
       setIsDeleting(false);

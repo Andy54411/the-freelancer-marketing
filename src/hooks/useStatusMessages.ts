@@ -17,10 +17,10 @@ export const useStatusMessages = (): StatusMessages => {
   const searchParams = useSearchParams();
 
   return {
-    success: searchParams.get('success') || undefined,
-    error: searchParams.get('error') || undefined,
-    details: searchParams.get('details') || undefined,
-    accounts: searchParams.get('accounts') || undefined,
-    campaign_id: searchParams.get('campaign_id') || undefined,
+    success: searchParams?.get('success') || undefined,
+    error: searchParams?.get('error') || undefined,
+    details: searchParams?.get('details') || undefined,
+    accounts: searchParams?.get('accounts') || undefined,
+    campaign_id: searchParams?.get('campaign_id') || undefined,
   };
 };

@@ -14,7 +14,11 @@ interface Step5Data {
   documentsCompleted: boolean;
 }
 
-export default function OnboardingStep5() {
+interface OnboardingStep5Props {
+  companyUid?: string;
+}
+
+export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
   const { user } = useAuth();
   const {
     stepData,

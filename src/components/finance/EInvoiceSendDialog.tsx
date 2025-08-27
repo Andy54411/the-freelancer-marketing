@@ -134,7 +134,6 @@ Mit freundlichen Grüßen`,
   const checkCompliance = async () => {
     setIsChecking(true);
     try {
-
       const compliance = await EInvoiceTransmissionService.checkUStGCompliance(xmlContent);
 
       setComplianceCheck(compliance);
@@ -143,11 +142,9 @@ Mit freundlichen Grüßen`,
         toast.success('E-Rechnung ist UStG §14 konform');
       } else {
         toast.error('E-Rechnung entspricht nicht UStG §14 Anforderungen');
-
       }
     } catch (error) {
       toast.error('Compliance-Prüfung fehlgeschlagen');
-
     } finally {
       setIsChecking(false);
     }
@@ -242,7 +239,6 @@ Mit freundlichen Grüßen`,
       setStep('completed');
       toast.success('E-Rechnung erfolgreich versendet');
     } catch (error) {
-
       toast.error('E-Rechnungs-Versendung fehlgeschlagen: ' + (error as Error).message);
       setStep('recipient');
     } finally {
@@ -294,7 +290,7 @@ Mit freundlichen Grüßen`,
 
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(20);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('helvetica', 'bold');
       doc.text('Übertragungsprotokoll - E-Rechnung', 20, 17);
 
       // Rechnungsnummer
@@ -308,12 +304,12 @@ Mit freundlichen Grüßen`,
 
       // Übertragungsdetails
       doc.setFontSize(16);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('helvetica', 'bold');
       doc.text('Übertragungsdetails', 20, yPosition);
       yPosition += 10;
 
       doc.setFontSize(11);
-      doc.setFont(undefined, 'normal');
+      doc.setFont('helvetica', 'normal');
 
       const details = [
         ['Protokoll-ID:', transmissionLogId || 'N/A'],
@@ -323,9 +319,9 @@ Mit freundlichen Grüßen`,
       ];
 
       details.forEach(([label, value]) => {
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text(label, 20, yPosition);
-        doc.setFont(undefined, 'normal');
+        doc.setFont('helvetica', 'normal');
         doc.text(value, 80, yPosition);
         yPosition += 7;
       });
@@ -334,20 +330,20 @@ Mit freundlichen Grüßen`,
 
       // UStG §14 Compliance
       doc.setFontSize(16);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('helvetica', 'bold');
       doc.text('UStG §14 Compliance', 20, yPosition);
       yPosition += 10;
 
       doc.setTextColor(taskiloR, taskiloG, taskiloB);
       doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('helvetica', 'bold');
       doc.text('✓ Vollständig UStG §14 konform', 20, yPosition);
       doc.setTextColor(0, 0, 0);
       yPosition += 15;
 
       // Compliance-Checkliste in zwei Spalten
       doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
+      doc.setFont('helvetica', 'normal');
 
       const complianceItems = [
         '✓ Strukturiertes Format',
@@ -368,12 +364,12 @@ Mit freundlichen Grüßen`,
 
       // Empfänger-Informationen
       doc.setFontSize(16);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('helvetica', 'bold');
       doc.text('Empfänger-Informationen', 20, yPosition);
       yPosition += 10;
 
       doc.setFontSize(11);
-      doc.setFont(undefined, 'normal');
+      doc.setFont('helvetica', 'normal');
 
       const recipientDetails = [['Empfänger:', formData.recipientName]];
 
@@ -386,9 +382,9 @@ Mit freundlichen Grüßen`,
       }
 
       recipientDetails.forEach(([label, value]) => {
-        doc.setFont(undefined, 'bold');
+        doc.setFont('helvetica', 'bold');
         doc.text(label, 20, yPosition);
-        doc.setFont(undefined, 'normal');
+        doc.setFont('helvetica', 'normal');
 
         // Lange Texte umbrechen
         const splitText = doc.splitTextToSize(value, 110);
@@ -407,10 +403,10 @@ Mit freundlichen Grüßen`,
       doc.rect(15, yPosition - 5, 180, 25, 'F');
 
       doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('helvetica', 'bold');
       doc.text('Aufbewahrungspflicht:', 20, yPosition + 3);
 
-      doc.setFont(undefined, 'normal');
+      doc.setFont('helvetica', 'normal');
       const legalText = doc.splitTextToSize(
         'Dieses Übertragungsprotokoll wird gemäß § 14b UStG für 8 Jahre gespeichert und dient als Nachweis der ordnungsgemäßen elektronischen Übertragung.',
         170
@@ -434,7 +430,6 @@ Mit freundlichen Grüßen`,
 
       return true;
     } catch (error) {
-
       throw error;
     }
   };
@@ -1142,7 +1137,6 @@ Mit freundlichen Grüßen`,
                   generateTransmissionLogPDF();
                   toast.success('PDF wurde heruntergeladen');
                 } catch (error) {
-
                   toast.error('PDF-Export fehlgeschlagen');
                 }
               }}

@@ -116,7 +116,6 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       setMovements(movementsData);
       setCategories(categoriesData);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -128,7 +127,11 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
 
   const handleAddItem = async () => {
     try {
-      await InventoryService.addInventoryItem(companyId, newItem);
+      await InventoryService.addInventoryItem(companyId, {
+        ...newItem,
+        reservedStock: 0,
+        availableStock: newItem.currentStock,
+      });
       await loadData();
       setShowAddDialog(false);
       setNewItem({
@@ -146,9 +149,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
         location: '',
         status: 'active',
       });
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleStockAdjustment = async () => {
@@ -168,9 +169,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       setShowStockDialog(false);
       setStockAdjustment({ newStock: 0, reason: '', type: 'adjustment' });
       setSelectedItem(null);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   // Handler für Detail-Ansicht
@@ -188,9 +187,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
       await loadData();
       setShowDeleteDialog(false);
       setSelectedItem(null);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleConfirmDelete = (item: InventoryItem) => {
