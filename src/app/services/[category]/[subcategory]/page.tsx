@@ -100,7 +100,6 @@ export default function SubcategoryPage() {
           // Fallback auf ursprüngliche Daten
           return provider;
         } catch (error) {
-
           return provider;
         }
       })
@@ -118,20 +117,13 @@ export default function SubcategoryPage() {
     try {
       setLoading(true);
 
-      // Query für Firmen - erweitert um verschiedene Aktivitätszustände
-      const firmCollectionRef = collection(db, 'companies');
-      const firmQuery = query(firmCollectionRef, limit(50));
+      // 🔧 SAUBERE TRENNUNG: Nur companies collection verwenden
+      const companiesCollectionRef = collection(db, 'companies');
+      const companiesQuery = query(companiesCollectionRef, limit(50));
 
-      // Query für Users/Freelancer
-      const userCollectionRef = collection(db, 'users');
-      const userQuery = query(userCollectionRef, where('isFreelancer', '==', true), limit(50));
+      const companiesSnapshot = await getDocs(companiesQuery);
 
-      const [firmSnapshot, userSnapshot] = await Promise.all([
-        getDocs(firmQuery),
-        getDocs(userQuery),
-      ]);
-
-      const firmProviders: Provider[] = firmSnapshot.docs
+      const companyProviders: Provider[] = companiesSnapshot.docs
         .map(doc => {
           const data = doc.data();
           return {
@@ -169,47 +161,13 @@ export default function SubcategoryPage() {
         })
         // Filter nur inaktive Firmen aus (aber zeige Firmen ohne isActive Feld)
         .filter(provider => {
-          const data = firmSnapshot.docs.find(doc => doc.id === provider.id)?.data();
+          const data = companiesSnapshot.docs.find(doc => doc.id === provider.id)?.data();
           // Zeige Provider wenn isActive nicht explizit false ist
           return data?.isActive !== false;
         });
 
-      const userProviders: Provider[] = userSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          userName: data.userName || data.displayName,
-          profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
-          profilePictureURL: data.profilePictureURL,
-          photoURL: data.photoURL,
-          bio: data.bio,
-          location: data.location,
-          hourlyRate: data.hourlyRate || data.pricePerHour || data.baseRate,
-          skills:
-            data.skills ||
-            data.services ||
-            data.categories ||
-            data.serviceCategories ||
-            data.specialties ||
-            data.expertise ||
-            (data.selectedSubcategory ? [data.selectedSubcategory] : []),
-          selectedCategory: data.selectedCategory,
-          selectedSubcategory: data.selectedSubcategory,
-          rating: data.averageRating || data.rating || data.ratingAverage || data.starRating || 0,
-          reviewCount:
-            data.reviewCount ||
-            data.totalReviews ||
-            data.numReviews ||
-            data.reviewsCount ||
-            (Array.isArray(data.reviews) ? data.reviews.length : 0),
-          completedJobs: data.completedJobs || 0,
-          isCompany: false,
-          priceRange: data.priceRange,
-          responseTime: data.responseTime,
-        };
-      });
-
-      const allProviders = [...firmProviders, ...userProviders];
+      // 🔧 SAUBERE TRENNUNG: Nur companies verwenden, keine users mehr
+      const allProviders = companyProviders;
 
       // Anreichern mit echten Bewertungen
       const enrichedProviders = await enrichProvidersWithReviews(allProviders);
@@ -285,7 +243,6 @@ export default function SubcategoryPage() {
 
       setProviders(filteredProviders);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -307,10 +264,8 @@ export default function SubcategoryPage() {
   // Debug logging für troubleshooting
 
   const handleBookNow = (provider: Provider) => {
-
     // Auth-Check: Wenn nicht eingeloggt, zur Registrierung weiterleiten
     if (!user) {
-
       router.push('/login');
       return;
     }
@@ -318,7 +273,6 @@ export default function SubcategoryPage() {
     // Wenn eingeloggt, Modal öffnen
     setSelectedProvider(provider);
     setIsBookingModalOpen(true);
-
   };
 
   const handleBookingConfirm = async (
@@ -328,7 +282,6 @@ export default function SubcategoryPage() {
     description: string
   ) => {
     try {
-
       // Schließe das Modal
       setIsBookingModalOpen(false);
       setSelectedProvider(null);
@@ -365,7 +318,6 @@ export default function SubcategoryPage() {
         `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
       );
     } catch (error) {
-
       alert('Fehler bei der Weiterleitung. Bitte versuchen Sie es erneut.');
     }
   };
@@ -538,7 +490,6 @@ export default function SubcategoryPage() {
 
                           // Auth-Check für Profil-Ansicht
                           if (!user) {
-
                             router.push('/login');
                             return;
                           }

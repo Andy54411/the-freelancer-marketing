@@ -48,46 +48,23 @@ export default function CategoryPage() {
     try {
       // Lade Daten für jede Subcategory
       for (const subcategory of categoryInfo.subcategories) {
-        // Query für Firmen in dieser Subcategory
+        // 🔧 SAUBERE TRENNUNG: Nur companies collection verwenden
         const companiesQuery = query(
           collection(db, 'companies'),
           where('selectedSubcategory', '==', subcategory),
           limit(50)
         );
 
-        // Query für Freelancer/Users in dieser Subcategory
-        const usersQuery = query(
-          collection(db, 'users'),
-          where('selectedSubcategory', '==', subcategory),
-          limit(50)
-        );
-
-        const [companiesSnapshot, usersSnapshot] = await Promise.all([
-          getDocs(companiesQuery),
-          getDocs(usersQuery),
-        ]);
+        const companiesSnapshot = await getDocs(companiesQuery);
 
         let totalPrice = 0;
         let priceCount = 0;
         let totalRating = 0;
         let ratingCount = 0;
-        const totalProviders = companiesSnapshot.docs.length + usersSnapshot.docs.length;
+        const totalProviders = companiesSnapshot.docs.length;
 
         // Sammle Preise und Bewertungen von Firmen
         companiesSnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.hourlyRate && typeof data.hourlyRate === 'number') {
-            totalPrice += data.hourlyRate;
-            priceCount++;
-          }
-          if (data.rating && typeof data.rating === 'number') {
-            totalRating += data.rating;
-            ratingCount++;
-          }
-        });
-
-        // Sammle Preise und Bewertungen von Freelancern
-        usersSnapshot.docs.forEach(doc => {
           const data = doc.data();
           if (data.hourlyRate && typeof data.hourlyRate === 'number') {
             totalPrice += data.hourlyRate;
@@ -114,9 +91,7 @@ export default function CategoryPage() {
       }
 
       setSubcategoryStats(stats);
-
     } catch (error) {
-
       // Fallback-Werte bei Fehler
       const fallbackStats: Record<string, SubcategoryStats> = {};
       categoryInfo.subcategories.forEach(subcategory => {
