@@ -552,21 +552,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       await updateDoc(companyDocRef, companyUpdates);
       console.log('✅ Companies document updated successfully');
 
-      // 🔧 MINIMAL UPDATE: Nur completion flags in users document
-      const userDocRef = doc(db, 'users', user.uid);
-      const userMinimalUpdates = {
-        onboardingCompleted: true,
-        onboardingCompletedAt: serverTimestamp(),
-        profileComplete: true,
-        profileStatus: 'pending_review',
-      };
-
-      console.log('💾 Updating users document with minimal completion flags...');
-      await updateDoc(userDocRef, userMinimalUpdates);
-      console.log('✅ Users document updated with minimal flags');
-
-      // SUCCESS: Onboarding abgeschlossen - companies collection updated
-      console.log('✅ Onboarding erfolgreich abgeschlossen (saubere 2-Collection Trennung)');
+      // SUCCESS: Onboarding abgeschlossen - companies-only architecture
+      console.log('✅ Onboarding erfolgreich abgeschlossen (companies-only architecture)');
 
       // Set cookies for middleware
       console.log('🍪 Setting completion cookies...');
