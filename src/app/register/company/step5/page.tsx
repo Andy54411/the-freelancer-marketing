@@ -789,7 +789,12 @@ export default function Step5CompanyPage() {
         postalCode: companyPostalCode || null,
         taskiloProfileUrl: `${frontendAppUrl}/profile/${currentAuthUserUID}`,
         description: '',
-        hourlyRate: Number(hourlyRate) || 0,
+        // 🔧 DEBUG: hourlyRate prüfen
+        hourlyRate: (() => {
+          const rate = Number(hourlyRate) || 0;
+          console.log('🔧 DEBUG hourlyRate in companyData:', { hourlyRate, parsedRate: rate });
+          return rate;
+        })(),
         selectedCategory: selectedCategory || '',
         selectedSubcategory: selectedSubcategory || '',
         industryMcc: derivedMcc || null,
@@ -925,6 +930,28 @@ export default function Step5CompanyPage() {
           companyHouseNumber: cleanedCompanyData.companyHouseNumber || null,
           companyPhoneNumber: cleanedCompanyData.companyPhoneNumber || null,
           companyWebsite: cleanedCompanyData.companyWebsite || null,
+          // 🔧 FIX: selectedCategory und selectedSubcategory hinzufügen!
+          selectedCategory: cleanedCompanyData.selectedCategory || '',
+          selectedSubcategory: cleanedCompanyData.selectedSubcategory || '',
+          description: cleanedCompanyData.description || '',
+          skills: cleanedCompanyData.skills || [],
+          serviceAreas: cleanedCompanyData.serviceAreas || [],
+          // 🔧 DEBUG: hourlyRate in extendedData prüfen
+          hourlyRate: (() => {
+            const rate = Number(cleanedCompanyData.hourlyRate) || Number(hourlyRate) || 0;
+            console.log('🔧 DEBUG hourlyRate in extendedData:', {
+              cleanedRate: cleanedCompanyData.hourlyRate,
+              contextRate: hourlyRate,
+              finalRate: rate,
+            });
+            return rate;
+          })(),
+          lat: cleanedCompanyData.lat || null,
+          lng: cleanedCompanyData.lng || null,
+          radiusKm: cleanedCompanyData.radiusKm || 30,
+          // 🔧 FIX: Zusammengesetztes location Feld für Service-Seite
+          location:
+            `${cleanedCompanyData.companyCity || ''}${cleanedCompanyData.companyPostalCode ? ', ' + cleanedCompanyData.companyPostalCode : ''}`.trim(),
           status: 'pending_verification',
           profileComplete: false,
           updatedAt: serverTimestamp(),

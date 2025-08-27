@@ -342,8 +342,12 @@ export default function Step4() {
   }>({});
   const router = useRouter();
 
-  const { setSelectedHandwerkSkills, setSelectedHaushaltServices, setSelectedSubcategory } =
-    useRegistration();
+  const {
+    setSelectedHandwerkSkills,
+    setSelectedHaushaltServices,
+    setSelectedSubcategory,
+    setSelectedCategory,
+  } = useRegistration();
 
   const handleOpenSubcategoryModal = useCallback((category: CardData) => {
     setCurrentSelectedCategory(category);
@@ -362,11 +366,13 @@ export default function Step4() {
           ...prev,
           [selectedSkill]: subcategory,
         }));
+        // 🔧 FIX: Auch die Hauptkategorie setzen!
+        setSelectedCategory(selectedSkill);
         setSelectedSubcategory(subcategory);
         handleCloseSubcategoryModal(); // KORREKTUR: Modal hier schließen
       }
     },
-    [selectedSkill, setSelectedSubcategory, handleCloseSubcategoryModal]
+    [selectedSkill, setSelectedCategory, setSelectedSubcategory, handleCloseSubcategoryModal]
   );
 
   const handleNext = () => {
@@ -383,6 +389,10 @@ export default function Step4() {
 
     localStorage.setItem('selectedSkill', selectedSkill);
     localStorage.setItem('selectedSubcategoryName', selectedSubcategoryName);
+
+    // 🔧 FIX: Setze auch die Kategorie im Registration Context
+    setSelectedCategory(selectedSkill);
+    setSelectedSubcategory(selectedSubcategoryName);
 
     if (selectedSkill === 'Handwerk') {
       setSelectedHandwerkSkills?.(selectedSubcategoryName ? [selectedSubcategoryName] : null);

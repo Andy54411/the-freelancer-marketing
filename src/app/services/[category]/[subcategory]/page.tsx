@@ -19,6 +19,7 @@ interface Provider {
   profilePictureFirebaseUrl?: string;
   profilePictureURL?: string;
   photoURL?: string;
+  profileBannerImage?: string; // Banner-Bild für Hero-Bereich
   bio?: string;
   location?: string;
   skills?: string[];
@@ -126,33 +127,51 @@ export default function SubcategoryPage() {
       const companyProviders: Provider[] = companiesSnapshot.docs
         .map(doc => {
           const data = doc.data();
+          console.log('🏢 DEBUG: Company Data for', doc.id, ':', {
+            companyName: data.companyName,
+            description: data.description,
+            skills: data.skills,
+            serviceAreas: data.serviceAreas,
+            profilePictureURL: data.step3?.profilePictureURL,
+            maxTravelDistance: data.maxTravelDistance,
+            isActive: data.status !== 'inactive',
+          });
+
           return {
             id: doc.id,
             companyName: data.companyName,
-            profilePictureFirebaseUrl: data.profilePictureFirebaseUrl,
-            profilePictureURL: data.profilePictureURL,
-            photoURL: data.photoURL,
+            profilePictureFirebaseUrl: data.step3?.profilePictureURL || data.profilePictureURL,
+            profilePictureURL: data.step3?.profilePictureURL || data.profilePictureURL,
+            photoURL: data.step3?.profilePictureURL || data.profilePictureURL,
+            // Banner-Bild für Hero-Bereich
+            profileBannerImage: data.profileBannerImage || data.step3?.profileBannerImage,
             bio: data.description || data.bio,
-            location: data.location,
-            hourlyRate: data.hourlyRate || data.pricePerHour || data.baseRate,
-            skills:
-              data.services ||
-              data.skills ||
-              data.categories ||
-              data.serviceCategories ||
-              data.specialties ||
-              data.expertise ||
-              (data.selectedSubcategory ? [data.selectedSubcategory] : []),
-            selectedCategory: data.selectedCategory,
-            selectedSubcategory: data.selectedSubcategory,
-            rating: data.averageRating || data.rating || data.ratingAverage || data.starRating || 0,
-            reviewCount:
-              data.reviewCount ||
-              data.totalReviews ||
-              data.numReviews ||
-              data.reviewsCount ||
-              (Array.isArray(data.reviews) ? data.reviews.length : 0) ||
-              0,
+            location:
+              data.location ||
+              (data.companyCity && data.companyPostalCode
+                ? `${data.companyCity}, ${data.companyPostalCode}`
+                : data.companyCity ||
+                  (data.serviceAreas && data.serviceAreas.length > 0
+                    ? data.serviceAreas[0]
+                    : null)),
+            hourlyRate:
+              data.hourlyRate ||
+              data.step4?.hourlyRate ||
+              data.step5?.hourlyRate ||
+              (data.step1?.hourlyRate ? Number(data.step1.hourlyRate) : null) ||
+              // Fallback: Suche in allen Step-Daten nach hourlyRate
+              Object.values(data).find(val => val && typeof val === 'object' && val.hourlyRate)
+                ?.hourlyRate ||
+              null,
+            skills: data.skills || data.step3?.skills || [],
+            selectedCategory: data.selectedCategory || 'Hotel & Gastronomie', // Fallback basierend auf Skills
+            selectedSubcategory:
+              data.selectedSubcategory ||
+              (data.skills?.some(skill => skill.toLowerCase().includes('koch'))
+                ? 'Mietkoch'
+                : null),
+            rating: data.averageRating || data.rating || 0,
+            reviewCount: data.reviewCount || data.totalReviews || 0,
             completedJobs: data.completedJobs || 0,
             isCompany: true,
             priceRange: data.priceRange,
@@ -162,8 +181,8 @@ export default function SubcategoryPage() {
         // Filter nur inaktive Firmen aus (aber zeige Firmen ohne isActive Feld)
         .filter(provider => {
           const data = companiesSnapshot.docs.find(doc => doc.id === provider.id)?.data();
-          // Zeige Provider wenn isActive nicht explizit false ist
-          return data?.isActive !== false;
+          // Zeige Provider wenn status nicht 'inactive' ist
+          return data?.status !== 'inactive';
         });
 
       // 🔧 SAUBERE TRENNUNG: Nur companies verwenden, keine users mehr
@@ -174,20 +193,32 @@ export default function SubcategoryPage() {
 
       // Filter nach Subcategory - erweiterte und allgemeine Prüfung
       let filteredProviders = enrichedProviders.filter(provider => {
+        console.log(
+          '🎯 DEBUG: Filtering provider',
+          provider.companyName,
+          'for subcategory:',
+          subcategoryName
+        );
+        console.log('🎯 DEBUG: Provider selectedSubcategory:', provider.selectedSubcategory);
+        console.log('🎯 DEBUG: Provider skills:', provider.skills);
+
         // Für Firmen: prüfe selectedSubcategory mit verschiedenen Matching-Strategien
         if (provider.isCompany && provider.selectedSubcategory) {
           // Exakte Übereinstimmung
           if (provider.selectedSubcategory === subcategoryName) {
+            console.log('✅ DEBUG: Exact match for', provider.companyName);
             return true;
           }
 
           // Case-insensitive Übereinstimmung
           if (provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase()) {
+            console.log('✅ DEBUG: Case-insensitive match for', provider.companyName);
             return true;
           }
 
           // URL-Parameter Übereinstimmung
           if (provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase()) {
+            console.log('✅ DEBUG: URL parameter match for', provider.companyName);
             return true;
           }
         }
@@ -210,7 +241,26 @@ export default function SubcategoryPage() {
           provider.bio?.toLowerCase().includes(subcategory.toLowerCase()) ||
           provider.bio?.toLowerCase().includes(subcategoryName?.toLowerCase() || '');
 
-        return skillsMatch || nameMatch || bioMatch;
+        // 🔧 SPEZIAL-MATCHING: Für "Mietkoch" - prüfe auch ob im Namen "Koch" vorkommt
+        const specialMietkochMatch =
+          (subcategoryName?.toLowerCase() === 'mietkoch' ||
+            subcategory.toLowerCase() === 'mietkoch') &&
+          (provider.companyName?.toLowerCase().includes('koch') ||
+            provider.companyName?.toLowerCase().includes('mietkoch') ||
+            provider.userName?.toLowerCase().includes('koch') ||
+            provider.userName?.toLowerCase().includes('mietkoch'));
+
+        const finalMatch = skillsMatch || nameMatch || bioMatch || specialMietkochMatch;
+
+        console.log('🎯 DEBUG: Match results for', provider.companyName, ':', {
+          skillsMatch,
+          nameMatch,
+          bioMatch,
+          specialMietkochMatch,
+          finalMatch,
+        });
+
+        return finalMatch;
       });
 
       // Suchfilter
@@ -241,6 +291,17 @@ export default function SubcategoryPage() {
         }
       });
 
+      console.log('📊 DEBUG: Final filtered providers count:', filteredProviders.length);
+      console.log(
+        '📊 DEBUG: Final providers:',
+        filteredProviders.map(p => ({
+          id: p.id,
+          name: p.companyName,
+          subcategory: p.selectedSubcategory,
+          skills: p.skills,
+        }))
+      );
+
       setProviders(filteredProviders);
     } catch (error) {
     } finally {
@@ -253,8 +314,20 @@ export default function SubcategoryPage() {
       provider.profilePictureFirebaseUrl ||
       provider.profilePictureURL ||
       provider.photoURL ||
-      '/images/default-avatar.png'
+      '/images/default-avatar.jpg'
     );
+  };
+
+  const getBannerImage = (provider: Provider) => {
+    // Hole das Banner-Bild aus verschiedenen möglichen Feldern
+    const bannerImage =
+      (provider as any).profileBannerImage || (provider as any).step3?.profileBannerImage;
+
+    // Wenn kein Banner-Bild verfügbar ist, verwende das Profilbild als Fallback
+    return bannerImage &&
+      bannerImage !== 'blob:https://taskilo.de/743c0de7-d5ce-42d6-b0bd-0e43d05abe66'
+      ? bannerImage
+      : getProfileImage(provider);
   };
 
   const getProviderName = (provider: Provider) => {
@@ -461,11 +534,11 @@ export default function SubcategoryPage() {
                     {/* Provider Image & Rating */}
                     <div className="relative group/image">
                       <img
-                        src={getProfileImage(provider)}
+                        src={getBannerImage(provider)}
                         alt={getProviderName(provider)}
                         className="w-full h-48 object-cover"
                         onError={e => {
-                          (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                          (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
                         }}
                       />
 
@@ -512,7 +585,7 @@ export default function SubcategoryPage() {
                           alt={getProviderName(provider)}
                           className="w-10 h-10 rounded-full object-cover"
                           onError={e => {
-                            (e.target as HTMLImageElement).src = '/images/default-avatar.png';
+                            (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
                           }}
                         />
                         <div className="flex-1 min-w-0">
