@@ -9,6 +9,7 @@ import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 export interface ProposalData {
   id?: string; // Optional ID field for subcollection documents
   companyUid: string;
+  providerId?: string; // Same as companyUid for consistency
   message: string;
   serviceItems?: Array<{
     title: string;
@@ -42,6 +43,7 @@ export class ProposalSubcollectionService {
     const now = Timestamp.now();
     const proposal = {
       ...proposalData,
+      providerId: proposalData.companyUid, // Ensure providerId is set for consistency
       createdAt: now,
       updatedAt: now,
     };
