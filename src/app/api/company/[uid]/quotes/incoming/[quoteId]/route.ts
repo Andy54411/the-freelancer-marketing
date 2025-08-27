@@ -106,21 +106,45 @@ export async function GET(
     let hasResponse = false;
     let responseData: any = null;
 
-    // For quotes collection, check proposals collection for responses
+    // Check subcollection for proposals first (new structure)
     try {
-      const proposalsSnapshot = await db
+      const subcollectionSnapshot = await db
+        .collection('quotes')
+        .doc(quoteId)
         .collection('proposals')
-        .where('quoteId', '==', quoteId)
         .where('providerId', '==', uid)
         .get();
 
-      if (!proposalsSnapshot.empty) {
+      if (!subcollectionSnapshot.empty) {
         hasResponse = true;
-        responseData = proposalsSnapshot.docs[0].data();
+        responseData = subcollectionSnapshot.docs[0].data();
         finalStatus = 'responded';
+        console.log('✅ Found proposal in subcollection:', responseData);
+      } else {
+        console.log('❌ No proposal found in subcollection for provider:', uid);
       }
     } catch (error) {
-      console.error('Error checking proposals:', error);
+      console.error('Error checking subcollection proposals:', error);
+    }
+
+    // Fallback: Check main proposals collection (old structure)
+    if (!hasResponse) {
+      try {
+        const proposalsSnapshot = await db
+          .collection('proposals')
+          .where('quoteId', '==', quoteId)
+          .where('providerId', '==', uid)
+          .get();
+
+        if (!proposalsSnapshot.empty) {
+          hasResponse = true;
+          responseData = proposalsSnapshot.docs[0].data();
+          finalStatus = 'responded';
+          console.log('✅ Found proposal in main collection:', responseData);
+        }
+      } catch (error) {
+        console.error('Error checking main proposals collection:', error);
+      }
     }
 
     // Use actual status from quote if available
