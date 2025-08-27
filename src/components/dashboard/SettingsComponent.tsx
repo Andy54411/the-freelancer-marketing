@@ -184,6 +184,7 @@ export interface UserDataForSettings {
   radiusKm: number | null;
   selectedCategory: string | null;
   selectedSubcategory: string | null;
+  profileBannerImage: string | null;
   profilePictureFile: File | null;
   businessLicenseFile: File | null;
   masterCraftsmanCertificateFile: File | null;
@@ -373,6 +374,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         radiusKm: get('radiusKm', 30),
         selectedCategory: get('selectedCategory', get('step2.industry', null)), // Erlaube null
         selectedSubcategory: get('selectedSubcategory', null), // Erlaube null
+        profileBannerImage: get('profileBannerImage', null),
         stripeAccountId: get('stripeAccountId', null),
         profilePictureFile: null,
         businessLicenseFile: null,

@@ -26,8 +26,10 @@ export interface LogoFormProps {
 
 const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [projectImages, setProjectImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [progress, setProgress] = useState<number>(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
@@ -42,6 +44,13 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
     setFileUrl(profileUrl);
     console.log('🖼️ Logo Form - Profile URL updated:', profileUrl);
   }, [formData?.step3?.profilePictureURL]);
+
+  // Update bannerUrl when formData changes
+  useEffect(() => {
+    const bannerImageUrl = formData?.profileBannerImage || null;
+    setBannerUrl(bannerImageUrl);
+    console.log('🎨 Logo Form - Banner URL updated:', bannerImageUrl);
+  }, [formData?.profileBannerImage]);
 
   useEffect(() => {
     if (!uid) return;
@@ -122,6 +131,66 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
         errorMessage = `Fehler beim Hochladen des Logos: ${err.message}`;
       }
       setUploadError(errorMessage);
+    }
+  };
+
+  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !uid) return;
+
+    console.log('🎯 Banner-Upload gestartet (Settings):', {
+      fileName: file.name,
+      fileSize: file.size,
+    });
+
+    setUploadError(null);
+    setUploadSuccess(false);
+    setUploadingBanner(true);
+
+    const storageInstance = getStorage();
+
+    try {
+      // Verwende companies/ Pfad für Banner-Bilder
+      const fileRef = ref(storageInstance, `companies/${uid}/banner.jpg`);
+      console.log('📤 Uploading Banner to:', `companies/${uid}/banner.jpg`);
+
+      const uploadTask = uploadBytesResumable(fileRef, file);
+
+      await uploadTask;
+      const url = await getDownloadURL(fileRef);
+
+      console.log('✅ Banner-Upload erfolgreich (Settings):', url);
+
+      // KRITISCHE KORREKTUR: Prüfe user_type und schreibe in richtige Collection
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userData = userDoc.data();
+      const userType = userData?.user_type;
+
+      if (userType === 'firma') {
+        // Für Firmen: Schreibe Banner in companies collection
+        await updateDoc(doc(db, 'companies', uid), {
+          profileBannerImage: url,
+        });
+        console.log('💾 Banner URL in companies collection gespeichert:', url);
+      } else {
+        console.warn('Banner-Upload ist nur für Firmen verfügbar');
+        setUploadError('Banner-Upload ist nur für Firmen verfügbar');
+        return;
+      }
+
+      setBannerUrl(url);
+      handleChange('profileBannerImage', url);
+      window.dispatchEvent(new CustomEvent('bannerImageUpdated', { detail: url }));
+      setUploadSuccess(true);
+    } catch (err: unknown) {
+      let errorMessage = 'Fehler beim Hochladen des Banners.';
+      if (err instanceof Error) {
+        errorMessage = `Fehler beim Hochladen des Banners: ${err.message}`;
+      }
+      console.error('❌ Banner-Upload Fehler (Settings):', err);
+      setUploadError(errorMessage);
+    } finally {
+      setUploadingBanner(false);
     }
   };
 
@@ -283,6 +352,38 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
         {fileUrl && (
           <div className="mt-4">
             <img src={fileUrl} alt="Logo Preview" className="max-w-xs max-h-32 object-contain" />
+          </div>
+        )}
+      </div>
+
+      {/* Banner-Upload Sektion */}
+      <div>
+        <Label
+          htmlFor="banner-upload"
+          className="block mb-2 font-medium text-gray-900 dark:text-gray-200"
+        >
+          Banner-Bild hochladen
+        </Label>
+        <Input
+          id="banner-upload"
+          type="file"
+          accept="image/*"
+          onChange={handleBannerUpload}
+          disabled={uploadingBanner}
+          className="w-full p-2 border rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+        />
+        {uploadingBanner && (
+          <div className="mt-2 text-[#14ad9f] text-sm flex items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f]"></div>
+            Banner wird hochgeladen...
+          </div>
+        )}
+        {bannerUrl && !uploadingBanner && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Banner-Vorschau:</p>
+            <div className="relative w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+              <img src={bannerUrl} alt="Banner Preview" className="w-full h-full object-cover" />
+            </div>
           </div>
         )}
       </div>
