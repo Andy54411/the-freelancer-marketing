@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, admin } from '@/firebase/server';
+import { ProposalSubcollectionService } from '@/services/ProposalSubcollectionService';
 import Stripe from 'stripe';
 
 // Stripe Initialisierung
@@ -35,7 +36,6 @@ export async function POST(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
@@ -60,7 +60,6 @@ export async function POST(
     // Debug logging
 
     if (!proposalId || !amount) {
-
       return NextResponse.json(
         { error: 'Proposal ID und Betrag sind erforderlich' },
         { status: 400 }
@@ -73,24 +72,23 @@ export async function POST(
       return NextResponse.json({ error: 'Stripe nicht verfügbar' }, { status: 500 });
     }
 
-    // Get the project request to verify access and get details
-    const projectRef = db.collection('project_requests').doc(quoteId);
+    // Get the quote to verify access and get details
+    const projectRef = db.collection('quotes').doc(quoteId);
     const projectDoc = await projectRef.get();
 
     if (!projectDoc.exists) {
-      return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 });
+      return NextResponse.json({ error: 'Quote nicht gefunden' }, { status: 404 });
     }
 
     const projectData = projectDoc.data();
 
-    // Check if user owns this project
+    // Check if user owns this quote
     if (projectData?.customerUid !== uid) {
-      return NextResponse.json({ error: 'Keine Berechtigung für dieses Projekt' }, { status: 403 });
+      return NextResponse.json({ error: 'Keine Berechtigung für diese Quote' }, { status: 403 });
     }
 
-    // Find the proposal
-    const proposals = projectData?.proposals || [];
-    const proposal = proposals.find((p: any) => p.companyUid === proposalId);
+    // Find the proposal using subcollection
+    const proposal = await ProposalSubcollectionService.getProposal(quoteId, proposalId);
 
     if (!proposal) {
       return NextResponse.json({ error: 'Angebot nicht gefunden' }, { status: 404 });
@@ -121,7 +119,6 @@ export async function POST(
 
     // Final validation with database-fetched Stripe Account ID
     if (!proposalId || !amount || !finalCompanyStripeAccountId) {
-
       return NextResponse.json(
         { error: 'Proposal ID, Betrag und Stripe Account ID sind erforderlich' },
         { status: 400 }
@@ -177,38 +174,25 @@ export async function POST(
       },
     });
 
-    // Update quote status to payment_pending
-    const proposalArray = Array.isArray(proposals) ? proposals : Object.values(proposals);
-    const updateProposalIndex = proposalArray.findIndex((p: any) => p.companyUid === proposalId);
+    // Update proposal status to payment_pending using subcollection
+    // Note: We need to use a custom status for payment_pending since service only accepts 'accepted'/'declined'
+    const proposalRef = db
+      .collection('quotes')
+      .doc(quoteId)
+      .collection('proposals')
+      .doc(proposalId);
+    await proposalRef.update({
+      status: 'payment_pending',
+      paymentIntentId: paymentIntent.id,
+      paymentPendingAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
 
-    if (updateProposalIndex !== -1) {
-      await projectRef.update({
-        [`proposals.${updateProposalIndex}.status`]: 'payment_pending',
-        [`proposals.${updateProposalIndex}.paymentIntentId`]: paymentIntent.id,
-        [`proposals.${updateProposalIndex}.paymentPendingAt`]: new Date().toISOString(),
-        status: 'payment_pending',
-        updatedAt: new Date().toISOString(),
-      });
-    } else {
-      // Fallback: Update the whole proposals array
-      const updatedProposals = proposalArray.map((p: any) => {
-        if (p.companyUid === proposalId) {
-          return {
-            ...p,
-            status: 'payment_pending',
-            paymentIntentId: paymentIntent.id,
-            paymentPendingAt: new Date().toISOString(),
-          };
-        }
-        return p;
-      });
-
-      await projectRef.update({
-        proposals: updatedProposals,
-        status: 'payment_pending',
-        updatedAt: new Date().toISOString(),
-      });
-    }
+    // Update quote status
+    await projectRef.update({
+      status: 'payment_pending',
+      updatedAt: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
@@ -221,7 +205,6 @@ export async function POST(
       },
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Erstellen der Quote-Zahlung' }, { status: 500 });
   }
 }
@@ -240,7 +223,6 @@ export async function PATCH(
     // Auth-Check
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-
       return NextResponse.json({ error: 'Authentifizierung erforderlich' }, { status: 401 });
     }
 
@@ -248,15 +230,12 @@ export async function PATCH(
     let decodedToken;
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-
     } catch (authError) {
-
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
     // Check if user is authorized
     if (decodedToken.uid !== uid) {
-
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
@@ -265,7 +244,6 @@ export async function PATCH(
     const { paymentIntentId, proposalId } = body;
 
     if (!paymentIntentId || !proposalId) {
-
       return NextResponse.json(
         { error: 'Payment Intent ID und Proposal ID sind erforderlich' },
         { status: 400 }
@@ -304,83 +282,35 @@ export async function PATCH(
     }
 
     // Find the proposal - handle both Array and Object structures
-    const proposals = projectData?.proposals || [];
+    // Get proposal from subcollection
+    const proposal = await ProposalSubcollectionService.getProposal(quoteId, proposalId);
 
-    let proposalIndex = -1;
-    let proposal: any = null;
-
-    if (Array.isArray(proposals)) {
-      // Normal Array structure
-      proposalIndex = proposals.findIndex((p: any) => p.companyUid === proposalId);
-      if (proposalIndex !== -1) {
-        proposal = proposals[proposalIndex];
-      }
-    } else if (typeof proposals === 'object' && proposals !== null) {
-      // Object structure - corrupted by Firebase
-
-      // Try to find by object key matching proposalId
-      const objectKeys = Object.keys(proposals);
-
-      // First, try to find if proposalId is a direct key
-      if (proposals[proposalId]) {
-
-        proposal = { ...proposals[proposalId], companyUid: proposalId };
-        proposalIndex = 0; // Set to 0 for object structure
-      } else {
-        // Convert to array and search for any proposal that might match
-        const proposalArray = Object.values(proposals);
-        for (let i = 0; i < proposalArray.length; i++) {
-          const p = proposalArray[i] as any;
-          if (
-            p.companyUid === proposalId ||
-            p.paymentIntentId === paymentIntentId ||
-            (p.status === 'payment_pending' && objectKeys.length === 1)
-          ) {
-
-            proposal = p;
-            proposalIndex = i;
-            break;
-          }
-        }
-      }
-
-      // If still not found, try to reconstruct from payment intent
-      if (!proposal && paymentIntentId) {
-
-        // Extract amount from PaymentIntent (convert from cents to euros)
-        const paymentAmountEuros = paymentIntent.amount / 100;
-
-        // We'll reconstruct the proposal data from what we know
-        proposal = {
-          companyUid: proposalId,
-          status: 'payment_pending',
-          paymentIntentId: paymentIntentId,
-          // Get the actual amount from PaymentIntent
-          totalAmount: paymentAmountEuros,
-          price: paymentAmountEuros,
-          currency: paymentIntent.currency.toUpperCase(),
-          companyName: paymentIntent.metadata?.company_name || 'Unknown Company',
-          timeline: '',
-          description: paymentIntent.description || '',
-        };
-        proposalIndex = 0;
-
-      }
-    }
-
-    if (proposalIndex === -1 || !proposal) {
-
+    if (!proposal) {
       return NextResponse.json({ error: 'Angebot nicht gefunden' }, { status: 404 });
     }
 
     const acceptedProposal = proposal;
 
     // Ensure we have a valid amount - fallback to PaymentIntent amount if proposal amount is missing
-    const finalAmount =
-      acceptedProposal.totalAmount || acceptedProposal.price || paymentIntent.amount / 100;
+    const finalAmount = acceptedProposal.totalAmount || paymentIntent.amount / 100;
 
     // Generate unique order ID
     const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Get provider information for the order
+    let providerName = 'Unbekannter Anbieter';
+    let providerStripeAccountId = '';
+
+    try {
+      const providerDoc = await db.collection('users').doc(acceptedProposal.companyUid).get();
+      if (providerDoc.exists) {
+        const providerData = providerDoc.data();
+        providerName = providerData?.companyName || providerName;
+        providerStripeAccountId = providerData?.stripeAccountId || '';
+      }
+    } catch (error) {
+      console.error('Error fetching provider data:', error);
+    }
 
     // Create order in auftraege collection
     const orderData = {
@@ -388,24 +318,24 @@ export async function PATCH(
       id: orderId,
 
       // Customer info
-      customerFirebaseUid: projectData.customerUid,
+      customerFirebaseUid: projectData?.customerUid,
       customerEmail: decodedToken.email || '',
-      customerFirstName: projectData.customerName?.split(' ')[0] || '',
-      customerLastName: projectData.customerName?.split(' ').slice(1).join(' ') || '',
+      customerFirstName: projectData?.customerName?.split(' ')[0] || '',
+      customerLastName: projectData?.customerName?.split(' ').slice(1).join(' ') || '',
       customerType: 'private', // TODO: Detect from project data
-      kundeId: projectData.customerUid,
+      kundeId: projectData?.customerUid,
 
       // Provider info
       selectedAnbieterId: acceptedProposal.companyUid || '',
-      providerName: acceptedProposal.companyName || '',
-      anbieterStripeAccountId: acceptedProposal.companyStripeAccountId || '',
+      providerName: providerName,
+      anbieterStripeAccountId: providerStripeAccountId,
 
       // Project info
-      selectedCategory: projectData.category || projectData.serviceCategory || '',
-      selectedSubcategory: projectData.subcategory || projectData.serviceSubcategory || '',
-      projectName: projectData.title || '',
-      projectTitle: projectData.title || '',
-      description: projectData.description || '',
+      selectedCategory: projectData?.category || projectData?.serviceCategory || '',
+      selectedSubcategory: projectData?.subcategory || projectData?.serviceSubcategory || '',
+      projectName: projectData?.title || '',
+      projectTitle: projectData?.title || '',
+      description: projectData?.description || '',
 
       // Payment info
       totalAmountPaidByBuyer: finalAmount * 100, // Convert to cents
@@ -459,62 +389,16 @@ export async function PATCH(
     // Save order to auftraege collection
     await db.collection('auftraege').doc(orderId).set(orderData);
 
-    // Update quote status to accepted and paid
-    const originalProposals = projectData?.proposals || [];
-    let updatedProposals;
+    // Update proposal to accepted and paid using subcollection
+    await ProposalSubcollectionService.updateProposalStatus(quoteId, proposalId, 'accepted', {
+      acceptedAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
+      paymentIntentId: paymentIntentId,
+      orderId: orderId,
+    });
 
-    if (Array.isArray(originalProposals)) {
-      // Normal Array structure
-      updatedProposals = [...originalProposals];
-      updatedProposals.forEach((proposal, index) => {
-        if (index === proposalIndex) {
-          proposal.status = 'accepted';
-          proposal.acceptedAt = new Date().toISOString();
-          proposal.paidAt = new Date().toISOString();
-          proposal.paymentIntentId = paymentIntentId;
-          proposal.orderId = orderId;
-        } else if (proposal.status === 'pending') {
-          proposal.status = 'declined';
-          proposal.declinedAt = new Date().toISOString();
-          proposal.declineReason = 'Ein anderes Angebot wurde angenommen und bezahlt';
-        }
-      });
-    } else {
-      // Object structure - update the accepted proposal
-      updatedProposals = { ...originalProposals };
-
-      // Find and update the accepted proposal
-      const objectKeys = Object.keys(updatedProposals);
-      objectKeys.forEach(key => {
-        const prop = updatedProposals[key];
-        if (
-          prop.companyUid === proposalId ||
-          prop.paymentIntentId === paymentIntentId ||
-          (prop.status === 'payment_pending' && objectKeys.length === 1)
-        ) {
-          // This is the accepted proposal
-          updatedProposals[key] = {
-            ...prop,
-            status: 'accepted',
-            acceptedAt: new Date().toISOString(),
-            paidAt: new Date().toISOString(),
-            paymentIntentId: paymentIntentId,
-            orderId: orderId,
-            companyUid: proposalId, // Ensure this is set
-          };
-        } else if (prop.status === 'pending') {
-          updatedProposals[key] = {
-            ...prop,
-            status: 'declined',
-            declinedAt: new Date().toISOString(),
-            declineReason: 'Ein anderes Angebot wurde angenommen und bezahlt',
-          };
-        }
-      });
-    }
-
+    // Update quote status
     await projectRef.update({
-      proposals: updatedProposals,
       status: 'accepted',
       acceptedProposal: proposalId,
       acceptedAt: new Date().toISOString(),
@@ -533,7 +417,7 @@ export async function PATCH(
       paymentIntentId: paymentIntentId,
     });
   } catch (error) {
-
+    console.error('Payment processing error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten der Quote-Zahlung' },
       { status: 500 }

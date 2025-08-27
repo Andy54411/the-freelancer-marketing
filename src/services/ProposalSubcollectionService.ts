@@ -24,6 +24,10 @@ export interface ProposalData {
   additionalNotes?: string;
   status: 'pending' | 'accepted' | 'declined' | 'expired';
   submittedAt: string;
+  acceptedAt?: string; // For when proposal is accepted
+  paidAt?: string; // For when payment is completed
+  paymentIntentId?: string; // Stripe payment intent ID
+  orderId?: string; // Related order ID
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
