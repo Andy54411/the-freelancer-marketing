@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   FileText,
   Calendar,
@@ -116,6 +117,7 @@ export default function RequestQuoteModal({
   customerInfo,
   onSubmit,
 }: RequestQuoteModalProps) {
+  const { firebaseUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'contact' | 'review' | 'success'>('details');
 
@@ -183,10 +185,25 @@ export default function RequestQuoteModal({
       if (onSubmit) {
         await onSubmit(formData);
       } else {
-        // Fallback: Standard-Anfrage über API
+        // Fallback: Standard-Anfrage über API with Auth token
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+        // Add auth token if user is logged in
+        if (firebaseUser) {
+          try {
+            const token = await firebaseUser.getIdToken();
+            headers['Authorization'] = `Bearer ${token}`;
+            console.log('🔐 Sending quote request with auth token for user:', firebaseUser.uid);
+          } catch (error) {
+            console.error('Error getting auth token:', error);
+          }
+        } else {
+          console.log('📝 Sending quote request without auth (anonymous)');
+        }
+
         const response = await fetch('/api/quotes/create', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             providerId: provider.id,
             quoteData: formData,
@@ -199,7 +216,7 @@ export default function RequestQuoteModal({
       setStep('success');
       toast.success('Angebot erfolgreich angefragt!');
     } catch (error) {
-
+      console.error('Error submitting quote request:', error);
       toast.error('Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.');
     } finally {
       setLoading(false);

@@ -59,168 +59,171 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    // Query for project requests
+    // Query for incoming quotes
 
-    // Get ALL project requests first, then filter in memory
-    // This avoids Firestore index issues and gives us more flexibility
-    let projectRequestsSnapshot;
+    // Get quotes specifically directed to this provider/company
+    let quotesSnapshot;
     try {
-      // Get all active project requests
-      projectRequestsSnapshot = await db
-        .collection('project_requests')
-        .where('status', 'in', ['open', 'responded', 'accepted', 'active', 'payment_pending'])
-        .get();
+      // Get quotes where this company is the providerId
+      quotesSnapshot = await db.collection('quotes').where('providerId', '==', uid).get();
     } catch (error) {
-      // Ultra-simple fallback - get all project_requests
-      projectRequestsSnapshot = await db.collection('project_requests').get();
+      console.error('Error fetching quotes:', error);
+      // Ultra-simple fallback - get all quotes and filter in memory
+      quotesSnapshot = await db.collection('quotes').get();
     }
 
     const quotes: any[] = [];
 
-    for (const doc of projectRequestsSnapshot.docs) {
-      const projectData = doc.data();
+    for (const doc of quotesSnapshot.docs) {
+      const quoteData = doc.data();
 
-      // Check if this request is relevant for this company
-      let isRelevantForCompany = false;
-
-      // Case 1: Direct assignment - company is specifically selected
-      if (
-        projectData.selectedProviders &&
-        Array.isArray(projectData.selectedProviders) &&
-        projectData.selectedProviders.length > 0
-      ) {
-        const isDirectlySelected = projectData.selectedProviders.some(
-          (provider: any) =>
-            provider.uid === uid || provider.companyUid === uid || provider.id === uid
-        );
-        if (isDirectlySelected) {
-          isRelevantForCompany = true;
-        } else {
-        }
-      }
-      // Case 2: Public request - no specific companies selected, match by subcategory
-      else {
-        const projectSubcategory = projectData.serviceSubcategory || projectData.subcategory;
-        const subcategoryMatches = projectSubcategory === selectedSubcategory;
-
-        if (subcategoryMatches) {
-          isRelevantForCompany = true;
-        } else {
-        }
-      }
-
-      // Skip if not relevant for this company
-      if (!isRelevantForCompany) {
+      // Skip if not for this provider (in case of fallback query)
+      if (quoteData.providerId !== uid) {
         continue;
       }
 
-      // Get customer information based on customerUid
+      // Get customer information
       let customerInfo: any = null;
 
-      if (projectData.customerUid) {
+      // If we have customerUid, get full customer data
+      if (quoteData.customerUid) {
         try {
           // First try to get from users collection
-          const userDoc = await db.collection('users').doc(projectData.customerUid).get();
+          const userDoc = await db.collection('users').doc(quoteData.customerUid).get();
 
           if (userDoc.exists) {
             const userData = userDoc.data();
             if (userData) {
-              // Check if this user is a company by checking companies collection
-              const companyDoc = await db.collection('companies').doc(userDoc.id).get();
-              const isCompany = companyDoc.exists;
+              // Use customerType from quote data directly
+              const customerType = quoteData.customerType || 'user';
 
               customerInfo = {
                 name:
                   userData.companyName ||
                   userData.firstName + ' ' + userData.lastName ||
+                  quoteData.customerName ||
                   'Unbekannter Kunde',
-                type: isCompany ? 'company' : 'user',
+                type: customerType,
                 email: userData.email,
                 phone: userData.phone,
-                avatar: userData.avatar || null,
+                avatar:
+                  userData.step3?.profilePictureURL ||
+                  userData.avatar ||
+                  userData.profilePictureURL ||
+                  null,
                 uid: userDoc.id,
               };
             }
-          } else {
-            // Customer not found in users collection
           }
-        } catch (error) {}
-      }
-
-      // Check if this company has already submitted a proposal
-      const hasResponse =
-        projectData.proposals &&
-        projectData.proposals.some(proposal => proposal.companyUid === uid);
-
-      // Determine status based on proposals
-      let finalStatus = 'pending';
-      if (hasResponse) {
-        const companyProposal = projectData.proposals.find(p => p.companyUid === uid);
-        if (companyProposal?.status === 'accepted') {
-          finalStatus = 'accepted';
-        } else if (companyProposal?.status === 'declined') {
-          finalStatus = 'declined';
-        } else {
-          finalStatus = 'responded';
+        } catch (error) {
+          console.error('Error fetching customer info:', error);
         }
       }
 
-      // Build budget information
-      let budgetInfo: any = null;
-      let budgetRangeText = 'Nicht angegeben';
+      // If no customerUid or customer not found, try to find customer by email
+      if (!customerInfo && quoteData.customerEmail) {
+        try {
+          const usersSnapshot = await db
+            .collection('users')
+            .where('email', '==', quoteData.customerEmail)
+            .get();
 
-      if (projectData.budgetAmount && projectData.budgetAmount > 0) {
-        budgetInfo = {
-          amount: projectData.budgetAmount,
-          max: projectData.maxBudget || projectData.budgetAmount,
-          currency: 'EUR',
-          type: projectData.budgetType || 'project',
-        };
+          if (!usersSnapshot.empty) {
+            const userDoc = usersSnapshot.docs[0];
+            const userData = userDoc.data();
 
-        if (projectData.maxBudget && projectData.maxBudget !== projectData.budgetAmount) {
-          budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} - ${projectData.maxBudget.toLocaleString('de-DE')} €`;
-        } else {
-          budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} €`;
+            if (userData) {
+              // Use customerType from quote data directly
+              const customerType = quoteData.customerType || 'user';
+
+              customerInfo = {
+                name:
+                  userData.companyName ||
+                  userData.firstName + ' ' + userData.lastName ||
+                  quoteData.customerName ||
+                  'Unbekannter Kunde',
+                type: customerType,
+                email: userData.email,
+                phone: userData.phone || quoteData.customerPhone,
+                avatar:
+                  userData.step3?.profilePictureURL ||
+                  userData.avatar ||
+                  userData.profilePictureURL ||
+                  null,
+                uid: userDoc.id,
+              };
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching customer by email:', error);
         }
-      } else if (projectData.budget) {
-        // Fallback to old budget structure
-        budgetInfo = projectData.budget;
-        budgetRangeText = projectData.budget;
       }
 
-      quotes.push({
-        id: doc.id,
-        title: projectData.title || 'Ohne Titel',
-        description: projectData.description || '',
-        serviceCategory: projectData.serviceCategory || '',
-        serviceSubcategory: projectData.serviceSubcategory || '',
-        projectType: projectData.projectType || 'project',
-        status: finalStatus,
-        budget: budgetInfo,
-        budgetRange: budgetRangeText,
-        timeline: projectData.timeline,
-        startDate: projectData.startDate,
-        endDate: projectData.endDate,
-        location: projectData.location,
-        postalCode: projectData.postalCode,
-        urgency: projectData.urgency,
-        estimatedDuration: projectData.estimatedDuration,
-        preferredStartDate: projectData.preferredStartDate,
-        additionalNotes: projectData.additionalNotes,
-        customer: customerInfo || {
-          name: projectData.customerName || 'Unbekannter Kunde',
-          type: projectData.customerType || 'user',
-          email: projectData.customerEmail || null,
-          phone: null,
+      // If no customerUid or customer not found, use the basic info from quote
+      if (!customerInfo) {
+        customerInfo = {
+          name: quoteData.customerName || 'Unbekannter Kunde',
+          type: quoteData.customerType || 'user', // Use customerType from quote data
+          email: quoteData.customerEmail || '',
+          phone: quoteData.customerPhone || '',
           avatar: null,
-          uid: projectData.customerUid,
-        },
-        createdAt: projectData.createdAt?.toDate?.() || new Date(projectData.createdAt),
+          uid: quoteData.customerUid || null,
+        };
+      }
+
+      // Check if this company has already submitted a response/proposal
+      let hasResponse = false;
+      let responseData: any = null;
+
+      try {
+        // Check for existing proposals/responses for this quote
+        const proposalsSnapshot = await db
+          .collection('proposals')
+          .where('quoteId', '==', doc.id)
+          .where('providerId', '==', uid)
+          .get();
+
+        if (!proposalsSnapshot.empty) {
+          hasResponse = true;
+          responseData = proposalsSnapshot.docs[0].data();
+        }
+      } catch (error) {
+        console.error('Error checking proposals:', error);
+      }
+
+      // Determine actual status based on response and payment
+      let actualStatus = quoteData.status || 'pending';
+
+      if (hasResponse && actualStatus === 'pending') {
+        actualStatus = 'responded';
+      }
+
+      // Build the quote object
+      const quote = {
+        id: doc.id,
+        title: quoteData.projectTitle || quoteData.title || 'Kein Titel',
+        description: quoteData.projectDescription || quoteData.description || '',
+        serviceCategory: quoteData.projectCategory || quoteData.serviceCategory || '',
+        serviceSubcategory: quoteData.projectSubcategory || quoteData.serviceSubcategory || '',
+        projectType: 'fixed_price', // Default for quotes
+        status: actualStatus,
+        budget: quoteData.budgetRange ? { budgetRange: quoteData.budgetRange } : undefined,
+        budgetRange: quoteData.budgetRange || 'Nicht angegeben',
+        deadline: quoteData.preferredStartDate || quoteData.deadline,
+        location: quoteData.location || '',
+        urgency: quoteData.urgency || 'normal',
+        estimatedDuration: quoteData.estimatedDuration || '',
         hasResponse: hasResponse,
-        proposals: projectData.proposals || [],
-        customerUid: projectData.customerUid,
-        customerCompanyUid: projectData.customerCompanyUid,
-      });
+        response: responseData,
+        customer: customerInfo,
+        customerType: customerInfo.type,
+        customerUid: customerInfo.uid,
+        createdAt: quoteData.createdAt?.toDate
+          ? quoteData.createdAt.toDate()
+          : new Date(quoteData.createdAt || Date.now()),
+      };
+
+      quotes.push(quote);
     }
 
     return NextResponse.json({

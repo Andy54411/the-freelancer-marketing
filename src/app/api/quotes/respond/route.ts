@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { QuoteNotificationService } from '@/lib/quote-notifications';
+import { ProposalSubcollectionService } from '@/services/ProposalSubcollectionService';
 import admin from 'firebase-admin';
 
 /**
@@ -20,7 +21,6 @@ export async function POST(request: NextRequest) {
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Quote ID und Aktion sind erforderlich' }, { status: 400 });
     }
 
-    const quoteRef = db.collection('project_requests').doc(quoteId);
+    // Get quote from quotes collection
+    const quoteRef = db.collection('quotes').doc(quoteId);
     const quoteDoc = await quoteRef.get();
 
     if (!quoteDoc.exists) {
@@ -44,24 +45,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Angebotsanfrage-Daten nicht verfügbar' }, { status: 404 });
     }
 
-    // Berechtigungs-Check: Company muss in der assignedCompanies Liste sein oder es ist eine offene Anfrage
-    // TODO: Prüfen welches Feld für die Berechtigung verwendet wird
-    if (quoteData?.assignedCompanies && !quoteData.assignedCompanies.includes(decodedToken.uid)) {
+    // Check providerId authorization
+    if (quoteData?.providerId !== decodedToken.uid) {
       return NextResponse.json(
         {
           error: 'Keine Berechtigung für diese Angebotsanfrage',
           debug: {
             userUid: decodedToken.uid,
-            assignedCompanies: quoteData.assignedCompanies,
+            providerId: quoteData.providerId,
           },
         },
         { status: 403 }
       );
     }
-
-    const updateData: any = {
-      updatedAt: new Date().toISOString(),
-    };
 
     switch (action) {
       case 'respond':
@@ -72,19 +68,21 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Check if company has already submitted a proposal
-        const existingProposals = quoteData.proposals || [];
-        const existingProposal = existingProposals.find(p => p.companyUid === decodedToken.uid);
+        // Check if company has already submitted a proposal using subcollection
+        const hasExistingProposal = await ProposalSubcollectionService.hasExistingProposal(
+          quoteId,
+          decodedToken.uid
+        );
 
-        if (existingProposal) {
+        if (hasExistingProposal) {
           return NextResponse.json(
             { error: 'Sie haben bereits ein Angebot für dieses Projekt abgegeben' },
             { status: 400 }
           );
         }
 
-        // Create new proposal
-        const newProposal = {
+        // Create new proposal data
+        const newProposalData = {
           companyUid: decodedToken.uid,
           message: response.message,
           serviceItems: response.serviceItems || [],
@@ -93,15 +91,12 @@ export async function POST(request: NextRequest) {
           timeline: response.timeline || '',
           terms: response.terms || '',
           additionalNotes: response.additionalNotes || '',
-          status: 'pending',
+          status: 'pending' as const,
           submittedAt: new Date().toISOString(),
         };
 
-        // Add proposal to the proposals array
-        const updatedProposals = [...existingProposals, newProposal];
-
-        updateData.status = 'responded';
-        updateData.proposals = updatedProposals;
+        // Create proposal in subcollection
+        await ProposalSubcollectionService.createProposal(quoteId, newProposalData);
 
         // Bell-Notification an Kunden senden (Provider hat geantwortet)
         if (quoteData?.customerUid) {
@@ -121,14 +116,13 @@ export async function POST(request: NextRequest) {
               {
                 providerName: providerName,
                 subcategory: quoteData.serviceSubcategory || quoteData.projectTitle || 'Service',
-                estimatedPrice: response.totalAmount || 0,
-                estimatedDuration: response.timeline || 'Nicht angegeben',
+                estimatedPrice: newProposalData.totalAmount || 0,
+                estimatedDuration: newProposalData.timeline || 'Nicht angegeben',
               }
             );
 
             // Email Notification an Customer
             try {
-
               // Customer Email aus User-Daten holen
               const userDoc = await db.collection('users').doc(quoteData.customerUid).get();
 
@@ -137,7 +131,6 @@ export async function POST(request: NextRequest) {
                 const customerEmail = userData?.email;
 
                 if (customerEmail) {
-
                   // Import Email Service
                   const { emailService } = await import('@/lib/resend-email-service');
 
@@ -149,62 +142,38 @@ export async function POST(request: NextRequest) {
                   );
 
                   if (emailResult.success) {
-
                   } else {
-
                   }
                 } else {
-
                 }
               } else {
-
               }
-            } catch (emailError) {
-
-            }
+            } catch (emailError) {}
           } catch (notificationError) {
-
             // Notification-Fehler sollten den Response nicht blockieren
           }
         }
         break;
 
       case 'accept':
-        updateData.status = 'accepted';
-        updateData.acceptedAt = new Date().toISOString();
+        await ProposalSubcollectionService.updateProposalStatus(
+          quoteId,
+          decodedToken.uid,
+          'accepted'
+        );
         break;
 
       case 'decline':
-        updateData.status = 'declined';
-        updateData.declinedAt = new Date().toISOString();
-
-        // Finde und aktualisiere das entsprechende Proposal im proposals Array
-        const existingProposalsForDecline = quoteData?.proposals || [];
-        const updatedProposalsForDecline = existingProposalsForDecline.map((proposal: any) => {
-          // Finde das Proposal von der aktuellen Company
-          if (
-            proposal.providerId === decodedToken.uid ||
-            proposal.companyId === decodedToken.uid ||
-            proposal.companyUid === decodedToken.uid
-          ) {
-            return {
-              ...proposal,
-              status: 'declined',
-              declinedAt: new Date().toISOString(),
-            };
-          }
-          return proposal;
-        });
-
-        updateData.proposals = updatedProposalsForDecline;
+        await ProposalSubcollectionService.updateProposalStatus(
+          quoteId,
+          decodedToken.uid,
+          'declined'
+        );
         break;
 
       default:
         return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
     }
-
-    // Update in Firestore
-    await quoteRef.update(updateData);
 
     // Erfolgsmeldung zurückgeben
     return NextResponse.json({
@@ -214,7 +183,6 @@ export async function POST(request: NextRequest) {
       }`,
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Bearbeiten der Angebotsanfrage' },
       { status: 500 }

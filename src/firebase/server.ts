@@ -6,16 +6,6 @@ import { readFileSync } from 'fs';
 
 if (!admin.apps.length) {
   try {
-    // WICHTIG: Entferne GOOGLE_APPLICATION_CREDENTIALS sofort, um zu verhindern,
-    // dass Firebase es automatisch als Dateipfad interpretiert
-    const originalGoogleAppCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (originalGoogleAppCredentials) {
-      delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
-      console.log(
-        'GOOGLE_APPLICATION_CREDENTIALS temporär entfernt für manuelle Credential-Behandlung'
-      );
-    }
-
     const options: AppOptions = {
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f',
       storageBucket: 'tilvo-f142f.firebasestorage.app',
@@ -24,53 +14,72 @@ if (!admin.apps.length) {
         'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     };
 
-    // VERCEL OPTIMIERTE CREDENTIAL HANDLING
     let credentialSet = false;
 
-    // 1. Priorität: FIREBASE_SERVICE_ACCOUNT_KEY (für Vercel)
+    // 1. Priorität: FIREBASE_SERVICE_ACCOUNT_KEY (für Vercel Production)
     const firebaseServiceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
     if (firebaseServiceAccountKey && !credentialSet) {
       try {
+        console.log('Verwende FIREBASE_SERVICE_ACCOUNT_KEY für Credentials...');
         const serviceAccount = JSON.parse(firebaseServiceAccountKey);
         options.credential = admin.credential.cert(serviceAccount);
         credentialSet = true;
+        console.log('✅ Firebase Credentials erfolgreich aus FIREBASE_SERVICE_ACCOUNT_KEY geladen');
       } catch (jsonError: any) {
         console.error('Fehler beim Parsen von FIREBASE_SERVICE_ACCOUNT_KEY:', jsonError.message);
       }
     }
 
-    // 2. Fallback: Verwende die ursprünglich gespeicherte GOOGLE_APPLICATION_CREDENTIALS als JSON-String ODER Dateipfad
-    if (originalGoogleAppCredentials && !credentialSet) {
+    // 2. Fallback: Lokale Service Account Datei (für Development)
+    if (!credentialSet) {
+      try {
+        console.log('Versuche Service Account Datei zu verwenden...');
+        const serviceAccountPath = './firebase_functions/service-account.json';
+        const serviceAccountJson = readFileSync(serviceAccountPath, 'utf8');
+        const serviceAccount = JSON.parse(serviceAccountJson);
+        options.credential = admin.credential.cert(serviceAccount);
+        credentialSet = true;
+        console.log(
+          '✅ Firebase Credentials erfolgreich aus lokaler Datei geladen:',
+          serviceAccountPath
+        );
+      } catch (fileError: any) {
+        console.error('Fehler beim Laden der Service Account Datei:', fileError.message);
+      }
+    }
+
+    // 3. Fallback: GOOGLE_APPLICATION_CREDENTIALS
+    const googleAppCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (googleAppCredentials && !credentialSet) {
       try {
         console.log('Versuche GOOGLE_APPLICATION_CREDENTIALS zu verwenden...');
         // Prüfe ob es ein Dateipfad ist (beginnt mit / oder enthält .json)
-        if (
-          originalGoogleAppCredentials.startsWith('/') ||
-          originalGoogleAppCredentials.includes('.json')
-        ) {
-          console.log('Verwende Credential-Datei:', originalGoogleAppCredentials);
-          // Lade JSON aus Datei
-          const serviceAccountJson = readFileSync(originalGoogleAppCredentials, 'utf8');
+        if (googleAppCredentials.startsWith('/') || googleAppCredentials.includes('.json')) {
+          console.log('Verwende Credential-Datei:', googleAppCredentials);
+          const serviceAccountJson = readFileSync(googleAppCredentials, 'utf8');
           const serviceAccount = JSON.parse(serviceAccountJson);
           options.credential = admin.credential.cert(serviceAccount);
           credentialSet = true;
         } else {
-          // Behandle als JSON-String (für Vercel)
+          // Behandle als JSON-String
           console.log('Verwende Credential-JSON-String...');
-          const cleanedJson = originalGoogleAppCredentials.replace(/\\n/g, '\n');
+          const cleanedJson = googleAppCredentials.replace(/\\n/g, '\n');
           const serviceAccount = JSON.parse(cleanedJson);
           options.credential = admin.credential.cert(serviceAccount);
           credentialSet = true;
         }
+        console.log(
+          '✅ Firebase Credentials erfolgreich aus GOOGLE_APPLICATION_CREDENTIALS geladen'
+        );
       } catch (jsonError: any) {
         console.error('Fehler beim Parsen von GOOGLE_APPLICATION_CREDENTIALS:', jsonError.message);
       }
     }
 
-    // WICHTIG: Wenn keine Credentials gesetzt sind, FEHLER werfen (nie applicationDefault verwenden)
+    // WICHTIG: Wenn keine Credentials gesetzt sind, FEHLER werfen
     if (!credentialSet) {
       const errorMsg =
-        'Firebase Credentials nicht verfügbar - FIREBASE_SERVICE_ACCOUNT_KEY oder GOOGLE_APPLICATION_CREDENTIALS als JSON-String erforderlich.';
+        'Firebase Credentials nicht verfügbar - FIREBASE_SERVICE_ACCOUNT_KEY, lokale service-account.json oder GOOGLE_APPLICATION_CREDENTIALS erforderlich.';
       console.error(errorMsg);
       throw new Error(errorMsg);
     }

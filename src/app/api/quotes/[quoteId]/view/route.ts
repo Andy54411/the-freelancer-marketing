@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { db } from '@/firebase/server';
 
-export async function POST(request: NextRequest, { params }: { params: { quoteId: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ quoteId: string }> }
+) {
   try {
-    const { quoteId } = params;
+    const { quoteId } = await params;
 
     if (!quoteId) {
       return NextResponse.json({ error: 'Quote ID ist erforderlich' }, { status: 400 });
@@ -19,12 +22,12 @@ export async function POST(request: NextRequest, { params }: { params: { quoteId
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await getAuth().verifyIdToken(token);
 
-    // Projekt-Dokument laden
-    const quoteRef = db.collection('project_requests').doc(quoteId);
+    // Try to load from quotes collection first
+    const quoteRef = db.collection('quotes').doc(quoteId);
     const quoteDoc = await quoteRef.get();
 
     if (!quoteDoc.exists) {
-      return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 });
+      return NextResponse.json({ error: 'Quote nicht gefunden' }, { status: 404 });
     }
 
     const quoteData = quoteDoc.data();
@@ -55,7 +58,6 @@ export async function POST(request: NextRequest, { params }: { params: { quoteId
       viewCount: newViewCount,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Zählen des Views' }, { status: 500 });
   }
 }

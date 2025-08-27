@@ -1,10 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/server';
+import { db, admin } from '@/firebase/server';
 import { QuoteNotificationService } from '@/lib/quote-notifications';
 
 export async function POST(request: NextRequest) {
   try {
-    const { providerId, quoteData, customerUid } = await request.json();
+    // Get auth token to identify the customer
+    const authHeader = request.headers.get('authorization');
+    let customerUid: string | null = null;
+    let customerType = 'user'; // Default to B2C
+    let isB2B = false;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split('Bearer ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        customerUid = decodedToken.uid;
+
+        // Check if this user is a company (B2B) by checking companies collection
+        if (customerUid) {
+          const companyDoc = await db.collection('companies').doc(customerUid).get();
+          if (companyDoc.exists) {
+            isB2B = true;
+            customerType = 'company';
+            console.log(`📋 B2B Quote Request from company: ${customerUid}`);
+          } else {
+            console.log(`👤 B2C Quote Request from user: ${customerUid}`);
+          }
+        }
+      } catch (authError) {
+        console.error('Auth token verification failed:', authError);
+        // Continue without customerUid for anonymous quotes
+      }
+    }
+
+    const { providerId, quoteData } = await request.json();
 
     if (!providerId || !quoteData) {
       return NextResponse.json(
@@ -20,7 +49,9 @@ export async function POST(request: NextRequest) {
     const quoteRequest = {
       id: quoteId,
       providerId,
-      customerUid: customerUid || null, // Customer UID für Notifications
+      customerUid: customerUid, // Automatically determined from auth
+      customerType: customerType, // 'user' for B2C, 'company' for B2B
+      isB2B: isB2B, // Boolean flag for easy filtering
       status: 'pending', // pending, reviewed, quoted, accepted, declined
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -59,9 +90,7 @@ export async function POST(request: NextRequest) {
         const providerData = providerDoc.data();
         providerName = providerData?.companyName || 'Anbieter';
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
 
     // Bell-Notifications senden (nur wenn customerUid verfügbar)
     if (customerUid) {
@@ -79,9 +108,7 @@ export async function POST(request: NextRequest) {
             description: quoteData.projectDescription,
           }
         );
-
       } catch (notificationError) {
-
         // Notifications-Fehler sollten die Quote-Erstellung nicht blockieren
       }
     }
@@ -92,7 +119,6 @@ export async function POST(request: NextRequest) {
       message: 'Angebots-Anfrage erfolgreich gesendet',
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Erstellen der Angebots-Anfrage' },
       { status: 500 }

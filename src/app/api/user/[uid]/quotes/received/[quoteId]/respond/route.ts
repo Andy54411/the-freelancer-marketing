@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, admin } from '@/firebase/server';
+import { db } from '@/firebase/server';
+import { ProposalSubcollectionService } from '@/services/ProposalSubcollectionService';
+import admin from 'firebase-admin';
 
 /**
  * API Route für Customer Quote Response (Accept/Decline)
@@ -23,7 +25,6 @@ export async function POST(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
@@ -61,43 +62,21 @@ export async function POST(
       return NextResponse.json({ error: 'Keine Berechtigung für dieses Projekt' }, { status: 403 });
     }
 
-    // Find the proposal
-    const proposals = projectData?.proposals || [];
-    const proposalIndex = proposals.findIndex(p => p.companyUid === proposalId);
+    // Find the proposal using subcollection
+    const proposal = await ProposalSubcollectionService.getProposal(quoteId, proposalId);
 
-    if (proposalIndex === -1) {
+    if (!proposal) {
       return NextResponse.json({ error: 'Angebot nicht gefunden' }, { status: 404 });
     }
 
     // Check if proposal is still pending
-    if (proposals[proposalIndex].status !== 'pending') {
+    if (proposal.status !== 'pending') {
       return NextResponse.json({ error: 'Angebot wurde bereits bearbeitet' }, { status: 400 });
     }
 
-    // Update proposals
-    const updatedProposals = [...proposals];
-
     if (action === 'accept') {
-      // Accept this proposal and decline all others
-      updatedProposals.forEach((proposal, index) => {
-        if (index === proposalIndex) {
-          proposal.status = 'accepted';
-          proposal.acceptedAt = new Date().toISOString();
-        } else if (proposal.status === 'pending') {
-          proposal.status = 'declined';
-          proposal.declinedAt = new Date().toISOString();
-          proposal.declineReason = 'Ein anderes Angebot wurde angenommen';
-        }
-      });
-
-      // Update project status
-      await projectRef.update({
-        proposals: updatedProposals,
-        status: 'accepted',
-        acceptedProposal: proposalId,
-        acceptedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      // Accept proposal using subcollection service (this also declines all other proposals)
+      await ProposalSubcollectionService.updateProposalStatus(quoteId, proposalId, 'accepted');
 
       // TODO: Send notifications to companies
       // TODO: Create contract/payment process
@@ -107,15 +86,14 @@ export async function POST(
         message: 'Angebot erfolgreich angenommen',
       });
     } else {
-      // Decline this proposal
-      updatedProposals[proposalIndex].status = 'declined';
-      updatedProposals[proposalIndex].declinedAt = new Date().toISOString();
+      // Decline this proposal using subcollection service
+      await ProposalSubcollectionService.updateProposalStatus(quoteId, proposalId, 'declined');
 
       // Check if all proposals are declined
-      const allDeclined = updatedProposals.every(p => p.status === 'declined');
+      const allProposals = await ProposalSubcollectionService.getProposalsForQuote(quoteId);
+      const allDeclined = allProposals.every(p => p.status === 'declined');
 
       await projectRef.update({
-        proposals: updatedProposals,
         ...(allDeclined && { status: 'no_suitable_offers' }),
         updatedAt: new Date().toISOString(),
       });
@@ -128,7 +106,6 @@ export async function POST(
       });
     }
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Bearbeiten des Angebots' }, { status: 500 });
   }
 }

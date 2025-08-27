@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, admin } from '@/firebase/server';
+import { ProposalSubcollectionService } from '@/services/ProposalSubcollectionService';
 
 /**
  * API Route für Customer Quote Details
@@ -23,37 +24,27 @@ export async function GET(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
     // Check if user is authorized to access this quote
     if (decodedToken.uid !== uid) {
-
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
-    // Get the project request
-
-    const projectRef = db.collection('project_requests').doc(quoteId);
-    const projectDoc = await projectRef.get();
+    // Get the project request - try project_requests first, then quotes
+    let projectRef = db.collection('project_requests').doc(quoteId);
+    let projectDoc = await projectRef.get();
+    let isQuotesCollection = false;
 
     if (!projectDoc.exists) {
-
       // Check if it might be in the quotes collection instead
-      const quoteRef = db.collection('quotes').doc(quoteId);
-      const quoteDoc = await quoteRef.get();
+      projectRef = db.collection('quotes').doc(quoteId);
+      projectDoc = await projectRef.get();
+      isQuotesCollection = true;
 
-      if (!quoteDoc.exists) {
-
+      if (!projectDoc.exists) {
         return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 });
-      } else {
-
-        // TODO: Handle quotes collection format
-        return NextResponse.json(
-          { error: 'Quote in falscher Collection gefunden - Development needed' },
-          { status: 500 }
-        );
       }
     }
 
@@ -61,17 +52,17 @@ export async function GET(
 
     // Check if user owns this project
     if (projectData?.customerUid !== uid) {
-
       return NextResponse.json({ error: 'Keine Berechtigung für dieses Projekt' }, { status: 403 });
     }
 
-    // Enhance proposals with company information
+    // Enhance proposals with company information using subcollections
     const enhancedProposals: any[] = [];
 
-    if (projectData?.proposals) {
-      for (let i = 0; i < projectData.proposals.length; i++) {
-        const proposal = projectData.proposals[i];
+    if (isQuotesCollection) {
+      // Get proposals from subcollection for quotes collection
+      const proposals = await ProposalSubcollectionService.getProposalsForQuote(quoteId);
 
+      for (const proposal of proposals) {
         // Get company information
         let companyInfo = {
           companyName: 'Unbekanntes Unternehmen',
@@ -82,7 +73,6 @@ export async function GET(
 
         try {
           // Try users collection for company data
-
           const companyDoc = await db.collection('users').doc(proposal.companyUid).get();
           if (companyDoc.exists) {
             const companyData = companyDoc.data();
@@ -97,42 +87,96 @@ export async function GET(
               companyPhone: companyData?.phone || null,
               companyLogo: companyData?.logo || companyData?.avatar || null,
             };
-          } else {
-
           }
         } catch (error) {
-
+          // Company not found, use defaults
         }
 
         enhancedProposals.push({
           ...proposal,
           ...companyInfo,
-          submittedAt: proposal.submittedAt?.toDate
-            ? proposal.submittedAt.toDate().toISOString()
-            : proposal.submittedAt
-              ? new Date(proposal.submittedAt).toISOString()
-              : new Date().toISOString(),
+          submittedAt: proposal.submittedAt
+            ? new Date(proposal.submittedAt).toISOString()
+            : new Date().toISOString(),
         });
-
       }
-    }
+    } else {
+      // Handle legacy project_requests collection with proposals array
+      if (projectData?.proposals) {
+        for (let i = 0; i < projectData.proposals.length; i++) {
+          const proposal = projectData.proposals[i];
 
-    // Build budget information
+          // Get company information
+          let companyInfo = {
+            companyName: 'Unbekanntes Unternehmen',
+            companyEmail: null,
+            companyPhone: null,
+            companyLogo: null,
+          };
+
+          try {
+            // Try users collection for company data
+            const companyDoc = await db.collection('users').doc(proposal.companyUid).get();
+            if (companyDoc.exists) {
+              const companyData = companyDoc.data();
+
+              companyInfo = {
+                companyName:
+                  companyData?.companyName ||
+                  (companyData?.firstName && companyData?.lastName
+                    ? `${companyData.firstName} ${companyData.lastName}`
+                    : 'Unbekanntes Unternehmen'),
+                companyEmail: companyData?.email || null,
+                companyPhone: companyData?.phone || null,
+                companyLogo: companyData?.logo || companyData?.avatar || null,
+              };
+            }
+          } catch (error) {
+            // Company not found, use defaults
+          }
+
+          enhancedProposals.push({
+            ...proposal,
+            ...companyInfo,
+            submittedAt: proposal.submittedAt?.toDate
+              ? proposal.submittedAt.toDate().toISOString()
+              : proposal.submittedAt
+                ? new Date(proposal.submittedAt).toISOString()
+                : new Date().toISOString(),
+          });
+        }
+      }
+    } // Build budget information
     let budgetRangeText = 'Nicht angegeben';
-    if (projectData?.budgetAmount && projectData?.budgetAmount > 0) {
-      if (projectData?.maxBudget && projectData?.maxBudget !== projectData?.budgetAmount) {
-        budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} - ${projectData.maxBudget.toLocaleString('de-DE')} €`;
-      } else {
-        budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} €`;
+
+    if (isQuotesCollection) {
+      // Handle quotes collection budget format
+      budgetRangeText = projectData?.budgetRange || 'Nicht angegeben';
+    } else {
+      // Handle legacy project_requests collection budget format
+      if (projectData?.budgetAmount && projectData?.budgetAmount > 0) {
+        if (projectData?.maxBudget && projectData?.maxBudget !== projectData?.budgetAmount) {
+          budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} - ${projectData.maxBudget.toLocaleString('de-DE')} €`;
+        } else {
+          budgetRangeText = `${projectData.budgetAmount.toLocaleString('de-DE')} €`;
+        }
       }
     }
 
     const quote = {
       id: projectDoc.id,
-      title: projectData?.title || 'Ohne Titel',
-      description: projectData?.description || '',
-      serviceCategory: projectData?.serviceCategory || '',
-      serviceSubcategory: projectData?.serviceSubcategory || '',
+      title: isQuotesCollection
+        ? projectData?.projectTitle || projectData?.title || 'Ohne Titel'
+        : projectData?.title || 'Ohne Titel',
+      description: isQuotesCollection
+        ? projectData?.projectDescription || projectData?.description || ''
+        : projectData?.description || '',
+      serviceCategory: isQuotesCollection
+        ? projectData?.projectCategory || projectData?.serviceCategory || ''
+        : projectData?.serviceCategory || '',
+      serviceSubcategory: isQuotesCollection
+        ? projectData?.projectSubcategory || projectData?.serviceSubcategory || ''
+        : projectData?.serviceSubcategory || '',
       budget: {
         amount: projectData?.budgetAmount || 0,
         max: projectData?.maxBudget || 0,
@@ -158,7 +202,6 @@ export async function GET(
       quote,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Laden der Quote-Details' }, { status: 500 });
   }
 }

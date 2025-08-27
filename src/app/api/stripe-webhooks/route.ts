@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
   if (!stripe) {
     const errorKey = 'stripe_not_configured';
     if (shouldLogError(errorKey)) {
-
     }
     return NextResponse.json(
       { received: false, error: 'Stripe nicht konfiguriert' },
@@ -43,7 +42,6 @@ export async function POST(req: NextRequest) {
   if (!webhookSecret) {
     const errorKey = 'webhook_secret_missing';
     if (shouldLogError(errorKey)) {
-
     }
     return NextResponse.json(
       { received: false, error: 'Webhook secret nicht konfiguriert' },
@@ -58,7 +56,6 @@ export async function POST(req: NextRequest) {
     if (!signature) {
       const errorKey = 'missing_signature';
       if (shouldLogError(errorKey)) {
-
       }
       return NextResponse.json({ received: false, error: 'Keine Signatur' }, { status: 400 });
     }
@@ -66,7 +63,6 @@ export async function POST(req: NextRequest) {
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-
     } catch (err: unknown) {
       let errorMessage = 'Fehler bei der Webhook-Verifikation.';
       if (err instanceof Error) {
@@ -74,7 +70,6 @@ export async function POST(req: NextRequest) {
       }
       const errorKey = `webhook_verification_${errorMessage.slice(0, 20)}`;
       if (shouldLogError(errorKey)) {
-
       }
       return NextResponse.json({ received: false, error: errorMessage }, { status: 400 });
     }
@@ -92,14 +87,12 @@ export async function POST(req: NextRequest) {
           paymentType === 'additional_hours_platform_hold' ||
           paymentType === 'additional_hours_direct_transfer'
         ) {
-
           const orderId = chargeSucceeded.metadata?.orderId;
           const entryIds = chargeSucceeded.metadata?.entryIds;
 
           if (!orderId || !entryIds) {
             const errorKey = `missing_metadata_charge_${chargeSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-
             }
             return NextResponse.json({
               received: true,
@@ -126,7 +119,6 @@ export async function POST(req: NextRequest) {
                 const now = new Date();
                 const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
                   if (entryIdsList.includes(entry.id)) {
-
                     return {
                       ...entry,
                       status: 'transferred', // CRITICAL: Change status to transferred
@@ -159,7 +151,6 @@ export async function POST(req: NextRequest) {
                 let timeTrackingStatus = timeTracking.status;
                 if (allAdditionalTransferred && timeTrackingStatus !== 'completed') {
                   timeTrackingStatus = 'completed';
-
                 }
 
                 // Update the entire timeTracking object
@@ -172,7 +163,6 @@ export async function POST(req: NextRequest) {
                 });
               }
             });
-
           } catch (dbError: unknown) {
             let dbErrorMessage =
               'Unbekannter Datenbankfehler bei der Verarbeitung zusätzlicher Stunden (charge).';
@@ -181,7 +171,6 @@ export async function POST(req: NextRequest) {
             }
             const errorKey = `db_additional_hours_charge_${orderId}`;
             if (shouldLogError(errorKey)) {
-
             }
             return NextResponse.json({
               received: true,
@@ -205,14 +194,12 @@ export async function POST(req: NextRequest) {
           paymentType === 'additional_hours_platform_hold' ||
           paymentType === 'additional_hours_direct_transfer'
         ) {
-
           const orderId = paymentIntentSucceeded.metadata?.orderId;
           const entryIds = paymentIntentSucceeded.metadata?.entryIds;
 
           if (!orderId || !entryIds) {
             const errorKey = `missing_metadata_${paymentIntentSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-
             }
             return NextResponse.json({
               received: true,
@@ -239,7 +226,6 @@ export async function POST(req: NextRequest) {
                 const now = new Date();
                 const updatedTimeEntries = timeTracking.timeEntries.map((entry: any) => {
                   if (entryIdsList.includes(entry.id)) {
-
                     return {
                       ...entry,
                       status: 'transferred', // CRITICAL: Change status to transferred
@@ -272,7 +258,6 @@ export async function POST(req: NextRequest) {
                 let timeTrackingStatus = timeTracking.status;
                 if (allAdditionalTransferred && timeTrackingStatus !== 'completed') {
                   timeTrackingStatus = 'completed';
-
                 }
 
                 // Update the entire timeTracking object
@@ -338,7 +323,6 @@ export async function POST(req: NextRequest) {
                   const connectAccount = await stripe.accounts.retrieve(providerStripeAccountId);
 
                   if (!connectAccount.charges_enabled) {
-
                     // Trotzdem weitermachen, aber warnen
                   }
 
@@ -390,9 +374,7 @@ export async function POST(req: NextRequest) {
                       lastAdditionalHoursOrderId: orderId,
                       pendingAdditionalHours: admin.firestore.FieldValue.increment(transferAmount),
                     });
-
                   } else {
-
                   }
                 } catch (transferError: unknown) {
                   let transferErrorMessage = 'Unbekannter Transfer-Fehler';
@@ -401,7 +383,6 @@ export async function POST(req: NextRequest) {
                   }
                   const errorKey = `transfer_error_${orderId}_${Date.now()}`;
                   if (shouldLogError(errorKey)) {
-
                   }
                   // Continue processing even if transfer fails - important for webhook reliability
                   // Aber versuche einen Retry-Mechanismus zu implementieren
@@ -417,18 +398,12 @@ export async function POST(req: NextRequest) {
                       retryCount: 0,
                       status: 'pending_retry',
                     });
-
-                  } catch (saveError) {
-
-                  }
+                  } catch (saveError) {}
                 }
               } else {
-
               }
             } else if (paymentType === 'additional_hours_direct_transfer') {
-
             }
-
           } catch (dbError: unknown) {
             let dbErrorMessage =
               'Unbekannter Datenbankfehler bei der Verarbeitung zusätzlicher Stunden.';
@@ -437,7 +412,6 @@ export async function POST(req: NextRequest) {
             }
             const errorKey = `db_additional_hours_${orderId}`;
             if (shouldLogError(errorKey)) {
-
             }
             return NextResponse.json({
               received: true,
@@ -449,7 +423,6 @@ export async function POST(req: NextRequest) {
 
         // Handle B2B Provider Booking payments (from ProviderBookingModal)
         if (paymentType === 'b2b_payment' || paymentType === 'b2b_project') {
-
           // DEBUG: Log alle Metadaten für B2B Payments
 
           const customerFirebaseId = paymentIntentSucceeded.metadata?.customerFirebaseId;
@@ -461,7 +434,6 @@ export async function POST(req: NextRequest) {
           if (!customerFirebaseId || !providerFirebaseId) {
             const errorKey = `missing_b2b_metadata_${paymentIntentSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-
             }
             return NextResponse.json({
               received: true,
@@ -569,7 +541,6 @@ export async function POST(req: NextRequest) {
 
               const newAuftragRef = auftragCollectionRef.doc(orderId);
               transaction.set(newAuftragRef, b2bOrderData);
-
             });
 
             // 🔔 BELL NOTIFICATION: B2B Order erfolgreich erstellt
@@ -590,10 +561,7 @@ export async function POST(req: NextRequest) {
                 providerFirebaseId, // Provider ID
                 orderNotificationData
               );
-
-            } catch (notificationError) {
-
-            }
+            } catch (notificationError) {}
 
             return NextResponse.json({
               received: true,
@@ -606,7 +574,6 @@ export async function POST(req: NextRequest) {
             }
             const errorKey = `b2b_order_creation_${paymentIntentSucceeded.id}`;
             if (shouldLogError(errorKey)) {
-
             }
             return NextResponse.json({
               received: true,
@@ -619,14 +586,12 @@ export async function POST(req: NextRequest) {
         const quotePaymentType = paymentIntentSucceeded.metadata?.type;
 
         if (quotePaymentType === 'quote_payment') {
-
           // Quote payment - delegate to the existing API route
           const quoteId = paymentIntentSucceeded.metadata?.quote_id;
           const proposalId = paymentIntentSucceeded.metadata?.proposal_id;
           const customerUid = paymentIntentSucceeded.metadata?.customerUid;
 
           if (!quoteId || !proposalId || !customerUid) {
-
             return NextResponse.json({
               received: true,
               message: 'Quote payment metadata incomplete.',
@@ -635,21 +600,21 @@ export async function POST(req: NextRequest) {
 
           try {
             // Handle quote -> order conversion directly in webhook
-            const projectRef = db.collection('project_requests').doc(quoteId);
-            const projectDoc = await projectRef.get();
+            const quoteRef = db.collection('quotes').doc(quoteId);
+            const quoteDoc = await quoteRef.get();
 
-            if (!projectDoc.exists) {
+            if (!quoteDoc.exists) {
               throw new Error(`Quote ${quoteId} not found`);
             }
 
-            const projectData = projectDoc.data();
+            const quoteData = quoteDoc.data();
 
-            if (!projectData) {
+            if (!quoteData) {
               throw new Error(`Quote ${quoteId} has no data`);
             }
 
             // Find the proposal
-            const proposals = projectData?.proposals || [];
+            const proposals = quoteData?.proposals || [];
             let proposal: any = null;
 
             if (Array.isArray(proposals)) {
@@ -676,40 +641,44 @@ export async function POST(req: NextRequest) {
             // Create order in auftraege collection
             const orderData = {
               id: orderId,
-              customerFirebaseUid: projectData.customerUid,
-              customerEmail: projectData.customerEmail || '',
-              customerFirstName: projectData.customerName?.split(' ')[0] || '',
-              customerLastName: projectData.customerName?.split(' ').slice(1).join(' ') || '',
+              customerFirebaseUid: quoteData.customerUid,
+              customerEmail: quoteData.customerEmail || '',
+              customerFirstName: quoteData.customerName?.split(' ')[0] || '',
+              customerLastName: quoteData.customerName?.split(' ').slice(1).join(' ') || '',
               customerType: 'private',
-              kundeId: projectData.customerUid,
+              kundeId: quoteData.customerUid,
               selectedAnbieterId: proposal.companyUid || '',
               providerName: proposal.companyName || '',
               anbieterStripeAccountId: proposal.companyStripeAccountId || '',
-              selectedCategory: projectData.category || projectData.serviceCategory || '',
-              selectedSubcategory: projectData.subcategory || projectData.serviceSubcategory || '',
-              projectName: projectData.title || '',
-              projectTitle: projectData.title || '',
-              description: projectData.description || '',
+              selectedCategory: quoteData.category || quoteData.serviceCategory || '',
+              selectedSubcategory: quoteData.subcategory || quoteData.serviceSubcategory || '',
+              projectName: quoteData.title || quoteData.projectTitle || '',
+              projectTitle: quoteData.title || quoteData.projectTitle || '',
+              description: quoteData.description || quoteData.projectDescription || '',
               totalAmountPaidByBuyer: finalAmount * 100,
               originalJobPriceInCents: finalAmount * 100,
               applicationFeeAmountFromStripe: Math.round(finalAmount * 100 * 0.035),
               sellerCommissionInCents: Math.round(finalAmount * 100 * 0.035),
               paymentIntentId: paymentIntentSucceeded.id,
               paidAt: new Date(),
-              jobCountry: projectData.location?.country || 'DE',
-              jobCity: projectData.location?.city || '',
-              jobPostalCode: projectData.location?.postalCode || '',
-              jobStreet: projectData.location?.street || '',
-              jobDateFrom: projectData.startDate || new Date().toISOString().split('T')[0],
-              jobDateTo: projectData.endDate || new Date().toISOString().split('T')[0],
-              jobTimePreference: projectData.timePreference || '09:00',
+              jobCountry: quoteData.location?.country || 'DE',
+              jobCity: quoteData.location?.city || '',
+              jobPostalCode: quoteData.location?.postalCode || '',
+              jobStreet: quoteData.location?.street || '',
+              jobDateFrom:
+                quoteData.startDate ||
+                quoteData.preferredStartDate ||
+                new Date().toISOString().split('T')[0],
+              jobDateTo:
+                quoteData.endDate || quoteData.deadline || new Date().toISOString().split('T')[0],
+              jobTimePreference: quoteData.timePreference || '09:00',
               status: 'AKTIV',
               createdAt: new Date(),
               lastUpdated: new Date(),
               orderDate: new Date(),
               currency: proposal.currency || 'EUR',
               jobDurationString: proposal.timeline || '',
-              subcategoryFormData: projectData.subcategoryFormData || {},
+              subcategoryFormData: quoteData.subcategoryFormData || {},
               originalQuoteId: quoteId,
               originalProposalId: proposalId,
               approvalRequests: [],
@@ -769,7 +738,7 @@ export async function POST(req: NextRequest) {
               });
             }
 
-            await projectRef.update({
+            await quoteRef.update({
               proposals: updatedProposals,
               status: 'accepted',
               acceptedProposal: proposalId,
@@ -785,7 +754,6 @@ export async function POST(req: NextRequest) {
               message: `Quote payment processed for quote ${quoteId}, order ${orderId} created`,
             });
           } catch (error) {
-
             return NextResponse.json({
               received: true,
               message: 'Quote payment processing failed.',
@@ -800,7 +768,6 @@ export async function POST(req: NextRequest) {
         if (!tempJobDraftId || !firebaseUserId) {
           const errorKey = `missing_draft_metadata_${paymentIntentSucceeded.id}`;
           if (shouldLogError(errorKey)) {
-
           }
           // Wichtig: Trotzdem 200 an Stripe senden, um Wiederholungen zu vermeiden, aber den Fehler loggen.
           return NextResponse.json({
@@ -821,7 +788,6 @@ export async function POST(req: NextRequest) {
             const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
 
             if (tempJobDraftSnapshot.data()?.status === 'converted') {
-
               return;
             }
             if (!tempJobDraftSnapshot.exists) {
@@ -857,7 +823,6 @@ export async function POST(req: NextRequest) {
                 const hoursPerDay = durationMatch ? parseFloat(durationMatch[1]) : 8; // Fallback auf 8 Stunden
 
                 correctedJobTotalCalculatedHours = hoursPerDay * daysDiff;
-
               }
             }
 
@@ -940,14 +905,9 @@ export async function POST(req: NextRequest) {
                 orderData.selectedAnbieterId, // Provider ID
                 orderNotificationData
               );
-
-            } catch (notificationError) {
-
-            }
+            } catch (notificationError) {}
           } else {
-
           }
-
         } catch (dbError: unknown) {
           // dbError ist hier vom Typ unknown
           let dbErrorMessage = 'Unbekannter Datenbankfehler bei der Job-Konvertierung.';
@@ -956,7 +916,6 @@ export async function POST(req: NextRequest) {
           }
           const errorKey = `db_job_conversion_${tempJobDraftId}`;
           if (shouldLogError(errorKey)) {
-
           }
           return NextResponse.json({
             received: true,
@@ -969,9 +928,8 @@ export async function POST(req: NextRequest) {
       // Z.B. setup_intent.succeeded für das Speichern von Zahlungsmethoden
       // case 'setup_intent.succeeded': { ... }
       default:
-        // Es ist wichtig, für unbehandelte Events trotzdem 200 OK zu senden,
-        // damit Stripe nicht versucht, sie erneut zu senden.
-
+      // Es ist wichtig, für unbehandelte Events trotzdem 200 OK zu senden,
+      // damit Stripe nicht versucht, sie erneut zu senden.
     }
 
     return NextResponse.json({ received: true });
@@ -982,7 +940,6 @@ export async function POST(req: NextRequest) {
     }
     const errorKey = `webhook_general_error`;
     if (shouldLogError(errorKey)) {
-
     }
     return NextResponse.json({ received: false, error: errorMessage }, { status: 500 });
   }
