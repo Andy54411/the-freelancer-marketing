@@ -328,34 +328,22 @@ export const createStripeAccountIfComplete = onCall(
     }
     loggerV2.info('[DEBUG] Punkt 1: Basis-Infos (userId, IP) OK.');
 
-    // Für Firmen sollten Stripe-Daten in companies collection gespeichert werden
-    const userDocRef = db.collection("users").doc(userId);
-    const userDocSnapshot = await userDocRef.get();
-    if (!userDocSnapshot.exists) {
-      throw new HttpsError("not-found", `Nutzerdokument ${userId} nicht gefunden.`);
-    }
-    const existingFirestoreUserData = userDocSnapshot.data() as any;
-    if (!existingFirestoreUserData) {
-      throw new HttpsError("internal", "Fehler beim Lesen der Nutzerdaten aus Firestore.");
-    }
-    loggerV2.info('[DEBUG] Punkt 2: Nutzerdokument aus Firestore geladen OK.');
-
-    // Check if user has company data by checking companies collection
+    // COMPANIES-ONLY: Nur companies collection für Firmen verwenden
     const companyDocRef = db.collection("companies").doc(userId);
     const companyDocSnapshot = await companyDocRef.get();
     if (!companyDocSnapshot.exists) {
-      throw new HttpsError("failed-precondition", "Nur Firmen können Stripe-Konten erstellen.");
+      throw new HttpsError("failed-precondition", "Firmenprofil nicht gefunden. Nur Firmen können Stripe-Konten erstellen.");
     }
-    loggerV2.info('[DEBUG] Punkt 4: Nutzer ist eine Firma OK.');
-
-    // Use companies collection for company data
-    if (!companyDocSnapshot.exists) {
-      throw new HttpsError("not-found", `Firmendokument ${userId} nicht gefunden.`);
-    }
-    const existingCompanyData = companyDocSnapshot.data() as any;
-    if (!existingCompanyData) {
+    const existingFirestoreCompanyData = companyDocSnapshot.data() as any;
+    if (!existingFirestoreCompanyData) {
       throw new HttpsError("internal", "Fehler beim Lesen der Firmendaten aus Firestore.");
     }
+    loggerV2.info('[DEBUG] Punkt 2: Firmendokument aus Firestore geladen OK.');
+
+    loggerV2.info('[DEBUG] Punkt 4: Nutzer ist eine Firma OK.');
+
+    // Company data already loaded from snapshot above
+    const existingCompanyData = existingFirestoreCompanyData;
 
     if (existingCompanyData.stripeAccountId?.startsWith('acct_')) {
       throw new HttpsError("already-exists", "Firma hat bereits ein Stripe-Konto.");
@@ -430,7 +418,7 @@ export const createStripeAccountIfComplete = onCall(
     }
     loggerV2.info('[DEBUG] Alle Validierungen bestanden. Fahre fort mit Kontoerstellung.');
 
-    const userAgent = existingFirestoreUserData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
+    const userAgent = existingFirestoreCompanyData.common?.tosAcceptanceUserAgent || request.rawRequest?.headers["user-agent"] || "UserAgentNotProvided";
     // Helper, um leere Strings, null oder undefined in 'undefined' umzuwandeln, damit Stripe sie ignoriert.
     const sanitizeForStripe = <T>(val: T | null | undefined | ""): T | undefined => {
       if (val === null || val === undefined || val === "") return undefined;
@@ -841,25 +829,16 @@ export const updateStripeCompanyDetails = onCall(
     const userId = request.auth.uid;
     const localStripe = getStripeInstance(stripeKey); // <-- Parameter übergeben
     
-    // Für updateStripeCompanyDetails sollten wir die companies collection verwenden
-    const userDocRef = db.collection("users").doc(userId);
+    // COMPANIES-ONLY: Nur companies collection verwenden, keine users collection
     const companyDocRef = db.collection("companies").doc(userId);
 
     try {
-      // Prüfe zuerst user_type in users collection
-      const userDoc = await userDocRef.get();
-      if (!userDoc.exists) throw new HttpsError("not-found", "Benutzerprofil nicht gefunden.");
-      const currentFirestoreUserData = userDoc.data() as any;
-      if (!currentFirestoreUserData) throw new HttpsError("internal", "Nutzerdaten nicht lesbar.");
-      
-      // Check if user has company data by checking companies collection  
+      // Prüfe nur companies collection - users collection nicht mehr erforderlich
       const companyDoc = await companyDocRef.get();
       if (!companyDoc.exists) {
-        throw new HttpsError("failed-precondition", "Nur Firmen können Stripe-Company-Details aktualisieren.");
+        throw new HttpsError("failed-precondition", "Firmenprofil nicht gefunden. Nur Firmen können Stripe-Company-Details aktualisieren.");
       }
 
-      // Use companies collection for company data
-      if (!companyDoc.exists) throw new HttpsError("not-found", "Firmenprofil nicht gefunden.");
       const currentCompanyData = companyDoc.data() as any;
       if (!currentCompanyData) throw new HttpsError("internal", "Firmendaten nicht lesbar.");
 
@@ -944,7 +923,7 @@ export const updateStripeCompanyDetails = onCall(
       await companyDocRefForUpdate.set(firestoreUpdatePayload, { merge: true });
 
       if (currentBusinessType === 'company') {
-        let personIdToUpdate: string | undefined = currentFirestoreUserData.stripeRepresentativePersonId;
+        let personIdToUpdate: string | undefined = currentCompanyData.stripeRepresentativePersonId;
         const personDataToUpdate: Partial<Stripe.AccountUpdatePersonParams> = {};
         let isCreatingNewPerson = false;
 
@@ -1060,12 +1039,9 @@ export const updateStripeCompanyDetails = onCall(
       if (error instanceof HttpsError) throw error;
 
       try {
-        const userDocForError = db.collection("users").doc(userId);
-        await userDocForError.update({ stripeAccountError: error.message || 'Unbekannter Stripe-Fehler', updatedAt: FieldValue.serverTimestamp() });
-        const companyDocRefForError = db.collection("users").doc(userId);
-        if ((await companyDocRefForError.get()).exists) {
-          await companyDocRefForError.set({ stripeAccountError: error.message || 'Unbekannter Stripe-Fehler', updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-        }
+        // COMPANIES-ONLY: Nur companies collection für Fehler-Updates
+        const companyDocRefForError = db.collection("companies").doc(userId);
+        await companyDocRefForError.set({ stripeAccountError: error.message || 'Unbekannter Stripe-Fehler', updatedAt: FieldValue.serverTimestamp() }, { merge: true });
       } catch (dbError: any) {
         loggerV2.error(`DB-Fehler beim Speichern des Stripe-Fehlers für ${userId} im Catch-Block von updateStripeCompanyDetails:`, dbError.message);
       }
