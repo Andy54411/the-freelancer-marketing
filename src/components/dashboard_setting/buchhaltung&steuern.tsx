@@ -13,14 +13,20 @@ const AccountingForm: React.FC<AccountingFormProps> = ({ formData, handleChange 
   const [isSmallBusiness, setIsSmallBusiness] = useState(false);
 
   useEffect(() => {
-    if (formData?.step3?.ust === 'kleinunternehmer') {
+    const currentUst = formData?.step3?.ust;
+    if (currentUst === 'kleinunternehmer') {
       setIsSmallBusiness(true);
-      handleChange('step3.profitMethod', 'euer');
-      handleChange('step3.priceInput', 'brutto');
+      // Nur ändern, wenn die Werte noch nicht gesetzt sind
+      if (formData?.step3?.profitMethod !== 'euer') {
+        handleChange('step3.profitMethod', 'euer');
+      }
+      if (formData?.step3?.priceInput !== 'brutto') {
+        handleChange('step3.priceInput', 'brutto');
+      }
     } else {
       setIsSmallBusiness(false);
     }
-  }, [formData?.step3?.ust, handleChange]);
+  }, [formData?.step3?.ust]); // Entferne handleChange aus dependencies
 
   const baseBoxClass = 'p-6 rounded-md shadow-sm cursor-pointer transition border ';
 

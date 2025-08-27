@@ -61,6 +61,7 @@ interface CompanyData {
   uid: string;
   companyName: string;
   logoUrl?: string;
+  profilePictureURL?: string;
 }
 
 interface HeaderProps {
@@ -607,6 +608,12 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                         onLoad={() => {
                           setImageLoadError(false);
                         }}
+                      />
+                    ) : company?.profilePictureURL ? (
+                      <img
+                        src={company.profilePictureURL}
+                        alt="Firmenlogo"
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-md object-cover"
                       />
                     ) : company?.logoUrl ? (
                       <img

@@ -16,34 +16,81 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🔍 Settings page useEffect:', { uid, user: !!user, userUid: user?.uid });
+
     const loadUserData = async () => {
       if (!uid || !user || user.uid !== uid) {
+        console.log('❌ Settings page - authorization failed:', {
+          uid,
+          user: !!user,
+          userUid: user?.uid,
+        });
         setLoading(false);
         return;
       }
+
+      console.log('📡 Settings page - loading data for uid:', uid);
 
       try {
         // Lade Auth-Daten aus users collection
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (userDoc.exists()) {
           const userDocData = userDoc.data();
+          console.log('✅ Settings page - user data loaded:', userDocData);
           setUserData(userDocData);
+        } else {
+          console.log('❌ Settings page - no user data found');
+        }
 
-          // Check if user is a company by checking companies collection
-          const companyDoc = await getDoc(doc(db, 'companies', uid));
-          if (companyDoc.exists()) {
-            setCompanyData(companyDoc.data());
+        // IMMER auch companies collection prüfen (für Firmen)
+        const companyDoc = await getDoc(doc(db, 'companies', uid));
+        if (companyDoc.exists()) {
+          const companyDocData = companyDoc.data();
+          console.log('✅ Settings page - company data loaded:', companyDocData);
+          setCompanyData(companyDocData);
+
+          // FALLBACK: Wenn keine user data vorhanden, verwende company data als user data
+          if (!userDoc.exists()) {
+            console.log('🔄 Settings page - using company data as fallback for user data');
+            setUserData(companyDocData);
           }
+        } else {
+          console.log('⚠️ Settings page - no company data found');
         }
       } catch (error) {
-        console.error('Error loading user/company data:', error);
+        console.error('❌ Settings page - error loading data:', error);
       } finally {
+        console.log('✅ Settings page - loading complete');
         setLoading(false);
       }
     };
 
     loadUserData();
   }, [uid, user]);
+
+  // DEBUG: Log combined data when it changes
+  useEffect(() => {
+    if (userData || companyData) {
+      const combinedForDebug = companyData ? { ...userData, ...companyData } : userData;
+      console.log('🔍 Settings Data Debug:', {
+        userData: userData,
+        companyData: companyData,
+        combinedData: combinedForDebug,
+        userType: userData?.user_type,
+        languages: {
+          inUserData: userData?.languages || userData?.['step2.languages'],
+          inCompanyData: companyData?.languages || companyData?.['step2.languages'],
+          inCombined: combinedForDebug?.languages || combinedForDebug?.['step2.languages'],
+        },
+      });
+    }
+  }, [userData, companyData]);
+
+  console.log('🚀 Settings page render:', {
+    loading,
+    userData: !!userData,
+    companyData: !!companyData,
+  });
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
@@ -89,21 +136,11 @@ export default function SettingsPage() {
     }
   };
 
-  // Kombiniere user und company Daten für Settings Component
-  const combinedData = companyData ? { ...userData, ...companyData } : userData;
+  // Kombiniere die Daten stabil ohne useMemo um Hook-Reihenfolge zu erhalten
+  let finalData = userData;
+  if (companyData && userData) {
+    finalData = { ...userData, ...companyData };
+  }
 
-  // DEBUG: Log combined data structure
-  console.log('🔍 Settings Data Debug:', {
-    userData: userData,
-    companyData: companyData,
-    combinedData: combinedData,
-    userType: userData?.user_type,
-    languages: {
-      inUserData: userData?.languages || userData?.['step2.languages'],
-      inCompanyData: companyData?.languages || companyData?.['step2.languages'],
-      inCombined: combinedData?.languages || combinedData?.['step2.languages'],
-    },
-  });
-
-  return <SettingsComponent userData={combinedData} onDataSaved={handleDataSaved} />;
+  return <SettingsComponent userData={finalData} onDataSaved={handleDataSaved} />;
 }
