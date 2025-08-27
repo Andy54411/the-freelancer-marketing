@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (markAsGrandfathered) {
-      // Mark existing company as grandfathered (no onboarding needed) - HARMONIZED SYSTEM
-      await updateDoc(doc(db, 'users', companyUid), {
+      // Mark existing company as grandfathered (no onboarding needed) - COMPANIES-ONLY SYSTEM
+      await updateDoc(doc(db, 'companies', companyUid), {
         onboardingCompleted: true,
         onboardingCompletedAt: serverTimestamp(),
         profileComplete: true,
@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
         status: 'grandfathered',
       });
     } else {
-      // Initialize normal onboarding - HARMONIZED SYSTEM
-      await updateDoc(doc(db, 'users', companyUid), {
+      // Initialize normal onboarding - COMPANIES-ONLY SYSTEM
+      await updateDoc(doc(db, 'companies', companyUid), {
         onboardingCompleted: false,
         onboardingCurrentStep: '1',
         onboardingCompletionPercentage: 0,
