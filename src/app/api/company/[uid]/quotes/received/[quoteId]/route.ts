@@ -101,6 +101,66 @@ export async function GET(
       }
     }
 
+    // Check for proposals/responses in subcollection
+    let hasResponse = false;
+    let responseData: any = null;
+    let responseDate: Date | null = null;
+
+    try {
+      // Check subcollection for proposals (new structure)
+      const proposalsSnapshot = await db
+        .collection('quotes')
+        .doc(quoteId)
+        .collection('proposals')
+        .get();
+
+      console.log(
+        `🔍 Found ${proposalsSnapshot.docs.length} proposal(s) in subcollection for quote ${quoteId}`
+      );
+
+      if (!proposalsSnapshot.empty) {
+        // Get the first proposal (there should only be one per provider usually)
+        const proposalDoc = proposalsSnapshot.docs[0];
+        const proposalData = proposalDoc.data();
+
+        hasResponse = true;
+        responseData = {
+          id: proposalDoc.id,
+          providerId: proposalData.providerId || proposalData.companyUid,
+          message: proposalData.message,
+          totalAmount: proposalData.totalAmount,
+          currency: proposalData.currency || 'EUR',
+          timeline: proposalData.timeline,
+          status: proposalData.status,
+          submittedAt: proposalData.submittedAt,
+          serviceItems: proposalData.serviceItems || [],
+        };
+
+        responseDate = proposalData.submittedAt ? new Date(proposalData.submittedAt) : null;
+
+        console.log('✅ Found proposal in subcollection:', {
+          proposalId: proposalDoc.id,
+          status: proposalData.status,
+          amount: proposalData.totalAmount,
+          submittedAt: proposalData.submittedAt,
+        });
+      } else {
+        console.log('❌ No proposals found in subcollection');
+      }
+    } catch (error) {
+      console.error('Error checking proposal subcollection:', error);
+    }
+
+    // Fallback: Check old response structure in quote document
+    if (!hasResponse && quoteData?.response) {
+      hasResponse = true;
+      responseData = quoteData.response;
+      responseDate = quoteData.response?.respondedAt
+        ? new Date(quoteData.response.respondedAt)
+        : null;
+      console.log('✅ Found response in quote document (old structure)');
+    }
+
     // Build the quote response object
     const quote = {
       id: quoteDoc.id,
@@ -118,11 +178,9 @@ export async function GET(
       preferredStartDate: quoteData?.preferredStartDate || '',
       additionalNotes: quoteData?.additionalNotes || '',
       provider: providerInfo,
-      hasResponse: !!quoteData?.response,
-      response: quoteData?.response || null,
-      responseDate: quoteData?.response?.respondedAt
-        ? new Date(quoteData.response.respondedAt)
-        : null,
+      hasResponse: hasResponse,
+      response: responseData,
+      responseDate: responseDate,
       createdAt: quoteData?.createdAt?.toDate
         ? quoteData.createdAt.toDate()
         : new Date(quoteData?.createdAt || Date.now()),
