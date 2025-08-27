@@ -14,27 +14,27 @@ export default function CompanyOnboardingStepPage(): JSX.Element {
   const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const companyUid = params.uid as string;
-  const stepId = parseInt(params.stepId as string) || 1;
+  const companyUid = params?.uid as string;
+  const stepId = parseInt(params?.stepId as string) || 1;
 
   useEffect(() => {
     async function checkAuthorization() {
-      if (!user || !companyUid) {
+      if (!user || !companyUid || !params) {
         router.push('/auth/login');
         return;
       }
 
       try {
-        // Prüfe, ob der User Zugriff auf diese Company hat
-        const userDoc = await getDoc(doc(db, 'users', companyUid));
+        // COMPANIES-ONLY: Prüfe ob der User Zugriff auf diese Company hat über companies collection
+        const companyDoc = await getDoc(doc(db, 'companies', companyUid));
 
-        if (!userDoc.exists()) {
+        if (!companyDoc.exists()) {
           router.push('/dashboard');
           return;
         }
 
-        const userData = userDoc.data();
-        const isOwner = userData.uid === user.uid || companyUid === user.uid;
+        const companyData = companyDoc.data();
+        const isOwner = companyData.uid === user.uid || companyUid === user.uid;
 
         if (!isOwner) {
           router.push('/dashboard');
@@ -49,7 +49,6 @@ export default function CompanyOnboardingStepPage(): JSX.Element {
 
         setIsAuthorized(true);
       } catch (error) {
-
         router.push('/dashboard');
       } finally {
         setIsLoading(false);
@@ -73,10 +72,7 @@ export default function CompanyOnboardingStepPage(): JSX.Element {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <OnboardingContainer
-        companyUid={companyUid}
-        initialStep={stepId}
-      />
+      <OnboardingContainer companyUid={companyUid} initialStep={stepId} />
     </div>
   );
 }
