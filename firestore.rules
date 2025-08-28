@@ -1462,6 +1462,36 @@ service cloud.firestore {
       
       // Löschen: Nur Support Staff
       allow delete: if request.auth != null && isSupportStaff();
+      
+      // Chat-Subcollection für Quote-spezifische Nachrichten
+      match /chat/{messageId} {
+        // Lesen: Nur Quote-Teilnehmer (Kunde oder Provider)
+        allow read: if request.auth != null && 
+                       (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid ||
+                        isSupportStaff());
+        
+        // Listen: Nur Quote-Teilnehmer (Kunde oder Provider)
+        allow list: if request.auth != null && 
+                       (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid ||
+                        isSupportStaff());
+        
+        // Erstellen: Nur Quote-Teilnehmer können Nachrichten senden
+        allow create: if request.auth != null && 
+                         request.resource.data.senderId == request.auth.uid &&
+                         (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid) &&
+                         request.resource.data.keys().hasAll(['text', 'senderId', 'senderName', 'senderType', 'timestamp', 'read']);
+        
+        // Aktualisieren: Nur für Lesebestätigungen
+        allow update: if request.auth != null && 
+                         resource.data.senderId != request.auth.uid && // Nicht eigene Nachrichten
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
+                         request.resource.data.read == true &&
+                         (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid);
+      }
     }
 
     // Project Requests Collection - für User-Projekte

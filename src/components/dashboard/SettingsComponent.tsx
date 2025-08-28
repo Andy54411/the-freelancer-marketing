@@ -206,10 +206,109 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
     'general' | 'accounting' | 'bank' | 'logo' | 'payouts'
   >('general');
   const [showManagingDirectorPersonalModal, setShowManagingDirectorPersonalModal] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  // Timeout nach 10 Sekunden, um Fallback-Formular zu laden
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!form && userData) {
+        console.log('⚠️ Settings: Loading timeout reached, creating fallback form');
+        setLoadingTimeout(true);
+
+        // Erstelle minimales Fallback-Formular mit type assertion für dynamische Eigenschaften
+        const userDataAny = userData as any;
+
+        setForm({
+          uid: userData.uid || '',
+          email: userData.email || '',
+          user_type: userData.user_type || 'company',
+          step1: {
+            firstName: userData.firstName || '',
+            lastName: userData.lastName || '',
+            phoneNumber: userData.phoneNumber || '',
+            email: userData.email || '',
+            dateOfBirth: userData.dateOfBirth || '',
+            personalStreet: userData.personalStreet || '',
+            personalHouseNumber: userData.personalHouseNumber || '',
+            personalPostalCode: userData.personalPostalCode || '',
+            personalCity: userData.personalCity || '',
+            personalCountry: userData.personalCountry || 'DE',
+            isManagingDirectorOwner: userData.isManagingDirectorOwner ?? true,
+          },
+          step2: {
+            companyName: userData.companyName || '',
+            companySuffix: userDataAny.companySuffix || '',
+            companyPhoneNumber: userData.companyPhoneNumber || userData.phoneNumber || '',
+            legalForm: userData.legalForm || null,
+            address: userData.address || userData.personalStreet || '',
+            street: userData.companyStreet || userData.personalStreet || '',
+            houseNumber: userData.companyHouseNumber || userData.personalHouseNumber || '',
+            postalCode: userData.companyPostalCode || userData.personalPostalCode || '',
+            city: userData.companyCity || userData.personalCity || '',
+            country: userData.companyCountry || userData.personalCountry || 'DE',
+            website: userData.companyWebsite || userDataAny.website || '',
+            fax: userDataAny.fax || '',
+            languages: userDataAny.languages || '',
+            description: userDataAny.publicDescription || userDataAny.description || '',
+            employees: userDataAny.employees || '',
+            industry: userDataAny.industry || userData.selectedCategory || '',
+            industryMcc: userData.industryMcc || '',
+          },
+          step3: {
+            hourlyRate: String(userData.hourlyRate || '0'),
+            taxNumber: userData.taxNumber || '',
+            vatId: userData.vatId || '',
+            companyRegister: userData.companyRegister || '',
+            profilePictureURL:
+              userData.profilePictureFirebaseUrl ||
+              userData.profilePictureURL ||
+              '/default-avatar.png',
+            businessLicenseURL: userData.businessLicenseURL || null,
+            masterCraftsmanCertificateURL: userData.masterCraftsmanCertificateURL || null,
+            identityFrontUrl: userData.identityFrontUrl || null,
+            identityBackUrl: userData.identityBackUrl || null,
+            districtCourt: '',
+            ust: 'standard',
+            profitMethod: 'euer',
+            taxMethod: 'soll',
+            defaultTaxRate: '19',
+            accountingSystem: 'skr03',
+            priceInput: 'netto',
+          },
+          step4: {
+            accountHolder: userData.accountHolder || '',
+            iban: userData.iban || '',
+            bankCountry: userData.bankCountry || 'DE',
+          },
+          lat: userData.lat || null,
+          lng: userData.lng || null,
+          radiusKm: userData.radiusKm || 30,
+          selectedCategory: userData.selectedCategory || null,
+          selectedSubcategory: userData.selectedSubcategory || null,
+          profileBannerImage: userDataAny.profileBannerImage || null,
+          stripeAccountId: userData.stripeAccountId || null,
+          profilePictureFile: null,
+          businessLicenseFile: null,
+          masterCraftsmanCertificateFile: null,
+          identityFrontFile: null,
+          identityBackFile: null,
+        });
+      }
+    }, 10000); // 10 Sekunden Timeout
+
+    return () => clearTimeout(timer);
+  }, [userData, form]);
 
   useEffect(() => {
-    if (userData) {
-      // Debug-Logging für Datenbank-Struktur
+    console.log('🔧 SettingsComponent: useEffect triggered with userData:', userData);
+
+    if (!userData) {
+      console.log('❌ SettingsComponent: No userData provided');
+      return;
+    }
+
+    try {
+      console.log('🔄 SettingsComponent: Processing userData...');
 
       const get = <T,>(path: string, fallback: T): T => {
         const keys = path.split('.');
@@ -235,7 +334,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         userData: userData,
       });
 
-      setForm({
+      const formData: UserDataForSettings = {
         uid: userData.uid,
         email: userData.email,
         user_type: userData.user_type,
@@ -290,7 +389,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           description: get('step2.description', get('publicDescription', get('description', ''))),
           employees: get('step2.employees', get('employees', '')),
           industry: (() => {
-            // Prüfe zuerst, ob bereits eine Branche in step2.industry gesetzt ist
+            // Vereinfachte Industrie-Logik
             const existingIndustry = get('step2.industry', '');
             if (
               existingIndustry &&
@@ -300,21 +399,19 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
               return existingIndustry;
             }
 
-            // Wenn nicht, prüfe selectedSubcategory für automatische Zuordnung
             const subcategory = get('selectedSubcategory', '') as string;
-
             if (subcategory && subcategory !== '') {
-              // Verwende findCategoryBySubcategory um die richtige Kategorie zu finden
-              const mappedCategory = findCategoryBySubcategory(subcategory);
-
-              if (mappedCategory) {
-                return mappedCategory;
+              try {
+                const mappedCategory = findCategoryBySubcategory(subcategory);
+                if (mappedCategory) {
+                  return mappedCategory;
+                }
+              } catch (error) {
+                console.warn('Error mapping category:', error);
               }
             }
 
-            // Versuche Kategorie-Mapping basierend auf selectedCategory
             const selectedCategory = get('selectedCategory', '') as string;
-
             if (
               selectedCategory &&
               selectedCategory !== 'Bitte wählen' &&
@@ -323,10 +420,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
               return selectedCategory;
             }
 
-            // Ansonsten verwende industry als Fallback
-            const fallback = get('industry', '');
-
-            return fallback;
+            return get('industry', '');
           })(),
           industryMcc: get('step2.industryMcc', get('industryMcc', '')),
         },
@@ -372,8 +466,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           return city.includes('Sellin') ? 13.7167 : null;
         })(),
         radiusKm: get('radiusKm', 30),
-        selectedCategory: get('selectedCategory', get('step2.industry', null)), // Erlaube null
-        selectedSubcategory: get('selectedSubcategory', null), // Erlaube null
+        selectedCategory: get('selectedCategory', get('step2.industry', null)),
+        selectedSubcategory: get('selectedSubcategory', null),
         profileBannerImage: get('profileBannerImage', null),
         stripeAccountId: get('stripeAccountId', null),
         profilePictureFile: null,
@@ -381,9 +475,85 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         masterCraftsmanCertificateFile: null,
         identityFrontFile: null,
         identityBackFile: null,
-      });
+      };
 
-      // Debug-Logging für gemappte Formularwerte
+      console.log('✅ SettingsComponent: Form data created successfully:', formData);
+      setForm(formData);
+    } catch (error) {
+      console.error('❌ SettingsComponent: Error processing userData:', error);
+      // Fallback: Setze ein minimales form object
+      setForm({
+        uid: userData.uid || '',
+        email: userData.email || '',
+        user_type: userData.user_type || '',
+        step1: {
+          firstName: '',
+          lastName: '',
+          phoneNumber: '',
+          email: userData.email || '',
+          dateOfBirth: '',
+          personalStreet: '',
+          personalHouseNumber: '',
+          personalPostalCode: '',
+          personalCity: '',
+          personalCountry: 'DE',
+          isManagingDirectorOwner: true,
+        },
+        step2: {
+          companyName: '',
+          companySuffix: '',
+          companyPhoneNumber: '',
+          legalForm: null,
+          address: '',
+          street: '',
+          houseNumber: '',
+          postalCode: '',
+          city: '',
+          country: 'DE',
+          website: '',
+          fax: '',
+          languages: '',
+          description: '',
+          employees: '',
+          industry: '',
+          industryMcc: '',
+        },
+        step3: {
+          hourlyRate: '0',
+          taxNumber: '',
+          vatId: '',
+          companyRegister: '',
+          profilePictureURL: '/default-avatar.png',
+          businessLicenseURL: null,
+          masterCraftsmanCertificateURL: null,
+          identityFrontUrl: null,
+          identityBackUrl: null,
+          districtCourt: '',
+          ust: 'standard',
+          profitMethod: 'euer',
+          taxMethod: 'soll',
+          defaultTaxRate: '19',
+          accountingSystem: 'skr03',
+          priceInput: 'netto',
+        },
+        step4: {
+          accountHolder: '',
+          iban: '',
+          bankCountry: 'DE',
+        },
+        lat: null,
+        lng: null,
+        radiusKm: 30,
+        selectedCategory: null,
+        selectedSubcategory: null,
+        profileBannerImage: null,
+        stripeAccountId: null,
+        profilePictureFile: null,
+        businessLicenseFile: null,
+        masterCraftsmanCertificateFile: null,
+        identityFrontFile: null,
+        identityBackFile: null,
+      });
     }
   }, [userData]);
 
@@ -798,9 +968,31 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
   if (!form) {
     return (
-      <div className="p-6 flex justify-center items-center min-h-[300px]">
-        <FiLoader className="animate-spin mr-3 h-8 w-8 text-teal-600" />
-        <span>Lade Einstellungen...</span>
+      <div className="p-6 flex flex-col justify-center items-center min-h-[300px] space-y-4">
+        <FiLoader className="animate-spin h-8 w-8 text-teal-600" />
+        <div className="text-center">
+          <span className="text-lg font-semibold text-gray-700">
+            {loadingTimeout ? 'Erstelle Fallback-Formular...' : 'Lade Einstellungen...'}
+          </span>
+          <p className="text-sm text-gray-500 mt-2">
+            {loadingTimeout
+              ? 'Das Laden hat länger gedauert, verwende Basis-Daten...'
+              : 'Falls das Laden zu lange dauert, versuchen Sie die Seite neu zu laden.'}
+          </p>
+        </div>
+
+        {/* Debug Information (nur in Development) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs text-gray-600 max-w-md">
+            <p>
+              <strong>Debug Info:</strong>
+            </p>
+            <p>userData: {userData ? 'vorhanden' : 'nicht vorhanden'}</p>
+            <p>form: {form ? 'vorhanden' : 'nicht vorhanden'}</p>
+            <p>loadingTimeout: {loadingTimeout ? 'ja' : 'nein'}</p>
+            {userData && <p>userData.uid: {userData.uid}</p>}
+          </div>
+        )}
       </div>
     );
   }

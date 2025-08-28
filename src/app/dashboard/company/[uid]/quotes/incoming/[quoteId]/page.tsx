@@ -209,13 +209,9 @@ export default function QuoteResponsePage({
 
       if (response.ok) {
         const data = await response.json();
-
       } else {
-
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   // Lade Angebots-Anfrage Details
@@ -239,7 +235,7 @@ export default function QuoteResponsePage({
         const data = await apiResponse.json();
 
         setQuote(data.quote);
-        
+
         // Extract response data from quote if available
         if (data.quote?.response) {
           setResponse(data.quote.response);
@@ -251,14 +247,12 @@ export default function QuoteResponsePage({
         const errorData = await apiResponse.json().catch(() => ({}));
 
         if (apiResponse.status === 404) {
-
         }
 
         // Nicht automatisch weiterleiten, sondern Fehler anzeigen
         // router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       }
     } catch (error) {
-
       // Nicht automatisch weiterleiten bei Fehlern
       // router.push(`/dashboard/company/${getCompanyId()}/quotes/incoming`);
     } finally {
@@ -285,7 +279,6 @@ export default function QuoteResponsePage({
       const dataToSend = responseData || response;
 
       if (!dataToSend) {
-
         return;
       }
 
@@ -315,13 +308,9 @@ export default function QuoteResponsePage({
 
         try {
           const errorData = JSON.parse(errorText);
-
-        } catch (parseError) {
-
-        }
+        } catch (parseError) {}
       }
     } catch (error) {
-
     } finally {
       setSubmitting(false);
     }
@@ -352,10 +341,8 @@ export default function QuoteResponsePage({
         const companyId = getCompanyId();
         router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       } else {
-
       }
     } catch (error) {
-
     } finally {
       setSubmitting(false);
     }
@@ -392,7 +379,6 @@ export default function QuoteResponsePage({
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.clientSecret) {
-
           // Führe die Stripe Zahlung durch
           const cardElement = elements.getElement(CardElement);
           if (!cardElement) {
@@ -443,7 +429,6 @@ export default function QuoteResponsePage({
         throw new Error(errorData.error || 'Netzwerkfehler');
       }
     } catch (error) {
-
       alert(`Fehler beim Zahlen der Provision: ${error.message}`);
       return false;
     } finally {
@@ -455,7 +440,6 @@ export default function QuoteResponsePage({
   const handleContractAccept = async () => {
     try {
       if (!quote?.response?.totalAmount) {
-
         return;
       }
 
@@ -474,9 +458,7 @@ export default function QuoteResponsePage({
       if (success) {
         setShowPaymentModal(false);
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   // Format Datum
@@ -949,7 +931,7 @@ export default function QuoteResponsePage({
             </div>
 
             {/* Chat - nur wenn Kontakte ausgetauscht oder bezahlt */}
-            {(quote.status === 'contacts_exchanged' || 
+            {(quote.status === 'contacts_exchanged' ||
               (quote.status === 'accepted' && quote.payment?.provisionStatus === 'paid')) && (
               <QuoteChat
                 quoteId={quote.id}
@@ -1041,9 +1023,7 @@ export default function QuoteResponsePage({
         {(quote.status === 'open' || quote.status === 'pending') && !response && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Angebot erstellen
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Angebot erstellen</h3>
               <p className="text-gray-600 mb-6">
                 Erstellen Sie ein detailliertes Angebot für diese Anfrage
               </p>
@@ -1063,111 +1043,46 @@ export default function QuoteResponsePage({
           </div>
         )}
 
-        {/* Bereits gesendetes Angebot anzeigen */}
-        {response && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center mb-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                <FiFileText className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Ihr Angebot</h2>
-                <p className="text-sm text-gray-600">
-                  Sie haben bereits ein Angebot für diese Anfrage gesendet
-                </p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <span className="text-sm font-medium text-gray-600">Gesamtbetrag:</span>
-                  <div className="text-xl font-bold text-[#14ad9f]">
-                    {response.totalAmount?.toFixed(2)} {response.currency || 'EUR'}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-600">Timeline:</span>
-                  <div className="text-gray-900">{response.timeline}</div>
-                </div>
-              </div>
-              
-              {response.serviceItems && response.serviceItems.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Leistungen:</h4>
-                  <div className="space-y-2">
-                    {response.serviceItems.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
-                        <div>
-                          <div className="font-medium text-gray-900">{item.title}</div>
-                          {item.description && (
-                            <div className="text-sm text-gray-600">{item.description}</div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium">{item.total?.toFixed(2)} EUR</div>
-                          {item.quantity > 1 && (
-                            <div className="text-sm text-gray-500">
-                              {item.quantity}x {item.unitPrice?.toFixed(2)} EUR
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {response.notes && (
-                <div className="mt-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Notizen:</h4>
-                  <div className="text-gray-700 bg-white p-3 rounded border">
-                    {response.notes}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Kontaktdaten für Status contacts_exchanged - Debug und erweiterte Bedingungen */}
-        {(quote.status === 'contacts_exchanged' || quote.status === 'accepted' || quote.payment?.provisionStatus === 'paid') && (
+        {/* Kontaktdaten für Status contacts_exchanged */}
+        {(quote.status === 'contacts_exchanged' ||
+          quote.status === 'accepted' ||
+          quote.payment?.provisionStatus === 'paid') && (
           <div className="mt-6">
-            <div className="mb-4 p-3 bg-yellow-100 rounded text-sm">
-              <strong>🔍 Debug Info:</strong><br/>
-              - Status: <code>{quote.status}</code><br/>
-              - PaymentStatus: <code>{quote.payment?.provisionStatus || 'undefined'}</code><br/>
-              - CustomerUID: <code>{quote.customer?.uid}</code><br/>
-              - ProviderUID: <code>{getCompanyId()}</code><br/>
-              - ContactExchange: <code>{response ? 'Mit Response' : 'Ohne Response'}</code>
-            </div>
             <ContactExchangeDisplay
               customerUid={quote.customer?.uid}
               providerUid={getCompanyId()}
               status={quote.status}
-              contactExchange={response ? {
-                status: 'completed',
-                completedAt: response.acceptedAt || new Date().toISOString(),
-                contactsExchanged: true,
-                customerContact: response.customerContact ? {
-                  type: response.customerContact.type,
-                  name: response.customerContact.name,
-                  email: response.customerContact.email,
-                  phone: response.customerContact.phone,
-                  address: response.customerContact.address,
-                  contactPerson: response.customerContact.contactPerson,
-                  uid: response.customerContact.uid
-                } : undefined,
-                providerContact: response.providerContact ? {
-                  type: response.providerContact.type,
-                  name: response.providerContact.name,
-                  email: response.providerContact.email,
-                  phone: response.providerContact.phone,
-                  address: response.providerContact.address,
-                  contactPerson: response.providerContact.contactPerson,
-                  uid: response.providerContact.uid
-                } : undefined
-              } : undefined}
+              contactExchange={
+                response
+                  ? {
+                      status: 'completed',
+                      completedAt: response.acceptedAt || new Date().toISOString(),
+                      contactsExchanged: true,
+                      customerContact: response.customerContact
+                        ? {
+                            type: response.customerContact.type,
+                            name: response.customerContact.name,
+                            email: response.customerContact.email,
+                            phone: response.customerContact.phone,
+                            address: response.customerContact.address,
+                            contactPerson: response.customerContact.contactPerson,
+                            uid: response.customerContact.uid,
+                          }
+                        : undefined,
+                      providerContact: response.providerContact
+                        ? {
+                            type: response.providerContact.type,
+                            name: response.providerContact.name,
+                            email: response.providerContact.email,
+                            phone: response.providerContact.phone,
+                            address: response.providerContact.address,
+                            contactPerson: response.providerContact.contactPerson,
+                            uid: response.providerContact.uid,
+                          }
+                        : undefined,
+                    }
+                  : undefined
+              }
               currentUserUid={getCompanyId()}
             />
           </div>
@@ -1313,12 +1228,10 @@ export default function QuoteResponsePage({
                   companyId={getCompanyId()}
                   onSubmit={async data => {
                     try {
-
                       let quoteData;
 
                       // Prüfe, ob es zeitbasierte Projekte sind (TimeBasedQuoteForm)
                       if (data.timeBasedProjects && Array.isArray(data.timeBasedProjects)) {
-
                         quoteData = {
                           message:
                             data.message ||
@@ -1351,7 +1264,6 @@ export default function QuoteResponsePage({
                       }
                       // Standard-Angebot (QuoteResponseForm)
                       else if (data.serviceItems && Array.isArray(data.serviceItems)) {
-
                         quoteData = {
                           message:
                             data.message || data.additionalNotes || 'Standard-Angebot erstellt',
@@ -1376,7 +1288,6 @@ export default function QuoteResponsePage({
                       }
                       // Fallback für andere Datenstrukturen
                       else {
-
                         quoteData = {
                           message: data.message || data.additionalNotes || 'Angebot erstellt',
                           serviceItems: [
@@ -1399,9 +1310,7 @@ export default function QuoteResponsePage({
 
                       // Direkt mit den konvertierten Daten senden
                       await submitResponse(quoteData);
-                    } catch (error) {
-
-                    }
+                    } catch (error) {}
                   }}
                   onCancel={() => setShowResponseForm(false)}
                   loading={submitting}
