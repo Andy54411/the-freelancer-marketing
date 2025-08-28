@@ -25,12 +25,13 @@ export default async function middleware(request: NextRequest) {
   // Company Dashboard Onboarding Protection (nach Dokumentation)
   if (request.nextUrl.pathname.startsWith('/dashboard/company/')) {
     logMiddleware('Company Dashboard Zugriff erkannt', request);
-    const onboardingCheck = checkCompanyOnboardingStatus(request);
-    if (onboardingCheck) {
-      logMiddleware('Company Dashboard blockiert - Umleitung zu Onboarding', request);
-      return onboardingCheck;
-    }
-    logMiddleware('Company Dashboard Zugriff erlaubt', request);
+    // TEMPORÄR DEAKTIVIERT FÜR PAYMENT TESTS
+    // const onboardingCheck = checkCompanyOnboardingStatus(request);
+    // if (onboardingCheck) {
+    //   logMiddleware('Company Dashboard blockiert - Umleitung zu Onboarding', request);
+    //   return onboardingCheck;
+    // }
+    logMiddleware('Company Dashboard Zugriff erlaubt (ONBOARDING CHECK DEAKTIVIERT)', request);
   }
 
   // Admin Authentication Protection

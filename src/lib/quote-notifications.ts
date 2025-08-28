@@ -187,7 +187,7 @@ export class QuoteNotificationService {
           if (userRole === 'provider') {
             // Provider wird benachrichtigt, dass Kunde das Angebot angenommen hat
             title = '🎉 Angebot angenommen!';
-            message = `${quoteData.customerName} hat Ihr Angebot für "${quoteData.subcategory}" angenommen! Provision erforderlich für Kontaktaustausch.`;
+            message = `${quoteData.customerName} hat Ihr Angebot für "${quoteData.subcategory}" angenommen! Zahlung erforderlich für Kontaktaustausch.`;
             notificationType = 'quote_accepted';
           } else {
             // Kunde wird über eigene Annahme informiert (falls nötig)
@@ -282,11 +282,7 @@ export class QuoteNotificationService {
     quoteId: string,
     customerUid: string,
     providerUid: string,
-    quoteData: {
-      customerName: string;
-      providerName: string;
-      subcategory: string;
-    }
+    quoteTitle: string
   ): Promise<void> {
     try {
       // 1. PROVIDER NOTIFICATION - Kontakte verfügbar
@@ -294,16 +290,14 @@ export class QuoteNotificationService {
         userId: providerUid,
         type: 'quote_contact_exchange',
         title: '📞 Kontaktdaten verfügbar!',
-        message: `Die Provision wurde bezahlt! Sie können nun die Kontaktdaten von ${quoteData.customerName} für "${quoteData.subcategory}" einsehen.`,
+        message: `Die Zahlung wurde abgeschlossen! Sie können nun die Kontaktdaten für "${quoteTitle}" einsehen.`,
         quoteId,
-        quoteTitle: `${quoteData.subcategory} - ${quoteData.customerName}`,
+        quoteTitle: quoteTitle,
         link: `/dashboard/company/${providerUid}/quotes/incoming/${quoteId}`,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
-          customerName: quoteData.customerName,
-          providerName: quoteData.providerName,
-          subcategory: quoteData.subcategory,
+          subcategory: quoteTitle,
         },
       };
 
@@ -312,16 +306,14 @@ export class QuoteNotificationService {
         userId: customerUid,
         type: 'quote_contact_exchange',
         title: '🤝 Kontaktaustausch erfolgreich!',
-        message: `Die Zahlung war erfolgreich! Sie können nun die Kontaktdaten von ${quoteData.providerName} für "${quoteData.subcategory}" einsehen.`,
+        message: `Die Zahlung war erfolgreich! Sie können nun die Kontaktdaten für "${quoteTitle}" einsehen.`,
         quoteId,
-        quoteTitle: `${quoteData.subcategory} - ${quoteData.providerName}`,
+        quoteTitle: quoteTitle,
         link: `/dashboard/company/${customerUid}/quotes/received/${quoteId}`,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
-          customerName: quoteData.customerName,
-          providerName: quoteData.providerName,
-          subcategory: quoteData.subcategory,
+          subcategory: quoteTitle,
         },
       };
 
@@ -332,7 +324,7 @@ export class QuoteNotificationService {
       ]);
 
     } catch (error) {
-
+      console.error('Error creating contact exchange notifications:', error);
       throw error;
     }
   }

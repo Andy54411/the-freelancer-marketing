@@ -43,22 +43,54 @@ export async function POST(
 
     const quoteData = quoteDoc.data();
 
-    // Validiere, dass das Angebot angenommen wurde
-    if (quoteData?.status !== 'accepted') {
+    // Validiere, dass das Angebot angenommen wurde ODER Payment Intent erstellt werden soll
+    if (action === 'create_payment_intent') {
+      // Bei Payment Intent Creation: Setze Status auf 'accepted' falls noch 'responded'
+      if (quoteData?.status === 'responded') {
+        await quoteRef.update({
+          status: 'accepted',
+          acceptedAt: new Date().toISOString(),
+        });
+        console.log('✅ Quote status updated to accepted');
+      } else if (quoteData?.status !== 'accepted') {
+        return NextResponse.json({ error: 'Angebot muss zuerst beantwortet werden' }, { status: 400 });
+      }
+    } else if (quoteData?.status !== 'accepted') {
       return NextResponse.json({ error: 'Angebot wurde noch nicht angenommen' }, { status: 400 });
     }
 
-    // Validiere, dass es eine Response mit totalAmount gibt
-    if (!quoteData?.response?.totalAmount) {
+    // Validiere, dass es eine Response mit totalAmount gibt (Legacy) oder Proposals (Neu)
+    let totalAmount = 0;
+    
+    // Zuerst prüfen: Proposals in Subcollection (Neues System)
+    const proposalsSnapshot = await quoteRef.collection('proposals').get();
+    if (!proposalsSnapshot.empty) {
+      const proposalDoc = proposalsSnapshot.docs[0]; // Nehme erste Proposal
+      const proposalData = proposalDoc.data();
+      totalAmount = proposalData.totalAmount || 0;
+      console.log('💰 Using totalAmount from proposal:', totalAmount);
+    }
+    // Fallback: Legacy Response System
+    else if (quoteData?.response?.totalAmount) {
+      totalAmount = parseFloat(quoteData.response.totalAmount);
+      console.log('💰 Using totalAmount from legacy response:', totalAmount);
+    }
+    
+    if (!totalAmount || totalAmount <= 0) {
       return NextResponse.json({ error: 'Angebotssumme nicht gefunden' }, { status: 400 });
     }
 
     switch (action) {
       case 'create_payment_intent': {
         // Berechne 3,5% Provision
-        const totalAmount = parseFloat(quoteData.response.totalAmount);
         const provisionRate = 0.05; // 5% Provision für Taskilo
         const provisionAmount = Math.round(totalAmount * provisionRate * 100); // In Cents
+
+        console.log('💰 Payment calculation:', {
+          totalAmount,
+          provisionRate,
+          provisionAmount: provisionAmount / 100
+        });
 
         // Erstelle Payment Intent für Provision (ohne Connect Features für Tests)
         const paymentIntent = await stripe.paymentIntents.create({
@@ -106,16 +138,55 @@ export async function POST(
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
         if (paymentIntent.status === 'succeeded') {
-          // Update Quote mit erfolgreichem Payment
-          await quoteRef.update({
+          // Lade Company-Daten für Customer und Provider automatisch
+          const customerCompanyDoc = await db.collection('companies').doc(companyId).get();
+          const providerId = quoteData.providerId || quoteData.providerUid;
+          const providerCompanyDoc = await db.collection('companies').doc(providerId).get();
+
+          // Extrahiere Customer Contact aus Company-Daten
+          let customerContact: any = null;
+          if (customerCompanyDoc.exists) {
+            const customerCompanyData = customerCompanyDoc.data();
+            customerContact = {
+              name: customerCompanyData?.companyName || customerCompanyData?.name || 'Kunde',
+              email: customerCompanyData?.email || '',
+              phone: customerCompanyData?.phone || customerCompanyData?.phoneNumber || '',
+              address: `${customerCompanyData?.address || customerCompanyData?.street || ''}, ${customerCompanyData?.city || ''}`.trim().replace(/^,\s*/, '').replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
+            };
+          }
+
+          // Extrahiere Provider Contact aus Company-Daten
+          let providerContact: any = null;
+          if (providerCompanyDoc.exists) {
+            const providerCompanyData = providerCompanyDoc.data();
+            providerContact = {
+              name: providerCompanyData?.companyName || providerCompanyData?.name || 'Anbieter',
+              email: providerCompanyData?.email || '',
+              phone: providerCompanyData?.phone || providerCompanyData?.phoneNumber || '',
+              address: `${providerCompanyData?.address || providerCompanyData?.street || ''}, ${providerCompanyData?.city || ''}`.trim().replace(/^,\s*/, '').replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
+            };
+          }
+
+          // Update Quote mit erfolgreichem Payment und Kontaktdaten
+          const updateData: any = {
             'payment.provisionStatus': 'paid',
             'payment.paidAt': new Date().toISOString(),
             'payment.paymentIntentId': paymentIntentId,
             'contactExchange.readyForExchange': true,
-          });
+            'status': 'contacts_exchanged',
+          };
+
+          // Füge Kontaktdaten hinzu, falls verfügbar
+          if (customerContact) {
+            updateData['contactExchange.customerContact'] = customerContact;
+          }
+          if (providerContact) {
+            updateData['contactExchange.providerContact'] = providerContact;
+          }
+
+          await quoteRef.update(updateData);
 
           // Bell-Notification für erfolgreichen Kontaktaustausch
-          const providerId = quoteData.providerId || quoteData.providerUid;
           if (providerId) {
             try {
               // Namen für Notification abrufen
@@ -143,11 +214,7 @@ export async function POST(
                 quoteId,
                 companyId, // Customer UID
                 providerId, // Provider UID
-                {
-                  customerName: customerName,
-                  providerName: providerName,
-                  subcategory: quoteData.projectSubcategory || quoteData.projectTitle || 'Service',
-                }
+                `${customerName} ↔ ${providerName} - ${quoteData.projectSubcategory || quoteData.projectTitle || 'Service'}`
               );
 
             } catch (notificationError) {

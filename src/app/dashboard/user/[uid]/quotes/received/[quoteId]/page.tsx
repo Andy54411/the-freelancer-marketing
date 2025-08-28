@@ -19,6 +19,7 @@ import {
   FiCreditCard,
 } from 'react-icons/fi';
 import QuotePaymentModal from '@/components/quotes/QuotePaymentModal';
+import QuoteChat from '@/components/chat/QuoteChat';
 
 interface Proposal {
   companyUid: string;
@@ -443,6 +444,20 @@ export default function CustomerQuoteDetailsPage({
                             {proposal.status !== 'accepted' && (
                               <div className="text-sm text-gray-500">
                                 Kontaktdaten verfügbar nach Annahme
+                              </div>
+                            )}
+                            
+                            {/* Chat - nur wenn angenommen und bezahlt */}
+                            {proposal.status === 'accepted' && (quote.status === 'contacts_exchanged' || quote.status === 'paid') && (
+                              <div className="mt-3">
+                                <QuoteChat
+                                  quoteId={quote.id}
+                                  customerId={quote.customerId}
+                                  providerId={proposal.companyUid}
+                                  customerName={quote.customer?.name || 'Kunde'}
+                                  providerName={proposal.companyName || 'Anbieter'}
+                                  currentUserType="customer"
+                                />
                               </div>
                             )}
                           </div>

@@ -104,8 +104,11 @@ export default function ReceivedQuotesPage() {
     }
   }, [firebaseUser, params?.uid]);
 
-  // Filter Angebote
+  // Filter Angebote - only show quotes that have actual responses/proposals
   const filteredQuotes = quotes.filter(quote => {
+    // First filter: Only quotes with responses
+    if (!quote.hasResponse) return false;
+
     const matchesSearch =
       quote.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       quote.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,11 +123,11 @@ export default function ReceivedQuotesPage() {
 
   // Statistiken
   const stats = {
-    total: quotes.length,
-    pending: quotes.filter(q => q.status === 'pending').length,
+    total: quotes.filter(q => q.hasResponse).length, // Only count quotes with actual responses/proposals
+    pending: quotes.filter(q => q.status === 'pending' && q.hasResponse).length,
     responded: quotes.filter(q => q.hasResponse).length,
-    fromCompanies: quotes.filter(q => q.provider?.type === 'company').length,
-    fromUsers: quotes.filter(q => q.provider?.type === 'user').length,
+    fromCompanies: quotes.filter(q => q.provider?.type === 'company' && q.hasResponse).length,
+    fromUsers: quotes.filter(q => q.provider?.type === 'user' && q.hasResponse).length,
   };
 
   // Format Date
@@ -164,7 +167,28 @@ export default function ReceivedQuotesPage() {
   };
 
   // Status Badge
-  const getStatusBadge = (status: string, hasResponse: boolean, paymentStatus?: string) => {
+  const getStatusBadge = (status: string, hasResponse: boolean, paymentStatus?: string, contactExchange?: any) => {
+    // Priority 1: Check if contacts have been exchanged (payment completed)
+    if (status === 'contacts_exchanged' || contactExchange?.contactsExchanged) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+          <FiCheckCircle className="mr-1 h-3 w-3" />
+          Kontakte ausgetauscht
+        </span>
+      );
+    }
+
+    // Priority 2: Check if payment is completed
+    if (paymentStatus === 'paid') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+          <FiCheckCircle className="mr-1 h-3 w-3" />
+          Zahlung abgeschlossen
+        </span>
+      );
+    }
+
+    // Priority 3: If there's an actual response/proposal, show "Angebot erhalten"
     if (hasResponse) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
@@ -174,7 +198,7 @@ export default function ReceivedQuotesPage() {
       );
     }
 
-    // Special handling for accepted status - check payment
+    // Priority 4: Special handling for accepted status - check payment
     if (status === 'accepted') {
       if (paymentStatus === 'paid') {
         return (
@@ -193,18 +217,23 @@ export default function ReceivedQuotesPage() {
       }
     }
 
+    // Priority 5: Show status based on quote status
     const statusStyles = {
+      open: 'bg-gray-100 text-gray-800 border-gray-200',
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       responded: 'bg-blue-100 text-blue-800 border-blue-200',
       accepted: 'bg-green-100 text-green-800 border-green-200',
       declined: 'bg-red-100 text-red-800 border-red-200',
+      contacts_exchanged: 'bg-green-100 text-green-800 border-green-200',
     };
 
     const statusLabels = {
+      open: 'Warten auf Angebote',
       pending: 'Wartend',
       responded: 'Beantwortet',
       accepted: 'Angenommen',
       declined: 'Abgelehnt',
+      contacts_exchanged: 'Kontakte ausgetauscht',
     };
 
     return (
@@ -432,7 +461,8 @@ export default function ReceivedQuotesPage() {
                       {getStatusBadge(
                         quote.status,
                         quote.hasResponse,
-                        quote.payment?.provisionStatus
+                        quote.payment?.provisionStatus,
+                        (quote as any).contactExchange
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

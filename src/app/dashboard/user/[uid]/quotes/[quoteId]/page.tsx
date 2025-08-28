@@ -21,6 +21,7 @@ import {
   Star as FiStar,
 } from 'lucide-react';
 import Link from 'next/link';
+import QuoteChat from '@/components/chat/QuoteChat';
 
 interface QuoteRequest {
   id: string;
@@ -611,7 +612,10 @@ export default function CustomerQuoteDetailPage() {
                   </label>
                   <p className="mt-1 text-sm text-gray-900 flex items-center">
                     <FiClock className="mr-2 h-4 w-4 text-gray-400" />
-                    {new Date(quote.response.respondedAt).toLocaleString('de-DE')}
+                    {quote.response.respondedAt 
+                      ? new Date(quote.response.respondedAt).toLocaleString('de-DE')
+                      : 'Unbekannt'
+                    }
                   </p>
                 </div>
               )}
@@ -636,6 +640,18 @@ export default function CustomerQuoteDetailPage() {
                 </Link>
               </div>
             </div>
+          )}
+
+          {/* Chat - nur wenn Angebot angenommen */}
+          {quote.status === 'accepted' && (
+            <QuoteChat
+              quoteId={quote.id}
+              customerId={quote.customerUid || uid}
+              providerId={quote.providerId}
+              customerName={quote.customerName}
+              providerName={quote.providerName || quote.providerCompany || 'Anbieter'}
+              currentUserType="customer"
+            />
           )}
         </div>
       </div>

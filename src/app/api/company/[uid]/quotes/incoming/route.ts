@@ -174,27 +174,59 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Check if this company has already submitted a response/proposal
       let hasResponse = false;
       let responseData: any = null;
+      let proposalStatus = null;
 
       try {
-        // Check for existing proposals/responses for this quote
+        // First check subcollection proposals (new format)
         const proposalsSnapshot = await db
+          .collection('quotes')
+          .doc(doc.id)
           .collection('proposals')
-          .where('quoteId', '==', doc.id)
           .where('providerId', '==', uid)
           .get();
 
         if (!proposalsSnapshot.empty) {
           hasResponse = true;
           responseData = proposalsSnapshot.docs[0].data();
+          proposalStatus = responseData.status; // Get proposal status
+          console.log(`📋 Found subcollection proposal with status: ${proposalStatus}`);
+        } else {
+          // Fallback: Check old proposals collection
+          const oldProposalsSnapshot = await db
+            .collection('proposals')
+            .where('quoteId', '==', doc.id)
+            .where('providerId', '==', uid)
+            .get();
+
+          if (!oldProposalsSnapshot.empty) {
+            hasResponse = true;
+            responseData = oldProposalsSnapshot.docs[0].data();
+            proposalStatus = responseData.status;
+            console.log(`📋 Found old collection proposal with status: ${proposalStatus}`);
+          }
         }
       } catch (error) {
         console.error('Error checking proposals:', error);
       }
 
-      // Determine actual status based on response and payment
+      // Determine actual status based on proposal status and payment
       let actualStatus = quoteData.status || 'pending';
 
-      if (hasResponse && actualStatus === 'pending') {
+      // Priority 1: Use proposal status if available
+      if (proposalStatus) {
+        if (proposalStatus === 'accepted') {
+          // Check if payment is complete
+          if (quoteData.payment?.status === 'paid') {
+            actualStatus = 'accepted';
+          } else {
+            actualStatus = 'accepted'; // Still show as accepted even if payment pending
+          }
+        } else if (proposalStatus === 'declined' || proposalStatus === 'rejected') {
+          actualStatus = 'declined';
+        } else if (proposalStatus === 'pending' && hasResponse) {
+          actualStatus = 'responded';
+        }
+      } else if (hasResponse && actualStatus === 'pending') {
         actualStatus = 'responded';
       }
 
@@ -215,6 +247,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         estimatedDuration: quoteData.estimatedDuration || '',
         hasResponse: hasResponse,
         response: responseData,
+        payment: quoteData.payment || null, // Include payment info
+        proposalStatus: proposalStatus, // Include proposal status
         customer: customerInfo,
         customerType: customerInfo.type,
         customerUid: customerInfo.uid,

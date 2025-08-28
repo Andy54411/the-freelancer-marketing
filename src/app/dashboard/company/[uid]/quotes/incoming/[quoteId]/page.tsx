@@ -22,6 +22,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import QuoteFormToggle from '@/components/quotes/QuoteFormToggle';
 import ContractTermsModal from '@/components/quotes/ContractTermsModal';
+import { ContactExchangeDisplay } from '@/components/quotes/ContactExchangeDisplay';
+import QuoteChat from '@/components/chat/QuoteChat';
 
 // Interface für Angebots-Anfrage Details
 interface QuoteRequest {
@@ -31,7 +33,7 @@ interface QuoteRequest {
   serviceCategory: string;
   serviceSubcategory: string;
   projectType: 'fixed_price' | 'hourly' | 'project';
-  status: 'pending' | 'responded' | 'accepted' | 'declined';
+  status: 'open' | 'pending' | 'responded' | 'accepted' | 'declined' | 'contacts_exchanged';
   budget?: {
     min: number;
     max: number;
@@ -69,6 +71,7 @@ interface QuoteRequest {
     name: string;
     type: 'user' | 'company';
     email: string;
+    phone?: string;
     avatar?: string;
     uid: string;
   };
@@ -136,6 +139,30 @@ interface QuoteResponse {
   terms: string;
   validUntil: string;
   notes: string;
+  // Contact exchange fields
+  contactsExchanged?: boolean;
+  paymentComplete?: boolean;
+  status?: 'responded' | 'accepted' | 'contacts_exchanged';
+  customerContact?: {
+    type: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    address: string;
+    contactPerson: string;
+    uid: string;
+  };
+  providerContact?: {
+    type: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    address: string;
+    contactPerson: string;
+    uid: string;
+  };
+  acceptedAt?: string;
+  contactExchangeAt?: string;
 }
 
 export default function QuoteResponsePage({
@@ -212,6 +239,11 @@ export default function QuoteResponsePage({
         const data = await apiResponse.json();
 
         setQuote(data.quote);
+        
+        // Extract response data from quote if available
+        if (data.quote?.response) {
+          setResponse(data.quote.response);
+        }
 
         // View-Count erhöhen (nach erfolgreichem Laden)
         await incrementViewCount(quoteId, token);
@@ -397,7 +429,7 @@ export default function QuoteResponsePage({
             if (confirmResponse.ok) {
               const confirmResult = await confirmResponse.json();
               if (confirmResult.success) {
-                alert('Provision erfolgreich bezahlt! Kontaktdaten werden ausgetauscht.');
+                alert('Zahlung erfolgreich! Kontaktdaten werden freigeschaltet.');
                 fetchQuoteDetails(); // Lade Quote neu
                 return true;
               }
@@ -916,6 +948,19 @@ export default function QuoteResponsePage({
               </div>
             </div>
 
+            {/* Chat - nur wenn Kontakte ausgetauscht oder bezahlt */}
+            {(quote.status === 'contacts_exchanged' || 
+              (quote.status === 'accepted' && quote.payment?.provisionStatus === 'paid')) && (
+              <QuoteChat
+                quoteId={quote.id}
+                customerId={quote.customerUid || quote.customer.uid}
+                providerId={getCompanyId()}
+                customerName={quote.customer.name}
+                providerName="Anbieter"
+                currentUserType="provider"
+              />
+            )}
+
             {/* Status */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Status</h2>
@@ -931,7 +976,9 @@ export default function QuoteResponsePage({
                           ? quote.payment?.provisionStatus === 'paid'
                             ? 'bg-green-50 border border-green-200'
                             : 'bg-yellow-50 border border-yellow-200'
-                          : 'bg-red-50 border border-red-200'
+                          : quote.status === 'contacts_exchanged'
+                            ? 'bg-green-50 border border-green-200'
+                            : 'bg-red-50 border border-red-200'
                   }`}
                 >
                   <div className="flex items-center">
@@ -945,7 +992,9 @@ export default function QuoteResponsePage({
                               ? quote.payment?.provisionStatus === 'paid'
                                 ? 'bg-green-400'
                                 : 'bg-yellow-400'
-                              : 'bg-red-400'
+                              : quote.status === 'contacts_exchanged'
+                                ? 'bg-green-400'
+                                : 'bg-red-400'
                       }`}
                     />
                     <span
@@ -958,7 +1007,11 @@ export default function QuoteResponsePage({
                               ? quote.payment?.provisionStatus === 'paid'
                                 ? 'text-green-800'
                                 : 'text-yellow-800'
-                              : 'text-red-800'
+                              : quote.status === 'contacts_exchanged'
+                                ? 'text-green-800'
+                                : quote.status === 'open'
+                                  ? 'text-gray-800'
+                                  : 'text-red-800'
                       }`}
                     >
                       {quote.status === 'pending'
@@ -969,7 +1022,13 @@ export default function QuoteResponsePage({
                             ? quote.payment?.provisionStatus === 'paid'
                               ? 'Angebot angenommen'
                               : 'Zahlung ausstehend'
-                            : 'Angebot abgelehnt'}
+                            : quote.status === 'contacts_exchanged'
+                              ? 'Kontakte ausgetauscht'
+                              : quote.status === 'open'
+                                ? 'Offen für Angebote'
+                                : quote.status === 'declined'
+                                  ? 'Angebot abgelehnt'
+                                  : 'Unbekannter Status'}
                     </span>
                   </div>
                 </div>
@@ -978,198 +1037,141 @@ export default function QuoteResponsePage({
           </div>
         </div>
 
-        {/* Kontaktdaten (nur bei angenommenen Angeboten UND bezahlter Provision) - Eigenständiger Container */}
-        {quote.status === 'accepted' &&
-          quote.payment?.provisionStatus === 'paid' &&
-          quote.contactExchange && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center mb-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                  <FiCheckCircle className="w-4 h-4 text-green-600" />
+        {/* Action Buttons - Angebot erstellen */}
+        {(quote.status === 'open' || quote.status === 'pending') && !response && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Angebot erstellen
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Erstellen Sie ein detailliertes Angebot für diese Anfrage
+              </p>
+              <button
+                onClick={() => setShowResponseForm(true)}
+                disabled={submitting}
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? (
+                  <FiLoader className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                ) : (
+                  <FiFileText className="-ml-1 mr-2 h-4 w-4" />
+                )}
+                Angebot jetzt erstellen
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Bereits gesendetes Angebot anzeigen */}
+        {response && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <FiFileText className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Ihr Angebot</h2>
+                <p className="text-sm text-gray-600">
+                  Sie haben bereits ein Angebot für diese Anfrage gesendet
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <span className="text-sm font-medium text-gray-600">Gesamtbetrag:</span>
+                  <div className="text-xl font-bold text-[#14ad9f]">
+                    {response.totalAmount?.toFixed(2)} {response.currency || 'EUR'}
+                  </div>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Kontaktdaten ausgetauscht</h2>
-                  <p className="text-sm text-gray-600">
-                    Sie können nun direkt mit dem Kunden kommunizieren
-                  </p>
+                  <span className="text-sm font-medium text-gray-600">Timeline:</span>
+                  <div className="text-gray-900">{response.timeline}</div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                {/* Kundendaten */}
-                {quote.contactExchange.customerData && (
-                  <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center text-lg">
-                      <FiUser className="h-5 w-5 mr-3 text-blue-600" />
-                      Kundendaten
-                    </h3>
-                    <div className="space-y-4">
-                      {quote.contactExchange.customerData.name && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                          <span className="font-medium text-gray-700 mb-1 sm:mb-0 min-w-0 sm:w-24">
-                            Name:
-                          </span>
-                          <span className="text-gray-900 font-medium break-words">
-                            {quote.contactExchange.customerData.name}
-                          </span>
+              
+              {response.serviceItems && response.serviceItems.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Leistungen:</h4>
+                  <div className="space-y-2">
+                    {response.serviceItems.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center bg-white p-3 rounded border">
+                        <div>
+                          <div className="font-medium text-gray-900">{item.title}</div>
+                          {item.description && (
+                            <div className="text-sm text-gray-600">{item.description}</div>
+                          )}
                         </div>
-                      )}
-                      {quote.contactExchange.customerData.email && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                          <span className="font-medium text-gray-700 mb-1 sm:mb-0 min-w-0 sm:w-24">
-                            Email:
-                          </span>
-                          <a
-                            href={`mailto:${quote.contactExchange.customerData.email}`}
-                            className="text-[#14ad9f] hover:text-[#129488] hover:underline font-medium break-all"
-                          >
-                            {quote.contactExchange.customerData.email}
-                          </a>
+                        <div className="text-right">
+                          <div className="font-medium">{item.total?.toFixed(2)} EUR</div>
+                          {item.quantity > 1 && (
+                            <div className="text-sm text-gray-500">
+                              {item.quantity}x {item.unitPrice?.toFixed(2)} EUR
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {quote.contactExchange.customerData.phone && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                          <span className="font-medium text-gray-700 mb-1 sm:mb-0 min-w-0 sm:w-24">
-                            Telefon:
-                          </span>
-                          <a
-                            href={`tel:${quote.contactExchange.customerData.phone}`}
-                            className="text-[#14ad9f] hover:text-[#129488] hover:underline font-medium"
-                          >
-                            {quote.contactExchange.customerData.phone}
-                          </a>
-                        </div>
-                      )}
-                      {quote.contactExchange.customerData.address && (
-                        <div className="bg-white rounded-lg p-3 border border-blue-200">
-                          <span className="font-medium text-gray-700 block mb-2">Adresse:</span>
-                          <div className="space-y-1">
-                            <span className="text-gray-900 font-medium block">
-                              {quote.contactExchange.customerData.address}
-                            </span>
-                            {(quote.contactExchange.customerData.postalCode ||
-                              quote.contactExchange.customerData.city) && (
-                              <span className="text-gray-700 text-sm block">
-                                {quote.contactExchange.customerData.postalCode &&
-                                  quote.contactExchange.customerData.postalCode}
-                                {quote.contactExchange.customerData.postalCode &&
-                                  quote.contactExchange.customerData.city &&
-                                  ' '}
-                                {quote.contactExchange.customerData.city &&
-                                  quote.contactExchange.customerData.city}
-                              </span>
-                            )}
-                            {quote.contactExchange.customerData.country &&
-                              quote.contactExchange.customerData.country !== 'DE' && (
-                                <span className="text-gray-600 text-sm block">
-                                  {quote.contactExchange.customerData.country}
-                                </span>
-                              )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {/* Ihre Daten */}
-                {quote.contactExchange.providerData && (
-                  <div className="bg-green-50 rounded-xl p-6 border border-green-100">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center text-lg">
-                      <FiBuilding className="h-5 w-5 mr-3 text-green-600" />
-                      Ihre freigegebenen Daten
-                    </h3>
-                    <div className="space-y-4">
-                      {quote.contactExchange.providerData.name && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                          <span className="font-medium text-gray-700 mb-1 sm:mb-0 min-w-0 sm:w-24">
-                            Name:
-                          </span>
-                          <span className="text-gray-900 font-medium break-words">
-                            {quote.contactExchange.providerData.name}
-                          </span>
-                        </div>
-                      )}
-                      {quote.contactExchange.providerData.email && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                          <span className="font-medium text-gray-700 mb-1 sm:mb-0 min-w-0 sm:w-24">
-                            Email:
-                          </span>
-                          <span className="text-gray-900 font-medium break-all">
-                            {quote.contactExchange.providerData.email}
-                          </span>
-                        </div>
-                      )}
-                      {quote.contactExchange.providerData.phone && (
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                          <span className="font-medium text-gray-700 mb-1 sm:mb-0 min-w-0 sm:w-24">
-                            Telefon:
-                          </span>
-                          <span className="text-gray-900 font-medium">
-                            {quote.contactExchange.providerData.phone}
-                          </span>
-                        </div>
-                      )}
-                      {quote.contactExchange.providerData.address && (
-                        <div className="bg-white rounded-lg p-3 border border-green-200">
-                          <span className="font-medium text-gray-700 block mb-2">Adresse:</span>
-                          <div className="space-y-1">
-                            <span className="text-gray-900 font-medium block">
-                              {quote.contactExchange.providerData.address}
-                            </span>
-                            {(quote.contactExchange.providerData.postalCode ||
-                              quote.contactExchange.providerData.city) && (
-                              <span className="text-gray-700 text-sm block">
-                                {quote.contactExchange.providerData.postalCode &&
-                                  quote.contactExchange.providerData.postalCode}
-                                {quote.contactExchange.providerData.postalCode &&
-                                  quote.contactExchange.providerData.city &&
-                                  ' '}
-                                {quote.contactExchange.providerData.city &&
-                                  quote.contactExchange.providerData.city}
-                              </span>
-                            )}
-                            {quote.contactExchange.providerData.country &&
-                              quote.contactExchange.providerData.country !== 'DE' && (
-                                <span className="text-gray-600 text-sm block">
-                                  {quote.contactExchange.providerData.country}
-                                </span>
-                              )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {quote.contactExchange.exchangedAt && (
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <div className="flex items-center text-xs text-gray-500">
-                    <FiCalendar className="w-3 h-3 mr-1" />
-                    Kontaktdaten ausgetauscht am:{' '}
-                    {(() => {
-                      try {
-                        const date = quote.contactExchange.exchangedAt;
-                        if (date && typeof date === 'object' && '_seconds' in date) {
-                          // Firestore timestamp format
-                          const seconds = date._seconds as number;
-                          return new Date(seconds * 1000).toLocaleString('de-DE');
-                        } else if (date) {
-                          // Regular Date format
-                          return new Date(date).toLocaleString('de-DE');
-                        }
-                        return 'Unbekannt';
-                      } catch (error) {
-
-                        return 'Unbekannt';
-                      }
-                    })()}
+                </div>
+              )}
+              
+              {response.notes && (
+                <div className="mt-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Notizen:</h4>
+                  <div className="text-gray-700 bg-white p-3 rounded border">
+                    {response.notes}
                   </div>
                 </div>
               )}
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Kontaktdaten für Status contacts_exchanged - Debug und erweiterte Bedingungen */}
+        {(quote.status === 'contacts_exchanged' || quote.status === 'accepted' || quote.payment?.provisionStatus === 'paid') && (
+          <div className="mt-6">
+            <div className="mb-4 p-3 bg-yellow-100 rounded text-sm">
+              <strong>🔍 Debug Info:</strong><br/>
+              - Status: <code>{quote.status}</code><br/>
+              - PaymentStatus: <code>{quote.payment?.provisionStatus || 'undefined'}</code><br/>
+              - CustomerUID: <code>{quote.customer?.uid}</code><br/>
+              - ProviderUID: <code>{getCompanyId()}</code><br/>
+              - ContactExchange: <code>{response ? 'Mit Response' : 'Ohne Response'}</code>
+            </div>
+            <ContactExchangeDisplay
+              customerUid={quote.customer?.uid}
+              providerUid={getCompanyId()}
+              status={quote.status}
+              contactExchange={response ? {
+                status: 'completed',
+                completedAt: response.acceptedAt || new Date().toISOString(),
+                contactsExchanged: true,
+                customerContact: response.customerContact ? {
+                  type: response.customerContact.type,
+                  name: response.customerContact.name,
+                  email: response.customerContact.email,
+                  phone: response.customerContact.phone,
+                  address: response.customerContact.address,
+                  contactPerson: response.customerContact.contactPerson,
+                  uid: response.customerContact.uid
+                } : undefined,
+                providerContact: response.providerContact ? {
+                  type: response.providerContact.type,
+                  name: response.providerContact.name,
+                  email: response.providerContact.email,
+                  phone: response.providerContact.phone,
+                  address: response.providerContact.address,
+                  contactPerson: response.providerContact.contactPerson,
+                  uid: response.providerContact.uid
+                } : undefined
+              } : undefined}
+              currentUserUid={getCompanyId()}
+            />
+          </div>
+        )}
 
         {/* Payment Section für angenommene Angebote */}
         {quote.status === 'accepted' && (

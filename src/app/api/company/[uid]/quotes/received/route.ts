@@ -3,6 +3,19 @@ import { db, admin } from '@/firebase/server';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;
+  
+  // Check if this is a request for a specific quote (has quoteId in URL)
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/');
+  const receivedIndex = pathSegments.findIndex(segment => segment === 'received');
+  
+  // If there's a segment after 'received', this is for a specific quote - return 404 to let the specific route handle it
+  if (receivedIndex !== -1 && pathSegments[receivedIndex + 1]) {
+    console.log(`🔄 PARENT ROUTE: Delegating to specific quote route for: ${pathSegments[receivedIndex + 1]}`);
+    return new NextResponse(null, { status: 404 });
+  }
+  
+  console.log(`🎯 PARENT ROUTE CALLED: /api/company/${uid}/quotes/received - URL: ${request.url}`);
 
   try {
     // Get the auth token from the request headers
@@ -112,6 +125,45 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     for (const doc of quotesSnapshot.docs) {
       const quoteData = doc.data();
+      
+      console.log(`🔍 Processing quote ${doc.id}:`);
+      console.log(`  - Title: ${quoteData.projectTitle || quoteData.projectDescription || 'No title'}`);
+      console.log(`  - Status: ${quoteData.status}`);
+      console.log(`  - ProposalsInSubcollection: ${quoteData.proposalsInSubcollection}`);
+      console.log(`  - Has legacy response: ${!!quoteData.response}`);
+
+      // Load proposals from subcollection if they exist
+      let proposals: any[] = [];
+      let hasProposals = false;
+      
+      try {
+        // ALWAYS check subcollection for proposals, regardless of proposalsInSubcollection flag
+        console.log(`🔍 Checking proposals subcollection for quote ${doc.id}`);
+        const proposalsSnapshot = await db
+          .collection('quotes')
+          .doc(doc.id)
+          .collection('proposals')
+          .get();
+        
+        proposals = proposalsSnapshot.docs.map(proposalDoc => ({
+          id: proposalDoc.id,
+          ...proposalDoc.data(),
+          createdAt: proposalDoc.data().createdAt?.toDate?.() || new Date(proposalDoc.data().createdAt)
+        }));
+        
+        hasProposals = proposals.length > 0;
+        console.log(`📋 Found ${proposals.length} proposals in subcollection for quote ${doc.id}`);
+        
+        // If no proposals in subcollection, check legacy response field as fallback
+        if (!hasProposals) {
+          hasProposals = !!quoteData.response;
+          console.log(`📜 Legacy response check: ${hasProposals ? 'found' : 'not found'} for quote ${doc.id}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error loading proposals for quote ${doc.id}:`, error);
+        // Fallback to legacy response check
+        hasProposals = !!quoteData.response;
+      }
 
       // Get provider information (who sent the quote)
       let providerInfo: {
@@ -151,6 +203,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: doc.id,
         ...quoteData,
         provider: providerInfo,
+        proposals: proposals,
+        hasProposals: hasProposals,
         contactExchange: quoteData.contactExchange || null, // Explizit hinzufügen
         customerDecision: quoteData.customerDecision || null, // Explizit hinzufügen
         createdAt: quoteData.createdAt?.toDate?.() || new Date(quoteData.createdAt),
@@ -166,10 +220,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         estimatedDuration: quoteData.estimatedDuration,
         preferredStartDate: quoteData.preferredStartDate,
         additionalNotes: quoteData.additionalNotes,
-        response: quoteData.response, // Contains the provider's response
-        hasResponse: !!quoteData.response,
+        response: quoteData.response, // Contains the provider's response (legacy)
+        hasResponse: !!quoteData.response || hasProposals, // Check both legacy and new format
         responseDate: quoteData.response?.respondedAt
           ? new Date(quoteData.response.respondedAt)
+          : proposals.length > 0 
+          ? proposals[0].createdAt 
           : null,
       });
     }

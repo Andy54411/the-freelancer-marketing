@@ -50,13 +50,16 @@ interface IncomingQuote {
   };
   createdAt: Date;
   payment?: {
+    status?: 'pending' | 'paid' | 'failed'; // New payment status from API
     provisionStatus: 'pending' | 'paid' | 'failed';
     provisionAmount: number;
     provisionPaymentIntentId?: string;
     paymentIntentId?: string;
     createdAt?: string;
     paidAt?: string;
+    totalAmount?: number;
   };
+  proposalStatus?: string; // Status from proposal subcollection
   customerType?: string;
   customerUid?: string;
   customerCompanyUid?: string;
@@ -199,8 +202,18 @@ export default function IncomingQuotesPage() {
   };
 
   // Status Badge Component
-  const getStatusBadge = (status: string, hasResponse?: boolean, paymentStatus?: string) => {
-    // Special handling for accepted status - check payment
+  const getStatusBadge = (status: string, hasResponse?: boolean, paymentStatus?: string, contactExchange?: any) => {
+    // Priority 1: Check if contacts have been exchanged (payment completed)
+    if (status === 'contacts_exchanged' || contactExchange?.contactsExchanged) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+          <FiCheckCircle className="mr-1 h-3 w-3" />
+          Kontakte ausgetauscht
+        </span>
+      );
+    }
+
+    // Priority 2: Special handling for accepted status - check payment
     if (status === 'accepted') {
       if (paymentStatus === 'paid') {
         return (
@@ -239,18 +252,30 @@ export default function IncomingQuotesPage() {
     }
 
     const statusStyles = {
+      open: 'bg-gray-100 text-gray-800 border-gray-200',
       pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       responded: 'bg-blue-100 text-blue-800 border-blue-200',
+      accepted: 'bg-green-100 text-green-800 border-green-200',
+      declined: 'bg-red-100 text-red-800 border-red-200',
+      contacts_exchanged: 'bg-green-100 text-green-800 border-green-200',
     };
 
     const statusLabels = {
+      open: 'Offen',
       pending: 'Wartend',
       responded: 'Beantwortet',
+      accepted: 'Angenommen',
+      declined: 'Abgelehnt',
+      contacts_exchanged: 'Kontakte ausgetauscht',
     };
 
     const statusIcons = {
+      open: FiClock,
       pending: FiClock,
       responded: FiFileText,
+      accepted: FiCheckCircle,
+      declined: FiXCircle,
+      contacts_exchanged: FiCheckCircle,
     };
 
     const StatusIcon = statusIcons[status] || FiClock;
@@ -512,7 +537,8 @@ export default function IncomingQuotesPage() {
                         {getStatusBadge(
                           getActualStatus(quote),
                           quote.hasResponse,
-                          quote.payment?.provisionStatus
+                          quote.payment?.status || quote.payment?.provisionStatus,
+                          (quote as any).contactExchange
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

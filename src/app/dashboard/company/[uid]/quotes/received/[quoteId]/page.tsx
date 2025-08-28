@@ -18,7 +18,14 @@ import {
   AlertTriangle as FiAlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import CheckoutForm from '@/components/quotes/CheckoutForm';
 import ContractTermsModal from '@/components/quotes/ContractTermsModal';
+import QuotePaymentModal from '@/components/quotes/QuotePaymentModal';
+import { ContactExchangeDisplay } from '@/components/quotes/ContactExchangeDisplay';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Interface für erhaltenes Angebot Detail
 interface ReceivedQuoteDetail {
@@ -27,7 +34,7 @@ interface ReceivedQuoteDetail {
   description: string;
   category: string;
   subcategory: string;
-  status: 'pending' | 'responded' | 'accepted' | 'declined';
+  status: 'pending' | 'responded' | 'accepted' | 'declined' | 'paid' | 'contacts_exchanged';
   budget?: string;
   budgetRange?: string;
   location?: string;
@@ -44,6 +51,17 @@ interface ReceivedQuoteDetail {
     uid: string;
   };
   hasResponse: boolean;
+  hasProposals?: boolean; // Neue Property für Subcollection-Support
+  proposals?: Array<{   // Neue Property für Proposals aus Subcollection
+    id: string;
+    providerId: string;
+    totalAmount: number;
+    message: string;
+    status: string;
+    submittedAt: string;
+  }>;
+  providerUid?: string;  // Neue Property für Provider-ID
+  providerId?: string;   // Alternative Provider-ID
   response?: {
     message: string;
     serviceItems: Array<{
@@ -60,30 +78,28 @@ interface ReceivedQuoteDetail {
     respondedAt: string;
   };
   contactExchange?: {
-    exchangedAt: Date;
-    customerData: {
+    status: 'completed';
+    completedAt: string;
+    contactsExchanged: boolean;
+    exchangeReason?: string;
+    customerContact?: {
+      type: string;
       name: string;
       email: string;
-      phone?: string;
-      address?: string;
-      postalCode?: string;
-      city?: string;
-      country?: string;
-      type: 'company' | 'individual';
+      phone: string | null;
+      address: string;
+      contactPerson: string;
       uid: string;
     };
-    providerData: {
+    providerContact?: {
+      type: string;
       name: string;
       email: string;
-      phone?: string;
-      address?: string;
-      postalCode?: string;
-      city?: string;
-      country?: string;
-      type: 'company' | 'individual';
+      phone: string | null;
+      address: string;
+      contactPerson: string;
       uid: string;
     };
-    status: 'exchanged';
   };
   payment?: {
     provisionStatus: 'pending' | 'paid' | 'failed';
@@ -108,6 +124,10 @@ export default function ReceivedQuoteDetailPage() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionType, setActionType] = useState<'accept' | 'decline' | null>(null);
   const [showContractModal, setShowContractModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   // Helper functions to ensure we get strings from params
   const getCompanyId = (): string => {
@@ -123,40 +143,160 @@ export default function ReceivedQuoteDetailPage() {
   // Lade Quote-Details
   const fetchQuoteDetail = async () => {
     try {
-      if (!firebaseUser) return;
+      if (!firebaseUser) {
+        console.error('❌ No firebase user available');
+        return;
+      }
 
       const quoteId = getQuoteId();
       const companyId = getCompanyId();
 
-      const token = await firebaseUser.getIdToken();
-      if (!token) return;
+      console.log(`🎯 Fetching quote details: companyId=${companyId}, quoteId=${quoteId}`);
 
-      // Für jetzt laden wir alle received quotes und filtern das spezifische
-      const response = await fetch(`/api/company/${companyId}/quotes/received`, {
+      const token = await firebaseUser.getIdToken();
+      if (!token) {
+        console.error('❌ No token available');
+        return;
+      }
+
+      console.log(`🔑 Token obtained, length: ${token.length}`);
+
+      // Lade spezifische Quote-Details von der Detail-API
+      const apiUrl = `/api/company/${companyId}/quotes/received/${quoteId}`;
+      console.log(`📡 Making API call to: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl, {
         headers: {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
+      console.log(`📡 API response status: ${response.status}`);
+      
       if (response.ok) {
         const data = await response.json();
-        if (data.success && data.quotes) {
-          const foundQuote = data.quotes.find((q: any) => q.id === quoteId);
-          if (foundQuote) {
-            setQuote(foundQuote);
-          } else {
-            setError('Angebot nicht gefunden');
-          }
+        console.log(`✅ API response data:`, data);
+        if (data.success && data.quote) {
+          setQuote(data.quote);
+          console.log('✅ Quote loaded:', {
+            hasResponse: data.quote.hasResponse,
+            hasProposals: data.quote.hasProposals,
+            proposalsCount: data.quote.proposals?.length || 0,
+          });
+        } else {
+          setError('Angebot nicht gefunden');
         }
       } else {
-        setError('Fehler beim Laden des Angebots');
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.error || 'Fehler beim Laden des Angebots');
       }
     } catch (error) {
-
+      console.error('Error fetching quote detail:', error);
       setError('Fehler beim Laden des Angebots');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Lade Payment Intent für Quote
+  const createPaymentIntent = async () => {
+    console.log('🚀 PAYMENT: Starting createPaymentIntent');
+    setPaymentLoading(true);
+    
+    try {
+      if (!firebaseUser) {
+        console.error('❌ PAYMENT: No firebase user available');
+        return;
+      }
+
+      if (!quote) {
+        console.error('❌ PAYMENT: No quote available');
+        return;
+      }
+
+      const quoteId = getQuoteId();
+      const companyId = getCompanyId();
+      
+      console.log('📊 PAYMENT: Quote data:', {
+        quoteId,
+        companyId,
+        hasProposals: quote.hasProposals,
+        hasResponse: quote.hasResponse,
+        proposalsCount: quote.proposals?.length || 0
+      });
+
+      const token = await firebaseUser.getIdToken();
+      console.log('🔑 PAYMENT: Token obtained, length:', token.length);
+
+      // API Call zur Payment Route
+      const paymentUrl = `/api/company/${companyId}/quotes/received/${quoteId}/payment`;
+      console.log('🌐 PAYMENT: Calling API:', paymentUrl);
+      
+      // Finde den Provider aus den Proposals oder Response
+      let proposalId = '';
+      if (quote.proposals && quote.proposals.length > 0) {
+        proposalId = quote.proposals[0].providerId || quote.proposals[0].id || '';
+        console.log('💼 PAYMENT: Using proposal ID from subcollection:', proposalId);
+      } else if (quote.response) {
+        proposalId = quote.providerUid || quote.providerId || '';
+        console.log('📜 PAYMENT: Using provider ID from legacy response:', proposalId);
+      }
+
+      const requestBody = {
+        action: 'create_payment_intent',
+        proposalId: proposalId,
+        quoteTitle: quote.title,
+        quoteDescription: quote.description,
+        amount: quote.proposals?.[0]?.totalAmount || quote.response?.totalAmount || 0,
+        currency: 'eur',
+        companyName: quote.provider?.name || 'Provider',
+        customerFirebaseId: companyId,
+        customerStripeId: '', // Will be handled by API
+      };
+      console.log('📤 PAYMENT: Request body:', requestBody);
+      
+      const response = await fetch(paymentUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('📥 PAYMENT: Response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ PAYMENT: Response data:', data);
+        
+        if (data.success && data.clientSecret) {
+          console.log('🎯 PAYMENT: Success! Setting clientSecret');
+          setClientSecret(data.clientSecret);
+        } else {
+          console.error('❌ PAYMENT: No success or clientSecret in response:', data);
+          setError('Fehler beim Erstellen der Zahlung');
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ PAYMENT: API error:', errorData);
+        setError(errorData.error || 'Fehler beim Erstellen der Zahlung');
+      }
+    } catch (error: any) {
+      console.error('💥 PAYMENT: Exception:', error);
+      setError('Fehler beim Erstellen der Zahlung');
+    } finally {
+      console.log('🏁 PAYMENT: Finished, setting paymentLoading to false');
+      setPaymentLoading(false);
+    }
+  };
+
+  // Angebot annehmen - öffnet Payment Modal und startet Payment Intent
+  const handleAcceptOffer = () => {
+    console.log('🚀 Angebot annehmen clicked - opening payment modal');
+    setShowPaymentModal(true);
+    createPaymentIntent(); // Payment Intent direkt erstellen
   };
 
   useEffect(() => {
@@ -168,14 +308,26 @@ export default function ReceivedQuoteDetailPage() {
   }, [firebaseUser]);
 
   // Format Date
-  const formatDate = (date: Date | string) => {
-    return new Intl.DateTimeFormat('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return 'Nicht verfügbar';
+    
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) {
+        return 'Ungültiges Datum';
+      }
+      
+      return new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Ungültiges Datum';
+    }
   };
 
   // Format Budget
@@ -621,8 +773,11 @@ export default function ReceivedQuoteDetailPage() {
             </div>
           )}
 
-          {/* Annahme/Ablehnung Buttons - nur anzeigen wenn noch nicht entschieden */}
-          {quote.status !== 'accepted' && quote.status !== 'declined' && (
+          {/* Annahme/Ablehnung Buttons - nur anzeigen wenn noch nicht entschieden UND kein 'responded' Status */}
+          {quote.status !== 'accepted' && 
+           quote.status !== 'declined' && 
+           quote.status !== 'responded' &&
+           quote.status !== 'contacts_exchanged' as any && (
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="flex flex-col sm:flex-row gap-4 justify-end">
                 <button
@@ -639,7 +794,11 @@ export default function ReceivedQuoteDetailPage() {
                 </button>
 
                 <button
-                  onClick={() => handleQuoteAction('accept')}
+                  onClick={() => {
+                    console.log('🚀 Angebot annehmen clicked - opening payment modal');
+                    setShowPaymentModal(true);
+                    createPaymentIntent();
+                  }}
                   disabled={isActionLoading}
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
@@ -655,13 +814,20 @@ export default function ReceivedQuoteDetailPage() {
           )}
 
           {/* Status-Anzeige wenn bereits entschieden */}
-          {(quote.status === 'accepted' || quote.status === 'declined') && (
+          {(quote.status === 'accepted' || 
+            quote.status === 'declined' || 
+            (quote.status as any) === 'contacts_exchanged') && (
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="text-center">
-                {quote.status === 'accepted' ? (
+                {(quote.status === 'accepted' || (quote.status as any) === 'contacts_exchanged') ? (
                   <div>
-                    {/* Nur "Angebot angenommen" anzeigen wenn Zahlung erfolgt ist */}
-                    {quote.payment?.provisionStatus === 'paid' ? (
+                    {/* Status für erfolgreich ausgetauschte Kontakte */}
+                    {(quote.status as any) === 'contacts_exchanged' ? (
+                      <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200 mb-4">
+                        <FiCheckCircle className="mr-2 h-4 w-4" />
+                        Bezahlt - Kontakte ausgetauscht
+                      </div>
+                    ) : quote.payment?.provisionStatus === 'paid' ? (
                       <div className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200 mb-4">
                         <FiCheckCircle className="mr-2 h-4 w-4" />
                         Angebot angenommen
@@ -674,8 +840,32 @@ export default function ReceivedQuoteDetailPage() {
                     )}
 
                     {/* Payment Section für Provider */}
-                    {!quote.payment?.provisionStatus ||
-                    quote.payment.provisionStatus === 'pending' ? (
+                    {(quote.status as any) === 'contacts_exchanged' ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <div className="flex items-center justify-center mb-2">
+                          <FiCheckCircle className="h-8 w-8 text-green-600 mr-3" />
+                          <div className="text-left">
+                            <h3 className="text-lg font-medium text-green-800">
+                              Zahlung erfolgreich!
+                            </h3>
+                            <p className="text-sm text-green-700">
+                              Kontaktdaten wurden ausgetauscht. Sie können nun direkt kommunizieren.
+                            </p>
+                          </div>
+                        </div>
+                        {(quote.payment?.paidAt || quote.contactExchange?.completedAt) && (
+                          <p className="text-xs text-gray-500 text-center">
+                            Bezahlt am:{' '}
+                            {quote.payment?.paidAt
+                              ? new Date(quote.payment.paidAt).toLocaleDateString('de-DE')
+                              : quote.contactExchange?.completedAt
+                                ? new Date(quote.contactExchange.completedAt).toLocaleDateString('de-DE')
+                                : 'Unbekannt'}
+                          </p>
+                        )}
+                      </div>
+                    ) : (!quote.payment?.provisionStatus ||
+                    quote.payment.provisionStatus === 'pending') ? (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                         <div className="flex items-center justify-center mb-4">
                           <FiClock className="h-8 w-8 text-blue-600 mr-3" />
@@ -725,137 +915,42 @@ export default function ReceivedQuoteDetailPage() {
             </div>
           )}
 
-          {/* Kontaktdaten-Austausch für angenommene Angebote - NUR wenn Zahlung erfolgt ist */}
-          {quote.status === 'accepted' &&
-            quote.payment?.provisionStatus === 'paid' &&
-            quote.contactExchange && (
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                  <FiUser className="mr-2 h-5 w-5 text-[#14ad9f]" />
-                  Kontaktdaten ausgetauscht
-                </h3>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Anbieter Kontaktdaten */}
-                    <div className="bg-white rounded-lg p-4 border border-green-100">
-                      <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                        <FiBuilding className="mr-2 h-4 w-4 text-[#14ad9f]" />
-                        Anbieter Kontaktdaten
-                      </h4>
-                      <div className="space-y-2">
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">Name:</span>
-                          <p className="text-sm text-gray-900">
-                            {quote.contactExchange.providerData.name}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">E-Mail:</span>
-                          <p className="text-sm text-gray-900">
-                            <a
-                              href={`mailto:${quote.contactExchange.providerData.email}`}
-                              className="text-[#14ad9f] hover:text-[#129488]"
-                            >
-                              {quote.contactExchange.providerData.email}
-                            </a>
-                          </p>
-                        </div>
-                        {quote.contactExchange.providerData.phone && (
-                          <div>
-                            <span className="text-sm font-medium text-gray-700">Telefon:</span>
-                            <p className="text-sm text-gray-900">
-                              <a
-                                href={`tel:${quote.contactExchange.providerData.phone}`}
-                                className="text-[#14ad9f] hover:text-[#129488]"
-                              >
-                                {quote.contactExchange.providerData.phone}
-                              </a>
-                            </p>
-                          </div>
-                        )}
-                        {quote.contactExchange.providerData.address && (
-                          <div>
-                            <span className="text-sm font-medium text-gray-700">Adresse:</span>
-                            <p className="text-sm text-gray-900">
-                              {quote.contactExchange.providerData.address}
-                            </p>
-                          </div>
-                        )}
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">Typ:</span>
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
-                              quote.contactExchange.providerData.type === 'company'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
-                          >
-                            {quote.contactExchange.providerData.type === 'company'
-                              ? 'Unternehmen'
-                              : 'Einzelperson'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+          {/* KONTAKTAUSTAUSCH ERFOLGREICH - Erweiterte Komponente mit Company-Daten-Ladung */}
+          {(quote.status === 'contacts_exchanged' || quote.payment?.provisionStatus === 'paid') && (
+            <ContactExchangeDisplay 
+              contactExchange={quote.contactExchange}
+              currentUserUid={getCompanyId()}
+              customerUid={getCompanyId()}
+              providerUid={quote.provider?.uid || quote.providerUid || quote.providerId}
+              status={quote.status}
+            />
+          )}
 
-                    {/* Ihre Kontaktdaten (für Transparenz) */}
-                    <div className="bg-white rounded-lg p-4 border border-green-100">
-                      <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                        <FiUser className="mr-2 h-4 w-4 text-[#14ad9f]" />
-                        Ihre freigegebenen Kontaktdaten
-                      </h4>
-                      <div className="space-y-2">
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">Name:</span>
-                          <p className="text-sm text-gray-900">
-                            {quote.contactExchange.customerData.name}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">E-Mail:</span>
-                          <p className="text-sm text-gray-900">
-                            {quote.contactExchange.customerData.email}
-                          </p>
-                        </div>
-                        {quote.contactExchange.customerData.phone && (
-                          <div>
-                            <span className="text-sm font-medium text-gray-700">Telefon:</span>
-                            <p className="text-sm text-gray-900">
-                              {quote.contactExchange.customerData.phone}
-                            </p>
-                          </div>
-                        )}
-                        {quote.contactExchange.customerData.address && (
-                          <div>
-                            <span className="text-sm font-medium text-gray-700">Adresse:</span>
-                            <p className="text-sm text-gray-900">
-                              {quote.contactExchange.customerData.address}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-green-200">
-                    <p className="text-sm text-green-700 flex items-center">
-                      <FiCheckCircle className="mr-2 h-4 w-4" />
-                      Kontaktdaten wurden am{' '}
-                      {quote.contactExchange.exchangedAt
-                        ? new Date(quote.contactExchange.exchangedAt).toLocaleDateString('de-DE', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : 'Unbekanntem Datum'}{' '}
-                      automatisch ausgetauscht.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+          {/* Actions Section - nur anzeigen wenn Status 'responded' ist */}
+          {quote.status === 'responded' && (
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowDeclineModal(true)}
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              >
+                Angebot ablehnen
+              </button>
+              <button
+                onClick={handleAcceptOffer}
+                disabled={paymentLoading}
+                className="flex-1 bg-[#14ad9f] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#129488] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {paymentLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    Lädt...
+                  </>
+                ) : (
+                  'Angebot annehmen'
+                )}
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -869,14 +964,113 @@ export default function ReceivedQuoteDetailPage() {
         </div>
       )}
 
+      {/* Payment Modal */}
+      {quote && showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Zahlung bestätigen</h2>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+            
+            {paymentLoading ? (
+              <div className="mb-4 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f] mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">Zahlung wird vorbereitet...</p>
+                <p className="font-semibold">{quote.title}</p>
+                <p className="text-lg font-bold text-[#14ad9f] mt-2">
+                  {quote.response?.totalAmount?.toFixed(2)} €
+                </p>
+              </div>
+            ) : clientSecret ? (
+              <div>
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">Zahlung für:</p>
+                  <p className="font-semibold">{quote.title}</p>
+                  <p className="text-lg font-bold text-[#14ad9f] mt-2">
+                    {quote.response?.totalAmount?.toFixed(2)} €
+                  </p>
+                </div>
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret,
+                    appearance: {
+                      theme: 'stripe',
+                      variables: {
+                        colorPrimary: '#14ad9f',
+                      },
+                    },
+                    loader: 'auto',
+                  }}
+                >
+                  <CheckoutForm
+                    clientSecret={clientSecret}
+                    quoteDetails={{
+                      quoteId: quote.id,
+                      quoteTitle: quote.title,
+                      proposalAmount: quote.proposals?.[0]?.totalAmount || quote.response?.totalAmount || 0,
+                      companyName: quote.provider?.name || 'Unbekannt',
+                      userUid: getCompanyId()
+                    }}
+                    paymentDetails={{
+                      amount: quote.proposals?.[0]?.totalAmount || quote.response?.totalAmount || 0,
+                      currency: 'eur',
+                      description: `Zahlung für: ${quote.title}`,
+                      quoteId: quote.id,
+                      totalAmount: quote.proposals?.[0]?.totalAmount || quote.response?.totalAmount || 0
+                    }}
+                    onSuccess={(paymentIntentId) => {
+                      console.log('✅ Payment successful:', paymentIntentId);
+                      setShowPaymentModal(false);
+                      setClientSecret(null);
+                      // Refresh quote data to show paid status
+                      fetchQuoteDetail();
+                      alert('✅ Zahlung erfolgreich abgeschlossen!');
+                    }}
+                    onError={(error) => {
+                      console.error('❌ Payment error:', error);
+                      alert(`Fehler bei der Zahlung: ${error}`);
+                    }}
+                    onProcessing={(isProcessing) => {
+                      console.log('Payment processing:', isProcessing);
+                    }}
+                  />
+                </Elements>
+              </div>
+            ) : (
+              <div className="mb-4 text-center">
+                <p className="text-red-600">Fehler beim Laden der Zahlung</p>
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="mt-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Schließen
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Contract Terms Modal */}
       {quote && (
         <ContractTermsModal
           isOpen={showContractModal}
           onClose={() => setShowContractModal(false)}
-          onAccept={() => {
+          onAccept={async () => {
             setShowContractModal(false);
-            processQuoteAction('accept');
+            // Erst Quote akzeptieren, dann SOFORT Payment starten
+            await processQuoteAction('accept');
+            // Payment Modal öffnen und SOFORT Payment Intent erstellen
+            setShowPaymentModal(true);
+            setPaymentLoading(true);
+            await createPaymentIntent();
           }}
           userType="customer"
           quoteAmount={quote.response?.totalAmount || 0}

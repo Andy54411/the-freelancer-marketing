@@ -14,6 +14,7 @@ import {
   FiDollarSign,
 } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
+import CheckoutFormComponent from './CheckoutForm';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -31,12 +32,15 @@ interface QuotePaymentModalProps {
   companyName: string;
   customerFirebaseId: string;
   customerStripeId?: string;
+  userType?: 'user' | 'company'; // B2C vs B2B
 }
 
 interface PaymentDetails {
   amount: number;
-  platformFee: number;
-  companyReceives: number;
+  currency: string;
+  description: string;
+  quoteId: string;
+  totalAmount: number;
 }
 
 interface CheckoutFormProps {
@@ -249,6 +253,7 @@ export default function QuotePaymentModal({
   companyName,
   customerFirebaseId,
   customerStripeId,
+  userType = 'company', // Default to company/B2B
 }: QuotePaymentModalProps) {
   const { firebaseUser } = useAuth();
   const [clientSecret, setClientSecret] = useState<string>('');
@@ -264,55 +269,80 @@ export default function QuotePaymentModal({
   };
 
   const createQuotePaymentIntent = async () => {
+    console.log('🚀 QUOTE PAYMENT: Starting createQuotePaymentIntent');
+    console.log('📊 QUOTE PAYMENT DATA:', {
+      quoteId,
+      proposalId,
+      customerFirebaseId,
+      userType,
+      proposalAmount,
+      firebaseUser: !!firebaseUser
+    });
+    
     setIsCreatingPayment(true);
     setError('');
 
     try {
       if (!firebaseUser) {
+        console.error('❌ QUOTE PAYMENT: No firebase user');
         throw new Error('Benutzer nicht authentifiziert');
       }
 
       const token = await firebaseUser.getIdToken();
+      console.log('🔑 QUOTE PAYMENT: Token obtained, length:', token.length);
 
-      const response = await fetch(
-        `/api/user/${customerFirebaseId}/quotes/received/${quoteId}/payment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            proposalId,
-            quoteTitle,
-            quoteDescription,
-            amount: proposalAmount,
-            currency: proposalCurrency,
-            companyName,
-            customerFirebaseId,
-            customerStripeId,
-          }),
-        }
-      );
+      // Dynamically choose API route based on user type (B2B vs B2C)
+      const apiPath = userType === 'user' ? 'user' : 'company';
+      const url = `/api/${apiPath}/${customerFirebaseId}/quotes/received/${quoteId}/payment`;
+      console.log('🌐 QUOTE PAYMENT: Calling API:', url);
+      
+      const requestBody = {
+        action: 'create_payment_intent',
+        proposalId,
+        quoteTitle,
+        quoteDescription,
+        amount: proposalAmount,
+        currency: proposalCurrency,
+        companyName,
+        customerFirebaseId,
+        customerStripeId,
+      };
+      console.log('📤 QUOTE PAYMENT: Request body:', requestBody);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('📥 QUOTE PAYMENT: Response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ QUOTE PAYMENT: Response not ok:', errorData);
         throw new Error(errorData.error || 'Fehler beim Erstellen der Quote-Zahlung');
       }
 
       const data = await response.json();
+      console.log('✅ QUOTE PAYMENT: Response data:', data);
 
       if (data.success && data.clientSecret) {
+        console.log('🎯 QUOTE PAYMENT: Success! Setting clientSecret and paymentDetails');
         setClientSecret(data.clientSecret);
         setPaymentDetails(data.paymentDetails);
 
       } else {
+        console.error('❌ QUOTE PAYMENT: No success or clientSecret in response:', data);
         throw new Error(data.error || 'Fehler beim Erstellen der Quote-Zahlung');
       }
     } catch (error: any) {
-
+      console.error('💥 QUOTE PAYMENT: Caught error:', error);
       setError(error.message || 'Fehler beim Erstellen der Quote-Zahlung');
     } finally {
+      console.log('🏁 QUOTE PAYMENT: Finished, setting isCreatingPayment to false');
       setIsCreatingPayment(false);
     }
   };
@@ -383,7 +413,7 @@ export default function QuotePaymentModal({
                 loader: 'auto',
               }}
             >
-              <CheckoutForm
+              <CheckoutFormComponent
                 clientSecret={clientSecret}
                 quoteDetails={{
                   quoteId,
