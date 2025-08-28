@@ -21,7 +21,11 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
     const { uid } = params;
     const body: PayoutRequest = await request.json();
 
-    // 1. Prüfe alle abgeschlossenen Orders für diese Company
+    let totalAvailableAmount = 0;
+    const orderIds: string[] = [];
+    const quotePaymentIds: string[] = [];
+
+    // 1. NORMALE AUFTRÄGE: Prüfe alle abgeschlossenen Orders für diese Company
     const ordersRef = adminDb.collection('auftraege');
     const completedOrdersQuery = ordersRef
       .where('selectedAnbieterId', '==', uid)
@@ -29,17 +33,6 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       .where('payoutStatus', '==', 'available_for_payout');
 
     const completedOrdersSnap = await completedOrdersQuery.get();
-
-    if (completedOrdersSnap.empty) {
-      return NextResponse.json(
-        { error: 'No completed orders available for payout' },
-        { status: 400 }
-      );
-    }
-
-    // 2. Berechne verfügbaren Betrag
-    let totalAvailableAmount = 0;
-    const orderIds: string[] = [];
 
     completedOrdersSnap.forEach(doc => {
       const orderData = doc.data();
@@ -54,6 +47,67 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       orderIds.push(doc.id);
     });
 
+    // 2. QUOTE PAYMENTS: Suche nach Quote Payments die auszahlungsbereit sind
+    const quotesRef = adminDb.collection('quotes');
+    const quotesQuery = quotesRef.where('status', '==', 'contacts_exchanged');
+    const quotesSnap = await quotesQuery.get();
+
+    const quoteProvisionTransfers: Array<{
+      quoteId: string;
+      proposalId: string;
+      provisionAmount: number;
+      netAmount: number;
+    }> = [];
+
+    for (const quoteDoc of quotesSnap.docs) {
+      const quoteData = quoteDoc.data();
+
+      // Prüfe ob Quote Proposals hat
+      const proposalsRef = quoteDoc.ref.collection('proposals');
+      const proposalsQuery = proposalsRef
+        .where('providerId', '==', uid)
+        .where('paymentComplete', '==', true);
+      const proposalsSnap = await proposalsQuery.get();
+
+      proposalsSnap.forEach(proposalDoc => {
+        const proposalData = proposalDoc.data();
+
+        // Prüfe ob bereits ausgezahlt wurde
+        if (
+          proposalData.payoutStatus === 'payout_requested' ||
+          proposalData.payoutStatus === 'completed'
+        ) {
+          return;
+        }
+
+        // Berechne Auszahlungsbetrag und Provision (wie bei regulären Aufträgen)
+        const totalAmount = proposalData.totalAmount || 0;
+        const platformFeePercent = 0.05; // 5% Platform Fee
+        const platformFeeAmount = Math.round(totalAmount * 100 * platformFeePercent);
+        const netAmount = totalAmount * 100 - platformFeeAmount;
+
+        if (netAmount > 0) {
+          totalAvailableAmount += netAmount;
+          quotePaymentIds.push(`quote_${quoteDoc.id}`);
+
+          // Merke die Provision für spätere Übertragung auf Hauptkonto
+          quoteProvisionTransfers.push({
+            quoteId: quoteDoc.id,
+            proposalId: proposalDoc.id,
+            provisionAmount: platformFeeAmount,
+            netAmount: netAmount,
+          });
+        }
+      });
+    }
+
+    if (totalAvailableAmount <= 0) {
+      return NextResponse.json(
+        { error: 'No completed orders or quote payments available for payout' },
+        { status: 400 }
+      );
+    }
+
     // 3. Validiere Auszahlungsbetrag
     const payoutAmount = body.amount
       ? Math.min(body.amount * 100, totalAvailableAmount)
@@ -63,12 +117,15 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       return NextResponse.json({ error: 'No valid amount available for payout' }, { status: 400 });
     }
 
-    // 4. Hole Company Stripe Account Info aus users collection
-    const companyRef = adminDb.collection('users').doc(uid);
+    // 4. Hole Company Stripe Account Info aus companies collection
+    const companyRef = adminDb.collection('companies').doc(uid);
     const companySnap = await companyRef.get();
 
     if (!companySnap.exists) {
-      return NextResponse.json({ error: 'Company not found in users collection' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Company not found in companies collection' },
+        { status: 404 }
+      );
     }
 
     const companyData = companySnap.data();
@@ -92,11 +149,14 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
           method: 'standard', // Bank transfer
           statement_descriptor: 'Taskilo Auszahlung',
           description:
-            body.description || `Auszahlung für ${orderIds.length} abgeschlossene Aufträge`,
+            body.description ||
+            `Auszahlung für ${orderIds.length} Aufträge und ${quotePaymentIds.length} Quote Payments`,
           metadata: {
             companyId: uid,
             orderIds: orderIds.join(','),
-            orderCount: orderIds.length.toString(),
+            quotePaymentIds: quotePaymentIds.join(','),
+            totalOrders: orderIds.length.toString(),
+            totalQuotePayments: quotePaymentIds.length.toString(),
             requestedAt: new Date().toISOString(),
           },
         },
@@ -106,9 +166,7 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       );
 
       stripePayoutId = payout.id;
-
     } catch (stripeError: any) {
-
       return NextResponse.json(
         {
           error: 'Payout failed',
@@ -119,9 +177,10 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       );
     }
 
-    // 6. Update Order Status zu "payout_requested"
+    // 6. Update Order Status zu "payout_requested" + Quote Proposals
     const batch = adminDb.batch();
 
+    // Reguläre Aufträge
     completedOrdersSnap.forEach(doc => {
       batch.update(doc.ref, {
         payoutStatus: 'payout_requested',
@@ -131,9 +190,55 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       });
     });
 
+    // Quote Proposals Status Update + Provision Transfer
+    for (const transfer of quoteProvisionTransfers) {
+      const quoteRef = adminDb.collection('quotes').doc(transfer.quoteId);
+      const proposalRef = quoteRef.collection('proposals').doc(transfer.proposalId);
+
+      // Update Proposal Status
+      batch.update(proposalRef, {
+        payoutStatus: 'payout_requested',
+        payoutRequestedAt: new Date(),
+        stripePayoutId: stripePayoutId,
+        updatedAt: new Date(),
+      });
+
+      // 🏦 PROVISION TRANSFER: Übertrage Platform Fee auf Hauptkonto
+      try {
+        const platformAccountId = process.env.STRIPE_PLATFORM_ACCOUNT_ID || 'acct_main_platform';
+
+        await stripe.transfers.create({
+          amount: transfer.provisionAmount,
+          currency: 'eur',
+          destination: platformAccountId,
+          description: `Platform Fee für Quote ${transfer.quoteId}`,
+          metadata: {
+            quoteId: transfer.quoteId,
+            proposalId: transfer.proposalId,
+            companyId: uid,
+            type: 'platform_fee_quote',
+          },
+        });
+
+        console.log(
+          `✅ Provision übertragen für Quote ${transfer.quoteId}: €${transfer.provisionAmount / 100}`
+        );
+      } catch (transferError: any) {
+        console.error(
+          `❌ Provision Transfer Fehler für Quote ${transfer.quoteId}:`,
+          transferError.message
+        );
+      }
+    }
+
     await batch.commit();
 
-    // 7. Erstelle Payout-Log
+    // 7. Erstelle umfassendes Payout-Log
+    const totalProvisionAmount = quoteProvisionTransfers.reduce(
+      (sum, transfer) => sum + transfer.provisionAmount,
+      0
+    );
+
     const payoutLogRef = adminDb.collection('payout_logs').doc();
     await payoutLogRef.set({
       companyId: uid,
@@ -141,11 +246,17 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
       amount: payoutAmount,
       currency: 'EUR',
       orderIds: orderIds,
+      quotePaymentIds: quotePaymentIds,
       orderCount: orderIds.length,
+      quotePaymentCount: quotePaymentIds.length,
+      totalProvisionAmount: totalProvisionAmount,
+      provisionTransfers: quoteProvisionTransfers,
       requestedAt: new Date(),
       status: 'requested',
       method: 'bank_transfer',
-      description: body.description || `Auszahlung für ${orderIds.length} abgeschlossene Aufträge`,
+      description:
+        body.description ||
+        `Auszahlung für ${orderIds.length} Aufträge und ${quotePaymentIds.length} Quote Payments`,
     });
 
     return NextResponse.json({
@@ -156,13 +267,14 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
         amount: payoutAmount / 100,
         currency: 'EUR',
         orderCount: orderIds.length,
+        quotePaymentCount: quotePaymentIds.length,
+        totalProvisionTransferred: totalProvisionAmount / 100,
         estimatedArrival: '1-2 Werktage',
         status: 'requested',
         method: 'bank_transfer',
       },
     });
   } catch (error: any) {
-
     return NextResponse.json(
       { error: 'Failed to process payout request', details: error.message },
       { status: 500 }
@@ -171,53 +283,138 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
 }
 
 /**
- * GET: Get available payout amount for company
+ * GET: Get available payout amount for company from Stripe Balance
  */
 export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    const { uid } = params;
+    const { uid } = await params;
 
-    // Hole alle abgeschlossenen Orders die zur Auszahlung bereit sind
-    const ordersRef = adminDb.collection('auftraege');
-    const availableOrdersQuery = ordersRef
-      .where('selectedAnbieterId', '==', uid)
-      .where('status', '==', 'ABGESCHLOSSEN')
-      .where('payoutStatus', '==', 'available_for_payout');
+    // 1. Hole Company Stripe Account Info
+    const companyRef = adminDb.collection('companies').doc(uid);
+    const companySnap = await companyRef.get();
 
-    const availableOrdersSnap = await availableOrdersQuery.get();
+    if (!companySnap.exists) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+    }
 
-    let totalAvailable = 0;
-    const orders: any[] = [];
+    const companyData = companySnap.data();
+    const stripeAccountId = companyData?.stripeAccountId;
 
-    availableOrdersSnap.forEach(doc => {
-      const orderData = doc.data();
-      const platformFee =
-        orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
-      const netAmount = orderData.totalAmountPaidByBuyer - platformFee;
+    if (!stripeAccountId) {
+      return NextResponse.json({ error: 'No Stripe account configured' }, { status: 400 });
+    }
 
-      // ✅ ZUSÄTZLICH: Additional Hours berücksichtigen
-      const additionalHoursAmount = orderData.additionalHoursPayoutAmount || 0;
-      const totalOrderAmount = netAmount + additionalHoursAmount;
-
-      totalAvailable += totalOrderAmount;
-      orders.push({
-        id: doc.id,
-        amount: totalOrderAmount / 100,
-        baseAmount: netAmount / 100,
-        additionalHoursAmount: additionalHoursAmount / 100,
-        completedAt: orderData.completedAt,
-        projectTitle: orderData.projectTitle || orderData.description,
+    // 2. Hole tatsächliches Stripe Balance
+    let stripeBalance;
+    try {
+      stripeBalance = await stripe.balance.retrieve({
+        stripeAccount: stripeAccountId,
       });
-    });
+    } catch (stripeError: any) {
+      console.error('Stripe Balance Error:', stripeError);
+      return NextResponse.json(
+        { error: 'Failed to get Stripe balance', details: stripeError.message },
+        { status: 500 }
+      );
+    }
+
+    // 3. Extrahiere verfügbares Guthaben (EUR)
+    const availableBalanceEur = stripeBalance.available.find(balance => balance.currency === 'eur');
+    const pendingBalanceEur = stripeBalance.pending.find(balance => balance.currency === 'eur');
+
+    const availableAmount = availableBalanceEur ? availableBalanceEur.amount / 100 : 0;
+    const pendingAmount = pendingBalanceEur ? pendingBalanceEur.amount / 100 : 0;
+
+    // 4. Hole trotzdem abgeschlossene Aufträge für die Liste (informativ)
+    const orders: any[] = [];
+    let orderCount = 0;
+
+    // Normale Aufträge für Info
+    try {
+      const ordersRef = adminDb.collection('auftraege');
+      const completedOrdersQuery = ordersRef
+        .where('selectedAnbieterId', '==', uid)
+        .where('status', '==', 'ABGESCHLOSSEN')
+        .limit(10); // Nur die letzten 10 für Display
+
+      const completedOrdersSnap = await completedOrdersQuery.get();
+      orderCount += completedOrdersSnap.size;
+
+      completedOrdersSnap.forEach(doc => {
+        const orderData = doc.data();
+        const platformFee =
+          orderData.sellerCommissionInCents || orderData.applicationFeeAmountFromStripe || 0;
+        const netAmount = orderData.totalAmountPaidByBuyer - platformFee;
+
+        orders.push({
+          id: doc.id,
+          type: 'regular_order',
+          amount: netAmount / 100,
+          completedAt: orderData.completedAt,
+          projectTitle: orderData.projectTitle || orderData.description,
+          status: orderData.payoutStatus || 'completed',
+        });
+      });
+    } catch (error) {
+      console.log('Error fetching orders for display:', error);
+    }
+
+    // Quote Payments für Info
+    try {
+      const quotesRef = adminDb.collection('quotes');
+      const quotesQuery = quotesRef.where('status', '==', 'contacts_exchanged').limit(5);
+      const quotesSnap = await quotesQuery.get();
+
+      for (const quoteDoc of quotesSnap.docs) {
+        const quoteData = quoteDoc.data();
+
+        const proposalsRef = quoteDoc.ref.collection('proposals');
+        const proposalsQuery = proposalsRef
+          .where('providerId', '==', uid)
+          .where('paymentComplete', '==', true);
+        const proposalsSnap = await proposalsQuery.get();
+
+        proposalsSnap.forEach(proposalDoc => {
+          const proposalData = proposalDoc.data();
+          const totalAmount = proposalData.totalAmount || 0;
+          const platformFeePercent = 0.05;
+          const netAmount = totalAmount * (1 - platformFeePercent);
+
+          orders.push({
+            id: `quote_${quoteDoc.id}`,
+            type: 'quote_payment',
+            quoteId: quoteDoc.id,
+            proposalId: proposalDoc.id,
+            amount: netAmount,
+            completedAt: proposalData.contactExchangeAt || proposalData.acceptedAt,
+            projectTitle: quoteData.title || 'Quote Payment',
+            status: proposalData.payoutStatus || 'completed',
+          });
+        });
+      }
+    } catch (error) {
+      console.log('Error fetching quotes for display:', error);
+    }
 
     return NextResponse.json({
-      availableAmount: totalAvailable / 100,
+      availableAmount: availableAmount, // Tatsächliches Stripe-Guthaben
+      pendingAmount: pendingAmount,
       currency: 'EUR',
-      orderCount: orders.length,
-      orders: orders,
+      orderCount: orderCount,
+      orders: orders.slice(0, 10), // Nur die letzten 10 anzeigen
+      stripeBalance: {
+        available: availableAmount,
+        pending: pendingAmount,
+        lastUpdated: new Date().toISOString(),
+      },
+      breakdown: {
+        message: 'Amounts based on actual Stripe balance, not database calculations',
+        regularOrders: orders.filter(o => o.type === 'regular_order').length,
+        quotePayments: orders.filter(o => o.type === 'quote_payment').length,
+      },
     });
   } catch (error: any) {
-
+    console.error('Payout GET Error:', error);
     return NextResponse.json(
       { error: 'Failed to get available payout amount', details: error.message },
       { status: 500 }

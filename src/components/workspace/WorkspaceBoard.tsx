@@ -129,18 +129,25 @@ export function WorkspaceBoard({
   const columns = getColumnsWithTasks();
 
   // Optimistic update for better UX - update local state immediately
-  const updateLocalWorkspace = (updates: Partial<Workspace>) => {
+  const updateLocalWorkspace = async (updates: Partial<Workspace>) => {
     if (!selectedWorkspace) return;
 
-    const updatedWorkspace = { ...selectedWorkspace, ...updates };
-    setSelectedWorkspace(updatedWorkspace);
+    try {
+      // Update local state immediately for responsive UI
+      const updatedWorkspace = { ...selectedWorkspace, ...updates };
+      setSelectedWorkspace(updatedWorkspace);
 
-    // Call parent update function for Realtime Database sync
-    // Real-time listener will handle sync across users
-    onUpdateWorkspace(selectedWorkspace.id, updates);
+      // Call parent update function for Realtime Database sync
+      // This will trigger real-time updates for all connected users
+      await onUpdateWorkspace(selectedWorkspace.id, updates);
+    } catch (error) {
+      console.error('Failed to update workspace:', error);
+      // Revert local state on error
+      setSelectedWorkspace(selectedWorkspace);
+    }
   };
 
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = async (result: DropResult) => {
     if (!result.destination || !selectedWorkspace) {
       return;
     }
@@ -158,7 +165,7 @@ export function WorkspaceBoard({
         position: index,
       }));
 
-      onUpdateWorkspace(selectedWorkspace.id, {
+      await updateLocalWorkspace({
         boardColumns: updatedColumns,
       });
       return;
@@ -179,37 +186,44 @@ export function WorkspaceBoard({
       const updatedTasks = newTasks.map((task, index) => ({
         ...task,
         position: index,
+        updatedAt: new Date(),
       }));
 
       const updatedColumns = columns.map(col =>
         col.id === source.droppableId ? { ...col, tasks: updatedTasks } : col
       );
 
-      updateLocalWorkspace({
+      await updateLocalWorkspace({
         boardColumns: updatedColumns,
       });
     } else {
-      // Moving between columns
+      // Moving between columns - REALTIME CARD MOVEMENT
       const sourceTasks = Array.from(sourceColumn.tasks || []);
       const destTasks = Array.from(destColumn.tasks || []);
       const [movedTask] = sourceTasks.splice(source.index, 1);
 
-      // Update both status and columnId for consistency
-      const newStatus = destination.droppableId;
-      movedTask.columnId = newStatus;
-      movedTask.status = newStatus;
-      movedTask.updatedAt = new Date();
+      // Update task with new column/status and timestamp
+      const updatedMovedTask = {
+        ...movedTask,
+        columnId: destination.droppableId,
+        status: destination.droppableId,
+        updatedAt: new Date(),
+        position: destination.index,
+      };
 
-      destTasks.splice(destination.index, 0, movedTask);
+      destTasks.splice(destination.index, 0, updatedMovedTask);
 
+      // Reposition all tasks in both columns
       const updatedSourceTasks = sourceTasks.map((task, index) => ({
         ...task,
         position: index,
+        updatedAt: new Date(),
       }));
 
       const updatedDestTasks = destTasks.map((task, index) => ({
         ...task,
         position: index,
+        updatedAt: new Date(),
       }));
 
       const updatedColumns = columns.map(col => {
@@ -222,9 +236,15 @@ export function WorkspaceBoard({
         return col;
       });
 
-      updateLocalWorkspace({
+      // Save to Realtime Database - this will sync to all connected users
+      await updateLocalWorkspace({
         boardColumns: updatedColumns,
+        updatedAt: new Date(),
       });
+
+      console.log(
+        `🔄 Task "${movedTask.title}" moved from "${sourceColumn.title}" to "${destColumn.title}" (Realtime sync active)`
+      );
     }
   };
 
@@ -434,7 +454,6 @@ export function WorkspaceBoard({
         setSelectedTask(null);
       }
     } catch (error) {
-
       alert('Fehler beim Archivieren der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -515,7 +534,6 @@ export function WorkspaceBoard({
         archivedTasks: updatedArchivedTasks,
       });
     } catch (error) {
-
       alert('Fehler beim Wiederherstellen der Aufgabe. Bitte versuche es erneut.');
     }
   };
@@ -569,7 +587,6 @@ export function WorkspaceBoard({
         setSelectedTask(null);
       }
     } catch (error) {
-
       alert('Fehler beim Löschen der Aufgabe. Bitte versuche es erneut.');
     }
   };

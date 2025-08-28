@@ -672,7 +672,8 @@ export async function POST(req: NextRequest) {
               jobDateTo:
                 quoteData.endDate || quoteData.deadline || new Date().toISOString().split('T')[0],
               jobTimePreference: quoteData.timePreference || '09:00',
-              status: 'AKTIV',
+              status: 'ABGESCHLOSSEN',
+              payoutStatus: 'available_for_payout',
               createdAt: new Date(),
               lastUpdated: new Date(),
               orderDate: new Date(),

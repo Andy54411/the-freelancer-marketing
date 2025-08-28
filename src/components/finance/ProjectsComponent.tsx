@@ -165,7 +165,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       setProjects(loadedProjects);
     } catch (error) {
-
       toast.error('Projekte konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -193,7 +192,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       });
       return Math.round(totalHours * 100) / 100; // Runde auf 2 Dezimalstellen
     } catch (error) {
-
       return 0;
     }
   };
@@ -234,7 +232,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       toast.success('Projekt erfolgreich gelöscht');
     } catch (error) {
-
       toast.error('Fehler beim Löschen des Projekts');
     }
   };
@@ -277,7 +274,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       setCustomers(loadedCustomers);
     } catch (error) {
-
       toast.error('Kunden konnten nicht geladen werden');
     } finally {
       setLoadingCustomers(false);
@@ -425,7 +421,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       toast.success('Projekt wurde erfolgreich erstellt');
     } catch (error) {
-
       toast.error('Projekt konnte nicht erstellt werden');
     }
   };
@@ -457,7 +452,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       toast.success(`Projektstatus wurde auf "${getStatusLabel(newStatus)}" geändert`);
     } catch (error) {
-
       toast.error('Projektstatus konnte nicht geändert werden');
     }
   };
@@ -875,14 +869,14 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
                     </SelectTrigger>
                     <SelectContent>
                       {loadingCustomers ? (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="loading" disabled>
                           <div className="flex items-center">
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             Lade Kunden...
                           </div>
                         </SelectItem>
                       ) : customers.length === 0 ? (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="no-customers" disabled>
                           Keine Kunden verfügbar
                         </SelectItem>
                       ) : (

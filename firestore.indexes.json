@@ -303,6 +303,24 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "auftraege",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "selectedAnbieterId",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "status",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "quoteId",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
