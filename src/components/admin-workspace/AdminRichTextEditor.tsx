@@ -559,7 +559,6 @@ export function RichTextEditor({
   // Debug: Zeige welche Sections existieren
   useEffect(() => {
     if (sections.length > 0) {
-
     }
   }, [sections]);
 
@@ -1015,35 +1014,41 @@ export function RichTextEditor({
               Neue Section hinzufügen:
             </span>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => addSection('heading', 1)}
-              className="text-xs h-7 gap-1 text-gray-700 hover:text-[#14ad9f] hover:bg-[#14ad9f]/10"
-            >
-              <Heading1 className="h-3 w-3" />
-              H1
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => addSection('heading', 2)}
-              className="text-xs h-7 gap-1 text-gray-700 hover:text-[#14ad9f] hover:bg-[#14ad9f]/10"
-            >
-              <Heading2 className="h-3 w-3" />
-              H2
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => addSection('heading', 3)}
-              className="text-xs h-7 gap-1 text-gray-700 hover:text-[#14ad9f] hover:bg-[#14ad9f]/10"
-            >
-              <Heading3 className="h-3 w-3" />
-              H3
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7 gap-1 text-gray-700 hover:text-[#14ad9f] hover:bg-[#14ad9f]/10"
+                >
+                  <Type className="h-3 w-3" />
+                  Überschrift
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => addSection('paragraph')}>
+                  <Type className="h-3 w-3 mr-2" />
+                  Normaler Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addSection('heading', 1)}>
+                  <Heading1 className="h-3 w-3 mr-2" />
+                  H1 - Hauptüberschrift
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addSection('heading', 2)}>
+                  <Heading2 className="h-3 w-3 mr-2" />
+                  H2 - Unterüberschrift
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addSection('heading', 3)}>
+                  <Heading3 className="h-3 w-3 mr-2" />
+                  H3 - Abschnittsüberschrift
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addSection('heading', 4)}>
+                  <Heading1 className="h-3 w-3 mr-2" />
+                  H4 - Kleinste Überschrift
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Separator orientation="vertical" className="h-4" />
 

@@ -559,7 +559,6 @@ export function RichTextEditor({
   // Debug: Zeige welche Sections existieren
   useEffect(() => {
     if (sections.length > 0) {
-
     }
   }, [sections]);
 
@@ -1003,7 +1002,7 @@ export function RichTextEditor({
           <div className="border-b border-gray-200">
             <EditorContent
               editor={editor}
-              className="prose prose-sm max-w-none p-6 focus:outline-none [&_.ProseMirror]:focus:outline-none [&_.ProseMirror]:min-h-[200px] [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h1]:text-gray-900 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:text-gray-900 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-bold [&_.ProseMirror_h3]:text-gray-900 [&_.ProseMirror_p]:text-gray-700 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-[#14ad9f] [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_pre]:bg-gray-100 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_pre]:rounded [&_.ProseMirror_code]:bg-gray-100 [&_.ProseMirror_code]:px-2 [&_.ProseMirror_code]:py-1 [&_.ProseMirror_code]:rounded [&_.ProseMirror_table]:border-collapse [&_.ProseMirror_table]:table-auto [&_.ProseMirror_table]:w-full [&_.ProseMirror_table]:border [&_.ProseMirror_table]:border-gray-300 [&_.ProseMirror_td]:border [&_.ProseMirror_td]:border-gray-300 [&_.ProseMirror_td]:p-2 [&_.ProseMirror_th]:border [&_.ProseMirror_th]:border-gray-300 [&_.ProseMirror_th]:p-2 [&_.ProseMirror_th]:bg-gray-50 [&_.ProseMirror_th]:font-bold [&_.ProseMirror_img]:max-w-full [&_.ProseMirror_img]:h-auto [&_.ProseMirror_img]:rounded-lg [&_.ProseMirror_ul[data-type=taskList]]:list-none [&_.ProseMirror_ul[data-type=taskList]_li]:flex [&_.ProseMirror_ul[data-type=taskList]_li]:items-start [&_.ProseMirror_ul[data-type=taskList]_li]:gap-2 [&_.ProseMirror_ul[data-type=taskList]_li>label]:flex [&_.ProseMirror_ul[data-type=taskList]_li>label]:items-center [&_.ProseMirror_ul[data-type=taskList]_li>label>input]:mr-2"
+              className="prose prose-sm max-w-none p-6 focus:outline-none [&_.ProseMirror]:focus:outline-none [&_.ProseMirror]:min-h-[200px] [&_.ProseMirror_h1]:text-3xl [&_.ProseMirror_h1]:font-bold [&_.ProseMirror_h1]:text-gray-900 [&_.ProseMirror_h2]:text-2xl [&_.ProseMirror_h2]:font-bold [&_.ProseMirror_h2]:text-gray-900 [&_.ProseMirror_h3]:text-xl [&_.ProseMirror_h3]:font-bold [&_.ProseMirror_h3]:text-gray-900 [&_.ProseMirror_h4]:text-lg [&_.ProseMirror_h4]:font-bold [&_.ProseMirror_h4]:text-gray-900 [&_.ProseMirror_p]:text-gray-700 [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-[#14ad9f] [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_pre]:bg-gray-100 [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_pre]:rounded [&_.ProseMirror_code]:bg-gray-100 [&_.ProseMirror_code]:px-2 [&_.ProseMirror_code]:py-1 [&_.ProseMirror_code]:rounded [&_.ProseMirror_table]:border-collapse [&_.ProseMirror_table]:table-auto [&_.ProseMirror_table]:w-full [&_.ProseMirror_table]:border [&_.ProseMirror_table]:border-gray-300 [&_.ProseMirror_td]:border [&_.ProseMirror_td]:border-gray-300 [&_.ProseMirror_td]:p-2 [&_.ProseMirror_th]:border [&_.ProseMirror_th]:border-gray-300 [&_.ProseMirror_th]:p-2 [&_.ProseMirror_th]:bg-gray-50 [&_.ProseMirror_th]:font-bold [&_.ProseMirror_img]:max-w-full [&_.ProseMirror_img]:h-auto [&_.ProseMirror_img]:rounded-lg [&_.ProseMirror_ul[data-type=taskList]]:list-none [&_.ProseMirror_ul[data-type=taskList]_li]:flex [&_.ProseMirror_ul[data-type=taskList]_li]:items-start [&_.ProseMirror_ul[data-type=taskList]_li]:gap-2 [&_.ProseMirror_ul[data-type=taskList]_li>label]:flex [&_.ProseMirror_ul[data-type=taskList]_li>label]:items-center [&_.ProseMirror_ul[data-type=taskList]_li>label>input]:mr-2"
             />
           </div>
         )}
@@ -1015,35 +1014,41 @@ export function RichTextEditor({
               Neue Section hinzufügen:
             </span>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => addSection('heading', 1)}
-              className="text-xs h-7 gap-1 text-gray-700 hover:text-[#14ad9f] hover:bg-[#14ad9f]/10"
-            >
-              <Heading1 className="h-3 w-3" />
-              H1
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => addSection('heading', 2)}
-              className="text-xs h-7 gap-1 text-gray-700 hover:text-[#14ad9f] hover:bg-[#14ad9f]/10"
-            >
-              <Heading2 className="h-3 w-3" />
-              H2
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => addSection('heading', 3)}
-              className="text-xs h-7 gap-1 text-gray-700 hover:text-[#14ad9f] hover:bg-[#14ad9f]/10"
-            >
-              <Heading3 className="h-3 w-3" />
-              H3
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-7 gap-1 text-gray-700 hover:text-[#14ad9f] hover:bg-[#14ad9f]/10"
+                >
+                  <Type className="h-3 w-3" />
+                  Überschrift
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => addSection('paragraph')}>
+                  <Type className="h-3 w-3 mr-2" />
+                  Normaler Text
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addSection('heading', 1)}>
+                  <Heading1 className="h-3 w-3 mr-2" />
+                  H1 - Hauptüberschrift
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addSection('heading', 2)}>
+                  <Heading2 className="h-3 w-3 mr-2" />
+                  H2 - Unterüberschrift
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addSection('heading', 3)}>
+                  <Heading3 className="h-3 w-3 mr-2" />
+                  H3 - Abschnittsüberschrift
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => addSection('heading', 4)}>
+                  <Heading1 className="h-3 w-3 mr-2" />
+                  H4 - Kleinste Überschrift
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Separator orientation="vertical" className="h-4" />
 
