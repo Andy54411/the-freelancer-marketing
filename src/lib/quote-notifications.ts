@@ -1,11 +1,18 @@
 // Quote Notification Service für Angebotsanfragen und Statusänderungen
 import { ResendEmailService } from './resend-email-service';
-import { admin } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Firebase Admin is already initialized in @/firebase/server
-// No need to initialize here
+// Firebase will be imported dynamically when needed
+let admin: any = null;
+let db: any = null;
 
-const db = admin.firestore();
+async function ensureFirebaseInitialized() {
+  if (!admin || !db) {
+    const firebase = await import('@/firebase/server');
+    admin = firebase.admin;
+    db = firebase.db;
+  }
+  return { admin, db };
+}
 
 export interface QuoteNotification {
   userId: string;
@@ -62,6 +69,13 @@ export class QuoteNotificationService {
     }
   ): Promise<void> {
     try {
+      // Ensure Firebase is initialized
+      const { admin, db } = await ensureFirebaseInitialized();
+      if (!admin || !db) {
+        console.error('Firebase nicht verfügbar für Quote Notifications');
+        return;
+      }
+
       const budgetText = `${quoteData.budget.min.toLocaleString('de-DE')} - ${quoteData.budget.max.toLocaleString('de-DE')} ${quoteData.budget.currency}`;
       const urgencyText = quoteData.urgency ? ` (${quoteData.urgency} Priorität)` : '';
 
@@ -110,9 +124,7 @@ export class QuoteNotificationService {
         db.collection('notifications').add(providerNotification),
         db.collection('notifications').add(customerNotification),
       ]);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -131,6 +143,13 @@ export class QuoteNotificationService {
     }
   ): Promise<void> {
     try {
+      // Ensure Firebase is initialized
+      const { admin, db } = await ensureFirebaseInitialized();
+      if (!admin || !db) {
+        console.error('Firebase nicht verfügbar für Quote Notifications');
+        return;
+      }
+
       const priceText = quoteData.estimatedPrice
         ? ` Angebotspreis: ${quoteData.estimatedPrice.toLocaleString('de-DE')} €`
         : '';
@@ -154,9 +173,7 @@ export class QuoteNotificationService {
       };
 
       await db.collection('notifications').add(notification);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -166,17 +183,24 @@ export class QuoteNotificationService {
    */
   static async createQuoteStatusNotification(
     quoteId: string,
-    targetUserUid: string,
+    targetUserId: string,
     status: 'accepted' | 'declined',
     quoteData: {
       customerName?: string;
       providerName?: string;
       subcategory: string;
       estimatedPrice?: number;
-      isCustomerAction?: boolean; // Um zu unterscheiden, wer die Aktion ausgeführt hat
+      isCustomerAction?: boolean;
     }
   ): Promise<void> {
     try {
+      // Ensure Firebase is initialized
+      const { admin, db } = await ensureFirebaseInitialized();
+      if (!admin || !db) {
+        console.error('Firebase nicht verfügbar für Quote Notifications');
+        return;
+      }
+
       let title: string;
       let message: string;
       let notificationType: QuoteNotification['type'];
@@ -214,7 +238,7 @@ export class QuoteNotificationService {
       }
 
       const notification: Omit<QuoteNotification, 'id'> = {
-        userId: targetUserUid,
+        userId: targetUserId,
         type: notificationType,
         title,
         message,
@@ -222,17 +246,15 @@ export class QuoteNotificationService {
         quoteTitle: quoteData.subcategory,
         link:
           userRole === 'provider'
-            ? `/dashboard/company/${targetUserUid}/quotes/incoming/${quoteId}`
-            : `/dashboard/company/${targetUserUid}/quotes/received/${quoteId}`,
+            ? `/dashboard/company/${targetUserId}/quotes/incoming/${quoteId}`
+            : `/dashboard/company/${targetUserId}/quotes/received/${quoteId}`,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: quoteData,
       };
 
       await db.collection('notifications').add(notification);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -268,9 +290,7 @@ export class QuoteNotificationService {
       };
 
       await db.collection('notifications').add(notification);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -322,7 +342,6 @@ export class QuoteNotificationService {
         db.collection('notifications').add(providerNotification),
         db.collection('notifications').add(customerNotification),
       ]);
-
     } catch (error) {
       console.error('Error creating contact exchange notifications:', error);
       throw error;

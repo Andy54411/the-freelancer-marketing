@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/firebase/server';
 import { QuoteNotificationService } from '@/lib/quote-notifications';
 
 // Stripe Initialisierung
 function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecret) {
-
     return null;
   }
   return new Stripe(stripeSecret, {
@@ -24,6 +22,14 @@ export async function POST(
   { params }: { params: { uid: string; quoteId: string } }
 ) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { db } = await import('@/firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const stripe = getStripeInstance();
     if (!stripe) {
       return NextResponse.json({ error: 'Stripe-Konfiguration fehlt' }, { status: 500 });
@@ -53,7 +59,10 @@ export async function POST(
         });
         console.log('✅ Quote status updated to accepted');
       } else if (quoteData?.status !== 'accepted') {
-        return NextResponse.json({ error: 'Angebot muss zuerst beantwortet werden' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Angebot muss zuerst beantwortet werden' },
+          { status: 400 }
+        );
       }
     } else if (quoteData?.status !== 'accepted') {
       return NextResponse.json({ error: 'Angebot wurde noch nicht angenommen' }, { status: 400 });
@@ -61,7 +70,7 @@ export async function POST(
 
     // Validiere, dass es eine Response mit totalAmount gibt (Legacy) oder Proposals (Neu)
     let totalAmount = 0;
-    
+
     // Zuerst prüfen: Proposals in Subcollection (Neues System)
     const proposalsSnapshot = await quoteRef.collection('proposals').get();
     if (!proposalsSnapshot.empty) {
@@ -75,7 +84,7 @@ export async function POST(
       totalAmount = parseFloat(quoteData.response.totalAmount);
       console.log('💰 Using totalAmount from legacy response:', totalAmount);
     }
-    
+
     if (!totalAmount || totalAmount <= 0) {
       return NextResponse.json({ error: 'Angebotssumme nicht gefunden' }, { status: 400 });
     }
@@ -89,7 +98,7 @@ export async function POST(
         console.log('💰 Payment calculation:', {
           totalAmount,
           provisionRate,
-          provisionAmount: provisionAmount / 100
+          provisionAmount: provisionAmount / 100,
         });
 
         // Erstelle Payment Intent für Provision (ohne Connect Features für Tests)
@@ -151,7 +160,11 @@ export async function POST(
               name: customerCompanyData?.companyName || customerCompanyData?.name || 'Kunde',
               email: customerCompanyData?.email || '',
               phone: customerCompanyData?.phone || customerCompanyData?.phoneNumber || '',
-              address: `${customerCompanyData?.address || customerCompanyData?.street || ''}, ${customerCompanyData?.city || ''}`.trim().replace(/^,\s*/, '').replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
+              address:
+                `${customerCompanyData?.address || customerCompanyData?.street || ''}, ${customerCompanyData?.city || ''}`
+                  .trim()
+                  .replace(/^,\s*/, '')
+                  .replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
             };
           }
 
@@ -163,7 +176,11 @@ export async function POST(
               name: providerCompanyData?.companyName || providerCompanyData?.name || 'Anbieter',
               email: providerCompanyData?.email || '',
               phone: providerCompanyData?.phone || providerCompanyData?.phoneNumber || '',
-              address: `${providerCompanyData?.address || providerCompanyData?.street || ''}, ${providerCompanyData?.city || ''}`.trim().replace(/^,\s*/, '').replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
+              address:
+                `${providerCompanyData?.address || providerCompanyData?.street || ''}, ${providerCompanyData?.city || ''}`
+                  .trim()
+                  .replace(/^,\s*/, '')
+                  .replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
             };
           }
 
@@ -173,7 +190,7 @@ export async function POST(
             'payment.paidAt': new Date().toISOString(),
             'payment.paymentIntentId': paymentIntentId,
             'contactExchange.readyForExchange': true,
-            'status': 'contacts_exchanged',
+            status: 'contacts_exchanged',
           };
 
           // Füge Kontaktdaten hinzu, falls verfügbar
@@ -216,9 +233,7 @@ export async function POST(
                 providerId, // Provider UID
                 `${customerName} ↔ ${providerName} - ${quoteData.projectSubcategory || quoteData.projectTitle || 'Service'}`
               );
-
             } catch (notificationError) {
-
               // Notification-Fehler sollten das Payment nicht rückgängig machen
             }
           }
@@ -236,7 +251,6 @@ export async function POST(
         return NextResponse.json({ error: 'Ungültige Aktion' }, { status: 400 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Server-Fehler',

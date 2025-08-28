@@ -1,10 +1,17 @@
 // src/app/api/process-payment-intent-locally/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { db, admin } from '@/firebase/server';
 import { OrderNotificationService } from '../../../lib/order-notifications';
 
 export async function POST(req: NextRequest) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { db, admin } = await import('@/firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!db || !admin) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const { paymentIntentId } = await req.json();
 
     if (!paymentIntentId) {
@@ -37,7 +44,6 @@ export async function POST(req: NextRequest) {
         const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
 
         if (tempJobDraftSnapshot.data()?.status === 'converted') {
-
           return;
         }
 
@@ -71,7 +77,6 @@ export async function POST(req: NextRequest) {
             const hoursPerDay = durationMatch ? parseFloat(durationMatch[1]) : 8;
 
             correctedJobTotalCalculatedHours = hoursPerDay * daysDiff;
-
           }
         }
 
@@ -109,7 +114,6 @@ export async function POST(req: NextRequest) {
           status: 'converted',
           convertedToOrderId: newAuftragRef.id,
         });
-
       });
 
       // 🔔 NOTIFICATION: Order erfolgreich erstellt
@@ -131,10 +135,7 @@ export async function POST(req: NextRequest) {
             orderData.selectedAnbieterId, // Provider ID
             orderNotificationData
           );
-
-        } catch (notificationError) {
-
-        }
+        } catch (notificationError) {}
       }
 
       return NextResponse.json({
@@ -159,7 +160,6 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Lokale Auftragserstellung fehlgeschlagen',

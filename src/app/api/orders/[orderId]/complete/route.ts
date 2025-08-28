@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { admin } from '../../../../../firebase/server';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
 });
 
-const adminDb = admin.firestore();
-
 export async function PATCH(request: NextRequest, { params }: { params: { orderId: string } }) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { admin } = await import('../../../../../firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!admin) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
+    const adminDb = admin.firestore();
     const { orderId } = params;
     const { feedback } = await request.json();
 
@@ -73,7 +79,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
       payoutStatus: 'available_for_payout',
     });
   } catch (error: any) {
-
     return NextResponse.json(
       { error: 'Interner Server-Fehler', details: error.message },
       { status: 500 }
@@ -83,6 +88,15 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
 
 export async function GET(request: NextRequest, { params }: { params: { orderId: string } }) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { admin } = await import('../../../../../firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!admin) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
+    const adminDb = admin.firestore();
     const { orderId } = params;
 
     const orderDoc = await adminDb.collection('auftraege').doc(orderId).get();
@@ -98,7 +112,6 @@ export async function GET(request: NextRequest, { params }: { params: { orderId:
       ...orderData,
     });
   } catch (error: any) {
-
     return NextResponse.json(
       { error: 'Interner Server-Fehler', details: error.message },
       { status: 500 }

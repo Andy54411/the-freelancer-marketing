@@ -1,11 +1,18 @@
 // Order Notification Service für Auftragsbuchungen
 import { ResendEmailService } from './resend-email-service';
-import { admin } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Firebase Admin is already initialized in @/firebase/server
-// No need to initialize here
+// Firebase will be imported dynamically when needed
+let admin: any = null;
+let db: any = null;
 
-const db = admin.firestore();
+async function ensureFirebaseInitialized() {
+  if (!admin || !db) {
+    const firebase = await import('@/firebase/server');
+    admin = firebase.admin;
+    db = firebase.db;
+  }
+  return { admin, db };
+}
 
 export interface OrderNotification {
   userId: string;
@@ -49,6 +56,13 @@ export class OrderNotificationService {
     }
   ): Promise<void> {
     try {
+      // Ensure Firebase is initialized
+      const { admin, db } = await ensureFirebaseInitialized();
+      if (!admin || !db) {
+        console.error('Firebase nicht verfügbar für Order Notifications');
+        return;
+      }
+
       // 1. PROVIDER NOTIFICATION - Neue Buchung erhalten
       const providerNotification: Omit<OrderNotification, 'id'> = {
         userId: providerUid,
@@ -98,9 +112,7 @@ export class OrderNotificationService {
         db.collection('notifications').add(providerNotification),
         db.collection('notifications').add(customerNotification),
       ]);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -158,9 +170,7 @@ export class OrderNotificationService {
       };
 
       await db.collection('notifications').add(notification);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -193,9 +203,7 @@ export class OrderNotificationService {
       };
 
       await db.collection('notifications').add(testNotification);
-
     } catch (error) {
-
       throw error;
     }
   }

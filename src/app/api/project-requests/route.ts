@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
 import { ProjectEmailNotificationService } from '@/lib/project-email-notifications';
 
@@ -9,6 +8,14 @@ import { ProjectEmailNotificationService } from '@/lib/project-email-notificatio
  */
 export async function POST(request: NextRequest) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { db } = await import('@/firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const body = await request.json();
 
     // Support für AI Project Creation Format
@@ -243,6 +250,14 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { db } = await import('@/firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const { searchParams } = new URL(request.url);
     const customerUid = searchParams.get('customerUid');
     const status = searchParams.get('status');

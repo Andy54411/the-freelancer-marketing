@@ -1,11 +1,18 @@
 // Project Email Notification Service für Unternehmen
 import { ResendEmailService } from './resend-email-service';
-import { admin } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Firebase Admin is already initialized in @/firebase/server
-// No need to initialize here
+// Firebase will be imported dynamically when needed
+let admin: any = null;
+let db: any = null;
 
-const db = admin.firestore();
+async function ensureFirebaseInitialized() {
+  if (!admin || !db) {
+    const firebase = await import('@/firebase/server');
+    admin = firebase.admin;
+    db = firebase.db;
+  }
+  return { admin, db };
+}
 
 export interface ProjectEmailData {
   projectId: string;
@@ -53,6 +60,18 @@ export class ProjectEmailNotificationService {
     details: Array<{ email: string; success: boolean; error?: string }>;
   }> {
     try {
+      // Ensure Firebase is initialized
+      const { admin, db } = await ensureFirebaseInitialized();
+      if (!admin || !db) {
+        console.error('Firebase nicht verfügbar für Project Email Notifications');
+        return {
+          success: false,
+          sentCount: 0,
+          failedCount: 0,
+          details: [{ email: 'system', success: false, error: 'Firebase nicht verfügbar' }],
+        };
+      }
+
       // 1. Finde alle Unternehmen in der companies Collection mit der entsprechenden Subcategory
       const companiesQuery = await db
         .collection('companies')
