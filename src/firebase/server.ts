@@ -4,11 +4,17 @@ import { getAuth } from 'firebase-admin/auth';
 import { AppOptions } from 'firebase-admin/app';
 import { readFileSync, existsSync } from 'fs';
 
-// Check if we're in build time or runtime
+// Better build time detection
 const isBuildTime =
-  process.env.NODE_ENV === 'development' && !process.env.VERCEL && process.argv.includes('build');
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  (process.env.NODE_ENV === 'production' && !process.env.VERCEL) ||
+  typeof window !== 'undefined';
 
-if (!admin.apps.length && !isBuildTime) {
+let db: ReturnType<typeof getFirestore> | null = null;
+let auth: ReturnType<typeof getAuth> | null = null;
+
+// Only initialize Firebase Admin SDK if not in build time
+if (!isBuildTime && !admin.apps.length) {
   try {
     const options: AppOptions = {
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f',
@@ -128,10 +134,11 @@ if (!admin.apps.length && !isBuildTime) {
       throw new Error(errorMsg);
     }
 
-    // Skip initialization during build time
-    if (!isBuildTime) {
-      admin.initializeApp(options);
-    }
+    admin.initializeApp(options);
+
+    // Initialize instances after successful app initialization
+    db = getFirestore();
+    auth = getAuth();
 
     // Logging für Emulator-Verbindungen in der lokalen Entwicklung
     if (process.env.NODE_ENV === 'development') {
@@ -148,17 +155,14 @@ if (!admin.apps.length && !isBuildTime) {
       }
     }
   } catch (error: any) {
+    console.error('Firebase Admin SDK Initialisierungsfehler:', error.message);
+    // In production, we should not throw during build time
     if (!isBuildTime) {
-      console.error('Firebase Admin SDK Initialisierungsfehler:', error.message);
       throw new Error(
         'Initialisierung des Firebase Admin SDK fehlgeschlagen. Überprüfen Sie die Server-Logs für Details.'
       );
     }
   }
 }
-
-// Export safe instances with fallbacks for build time
-const db = !isBuildTime && admin.apps.length > 0 ? getFirestore() : null;
-const auth = !isBuildTime && admin.apps.length > 0 ? getAuth() : null;
 
 export { db, auth, admin };

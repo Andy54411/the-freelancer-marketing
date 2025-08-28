@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, db } from '@/firebase/server';
 
 export async function POST(request: NextRequest) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { auth, db } = await import('@/firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!auth || !db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const { orderId } = await request.json();
 
     if (!orderId) {
@@ -22,7 +29,6 @@ export async function POST(request: NextRequest) {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
     } catch (authError) {
-
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
@@ -68,7 +74,6 @@ export async function POST(request: NextRequest) {
       messages,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

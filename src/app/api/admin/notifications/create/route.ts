@@ -1,9 +1,11 @@
 // Firebase Admin SDK basierte Notification-Erstellung (umgeht Client-Regeln)
 import { NextRequest, NextResponse } from 'next/server';
-import { admin, db } from '@/firebase/server'; // Use centralized Firebase setup
 
 export async function POST(request: NextRequest) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { admin, db } = await import('@/firebase/server');
+
     // Check if Firebase is properly initialized
     if (!db || !admin) {
       console.error('Firebase Admin SDK nicht initialisiert');

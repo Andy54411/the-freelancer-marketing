@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db as adminDb } from '@/firebase/server';
 import Stripe from 'stripe';
 
 // Initialize Stripe
@@ -18,6 +17,14 @@ interface PayoutRequest {
  */
 export async function POST(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { db: adminDb } = await import('@/firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const { uid } = params;
     const body: PayoutRequest = await request.json();
 
@@ -287,6 +294,14 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
  */
 export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { db: adminDb } = await import('@/firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const { uid } = await params;
 
     // 1. Hole Company Stripe Account Info
