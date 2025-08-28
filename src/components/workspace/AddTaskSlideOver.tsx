@@ -19,7 +19,7 @@ import type { WorkspaceTask } from '@/services/WorkspaceService';
 interface AddTaskSlideOverProps {
   isOpen: boolean;
   onClose: () => void;
-  onTaskCreated: (task: Partial<WorkspaceTask>) => void;
+  onTaskCreated: (task: Partial<WorkspaceTask>) => Promise<void>;
   columnId: string;
   columnTitle: string;
 }
@@ -90,7 +90,8 @@ export function AddTaskSlideOver({
         updatedAt: new Date(),
       };
 
-      onTaskCreated(task);
+      // Call the async onTaskCreated function
+      await onTaskCreated(task);
 
       // Reset form
       setFormData({
@@ -103,7 +104,8 @@ export function AddTaskSlideOver({
 
       onClose();
     } catch (error) {
-
+      console.error('Failed to create task:', error);
+      // Don't close modal on error so user can retry
     } finally {
       setLoading(false);
     }

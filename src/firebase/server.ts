@@ -2,9 +2,13 @@ import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { AppOptions } from 'firebase-admin/app';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 
-if (!admin.apps.length) {
+// Check if we're in build time or runtime
+const isBuildTime =
+  process.env.NODE_ENV === 'development' && !process.env.VERCEL && process.argv.includes('build');
+
+if (!admin.apps.length && !isBuildTime) {
   try {
     const options: AppOptions = {
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f',
@@ -24,12 +28,14 @@ if (!admin.apps.length) {
         // Bereinige mögliche Escape-Sequenzen und Whitespace
         const cleanedKey = firebaseServiceAccountKey.trim().replace(/\\n/g, '\n');
         const serviceAccount = JSON.parse(cleanedKey);
-        
+
         // Validiere, dass es sich um ein gültiges Service Account Objekt handelt
         if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
           options.credential = admin.credential.cert(serviceAccount);
           credentialSet = true;
-          console.log('✅ Firebase Credentials erfolgreich aus FIREBASE_SERVICE_ACCOUNT_KEY geladen');
+          console.log(
+            '✅ Firebase Credentials erfolgreich aus FIREBASE_SERVICE_ACCOUNT_KEY geladen'
+          );
         } else {
           console.warn('FIREBASE_SERVICE_ACCOUNT_KEY enthält kein gültiges Service Account Format');
         }
@@ -46,21 +52,25 @@ if (!admin.apps.length) {
       try {
         console.log('Versuche Service Account Datei zu verwenden...');
         const serviceAccountPath = './firebase_functions/service-account.json';
-        
+
         // Prüfe ob Datei existiert
-        const serviceAccountJson = readFileSync(serviceAccountPath, 'utf8');
-        const serviceAccount = JSON.parse(serviceAccountJson);
-        
-        // Validiere Service Account Format
-        if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
-          options.credential = admin.credential.cert(serviceAccount);
-          credentialSet = true;
-          console.log(
-            '✅ Firebase Credentials erfolgreich aus lokaler Datei geladen:',
-            serviceAccountPath
-          );
+        if (existsSync(serviceAccountPath)) {
+          const serviceAccountJson = readFileSync(serviceAccountPath, 'utf8');
+          const serviceAccount = JSON.parse(serviceAccountJson);
+
+          // Validiere Service Account Format
+          if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
+            options.credential = admin.credential.cert(serviceAccount);
+            credentialSet = true;
+            console.log(
+              '✅ Firebase Credentials erfolgreich aus lokaler Datei geladen:',
+              serviceAccountPath
+            );
+          } else {
+            console.error('Lokale Service Account Datei hat ungültiges Format');
+          }
         } else {
-          console.error('Lokale Service Account Datei hat ungültiges Format');
+          console.log('Service Account Datei nicht gefunden:', serviceAccountPath);
         }
       } catch (fileError: any) {
         console.error('Fehler beim Laden der Service Account Datei:', fileError.message);
@@ -73,13 +83,13 @@ if (!admin.apps.length) {
       try {
         console.log('Versuche GOOGLE_APPLICATION_CREDENTIALS zu verwenden...');
         const cleanedCredentials = googleAppCredentials.trim();
-        
+
         // Prüfe ob es ein Dateipfad ist (beginnt mit / oder enthält .json)
         if (cleanedCredentials.startsWith('/') || cleanedCredentials.includes('.json')) {
           console.log('Verwende Credential-Datei:', cleanedCredentials);
           const serviceAccountJson = readFileSync(cleanedCredentials, 'utf8');
           const serviceAccount = JSON.parse(serviceAccountJson);
-          
+
           if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
             options.credential = admin.credential.cert(serviceAccount);
             credentialSet = true;
@@ -91,7 +101,7 @@ if (!admin.apps.length) {
           console.log('Verwende Credential-JSON-String...');
           const cleanedJson = cleanedCredentials.replace(/\\n/g, '\n');
           const serviceAccount = JSON.parse(cleanedJson);
-          
+
           if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
             options.credential = admin.credential.cert(serviceAccount);
             credentialSet = true;
@@ -99,7 +109,7 @@ if (!admin.apps.length) {
             console.error('GOOGLE_APPLICATION_CREDENTIALS JSON hat ungültiges Format');
           }
         }
-        
+
         if (credentialSet) {
           console.log(
             '✅ Firebase Credentials erfolgreich aus GOOGLE_APPLICATION_CREDENTIALS geladen'
@@ -110,15 +120,18 @@ if (!admin.apps.length) {
       }
     }
 
-    // WICHTIG: Wenn keine Credentials gesetzt sind, FEHLER werfen
-    if (!credentialSet) {
+    // WICHTIG: Wenn keine Credentials gesetzt sind, FEHLER werfen (aber nur zur Laufzeit)
+    if (!credentialSet && !isBuildTime) {
       const errorMsg =
         'Firebase Credentials nicht verfügbar - FIREBASE_SERVICE_ACCOUNT_KEY, lokale service-account.json oder GOOGLE_APPLICATION_CREDENTIALS erforderlich.';
       console.error(errorMsg);
       throw new Error(errorMsg);
     }
 
-    admin.initializeApp(options);
+    // Skip initialization during build time
+    if (!isBuildTime) {
+      admin.initializeApp(options);
+    }
 
     // Logging für Emulator-Verbindungen in der lokalen Entwicklung
     if (process.env.NODE_ENV === 'development') {
@@ -135,14 +148,17 @@ if (!admin.apps.length) {
       }
     }
   } catch (error: any) {
-    console.error('Firebase Admin SDK Initialisierungsfehler:', error.message);
-    throw new Error(
-      'Initialisierung des Firebase Admin SDK fehlgeschlagen. Überprüfen Sie die Server-Logs für Details.'
-    );
+    if (!isBuildTime) {
+      console.error('Firebase Admin SDK Initialisierungsfehler:', error.message);
+      throw new Error(
+        'Initialisierung des Firebase Admin SDK fehlgeschlagen. Überprüfen Sie die Server-Logs für Details.'
+      );
+    }
   }
 }
 
-const db = getFirestore();
-const auth = getAuth();
+// Export safe instances with fallbacks for build time
+const db = !isBuildTime && admin.apps.length > 0 ? getFirestore() : null;
+const auth = !isBuildTime && admin.apps.length > 0 ? getAuth() : null;
 
 export { db, auth, admin };

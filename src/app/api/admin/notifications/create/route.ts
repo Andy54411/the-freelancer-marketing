@@ -2,11 +2,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { admin, db } from '@/firebase/server'; // Use centralized Firebase setup
 
-// Firebase Admin is already initialized in @/firebase/server
-// No need to initialize here
-
 export async function POST(request: NextRequest) {
   try {
+    // Check if Firebase is properly initialized
+    if (!db || !admin) {
+      console.error('Firebase Admin SDK nicht initialisiert');
+      return NextResponse.json(
+        { success: false, error: 'Firebase Admin SDK nicht verfügbar' },
+        { status: 500 }
+      );
+    }
+
     const requestData = await request.json();
     const {
       userUid,
@@ -71,7 +77,6 @@ export async function POST(request: NextRequest) {
       notificationId: docRef.id,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

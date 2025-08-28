@@ -269,37 +269,47 @@ export function WorkspaceBoard({
     setIsAddTaskOpen(true);
   };
 
-  const handleTaskCreated = (taskData: Partial<WorkspaceTask>) => {
+  const handleTaskCreated = async (taskData: Partial<WorkspaceTask>) => {
     if (!selectedWorkspace || !selectedColumnId) return;
 
-    const newTask: WorkspaceTask = {
-      id: `task_${Date.now()}`,
-      title: taskData.title || '',
-      description: taskData.description,
-      status: selectedColumnId,
-      priority: taskData.priority || 'medium',
-      assignedTo: taskData.assignedTo || [],
-      dueDate: taskData.dueDate,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      tags: taskData.tags || [],
-      position: taskData.position || 0,
-      columnId: selectedColumnId,
-    };
+    try {
+      const newTask: WorkspaceTask = {
+        id: `task_${Date.now()}`,
+        title: taskData.title || '',
+        description: taskData.description,
+        status: selectedColumnId,
+        priority: taskData.priority || 'medium',
+        assignedTo: taskData.assignedTo || [],
+        dueDate: taskData.dueDate,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tags: taskData.tags || [],
+        position: columns.find(col => col.id === selectedColumnId)?.tasks?.length || 0,
+        columnId: selectedColumnId,
+      };
 
-    const updatedColumns = columns.map(col => {
-      if (col.id === selectedColumnId) {
-        return {
-          ...col,
-          tasks: [...(col.tasks || []), newTask],
-        };
-      }
-      return col;
-    });
+      const updatedColumns = columns.map(col => {
+        if (col.id === selectedColumnId) {
+          return {
+            ...col,
+            tasks: [...(col.tasks || []), newTask],
+          };
+        }
+        return col;
+      });
 
-    onUpdateWorkspace(selectedWorkspace.id, {
-      boardColumns: updatedColumns,
-    });
+      // Use realtime updateLocalWorkspace for immediate sync
+      await updateLocalWorkspace({
+        boardColumns: updatedColumns,
+        updatedAt: new Date(),
+      });
+
+      console.log(
+        `✅ Task "${newTask.title}" created in column "${columns.find(col => col.id === selectedColumnId)?.title}" (Realtime sync active)`
+      );
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    }
   };
 
   const handleEditTask = (task: WorkspaceTask) => {
