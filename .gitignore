@@ -55,4 +55,7 @@ firebase_functions/.env.tilvo-f142f
 .env.gtm
 client_secret.json
 taskilo-newsletter-service-key.json
+service-account*.json
+*-service-account.json
+firebase-admin*.json
 .env*.local

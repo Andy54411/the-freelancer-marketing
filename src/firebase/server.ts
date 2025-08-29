@@ -6,11 +6,25 @@ import { AppOptions } from 'firebase-admin/app';
 // Better build time detection
 const isBuildTime =
   process.env.NEXT_PHASE === 'phase-production-build' ||
-  (process.env.NODE_ENV === 'production' && !process.env.VERCEL) ||
+  process.env.npm_lifecycle_event === 'build' ||
+  process.argv.includes('build') ||
+  (process.env.NODE_ENV === 'production' &&
+    !process.env.VERCEL &&
+    !process.env.RAILWAY_ENVIRONMENT) ||
   typeof window !== 'undefined';
 
 let db: ReturnType<typeof getFirestore> | null = null;
 let auth: ReturnType<typeof getAuth> | null = null;
+
+// Debug: Log build time detection
+console.log('🔍 Firebase Init Debug:', {
+  isBuildTime,
+  NEXT_PHASE: process.env.NEXT_PHASE,
+  npm_lifecycle_event: process.env.npm_lifecycle_event,
+  NODE_ENV: process.env.NODE_ENV,
+  hasVercel: !!process.env.VERCEL,
+  hasFirebaseKey: !!process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
+});
 
 // Only initialize Firebase Admin SDK if not in build time
 if (!isBuildTime && !admin.apps.length) {
@@ -57,14 +71,19 @@ if (!isBuildTime && !admin.apps.length) {
             for (let i = 0; i < cleanedKey.length; i++) {
               const char = cleanedKey[i];
               const charCode = char.charCodeAt(0);
-              // Nur printable ASCII + erlaubte Steuerzeichen (LF, CR, TAB)
+              // Nur printable ASCII + erlaubte Steuerzeichen (LF, CR, TAB) + JSON-relevante Zeichen
               if (
-                (charCode >= 32 && charCode <= 126) ||
-                charCode === 10 ||
-                charCode === 13 ||
-                charCode === 9
+                (charCode >= 32 && charCode <= 126) || // Printable ASCII
+                charCode === 10 || // LF
+                charCode === 13 || // CR
+                charCode === 9 // TAB
               ) {
                 ultraCleanKey += char;
+              } else {
+                // Log problematische Zeichen für Debugging
+                console.warn(
+                  `Entferne problematisches Zeichen an Position ${i}: charCode ${charCode}`
+                );
               }
             }
 
@@ -78,6 +97,12 @@ if (!isBuildTime && !admin.apps.length) {
 
             // Entferne zusätzliche problematische Unicode-Zeichen
             ultraCleanKey = ultraCleanKey.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+            // EXTRA: Entferne alle Control Characters (0-31 außer erlaubten)
+            ultraCleanKey = ultraCleanKey.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+            // EXTRA: Normalisiere Zeilenumbrüche zu \n
+            ultraCleanKey = ultraCleanKey.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
             console.log('JSON-String aggressiv bereinigt, versuche zu parsen...');
             serviceAccount = JSON.parse(ultraCleanKey);
@@ -117,13 +142,52 @@ if (!isBuildTime && !admin.apps.length) {
         console.log('Versuche GOOGLE_APPLICATION_CREDENTIALS als JSON-String zu verwenden...');
         let cleanedCredentials = googleAppCredentials.trim();
 
-        // Bereinige JSON-String (falls escape-sequences enthalten)
-        cleanedCredentials = cleanedCredentials.replace(/\\n/g, '\n');
-        cleanedCredentials = cleanedCredentials.replace(/\\r/g, '\r');
-        cleanedCredentials = cleanedCredentials.replace(/\\t/g, '\t');
-        cleanedCredentials = cleanedCredentials.replace(/\\"/g, '"');
+        // Entferne äußere Anführungszeichen
+        if (cleanedCredentials.startsWith('"') && cleanedCredentials.endsWith('"')) {
+          cleanedCredentials = cleanedCredentials.slice(1, -1);
+        }
+        if (cleanedCredentials.startsWith("'") && cleanedCredentials.endsWith("'")) {
+          cleanedCredentials = cleanedCredentials.slice(1, -1);
+        }
 
-        const serviceAccount = JSON.parse(cleanedCredentials);
+        // AGGRESSIVE Zeichen-Bereinigung für GOOGLE_APPLICATION_CREDENTIALS
+        let ultraCleanCredentials = '';
+        for (let i = 0; i < cleanedCredentials.length; i++) {
+          const char = cleanedCredentials[i];
+          const charCode = char.charCodeAt(0);
+          // Nur printable ASCII + erlaubte Steuerzeichen
+          if (
+            (charCode >= 32 && charCode <= 126) ||
+            charCode === 10 ||
+            charCode === 13 ||
+            charCode === 9
+          ) {
+            ultraCleanCredentials += char;
+          } else {
+            console.warn(
+              `GOOGLE_APPLICATION_CREDENTIALS: Entferne problematisches Zeichen an Position ${i}: charCode ${charCode}`
+            );
+          }
+        }
+
+        // Standard-Escape-Sequenzen normalisieren
+        ultraCleanCredentials = ultraCleanCredentials.replace(/\\n/g, '\n');
+        ultraCleanCredentials = ultraCleanCredentials.replace(/\\r/g, '\r');
+        ultraCleanCredentials = ultraCleanCredentials.replace(/\\t/g, '\t');
+        ultraCleanCredentials = ultraCleanCredentials.replace(/\\"/g, '"');
+        ultraCleanCredentials = ultraCleanCredentials.replace(/\\'/g, "'");
+        ultraCleanCredentials = ultraCleanCredentials.replace(/\\\\/g, '\\');
+
+        // Entferne Control Characters
+        ultraCleanCredentials = ultraCleanCredentials.replace(
+          /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,
+          ''
+        );
+
+        // Normalisiere Zeilenumbrüche
+        ultraCleanCredentials = ultraCleanCredentials.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+        const serviceAccount = JSON.parse(ultraCleanCredentials);
 
         if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
           options.credential = admin.credential.cert(serviceAccount);
@@ -169,8 +233,21 @@ if (!isBuildTime && !admin.apps.length) {
     }
   } catch (error: any) {
     console.error('Firebase Admin SDK Initialisierungsfehler:', error.message);
-    // In production, we should not throw during build time
-    if (!isBuildTime) {
+    console.error('Debug Info:', {
+      isBuildTime,
+      hasApps: admin.apps.length > 0,
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PHASE: process.env.NEXT_PHASE,
+    });
+
+    // In production build, don't throw - create mock instances
+    if (isBuildTime || process.env.npm_lifecycle_event === 'build') {
+      console.log('🔨 Build-Zeit erkannt - verwende Mock Firebase Instanzen');
+      // Don't throw during build, just log and continue
+      db = null;
+      auth = null;
+    } else {
+      // Runtime error - throw as before
       throw new Error(
         'Initialisierung des Firebase Admin SDK fehlgeschlagen. Überprüfen Sie die Server-Logs für Details.'
       );
@@ -179,3 +256,11 @@ if (!isBuildTime && !admin.apps.length) {
 }
 
 export { db, auth, admin };
+
+// Export mit Fallback für Buildzeit
+export default {
+  db: db || null,
+  auth: auth || null,
+  admin: admin || null,
+  isBuildTime,
+};

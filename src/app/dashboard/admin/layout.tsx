@@ -16,6 +16,7 @@ import {
   X,
   Ticket,
   Briefcase,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -36,6 +37,7 @@ const navigation = [
   { name: 'Übersicht', href: '/dashboard/admin', icon: BarChart3 },
   { name: 'Workspace', href: '/dashboard/admin/workspace', icon: Briefcase },
   { name: 'Tickets', href: '/dashboard/admin/tickets', icon: Ticket },
+  { name: 'Storno-Verwaltung', href: '/dashboard/admin/storno-management', icon: XCircle },
   { name: 'Enhanced Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
   { name: 'Unternehmen', href: '/dashboard/admin/companies', icon: Building2 },
   { name: 'Benutzer', href: '/dashboard/admin/users', icon: Users },
@@ -61,7 +63,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         router.push('/admin/login');
       }
     } catch (error) {
-
       router.push('/admin/login');
     } finally {
       setLoading(false);
@@ -76,9 +77,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     try {
       await fetch('/api/admin/auth/logout', { method: 'POST' });
       router.push('/admin/login');
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   if (loading) {

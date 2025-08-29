@@ -203,7 +203,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   const [form, setForm] = useState<UserDataForSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'general' | 'accounting' | 'bank' | 'logo' | 'payouts'
+    'general' | 'accounting' | 'bank' | 'logo' | 'payouts' | 'storno'
   >('general');
   const [showManagingDirectorPersonalModal, setShowManagingDirectorPersonalModal] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -952,7 +952,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   }, [form, userData, onDataSaved, handleChange]); // Abhängigkeiten für useCallback
 
   // Alle Hooks müssen vor bedingten Returns aufgerufen werden
-  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'payouts';
+  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'payouts' | 'storno';
   interface TabDefinition {
     key: TabKey;
     label: string;
@@ -964,6 +964,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
     { key: 'bank', label: 'Bankverbindung' },
     { key: 'logo', label: 'Logo & Dokumente' },
     { key: 'payouts', label: 'Auszahlungen' },
+    { key: 'storno', label: 'Storno-Einstellungen' },
   ];
 
   if (!form) {
@@ -1024,6 +1025,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           {activeTab === 'bank' && 'Bankverbindung'}
           {activeTab === 'logo' && 'Logo & Dokumente'}
           {activeTab === 'payouts' && 'Auszahlungen & Rechnungen'}
+          {activeTab === 'storno' && 'Storno-Einstellungen'}
         </h2>
 
         {form && activeTab === 'general' && (
@@ -1086,6 +1088,63 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
                 <li className="flex items-start">
                   <span className="text-[#14ad9f] mr-2">•</span>
                   Alle Beträge werden automatisch versteuert - Details in Ihrer Buchhaltung
+                </li>
+              </ul>
+            </div>
+          </div>
+        )}
+        {activeTab === 'storno' && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Storno-Einstellungen & Bedingungen
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Konfigurieren Sie Ihre Stornierungsbedingungen, Gebühren und automatische
+                  Genehmigungen.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href={`/dashboard/company/${user?.uid}/settings/storno`}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129a8f] transition-colors"
+                >
+                  Storno-Einstellungen verwalten
+                </Link>
+
+                <div className="text-sm text-gray-500 dark:text-gray-400 pt-3">
+                  Hier können Sie Ihre Stornierungsbedingungen, Gebühren und automatische
+                  Genehmigungsregeln konfigurieren.
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h4 className="text-md font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                Wichtige Hinweise zu Stornierungen
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Alle Stornierungen werden durch einen Admin geprüft und genehmigt
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Kunden haben bei Lieferverzug ein automatisches Storno-Recht
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Ihre Storno-Rate wird in Ihrem Provider-Score berücksichtigt
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Bei zu vielen Stornierungen kann Ihr Account temporär gesperrt werden
+                </li>
+                <li className="flex items-start">
+                  <span className="text-[#14ad9f] mr-2">•</span>
+                  Individuelle Storno-Bedingungen können konfiguriert werden
                 </li>
               </ul>
             </div>

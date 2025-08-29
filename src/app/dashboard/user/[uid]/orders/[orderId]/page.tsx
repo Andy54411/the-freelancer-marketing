@@ -31,6 +31,8 @@ import InlinePaymentComponent from '@/components/InlinePaymentComponent';
 import HoursBillingOverview from '@/components/HoursBillingOverview';
 // Order Completion Komponente
 import OrderCompletionModal from '@/components/orders/OrderCompletionModal';
+// Storno-Komponente
+import StornoButtonSection from '@/components/storno/StornoButtonSection';
 
 interface ParticipantDetails {
   id: string;
@@ -121,7 +123,6 @@ export default function OrderDetailPage() {
 
     // Wenn nach dem Laden kein Benutzer da ist, zum Login weiterleiten.
     if (!currentUser) {
-
       const currentPath = window.location.pathname + window.location.search;
       router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
       return;
@@ -195,16 +196,13 @@ export default function OrderDetailPage() {
           };
 
           setOrder(orderData);
-
         } catch (err: any) {
-
           setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
         } finally {
           setLoadingOrder(false);
         }
       },
       error => {
-
         setError(`Verbindungsfehler: ${error.message}`);
         setLoadingOrder(false);
       }
@@ -212,15 +210,12 @@ export default function OrderDetailPage() {
 
     // Cleanup function
     return () => {
-
       unsubscribe();
     };
   }, [authLoading, currentUser, orderId, router, firebaseUser]);
 
   // Payment Modal State Monitor
-  useEffect(() => {
-
-  }, [showInlinePayment, paymentClientSecret, paymentAmount, paymentHours]);
+  useEffect(() => {}, [showInlinePayment, paymentClientSecret, paymentAmount, paymentHours]);
 
   // Order Completion Handlers
   const handleCompleteOrder = () => {
@@ -269,7 +264,6 @@ export default function OrderDetailPage() {
 
       // Real-Time-Listener aktualisiert die Daten automatisch
     } catch (err: any) {
-
       setError(err.message || 'Ein Fehler ist beim Annehmen des Auftrags aufgetreten.');
     } finally {
       setIsUpdating(false);
@@ -278,12 +272,10 @@ export default function OrderDetailPage() {
 
   // Payment Modal Handler - kann von CustomerApprovalInterface aufgerufen werden
   const handlePaymentRequest = (clientSecret: string, amount: number, hours: number) => {
-
     setPaymentClientSecret(clientSecret);
     setPaymentAmount(amount);
     setPaymentHours(hours);
     setShowInlinePayment(true);
-
   };
 
   // Direct Payment Modal Handler - Echte Billing-Daten verwenden
@@ -315,7 +307,6 @@ export default function OrderDetailPage() {
       setPaymentAmount(billingResult.customerPays);
       setPaymentHours(paymentHours);
       setShowInlinePayment(true);
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
 
@@ -595,6 +586,20 @@ export default function OrderDetailPage() {
                       </div>
                     )}
 
+                    {/* STORNO BUTTONS - Implementiert nach Admin-Only System */}
+                    {currentUser.uid === order.customerId && (
+                      <StornoButtonSection
+                        order={order}
+                        currentUser={currentUser}
+                        onStornoSuccess={() => {
+                          setSuccessMessage(
+                            'Storno-Anfrage wurde eingereicht und wird von einem Admin geprüft.'
+                          );
+                          // Realtime-Listener aktualisiert automatisch den Status
+                        }}
+                      />
+                    )}
+
                     {/* Order Review/Confirm Button für Kunden bei PROVIDER_COMPLETED */}
                     {currentUser.uid === order.customerId &&
                       order.status === 'PROVIDER_COMPLETED' && (
@@ -676,7 +681,7 @@ export default function OrderDetailPage() {
                   <UserInfoCard
                     userId={cardUser.id}
                     userName={cardUser.name}
-                    userAvatarUrl={cardUser.avatarUrl}
+                    userAvatarUrl={cardUser.avatarUrl || undefined}
                     userRole={cardUser.role}
                   />
                 </div>
@@ -695,11 +700,9 @@ export default function OrderDetailPage() {
               isOpen={showInlinePayment}
               onClose={handlePaymentCancel}
               onSuccess={(paymentIntentId: string) => {
-
                 handlePaymentSuccess();
               }}
               onError={(error: string) => {
-
                 handlePaymentCancel();
               }}
             />

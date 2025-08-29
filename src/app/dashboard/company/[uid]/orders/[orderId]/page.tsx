@@ -29,6 +29,8 @@ import ChatComponent from '@/components/ChatComponent';
 import HoursBillingOverview from '@/components/HoursBillingOverview';
 // Payment-Komponente
 import InlinePaymentComponent from '@/components/InlinePaymentComponent';
+// Provider Storno-Warnung
+import ProviderStornoWarning from '@/components/storno/ProviderStornoWarning';
 
 interface ParticipantDetails {
   id: string;
@@ -740,6 +742,9 @@ export default function CompanyOrderDetailPage() {
                   />
                 </div>
               )}
+
+              {/* PROVIDER STORNO-WARNUNG bei überfälligen Aufträgen */}
+              {isViewerProvider && <ProviderStornoWarning order={order} companyUid={companyUid} />}
 
               {/* Auftrag abschließen - Box für aktive Aufträge */}
               {order.status === 'AKTIV' && isViewerProvider && !successMessage && (
