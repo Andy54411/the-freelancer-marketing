@@ -1,23 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, admin } from '@/firebase/server';
+
+// Runtime Firebase initialization to prevent build-time issues
+async function getFirebaseServices(): Promise<{ auth: any; db: any; admin: any }> {
+  try {
+    const firebaseModule = await import('@/firebase/server');
+
+    if (!firebaseModule.db || !firebaseModule.admin) {
+      console.error('Firebase services not initialized properly');
+      const { admin } = firebaseModule;
+      if (admin && admin.apps.length > 0) {
+        const { getAuth } = await import('firebase-admin/auth');
+        const { getFirestore } = await import('firebase-admin/firestore');
+        return {
+          auth: getAuth(),
+          db: getFirestore(),
+          admin,
+        };
+      }
+      throw new Error('Firebase services unavailable');
+    }
+
+    return {
+      auth: firebaseModule.auth,
+      db: firebaseModule.db,
+      admin: firebaseModule.admin,
+    };
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    throw new Error('Firebase services unavailable');
+  }
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;
-  
-  // Check if this is a request for a specific quote (has quoteId in URL)
-  const url = new URL(request.url);
-  const pathSegments = url.pathname.split('/');
-  const receivedIndex = pathSegments.findIndex(segment => segment === 'received');
-  
-  // If there's a segment after 'received', this is for a specific quote - return 404 to let the specific route handle it
-  if (receivedIndex !== -1 && pathSegments[receivedIndex + 1]) {
-    console.log(`🔄 PARENT ROUTE: Delegating to specific quote route for: ${pathSegments[receivedIndex + 1]}`);
-    return new NextResponse(null, { status: 404 });
-  }
-  
-  console.log(`🎯 PARENT ROUTE CALLED: /api/company/${uid}/quotes/received - URL: ${request.url}`);
 
   try {
+    // Initialize Firebase services dynamically
+    const { admin, db } = await getFirebaseServices();
+
+    // Check if this is a request for a specific quote (has quoteId in URL)
+    const url = new URL(request.url);
+    const pathSegments = url.pathname.split('/');
+    const receivedIndex = pathSegments.findIndex(segment => segment === 'received');
+
+    // If there's a segment after 'received', this is for a specific quote - return 404 to let the specific route handle it
+    if (receivedIndex !== -1 && pathSegments[receivedIndex + 1]) {
+      console.log(
+        `🔄 PARENT ROUTE: Delegating to specific quote route for: ${pathSegments[receivedIndex + 1]}`
+      );
+      return new NextResponse(null, { status: 404 });
+    }
+
+    console.log(
+      `🎯 PARENT ROUTE CALLED: /api/company/${uid}/quotes/received - URL: ${request.url}`
+    );
+
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -125,9 +162,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     for (const doc of quotesSnapshot.docs) {
       const quoteData = doc.data();
-      
+
       console.log(`🔍 Processing quote ${doc.id}:`);
-      console.log(`  - Title: ${quoteData.projectTitle || quoteData.projectDescription || 'No title'}`);
+      console.log(
+        `  - Title: ${quoteData.projectTitle || quoteData.projectDescription || 'No title'}`
+      );
       console.log(`  - Status: ${quoteData.status}`);
       console.log(`  - ProposalsInSubcollection: ${quoteData.proposalsInSubcollection}`);
       console.log(`  - Has legacy response: ${!!quoteData.response}`);
@@ -135,7 +174,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Load proposals from subcollection if they exist
       let proposals: any[] = [];
       let hasProposals = false;
-      
+
       try {
         // ALWAYS check subcollection for proposals, regardless of proposalsInSubcollection flag
         console.log(`🔍 Checking proposals subcollection for quote ${doc.id}`);
@@ -144,20 +183,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           .doc(doc.id)
           .collection('proposals')
           .get();
-        
+
         proposals = proposalsSnapshot.docs.map(proposalDoc => ({
           id: proposalDoc.id,
           ...proposalDoc.data(),
-          createdAt: proposalDoc.data().createdAt?.toDate?.() || new Date(proposalDoc.data().createdAt)
+          createdAt:
+            proposalDoc.data().createdAt?.toDate?.() || new Date(proposalDoc.data().createdAt),
         }));
-        
+
         hasProposals = proposals.length > 0;
         console.log(`📋 Found ${proposals.length} proposals in subcollection for quote ${doc.id}`);
-        
+
         // If no proposals in subcollection, check legacy response field as fallback
         if (!hasProposals) {
           hasProposals = !!quoteData.response;
-          console.log(`📜 Legacy response check: ${hasProposals ? 'found' : 'not found'} for quote ${doc.id}`);
+          console.log(
+            `📜 Legacy response check: ${hasProposals ? 'found' : 'not found'} for quote ${doc.id}`
+          );
         }
       } catch (error) {
         console.error(`❌ Error loading proposals for quote ${doc.id}:`, error);
@@ -224,9 +266,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         hasResponse: !!quoteData.response || hasProposals, // Check both legacy and new format
         responseDate: quoteData.response?.respondedAt
           ? new Date(quoteData.response.respondedAt)
-          : proposals.length > 0 
-          ? proposals[0].createdAt 
-          : null,
+          : proposals.length > 0
+            ? proposals[0].createdAt
+            : null,
       });
     }
 
