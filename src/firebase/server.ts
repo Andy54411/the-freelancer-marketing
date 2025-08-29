@@ -51,32 +51,13 @@ if (!isBuildTime && !admin.apps.length) {
               cleanedKey = cleanedKey.slice(1, -1);
             }
 
-            // Aggressive Bereinigung
-            cleanedKey = cleanedKey.replace(/\\n/g, '\n');
-            cleanedKey = cleanedKey.replace(/\\r/g, '\r');
-            cleanedKey = cleanedKey.replace(/\\t/g, '\t');
-            cleanedKey = cleanedKey.replace(/\\"/g, '"');
-            cleanedKey = cleanedKey.replace(/\\'/g, "'");
-            cleanedKey = cleanedKey.replace(/\\\\/g, '\\');
-
-            // Entferne ALLE Steuerzeichen außer erlaubten
-            cleanedKey = cleanedKey.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-            cleanedKey = cleanedKey.replace(/[\u200B-\u200D\uFEFF]/g, '');
-
-            console.log('JSON-String bereinigt, versuche zu parsen...');
-            serviceAccount = JSON.parse(cleanedKey);
-          }
-        } catch (parseError: any) {
-          console.error('Primäres Parsing fehlgeschlagen:', parseError.message);
-
-          // Letzter Versuch: Zeichen für Zeichen bereinigen
-          try {
-            console.log('Versuche aggressive Zeichen-Bereinigung...');
+            // SOFORTIGE aggressive Zeichen-Bereinigung um Vercel-Logs sauber zu halten
+            console.log('Führe sofortige aggressive Zeichen-Bereinigung durch...');
             let ultraCleanKey = '';
-            for (let i = 0; i < firebaseServiceAccountKey.length; i++) {
-              const char = firebaseServiceAccountKey[i];
+            for (let i = 0; i < cleanedKey.length; i++) {
+              const char = cleanedKey[i];
               const charCode = char.charCodeAt(0);
-              // Nur printable ASCII + erlaubte Steuerzeichen
+              // Nur printable ASCII + erlaubte Steuerzeichen (LF, CR, TAB)
               if (
                 (charCode >= 32 && charCode <= 126) ||
                 charCode === 10 ||
@@ -86,10 +67,29 @@ if (!isBuildTime && !admin.apps.length) {
                 ultraCleanKey += char;
               }
             }
+
+            // Standard-Escape-Sequenzen normalisieren
+            ultraCleanKey = ultraCleanKey.replace(/\\n/g, '\n');
+            ultraCleanKey = ultraCleanKey.replace(/\\r/g, '\r');
+            ultraCleanKey = ultraCleanKey.replace(/\\t/g, '\t');
+            ultraCleanKey = ultraCleanKey.replace(/\\"/g, '"');
+            ultraCleanKey = ultraCleanKey.replace(/\\'/g, "'");
+            ultraCleanKey = ultraCleanKey.replace(/\\\\/g, '\\');
+
+            // Entferne zusätzliche problematische Unicode-Zeichen
+            ultraCleanKey = ultraCleanKey.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+            console.log('JSON-String aggressiv bereinigt, versuche zu parsen...');
             serviceAccount = JSON.parse(ultraCleanKey);
-          } catch (finalError: any) {
-            throw new Error(`Alle JSON-Parsing-Versuche fehlgeschlagen: ${finalError.message}`);
           }
+        } catch (parseError: any) {
+          console.error(
+            'JSON-Parsing fehlgeschlagen nach aggressiver Bereinigung:',
+            parseError.message
+          );
+          throw new Error(
+            `Firebase Service Account Key konnte nicht geparst werden: ${parseError.message}`
+          );
         }
 
         // Validiere, dass es sich um ein gültiges Service Account Objekt handelt
