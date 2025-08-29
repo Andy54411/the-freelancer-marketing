@@ -944,46 +944,6 @@ export default function PayoutOverviewPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Orders Ready for Payout */}
-            {availableData && availableData.orders.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    <span>Aufträge bereit zur Auszahlung</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Diese abgeschlossenen Aufträge sind für die Auszahlung vorgesehen
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {availableData.orders.map(order => (
-                      <div
-                        key={order.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">{order.projectTitle}</div>
-                          <div className="text-sm text-gray-500">
-                            Abgeschlossen am {formatDate(order.completedAt)}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium text-[#14ad9f]">
-                            {formatCurrency(order.amount)}
-                          </div>
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
-                            Bereit zur Auszahlung
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </>
         )}
 

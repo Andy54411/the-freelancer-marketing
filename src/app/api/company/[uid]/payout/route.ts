@@ -7,21 +7,9 @@ let db: any;
 async function getFirebaseServices() {
   if (!db) {
     try {
-      console.log('Initializing Firebase for Payout API...');
+      console.log('Initializing Firebase for Payout API - NO JSON FILES...');
 
-      // Try existing server config first
-      try {
-        const firebaseServer = await import('@/firebase/server');
-        db = firebaseServer.db;
-        if (db) {
-          console.log('Using existing Firebase server configuration');
-          return { db };
-        }
-      } catch (importError) {
-        console.log('Existing config not available:', importError.message);
-      }
-
-      // Fallback to direct initialization
+      // DIRECT Firebase initialization without JSON imports
       const firebaseAdmin = await import('firebase-admin');
 
       // Check if app is already initialized

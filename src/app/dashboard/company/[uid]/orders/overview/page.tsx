@@ -128,7 +128,6 @@ const CompanyOrdersOverviewPage = () => {
             setQuoteRequests([]);
           }
         } catch (quoteErr) {
-
           setQuoteRequests([]);
         }
       } catch (err: any) {
@@ -187,19 +186,39 @@ const CompanyOrdersOverviewPage = () => {
   };
 
   const formatOrderDate = (date: Order['orderDate']): string => {
-    if (typeof date === 'string' && date) {
-      return new Date(date).toLocaleDateString('de-DE', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
-    }
-    if (date && typeof date === 'object' && '_seconds' in date) {
-      return new Date(date._seconds * 1000).toLocaleDateString('de-DE', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      });
+    // Handle multiple date formats and fallbacks
+    const tryParseDates = [
+      date,
+      (date as any)?.createdAt,
+      (date as any)?.paidAt,
+      (date as any)?.orderDate,
+    ].filter(Boolean);
+
+    for (const dateValue of tryParseDates) {
+      try {
+        if (typeof dateValue === 'string' && dateValue) {
+          const parsedDate = new Date(dateValue);
+          if (!isNaN(parsedDate.getTime())) {
+            return parsedDate.toLocaleDateString('de-DE', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            });
+          }
+        }
+        if (dateValue && typeof dateValue === 'object' && '_seconds' in dateValue) {
+          const parsedDate = new Date(dateValue._seconds * 1000);
+          if (!isNaN(parsedDate.getTime())) {
+            return parsedDate.toLocaleDateString('de-DE', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            });
+          }
+        }
+      } catch (error) {
+        continue;
+      }
     }
     return 'Unbekanntes Datum';
   };
@@ -371,7 +390,7 @@ const CompanyOrdersOverviewPage = () => {
                         <p className="flex items-center text-sm text-gray-500">
                           <FiUser className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                           {orderType === 'EINGEGANGEN'
-                            ? order.customerName
+                            ? order.customerName || 'Unbekannter Kunde'
                             : 'Anbieter: ' + (order.providerName || 'Unbekannt')}
                         </p>
                         {order.projectName && (

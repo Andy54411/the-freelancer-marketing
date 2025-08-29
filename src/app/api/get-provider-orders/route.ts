@@ -89,25 +89,41 @@ export async function GET(request: NextRequest) {
         ordersSnapshot.docs.map(async doc => {
           const orderData = doc.data();
 
-          // Fetch customer details
+          // Fetch customer details - check multiple possible fields
           let customerName = 'Unbekannter Kunde';
           let customerAvatarUrl = null;
 
-          if (orderData.customerFirebaseUid) {
+          // Try multiple fields for customer ID
+          const customerId =
+            orderData.customerFirebaseUid || orderData.orderedBy || orderData.customerUid;
+
+          if (customerId) {
             try {
-              const customerDoc = await db
-                .collection('users')
-                .doc(orderData.customerFirebaseUid)
-                .get();
+              // First try users collection
+              const customerDoc = await db.collection('users').doc(customerId).get();
               if (customerDoc.exists) {
                 const customerData = customerDoc.data();
                 const firstName = customerData?.firstName || '';
                 const lastName = customerData?.lastName || '';
-                customerName = `${firstName} ${lastName}`.trim() || 'Unbekannter Kunde';
+                customerName =
+                  `${firstName} ${lastName}`.trim() ||
+                  customerData?.displayName ||
+                  'Unbekannter Kunde';
                 customerAvatarUrl =
                   customerData?.profilePictureURL || customerData?.profilePictureFirebaseUrl;
+              } else {
+                // Fallback: try companies collection for B2B orders
+                const companyDoc = await db.collection('companies').doc(customerId).get();
+                if (companyDoc.exists) {
+                  const companyData = companyDoc.data();
+                  customerName =
+                    companyData?.companyName || companyData?.name || 'Unbekannte Firma';
+                  customerAvatarUrl = companyData?.logoUrl || companyData?.profilePictureURL;
+                }
               }
-            } catch (customerError) {}
+            } catch (customerError) {
+              console.error('Error fetching customer data:', customerError);
+            }
           }
 
           return {
@@ -115,6 +131,8 @@ export async function GET(request: NextRequest) {
             ...orderData,
             customerName,
             customerAvatarUrl,
+            // Ensure orderDate is properly mapped
+            orderDate: orderData.orderDate || orderData.createdAt || orderData.paidAt,
             // Convert Firestore timestamps to ISO strings for JSON serialization
             createdAt: orderData.createdAt?.toDate?.()?.toISOString() || orderData.createdAt,
             updatedAt: orderData.updatedAt?.toDate?.()?.toISOString() || orderData.updatedAt,

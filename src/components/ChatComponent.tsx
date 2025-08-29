@@ -9,11 +9,15 @@ import {
   getDoc,
   setDoc,
   collection,
+  query,
+  orderBy,
+  onSnapshot,
+  DocumentData,
 } from 'firebase/firestore';
-import { db } from '@/firebase/clients'; // Still needed for sending messages
+import { db } from '@/firebase/clients'; // Client Firebase for realtime updates
 import { useAuth } from '@/contexts/AuthContext';
 import { Send as FiSend, Loader2 as FiLoader } from 'lucide-react';
-import { Badge } from '@/components/ui/badge'; // Badge für Statusanzeige importieren
+import { Badge } from '@/components/ui/badge';
 
 // Interface für ein Chat-Nachrichten-Dokument in Firestore
 interface ChatMessage {
@@ -104,26 +108,60 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-Scroll deaktiviert um störendes Verhalten zu vermeiden
-  // useEffect(() => {
-  //   messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  // }, [messages]);
+  // Auto-Scroll to bottom when new messages arrive (re-enabled for realtime updates)
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Laden des Benutzerprofils, sobald currentUser verfügbar ist
   useEffect(() => {
     if (currentUser) {
       const fetchUserProfile = async () => {
         setUserProfileLoading(true);
+        setChatError(null);
         try {
-          const userDocRef = doc(db, 'users', currentUser.uid); // This is a one-time read, which is fine.
+          // Try to get user profile from available currentUser properties
+          if (currentUser.firstName || currentUser.lastName) {
+            setLoggedInUserProfile({
+              firstName: currentUser.firstName,
+              lastName: currentUser.lastName,
+              user_type: 'kunde', // Default fallback
+            });
+            setUserProfileLoading(false);
+            return;
+          }
+
+          // Fallback: Direct Firebase read (with error handling)
+          const userDocRef = doc(db, 'users', currentUser.uid);
           const userDocSnap = await getDoc(userDocRef);
           if (userDocSnap.exists()) {
             setLoggedInUserProfile(userDocSnap.data() as UserProfileData);
           } else {
-            setLoggedInUserProfile(null);
+            // Try companies collection if user not found
+            const companyDocRef = doc(db, 'companies', currentUser.uid);
+            const companyDocSnap = await getDoc(companyDocRef);
+            if (companyDocSnap.exists()) {
+              const companyData = companyDocSnap.data();
+              setLoggedInUserProfile({
+                companyName: companyData.companyName || companyData.name,
+                user_type: 'firma',
+              });
+            } else {
+              // Set basic profile if nothing found
+              setLoggedInUserProfile({
+                firstName: 'Benutzer',
+                user_type: 'kunde',
+              });
+            }
           }
         } catch (error) {
-          setChatError('Fehler beim Laden des Benutzerprofils');
+          console.error('Error loading user profile:', error);
+          // Set basic profile instead of showing error
+          setLoggedInUserProfile({
+            firstName: 'Benutzer',
+            user_type: 'kunde',
+          });
+          // Don't set error - just use fallback profile
         } finally {
           setUserProfileLoading(false);
         }
@@ -135,7 +173,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     }
   }, [currentUser]);
 
-  // Load chat messages using API instead of direct Firebase access
+  // Load chat messages with realtime updates instead of polling
   useEffect(() => {
     if (!currentUser?.uid || !orderId) {
       return;
@@ -144,50 +182,48 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
     setChatLoading(true);
     setChatError(null);
 
-    const loadChatMessages = async () => {
-      try {
-        const response = await fetch('/api/getOrderChat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${await firebaseUser?.getIdToken()}`,
-          },
-          body: JSON.stringify({ orderId }),
-        });
+    // Set up realtime listener for chat messages
+    const messagesQuery = query(
+      collection(db, 'auftraege', orderId, 'nachrichten'),
+      orderBy('timestamp', 'asc')
+    );
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch chat messages');
-        }
+    const unsubscribe = onSnapshot(
+      messagesQuery,
+      querySnapshot => {
+        try {
+          const fetchedMessages: ChatMessage[] = querySnapshot.docs.map(doc => {
+            const data = doc.data() as DocumentData;
+            return {
+              id: doc.id,
+              senderId: data.senderId,
+              senderName: data.senderName,
+              senderType: data.senderType,
+              text: data.text,
+              timestamp: data.timestamp,
+            };
+          });
 
-        const result = await response.json();
-
-        if (result.success && result.messages) {
-          const fetchedMessages: ChatMessage[] = result.messages.map((msg: any) => ({
-            id: msg.id,
-            senderId: msg.senderId,
-            senderName: msg.senderName,
-            senderType: msg.senderType,
-            text: msg.text,
-            timestamp: msg.timestamp,
-          }));
           setMessages(fetchedMessages);
+          setChatLoading(false);
+        } catch (error) {
+          console.error('Error processing chat messages:', error);
+          setChatError('Fehler beim Laden der Nachrichten');
+          setChatLoading(false);
         }
-      } catch (error) {
+      },
+      error => {
+        console.error('Error listening to chat messages:', error);
         setChatError('Fehler beim Laden der Nachrichten');
-      } finally {
         setChatLoading(false);
       }
-    };
+    );
 
-    loadChatMessages();
-
-    // Set up polling for new messages every 5 seconds
-    const pollInterval = setInterval(loadChatMessages, 5000);
-
+    // Cleanup function to unsubscribe from the listener
     return () => {
-      clearInterval(pollInterval);
+      unsubscribe();
     };
-  }, [currentUser?.uid, orderId, firebaseUser]);
+  }, [currentUser?.uid, orderId]);
 
   // Nachricht senden
   const handleSendMessage = async (e: FormEvent) => {
