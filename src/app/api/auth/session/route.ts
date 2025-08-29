@@ -1,6 +1,27 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/firebase/server';
 import { cookies } from 'next/headers';
+
+// Runtime Firebase initialization to prevent build-time issues
+async function getFirebaseAuth(): Promise<any> {
+  try {
+    const firebaseModule = await import('@/firebase/server');
+
+    if (!firebaseModule.auth) {
+      console.error('Firebase auth not initialized properly');
+      const { admin } = firebaseModule;
+      if (admin && admin.apps.length > 0) {
+        const { getAuth } = await import('firebase-admin/auth');
+        return getAuth();
+      }
+      throw new Error('Firebase auth unavailable');
+    }
+
+    return firebaseModule.auth;
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    throw new Error('Firebase auth unavailable');
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -8,6 +29,9 @@ export async function POST(request: Request) {
     if (!idToken) {
       return NextResponse.json({ error: 'ID token is required' }, { status: 400 });
     }
+
+    // Get Firebase Auth dynamically
+    const auth = await getFirebaseAuth();
 
     // Die Gültigkeit des Cookies auf 5 Tage setzen.
     const expiresIn = 60 * 60 * 24 * 5 * 1000;
@@ -22,7 +46,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ status: 'success' });
   } catch (error) {
-
     return NextResponse.json({ error: 'Failed to create session' }, { status: 401 });
   }
 }
