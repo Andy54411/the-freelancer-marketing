@@ -4,8 +4,35 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuth } from 'firebase-admin/auth';
-import { db } from '@/firebase/server';
+
+// Runtime Firebase initialization to prevent build-time issues
+async function getFirebaseServices(): Promise<{ auth: any; db: any }> {
+  try {
+    const firebaseModule = await import('@/firebase/server');
+
+    if (!firebaseModule.db) {
+      console.error('Firebase services not initialized properly');
+      const { admin } = firebaseModule;
+      if (admin && admin.apps.length > 0) {
+        const { getAuth } = await import('firebase-admin/auth');
+        const { getFirestore } = await import('firebase-admin/firestore');
+        return {
+          auth: getAuth(),
+          db: getFirestore(),
+        };
+      }
+      throw new Error('Firebase services unavailable');
+    }
+
+    return {
+      auth: firebaseModule.auth,
+      db: firebaseModule.db,
+    };
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    throw new Error('Firebase services unavailable');
+  }
+}
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -14,6 +41,9 @@ export async function PATCH(request: NextRequest) {
     if (!notificationId) {
       return NextResponse.json({ error: 'Benachrichtigungs-ID ist erforderlich' }, { status: 400 });
     }
+
+    // Initialize Firebase services dynamically
+    const { auth, db } = await getFirebaseServices();
 
     // Auth-Token aus Header extrahieren
     const authHeader = request.headers.get('authorization');
@@ -25,7 +55,7 @@ export async function PATCH(request: NextRequest) {
 
     try {
       // Token verifizieren
-      const decodedToken = await getAuth().verifyIdToken(token);
+      const decodedToken = await auth.verifyIdToken(token);
       const userId = decodedToken.uid;
 
       // Benachrichtigung abrufen und überprüfen, ob sie dem Benutzer gehört
@@ -57,11 +87,9 @@ export async function PATCH(request: NextRequest) {
         message: 'Benachrichtigung als gelesen markiert',
       });
     } catch (authError) {
-
       return NextResponse.json({ error: 'Ungültiges Auth-Token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',
@@ -75,6 +103,9 @@ export async function PATCH(request: NextRequest) {
 // Zusätzliche Route zum Markieren aller Benachrichtigungen als gelesen
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Firebase services dynamically
+    const { auth, db } = await getFirebaseServices();
+
     // Auth-Token aus Header extrahieren
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -85,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Token verifizieren
-      const decodedToken = await getAuth().verifyIdToken(token);
+      const decodedToken = await auth.verifyIdToken(token);
       const userId = decodedToken.uid;
 
       // Alle ungelesenen Benachrichtigungen des Benutzers finden
@@ -123,11 +154,9 @@ export async function POST(request: NextRequest) {
         marked: snapshot.size,
       });
     } catch (authError) {
-
       return NextResponse.json({ error: 'Ungültiges Auth-Token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Serverfehler',

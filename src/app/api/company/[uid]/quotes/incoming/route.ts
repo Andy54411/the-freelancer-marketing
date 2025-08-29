@@ -1,10 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, admin } from '@/firebase/server';
+
+// Runtime Firebase initialization to prevent build-time issues
+async function getFirebaseServices(): Promise<{ auth: any; db: any; admin: any }> {
+  try {
+    const firebaseModule = await import('@/firebase/server');
+
+    if (!firebaseModule.db || !firebaseModule.admin) {
+      console.error('Firebase services not initialized properly');
+      const { admin } = firebaseModule;
+      if (admin && admin.apps.length > 0) {
+        const { getAuth } = await import('firebase-admin/auth');
+        const { getFirestore } = await import('firebase-admin/firestore');
+        return {
+          auth: getAuth(),
+          db: getFirestore(),
+          admin,
+        };
+      }
+      throw new Error('Firebase services unavailable');
+    }
+
+    return {
+      auth: firebaseModule.auth,
+      db: firebaseModule.db,
+      admin: firebaseModule.admin,
+    };
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    throw new Error('Firebase services unavailable');
+  }
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   const { uid } = await params;
 
   try {
+    // Initialize Firebase services dynamically
+    const { admin, db } = await getFirebaseServices();
+
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
