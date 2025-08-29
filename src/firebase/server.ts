@@ -53,37 +53,7 @@ if (!isBuildTime && !admin.apps.length) {
       console.log('FIREBASE_SERVICE_ACCOUNT_KEY ist leer, verwende Fallback-Methoden...');
     }
 
-    // 2. Fallback: Lokale Service Account Datei (für Development)
-    if (!credentialSet) {
-      try {
-        console.log('Versuche Service Account Datei zu verwenden...');
-        const serviceAccountPath = './firebase_functions/service-account.json';
-
-        // Prüfe ob Datei existiert
-        if (existsSync(serviceAccountPath)) {
-          const serviceAccountJson = readFileSync(serviceAccountPath, 'utf8');
-          const serviceAccount = JSON.parse(serviceAccountJson);
-
-          // Validiere Service Account Format
-          if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
-            options.credential = admin.credential.cert(serviceAccount);
-            credentialSet = true;
-            console.log(
-              '✅ Firebase Credentials erfolgreich aus lokaler Datei geladen:',
-              serviceAccountPath
-            );
-          } else {
-            console.error('Lokale Service Account Datei hat ungültiges Format');
-          }
-        } else {
-          console.log('Service Account Datei nicht gefunden:', serviceAccountPath);
-        }
-      } catch (fileError: any) {
-        console.error('Fehler beim Laden der Service Account Datei:', fileError.message);
-      }
-    }
-
-    // 3. Fallback: GOOGLE_APPLICATION_CREDENTIALS
+    // 2. Fallback: GOOGLE_APPLICATION_CREDENTIALS (nur Environment Variables)
     const googleAppCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (googleAppCredentials && googleAppCredentials.trim() && !credentialSet) {
       try {
