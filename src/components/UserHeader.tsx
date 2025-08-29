@@ -228,7 +228,15 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                 onboardingCompleted: companyData.onboardingCompleted,
               };
 
-              profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
+              // Prüfe alle möglichen Profilbild-Felder in Company-Daten
+              profileUrl =
+                companyData.profilePictureURL ||
+                companyData.profilePictureFirebaseUrl ||
+                companyData['step3.profilePictureURL'] ||
+                companyData.step3?.profilePictureURL ||
+                null;
+
+              console.log(`🖼️ Company profileUrl found:`, profileUrl);
             } else {
               console.log(`⚠️ No data found in companies collection for user: ${uid}`);
             }
@@ -264,7 +272,15 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                 onboardingCompleted: companyData.onboardingCompleted,
               };
 
-              profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
+              // Prüfe alle möglichen Profilbild-Felder in Company-Daten (Fallback)
+              profileUrl =
+                companyData.profilePictureURL ||
+                companyData.profilePictureFirebaseUrl ||
+                companyData['step3.profilePictureURL'] ||
+                companyData.step3?.profilePictureURL ||
+                null;
+
+              console.log(`🖼️ Company fallback profileUrl found:`, profileUrl);
             }
           } catch (error) {
             console.error(`❌ Error in fallback companies check:`, error);
