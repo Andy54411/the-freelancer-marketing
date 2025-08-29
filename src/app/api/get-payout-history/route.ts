@@ -1,22 +1,27 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/firebase/server';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret
   ? new Stripe(stripeSecret, {
-    apiVersion: '2024-06-20',
-  })
+      apiVersion: '2024-06-20',
+    })
   : null;
 
 export async function POST(request: NextRequest) {
-
   if (!stripe) {
-
     return NextResponse.json({ error: 'Stripe-Konfiguration fehlt.' }, { status: 500 });
   }
 
   try {
+    // Dynamically import Firebase setup to avoid build-time initialization
+    const { db } = await import('@/firebase/server');
+
+    // Check if Firebase is properly initialized
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
+    }
+
     const body = await request.json();
     const { firebaseUserId } = body;
 
@@ -34,7 +39,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
-
       return NextResponse.json({ error: 'Kein gültiges Stripe-Konto gefunden.' }, { status: 404 });
     }
 
@@ -64,7 +68,6 @@ export async function POST(request: NextRequest) {
       success: true,
     });
   } catch (error) {
-
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
         {

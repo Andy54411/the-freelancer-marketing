@@ -1,6 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+// Dynamic Firebase imports to prevent build-time issues
+let db: any;
+
+async function getFirebaseServices() {
+  if (!db) {
+    try {
+      console.log('Initializing Firebase for Payout API...');
+
+      // Try existing server config first
+      try {
+        const firebaseServer = await import('@/firebase/server');
+        db = firebaseServer.db;
+        if (db) {
+          console.log('Using existing Firebase server configuration');
+          return { db };
+        }
+      } catch (importError) {
+        console.log('Existing config not available:', importError.message);
+      }
+
+      // Fallback to direct initialization
+      const firebaseAdmin = await import('firebase-admin');
+
+      // Check if app is already initialized
+      let app;
+      try {
+        app = firebaseAdmin.app();
+        console.log('Using existing Firebase app');
+      } catch (appError) {
+        console.log('Initializing new Firebase app for Payout...');
+
+        if (
+          process.env.FIREBASE_PROJECT_ID &&
+          process.env.FIREBASE_PRIVATE_KEY &&
+          process.env.FIREBASE_CLIENT_EMAIL
+        ) {
+          app = firebaseAdmin.initializeApp({
+            credential: firebaseAdmin.credential.cert({
+              projectId: process.env.FIREBASE_PROJECT_ID,
+              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+              privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            }),
+          });
+          console.log('Initialized with service account credentials');
+        } else if (process.env.FIREBASE_PROJECT_ID) {
+          app = firebaseAdmin.initializeApp({
+            credential: firebaseAdmin.credential.applicationDefault(),
+            projectId: process.env.FIREBASE_PROJECT_ID,
+          });
+          console.log('Initialized with application default credentials');
+        } else {
+          throw new Error('No Firebase configuration available');
+        }
+      }
+
+      db = firebaseAdmin.firestore();
+      console.log('Firebase Firestore initialized successfully for Payout API');
+      return { db };
+    } catch (error: any) {
+      console.error('Firebase initialization failed:', error);
+      throw error;
+    }
+  }
+  return { db };
+}
+
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
@@ -17,15 +83,18 @@ interface PayoutRequest {
  */
 export async function POST(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    // Dynamically import Firebase setup to avoid build-time initialization
-    const { db: adminDb } = await import('@/firebase/server');
+    // Fix Next.js warning
+    const resolvedParams = await params;
+
+    // Use improved Firebase initialization
+    const { db: adminDb } = await getFirebaseServices();
 
     // Check if Firebase is properly initialized
     if (!adminDb) {
       return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
-    const { uid } = params;
+    const { uid } = resolvedParams;
     const body: PayoutRequest = await request.json();
 
     let totalAvailableAmount = 0;
@@ -294,28 +363,40 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
  */
 export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    // Dynamically import Firebase setup to avoid build-time initialization
-    const { db: adminDb } = await import('@/firebase/server');
+    // Fix Next.js warning
+    const resolvedParams = await params;
+    console.log('🔍 Payout GET: Starting for uid:', resolvedParams?.uid);
+
+    // Use improved Firebase initialization
+    const { db: adminDb } = await getFirebaseServices();
+    console.log('🔍 Payout GET: Firebase services obtained, db available:', !!adminDb);
 
     // Check if Firebase is properly initialized
     if (!adminDb) {
+      console.log('❌ Payout GET: Firebase not available');
       return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
-    const { uid } = await params;
+    const { uid } = resolvedParams;
+    console.log('🔍 Payout GET: Processing for uid:', uid);
 
     // 1. Hole Company Stripe Account Info
+    console.log('🔍 Payout GET: Fetching company data...');
     const companyRef = adminDb.collection('companies').doc(uid);
     const companySnap = await companyRef.get();
+    console.log('🔍 Payout GET: Company exists:', companySnap.exists);
 
     if (!companySnap.exists) {
+      console.log('❌ Payout GET: Company not found');
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
     const companyData = companySnap.data();
     const stripeAccountId = companyData?.stripeAccountId;
+    console.log('🔍 Payout GET: Stripe Account ID:', stripeAccountId);
 
     if (!stripeAccountId) {
+      console.log('❌ Payout GET: No Stripe account configured');
       return NextResponse.json({ error: 'No Stripe account configured' }, { status: 400 });
     }
 
@@ -429,7 +510,8 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
       },
     });
   } catch (error: any) {
-    console.error('Payout GET Error:', error);
+    console.error('❌ Payout GET Error:', error);
+    console.error('❌ Payout GET Stack:', error.stack);
     return NextResponse.json(
       { error: 'Failed to get available payout amount', details: error.message },
       { status: 500 }
