@@ -31,8 +31,33 @@ if (!isBuildTime && !admin.apps.length) {
     if (firebaseServiceAccountKey && firebaseServiceAccountKey.trim() && !credentialSet) {
       try {
         console.log('Verwende FIREBASE_SERVICE_ACCOUNT_KEY für Credentials...');
-        // Bereinige mögliche Escape-Sequenzen und Whitespace
-        const cleanedKey = firebaseServiceAccountKey.trim().replace(/\\n/g, '\n');
+        // Sehr robuste Bereinigung für problematische Vercel Environment Variables
+        let cleanedKey = firebaseServiceAccountKey.trim();
+
+        // Entferne äußere Anführungszeichen falls vorhanden
+        if (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) {
+          cleanedKey = cleanedKey.slice(1, -1);
+        }
+        if (cleanedKey.startsWith("'") && cleanedKey.endsWith("'")) {
+          cleanedKey = cleanedKey.slice(1, -1);
+        }
+
+        // Ersetze alle escaped Zeichen
+        cleanedKey = cleanedKey.replace(/\\n/g, '\n');
+        cleanedKey = cleanedKey.replace(/\\r/g, '\r');
+        cleanedKey = cleanedKey.replace(/\\t/g, '\t');
+        cleanedKey = cleanedKey.replace(/\\"/g, '"');
+        cleanedKey = cleanedKey.replace(/\\'/g, "'");
+        cleanedKey = cleanedKey.replace(/\\\\/g, '\\');
+
+        // Entferne ALLE problematischen Steuerzeichen (ASCII 0-31 außer erlaubten)
+        // Erlaubt: \n (10), \r (13), \t (9)
+        cleanedKey = cleanedKey.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+
+        // Zusätzliche Bereinigung: Entferne unsichtbare Unicode-Zeichen
+        cleanedKey = cleanedKey.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+        console.log('JSON-String bereinigt, versuche zu parsen...');
         const serviceAccount = JSON.parse(cleanedKey);
 
         // Validiere, dass es sich um ein gültiges Service Account Objekt handelt
