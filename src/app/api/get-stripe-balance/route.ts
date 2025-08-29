@@ -1,6 +1,30 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import { db } from '@/firebase/server';
+
+// Runtime Firebase initialization to prevent build-time issues
+async function getFirebaseDb(): Promise<any> {
+  try {
+    // Dynamically import Firebase services
+    const firebaseModule = await import('@/firebase/server');
+
+    // Check if we have valid db service
+    if (!firebaseModule.db) {
+      console.error('Firebase database not initialized properly');
+      // Try to get from admin if needed
+      const { admin } = firebaseModule;
+      if (admin && admin.apps.length > 0) {
+        const { getFirestore } = await import('firebase-admin/firestore');
+        return getFirestore();
+      }
+      throw new Error('Firebase database unavailable');
+    }
+
+    return firebaseModule.db;
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    throw new Error('Firebase database unavailable');
+  }
+}
 
 // Fast cache for balance data
 const balanceCache = new Map<string, { data: any; timestamp: number }>();
@@ -26,12 +50,10 @@ function getStripeInstance() {
 }
 
 async function handleBalanceRequest(firebaseUserId: string) {
-
   // Check cache first
   const cacheKey = `balance_${firebaseUserId}`;
   const cached = balanceCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-
     return NextResponse.json(cached.data);
   }
 
@@ -48,10 +70,8 @@ async function handleBalanceRequest(firebaseUserId: string) {
 
     return result;
   } catch (error: any) {
-
     // Return expired cache if available
     if (cached) {
-
       return NextResponse.json({ ...cached.data, source: 'expired_cache' });
     }
 
@@ -66,6 +86,9 @@ async function handleBalanceRequest(firebaseUserId: string) {
 }
 
 async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
+  // Get Firebase DB dynamically
+  const db = await getFirebaseDb();
+
   // Fast Firebase lookup with timeout
   const firebaseTimeout = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error('Firebase timeout')), 6000);
@@ -83,11 +106,8 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
     if (userDoc?.exists) {
       const userData = userDoc.data();
       stripeAccountId = userData?.stripeAccountId;
-
     }
-  } catch (error) {
-
-  }
+  } catch (error) {}
 
   // Fallback: try stripe_accounts collection
   if (!stripeAccountId) {
@@ -100,11 +120,8 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
       if (doc?.exists) {
         const data = doc.data();
         stripeAccountId = data?.stripeAccountId;
-
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   if (!stripeAccountId) {
@@ -148,7 +165,6 @@ export async function GET(request: NextRequest) {
 
     return await handleBalanceRequest(firebaseUserId);
   } catch (error: any) {
-
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }
@@ -170,7 +186,6 @@ export async function POST(request: NextRequest) {
 
     return await handleBalanceRequest(firebaseUserId);
   } catch (error: any) {
-
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

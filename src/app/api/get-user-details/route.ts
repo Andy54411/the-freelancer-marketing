@@ -1,6 +1,30 @@
 // src/app/api/get-user-details/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/server';
+
+// Runtime Firebase initialization to prevent build-time issues
+async function getFirebaseDb(): Promise<any> {
+  try {
+    // Dynamically import Firebase services
+    const firebaseModule = await import('@/firebase/server');
+
+    // Check if we have valid db service
+    if (!firebaseModule.db) {
+      console.error('Firebase database not initialized properly');
+      // Try to get from admin if needed
+      const { admin } = firebaseModule;
+      if (admin && admin.apps.length > 0) {
+        const { getFirestore } = await import('firebase-admin/firestore');
+        return getFirestore();
+      }
+      throw new Error('Firebase database unavailable');
+    }
+
+    return firebaseModule.db;
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    throw new Error('Firebase database unavailable');
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,6 +33,9 @@ export async function POST(req: NextRequest) {
     if (!userIds || !Array.isArray(userIds)) {
       return NextResponse.json({ error: 'userIds array required' }, { status: 400 });
     }
+
+    // Get Firebase DB dynamically
+    const db = await getFirebaseDb();
 
     const userDetails: {
       id: string;
@@ -44,7 +71,6 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch (error) {
-
         userDetails.push({
           id: userId,
           exists: false,
@@ -58,7 +84,62 @@ export async function POST(req: NextRequest) {
       users: userDetails,
     });
   } catch (error: any) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
 
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const uid = searchParams.get('uid');
+
+    if (!uid) {
+      return NextResponse.json({ error: 'uid parameter required' }, { status: 400 });
+    }
+
+    // Get Firebase DB dynamically
+    const db = await getFirebaseDb();
+
+    // Try users collection first
+    let userDoc = await db.collection('users').doc(uid).get();
+    let userData: any = null;
+    let source = 'users';
+
+    if (userDoc.exists) {
+      userData = userDoc.data();
+    } else {
+      // Fallback: try companies collection
+      userDoc = await db.collection('companies').doc(uid).get();
+      if (userDoc.exists) {
+        userData = userDoc.data();
+        source = 'companies';
+      }
+    }
+
+    if (!userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: uid,
+        firstName: userData?.firstName || userData?.companyName || 'Unknown',
+        lastName: userData?.lastName || '',
+        email: userData?.email || 'Unknown',
+        role: userData?.role || userData?.userType || 'Unknown',
+        company: userData?.company || null,
+        exists: true,
+        source,
+      },
+    });
+  } catch (error: any) {
     return NextResponse.json(
       {
         success: false,

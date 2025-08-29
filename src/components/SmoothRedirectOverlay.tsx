@@ -4,6 +4,15 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, User, Building2, Shield, ArrowRight } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+
+interface UserData {
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+  displayName?: string;
+}
 
 export default function SmoothRedirectOverlay() {
   const { user, loading } = useAuth();
@@ -12,9 +21,74 @@ export default function SmoothRedirectOverlay() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [redirectMessage, setRedirectMessage] = useState('');
   const [progress, setProgress] = useState(0);
+  const [userName, setUserName] = useState<string>('');
+
+  // Firebase-Daten laden für personalisierten Namen
+  useEffect(() => {
+    const loadUserName = async () => {
+      if (!user?.uid) return;
+
+      try {
+        let name = '';
+
+        // Verwende firstName aus AuthContext falls verfügbar
+        if (user.firstName) {
+          name = user.firstName;
+        } else {
+          // Fallback: Lade direkt aus Firebase
+          let userData: UserData | null = null;
+
+          // Versuche users collection zuerst
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+
+          if (userDocSnap.exists()) {
+            userData = userDocSnap.data() as UserData;
+          } else {
+            // Fallback: companies collection
+            const companyDocRef = doc(db, 'companies', user.uid);
+            const companyDocSnap = await getDoc(companyDocRef);
+
+            if (companyDocSnap.exists()) {
+              userData = companyDocSnap.data() as UserData;
+            }
+          }
+
+          if (userData) {
+            name = userData.firstName || userData.companyName || userData.displayName || '';
+          }
+        }
+
+        // Fallback-Namen basierend auf Rolle
+        if (!name) {
+          switch (user.role) {
+            case 'master':
+            case 'support':
+              name = 'Admin';
+              break;
+            case 'firma':
+              name = 'Unternehmen';
+              break;
+            default:
+              name = 'liebe/r Nutzer/in';
+          }
+        }
+
+        setUserName(name);
+      } catch (error) {
+        console.error('Error loading user name:', error);
+        // Fallback bei Fehlern
+        setUserName(user.role === 'firma' ? 'Unternehmen' : 'liebe/r Nutzer/in');
+      }
+    };
+
+    if (user) {
+      loadUserName();
+    }
+  }, [user]);
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && userName) {
       // Prüfe ob User auf falscher Seite ist und redirect benötigt
       let needsRedirect = false;
       let targetPath = '';
@@ -25,7 +99,7 @@ export default function SmoothRedirectOverlay() {
         if (pathname === '/' || pathname === '/login' || pathname === '/register') {
           needsRedirect = true;
           targetPath = '/dashboard/admin';
-          message = `Willkommen zurück, ${user.firstName || 'Admin'}! Sie werden zum Admin-Dashboard weitergeleitet...`;
+          message = `Willkommen zurück, ${userName}! Sie werden zum Admin-Dashboard weitergeleitet...`;
         }
       }
       // Firma
@@ -33,14 +107,14 @@ export default function SmoothRedirectOverlay() {
         if (pathname === '/' || pathname === '/login' || pathname === '/register') {
           needsRedirect = true;
           targetPath = `/dashboard/company/${user.uid}`;
-          message = `Willkommen zurück, ${user.firstName || 'Unternehmen'}! Sie werden zu Ihrem Dashboard weitergeleitet...`;
+          message = `Willkommen zurück, ${userName}! Sie werden zu Ihrem Dashboard weitergeleitet...`;
         }
       }
       // Kunde
       else if (pathname === '/login' || pathname === '/register') {
         needsRedirect = true;
         targetPath = `/dashboard/user/${user.uid}`;
-        message = `Willkommen zurück, ${user.firstName || 'User'}! Sie werden zu Ihrem Dashboard weitergeleitet...`;
+        message = `Willkommen zurück, ${userName}! Sie werden zu Ihrem Dashboard weitergeleitet...`;
       }
 
       if (needsRedirect && targetPath) {
@@ -66,7 +140,7 @@ export default function SmoothRedirectOverlay() {
         return () => clearInterval(progressInterval);
       }
     }
-  }, [user, loading, pathname, router]);
+  }, [user, loading, pathname, router, userName]);
 
   // Icon basierend auf User-Rolle
   const getRoleIcon = () => {

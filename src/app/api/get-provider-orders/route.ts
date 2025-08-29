@@ -1,8 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, db } from '@/firebase/server';
+
+// Runtime Firebase initialization to prevent build-time issues
+async function getFirebaseServices(): Promise<{ auth: any; db: any }> {
+  try {
+    // Dynamically import Firebase services
+    const firebaseModule = await import('@/firebase/server');
+
+    // Check if we have valid services
+    if (!firebaseModule.auth || !firebaseModule.db) {
+      console.error('Firebase services not initialized properly');
+      // Try to get from admin if needed
+      const { admin } = firebaseModule;
+      if (admin && admin.apps.length > 0) {
+        const { getAuth } = await import('firebase-admin/auth');
+        const { getFirestore } = await import('firebase-admin/firestore');
+        return {
+          auth: getAuth(),
+          db: getFirestore(),
+        };
+      }
+      throw new Error('Firebase services unavailable');
+    }
+
+    return {
+      auth: firebaseModule.auth,
+      db: firebaseModule.db,
+    };
+  } catch (error) {
+    console.error('Firebase initialization failed:', error);
+    throw new Error('Firebase services unavailable');
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
+    // Initialize Firebase services dynamically
+    const { auth, db } = await getFirebaseServices();
+
     // CORS Headers setzen
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');
@@ -39,7 +73,6 @@ export async function GET(request: NextRequest) {
 
     // DIRECT FIRESTORE ACCESS - Bypass Firebase Functions billing issue
     try {
-
       // Fetch orders directly from Firestore
       const ordersSnapshot = await db
         .collection('auftraege')
@@ -48,7 +81,6 @@ export async function GET(request: NextRequest) {
         .get();
 
       if (ordersSnapshot.empty) {
-
         return NextResponse.json({ orders: [] }, { headers });
       }
 
@@ -75,9 +107,7 @@ export async function GET(request: NextRequest) {
                 customerAvatarUrl =
                   customerData?.profilePictureURL || customerData?.profilePictureFirebaseUrl;
               }
-            } catch (customerError) {
-
-            }
+            } catch (customerError) {}
           }
 
           return {
@@ -107,7 +137,6 @@ export async function GET(request: NextRequest) {
         { headers }
       );
     } catch (firestoreError) {
-
       // Fallback: Try Firebase Function (if billing gets activated)
 
       const functionUrl = `https://europe-west1-tilvo-f142f.cloudfunctions.net/getProviderOrders?providerId=${providerId}`;
@@ -136,7 +165,6 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error: unknown) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',
