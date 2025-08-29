@@ -2,7 +2,6 @@ import * as admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { AppOptions } from 'firebase-admin/app';
-import { readFileSync, existsSync } from 'fs';
 
 // Better build time detection
 const isBuildTime =
@@ -105,49 +104,35 @@ if (!isBuildTime && !admin.apps.length) {
         }
       } catch (jsonError: any) {
         console.error('Fehler beim Parsen von FIREBASE_SERVICE_ACCOUNT_KEY:', jsonError.message);
-        console.log('Fallback zur lokalen Service Account Datei...');
+        console.log('Versuche Fallback-Methoden...');
       }
     } else if (firebaseServiceAccountKey && !firebaseServiceAccountKey.trim()) {
       console.log('FIREBASE_SERVICE_ACCOUNT_KEY ist leer, verwende Fallback-Methoden...');
     }
 
-    // 2. Fallback: GOOGLE_APPLICATION_CREDENTIALS (nur Environment Variables)
+    // 2. Fallback: GOOGLE_APPLICATION_CREDENTIALS (nur JSON-String)
     const googleAppCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (googleAppCredentials && googleAppCredentials.trim() && !credentialSet) {
       try {
-        console.log('Versuche GOOGLE_APPLICATION_CREDENTIALS zu verwenden...');
-        const cleanedCredentials = googleAppCredentials.trim();
+        console.log('Versuche GOOGLE_APPLICATION_CREDENTIALS als JSON-String zu verwenden...');
+        let cleanedCredentials = googleAppCredentials.trim();
 
-        // Prüfe ob es ein Dateipfad ist (beginnt mit / oder enthält .json)
-        if (cleanedCredentials.startsWith('/') || cleanedCredentials.includes('.json')) {
-          console.log('Verwende Credential-Datei:', cleanedCredentials);
-          const serviceAccountJson = readFileSync(cleanedCredentials, 'utf8');
-          const serviceAccount = JSON.parse(serviceAccountJson);
+        // Bereinige JSON-String (falls escape-sequences enthalten)
+        cleanedCredentials = cleanedCredentials.replace(/\\n/g, '\n');
+        cleanedCredentials = cleanedCredentials.replace(/\\r/g, '\r');
+        cleanedCredentials = cleanedCredentials.replace(/\\t/g, '\t');
+        cleanedCredentials = cleanedCredentials.replace(/\\"/g, '"');
 
-          if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
-            options.credential = admin.credential.cert(serviceAccount);
-            credentialSet = true;
-          } else {
-            console.error('GOOGLE_APPLICATION_CREDENTIALS Datei hat ungültiges Format');
-          }
-        } else {
-          // Behandle als JSON-String
-          console.log('Verwende Credential-JSON-String...');
-          const cleanedJson = cleanedCredentials.replace(/\\n/g, '\n');
-          const serviceAccount = JSON.parse(cleanedJson);
+        const serviceAccount = JSON.parse(cleanedCredentials);
 
-          if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
-            options.credential = admin.credential.cert(serviceAccount);
-            credentialSet = true;
-          } else {
-            console.error('GOOGLE_APPLICATION_CREDENTIALS JSON hat ungültiges Format');
-          }
-        }
-
-        if (credentialSet) {
+        if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
+          options.credential = admin.credential.cert(serviceAccount);
+          credentialSet = true;
           console.log(
             '✅ Firebase Credentials erfolgreich aus GOOGLE_APPLICATION_CREDENTIALS geladen'
           );
+        } else {
+          console.error('GOOGLE_APPLICATION_CREDENTIALS hat ungültiges Service Account Format');
         }
       } catch (jsonError: any) {
         console.error('Fehler beim Parsen von GOOGLE_APPLICATION_CREDENTIALS:', jsonError.message);
@@ -157,7 +142,7 @@ if (!isBuildTime && !admin.apps.length) {
     // WICHTIG: Wenn keine Credentials gesetzt sind, FEHLER werfen (aber nur zur Laufzeit)
     if (!credentialSet && !isBuildTime) {
       const errorMsg =
-        'Firebase Credentials nicht verfügbar - FIREBASE_SERVICE_ACCOUNT_KEY, lokale service-account.json oder GOOGLE_APPLICATION_CREDENTIALS erforderlich.';
+        'Firebase Credentials nicht verfügbar - FIREBASE_SERVICE_ACCOUNT_KEY oder GOOGLE_APPLICATION_CREDENTIALS erforderlich.';
       console.error(errorMsg);
       throw new Error(errorMsg);
     }
