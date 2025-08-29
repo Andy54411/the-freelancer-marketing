@@ -1,6 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, admin } from '@/firebase/server';
 import { QuoteNotificationService } from '@/lib/quote-notifications';
+
+// Dynamic Firebase imports to prevent build-time issues
+let db: any;
+let admin: any;
+
+async function getFirebaseServices() {
+  if (!db || !admin) {
+    try {
+      console.log('Initializing Firebase for Quotes API...');
+
+      // Try existing server config first
+      try {
+        const firebaseServer = await import('@/firebase/server');
+        db = firebaseServer.db;
+        admin = firebaseServer.admin;
+        if (db && admin) {
+          console.log('Using existing Firebase server configuration');
+          return { db, admin };
+        }
+      } catch (importError) {
+        console.log('Existing config not available:', importError.message);
+      }
+
+      // Fallback to direct initialization
+      const firebaseAdmin = await import('firebase-admin');
+
+      // Check if app is already initialized
+      let app;
+      try {
+        app = firebaseAdmin.app();
+        console.log('Using existing Firebase app');
+      } catch (appError) {
+        console.log('Initializing new Firebase app...');
+
+        if (
+          process.env.FIREBASE_PROJECT_ID &&
+          process.env.FIREBASE_PRIVATE_KEY &&
+          process.env.FIREBASE_CLIENT_EMAIL
+        ) {
+          app = firebaseAdmin.initializeApp({
+            credential: firebaseAdmin.credential.cert({
+              projectId: process.env.FIREBASE_PROJECT_ID,
+              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+              privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            }),
+          });
+          console.log('Initialized with service account credentials');
+        } else if (process.env.FIREBASE_PROJECT_ID) {
+          app = firebaseAdmin.initializeApp({
+            credential: firebaseAdmin.credential.applicationDefault(),
+            projectId: process.env.FIREBASE_PROJECT_ID,
+          });
+          console.log('Initialized with application default credentials');
+        } else {
+          throw new Error('No Firebase configuration found');
+        }
+      }
+
+      db = firebaseAdmin.firestore(app);
+      admin = firebaseAdmin;
+      console.log('Firebase Firestore initialized successfully for Quotes API');
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+      throw error;
+    }
+  }
+  return { db, admin };
+}
 
 /**
  * API Route für Company Received Quote Details
@@ -11,7 +78,7 @@ export async function GET(
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
 ) {
   console.log(`🚀 ROUTE HIT! URL: ${request.url}`);
-  
+
   const { uid, quoteId } = await params;
 
   console.log(`🎯 GET ROUTE CALLED: uid=${uid}, quoteId=${quoteId}`);
@@ -27,9 +94,13 @@ export async function GET(
 
     const token = authHeader.split('Bearer ')[1];
     console.log(`🔑 Token extracted, length: ${token?.length}`);
+
+    // Get Firebase services with robust error handling
+    const { db, admin: firebaseAdmin } = await getFirebaseServices();
+
     let decodedToken;
     try {
-      decodedToken = await admin.auth().verifyIdToken(token);
+      decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
       console.log(`✅ Token verified for user: ${decodedToken.uid}`);
     } catch (authError) {
       console.error('❌ Token verification failed:', authError);
@@ -45,7 +116,7 @@ export async function GET(
 
     // Get company data
     console.log(`🏢 Loading company data for uid: ${uid}`);
-    
+
     // Try companies collection first (for B2B), then users as fallback (for B2C)
     console.log(`🔍 Searching for company in 'companies' collection: ${uid}`);
     let companyDoc = await db.collection('companies').doc(uid).get();
@@ -231,13 +302,19 @@ export async function GET(
         ? quoteData.createdAt.toDate()
         : new Date(quoteData?.createdAt || Date.now()),
       // Contact exchange data from first proposal if available
-      contactExchange: responseData && responseData.contactsExchanged ? {
-        status: 'completed',
-        completedAt: responseData.contactExchangeAt || responseData.acceptedAt || new Date().toISOString(),
-        contactsExchanged: responseData.contactsExchanged,
-        customerContact: responseData.customerContact,
-        providerContact: responseData.providerContact,
-      } : null,
+      contactExchange:
+        responseData && responseData.contactsExchanged
+          ? {
+              status: 'completed',
+              completedAt:
+                responseData.contactExchangeAt ||
+                responseData.acceptedAt ||
+                new Date().toISOString(),
+              contactsExchanged: responseData.contactsExchanged,
+              customerContact: responseData.customerContact,
+              providerContact: responseData.providerContact,
+            }
+          : null,
     };
 
     return NextResponse.json({
@@ -259,7 +336,7 @@ export async function POST(
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
 ) {
   const { uid, quoteId } = await params;
-  
+
   console.log(`🎯 ACTION ROUTE CALLED: uid=${uid}, quoteId=${quoteId}`);
 
   try {
@@ -327,7 +404,7 @@ export async function POST(
       status: quoteData?.status,
       customerUid: quoteData?.customerUid,
       providerId: quoteData?.providerId,
-      projectTitle: quoteData?.projectTitle
+      projectTitle: quoteData?.projectTitle,
     });
 
     if (action === 'accept') {
@@ -352,7 +429,7 @@ export async function POST(
           const firstProposal = proposalsSnapshot.docs[0];
           proposalId = firstProposal.id;
           proposalData = firstProposal.data();
-          
+
           console.log(`✅ Using proposal ${proposalId} with amount ${proposalData?.totalAmount}`);
         } else {
           console.log(`⚠️ No proposals found in subcollection, using legacy response`);
@@ -388,7 +465,7 @@ export async function POST(
       // Get customer data - check both collections
       let customerData: any = null;
       let customerDoc = await db.collection('companies').doc(companyId).get();
-      
+
       if (customerDoc.exists) {
         customerData = customerDoc.data();
         console.log(`✅ Found customer in companies collection: ${customerData?.companyName}`);
@@ -397,7 +474,9 @@ export async function POST(
         customerDoc = await db.collection('users').doc(companyId).get();
         if (customerDoc.exists) {
           customerData = customerDoc.data();
-          console.log(`✅ Found customer in users collection: ${customerData?.firstName} ${customerData?.lastName}`);
+          console.log(
+            `✅ Found customer in users collection: ${customerData?.firstName} ${customerData?.lastName}`
+          );
         } else {
           console.error(`❌ Customer ${companyId} not found in any collection`);
           return NextResponse.json(
@@ -410,7 +489,7 @@ export async function POST(
       // Get provider data - check both collections
       let providerData: any = null;
       let providerDoc = await db.collection('companies').doc(providerId).get();
-      
+
       if (providerDoc.exists) {
         providerData = providerDoc.data();
         console.log(`✅ Found provider in companies collection: ${providerData?.companyName}`);
@@ -419,7 +498,9 @@ export async function POST(
         providerDoc = await db.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           providerData = providerDoc.data();
-          console.log(`✅ Found provider in users collection: ${providerData?.firstName} ${providerData?.lastName}`);
+          console.log(
+            `✅ Found provider in users collection: ${providerData?.firstName} ${providerData?.lastName}`
+          );
         } else {
           console.error(`❌ Provider ${providerId} not found in any collection`);
           return NextResponse.json(
@@ -431,27 +512,28 @@ export async function POST(
 
       // Update quote with contact exchange information
       console.log(`📝 Updating quote ${quoteId} with contact exchange...`);
-      
+
       const updateData = {
         customerDecision: {
           action: 'accept',
           decidedAt: admin.firestore.FieldValue.serverTimestamp(),
           decidedBy: companyId,
           customerUid: companyId,
-          customerName: customerData?.companyName || 
-                      (customerData?.firstName && customerData?.lastName 
-                        ? `${customerData.firstName} ${customerData.lastName}` 
-                        : customerData?.name || 'Kunde'),
+          customerName:
+            customerData?.companyName ||
+            (customerData?.firstName && customerData?.lastName
+              ? `${customerData.firstName} ${customerData.lastName}`
+              : customerData?.name || 'Kunde'),
           customerEmail: customerData?.ownerEmail || customerData?.email || '',
           customerPhone: customerData?.ownerPhone || customerData?.phone || '',
           customerType: customerDoc.ref.parent.id === 'companies' ? 'company' : 'individual',
           provider: {
             uid: providerId,
-            name: (providerData?.companyName 
-                    ? providerData.companyName 
-                    : providerData?.firstName && providerData?.lastName 
-                      ? `${providerData.firstName} ${providerData.lastName}`
-                      : providerData?.name || 'Anbieter'),
+            name: providerData?.companyName
+              ? providerData.companyName
+              : providerData?.firstName && providerData?.lastName
+                ? `${providerData.firstName} ${providerData.lastName}`
+                : providerData?.name || 'Anbieter',
             email: providerData?.email || providerData?.ownerEmail || '',
             phone: providerData?.phone || providerData?.ownerPhone || '',
             type: providerDoc.ref.parent.id === 'companies' ? 'company' : 'individual',
@@ -482,14 +564,14 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        message: 'Angebot angenommen. Der Anbieter wurde benachrichtigt und bearbeitet Ihre Anfrage.',
+        message:
+          'Angebot angenommen. Der Anbieter wurde benachrichtigt und bearbeitet Ihre Anfrage.',
         status: 'contacts_exchanged',
         customerDecision: updateData.customerDecision,
       });
-
     } else if (action === 'decline') {
       console.log(`❌ Processing DECLINE action for quote ${quoteId}`);
-      
+
       // Update quote status to declined
       await quoteDoc.ref.update({
         status: 'declined',
@@ -509,7 +591,6 @@ export async function POST(
         status: 'declined',
       });
     }
-
   } catch (error) {
     console.error('❌ Error processing quote action:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
