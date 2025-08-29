@@ -31,34 +31,67 @@ if (!isBuildTime && !admin.apps.length) {
     if (firebaseServiceAccountKey && firebaseServiceAccountKey.trim() && !credentialSet) {
       try {
         console.log('Verwende FIREBASE_SERVICE_ACCOUNT_KEY für Credentials...');
-        // Sehr robuste Bereinigung für problematische Vercel Environment Variables
-        let cleanedKey = firebaseServiceAccountKey.trim();
 
-        // Entferne äußere Anführungszeichen falls vorhanden
-        if (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) {
-          cleanedKey = cleanedKey.slice(1, -1);
+        let serviceAccount;
+
+        try {
+          // Versuche zuerst Base64-Decoding (falls Base64-encoded)
+          if (firebaseServiceAccountKey.match(/^[A-Za-z0-9+/=]+$/)) {
+            console.log('Erkenne Base64-Format, dekodiere...');
+            const decodedKey = Buffer.from(firebaseServiceAccountKey, 'base64').toString('utf-8');
+            serviceAccount = JSON.parse(decodedKey);
+          } else {
+            // Normale JSON-String-Verarbeitung mit verbesserter Bereinigung
+            let cleanedKey = firebaseServiceAccountKey.trim();
+
+            // Entferne äußere Anführungszeichen
+            if (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) {
+              cleanedKey = cleanedKey.slice(1, -1);
+            }
+            if (cleanedKey.startsWith("'") && cleanedKey.endsWith("'")) {
+              cleanedKey = cleanedKey.slice(1, -1);
+            }
+
+            // Aggressive Bereinigung
+            cleanedKey = cleanedKey.replace(/\\n/g, '\n');
+            cleanedKey = cleanedKey.replace(/\\r/g, '\r');
+            cleanedKey = cleanedKey.replace(/\\t/g, '\t');
+            cleanedKey = cleanedKey.replace(/\\"/g, '"');
+            cleanedKey = cleanedKey.replace(/\\'/g, "'");
+            cleanedKey = cleanedKey.replace(/\\\\/g, '\\');
+
+            // Entferne ALLE Steuerzeichen außer erlaubten
+            cleanedKey = cleanedKey.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
+            cleanedKey = cleanedKey.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+            console.log('JSON-String bereinigt, versuche zu parsen...');
+            serviceAccount = JSON.parse(cleanedKey);
+          }
+        } catch (parseError: any) {
+          console.error('Primäres Parsing fehlgeschlagen:', parseError.message);
+
+          // Letzter Versuch: Zeichen für Zeichen bereinigen
+          try {
+            console.log('Versuche aggressive Zeichen-Bereinigung...');
+            let ultraCleanKey = '';
+            for (let i = 0; i < firebaseServiceAccountKey.length; i++) {
+              const char = firebaseServiceAccountKey[i];
+              const charCode = char.charCodeAt(0);
+              // Nur printable ASCII + erlaubte Steuerzeichen
+              if (
+                (charCode >= 32 && charCode <= 126) ||
+                charCode === 10 ||
+                charCode === 13 ||
+                charCode === 9
+              ) {
+                ultraCleanKey += char;
+              }
+            }
+            serviceAccount = JSON.parse(ultraCleanKey);
+          } catch (finalError: any) {
+            throw new Error(`Alle JSON-Parsing-Versuche fehlgeschlagen: ${finalError.message}`);
+          }
         }
-        if (cleanedKey.startsWith("'") && cleanedKey.endsWith("'")) {
-          cleanedKey = cleanedKey.slice(1, -1);
-        }
-
-        // Ersetze alle escaped Zeichen
-        cleanedKey = cleanedKey.replace(/\\n/g, '\n');
-        cleanedKey = cleanedKey.replace(/\\r/g, '\r');
-        cleanedKey = cleanedKey.replace(/\\t/g, '\t');
-        cleanedKey = cleanedKey.replace(/\\"/g, '"');
-        cleanedKey = cleanedKey.replace(/\\'/g, "'");
-        cleanedKey = cleanedKey.replace(/\\\\/g, '\\');
-
-        // Entferne ALLE problematischen Steuerzeichen (ASCII 0-31 außer erlaubten)
-        // Erlaubt: \n (10), \r (13), \t (9)
-        cleanedKey = cleanedKey.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-
-        // Zusätzliche Bereinigung: Entferne unsichtbare Unicode-Zeichen
-        cleanedKey = cleanedKey.replace(/[\u200B-\u200D\uFEFF]/g, '');
-
-        console.log('JSON-String bereinigt, versuche zu parsen...');
-        const serviceAccount = JSON.parse(cleanedKey);
 
         // Validiere, dass es sich um ein gültiges Service Account Objekt handelt
         if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
