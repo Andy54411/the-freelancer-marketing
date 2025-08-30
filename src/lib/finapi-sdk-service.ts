@@ -276,7 +276,7 @@ export class FinAPISDKService {
         try {
           console.log('🔑 Attempting to get user token with Firestore credentials...');
           const userToken = await this.getUserToken(
-            firestoreFinAPIUser.userEmail,
+            firestoreFinAPIUser.userId, // Use userId, not userEmail!
             firestoreFinAPIUser.password
           );
 
@@ -296,16 +296,18 @@ export class FinAPISDKService {
         console.log('⚠️ No valid finAPI user found in Firestore');
       }
 
-      // FALLBACK: Try to get existing user from finAPI directly
+      // FALLBACK: Try to get user token directly and then get user info
       try {
-        const existingUser = await this.getUser(userEmail);
+        console.log('🔍 Attempting to get user token with email and password...');
+        const userToken = await this.getUserToken(userEmail, password);
+
+        const existingUser = await this.getUser(userToken);
         if (existingUser) {
           console.log('🔍 Found existing finAPI user in finAPI:', {
             userId: existingUser.id,
             email: existingUser.email,
           });
 
-          const userToken = await this.getUserToken(userEmail, password);
           return {
             user: existingUser,
             userToken,
@@ -492,21 +494,20 @@ export class FinAPISDKService {
       });
 
       // WebForm 2.0 ist ein User-related Service - braucht User Token
-      // Verwende existierenden finAPI User aus Datenbank falls vorhanden
+      // Erstelle oder hole finAPI User für die Company
       let userAccessToken: string;
 
       try {
-        // Versuche mit existierenden finAPI Credentials aus Datenbank
-        userAccessToken = await this.getUserToken('tkLLc8PX1V', 'PassLLc8PX1V123');
-        console.log('✅ Using existing finAPI user from database');
-      } catch (error) {
-        // Fallback: Erstelle neuen User
+        // Erstelle neuen User oder hole existierenden aus der Datenbank
         const userData = await this.getOrCreateUser(userEmail, 'demo123', companyId);
         if (!userData.user.id) {
           throw new Error(`Could not create/get user for ${userEmail}`);
         }
         userAccessToken = userData.userToken;
-        console.log('✅ Created new finAPI user');
+        console.log('✅ Using finAPI user for company');
+      } catch (error: any) {
+        console.log('⚠️ Could not create/get finAPI user:', error.message);
+        throw new Error(`Could not create/get finAPI user: ${error.message}`);
       }
 
       // finAPI WebForm 2.0 - Minimaler Payload zum Entdecken der korrekten Fields
@@ -821,6 +822,7 @@ export class FinAPISDKService {
       console.log('🔍 Company document query result:', {
         exists: companyDoc.exists,
         docId: companyDoc.id,
+        dataKeys: companyDoc.exists ? Object.keys(companyDoc.data() || {}) : [],
       });
 
       if (companyDoc.exists) {
@@ -830,6 +832,8 @@ export class FinAPISDKService {
           finapiUserKeys: companyData?.finapiUser ? Object.keys(companyData.finapiUser) : [],
           finapiUserId: companyData?.finapiUser?.userId,
           finapiUserEmail: companyData?.finapiUser?.userEmail,
+          finapiPassword: companyData?.finapiUser?.password ? '***' : 'MISSING',
+          rawFinapiUser: companyData?.finapiUser,
         });
 
         const finapiUser = companyData?.finapiUser || null;
