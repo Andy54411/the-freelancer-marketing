@@ -135,6 +135,13 @@ interface CompanyDetails {
   verified: boolean;
   verificationStatus: string;
   lastVerificationUpdate?: string;
+
+  // Detaillierte Statistiken (optional, von erweiterter API)
+  auftraegeCount?: number;
+  auftraegeRevenue?: number;
+  quotesCount?: number;
+  quotesRevenue?: number;
+  completedOrders?: number;
 }
 
 export default function AdminCompanyDetailsPage() {
@@ -560,9 +567,9 @@ export default function AdminCompanyDetailsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => openDocument(company.profilePictureURL!, 'Profilbild')}
+                          title="Vollbild anzeigen"
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Vollbild
+                          <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
@@ -570,9 +577,9 @@ export default function AdminCompanyDetailsPage() {
                           onClick={() =>
                             downloadDocument(company.profilePictureURL!, 'profilbild.jpg')
                           }
+                          title="Download"
                         >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -596,9 +603,9 @@ export default function AdminCompanyDetailsPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => openDocument(company.profileBannerImage!, 'Banner-Bild')}
+                          title="Vollbild anzeigen"
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Vollbild
+                          <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"
@@ -606,9 +613,9 @@ export default function AdminCompanyDetailsPage() {
                           onClick={() =>
                             downloadDocument(company.profileBannerImage!, 'banner.jpg')
                           }
+                          title="Download"
                         >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
+                          <Download className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -633,12 +640,49 @@ export default function AdminCompanyDetailsPage() {
               <div>
                 <label className="text-sm font-medium text-gray-500">Gesamtumsatz</label>
                 <p className="text-2xl font-bold text-green-600">
-                  €{company.totalRevenue.toLocaleString()}
+                  €
+                  {company.totalRevenue.toLocaleString('de-DE', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </p>
+                {(company.auftraegeRevenue || company.quotesRevenue) && (
+                  <div className="text-xs text-gray-500 mt-1 space-y-1">
+                    {company.auftraegeRevenue && (
+                      <div>
+                        Aufträge: €
+                        {company.auftraegeRevenue.toLocaleString('de-DE', {
+                          minimumFractionDigits: 2,
+                        })}
+                      </div>
+                    )}
+                    {company.quotesRevenue && (
+                      <div>
+                        Quotes: €
+                        {company.quotesRevenue.toLocaleString('de-DE', {
+                          minimumFractionDigits: 2,
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Gesamtbestellungen</label>
                 <p className="text-2xl font-bold">{company.totalOrders}</p>
+                {(company.auftraegeCount || company.quotesCount) && (
+                  <div className="text-xs text-gray-500 mt-1 space-y-1">
+                    {company.auftraegeCount !== undefined && (
+                      <div>Aufträge: {company.auftraegeCount}</div>
+                    )}
+                    {company.quotesCount !== undefined && (
+                      <div>Bezahlte Quotes: {company.quotesCount}</div>
+                    )}
+                    {company.completedOrders !== undefined && (
+                      <div>Abgeschlossen: {company.completedOrders}</div>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Durchschnittsbewertung</label>
@@ -855,62 +899,74 @@ export default function AdminCompanyDetailsPage() {
                         </div>
                         <div className="space-y-2">
                           {company.identityFrontUrl && (
-                            <div className="flex items-center justify-between bg-white p-2 rounded border">
-                              <span className="text-sm text-gray-600">Ausweis Vorderseite</span>
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    openDocument(company.identityFrontUrl!, 'Ausweis Vorderseite')
-                                  }
-                                >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Anzeigen
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    downloadDocument(
-                                      company.identityFrontUrl!,
-                                      'ausweis_vorderseite.jpg'
-                                    )
-                                  }
-                                >
-                                  <Download className="h-4 w-4 mr-1" />
-                                  Download
-                                </Button>
+                            <div className="bg-white p-3 rounded border">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <span className="text-sm text-gray-600 font-medium">
+                                  Ausweis Vorderseite
+                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      openDocument(company.identityFrontUrl!, 'Ausweis Vorderseite')
+                                    }
+                                    className="flex-shrink-0"
+                                    title="Anzeigen"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      downloadDocument(
+                                        company.identityFrontUrl!,
+                                        'ausweis_vorderseite.jpg'
+                                      )
+                                    }
+                                    className="flex-shrink-0"
+                                    title="Download"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           )}
                           {company.identityBackUrl && (
-                            <div className="flex items-center justify-between bg-white p-2 rounded border">
-                              <span className="text-sm text-gray-600">Ausweis Rückseite</span>
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    openDocument(company.identityBackUrl!, 'Ausweis Rückseite')
-                                  }
-                                >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Anzeigen
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    downloadDocument(
-                                      company.identityBackUrl!,
-                                      'ausweis_rueckseite.jpg'
-                                    )
-                                  }
-                                >
-                                  <Download className="h-4 w-4 mr-1" />
-                                  Download
-                                </Button>
+                            <div className="bg-white p-3 rounded border">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <span className="text-sm text-gray-600 font-medium">
+                                  Ausweis Rückseite
+                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      openDocument(company.identityBackUrl!, 'Ausweis Rückseite')
+                                    }
+                                    className="flex-shrink-0"
+                                    title="Anzeigen"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      downloadDocument(
+                                        company.identityBackUrl!,
+                                        'ausweis_rueckseite.jpg'
+                                      )
+                                    }
+                                    className="flex-shrink-0"
+                                    title="Download"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           )}

@@ -16,6 +16,64 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const data = companyDoc.data();
 
+    // Lade echte Statistiken aus auftraege und quotes Collections
+    console.log(`Loading statistics for company ${id}...`);
+
+    // Hole alle Aufträge wo diese Company der Anbieter ist
+    const auftraegeSnapshot = await db
+      .collection('auftraege')
+      .where('selectedAnbieterId', '==', id)
+      .get();
+
+    // Hole alle Quotes wo diese Company der Provider ist
+    const quotesSnapshot = await db.collection('quotes').where('providerId', '==', id).get();
+
+    console.log(
+      `Found ${auftraegeSnapshot.size} auftraege and ${quotesSnapshot.size} quotes for company ${id}`
+    );
+
+    // Berechne Statistiken aus Aufträgen
+    let totalRevenue = 0;
+    const totalOrders = auftraegeSnapshot.size;
+    let completedOrders = 0;
+
+    auftraegeSnapshot.forEach(doc => {
+      const auftrag = doc.data();
+      // Addiere den Umsatz (in Cents, konvertiere zu Euro)
+      if (auftrag.jobCalculatedPriceInCents) {
+        totalRevenue += auftrag.jobCalculatedPriceInCents / 100;
+      }
+      // Zähle abgeschlossene Aufträge
+      if (auftrag.status === 'ABGESCHLOSSEN' || auftrag.status === 'COMPLETED') {
+        completedOrders++;
+      }
+    });
+
+    // Berechne Statistiken aus Quotes
+    let quotesTotalRevenue = 0;
+    let paidQuotes = 0;
+
+    quotesSnapshot.forEach(doc => {
+      const quote = doc.data();
+      // Addiere Umsatz aus bezahlten Quotes
+      if (quote.payment?.status === 'paid' && quote.payment?.totalAmount) {
+        quotesTotalRevenue += quote.payment.totalAmount;
+        paidQuotes++;
+      }
+    });
+
+    // Kombiniere Gesamtumsatz
+    const combinedTotalRevenue = totalRevenue + quotesTotalRevenue;
+    const combinedTotalOrders = totalOrders + paidQuotes;
+
+    // Placeholder für Bewertungen (könnte aus einer reviews Collection kommen)
+    const avgRating = 0; // TODO: Implementiere echte Bewertungslogik
+    const reviewCount = 0;
+
+    console.log(
+      `Statistics calculated: Revenue: €${combinedTotalRevenue}, Orders: ${combinedTotalOrders}`
+    );
+
     // Bestimme Status basierend auf verschiedenen Status-Feldern
     let status = 'inactive';
     if (data?.profileStatus === 'active' || data?.status === 'active') {
@@ -127,11 +185,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       businessLicenseURL: data?.step3?.businessLicenseURL,
       companyRegister: data?.step3?.companyRegister,
 
-      // Platform-spezifische Daten (mit Fallback-Werten)
-      totalOrders: data?.totalOrders || 0,
-      totalRevenue: data?.totalRevenue || 0,
-      avgRating: data?.avgRating || 0,
-      reviewCount: data?.reviewCount || 0,
+      // Platform-spezifische Daten (ECHTE STATISTIKEN)
+      totalOrders: combinedTotalOrders,
+      totalRevenue: combinedTotalRevenue,
+      avgRating: avgRating,
+      reviewCount: reviewCount,
+
+      // Zusätzliche Statistik-Details für Admin
+      auftraegeCount: totalOrders,
+      auftraegeRevenue: totalRevenue,
+      quotesCount: paidQuotes,
+      quotesRevenue: quotesTotalRevenue,
+      completedOrders: completedOrders,
 
       // Verifizierung und Status (erweitert)
       verified: data?.verified || data?.profileComplete || false,
