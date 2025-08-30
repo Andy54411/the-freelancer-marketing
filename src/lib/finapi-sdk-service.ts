@@ -258,6 +258,14 @@ export class FinAPISDKService {
       console.log('🔍 Checking Firestore for existing finAPI user...');
       const firestoreFinAPIUser = await this.getFinAPIUserFromFirestore(companyId);
 
+      console.log('🔍 Firestore finAPI user result:', {
+        found: !!firestoreFinAPIUser,
+        hasUserId: !!firestoreFinAPIUser?.userId,
+        hasPassword: !!firestoreFinAPIUser?.password,
+        userEmail: firestoreFinAPIUser?.userEmail,
+        userId: firestoreFinAPIUser?.userId,
+      });
+
       if (firestoreFinAPIUser && firestoreFinAPIUser.userId && firestoreFinAPIUser.password) {
         console.log('✅ Found existing finAPI user in Firestore:', {
           userId: firestoreFinAPIUser.userId,
@@ -266,11 +274,13 @@ export class FinAPISDKService {
 
         // Use existing credentials from Firestore
         try {
+          console.log('🔑 Attempting to get user token with Firestore credentials...');
           const userToken = await this.getUserToken(
             firestoreFinAPIUser.userEmail,
             firestoreFinAPIUser.password
           );
 
+          console.log('✅ Successfully got user token with Firestore credentials!');
           return {
             user: {
               id: firestoreFinAPIUser.userId,
@@ -279,11 +289,11 @@ export class FinAPISDKService {
             } as FinAPIUser,
             userToken,
           };
-        } catch (tokenError) {
-          console.log(
-            '⚠️ Token generation failed with Firestore credentials, will create new user'
-          );
+        } catch (tokenError: any) {
+          console.log('⚠️ Token generation failed with Firestore credentials:', tokenError.message);
         }
+      } else {
+        console.log('⚠️ No valid finAPI user found in Firestore');
       }
 
       // FALLBACK: Try to get existing user from finAPI directly
@@ -572,7 +582,7 @@ export class FinAPISDKService {
       const password = this.generateFinapiPassword(companyId);
 
       // Get or create user and token
-      const userResult = await this.getOrCreateUser(userId, password, userEmail);
+      const userResult = await this.getOrCreateUser(userEmail, password, companyId);
       const userToken = userResult.userToken;
 
       // Get bank connections
@@ -715,17 +725,50 @@ export class FinAPISDKService {
    */
   private async getFinAPIUserFromFirestore(companyId: string): Promise<any> {
     try {
+      console.log('🔍 getFinAPIUserFromFirestore - Starting search for companyId:', companyId);
+
       const admin = (await import('firebase-admin')).default;
+
+      // Check if Firebase Admin is already initialized
+      let app;
+      try {
+        app = admin.app();
+        console.log('✅ Using existing Firebase Admin app');
+      } catch {
+        console.log('⚠️ Firebase Admin not initialized, will be auto-initialized');
+        // It will be auto-initialized when we call firestore()
+      }
+
       const db = admin.firestore();
+      console.log('🔍 Firestore instance created, querying company document...');
 
       const companyDoc = await db.collection('companies').doc(companyId).get();
+      console.log('🔍 Company document query result:', {
+        exists: companyDoc.exists,
+        docId: companyDoc.id,
+      });
+
       if (companyDoc.exists) {
         const companyData = companyDoc.data();
-        return companyData?.finapiUser || null;
+        console.log('🔍 Company data retrieved, checking for finapiUser field:', {
+          hasFinapiUser: !!companyData?.finapiUser,
+          finapiUserKeys: companyData?.finapiUser ? Object.keys(companyData.finapiUser) : [],
+          finapiUserId: companyData?.finapiUser?.userId,
+          finapiUserEmail: companyData?.finapiUser?.userEmail,
+        });
+
+        const finapiUser = companyData?.finapiUser || null;
+        console.log('🔍 Returning finapiUser:', !!finapiUser);
+        return finapiUser;
+      } else {
+        console.log('⚠️ Company document does not exist in Firestore');
+        return null;
       }
-      return null;
-    } catch (error) {
-      console.log('⚠️ Error getting finAPI user from Firestore:', error);
+    } catch (error: any) {
+      console.log('❌ Error getting finAPI user from Firestore:', {
+        error: error.message,
+        stack: error.stack?.substring(0, 200),
+      });
       return null;
     }
   }
