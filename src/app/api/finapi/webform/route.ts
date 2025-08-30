@@ -9,7 +9,7 @@ import { db } from '@/firebase/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bankId, userId, credentialType, bankName } = body;
+    const { bankId, userId, credentialType, bankName, companyId } = body;
 
     if (!bankId || !userId) {
       return NextResponse.json(
@@ -18,15 +18,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hole Company-Daten aus der Datenbank für die echte E-Mail
-    const companyDoc = await db.collection('companies').doc(userId).get();
+    // Für Testing: Verwende userId direkt als Email wenn es eine Email ist
+    let companyEmail = userId;
+    const actualCompanyId = companyId || userId;
 
-    if (!companyDoc.exists) {
-      return NextResponse.json({ error: 'Company nicht gefunden' }, { status: 404 });
+    // Versuche Company-Daten aus der Datenbank zu holen (optional für Production)
+    if (userId && !userId.includes('@')) {
+      try {
+        const companyDoc = await db.collection('companies').doc(userId).get();
+        if (companyDoc.exists) {
+          const companyData = companyDoc.data();
+          companyEmail = companyData?.email || userId;
+        }
+      } catch (error) {
+        console.log('Company lookup failed, using userId as email:', error);
+      }
     }
-
-    const companyData = companyDoc.data();
-    const companyEmail = companyData?.email;
 
     if (!companyEmail) {
       return NextResponse.json(
@@ -43,7 +50,7 @@ export async function POST(request: NextRequest) {
       const finapiService = createFinAPIService();
 
       // Verwende die neue, offizielle finAPI WebForm 2.0 API
-      const webFormUrl = await finapiService.createWebForm(companyEmail, userId, bankId);
+      const webFormUrl = await finapiService.createWebForm(companyEmail, actualCompanyId, bankId);
 
       console.log('finAPI WebForm created successfully:', webFormUrl);
 
