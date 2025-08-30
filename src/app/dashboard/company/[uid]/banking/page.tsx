@@ -181,42 +181,8 @@ export default function BankingDashboardPage() {
         }
       }
 
-      // Final fallback: Check Firestore
-      const firestoreResponse = await fetch(
-        `/api/banking/stored-data?userId=${encodeURIComponent(uid)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (firestoreResponse.ok) {
-        const firestoreData = await firestoreResponse.json();
-        if (firestoreData.success && firestoreData.connections) {
-          const transformedConnections: BankConnection[] = firestoreData.connections.map(
-            (conn: any) => ({
-              id: conn.id,
-              bankName: conn.bankName,
-              status:
-                conn.status === 'ready'
-                  ? 'connected'
-                  : conn.status === 'pending'
-                    ? 'pending'
-                    : 'error',
-              accountCount: firestoreData.stats?.totalAccounts || conn.accountsCount || 0,
-              lastSync: conn.lastSync,
-            })
-          );
-          setConnections(transformedConnections);
-          console.log('✅ Loaded connections from Firestore:', transformedConnections);
-        } else {
-          setConnections([]);
-        }
-      } else {
-        setConnections([]);
-      }
+      // No more fallbacks - finAPI WebForm is the only banking integration
+      setConnections([]);
     } catch (error) {
       console.error('❌ Failed to load bank connections:', error);
       setConnections([]);

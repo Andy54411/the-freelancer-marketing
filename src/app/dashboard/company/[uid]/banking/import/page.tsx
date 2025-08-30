@@ -1,40 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { getFinAPICredentialType } from '@/lib/finapi-config';
-import {
-  Upload,
-  Download,
-  Settings,
-  RefreshCw,
-  CheckCircle,
-  AlertTriangle,
-  Clock,
-  ArrowLeft,
-  FileText,
-  Activity,
-  Building2,
-} from 'lucide-react';
-
-interface BankConnection {
-  id: string;
-  bankName: string;
-  status: 'connected' | 'error' | 'pending';
-  accountCount: number;
-  lastSync?: any;
-}
-
-interface ImportSettings {
-  automaticSync: boolean;
-  syncFrequency: 'HOURLY' | 'DAILY' | 'WEEKLY';
-  categorizeTransactions: boolean;
-  reconcileAutomatically: boolean;
-}
+import { ArrowLeft, FileText, CreditCard, Ban, ExternalLink, AlertTriangle } from 'lucide-react';
 
 export default function BankingImportPage() {
   const params = useParams();
@@ -42,579 +13,166 @@ export default function BankingImportPage() {
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
-  // Get environment-specific credential type
-  const credentialType = getFinAPICredentialType();
-
-  const [connections, setConnections] = useState<BankConnection[]>([]);
-  const [importSettings, setImportSettings] = useState<ImportSettings>({
-    automaticSync: true,
-    syncFrequency: 'DAILY',
-    categorizeTransactions: true,
-    reconcileAutomatically: false,
-  });
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState<string | null>(null);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  const [settingsSaved, setSettingsSaved] = useState(false);
-  const [importingTransactions, setImportingTransactions] = useState(false);
-
-  const loadBankConnections = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const response = await fetch(`/api/banking/stored-data?userId=${encodeURIComponent(uid)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load banking data: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        const transformedConnections: BankConnection[] = data.connections.map((conn: any) => ({
-          id: conn.id,
-          bankName: conn.bankName,
-          status:
-            conn.status === 'ready' ? 'connected' : conn.status === 'pending' ? 'pending' : 'error',
-          accountCount: data.stats.totalAccounts || conn.accountsCount || 0,
-          lastSync: conn.lastSync,
-        }));
-
-        setConnections(transformedConnections);
-      } else {
-        setConnections([]);
-      }
-    } catch (error) {
-      setConnections([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [uid]);
-
-  const loadImportSettings = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `/api/banking/import-settings?userId=${encodeURIComponent(uid)}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.success && data.settings) {
-          setImportSettings(data.settings);
-        }
-      } else {
-      }
-    } catch (error) {}
-  }, [uid]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && user.uid === uid) {
-      loadBankConnections();
-      loadImportSettings();
-    }
-  }, [user, uid, loadBankConnections, loadImportSettings]);
-
-  const categorizeTransactions = useCallback(
-    async (connectionId: string) => {
-      try {
-        const response = await fetch('/api/finapi/categorize-transactions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user?.uid,
-            connectionId: connectionId,
-            credentialType: credentialType,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-          }
-        }
-      } catch (error) {}
-    },
-    [user?.uid]
-  );
-
-  const syncConnection = useCallback(
-    async (connectionId: string) => {
-      setSyncing(connectionId);
-      try {
-        const response = await fetch('/api/finapi/sync-connection', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user?.uid,
-            connectionId: connectionId,
-            credentialType: credentialType,
-            importSettings: importSettings, // Einstellungen an finAPI senden
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Sync failed: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Update connection status with real data
-          setConnections(prev =>
-            prev.map(conn =>
-              conn.id === connectionId
-                ? {
-                    ...conn,
-                    lastSync: new Date().toISOString(),
-                    status: 'connected' as const,
-                    accountCount: data.accountCount || conn.accountCount,
-                  }
-                : conn
-            )
-          );
-        } else {
-          throw new Error(data.error || 'Sync failed');
-        }
-      } catch (error) {
-        // Update connection with error status
-        setConnections(prev =>
-          prev.map(conn =>
-            conn.id === connectionId ? { ...conn, status: 'error' as const } : conn
-          )
-        );
-      } finally {
-        setSyncing(null);
-      }
-    },
-    [user?.uid, importSettings]
-  );
-
-  const triggerAutomaticSync = useCallback(async () => {
-    if (!importSettings.automaticSync || connections.length === 0) {
-      return;
-    }
-
-    // Only sync if last sync was long enough ago based on frequency
-    const now = new Date();
-    for (const connection of connections) {
-      if (connection.status === 'connected' && connection.lastSync) {
-        const lastSync = new Date(connection.lastSync);
-        let shouldSync = false;
-
-        switch (importSettings.syncFrequency) {
-          case 'HOURLY':
-            shouldSync = now.getTime() - lastSync.getTime() > 60 * 60 * 1000; // 1 hour
-            break;
-          case 'DAILY':
-            shouldSync = now.getTime() - lastSync.getTime() > 24 * 60 * 60 * 1000; // 24 hours
-            break;
-          case 'WEEKLY':
-            shouldSync = now.getTime() - lastSync.getTime() > 7 * 24 * 60 * 60 * 1000; // 1 week
-            break;
-        }
-
-        if (shouldSync) {
-          await syncConnection(connection.id); // syncConnection verwendet bereits importSettings
-
-          // Additional categorization if enabled (finAPI wird das auch automatisch machen)
-          if (importSettings.categorizeTransactions) {
-            await categorizeTransactions(connection.id);
-          }
-        }
-      }
-    }
-  }, [importSettings, connections, syncConnection, categorizeTransactions]);
-
-  // Auto-sync based on settings
-  useEffect(() => {
-    if (!importSettings.automaticSync || connections.length === 0) {
-      return;
-    }
-
-    const syncInterval = setInterval(() => {
-      triggerAutomaticSync();
-    }, getIntervalMs(importSettings.syncFrequency));
-
-    return () => clearInterval(syncInterval);
-  }, [importSettings, connections, triggerAutomaticSync]);
-
-  const getIntervalMs = (frequency: string) => {
-    switch (frequency) {
-      case 'HOURLY':
-        return 60 * 60 * 1000; // 1 hour
-      case 'DAILY':
-        return 24 * 60 * 60 * 1000; // 24 hours
-      case 'WEEKLY':
-        return 7 * 24 * 60 * 60 * 1000; // 1 week
-      default:
-        return 24 * 60 * 60 * 1000; // Default to daily
-    }
-  };
-
-  const importTransactions = async () => {
-    setImportingTransactions(true);
-    try {
-      const response = await fetch('/api/finapi/import-transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user?.uid,
-          credentialType: credentialType,
-          importSettings: importSettings, // Einstellungen für finAPI Import
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Import failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Reload connections to update sync status
-        await loadBankConnections();
-      } else {
-        throw new Error(data.error || 'Transaction import failed');
-      }
-    } catch (error) {
-    } finally {
-      setImportingTransactions(false);
-    }
-  };
-
-  const saveSettings = async () => {
-    setSettingsSaving(true);
-    setSettingsSaved(false);
-    try {
-      const response = await fetch('/api/banking/import-settings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user?.uid,
-          settings: importSettings,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to save settings: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSettingsSaved(true);
-
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => {
-          setSettingsSaved(false);
-        }, 3000);
-      } else {
-        throw new Error(data.error || 'Failed to save settings');
-      }
-    } catch (error) {
-      alert('Fehler beim Speichern der Einstellungen: ' + (error as Error).message);
-    } finally {
-      setSettingsSaving(false);
-    }
-  };
-
-  const goBack = () => {
-    router.push(`/dashboard/company/${uid}/banking`);
-  };
-
-  // Authorization check
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
+    // Banking import system has been removed
+    setError(
+      'Das Banking-Import-System wurde entfernt. Verwenden Sie finAPI WebForm für Banking-Integrationen.'
     );
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'connected':
-        return <CheckCircle className="h-5 w-5 text-[#14ad9f]" />;
-      case 'error':
-        return <AlertTriangle className="h-5 w-5 text-red-500" />;
-      case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-400" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'connected':
-        return 'Verbunden';
-      case 'error':
-        return 'Fehler';
-      case 'pending':
-        return 'Ausstehend';
-      default:
-        return 'Unbekannt';
-    }
-  };
-
-  const formatLastSync = (timestamp?: any) => {
-    if (!timestamp) return 'Nie';
-
-    if (timestamp && typeof timestamp === 'object' && timestamp._seconds) {
-      const date = new Date(timestamp._seconds * 1000);
-      return date.toLocaleString('de-DE');
-    }
-
-    const date = new Date(timestamp);
-    if (isNaN(date.getTime())) return 'Ungültiges Datum';
-
-    return date.toLocaleString('de-DE');
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin text-[#14ad9f] mx-auto mb-4" />
-          <p className="text-gray-600">Verbindungen werden geladen...</p>
-        </div>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-gray-200 pb-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Banking Import</h1>
-            <p className="text-gray-600 mt-1">
-              Verwalten Sie Ihre Bankverbindungen und Datenimport
+      <div className="flex items-center space-x-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push(`/dashboard/company/${uid}/banking`)}
+          className="flex items-center space-x-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span>Zurück zu Banking</span>
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Banking Import</h1>
+          <p className="text-gray-600">Banking-System wurde vereinfacht</p>
+        </div>
+      </div>
+
+      {/* System Removed Notice */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-yellow-800">
+            <Ban className="h-5 w-5" />
+            <span>Banking Import System entfernt</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-yellow-700 mb-3">
+              Das interne Banking-Import-System wurde aus Datenschutz- und Sicherheitsgründen
+              entfernt. Für Banking-Integrationen verwenden Sie bitte das finAPI WebForm System.
             </p>
-          </div>
-        </div>
-      </div>
 
-      {/* Import Settings */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Import-Einstellungen</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <input
-                id="automaticSync"
-                type="checkbox"
-                checked={importSettings.automaticSync}
-                onChange={e =>
-                  setImportSettings(prev => ({ ...prev, automaticSync: e.target.checked }))
-                }
-                className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
-              />
-              <label htmlFor="automaticSync" className="ml-2 block text-sm text-gray-900">
-                Automatische Synchronisation
-              </label>
+            <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mb-4">
+              <h4 className="font-medium text-yellow-900 mb-2">Verfügbare Banking-Features:</h4>
+              <ul className="space-y-1 text-sm text-yellow-800">
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-[#14ad9f] rounded-full mr-2"></div>
+                  finAPI WebForm 2.0 Integration
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-[#14ad9f] rounded-full mr-2"></div>
+                  Sichere Bank-Verbindungen ohne Datenspeicherung
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-[#14ad9f] rounded-full mr-2"></div>
+                  DSGVO-konforme Lösung
+                </li>
+              </ul>
             </div>
 
-            <div className="flex items-center">
-              <input
-                id="categorizeTransactions"
-                type="checkbox"
-                checked={importSettings.categorizeTransactions}
-                onChange={e =>
-                  setImportSettings(prev => ({ ...prev, categorizeTransactions: e.target.checked }))
-                }
-                className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
-              />
-              <label htmlFor="categorizeTransactions" className="ml-2 block text-sm text-gray-900">
-                Transaktionen automatisch kategorisieren
-              </label>
-            </div>
-
-            <div className="flex items-center">
-              <input
-                id="reconcileAutomatically"
-                type="checkbox"
-                checked={importSettings.reconcileAutomatically}
-                onChange={e =>
-                  setImportSettings(prev => ({ ...prev, reconcileAutomatically: e.target.checked }))
-                }
-                className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
-              />
-              <label htmlFor="reconcileAutomatically" className="ml-2 block text-sm text-gray-900">
-                Automatischer Abgleich
-              </label>
+            <div className="flex space-x-3">
+              <Button
+                onClick={() => router.push(`/dashboard/company/${uid}/banking`)}
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Banking Dashboard
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/dashboard/company/${uid}/banking/webform`)}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                finAPI WebForm
+              </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div>
-            <label htmlFor="syncFrequency" className="block text-sm font-medium text-gray-700 mb-2">
-              Synchronisationsfrequenz
-            </label>
-            <select
-              id="syncFrequency"
-              value={importSettings.syncFrequency}
-              onChange={e =>
-                setImportSettings(prev => ({ ...prev, syncFrequency: e.target.value as any }))
-              }
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-            >
-              <option value="HOURLY">Stündlich</option>
-              <option value="DAILY">Täglich</option>
-              <option value="WEEKLY">Wöchentlich</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-between">
-          <button
-            onClick={importTransactions}
-            disabled={importingTransactions || connections.length === 0}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            {importingTransactions ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            {importingTransactions ? 'Importiere...' : 'Alle Transaktionen importieren'}
-          </button>
-
-          <button
-            onClick={saveSettings}
-            disabled={settingsSaving}
-            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 ${
-              settingsSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-[#14ad9f] hover:bg-[#129488]'
-            }`}
-          >
-            {settingsSaving ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : settingsSaved ? (
-              <CheckCircle className="h-4 w-4 mr-2" />
-            ) : (
-              <Settings className="h-4 w-4 mr-2" />
-            )}
-            {settingsSaving
-              ? 'Speichere...'
-              : settingsSaved
-                ? 'Gespeichert!'
-                : 'Einstellungen speichern'}
-          </button>
-        </div>
-      </div>
-
-      {/* Bank Connections */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Bankverbindungen</h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            Übersicht über alle verbundenen Bankkonten und deren Status
-          </p>
-        </div>
-
-        <ul className="divide-y divide-gray-200">
-          {connections.map(connection => (
-            <li key={connection.id} className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">{getStatusIcon(connection.status)}</div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900">{connection.bankName}</p>
-                    <div className="flex items-center space-x-4 mt-1">
-                      <p className="text-sm text-gray-500">
-                        Status: {getStatusText(connection.status)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {connection.accountCount} Konto{connection.accountCount !== 1 ? 'en' : ''}
-                      </p>
-                      {connection.lastSync && (
-                        <p className="text-sm text-gray-500">
-                          Letzter Sync: {formatLastSync(connection.lastSync)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => syncConnection(connection.id)}
-                    disabled={syncing === connection.id}
-                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs leading-4 font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
-                  >
-                    <RefreshCw
-                      className={`h-3 w-3 mr-1 ${syncing === connection.id ? 'animate-spin' : ''}`}
-                    />
-                    {syncing === connection.id ? 'Synchronisiere...' : 'Sync'}
-                  </button>
-
-                  <button className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs leading-4 font-medium rounded text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]">
-                    <Settings className="h-3 w-3 mr-1" />
-                    Einstellungen
-                  </button>
-                </div>
+      {/* Error Message */}
+      {error && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-medium text-red-800">Information</h3>
+                <p className="mt-1 text-sm text-red-700">{error}</p>
+                <Button variant="outline" size="sm" onClick={() => setError(null)} className="mt-3">
+                  Verstanden
+                </Button>
               </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {connections.length === 0 && (
-        <div className="text-center py-12">
-          <div className="flex flex-col items-center">
-            <Upload className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankverbindungen</h3>
-            <p className="text-gray-600 mb-6">
-              Fügen Sie Ihre erste Bankverbindung hinzu, um mit dem automatischen Import zu
-              beginnen.
-            </p>
-            <p className="text-gray-600 text-sm mt-2">
-              Verwenden Sie &ldquo;Banking → Verbinden&rdquo; um neue Bankverbindungen hinzuzufügen.
-            </p>
-          </div>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <button className="flex items-center justify-center px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#14ad9f] hover:text-[#14ad9f] transition-colors">
-          <Upload className="h-6 w-6 mr-3" />
-          <span className="font-medium">Datei importieren</span>
-        </button>
+      {/* Feature Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-blue-500" />
+              <span>Rechnungsstellung</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              Erstellen und verwalten Sie Rechnungen weiterhin über das Rechnungssystem.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/dashboard/company/${uid}/invoices`)}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Zu den Rechnungen
+            </Button>
+          </CardContent>
+        </Card>
 
-        <button className="flex items-center justify-center px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#14ad9f] hover:text-[#14ad9f] transition-colors">
-          <Download className="h-6 w-6 mr-3" />
-          <span className="font-medium">Export erstellen</span>
-        </button>
-
-        <button className="flex items-center justify-center px-6 py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#14ad9f] hover:text-[#14ad9f] transition-colors">
-          <Settings className="h-6 w-6 mr-3" />
-          <span className="font-medium">Import-Regeln</span>
-        </button>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <CreditCard className="h-5 w-5 text-green-500" />
+              <span>Banking WebForm</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">
+              Sichere Bankverbindungen über finAPI WebForm 2.0 ohne lokale Datenspeicherung.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/dashboard/company/${uid}/banking/webform`)}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              WebForm öffnen
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Migration Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-blue-800">System-Migration abgeschlossen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="text-sm text-blue-700 space-y-2">
+              <p>✅ Interne Banking-APIs entfernt für besseren Datenschutz</p>
+              <p>✅ finAPI WebForm 2.0 als sichere Alternative implementiert</p>
+              <p>✅ Keine persistente Speicherung von Banking-Daten</p>
+              <p>✅ Rechnungssystem weiterhin verfügbar</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

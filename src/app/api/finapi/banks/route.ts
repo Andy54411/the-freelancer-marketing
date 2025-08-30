@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createFinAPIService } from '@/lib/finapi-sdk-service';
 
 /**
  * GET /api/finapi/banks
- * List available banks for finAPI integration
- * SIMPLIFIED: Returns empty banks since WebForm handles bank selection
+ * List available banks for finAPI integration from real finAPI endpoint
  */
 export async function GET(request: NextRequest) {
   try {
@@ -12,27 +12,37 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('perPage') || '20');
 
-    console.log('🏛️ Getting banks list (simplified)');
+    console.log('🏛️ Getting banks list from finAPI');
 
-    // Return empty banks since WebForm handles bank selection
-    return NextResponse.json({
-      success: true,
-      banks: [],
-      totalCount: 0,
+    // Use the same service as other finAPI endpoints
+    const finapiService = createFinAPIService();
+
+    // Get banks from finAPI using the service
+    const result = await finapiService.getBanks({
+      search: search || undefined,
       page,
       perPage,
-      totalPages: 0,
+    });
+
+    console.log(`✅ Retrieved ${result.banks?.length || 0} banks from finAPI`);
+
+    return NextResponse.json({
+      success: true,
+      banks: result.banks || [],
+      totalCount: result.paging?.totalCount || 0,
+      page: result.paging?.page || page,
+      perPage: result.paging?.perPage || perPage,
+      totalPages: result.paging?.pageCount || 0,
       search,
-      source: 'webform_only',
-      message: 'Banks are selected through WebForm integration.',
+      source: 'finapi_service',
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('❌ Banks error:', error.message);
+    console.error('❌ Banks API error:', error.message);
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to get banks',
+        error: 'Failed to get banks from finAPI',
         details: error.message,
         timestamp: new Date().toISOString(),
       },

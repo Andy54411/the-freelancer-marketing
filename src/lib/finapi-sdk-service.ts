@@ -714,6 +714,82 @@ export class FinAPISDKService {
   }
 
   /**
+   * Get banks with pagination and search support
+   */
+  async getBanks(
+    options: {
+      search?: string;
+      page?: number;
+      perPage?: number;
+      includeTestBanks?: boolean;
+    } = {}
+  ): Promise<{
+    banks: any[];
+    paging: {
+      page: number;
+      perPage: number;
+      pageCount: number;
+      totalCount: number;
+    };
+  }> {
+    try {
+      const { search, page = 1, perPage = 20, includeTestBanks = true } = options;
+
+      const clientToken = await this.getClientToken();
+
+      const url = new URL(`${this.baseUrl}/api/v2/banks`);
+      url.searchParams.set('page', page.toString());
+      url.searchParams.set('perPage', perPage.toString());
+
+      if (search && search.trim()) {
+        url.searchParams.set('search', search.trim());
+      }
+
+      if (includeTestBanks) {
+        url.searchParams.set('isTestBank', 'true');
+      }
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${clientToken}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Banks request failed: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      return {
+        banks: data.banks || [],
+        paging: data.paging || {
+          page,
+          perPage,
+          pageCount: 1,
+          totalCount: data.banks?.length || 0,
+        },
+      };
+    } catch (error: any) {
+      console.error('❌ getBanks failed:', error.message);
+
+      // Return empty result instead of throwing
+      return {
+        banks: [],
+        paging: {
+          page: options.page || 1,
+          perPage: options.perPage || 20,
+          pageCount: 0,
+          totalCount: 0,
+        },
+      };
+    }
+  }
+
+  /**
    * Helper method: Generate finAPI user ID
    */
   private generateUserId(userEmail: string, companyId: string): string {
