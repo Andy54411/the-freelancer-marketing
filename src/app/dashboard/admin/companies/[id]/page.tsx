@@ -25,6 +25,11 @@ import {
   Edit,
   Ban,
   CheckCircle,
+  ExternalLink,
+  Eye,
+  Download,
+  Image,
+  FileImage,
 } from 'lucide-react';
 
 interface CompanyDetails {
@@ -137,6 +142,9 @@ export default function AdminCompanyDetailsPage() {
   const router = useRouter();
   const [company, setCompany] = useState<CompanyDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedDocument, setSelectedDocument] = useState<{ url: string; title: string } | null>(
+    null
+  );
   const companyId = params?.id as string;
 
   useEffect(() => {
@@ -159,6 +167,20 @@ export default function AdminCompanyDetailsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openDocument = (url: string, title: string) => {
+    setSelectedDocument({ url, title });
+  };
+
+  const downloadDocument = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getStatusBadge = (status: string) => {
@@ -510,6 +532,91 @@ export default function AdminCompanyDetailsPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Profilbilder */}
+          {(company.profilePictureURL || company.profileBannerImage) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Image className="h-5 w-5 mr-2" />
+                  Profilbilder
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {company.profilePictureURL && (
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">Profilbild</h4>
+                      <Badge className="bg-blue-100 text-blue-800">Verfügbar</Badge>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={company.profilePictureURL}
+                        alt="Profilbild"
+                        className="h-16 w-16 rounded-lg object-cover border"
+                      />
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocument(company.profilePictureURL!, 'Profilbild')}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Vollbild
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            downloadDocument(company.profilePictureURL!, 'profilbild.jpg')
+                          }
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {company.profileBannerImage && (
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">Banner-Bild</h4>
+                      <Badge className="bg-blue-100 text-blue-800">Verfügbar</Badge>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={company.profileBannerImage}
+                        alt="Banner-Bild"
+                        className="h-16 w-24 rounded-lg object-cover border"
+                      />
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocument(company.profileBannerImage!, 'Banner-Bild')}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Vollbild
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            downloadDocument(company.profileBannerImage!, 'banner.jpg')
+                          }
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -724,31 +831,179 @@ export default function AdminCompanyDetailsPage() {
 
               {(company.hasIdentityDocuments ||
                 company.hasBusinessLicense ||
-                company.hasCompanyRegister) && (
+                company.hasCompanyRegister ||
+                company.identityFrontUrl ||
+                company.identityBackUrl ||
+                company.businessLicenseURL ||
+                company.companyRegister) && (
                 <>
                   <Separator />
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <label className="text-sm font-medium text-gray-500">
                       Hochgeladene Dokumente
                     </label>
-                    {company.hasIdentityDocuments && (
-                      <div className="flex items-center text-sm text-green-600">
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Ausweisdokumente
+
+                    {/* Ausweisdokumente */}
+                    {(company.identityFrontUrl || company.identityBackUrl) && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900 flex items-center">
+                            <FileImage className="h-4 w-4 mr-2 text-blue-600" />
+                            Ausweisdokumente
+                          </h4>
+                          <Badge className="bg-green-100 text-green-800">Hochgeladen</Badge>
+                        </div>
+                        <div className="space-y-2">
+                          {company.identityFrontUrl && (
+                            <div className="flex items-center justify-between bg-white p-2 rounded border">
+                              <span className="text-sm text-gray-600">Ausweis Vorderseite</span>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openDocument(company.identityFrontUrl!, 'Ausweis Vorderseite')
+                                  }
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Anzeigen
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    downloadDocument(
+                                      company.identityFrontUrl!,
+                                      'ausweis_vorderseite.jpg'
+                                    )
+                                  }
+                                >
+                                  <Download className="h-4 w-4 mr-1" />
+                                  Download
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                          {company.identityBackUrl && (
+                            <div className="flex items-center justify-between bg-white p-2 rounded border">
+                              <span className="text-sm text-gray-600">Ausweis Rückseite</span>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openDocument(company.identityBackUrl!, 'Ausweis Rückseite')
+                                  }
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Anzeigen
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    downloadDocument(
+                                      company.identityBackUrl!,
+                                      'ausweis_rueckseite.jpg'
+                                    )
+                                  }
+                                >
+                                  <Download className="h-4 w-4 mr-1" />
+                                  Download
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
-                    {company.hasBusinessLicense && (
-                      <div className="flex items-center text-sm text-green-600">
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Gewerbeschein
+
+                    {/* Gewerbeschein */}
+                    {company.businessLicenseURL && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900 flex items-center">
+                            <FileText className="h-4 w-4 mr-2 text-purple-600" />
+                            Gewerbeschein
+                          </h4>
+                          <Badge className="bg-green-100 text-green-800">Hochgeladen</Badge>
+                        </div>
+                        <div className="flex items-center justify-between bg-white p-2 rounded border">
+                          <span className="text-sm text-gray-600">Gewerbeschein Dokument</span>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                openDocument(company.businessLicenseURL!, 'Gewerbeschein')
+                              }
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Anzeigen
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                downloadDocument(company.businessLicenseURL!, 'gewerbeschein.pdf')
+                              }
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
-                    {company.hasCompanyRegister && (
-                      <div className="flex items-center text-sm text-green-600">
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Handelsregister
+
+                    {/* Handelsregister */}
+                    {company.companyRegister && (
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900 flex items-center">
+                            <Shield className="h-4 w-4 mr-2 text-green-600" />
+                            Handelsregister
+                          </h4>
+                          <Badge className="bg-green-100 text-green-800">Hochgeladen</Badge>
+                        </div>
+                        <div className="flex items-center justify-between bg-white p-2 rounded border">
+                          <span className="text-sm text-gray-600">Handelsregister Auszug</span>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                openDocument(company.companyRegister!, 'Handelsregister')
+                              }
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Anzeigen
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                downloadDocument(company.companyRegister!, 'handelsregister.pdf')
+                              }
+                            >
+                              <Download className="h-4 w-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     )}
+
+                    {/* Status für fehlende Dokumente */}
+                    {!company.identityFrontUrl &&
+                      !company.identityBackUrl &&
+                      !company.businessLicenseURL &&
+                      !company.companyRegister && (
+                        <div className="text-center py-4 text-gray-500">
+                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">Keine Dokumente hochgeladen</p>
+                        </div>
+                      )}
                   </div>
                 </>
               )}
@@ -756,6 +1011,48 @@ export default function AdminCompanyDetailsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      {selectedDocument && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] w-full overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">{selectedDocument.title}</h3>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(selectedDocument.url, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Neues Fenster
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setSelectedDocument(null)}>
+                  Schließen
+                </Button>
+              </div>
+            </div>
+            <div className="overflow-auto max-h-[calc(90vh-80px)]">
+              {selectedDocument.url.toLowerCase().includes('.pdf') ? (
+                <iframe
+                  src={selectedDocument.url}
+                  className="w-full h-[600px]"
+                  title={selectedDocument.title}
+                />
+              ) : (
+                <div className="p-4 flex justify-center">
+                  <img
+                    src={selectedDocument.url}
+                    alt={selectedDocument.title}
+                    className="max-w-full max-h-full object-contain"
+                    style={{ maxHeight: 'calc(90vh - 120px)' }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
