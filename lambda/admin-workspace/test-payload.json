@@ -1,1 +1,1 @@
-{"httpMethod":"GET","path":"/workspaces","queryStringParameters":{"limit":"5"}}
+{"httpMethod":"GET","path":"/admin/companies","headers":{"Content-Type":"application/json"}}

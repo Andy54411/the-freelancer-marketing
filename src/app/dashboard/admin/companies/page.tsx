@@ -2,11 +2,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Search, Plus, Edit, Trash2, Mail, Phone, Globe } from 'lucide-react';
+import { Building2, Search, Plus, Edit, Trash2, Mail, Phone, Globe, Eye } from 'lucide-react';
 
 interface Company {
   id: string;
@@ -23,6 +24,7 @@ interface Company {
 }
 
 export default function AdminCompaniesPage() {
+  const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,7 +41,6 @@ export default function AdminCompaniesPage() {
         setCompanies(data.companies || []);
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -229,6 +230,14 @@ export default function AdminCompaniesPage() {
                     {getStatusBadge(company.status)}
 
                     <div className="flex space-x-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/dashboard/admin/companies/${company.id}`)}
+                        className="bg-[#14ad9f] hover:bg-[#129488] text-white border-[#14ad9f]"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button variant="outline" size="sm">
                         <Edit className="h-4 w-4" />
                       </Button>

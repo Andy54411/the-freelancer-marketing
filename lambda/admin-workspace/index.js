@@ -57,7 +57,12 @@ exports.handler = async event => {
 
     // Router basierend auf HTTP Method und normalisierten Path
     if (httpMethod === 'GET') {
-      if (normalizedPath === '/workspaces') {
+      if (normalizedPath === '/companies') {
+        return await getAllCompanies(queryStringParameters);
+      } else if (normalizedPath.includes('/companies/')) {
+        const companyId = extractCompanyId(normalizedPath);
+        return await getCompanyDetails(companyId);
+      } else if (normalizedPath === '/workspaces') {
         return await getAllWorkspaces(queryStringParameters);
       } else if (normalizedPath.includes('/workspaces/') && normalizedPath.includes('/tasks')) {
         const workspaceId = extractWorkspaceId(normalizedPath);
@@ -128,6 +133,11 @@ exports.handler = async event => {
 };
 
 // Hilfsfunktionen für Path-Parsing
+function extractCompanyId(path) {
+  const match = path.match(/\/companies\/([^\/]+)/);
+  return match ? match[1] : null;
+}
+
 function extractWorkspaceId(path) {
   const match = path.match(/\/workspaces\/([^\/]+)/);
   return match ? match[1] : null;
@@ -867,5 +877,98 @@ async function logActivity(workspaceId, activity) {
   } catch (error) {
     console.error('Failed to log activity:', error);
     // Aktivitäts-Logging sollte keine Fehler werfen
+  }
+}
+
+// === COMPANIES API PROXY ===
+// Proxy-Funktion für Companies API (ruft Vercel Firebase API auf)
+async function getAllCompanies(queryParams) {
+  try {
+    console.log('Fetching companies from Vercel API...');
+
+    // Rufe die Vercel-gehostete Firebase API auf
+    const apiUrl = process.env.TASKILO_API_URL || 'https://taskilo.de';
+    const response = await fetch(`${apiUrl}/api/admin/companies`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'TaskiloAdminLambda/1.0',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Vercel API responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    console.log(`Successfully fetched ${data.companies?.length || 0} companies`);
+
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({
+        companies: data.companies || [],
+        source: 'firebase_via_vercel_proxy',
+        timestamp: new Date().toISOString(),
+      }),
+    };
+  } catch (error) {
+    console.error('Error fetching companies:', error);
+    return {
+      statusCode: 500,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({
+        error: 'Failed to fetch companies',
+        details: error.message,
+        companies: [],
+      }),
+    };
+  }
+}
+
+// Company Details API Proxy
+async function getCompanyDetails(companyId) {
+  try {
+    console.log(`Fetching company details for ID: ${companyId}`);
+
+    // Rufe die Vercel-gehostete Firebase API auf
+    const apiUrl = process.env.TASKILO_API_URL || 'https://taskilo.de';
+    const response = await fetch(`${apiUrl}/api/admin/companies/${companyId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'TaskiloAdminLambda/1.0',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Vercel API responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    console.log(`Successfully fetched company details for ${companyId}`);
+
+    return {
+      statusCode: 200,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({
+        company: data.company || null,
+        source: 'firebase_via_vercel_proxy',
+        timestamp: new Date().toISOString(),
+      }),
+    };
+  } catch (error) {
+    console.error(`Error fetching company details for ${companyId}:`, error);
+    return {
+      statusCode: 500,
+      headers: CORS_HEADERS,
+      body: JSON.stringify({
+        error: 'Failed to fetch company details',
+        details: error.message,
+        company: null,
+      }),
+    };
   }
 }
