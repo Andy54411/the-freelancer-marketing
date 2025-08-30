@@ -35,6 +35,17 @@ export async function checkAdminApproval(companyId: string): Promise<AdminApprov
 
     const companyData = companyDoc.data();
 
+    // KRITISCH: Check für gesperrte Accounts (höchste Priorität)
+    if (companyData?.accountSuspended === true) {
+      return {
+        isApproved: false,
+        companyData,
+        error:
+          'Ihr Account wurde gesperrt. Kontaktieren Sie den Support für weitere Informationen.',
+        errorCode: 'ACCOUNT_SUSPENDED',
+      };
+    }
+
     // Check für Legacy-Firmen (Grandfathering)
     // Firmen die vor der Implementierung existierten sind automatisch approved
     const createdAt = companyData?.createdAt?.toDate?.() || new Date();

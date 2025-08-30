@@ -149,6 +149,10 @@ interface CompanyDetails {
   adminApprovedBy?: string;
   adminNotes?: string;
   approvalStatus?: 'pending' | 'approved' | 'rejected' | 'needs_review';
+  accountSuspended?: boolean;
+  suspendedAt?: string;
+  suspendedBy?: string;
+  suspensionReason?: string;
 }
 
 export default function AdminCompanyDetailsPage() {
@@ -199,7 +203,10 @@ export default function AdminCompanyDetailsPage() {
     document.body.removeChild(link);
   };
 
-  const handleApprovalAction = async (action: 'approve' | 'reject', notes: string = '') => {
+  const handleApprovalAction = async (
+    action: 'approve' | 'reject' | 'suspend' | 'unsuspend',
+    notes: string = ''
+  ) => {
     if (!company) return;
 
     setIsUpdatingApproval(true);
@@ -220,16 +227,20 @@ export default function AdminCompanyDetailsPage() {
         // Reload company details to get updated status
         await loadCompanyDetails();
         setAdminNotes('');
-        alert(
-          `Unternehmen wurde erfolgreich ${action === 'approve' ? 'freigegeben' : 'abgelehnt'}.`
-        );
+        const actionText = {
+          approve: 'freigegeben',
+          reject: 'abgelehnt',
+          suspend: 'gesperrt',
+          unsuspend: 'entsperrt',
+        }[action];
+        alert(`Unternehmen wurde erfolgreich ${actionText}.`);
       } else {
         const error = await response.json();
         alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
       }
     } catch (error) {
       console.error('Error updating approval status:', error);
-      alert('Fehler beim Aktualisieren des Freigabe-Status');
+      alert('Fehler beim Aktualisieren des Status');
     } finally {
       setIsUpdatingApproval(false);
     }
@@ -351,9 +362,16 @@ export default function AdminCompanyDetailsPage() {
           <Mail className="h-4 w-4 mr-2" />
           E-Mail senden
         </Button>
-        <Button variant="outline" className="text-red-600 hover:text-red-700">
+        <Button
+          variant="outline"
+          className={`${company.accountSuspended ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}`}
+          onClick={() =>
+            handleApprovalAction(company.accountSuspended ? 'unsuspend' : 'suspend', '')
+          }
+          disabled={isUpdatingApproval}
+        >
           <Ban className="h-4 w-4 mr-2" />
-          Sperren
+          {company.accountSuspended ? 'Entsperren' : 'Sperren'}
         </Button>
       </div>
 
@@ -940,6 +958,108 @@ export default function AdminCompanyDetailsPage() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Account-Sperrung Verwaltung */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Shield className="h-5 w-5 mr-2" />
+                Account-Sperrung
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {company.accountSuspended && (
+                <div className="space-y-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center">
+                    <Ban className="h-5 w-5 mr-2 text-red-600" />
+                    <span className="font-medium text-red-800">Account ist gesperrt</span>
+                  </div>
+
+                  {company.suspendedAt && (
+                    <div>
+                      <label className="text-sm font-medium text-red-700">Gesperrt am</label>
+                      <p className="text-sm text-red-600">
+                        {new Date(company.suspendedAt).toLocaleDateString('de-DE', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  )}
+
+                  {company.suspendedBy && (
+                    <div>
+                      <label className="text-sm font-medium text-red-700">Gesperrt von</label>
+                      <p className="text-sm text-red-600">{company.suspendedBy}</p>
+                    </div>
+                  )}
+
+                  {company.suspensionReason && (
+                    <div>
+                      <label className="text-sm font-medium text-red-700">Sperrgrund</label>
+                      <p className="text-sm bg-red-100 p-2 rounded text-red-800">
+                        {company.suspensionReason}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <label htmlFor="suspensionNotes" className="text-sm font-medium text-gray-700">
+                    {company.accountSuspended ? 'Entsperrungs-Notizen' : 'Sperrgrund'} (optional)
+                  </label>
+                  <textarea
+                    id="suspensionNotes"
+                    value={adminNotes}
+                    onChange={e => setAdminNotes(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#14ad9f] focus:ring-[#14ad9f] sm:text-sm"
+                    rows={3}
+                    placeholder={
+                      company.accountSuspended
+                        ? 'Grund für Entsperrung...'
+                        : 'Grund für Sperrung...'
+                    }
+                  />
+                </div>
+
+                <div className="flex space-x-2">
+                  {company.accountSuspended ? (
+                    <Button
+                      onClick={() => handleApprovalAction('unsuspend', adminNotes)}
+                      disabled={isUpdatingApproval}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isUpdatingApproval ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )}
+                      Account entsperren
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleApprovalAction('suspend', adminNotes)}
+                      disabled={isUpdatingApproval}
+                      variant="outline"
+                      className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      {isUpdatingApproval ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2" />
+                      ) : (
+                        <Ban className="h-4 w-4 mr-2" />
+                      )}
+                      Account sperren
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 

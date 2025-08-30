@@ -44,9 +44,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json();
     const { action, notes, adminId } = body;
 
-    if (!action || !['approve', 'reject'].includes(action)) {
+    if (!action || !['approve', 'reject', 'suspend', 'unsuspend'].includes(action)) {
       return NextResponse.json(
-        { error: 'Ungültige Aktion. Erlaubt: approve, reject' },
+        { error: 'Ungültige Aktion. Erlaubt: approve, reject, suspend, unsuspend' },
         { status: 400 }
       );
     }
@@ -69,6 +69,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       updateData.adminApprovedAt = now;
       updateData.adminApprovedBy = adminUserId;
       updateData.approvalStatus = 'approved';
+      updateData.accountSuspended = false;
+      updateData.suspendedAt = null;
+      updateData.suspendedBy = null;
       if (notes) {
         updateData.adminNotes = notes;
       }
@@ -78,6 +81,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       updateData.adminApprovedBy = null;
       updateData.approvalStatus = 'rejected';
       updateData.adminNotes = notes || 'Keine Begründung angegeben';
+    } else if (action === 'suspend') {
+      updateData.accountSuspended = true;
+      updateData.suspendedAt = now;
+      updateData.suspendedBy = adminUserId;
+      updateData.suspensionReason = notes || 'Keine Begründung angegeben';
+      updateData.adminApproved = false; // Suspended accounts are not approved
+    } else if (action === 'unsuspend') {
+      updateData.accountSuspended = false;
+      updateData.suspendedAt = null;
+      updateData.suspendedBy = null;
+      updateData.suspensionReason = null;
+      if (notes) {
+        updateData.adminNotes = notes;
+      }
     }
 
     // Update in Firebase
@@ -101,7 +118,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Send notification to company about approval status change
     try {
-      const notificationType = action === 'approve' ? 'approval_granted' : 'approval_rejected';
+      let notificationType = 'approval_pending';
+
+      if (action === 'approve') {
+        notificationType = 'approval_granted';
+      } else if (action === 'reject') {
+        notificationType = 'approval_rejected';
+      } else if (action === 'suspend') {
+        notificationType = 'account_suspended';
+      } else if (action === 'unsuspend') {
+        notificationType = 'account_unsuspended';
+      }
 
       const notificationResponse = await fetch(
         `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/company/${companyId}/notifications/approval`,
@@ -129,7 +156,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({
       success: true,
-      message: `Unternehmen wurde erfolgreich ${action === 'approve' ? 'freigegeben' : 'abgelehnt'}`,
+      message: `Unternehmen wurde erfolgreich ${
+        action === 'approve'
+          ? 'freigegeben'
+          : action === 'reject'
+            ? 'abgelehnt'
+            : action === 'suspend'
+              ? 'gesperrt'
+              : action === 'unsuspend'
+                ? 'entsperrt'
+                : 'bearbeitet'
+      }`,
       data: {
         companyId,
         action,

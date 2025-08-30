@@ -33,6 +33,10 @@ interface ApprovalStatus {
   adminNotes?: string;
   pendingActions?: string[];
   profileStatus?: string;
+  accountSuspended?: boolean;
+  suspendedAt?: string;
+  suspendedBy?: string;
+  suspensionReason?: string;
   isLoading: boolean;
   error?: string;
 }
@@ -81,6 +85,10 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
           adminNotes: data.adminNotes,
           pendingActions: data.pendingActions || [],
           profileStatus: data.profileStatus,
+          accountSuspended: data.accountSuspended,
+          suspendedAt: data.suspendedAt,
+          suspendedBy: data.suspendedBy,
+          suspensionReason: data.suspensionReason,
           isLoading: false,
         });
       } else {
@@ -141,6 +149,10 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
       return <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#14ad9f]" />;
     }
 
+    if (status.accountSuspended) {
+      return <AlertTriangle className="h-5 w-5 text-red-600" />;
+    }
+
     if (status.isApproved) {
       return <CheckCircle className="h-5 w-5 text-green-600" />;
     }
@@ -155,6 +167,15 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
   const getStatusBadge = () => {
     if (status.isLoading) {
       return <Badge variant="outline">Wird geladen...</Badge>;
+    }
+
+    if (status.accountSuspended) {
+      return (
+        <Badge className="bg-red-100 text-red-800">
+          <AlertTriangle className="h-3 w-3 mr-1" />
+          Account gesperrt
+        </Badge>
+      );
     }
 
     if (status.isApproved) {
@@ -193,6 +214,10 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
   };
 
   const getStatusMessage = () => {
+    if (status.accountSuspended) {
+      return `Ihr Account wurde am ${status.suspendedAt ? new Date(status.suspendedAt).toLocaleDateString('de-DE') : 'unbekanntem Datum'} gesperrt. ${status.suspensionReason ? `Grund: ${status.suspensionReason}` : ''} Kontaktieren Sie den Support für weitere Informationen.`;
+    }
+
     if (status.isApproved) {
       // Legacy-Firma mit pending profile review
       if (status.profileStatus === 'pending_review') {
@@ -231,6 +256,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
 
   // Zeige nichts an, wenn bereits freigegeben und Profile vollständig approved und keine ungelesenen Benachrichtigungen
   if (
+    !status.accountSuspended && // Gesperrte Accounts IMMER anzeigen
     status.isApproved &&
     (!status.profileStatus || status.profileStatus === 'approved') &&
     !status.adminNotes &&
@@ -243,11 +269,13 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
   return (
     <Card
       className={`${className} ${
-        isRecentlyApproved
-          ? 'border-green-200 bg-gradient-to-r from-green-50 to-blue-50'
-          : !status.isApproved
-            ? 'border-orange-200 bg-orange-50'
-            : 'border-green-200 bg-green-50'
+        status.accountSuspended
+          ? 'border-red-200 bg-red-50'
+          : isRecentlyApproved
+            ? 'border-green-200 bg-gradient-to-r from-green-50 to-blue-50'
+            : !status.isApproved
+              ? 'border-orange-200 bg-orange-50'
+              : 'border-green-200 bg-green-50'
       }`}
     >
       <CardHeader className="pb-3">

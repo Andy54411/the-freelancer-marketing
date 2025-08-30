@@ -72,6 +72,10 @@ function getNotificationTitle(type: string): string {
       return 'Account-Überprüfung erforderlich';
     case 'approval_pending':
       return 'Account wird überprüft';
+    case 'account_suspended':
+      return 'Account wurde gesperrt';
+    case 'account_unsuspended':
+      return 'Account wurde entsperrt';
     default:
       return 'Freigabe-Status Update';
   }
@@ -91,6 +95,12 @@ function getNotificationMessage(
 
     case 'approval_pending':
       return 'Ihr Account wird gerade von unserem Team überprüft. Sie erhalten eine Benachrichtigung, sobald die Überprüfung abgeschlossen ist.';
+
+    case 'account_suspended':
+      return `Ihr Taskilo-Account wurde gesperrt und alle Funktionen sind deaktiviert. Kontaktieren Sie den Support für weitere Informationen.${adminNotes ? ` Grund: ${adminNotes}` : ''}`;
+
+    case 'account_unsuspended':
+      return `Ihr Taskilo-Account wurde entsperrt und alle Funktionen sind wieder verfügbar. Sie können alle Platform-Features nutzen.${adminNotes ? ` Notiz: ${adminNotes}` : ''}`;
 
     default:
       return 'Der Status Ihres Accounts wurde aktualisiert.';
