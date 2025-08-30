@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import FinAPIWebFormModal from '@/components/FinAPIWebFormModal';
+import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
   Building2,
   CreditCard,
@@ -47,7 +48,10 @@ interface Bank {
 export default function BankingDashboardPage() {
   const params = useParams();
   const { user } = useAuth();
-  const uid = params.uid as string;
+  const uid = params?.uid as string;
+
+  // Get environment-specific credential type
+  const credentialType = getFinAPICredentialType();
 
   // Banking Overview States
   const [connections, setConnections] = useState<BankConnection[]>([]);
@@ -83,12 +87,10 @@ export default function BankingDashboardPage() {
 
     if (connectionStatus === 'success') {
       if (mode === 'mock') {
-
         setTimeout(() => {
           loadBankConnections();
         }, 1000);
       } else {
-
         setTimeout(() => {
           loadBankConnections();
         }, 1000);
@@ -122,43 +124,106 @@ export default function BankingDashboardPage() {
     try {
       setLoading(true);
 
-      const response = await fetch(`/api/banking/stored-data?userId=${encodeURIComponent(uid)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // First try finAPI bank connections API
+      const finapiResponse = await fetch(
+        `/api/finapi/bank-connections?userId=${encodeURIComponent(uid)}&credentialType=${credentialType}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(`Failed to load banking data: ${response.statusText}`);
+      if (finapiResponse.ok) {
+        const finapiData = await finapiResponse.json();
+        if (finapiData.success && finapiData.connections && finapiData.connections.length > 0) {
+          setConnections(finapiData.connections);
+          console.log('✅ Loaded finAPI bank connections:', finapiData.connections);
+          return;
+        }
       }
 
-      const data = await response.json();
+      // Fallback: Use enhanced accounts API to check for accounts
+      const accountsResponse = await fetch(
+        `/api/finapi/accounts-enhanced?userId=${encodeURIComponent(uid)}&credentialType=${credentialType}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-      if (data.success) {
-        const transformedConnections: BankConnection[] = data.connections.map((conn: any) => ({
-          id: conn.id,
-          bankName: conn.bankName,
-          status:
-            conn.status === 'ready' ? 'connected' : conn.status === 'pending' ? 'pending' : 'error',
-          accountCount: data.stats.totalAccounts || conn.accountsCount || 0,
-          lastSync: conn.lastSync,
-        }));
+      if (accountsResponse.ok) {
+        const accountsData = await accountsResponse.json();
+        if (
+          accountsData.success &&
+          accountsData.accounts &&
+          accountsData.accounts.length > 0 &&
+          accountsData.source !== 'mock_data'
+        ) {
+          // Transform finAPI accounts data to connections format
+          const bankGroups = accountsData.accountsByBank || {};
+          const transformedConnections: BankConnection[] = Object.entries(bankGroups).map(
+            ([bankName, accounts]: [string, any[]]) => ({
+              id: `bank_${bankName.replace(/\s+/g, '_').toLowerCase()}`,
+              bankName: bankName,
+              status: 'connected' as const,
+              accountCount: accounts.length,
+              lastSync: accountsData.lastSync || new Date().toISOString(),
+            })
+          );
 
-        setConnections(transformedConnections);
+          setConnections(transformedConnections);
+          console.log('✅ Loaded connections from accounts data:', transformedConnections);
+          return;
+        }
+      }
 
+      // Final fallback: Check Firestore
+      const firestoreResponse = await fetch(
+        `/api/banking/stored-data?userId=${encodeURIComponent(uid)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (firestoreResponse.ok) {
+        const firestoreData = await firestoreResponse.json();
+        if (firestoreData.success && firestoreData.connections) {
+          const transformedConnections: BankConnection[] = firestoreData.connections.map(
+            (conn: any) => ({
+              id: conn.id,
+              bankName: conn.bankName,
+              status:
+                conn.status === 'ready'
+                  ? 'connected'
+                  : conn.status === 'pending'
+                    ? 'pending'
+                    : 'error',
+              accountCount: firestoreData.stats?.totalAccounts || conn.accountsCount || 0,
+              lastSync: conn.lastSync,
+            })
+          );
+          setConnections(transformedConnections);
+          console.log('✅ Loaded connections from Firestore:', transformedConnections);
+        } else {
+          setConnections([]);
+        }
       } else {
-
         setConnections([]);
       }
     } catch (error) {
-
+      console.error('❌ Failed to load bank connections:', error);
       setConnections([]);
     } finally {
       setLoading(false);
     }
   };
-
   const loadAvailableBanks = async () => {
     try {
       setError(null);
@@ -178,7 +243,6 @@ export default function BankingDashboardPage() {
         throw new Error('Invalid response format - no banks data received');
       }
     } catch (error) {
-
       setError(
         'Die Bankliste konnte nicht geladen werden. Bitte prüfen Sie die finAPI Sandbox-Konfiguration.'
       );
@@ -190,7 +254,7 @@ export default function BankingDashboardPage() {
       if (!user?.uid) return;
 
       const response = await fetch(
-        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=sandbox`
+        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=${credentialType}`
       );
 
       if (response.ok) {
@@ -205,9 +269,7 @@ export default function BankingDashboardPage() {
           setConnectedBanks(connected);
         }
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleConnectBank = async (bank: Bank) => {
@@ -223,7 +285,6 @@ export default function BankingDashboardPage() {
     setError(null);
 
     try {
-
       const response = await fetch('/api/finapi/webform', {
         method: 'POST',
         headers: {
@@ -232,7 +293,7 @@ export default function BankingDashboardPage() {
         body: JSON.stringify({
           bankId: bank.id,
           userId: user?.uid,
-          credentialType: 'sandbox',
+          credentialType: credentialType,
           bankName: bank.name,
         }),
       });
@@ -251,7 +312,6 @@ export default function BankingDashboardPage() {
         throw new Error(data.error || 'Failed to create WebForm URL');
       }
     } catch (error: any) {
-
       setError(error.message || 'Unbekannter Fehler bei der Bankverbindung');
       setIsConnecting(false);
       setSelectedBank(null);
@@ -259,9 +319,11 @@ export default function BankingDashboardPage() {
   };
 
   const handleWebFormSuccess = async (bankConnectionId?: string) => {
+    console.log('🎉 WebForm success, performing real finAPI sync...');
 
     setIsWebFormModalOpen(false);
     setSelectedBank(null);
+    setIsConnecting(false);
 
     if (selectedBank) {
       setConnectedBanks(prev => ({
@@ -270,17 +332,44 @@ export default function BankingDashboardPage() {
       }));
     }
 
+    // Trigger immediate sync of real finAPI data after WebForm completion
+    try {
+      console.log('🔄 Syncing real bank data after WebForm completion...');
+
+      // Call import-transactions API to sync data from finAPI after WebForm
+      const syncResponse = await fetch('/api/finapi/import-transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.uid,
+          credentialType: credentialType,
+          forceSync: true, // Force immediate sync after WebForm
+        }),
+      });
+
+      if (syncResponse.ok) {
+        const syncData = await syncResponse.json();
+        console.log('✅ Post-WebForm sync successful:', syncData);
+      } else {
+        console.warn('⚠️ Post-WebForm sync failed, but WebForm was successful');
+      }
+    } catch (syncError: any) {
+      console.warn('⚠️ Post-WebForm sync error:', syncError.message);
+    }
+
+    // Reload data after sync attempt
     setTimeout(() => {
       loadConnectedBanks();
       loadBankConnections();
-    }, 1000);
+    }, 2000); // Increased delay for sync to complete
 
-    setError(`✅ ${webFormBankName} wurde erfolgreich verbunden!`);
+    setError(`✅ ${webFormBankName} wurde erfolgreich verbunden! Daten werden synchronisiert...`);
     setShowBankSelection(false);
   };
 
   const handleWebFormError = (error: string) => {
-
     setIsWebFormModalOpen(false);
     setError(`Verbindungsfehler: ${error}`);
   };
@@ -433,7 +522,7 @@ export default function BankingDashboardPage() {
           <div data-slot="card-content" className="px-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold text-gray-900">3</p>
+                <p className="text-2xl font-bold text-gray-900">{connections.length}</p>
                 <p className="text-sm text-gray-600">Verbundene Banken</p>
               </div>
               <Building2 className="h-8 w-8 text-[#14ad9f]" />

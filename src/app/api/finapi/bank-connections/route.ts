@@ -1,113 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFinApiBaseUrl, getFinApiCredentials } from '@/lib/finapi-config';
+import { finapiService } from '@/lib/finapi-sdk-service';
+import { db } from '@/firebase/server';
 
 /**
- * Get bank connections for user - NO MOCK DATA, SAME AUTH AS ACCOUNTS API
+ * GET /api/finapi/bank-connections
+ * Get bank connections for a user from finAPI
  */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
-    const credentialType = (searchParams.get('credentialType') as 'sandbox' | 'admin') || 'sandbox';
+    const credentialType = searchParams.get('credentialType') || 'sandbox';
 
     if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Get finAPI configuration (SAME AS ACCOUNTS API)
-    const baseUrl = getFinApiBaseUrl(credentialType);
-    const taskiloCredentials = getFinApiCredentials(credentialType);
+    console.log('🔗 Getting bank connections for user:', userId, 'credentialType:', credentialType);
 
-    if (!taskiloCredentials.clientId || !taskiloCredentials.clientSecret) {
-      return NextResponse.json({ error: 'finAPI credentials not configured' }, { status: 500 });
+    try {
+      // CRITICAL FIX: Get REAL company email (same as WebForm and accounts-enhanced)
+      const companyDoc = await db.collection('companies').doc(userId).get();
+
+      if (!companyDoc.exists) {
+        return NextResponse.json({
+          success: true,
+          connections: [],
+          source: 'no_company',
+          message: 'Company not found.',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const companyData = companyDoc.data();
+      const companyEmail = companyData?.email;
+
+      if (!companyEmail) {
+        console.log('ℹ️ No company email found, returning empty connections');
+        return NextResponse.json({
+          success: true,
+          connections: [],
+          source: 'no_email',
+          message: 'Company email not found. Please complete your profile.',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      console.log('✅ Using REAL company email for bank connections:', companyEmail);
+
+      // Use the SAME email as WebForm and accounts-enhanced
+      const bankData = await finapiService.syncUserBankData(companyEmail, userId);
+
+      if (bankData.connections && bankData.connections.length > 0) {
+        console.log('✅ Found finAPI bank connections:', bankData.connections.length);
+
+        // Transform connections to our format
+        const transformedConnections = bankData.connections.map((conn: any) => ({
+          id: conn.id,
+          bankName: conn.bankName || 'Unknown Bank',
+          bankId: conn.bankId,
+          accountIds: conn.accountIds || [],
+          status: conn.bankConnectionState || 'READY',
+          createdAt: conn.creationTime,
+          lastUpdated: conn.lastUpdateTime,
+          isActive: true,
+        }));
+
+        return NextResponse.json({
+          success: true,
+          connections: transformedConnections,
+          source: 'finapi_live',
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        console.log('ℹ️ No finAPI bank connections found');
+      }
+
+      // Fallback: No bank connections found
+      console.log('ℹ️ No bank connections found, returning empty connections');
+
+      return NextResponse.json({
+        success: true,
+        connections: [],
+        source: 'no_connections',
+        message: 'No bank connections found. Please connect a bank first.',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error('❌ Bank connections error:', error.message);
+
+      return NextResponse.json({
+        success: true,
+        connections: [],
+        source: 'error_fallback',
+        error: error.message,
+        timestamp: new Date().toISOString(),
+      });
     }
-
-    // Step 1: Get client credentials token (SAME AS ACCOUNTS API)
-    const tokenResponse = await fetch(`${baseUrl}/api/v2/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: taskiloCredentials.clientId,
-        client_secret: taskiloCredentials.clientSecret,
-      }),
-    });
-
-    if (!tokenResponse.ok) {
-
-      return NextResponse.json({ error: 'Failed to authenticate with finAPI' }, { status: 401 });
-    }
-
-    const clientTokenData = await tokenResponse.json();
-
-    // Step 2: Get user access token (EXACT SAME AS ACCOUNTS API)
-    const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36);
-    const userPassword = `TaskiloPass_${userId.slice(0, 10)}!2024`;
-
-    const userTokenResponse = await fetch(`${baseUrl}/api/v2/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'password',
-        username: finapiUserId,
-        password: userPassword,
-        client_id: taskiloCredentials.clientId,
-        client_secret: taskiloCredentials.clientSecret,
-      }),
-    });
-
-    if (!userTokenResponse.ok) {
-
-      return NextResponse.json({ error: 'Failed to get user token' }, { status: 401 });
-    }
-
-    const userTokenData = await userTokenResponse.json();
-
-    // Step 3: Get bank connections using user token
-    const connectionsResponse = await fetch(`${baseUrl}/api/v2/bankConnections`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${userTokenData.access_token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!connectionsResponse.ok) {
-
-      const errorText = await connectionsResponse.text();
-
-      return NextResponse.json(
-        { error: 'Failed to get bank connections' },
-        { status: connectionsResponse.status }
-      );
-    }
-
-    const connectionsData = await connectionsResponse.json();
-    const bankConnections = connectionsData.connections || [];
-
-    // Log bank names for debugging
-    bankConnections.forEach((conn: any, index: number) => {
-
-    });
-
-    return NextResponse.json({
-      success: true,
-      bankConnections: bankConnections,
-      totalCount: bankConnections.length,
-      user: {
-        finapiUserId: finapiUserId,
-      },
-    });
   } catch (error: any) {
+    console.error('❌ Bank connections API error:', error.message);
 
     return NextResponse.json(
       {
-        error: 'Internal server error',
+        error: 'Failed to fetch bank connections',
         details: error.message,
+        source: 'finAPI Bank Connections API',
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );

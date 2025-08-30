@@ -42,6 +42,16 @@ export class FinAPISDKService {
   private clientToken: string | null = null;
   private clientTokenExpiry: Date | null = null;
 
+  // Simple session caching for WebForm integration
+  private userSessions: Map<
+    string,
+    {
+      userId: string;
+      userToken: string;
+      createdAt: number;
+    }
+  > = new Map();
+
   // API Instances (lazy loaded)
   private _authApi: AuthorizationApi | null = null;
   private _usersApi: UsersApi | null = null;
@@ -94,7 +104,6 @@ export class FinAPISDKService {
    * Get user access token
    */
   async getUserToken(userId: string, password: string): Promise<string> {
-
     // Runtime credential check
     if (!this.config.credentials.clientId || !this.config.credentials.clientSecret) {
       throw new Error(
@@ -114,7 +123,6 @@ export class FinAPISDKService {
 
       return tokenResponse.accessToken;
     } catch (error: any) {
-
       throw error;
     }
   }
@@ -179,7 +187,6 @@ export class FinAPISDKService {
       const token = await this.getClientToken();
       return { success: true, token: `${token.substring(0, 20)}...` };
     } catch (error: any) {
-
       return {
         success: false,
         error: error.message || 'Unknown error',
@@ -191,7 +198,6 @@ export class FinAPISDKService {
    * Create finAPI user for Taskilo user
    */
   async createUser(userId: string, password: string, email?: string): Promise<User> {
-
     try {
       const usersApi = await this.getUsersApi();
       const user = await usersApi.createUser({
@@ -204,10 +210,8 @@ export class FinAPISDKService {
 
       return user;
     } catch (error: any) {
-
       // User already exists - this is actually OK for our use case
       if (error.status === 422 && error.message?.includes('already exists')) {
-
         // Return a minimal user object
         return {
           id: userId,
@@ -231,10 +235,8 @@ export class FinAPISDKService {
     password: string,
     email?: string
   ): Promise<{ user: User; userToken: string }> {
-
     // Step 1: Try to authenticate existing user first (more common scenario)
     try {
-
       const userToken = await this.getUserToken(userId, password);
 
       // User exists and authentication successful
@@ -247,11 +249,9 @@ export class FinAPISDKService {
 
       return { user, userToken };
     } catch (authError: any) {
-
       // Step 2: If authentication fails because user doesn't exist, try to create
       if (authError.status === 400 || authError.status === 401 || authError.status === 404) {
         try {
-
           const user = await this.createUser(userId, password, email);
 
           // Get token for newly created user
@@ -260,7 +260,6 @@ export class FinAPISDKService {
 
           return { user, userToken };
         } catch (createError: any) {
-
           // If creation also fails, provide detailed error
           throw new Error(
             `Failed to create finAPI user '${userId}' after authentication failed. ` +
@@ -282,7 +281,6 @@ export class FinAPISDKService {
    * List available banks (Public API - no user token required)
    */
   async listBanks(search?: string, location?: string, page = 1, perPage = 20): Promise<Bank[]> {
-
     // Use client token only for public banks listing
     const banksApi = await this.getBanksApi();
     const response = await banksApi.getAndSearchAllBanks(
@@ -310,7 +308,6 @@ export class FinAPISDKService {
     page = 1,
     perPage = 20
   ): Promise<Bank[]> {
-
     const banksApi = await this.getBanksApi(userToken);
     const response = await banksApi.getAndSearchAllBanks(
       undefined, // ids
@@ -346,8 +343,42 @@ export class FinAPISDKService {
       const connection = await connectionsApi.getBankConnection(parseInt(connectionId));
       return connection;
     } catch (error) {
-
       return null;
+    }
+  }
+
+  /**
+   * Delete bank connection to avoid "already connected" errors
+   */
+  async deleteBankConnection(userToken: string, connectionId: string): Promise<void> {
+    const connectionsApi = await this.getBankConnectionsApi(userToken);
+    try {
+      await connectionsApi.deleteBankConnection(parseInt(connectionId));
+      console.log('✅ Bank connection deleted:', connectionId);
+    } catch (error: any) {
+      console.log('⚠️ Failed to delete bank connection:', error.message);
+      // Don't throw error - deletion failure is not critical
+    }
+  }
+
+  /**
+   * Delete all bank connections for user to ensure clean state
+   */
+  async deleteAllBankConnections(userToken: string): Promise<void> {
+    try {
+      const connections = await this.getBankConnections(userToken);
+      console.log(`🗑️ Deleting ${connections.length} existing bank connections...`);
+
+      for (const connection of connections) {
+        if (connection.id) {
+          await this.deleteBankConnection(userToken, connection.id.toString());
+        }
+      }
+
+      console.log('✅ All bank connections deleted');
+    } catch (error: any) {
+      console.log('⚠️ Failed to delete bank connections:', error.message);
+      // Don't throw error - deletion failure is not critical
     }
   }
 
@@ -378,7 +409,6 @@ export class FinAPISDKService {
       redirectUrl?: string;
     } = {}
   ): Promise<{ id: string; url: string; expiresAt?: string }> {
-
     // Use raw fetch for WebForm 2.0 as SDK might not support it yet
     const response = await fetch(`${this.baseUrl}/api/webForms/bankConnectionImport`, {
       method: 'POST',
@@ -406,6 +436,134 @@ export class FinAPISDKService {
       id: webFormData.id,
       url: webFormData.url,
       expiresAt: webFormData.expiresAt,
+    };
+  }
+
+  /**
+   * Create Official WebForm with cleanup of existing connections
+   * Solves the "account already connected" problem
+   */
+  async createOfficialWebForm(
+    userEmail: string,
+    bankId: number,
+    companyId: string
+  ): Promise<{
+    id: string;
+    url: string;
+    expiresAt?: string;
+    bankName?: string;
+  }> {
+    console.log('🎯 Creating Official WebForm with cleanup...', {
+      userEmail,
+      bankId,
+      companyId,
+    });
+
+    // Step 1: Create or get user with deterministic ID for this company
+    try {
+      // Use shorter, alphanumeric-only user ID for finAPI compatibility
+      const shortId = companyId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+      const userId = `tk${shortId}`;
+      const password = `Tk${shortId}2025!`;
+
+      console.log('� Creating WebForm with short deterministic credentials...', {
+        userId,
+        shortId,
+      });
+
+      const userResult = await this.getOrCreateUser(userId, password, userEmail);
+      const userToken = userResult.userToken;
+
+      // Store session for later use in syncUserBankData
+      const sessionKey = `${companyId}_${userEmail}`;
+      this.userSessions.set(sessionKey, {
+        userId,
+        userToken,
+        createdAt: Date.now(),
+      });
+
+      console.log('💾 Session stored for:', sessionKey);
+
+      // Step 2: Clean up any existing bank connections to avoid "already connected" error
+      console.log('🧹 Cleaning up existing bank connections...');
+      await this.deleteAllBankConnections(userToken);
+
+      // Step 3: Create WebForm
+      console.log('🌐 Creating WebForm for bank:', bankId);
+
+      const webForm = await this.createBankImportWebForm(userToken, {
+        bankId,
+        callbacks: {
+          successCallback: `${process.env.NEXTAUTH_URL || 'https://taskilo.de'}/api/finapi/webform/success?userId=${companyId}`,
+          errorCallback: `${process.env.NEXTAUTH_URL || 'https://taskilo.de'}/dashboard/company/${companyId}/banking?error=webform_failed`,
+        },
+      });
+
+      console.log('✅ Official WebForm created successfully:', webForm.id);
+
+      return {
+        id: webForm.id,
+        url: webForm.url,
+        expiresAt: webForm.expiresAt,
+        bankName: 'Bank', // Default name, will be updated after connection
+      };
+    } catch (error) {
+      console.error('❌ Failed to create WebForm:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sync user bank data after WebForm completion
+   * Uses the same user session as WebForm creation
+   */
+  async syncUserBankData(
+    userEmail: string,
+    companyId: string
+  ): Promise<{
+    connections: any[];
+    accounts: any[];
+  }> {
+    console.log('🔄 Syncing user bank data...', { userEmail, companyId });
+
+    const sessionKey = `${companyId}_${userEmail}`;
+    const cachedSession = this.userSessions.get(sessionKey);
+
+    let userToken: string;
+
+    if (cachedSession && Date.now() - cachedSession.createdAt < 3600000) {
+      // 1 hour validity
+      console.log('📋 Using cached session:', cachedSession.userId);
+      userToken = cachedSession.userToken;
+    } else {
+      console.log('🆕 Creating new session for sync...');
+      // Use the SAME short deterministic user ID as WebForm creation
+      const shortId = companyId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8);
+      const userId = `tk${shortId}`;
+      const password = `Tk${shortId}2025!`;
+
+      const result = await this.getOrCreateUser(userId, password, userEmail);
+      userToken = result.userToken;
+    }
+
+    // Get bank connections
+    const connections = await this.getBankConnections(userToken);
+    console.log('✅ Bank connections retrieved:', connections.length);
+
+    // Get all accounts from all connections
+    let allAccounts: any[] = [];
+    for (const connection of connections) {
+      if (connection.accountIds && connection.accountIds.length > 0) {
+        const accounts = await this.getAccounts(userToken, connection.accountIds);
+        allAccounts = [...allAccounts, ...accounts];
+      }
+    }
+
+    console.log('✅ Bank accounts retrieved:', allAccounts.length);
+
+    return {
+      connections,
+      accounts: allAccounts,
     };
   }
 }

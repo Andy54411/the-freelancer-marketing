@@ -1,0 +1,141 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { finapiService } from '@/lib/finapi-sdk-service';
+import { db } from '@/firebase/server';
+
+/**
+ * POST /api/finapi/webform
+ * Creates a finAPI WebForm for bank connection
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { bankId, userId, credentialType, bankName } = body;
+
+    if (!bankId || !userId) {
+      return NextResponse.json(
+        { error: 'Bank-ID und Benutzer-ID sind erforderlich' },
+        { status: 400 }
+      );
+    }
+
+    // Hole Company-Daten aus der Datenbank für die echte E-Mail
+    const companyDoc = await db.collection('companies').doc(userId).get();
+
+    if (!companyDoc.exists) {
+      return NextResponse.json({ error: 'Company nicht gefunden' }, { status: 404 });
+    }
+
+    const companyData = companyDoc.data();
+    const companyEmail = companyData?.email;
+
+    if (!companyEmail) {
+      return NextResponse.json(
+        { error: 'Company-E-Mail nicht gefunden. Bitte vervollständigen Sie Ihr Profil.' },
+        { status: 400 }
+      );
+    }
+
+    // Verwende echte finAPI WebForm - für Live-Umstellung erforderlich
+    try {
+      console.log('Creating real finAPI WebForm with company email:', companyEmail);
+
+      // Verwende die neue, offizielle finAPI WebForm 2.0 API
+      const webForm = await finapiService.createOfficialWebForm(
+        companyEmail,
+        Number(bankId),
+        userId
+      );
+
+      console.log('finAPI WebForm created successfully:', webForm);
+
+      if (!webForm || !webForm.url) {
+        throw new Error('finAPI WebForm creation failed');
+      }
+
+      return NextResponse.json({
+        success: true,
+        webFormUrl: webForm.url,
+        webFormId: webForm.id,
+        bankName: webForm.bankName || bankName || 'Unknown Bank',
+        message: 'finAPI WebForm erfolgreich erstellt',
+        method: 'finapi_official_api',
+        isFinAPIFlow: true,
+        instructions: {
+          title: 'Bank-Verbindung herstellen',
+          steps: [
+            '1. Sie werden zur finAPI WebForm weitergeleitet',
+            '2. Wählen Sie Ihre Bank aus oder bestätigen Sie die Auswahl',
+            '3. Geben Sie Ihre echten Online-Banking-Zugangsdaten ein',
+            '4. Folgen Sie dem Anmeldeprozess (TAN, App-Freigabe, etc.)',
+            '5. Nach erfolgreicher Verbindung werden Sie zurückgeleitet',
+          ],
+        },
+        bankInfo: {
+          bankId: parseInt(bankId.toString()),
+          bankName: webForm.bankName || bankName || 'Unknown Bank',
+          userEmail: companyEmail,
+          connectionMethod: 'finapi_webform',
+        },
+      });
+    } catch (webFormError: any) {
+      console.error('finAPI WebForm creation error:', webFormError);
+
+      // Fallback: Return error instead of Taskilo flow for live deployment
+      return NextResponse.json(
+        {
+          error: 'finAPI WebForm-Erstellung fehlgeschlagen',
+          details: webFormError.message,
+          suggestion: 'Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support',
+          bankId: parseInt(bankId.toString()),
+          bankName: bankName || 'Unknown Bank',
+        },
+        { status: 500 }
+      );
+    }
+  } catch (error: any) {
+    console.error('Error creating finAPI WebForm:', error);
+
+    return NextResponse.json(
+      {
+        error: 'Fehler beim Erstellen der WebForm',
+        details: error.message,
+        suggestion: 'Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET /api/finapi/webform
+ * Returns WebForm status or information
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const webFormId = searchParams.get('webFormId');
+
+    if (!webFormId) {
+      return NextResponse.json({ error: 'WebForm-ID ist erforderlich' }, { status: 400 });
+    }
+
+    // In a real implementation, you would fetch WebForm status from finAPI
+    // For now, return a basic status response
+    return NextResponse.json({
+      success: true,
+      webFormId,
+      status: 'active',
+      message: 'WebForm-Status abgerufen',
+    });
+  } catch (error: any) {
+    console.error('Error fetching WebForm status:', error);
+
+    return NextResponse.json(
+      {
+        error: 'Fehler beim Abrufen des WebForm-Status',
+        details: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}

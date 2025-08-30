@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
   CheckCircle,
   Search,
@@ -68,6 +69,9 @@ export default function BankingReconciliationPage() {
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
+  // Get environment-specific credential type
+  const credentialType = getFinAPICredentialType();
+
   // State Management
   const [transactions, setTransactions] = useState<BankTransaction[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -89,7 +93,6 @@ export default function BankingReconciliationPage() {
   const loadInvoices = async () => {
     setLoadingInvoices(true);
     try {
-
       // NUCLEAR OPTION: Komplett neue URL mit Random String
       const randomCacheBuster = Math.random().toString(36).substring(7);
       const timestamp = new Date().getTime();
@@ -123,16 +126,12 @@ export default function BankingReconciliationPage() {
         setInvoices(data.invoices);
 
         // Debug: Log each invoice
-        data.invoices.forEach((invoice: Invoice, index: number) => {
-
-        });
+        data.invoices.forEach((invoice: Invoice, index: number) => {});
       } else {
-
         setError(data.error || 'Fehler beim Laden der Rechnungen');
         setInvoices([]); // Ensure invoices array is empty on error
       }
     } catch (err: unknown) {
-
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError('Fehler beim Laden der Rechnungen: ' + errorMessage);
       setInvoices([]); // Ensure invoices array is empty on error
@@ -146,19 +145,16 @@ export default function BankingReconciliationPage() {
     setLoadingTransactions(true);
     try {
       const response = await fetch(
-        `/api/finapi/transactions?userId=${uid}&credentialType=sandbox&page=1&perPage=100`
+        `/api/finapi/transactions?userId=${uid}&credentialType=${credentialType}&page=1&perPage=100`
       );
       const data = await response.json();
 
       if (data.success && data.transactions) {
         setTransactions(data.transactions);
-
       } else {
-
         setTransactions([]);
       }
     } catch (err: unknown) {
-
       setTransactions([]);
     } finally {
       setLoadingTransactions(false);
@@ -205,7 +201,6 @@ export default function BankingReconciliationPage() {
       const data = await response.json();
 
       if (data.success) {
-
         // Refresh data
         await Promise.all([loadInvoices(), loadTransactions()]);
         setSelectedInvoice(null);
@@ -214,7 +209,6 @@ export default function BankingReconciliationPage() {
         setError(data.error || 'Fehler beim Abgleich');
       }
     } catch (err: unknown) {
-
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError('Fehler beim Abgleich: ' + errorMessage);
     } finally {
@@ -238,13 +232,11 @@ export default function BankingReconciliationPage() {
       const data = await response.json();
 
       if (data.success) {
-
         await loadInvoices();
       } else {
         setError(data.error || 'Fehler beim Rückgängigmachen');
       }
     } catch (err: unknown) {
-
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError('Fehler beim Rückgängigmachen: ' + errorMessage);
     }
@@ -280,7 +272,6 @@ export default function BankingReconciliationPage() {
   const filteredInvoices = invoices.filter(invoice => {
     // Sicherheitscheck: Invoice muss existieren
     if (!invoice || typeof invoice !== 'object') {
-
       return false;
     }
 
@@ -300,7 +291,6 @@ export default function BankingReconciliationPage() {
   const filteredTransactions = transactions.filter(transaction => {
     // Sicherheitscheck: Transaction muss existieren
     if (!transaction || typeof transaction !== 'object') {
-
       return false;
     }
 

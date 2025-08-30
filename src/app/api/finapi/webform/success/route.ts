@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { finapiService } from '@/lib/finapi-sdk-service';
 import { storeBankConnection, storeBankAccounts } from '@/lib/bank-connection-storage';
+import { db } from '@/firebase/server';
 
 /**
  * finAPI WebForm 2.0 Success Callback
@@ -18,19 +19,36 @@ export async function GET(req: NextRequest) {
     // Real finAPI WebForm success - Automatische Speicherung in Firestore
     if (connectionId && userId) {
       try {
+        // CRITICAL FIX: Use SAME email as WebForm creation and other APIs
+        const companyDoc = await db.collection('companies').doc(userId).get();
 
-        // Hole Bank-Verbindung von finAPI mit korrekten Credentials
-        const finapiUserId = `tsk_${userId.slice(0, 28)}`.slice(0, 36); // Consistent ID
-        const userPassword = `TaskiloPass_${userId.slice(0, 10)}!2024`; // Consistent password
-        const userToken = await finapiService.getUserToken(finapiUserId, userPassword);
-        const connection = await finapiService.getBankConnection(userToken, connectionId);
+        if (!companyDoc.exists) {
+          throw new Error('Company not found');
+        }
+
+        const companyData = companyDoc.data();
+        const companyEmail = companyData?.email;
+
+        if (!companyEmail) {
+          throw new Error('Company email not found');
+        }
+
+        console.log('🎉 WebForm success callback - using company email:', companyEmail);
+
+        // Use the SAME session as WebForm creation via syncUserBankData
+        const bankData = await finapiService.syncUserBankData(companyEmail, userId);
+
+        // Find the specific connection by ID
+        const connection = bankData.connections.find((conn: any) => conn.id === connectionId);
 
         if (connection) {
+          console.log('✅ Found bank connection:', connection.bankName || 'Unknown Bank');
+
           // Speichere Bank-Verbindung in Firestore
           await storeBankConnection(userId, {
             finapiConnectionId: connectionId,
-            bankId: connection.bank?.id?.toString() || 'unknown',
-            bankName: connection.bank?.name || 'Unknown Bank',
+            bankId: connection.bankId?.toString() || bankId || 'unknown',
+            bankName: connection.bankName || 'Unknown Bank',
             bankCode: connection.bank?.blz,
             bic: connection.bank?.bic,
             connectionStatus: 'active',
@@ -41,26 +59,30 @@ export async function GET(req: NextRequest) {
             interfaces: [], // Vereinfacht - Interfaces werden später separat behandelt
           });
 
-          // Hole und speichere Konten
-          if (connection.accountIds && connection.accountIds.length > 0) {
+          // Get accounts for this connection
+          const connectionAccounts = bankData.accounts.filter((account: any) =>
+            connection.accountIds?.includes(account.id)
+          );
 
-            const accounts = await finapiService.getAccounts(userToken, connection.accountIds);
+          if (connectionAccounts.length > 0) {
+            console.log('✅ Found accounts for connection:', connectionAccounts.length);
 
             // Konvertiere finAPI Accounts zu StoredBankAccount Format
-            const storedAccounts = accounts.map(account => ({
+            const storedAccounts = connectionAccounts.map((account: any) => ({
               finapiAccountId: account.id?.toString() || 'unknown',
-              accountName: account.accountName || 'Unbekanntes Konto',
+              accountName: account.accountName || account.name || 'Unbekanntes Konto',
               iban: account.iban || '',
               accountNumber: account.accountNumber || '',
-              bankId: connection.bank?.id?.toString() || 'unknown',
-              bankName: connection.bank?.name || 'Unknown Bank',
-              bankCode: connection.bank?.blz || '',
-              bic: connection.bank?.bic || '',
-              accountType: account.accountType || 'UNKNOWN',
-              accountTypeName: account.accountType || 'Unbekannt', // Verwende accountType als Name
+              bankId: connection.bankId?.toString() || bankId || 'unknown',
+              bankName: connection.bankName || 'Unknown Bank',
+              bankCode: connection.bankCode || '',
+              bic: connection.bic || '',
+              accountType: account.accountTypeId || account.type || 'UNKNOWN',
+              accountTypeName:
+                account.accountTypeName || account.accountTypeId || account.type || 'Unbekannt',
               balance: account.balance || 0,
-              availableBalance: account.balance || 0, // Verwende balance als Fallback
-              currency: 'EUR', // Standard für deutsche Banken
+              availableBalance: account.availableBalance || account.balance || 0,
+              currency: account.currency || 'EUR',
               isDefault: false, // Wird später vom User gesetzt
               connectionId: connectionId,
               lastUpdated: new Date(),
@@ -69,10 +91,8 @@ export async function GET(req: NextRequest) {
 
             await storeBankAccounts(userId, storedAccounts);
           }
-
         }
       } catch (error) {
-
         // Weiter zum Redirect - Speicher-Fehler soll User nicht blockieren
       }
     }
@@ -85,7 +105,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten des Success Callbacks' },
       { status: 500 }

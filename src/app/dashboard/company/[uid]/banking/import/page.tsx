@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
   Upload,
   Download,
@@ -17,7 +18,7 @@ import {
   ArrowLeft,
   FileText,
   Activity,
-  Building2
+  Building2,
 } from 'lucide-react';
 
 interface BankConnection {
@@ -40,6 +41,9 @@ export default function BankingImportPage() {
   const router = useRouter();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+
+  // Get environment-specific credential type
+  const credentialType = getFinAPICredentialType();
 
   const [connections, setConnections] = useState<BankConnection[]>([]);
   const [importSettings, setImportSettings] = useState<ImportSettings>({
@@ -75,19 +79,17 @@ export default function BankingImportPage() {
         const transformedConnections: BankConnection[] = data.connections.map((conn: any) => ({
           id: conn.id,
           bankName: conn.bankName,
-          status: conn.status === 'ready' ? 'connected' : conn.status === 'pending' ? 'pending' : 'error',
+          status:
+            conn.status === 'ready' ? 'connected' : conn.status === 'pending' ? 'pending' : 'error',
           accountCount: data.stats.totalAccounts || conn.accountsCount || 0,
           lastSync: conn.lastSync,
         }));
 
         setConnections(transformedConnections);
-
       } else {
-
         setConnections([]);
       }
     } catch (error) {
-
       setConnections([]);
     } finally {
       setLoading(false);
@@ -96,27 +98,25 @@ export default function BankingImportPage() {
 
   const loadImportSettings = useCallback(async () => {
     try {
-
-      const response = await fetch(`/api/banking/import-settings?userId=${encodeURIComponent(uid)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `/api/banking/import-settings?userId=${encodeURIComponent(uid)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
 
         if (data.success && data.settings) {
           setImportSettings(data.settings);
-
         }
       } else {
-
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }, [uid]);
 
   useEffect(() => {
@@ -126,82 +126,84 @@ export default function BankingImportPage() {
     }
   }, [user, uid, loadBankConnections, loadImportSettings]);
 
-  const categorizeTransactions = useCallback(async (connectionId: string) => {
-    try {
-      const response = await fetch('/api/finapi/categorize-transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user?.uid,
-          connectionId: connectionId,
-          credentialType: 'sandbox'
-        }),
-      });
+  const categorizeTransactions = useCallback(
+    async (connectionId: string) => {
+      try {
+        const response = await fetch('/api/finapi/categorize-transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user?.uid,
+            connectionId: connectionId,
+            credentialType: credentialType,
+          }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+          }
         }
+      } catch (error) {}
+    },
+    [user?.uid]
+  );
+
+  const syncConnection = useCallback(
+    async (connectionId: string) => {
+      setSyncing(connectionId);
+      try {
+        const response = await fetch('/api/finapi/sync-connection', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user?.uid,
+            connectionId: connectionId,
+            credentialType: credentialType,
+            importSettings: importSettings, // Einstellungen an finAPI senden
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Sync failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update connection status with real data
+          setConnections(prev =>
+            prev.map(conn =>
+              conn.id === connectionId
+                ? {
+                    ...conn,
+                    lastSync: new Date().toISOString(),
+                    status: 'connected' as const,
+                    accountCount: data.accountCount || conn.accountCount,
+                  }
+                : conn
+            )
+          );
+        } else {
+          throw new Error(data.error || 'Sync failed');
+        }
+      } catch (error) {
+        // Update connection with error status
+        setConnections(prev =>
+          prev.map(conn =>
+            conn.id === connectionId ? { ...conn, status: 'error' as const } : conn
+          )
+        );
+      } finally {
+        setSyncing(null);
       }
-    } catch (error) {
-
-    }
-  }, [user?.uid]);
-
-  const syncConnection = useCallback(async (connectionId: string) => {
-    setSyncing(connectionId);
-    try {
-
-      const response = await fetch('/api/finapi/sync-connection', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user?.uid,
-          connectionId: connectionId,
-          credentialType: 'sandbox',
-          importSettings: importSettings // Einstellungen an finAPI senden
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Sync failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Update connection status with real data
-        setConnections(prev => prev.map(conn =>
-          conn.id === connectionId
-            ? {
-                ...conn,
-                lastSync: new Date().toISOString(),
-                status: 'connected' as const,
-                accountCount: data.accountCount || conn.accountCount
-              }
-            : conn
-        ));
-
-      } else {
-        throw new Error(data.error || 'Sync failed');
-      }
-    } catch (error) {
-
-      // Update connection with error status
-      setConnections(prev => prev.map(conn =>
-        conn.id === connectionId
-          ? { ...conn, status: 'error' as const }
-          : conn
-      ));
-    } finally {
-      setSyncing(null);
-    }
-  }, [user?.uid, importSettings]);
+    },
+    [user?.uid, importSettings]
+  );
 
   const triggerAutomaticSync = useCallback(async () => {
     if (!importSettings.automaticSync || connections.length === 0) {
@@ -228,12 +230,10 @@ export default function BankingImportPage() {
         }
 
         if (shouldSync) {
-
           await syncConnection(connection.id); // syncConnection verwendet bereits importSettings
 
           // Additional categorization if enabled (finAPI wird das auch automatisch machen)
           if (importSettings.categorizeTransactions) {
-
             await categorizeTransactions(connection.id);
           }
         }
@@ -270,7 +270,6 @@ export default function BankingImportPage() {
   const importTransactions = async () => {
     setImportingTransactions(true);
     try {
-
       const response = await fetch('/api/finapi/import-transactions', {
         method: 'POST',
         headers: {
@@ -278,7 +277,7 @@ export default function BankingImportPage() {
         },
         body: JSON.stringify({
           userId: user?.uid,
-          credentialType: 'sandbox',
+          credentialType: credentialType,
           importSettings: importSettings, // Einstellungen für finAPI Import
         }),
       });
@@ -290,14 +289,12 @@ export default function BankingImportPage() {
       const data = await response.json();
 
       if (data.success) {
-
         // Reload connections to update sync status
         await loadBankConnections();
       } else {
         throw new Error(data.error || 'Transaction import failed');
       }
     } catch (error) {
-
     } finally {
       setImportingTransactions(false);
     }
@@ -307,7 +304,6 @@ export default function BankingImportPage() {
     setSettingsSaving(true);
     setSettingsSaved(false);
     try {
-
       const response = await fetch('/api/banking/import-settings', {
         method: 'POST',
         headers: {
@@ -326,7 +322,6 @@ export default function BankingImportPage() {
       const data = await response.json();
 
       if (data.success) {
-
         setSettingsSaved(true);
 
         // Auto-hide success message after 3 seconds
@@ -337,7 +332,6 @@ export default function BankingImportPage() {
         throw new Error(data.error || 'Failed to save settings');
       }
     } catch (error) {
-
       alert('Fehler beim Speichern der Einstellungen: ' + (error as Error).message);
     } finally {
       setSettingsSaving(false);
@@ -418,7 +412,9 @@ export default function BankingImportPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Banking Import</h1>
-            <p className="text-gray-600 mt-1">Verwalten Sie Ihre Bankverbindungen und Datenimport</p>
+            <p className="text-gray-600 mt-1">
+              Verwalten Sie Ihre Bankverbindungen und Datenimport
+            </p>
           </div>
         </div>
       </div>
@@ -433,7 +429,9 @@ export default function BankingImportPage() {
                 id="automaticSync"
                 type="checkbox"
                 checked={importSettings.automaticSync}
-                onChange={(e) => setImportSettings(prev => ({ ...prev, automaticSync: e.target.checked }))}
+                onChange={e =>
+                  setImportSettings(prev => ({ ...prev, automaticSync: e.target.checked }))
+                }
                 className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
               />
               <label htmlFor="automaticSync" className="ml-2 block text-sm text-gray-900">
@@ -446,7 +444,9 @@ export default function BankingImportPage() {
                 id="categorizeTransactions"
                 type="checkbox"
                 checked={importSettings.categorizeTransactions}
-                onChange={(e) => setImportSettings(prev => ({ ...prev, categorizeTransactions: e.target.checked }))}
+                onChange={e =>
+                  setImportSettings(prev => ({ ...prev, categorizeTransactions: e.target.checked }))
+                }
                 className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
               />
               <label htmlFor="categorizeTransactions" className="ml-2 block text-sm text-gray-900">
@@ -459,7 +459,9 @@ export default function BankingImportPage() {
                 id="reconcileAutomatically"
                 type="checkbox"
                 checked={importSettings.reconcileAutomatically}
-                onChange={(e) => setImportSettings(prev => ({ ...prev, reconcileAutomatically: e.target.checked }))}
+                onChange={e =>
+                  setImportSettings(prev => ({ ...prev, reconcileAutomatically: e.target.checked }))
+                }
                 className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
               />
               <label htmlFor="reconcileAutomatically" className="ml-2 block text-sm text-gray-900">
@@ -475,7 +477,9 @@ export default function BankingImportPage() {
             <select
               id="syncFrequency"
               value={importSettings.syncFrequency}
-              onChange={(e) => setImportSettings(prev => ({ ...prev, syncFrequency: e.target.value as any }))}
+              onChange={e =>
+                setImportSettings(prev => ({ ...prev, syncFrequency: e.target.value as any }))
+              }
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#14ad9f] focus:border-[#14ad9f]"
             >
               <option value="HOURLY">Stündlich</option>
@@ -503,9 +507,7 @@ export default function BankingImportPage() {
             onClick={saveSettings}
             disabled={settingsSaving}
             className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 ${
-              settingsSaved
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-[#14ad9f] hover:bg-[#129488]'
+              settingsSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-[#14ad9f] hover:bg-[#129488]'
             }`}
           >
             {settingsSaving ? (
@@ -515,7 +517,11 @@ export default function BankingImportPage() {
             ) : (
               <Settings className="h-4 w-4 mr-2" />
             )}
-            {settingsSaving ? 'Speichere...' : settingsSaved ? 'Gespeichert!' : 'Einstellungen speichern'}
+            {settingsSaving
+              ? 'Speichere...'
+              : settingsSaved
+                ? 'Gespeichert!'
+                : 'Einstellungen speichern'}
           </button>
         </div>
       </div>
@@ -530,17 +536,13 @@ export default function BankingImportPage() {
         </div>
 
         <ul className="divide-y divide-gray-200">
-          {connections.map((connection) => (
+          {connections.map(connection => (
             <li key={connection.id} className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <div className="flex-shrink-0">
-                    {getStatusIcon(connection.status)}
-                  </div>
+                  <div className="flex-shrink-0">{getStatusIcon(connection.status)}</div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {connection.bankName}
-                    </p>
+                    <p className="text-sm font-medium text-gray-900">{connection.bankName}</p>
                     <div className="flex items-center space-x-4 mt-1">
                       <p className="text-sm text-gray-500">
                         Status: {getStatusText(connection.status)}
@@ -563,7 +565,9 @@ export default function BankingImportPage() {
                     disabled={syncing === connection.id}
                     className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs leading-4 font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
                   >
-                    <RefreshCw className={`h-3 w-3 mr-1 ${syncing === connection.id ? 'animate-spin' : ''}`} />
+                    <RefreshCw
+                      className={`h-3 w-3 mr-1 ${syncing === connection.id ? 'animate-spin' : ''}`}
+                    />
                     {syncing === connection.id ? 'Synchronisiere...' : 'Sync'}
                   </button>
 
@@ -584,7 +588,8 @@ export default function BankingImportPage() {
             <Upload className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankverbindungen</h3>
             <p className="text-gray-600 mb-6">
-              Fügen Sie Ihre erste Bankverbindung hinzu, um mit dem automatischen Import zu beginnen.
+              Fügen Sie Ihre erste Bankverbindung hinzu, um mit dem automatischen Import zu
+              beginnen.
             </p>
             <p className="text-gray-600 text-sm mt-2">
               Verwenden Sie &ldquo;Banking → Verbinden&rdquo; um neue Bankverbindungen hinzuzufügen.

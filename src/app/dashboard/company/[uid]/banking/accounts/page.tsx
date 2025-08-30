@@ -4,12 +4,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { BankAccount } from '@/types';
+import { getFinAPICredentialType } from '@/lib/finapi-config';
 import { PlusCircle, ExternalLink, Eye, EyeOff, RefreshCw } from 'lucide-react';
 
 export default function BankingAccountsPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+
+  // Get environment-specific credential type
+  const credentialType = getFinAPICredentialType();
 
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [accountsByBank, setAccountsByBank] = useState<{ [bankName: string]: BankAccount[] }>({});
@@ -27,14 +31,13 @@ export default function BankingAccountsPage() {
   const loadFinAPIAccounts = useCallback(async () => {
     try {
       if (!user?.uid) {
-
         setAccounts([]);
         return;
       }
 
       // Use enhanced accounts API that includes local storage
       const response = await fetch(
-        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=sandbox&forceRefresh=${refreshing}`
+        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=${credentialType}&forceRefresh=${refreshing}`
       );
 
       if (!response.ok) {
@@ -45,7 +48,6 @@ export default function BankingAccountsPage() {
       const data = await response.json();
 
       if (data.success && data.accounts) {
-
         setAccounts(data.accounts);
 
         // Set accounts grouped by bank if available
@@ -71,16 +73,13 @@ export default function BankingAccountsPage() {
 
         // Show success message if accounts were loaded from live API
         if (data.source === 'finapi_live' && refreshing) {
-
         }
       } else {
-
         setAccounts([]);
         setAccountsByBank({});
         setBankingOverview(null);
       }
     } catch (error) {
-
       setAccounts([]);
       setAccountsByBank({});
       setBankingOverview(null);
@@ -416,7 +415,7 @@ export default function BankingAccountsPage() {
             <PlusCircle className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankkonten verbunden</h3>
             <p className="text-gray-600 mb-6">
-                                    Verwenden Sie &ldquo;Banking → Verbinden&rdquo; um Bankkonten hinzuzufügen.
+              Verwenden Sie &ldquo;Banking → Verbinden&rdquo; um Bankkonten hinzuzufügen.
             </p>
           </div>
         </div>

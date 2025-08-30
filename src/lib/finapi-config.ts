@@ -15,6 +15,21 @@ export const FINAPI_CONFIG = {
 } as const;
 
 /**
+ * Get finAPI credential type based on environment
+ */
+export function getFinAPICredentialType(): 'sandbox' | 'production' {
+  // Check for environment variable first
+  const finapiEnv = process.env.FINAPI_ENVIRONMENT || process.env.NEXT_PUBLIC_FINAPI_ENVIRONMENT;
+
+  if (finapiEnv === 'production') {
+    return 'production';
+  }
+
+  // Default to sandbox for development and when env is not explicitly set to production
+  return 'sandbox';
+}
+
+/**
  * Get finAPI base URL based on credential type
  */
 export function getFinApiBaseUrl(credentialType: 'sandbox' | 'admin' = 'sandbox'): string {
@@ -43,4 +58,29 @@ export function getFinApiCredentials(credentialType: 'sandbox' | 'admin' = 'sand
  */
 export function buildFinApiAuthHeader(clientId: string, clientSecret: string): string {
   return `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
+}
+
+/**
+ * Check if finAPI is in production mode
+ */
+export function isFinAPIProduction(): boolean {
+  return getFinAPICredentialType() === 'production';
+}
+
+/**
+ * Check if finAPI is in sandbox mode
+ */
+export function isFinAPISandbox(): boolean {
+  return getFinAPICredentialType() === 'sandbox';
+}
+
+/**
+ * Get pagination configuration for finAPI requests
+ */
+export function getFinAPIPagination() {
+  return {
+    defaultPage: 1,
+    defaultPerPage: 100,
+    maxPerPage: 500,
+  };
 }

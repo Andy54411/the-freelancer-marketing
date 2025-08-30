@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
   Search,
   Filter,
@@ -55,6 +56,9 @@ export default function TransactionsPage() {
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
+  // Get environment-specific credential type
+  const credentialType = getFinAPICredentialType();
+
   // State Management
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -82,27 +86,25 @@ export default function TransactionsPage() {
 
     try {
       if (!user?.uid) {
-
         setTransactions([]);
         return;
       }
 
       // First try to load from enhanced accounts API (includes local storage)
       const accountsResponse = await fetch(
-        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=sandbox`
+        `/api/finapi/accounts-enhanced?userId=${user.uid}&credentialType=${credentialType}`
       );
 
       if (accountsResponse.ok) {
         const accountsData = await accountsResponse.json();
         if (accountsData.success && accountsData.accounts) {
           setAccounts(accountsData.accounts);
-
         }
       }
 
       // Then load transactions from finAPI
       const transactionsResponse = await fetch(
-        `/api/finapi/transactions?userId=${user.uid}&credentialType=sandbox&page=1&perPage=100`
+        `/api/finapi/transactions?userId=${user.uid}&credentialType=${credentialType}&page=1&perPage=100`
       );
 
       if (!transactionsResponse.ok) {
@@ -113,10 +115,8 @@ export default function TransactionsPage() {
       const data = await transactionsResponse.json();
 
       if (data.success && data.transactions) {
-
         setTransactions(data.transactions);
       } else {
-
         setTransactions([]);
         // Don't set error for "no user found" message - this is normal
         if (data.message && !data.message.includes('please connect a bank first')) {
@@ -124,7 +124,6 @@ export default function TransactionsPage() {
         }
       }
     } catch (err: any) {
-
       setError(err.message || 'Fehler beim Laden der Daten');
       setTransactions([]);
       setAccounts([]);
@@ -189,7 +188,6 @@ export default function TransactionsPage() {
     }
 
     if (isNaN(date.getTime())) {
-
       return 'Ungültiges Datum';
     }
 
@@ -243,49 +241,89 @@ export default function TransactionsPage() {
                 lastYear: lastYear,
                 yearStart: yearStart.toDateString(),
                 yearEnd: yearEnd.toDateString(),
-                transactionDate: isNaN(transactionDate.getTime()) ? 'Invalid Date' : transactionDate.toDateString(),
-                transactionYear: isNaN(transactionDate.getTime()) ? 'Invalid' : transactionDate.getFullYear(),
-                isInRange: !isNaN(transactionDate.getTime()) && transactionDate >= yearStart && transactionDate <= yearEnd,
+                transactionDate: isNaN(transactionDate.getTime())
+                  ? 'Invalid Date'
+                  : transactionDate.toDateString(),
+                transactionYear: isNaN(transactionDate.getTime())
+                  ? 'Invalid'
+                  : transactionDate.getFullYear(),
+                isInRange:
+                  !isNaN(transactionDate.getTime()) &&
+                  transactionDate >= yearStart &&
+                  transactionDate <= yearEnd,
                 logic: `Aktuelles Jahr: ${currentYear} → Letztes Jahr: ${lastYear}`,
                 totalTransactions: transactions.length,
                 yearTransactions: transactions.filter(t => {
                   const td = new Date(t.bookingDate || t.valueDate);
                   return !isNaN(td.getTime()) && td >= yearStart && td <= yearEnd;
-                }).length
+                }).length,
               };
-
             }
 
-            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(yearStart.getTime()) && !isNaN(yearEnd.getTime()) &&
-                              transactionDate >= yearStart && transactionDate <= yearEnd;
+            matchesDateRange =
+              !isNaN(transactionDate.getTime()) &&
+              !isNaN(yearStart.getTime()) &&
+              !isNaN(yearEnd.getTime()) &&
+              transactionDate >= yearStart &&
+              transactionDate <= yearEnd;
           } else if (dateRange === 'custom' && customDate) {
             // Benutzerdefiniertes Datum: Exakt an diesem Tag
             const selectedDate = new Date(customDate);
-            const dayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0);
-            const dayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59);
+            const dayStart = new Date(
+              selectedDate.getFullYear(),
+              selectedDate.getMonth(),
+              selectedDate.getDate(),
+              0,
+              0,
+              0
+            );
+            const dayEnd = new Date(
+              selectedDate.getFullYear(),
+              selectedDate.getMonth(),
+              selectedDate.getDate(),
+              23,
+              59,
+              59
+            );
 
             // Debug logging for first transaction
             if (transaction.id === transactions[0]?.id) {
               const debugData = {
                 dateRange: `Benutzerdefiniert (${customDate})`,
-                selectedDate: isNaN(selectedDate.getTime()) ? 'Invalid Date' : selectedDate.toDateString(),
+                selectedDate: isNaN(selectedDate.getTime())
+                  ? 'Invalid Date'
+                  : selectedDate.toDateString(),
                 dayStart: isNaN(dayStart.getTime()) ? 'Invalid Date' : dayStart.toDateString(),
                 dayEnd: isNaN(dayEnd.getTime()) ? 'Invalid Date' : dayEnd.toDateString(),
-                transactionDate: isNaN(transactionDate.getTime()) ? 'Invalid Date' : transactionDate.toDateString(),
-                isExactDay: !isNaN(transactionDate.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) &&
-                           transactionDate >= dayStart && transactionDate <= dayEnd,
+                transactionDate: isNaN(transactionDate.getTime())
+                  ? 'Invalid Date'
+                  : transactionDate.toDateString(),
+                isExactDay:
+                  !isNaN(transactionDate.getTime()) &&
+                  !isNaN(dayStart.getTime()) &&
+                  !isNaN(dayEnd.getTime()) &&
+                  transactionDate >= dayStart &&
+                  transactionDate <= dayEnd,
                 totalTransactions: transactions.length,
                 dayTransactions: transactions.filter(t => {
                   const td = new Date(t.bookingDate || t.valueDate);
-                  return !isNaN(td.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) &&
-                         td >= dayStart && td <= dayEnd;
-                }).length
+                  return (
+                    !isNaN(td.getTime()) &&
+                    !isNaN(dayStart.getTime()) &&
+                    !isNaN(dayEnd.getTime()) &&
+                    td >= dayStart &&
+                    td <= dayEnd
+                  );
+                }).length,
               };
-
             }
 
-            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(dayStart.getTime()) && !isNaN(dayEnd.getTime()) &&
-                              transactionDate >= dayStart && transactionDate <= dayEnd;
+            matchesDateRange =
+              !isNaN(transactionDate.getTime()) &&
+              !isNaN(dayStart.getTime()) &&
+              !isNaN(dayEnd.getTime()) &&
+              transactionDate >= dayStart &&
+              transactionDate <= dayEnd;
           } else {
             // Andere Filter: Letzte X Tage vom heutigen Datum
             const days = parseInt(dateRange);
@@ -297,19 +335,28 @@ export default function TransactionsPage() {
               const debugData = {
                 dateRange: `Letzte ${days} Tage`,
                 today: isNaN(today.getTime()) ? 'Invalid Date' : today.toDateString(),
-                cutoffDate: isNaN(cutoffDate.getTime()) ? 'Invalid Date' : cutoffDate.toDateString(),
-                transactionDate: isNaN(transactionDate.getTime()) ? 'Invalid Date' : transactionDate.toDateString(),
-                isAfterCutoff: !isNaN(transactionDate.getTime()) && !isNaN(cutoffDate.getTime()) && transactionDate >= cutoffDate,
+                cutoffDate: isNaN(cutoffDate.getTime())
+                  ? 'Invalid Date'
+                  : cutoffDate.toDateString(),
+                transactionDate: isNaN(transactionDate.getTime())
+                  ? 'Invalid Date'
+                  : transactionDate.toDateString(),
+                isAfterCutoff:
+                  !isNaN(transactionDate.getTime()) &&
+                  !isNaN(cutoffDate.getTime()) &&
+                  transactionDate >= cutoffDate,
                 totalTransactions: transactions.length,
                 dateRangeTransactions: transactions.filter(t => {
                   const td = new Date(t.bookingDate || t.valueDate);
                   return !isNaN(td.getTime()) && !isNaN(cutoffDate.getTime()) && td >= cutoffDate;
-                }).length
+                }).length,
               };
-
             }
 
-            matchesDateRange = !isNaN(transactionDate.getTime()) && !isNaN(cutoffDate.getTime()) && transactionDate >= cutoffDate;
+            matchesDateRange =
+              !isNaN(transactionDate.getTime()) &&
+              !isNaN(cutoffDate.getTime()) &&
+              transactionDate >= cutoffDate;
           }
         }
       }
@@ -322,7 +369,9 @@ export default function TransactionsPage() {
   const categories = [...new Set(transactions.map(t => t.category).filter(Boolean))];
 
   // Calculate summary statistics from filtered transactions
-  const totalIncome = filteredTransactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = filteredTransactions
+    .filter(t => t.amount > 0)
+    .reduce((sum, t) => sum + t.amount, 0);
 
   const totalExpenses = filteredTransactions
     .filter(t => t.amount < 0)
@@ -370,8 +419,8 @@ export default function TransactionsPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Transaktionen</h1>
             <p className="text-gray-600 mt-1">
-              Übersicht über alle Kontobewegungen
-              ({filteredTransactions.length} von {transactions.length} angezeigt)
+              Übersicht über alle Kontobewegungen ({filteredTransactions.length} von{' '}
+              {transactions.length} angezeigt)
             </p>
           </div>
           <div className="flex space-x-3">
@@ -929,9 +978,7 @@ ID: ${selectedTransaction.id}
 
                 {/* Quick Date Buttons */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Schnellauswahl
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700">Schnellauswahl</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => {
