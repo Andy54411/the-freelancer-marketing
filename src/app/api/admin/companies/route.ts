@@ -1,46 +1,38 @@
 // Admin Companies API
 import { NextRequest, NextResponse } from 'next/server';
-import { DynamoDBClient, ScanCommand } from '@aws-sdk/client-dynamodb';
-import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
-
-const dynamodb = new DynamoDBClient({
-  region: process.env.AWS_REGION || 'eu-central-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+import { db } from '@/firebase/server';
 
 export async function GET(_request: NextRequest) {
   try {
-    const command = new ScanCommand({
-      TableName: 'taskilo-admin-data',
-      FilterExpression: '#type = :type',
-      ExpressionAttributeNames: {
-        '#type': 'type',
-      },
-      ExpressionAttributeValues: marshall({
-        ':type': 'company',
-      }),
+    // Hole alle Unternehmen aus der Firebase companies Collection
+    const companiesSnapshot = await db.collection('companies').get();
+    const companies: any[] = [];
+
+    companiesSnapshot.forEach(doc => {
+      const data = doc.data();
+      companies.push({
+        id: doc.id,
+        email: data.email,
+        name: data.companyName || data.email,
+        type: 'company',
+        companyName: data.companyName,
+        industry: data.industry,
+        website: data.website,
+        phone: data.phone,
+        status: data.isActive ? 'active' : 'inactive',
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        lastLogin: data.lastLogin?.toDate?.()?.toISOString(),
+        // Zusätzliche Felder für Admin-Dashboard
+        address: data.address,
+        city: data.city,
+        postalCode: data.postalCode,
+        country: data.country,
+        description: data.description,
+        services: data.services,
+        stripeAccountId: data.stripeAccountId,
+        verified: data.verified || false,
+      });
     });
-
-    const result = await dynamodb.send(command);
-    const items = result.Items?.map(item => unmarshall(item)) || [];
-
-    // Formatiere Unternehmensdaten
-    const companies = items.map(company => ({
-      id: company.id,
-      email: company.email,
-      name: company.name || company.email,
-      type: company.type,
-      companyName: company.companyName,
-      industry: company.industry,
-      website: company.website,
-      phone: company.phone,
-      status: company.status || 'active',
-      createdAt: company.createdAt || new Date().toISOString(),
-      lastLogin: company.lastLogin,
-    }));
 
     return NextResponse.json({
       companies: companies.sort(
@@ -48,7 +40,7 @@ export async function GET(_request: NextRequest) {
       ),
     });
   } catch (error) {
-
+    console.error('Error fetching companies from Firebase:', error);
     return NextResponse.json({ error: 'Fehler beim Laden der Unternehmen' }, { status: 500 });
   }
 }
