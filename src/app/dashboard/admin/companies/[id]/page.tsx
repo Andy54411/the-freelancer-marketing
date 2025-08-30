@@ -993,9 +993,9 @@ export default function AdminCompanyDetailsPage() {
                               onClick={() =>
                                 openDocument(company.businessLicenseURL!, 'Gewerbeschein')
                               }
+                              title="Anzeigen"
                             >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Anzeigen
+                              <Eye className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
@@ -1003,9 +1003,9 @@ export default function AdminCompanyDetailsPage() {
                               onClick={() =>
                                 downloadDocument(company.businessLicenseURL!, 'gewerbeschein.pdf')
                               }
+                              title="Download"
                             >
-                              <Download className="h-4 w-4 mr-1" />
-                              Download
+                              <Download className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -1031,9 +1031,9 @@ export default function AdminCompanyDetailsPage() {
                               onClick={() =>
                                 openDocument(company.companyRegister!, 'Handelsregister')
                               }
+                              title="Anzeigen"
                             >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Anzeigen
+                              <Eye className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
@@ -1041,9 +1041,9 @@ export default function AdminCompanyDetailsPage() {
                               onClick={() =>
                                 downloadDocument(company.companyRegister!, 'handelsregister.pdf')
                               }
+                              title="Download"
                             >
-                              <Download className="h-4 w-4 mr-1" />
-                              Download
+                              <Download className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
