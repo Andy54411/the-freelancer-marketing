@@ -1,5 +1,95 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db as adminDb } from '@/firebase/server';
+
+// Direct Firebase initialization (copy from working getSingleOrder pattern)
+async function getFirebaseServices() {
+  try {
+    console.log('Direct Firebase initialization for storno-fees API...');
+
+    // DIRECT Firebase initialization
+    const firebaseAdmin = await import('firebase-admin');
+
+    // Check if app is already initialized
+    let app;
+    try {
+      app = firebaseAdmin.app();
+      console.log('Using existing Firebase app');
+    } catch (appError) {
+      console.log('Initializing new Firebase app...');
+
+      // Temporarily clear GOOGLE_APPLICATION_CREDENTIALS to prevent file access
+      const originalGoogleCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+      delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+      try {
+        // Use FIREBASE_SERVICE_ACCOUNT_KEY directly (no files, only Vercel env vars)
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+          console.log('Using FIREBASE_SERVICE_ACCOUNT_KEY from Vercel...');
+          let serviceAccount;
+
+          const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
+          console.log('Key starts with:', key.substring(0, 20));
+
+          // Clean the key - remove extra quotes and escapes
+          let cleanKey = key;
+          if (cleanKey.startsWith('"') && cleanKey.endsWith('"')) {
+            cleanKey = cleanKey.slice(1, -1);
+          }
+          if (cleanKey.startsWith("'") && cleanKey.endsWith("'")) {
+            cleanKey = cleanKey.slice(1, -1);
+          }
+
+          // Replace escaped newlines
+          cleanKey = cleanKey.replace(/\\n/g, '\n');
+          cleanKey = cleanKey.replace(/\\\"/g, '"');
+
+          try {
+            console.log('Attempting direct JSON parse...');
+            serviceAccount = JSON.parse(cleanKey);
+            console.log('Direct JSON parsing successful');
+          } catch (parseError) {
+            console.log('Direct parsing failed, trying base64 decode...');
+            try {
+              const decoded = Buffer.from(key, 'base64').toString('utf-8');
+              serviceAccount = JSON.parse(decoded);
+              console.log('Base64 + JSON parsing successful');
+            } catch (base64Error) {
+              console.error(
+                'Both parsing methods failed:',
+                parseError.message,
+                base64Error.message
+              );
+              throw new Error(
+                `Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY: ${parseError.message}`
+              );
+            }
+          }
+
+          app = firebaseAdmin.initializeApp({
+            credential: firebaseAdmin.credential.cert(serviceAccount),
+            projectId: serviceAccount.project_id || 'tilvo-f142f',
+          });
+        } else {
+          throw new Error(
+            'No Firebase configuration available (FIREBASE_SERVICE_ACCOUNT_KEY required)'
+          );
+        }
+      } finally {
+        // Restore GOOGLE_APPLICATION_CREDENTIALS if it was set
+        if (originalGoogleCreds) {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = originalGoogleCreds;
+        }
+      }
+    }
+
+    const auth = firebaseAdmin.auth();
+    const db = firebaseAdmin.firestore();
+    console.log('Firebase services initialized successfully');
+    return { auth, db };
+  } catch (error: any) {
+    console.error('Firebase initialization failed:', error);
+    throw error;
+  }
+}
 
 /**
  * COMPANY STORNO FEES SETTINGS API
@@ -129,38 +219,48 @@ function checkStornoEligibility(orderData: any, stornoSettings: any) {
 
 export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    // Check if Firebase is available
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
-    }
+    console.log('Starting storno-fees GET request for uid:', params.uid);
+
+    // Initialize Firebase services dynamically
+    const { db } = await getFirebaseServices();
+    console.log('Firebase services initialized successfully');
 
     const { uid } = params;
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
 
+    console.log('Looking for company with uid:', uid);
+
     // Hole Unternehmenseinstellungen aus der companies Collection
-    const companyRef = adminDb.collection('companies').doc(uid);
+    const companyRef = db.collection('companies').doc(uid);
     const companyDoc = await companyRef.get();
 
+    console.log('Company document exists:', companyDoc.exists);
+
     if (!companyDoc.exists) {
+      console.log('Company not found, returning 404');
       return NextResponse.json({ error: 'Unternehmen nicht gefunden' }, { status: 404 });
     }
 
     const companyData = companyDoc.data();
+    console.log('Company data retrieved successfully');
 
     // Hole Storno-Einstellungen (mit Defaults falls nicht vorhanden)
     const stornoSettings = companyData?.settings?.stornoFees || getDefaultStornoSettings();
+    console.log('Storno settings:', stornoSettings);
 
     // Wenn orderId gegeben, hole Auftragsdaten für Deadline-Check
     let orderAnalysis: any = null;
     if (orderId) {
       try {
-        const orderRef = adminDb.collection('auftraege').doc(orderId);
+        console.log('Loading order data for orderId:', orderId);
+        const orderRef = db.collection('auftraege').doc(orderId);
         const orderDoc = await orderRef.get();
 
         if (orderDoc.exists) {
           const orderData = orderDoc.data();
           orderAnalysis = checkStornoEligibility(orderData, stornoSettings);
+          console.log('Order analysis completed');
         }
       } catch (orderError) {
         console.error('Fehler beim Laden der Auftragsdaten:', orderError);
@@ -168,6 +268,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
       }
     }
 
+    console.log('Returning successful response');
     return NextResponse.json({
       success: true,
       stornoSettings,
@@ -180,16 +281,21 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
     });
   } catch (error: any) {
     console.error('Fehler beim Abrufen der Storno-Einstellungen:', error);
-    return NextResponse.json({ error: 'Fehler beim Abrufen der Einstellungen' }, { status: 500 });
+    console.error('Error stack:', error.stack);
+    return NextResponse.json(
+      {
+        error: 'Fehler beim Abrufen der Einstellungen',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    // Check if Firebase is available
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
-    }
+    // Initialize Firebase services dynamically
+    const { db } = await getFirebaseServices();
 
     const { uid } = params;
     const body = await request.json();
@@ -201,7 +307,7 @@ export async function PUT(request: NextRequest, { params }: { params: { uid: str
     }
 
     // Prüfe ob Unternehmen existiert in companies Collection
-    const companyRef = adminDb.collection('companies').doc(uid);
+    const companyRef = db.collection('companies').doc(uid);
     const companyDoc = await companyRef.get();
 
     if (!companyDoc.exists) {

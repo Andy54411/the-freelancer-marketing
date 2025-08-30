@@ -1,41 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as admin from 'firebase-admin';
 
-// Runtime Firebase initialization to prevent build-time issues
-async function getFirebaseServices(): Promise<{ auth: any; db: any }> {
-  try {
-    // Dynamically import Firebase services
-    const firebaseModule = await import('@/firebase/server');
+// Direct Firebase initialization using environment variables (like getSingleOrder API)
+async function initializeFirebase() {
+  console.log('Initializing Firebase for get-provider-orders API - NO JSON FILES...');
 
-    // Check if we have valid services
-    if (!firebaseModule.auth || !firebaseModule.db) {
-      console.error('Firebase services not initialized properly');
-      // Try to get from admin if needed
-      const { admin } = firebaseModule;
-      if (admin && admin.apps.length > 0) {
-        const { getAuth } = await import('firebase-admin/auth');
-        const { getFirestore } = await import('firebase-admin/firestore');
-        return {
-          auth: getAuth(),
-          db: getFirestore(),
-        };
-      }
-      throw new Error('Firebase services unavailable');
-    }
-
+  // If already initialized, return existing instances
+  if (admin.apps.length > 0) {
+    console.log('Using existing Firebase app');
+    const { getAuth } = await import('firebase-admin/auth');
+    const { getFirestore } = await import('firebase-admin/firestore');
     return {
-      auth: firebaseModule.auth,
-      db: firebaseModule.db,
+      auth: getAuth(),
+      db: getFirestore(),
     };
-  } catch (error) {
-    console.error('Firebase initialization failed:', error);
-    throw new Error('Firebase services unavailable');
   }
+
+  // Initialize with individual environment variables
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+
+  if (!projectId || !privateKey || !clientEmail) {
+    throw new Error('Missing Firebase configuration environment variables');
+  }
+
+  // Initialize Firebase Admin
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId,
+      privateKey: privateKey.replace(/\\n/g, '\n'),
+      clientEmail,
+    }),
+    projectId,
+    storageBucket: 'tilvo-f142f.firebasestorage.app',
+    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+  });
+
+  const { getAuth } = await import('firebase-admin/auth');
+  const { getFirestore } = await import('firebase-admin/firestore');
+
+  console.log('Firebase services initialized successfully for get-provider-orders API');
+
+  return {
+    auth: getAuth(),
+    db: getFirestore(),
+  };
 }
 
 export async function GET(request: NextRequest) {
   try {
     // Initialize Firebase services dynamically
-    const { auth, db } = await getFirebaseServices();
+    const { auth, db } = await initializeFirebase();
 
     // CORS Headers setzen
     const headers = new Headers();

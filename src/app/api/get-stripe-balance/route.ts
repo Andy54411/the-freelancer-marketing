@@ -1,29 +1,44 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
+import * as admin from 'firebase-admin';
 
-// Runtime Firebase initialization to prevent build-time issues
-async function getFirebaseDb(): Promise<any> {
-  try {
-    // Dynamically import Firebase services
-    const firebaseModule = await import('@/firebase/server');
+// Direct Firebase initialization using environment variables (like getSingleOrder API)
+async function initializeFirebase() {
+  console.log('Initializing Firebase for get-stripe-balance API - NO JSON FILES...');
 
-    // Check if we have valid db service
-    if (!firebaseModule.db) {
-      console.error('Firebase database not initialized properly');
-      // Try to get from admin if needed
-      const { admin } = firebaseModule;
-      if (admin && admin.apps.length > 0) {
-        const { getFirestore } = await import('firebase-admin/firestore');
-        return getFirestore();
-      }
-      throw new Error('Firebase database unavailable');
-    }
-
-    return firebaseModule.db;
-  } catch (error) {
-    console.error('Firebase initialization failed:', error);
-    throw new Error('Firebase database unavailable');
+  // If already initialized, return existing instances
+  if (admin.apps.length > 0) {
+    console.log('Using existing Firebase app');
+    const { getFirestore } = await import('firebase-admin/firestore');
+    return getFirestore();
   }
+
+  // Initialize with individual environment variables
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+
+  if (!projectId || !privateKey || !clientEmail) {
+    throw new Error('Missing Firebase configuration environment variables');
+  }
+
+  // Initialize Firebase Admin
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId,
+      privateKey: privateKey.replace(/\\n/g, '\n'),
+      clientEmail,
+    }),
+    projectId,
+    storageBucket: 'tilvo-f142f.firebasestorage.app',
+    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+  });
+
+  const { getFirestore } = await import('firebase-admin/firestore');
+
+  console.log('Firebase services initialized successfully for get-stripe-balance API');
+
+  return getFirestore();
 }
 
 // Fast cache for balance data
@@ -87,7 +102,7 @@ async function handleBalanceRequest(firebaseUserId: string) {
 
 async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
   // Get Firebase DB dynamically
-  const db = await getFirebaseDb();
+  const db = await initializeFirebase();
 
   // Fast Firebase lookup with timeout
   const firebaseTimeout = new Promise<never>((_, reject) => {
