@@ -1,181 +1,89 @@
 import * as admin from 'firebase-admin';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
-import { AppOptions } from 'firebase-admin/app';
 
-// Better build time detection
-const isBuildTime =
-  process.env.NEXT_PHASE === 'phase-production-build' ||
-  (process.env.NODE_ENV === 'production' && !process.env.VERCEL) ||
-  typeof window !== 'undefined';
-
-let db: ReturnType<typeof getFirestore> | null = null;
-let auth: ReturnType<typeof getAuth> | null = null;
-
-// Only initialize Firebase Admin SDK if not in build time
-if (!isBuildTime && !admin.apps.length) {
+// Simple Firebase initialization for development
+if (!admin.apps.length) {
   try {
-    const options: AppOptions = {
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tilvo-f142f',
-      storageBucket: 'tilvo-f142f.firebasestorage.app',
-      databaseURL:
-        process.env.FIREBASE_DATABASE_URL ||
-        'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
-    };
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    console.log(
+      '🔍 Checking FIREBASE_SERVICE_ACCOUNT_KEY...',
+      serviceAccountKey ? 'EXISTS' : 'MISSING'
+    );
 
-    let credentialSet = false;
+    if (serviceAccountKey) {
+      console.log('📝 Parsing service account key...');
 
-    // 1. Priorität: FIREBASE_SERVICE_ACCOUNT_KEY (für Vercel Production)
-    const firebaseServiceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (firebaseServiceAccountKey && firebaseServiceAccountKey.trim() && !credentialSet) {
+      // Clean escaped characters
+      let cleanKey = serviceAccountKey.trim();
+
+      // Remove outer quotes if present
+      if (
+        (cleanKey.startsWith('"') && cleanKey.endsWith('"')) ||
+        (cleanKey.startsWith("'") && cleanKey.endsWith("'"))
+      ) {
+        cleanKey = cleanKey.slice(1, -1);
+      }
+
+      // Replace escaped quotes and newlines
+      cleanKey = cleanKey.replace(/\\"/g, '"');
+      cleanKey = cleanKey.replace(/\\n/g, '\n');
+      cleanKey = cleanKey.replace(/\\r/g, '\r');
+      cleanKey = cleanKey.replace(/\\t/g, '\t');
+      cleanKey = cleanKey.replace(/\\\\/g, '\\');
+
+      console.log('🔍 First 100 chars of cleaned key:', cleanKey.substring(0, 100));
+      console.log('🔍 Key starts with:', cleanKey.charAt(0), 'Second char:', cleanKey.charAt(1));
+
+      // Try direct JSON.parse first
+      let serviceAccount;
       try {
-        console.log('Verwende FIREBASE_SERVICE_ACCOUNT_KEY für Credentials...');
+        serviceAccount = JSON.parse(cleanKey);
+      } catch (firstError) {
+        console.log('🔄 First parse failed, trying to fix private key format...');
 
-        let serviceAccount;
+        // Fix common private key formatting issues
+        let fixedKey = cleanKey;
+
+        // Ensure proper newlines in private key
+        fixedKey = fixedKey.replace(/"private_key":\s*"([^"]*)"/, (match, privateKey) => {
+          // Fix private key newlines
+          const fixedPrivateKey = privateKey
+            .replace(/\\n/g, '\n') // Convert \n to actual newlines
+            .replace(/\n+/g, '\n'); // Remove duplicate newlines
+          return `"private_key": "${fixedPrivateKey.replace(/\n/g, '\\n')}"`;
+        });
 
         try {
-          // Versuche zuerst Base64-Decoding (falls Base64-encoded)
-          if (firebaseServiceAccountKey.match(/^[A-Za-z0-9+/=]+$/)) {
-            console.log('Erkenne Base64-Format, dekodiere...');
-            const decodedKey = Buffer.from(firebaseServiceAccountKey, 'base64').toString('utf-8');
-            serviceAccount = JSON.parse(decodedKey);
-          } else {
-            // Normale JSON-String-Verarbeitung mit verbesserter Bereinigung
-            let cleanedKey = firebaseServiceAccountKey.trim();
-
-            // Entferne äußere Anführungszeichen
-            if (cleanedKey.startsWith('"') && cleanedKey.endsWith('"')) {
-              cleanedKey = cleanedKey.slice(1, -1);
-            }
-            if (cleanedKey.startsWith("'") && cleanedKey.endsWith("'")) {
-              cleanedKey = cleanedKey.slice(1, -1);
-            }
-
-            // Aggressive Bereinigung
-            cleanedKey = cleanedKey.replace(/\\n/g, '\n');
-            cleanedKey = cleanedKey.replace(/\\r/g, '\r');
-            cleanedKey = cleanedKey.replace(/\\t/g, '\t');
-            cleanedKey = cleanedKey.replace(/\\"/g, '"');
-            cleanedKey = cleanedKey.replace(/\\'/g, "'");
-            cleanedKey = cleanedKey.replace(/\\\\/g, '\\');
-
-            // Entferne ALLE Steuerzeichen außer erlaubten
-            cleanedKey = cleanedKey.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
-            cleanedKey = cleanedKey.replace(/[\u200B-\u200D\uFEFF]/g, '');
-
-            console.log('JSON-String bereinigt, versuche zu parsen...');
-            serviceAccount = JSON.parse(cleanedKey);
-          }
-        } catch (parseError: any) {
-          console.error('Primäres Parsing fehlgeschlagen:', parseError.message);
-
-          // Letzter Versuch: Zeichen für Zeichen bereinigen
-          try {
-            console.log('Versuche aggressive Zeichen-Bereinigung...');
-            let ultraCleanKey = '';
-            for (let i = 0; i < firebaseServiceAccountKey.length; i++) {
-              const char = firebaseServiceAccountKey[i];
-              const charCode = char.charCodeAt(0);
-              // Nur printable ASCII + erlaubte Steuerzeichen
-              if (
-                (charCode >= 32 && charCode <= 126) ||
-                charCode === 10 ||
-                charCode === 13 ||
-                charCode === 9
-              ) {
-                ultraCleanKey += char;
-              }
-            }
-            serviceAccount = JSON.parse(ultraCleanKey);
-          } catch (finalError: any) {
-            throw new Error(`Alle JSON-Parsing-Versuche fehlgeschlagen: ${finalError.message}`);
-          }
+          serviceAccount = JSON.parse(fixedKey);
+        } catch (secondError) {
+          console.error('❌ Both parsing methods failed:');
+          console.error('First error:', firstError.message);
+          console.error('Second error:', secondError.message);
+          throw firstError;
         }
-
-        // Validiere, dass es sich um ein gültiges Service Account Objekt handelt
-        if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
-          options.credential = admin.credential.cert(serviceAccount);
-          credentialSet = true;
-          console.log(
-            '✅ Firebase Credentials erfolgreich aus FIREBASE_SERVICE_ACCOUNT_KEY geladen'
-          );
-        } else {
-          console.warn('FIREBASE_SERVICE_ACCOUNT_KEY enthält kein gültiges Service Account Format');
-        }
-      } catch (jsonError: any) {
-        console.error('Fehler beim Parsen von FIREBASE_SERVICE_ACCOUNT_KEY:', jsonError.message);
-        console.log('Versuche Fallback-Methoden...');
       }
-    } else if (firebaseServiceAccountKey && !firebaseServiceAccountKey.trim()) {
-      console.log('FIREBASE_SERVICE_ACCOUNT_KEY ist leer, verwende Fallback-Methoden...');
-    }
+      console.log('✅ Service account parsed successfully');
 
-    // 2. Fallback: GOOGLE_APPLICATION_CREDENTIALS (nur JSON-String)
-    const googleAppCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (googleAppCredentials && googleAppCredentials.trim() && !credentialSet) {
-      try {
-        console.log('Versuche GOOGLE_APPLICATION_CREDENTIALS als JSON-String zu verwenden...');
-        let cleanedCredentials = googleAppCredentials.trim();
-
-        // Bereinige JSON-String (falls escape-sequences enthalten)
-        cleanedCredentials = cleanedCredentials.replace(/\\n/g, '\n');
-        cleanedCredentials = cleanedCredentials.replace(/\\r/g, '\r');
-        cleanedCredentials = cleanedCredentials.replace(/\\t/g, '\t');
-        cleanedCredentials = cleanedCredentials.replace(/\\"/g, '"');
-
-        const serviceAccount = JSON.parse(cleanedCredentials);
-
-        if (serviceAccount.type === 'service_account' && serviceAccount.project_id) {
-          options.credential = admin.credential.cert(serviceAccount);
-          credentialSet = true;
-          console.log(
-            '✅ Firebase Credentials erfolgreich aus GOOGLE_APPLICATION_CREDENTIALS geladen'
-          );
-        } else {
-          console.error('GOOGLE_APPLICATION_CREDENTIALS hat ungültiges Service Account Format');
-        }
-      } catch (jsonError: any) {
-        console.error('Fehler beim Parsen von GOOGLE_APPLICATION_CREDENTIALS:', jsonError.message);
-      }
-    }
-
-    // WICHTIG: Wenn keine Credentials gesetzt sind, FEHLER werfen (aber nur zur Laufzeit)
-    if (!credentialSet && !isBuildTime) {
-      const errorMsg =
-        'Firebase Credentials nicht verfügbar - FIREBASE_SERVICE_ACCOUNT_KEY oder GOOGLE_APPLICATION_CREDENTIALS erforderlich.';
-      console.error(errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    admin.initializeApp(options);
-
-    // Initialize instances after successful app initialization
-    db = getFirestore();
-    auth = getAuth();
-
-    // Logging für Emulator-Verbindungen in der lokalen Entwicklung
-    if (process.env.NODE_ENV === 'development') {
-      if (process.env.FIRESTORE_EMULATOR_HOST) {
-        console.log('🔥 Firestore Emulator verbunden:', process.env.FIRESTORE_EMULATOR_HOST);
+      // Fix private key format if needed
+      if (serviceAccount?.private_key && !serviceAccount.private_key.includes('\n')) {
+        console.log('🔧 Fixing private key format...');
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n'); // Convert escaped newlines to actual newlines
       }
 
-      if (process.env.FIREBASE_AUTH_EMULATOR_HOST) {
-        console.log('� Auth Emulator verbunden:', process.env.FIREBASE_AUTH_EMULATOR_HOST);
-      }
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: 'tilvo-f142f',
+      });
 
-      if (process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
-        console.log('📦 Storage Emulator verbunden:', process.env.FIREBASE_STORAGE_EMULATOR_HOST);
-      }
+      console.log('✅ Firebase Admin SDK initialized successfully');
+    } else {
+      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_KEY not found');
+      throw new Error('Firebase credentials missing');
     }
-  } catch (error: any) {
-    console.error('Firebase Admin SDK Initialisierungsfehler:', error.message);
-    // In production, we should not throw during build time
-    if (!isBuildTime) {
-      throw new Error(
-        'Initialisierung des Firebase Admin SDK fehlgeschlagen. Überprüfen Sie die Server-Logs für Details.'
-      );
-    }
+  } catch (error) {
+    console.error('❌ Firebase Admin SDK initialization failed:', error);
+    throw error; // Re-throw to prevent accessing undefined firebase services
   }
 }
 
-export { db, auth, admin };
+export const db = admin.firestore();
+export const auth = admin.auth();

@@ -1,95 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Direct Firebase initialization (copy from working getSingleOrder pattern)
-async function getFirebaseServices() {
-  try {
-    console.log('Direct Firebase initialization for storno-fees API...');
-
-    // DIRECT Firebase initialization
-    const firebaseAdmin = await import('firebase-admin');
-
-    // Check if app is already initialized
-    let app;
-    try {
-      app = firebaseAdmin.app();
-      console.log('Using existing Firebase app');
-    } catch (appError) {
-      console.log('Initializing new Firebase app...');
-
-      // Temporarily clear GOOGLE_APPLICATION_CREDENTIALS to prevent file access
-      const originalGoogleCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-      delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
-
-      try {
-        // Use FIREBASE_SERVICE_ACCOUNT_KEY directly (no files, only Vercel env vars)
-        if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-          console.log('Using FIREBASE_SERVICE_ACCOUNT_KEY from Vercel...');
-          let serviceAccount;
-
-          const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
-          console.log('Key starts with:', key.substring(0, 20));
-
-          // Clean the key - remove extra quotes and escapes
-          let cleanKey = key;
-          if (cleanKey.startsWith('"') && cleanKey.endsWith('"')) {
-            cleanKey = cleanKey.slice(1, -1);
-          }
-          if (cleanKey.startsWith("'") && cleanKey.endsWith("'")) {
-            cleanKey = cleanKey.slice(1, -1);
-          }
-
-          // Replace escaped newlines
-          cleanKey = cleanKey.replace(/\\n/g, '\n');
-          cleanKey = cleanKey.replace(/\\\"/g, '"');
-
-          try {
-            console.log('Attempting direct JSON parse...');
-            serviceAccount = JSON.parse(cleanKey);
-            console.log('Direct JSON parsing successful');
-          } catch (parseError) {
-            console.log('Direct parsing failed, trying base64 decode...');
-            try {
-              const decoded = Buffer.from(key, 'base64').toString('utf-8');
-              serviceAccount = JSON.parse(decoded);
-              console.log('Base64 + JSON parsing successful');
-            } catch (base64Error) {
-              console.error(
-                'Both parsing methods failed:',
-                parseError.message,
-                base64Error.message
-              );
-              throw new Error(
-                `Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY: ${parseError.message}`
-              );
-            }
-          }
-
-          app = firebaseAdmin.initializeApp({
-            credential: firebaseAdmin.credential.cert(serviceAccount),
-            projectId: serviceAccount.project_id || 'tilvo-f142f',
-          });
-        } else {
-          throw new Error(
-            'No Firebase configuration available (FIREBASE_SERVICE_ACCOUNT_KEY required)'
-          );
-        }
-      } finally {
-        // Restore GOOGLE_APPLICATION_CREDENTIALS if it was set
-        if (originalGoogleCreds) {
-          process.env.GOOGLE_APPLICATION_CREDENTIALS = originalGoogleCreds;
-        }
-      }
-    }
-
-    const auth = firebaseAdmin.auth();
-    const db = firebaseAdmin.firestore();
-    console.log('Firebase services initialized successfully');
-    return { auth, db };
-  } catch (error: any) {
-    console.error('Firebase initialization failed:', error);
-    throw error;
-  }
-}
+import { db } from '@/firebase/server';
 
 /**
  * COMPANY STORNO FEES SETTINGS API
@@ -219,17 +129,17 @@ function checkStornoEligibility(orderData: any, stornoSettings: any) {
 
 export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    console.log('Starting storno-fees GET request for uid:', params.uid);
-
-    // Initialize Firebase services dynamically
-    const { db } = await getFirebaseServices();
-    console.log('Firebase services initialized successfully');
-
     const { uid } = params;
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
 
+    console.log('GET: Company storno fees settings:', { uid });
     console.log('Looking for company with uid:', uid);
+
+    // Prüfe Firebase-Verbindung
+    if (!db) {
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
 
     // Hole Unternehmenseinstellungen aus der companies Collection
     const companyRef = db.collection('companies').doc(uid);
@@ -294,9 +204,6 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
 
 export async function PUT(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    // Initialize Firebase services dynamically
-    const { db } = await getFirebaseServices();
-
     const { uid } = params;
     const body = await request.json();
 
@@ -304,6 +211,11 @@ export async function PUT(request: NextRequest, { params }: { params: { uid: str
     const validationResult = validateStornoFeesInput(body);
     if (!validationResult.valid) {
       return NextResponse.json({ error: validationResult.error }, { status: 400 });
+    }
+
+    // Prüfe Firebase-Verbindung
+    if (!db) {
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
     }
 
     // Prüfe ob Unternehmen existiert in companies Collection
