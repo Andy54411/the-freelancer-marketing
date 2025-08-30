@@ -103,8 +103,9 @@ export async function GET(request: NextRequest) {
         // Create finAPI service instance
         const finapiService = createFinAPIService();
 
-        // Try to get user token and accounts
-        const userToken = await finapiService.getUserToken(companyEmail, userId);
+        // Use getOrCreateUser method to get proper user token
+        const userData = await finapiService.getOrCreateUser(companyEmail, 'demo123', userId);
+        const userToken = userData.userToken;
 
         if (userToken) {
           console.log('✅ Got user token, fetching accounts...');

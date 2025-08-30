@@ -23,19 +23,20 @@ import {
 } from 'lucide-react';
 
 interface Transaction {
-  id: string;
-  accountId: string;
+  id: number;
+  accountId: number;
   amount: number;
   currency: string;
   purpose: string;
   counterpartName?: string;
   counterpartIban?: string;
-  bookingDate: string;
+  bankBookingDate: string;
   valueDate: string;
-  transactionType: 'CREDIT' | 'DEBIT';
-  category?: string;
-  isReconciled: boolean;
-  isPending: boolean;
+  type: string;
+  category?: any;
+  isPotentialDuplicate: boolean;
+  isNew: boolean;
+  labels?: any[];
 }
 
 interface BankAccount {
@@ -213,13 +214,14 @@ export default function TransactionsPage() {
       transaction.counterpartName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.amount.toString().includes(searchTerm);
 
-    const matchesAccount = selectedAccount === 'all' || transaction.accountId === selectedAccount;
+    const matchesAccount =
+      selectedAccount === 'all' || transaction.accountId.toString() === selectedAccount;
     const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
 
     // Date range filtering
     let matchesDateRange = true;
     if (dateRange !== 'all') {
-      const transactionDateStr = transaction.bookingDate || transaction.valueDate;
+      const transactionDateStr = transaction.bankBookingDate || transaction.valueDate;
       if (transactionDateStr) {
         const transactionDate = new Date(transactionDateStr);
 
@@ -254,7 +256,7 @@ export default function TransactionsPage() {
                 logic: `Aktuelles Jahr: ${currentYear} → Letztes Jahr: ${lastYear}`,
                 totalTransactions: transactions.length,
                 yearTransactions: transactions.filter(t => {
-                  const td = new Date(t.bookingDate || t.valueDate);
+                  const td = new Date(t.bankBookingDate || t.valueDate);
                   return !isNaN(td.getTime()) && td >= yearStart && td <= yearEnd;
                 }).length,
               };
@@ -306,7 +308,7 @@ export default function TransactionsPage() {
                   transactionDate <= dayEnd,
                 totalTransactions: transactions.length,
                 dayTransactions: transactions.filter(t => {
-                  const td = new Date(t.bookingDate || t.valueDate);
+                  const td = new Date(t.bankBookingDate || t.valueDate);
                   return (
                     !isNaN(td.getTime()) &&
                     !isNaN(dayStart.getTime()) &&
@@ -347,7 +349,7 @@ export default function TransactionsPage() {
                   transactionDate >= cutoffDate,
                 totalTransactions: transactions.length,
                 dateRangeTransactions: transactions.filter(t => {
-                  const td = new Date(t.bookingDate || t.valueDate);
+                  const td = new Date(t.bankBookingDate || t.valueDate);
                   return !isNaN(td.getTime()) && !isNaN(cutoffDate.getTime()) && td >= cutoffDate;
                 }).length,
               };
@@ -618,13 +620,16 @@ export default function TransactionsPage() {
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
           {filteredTransactions.map(transaction => {
-            const account = accounts.find(a => a.id === transaction.accountId);
+            const account = accounts.find(a => a.id === transaction.accountId.toString());
             return (
               <li key={transaction.id} className="px-6 py-4 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
-                      {getTransactionIcon(transaction.transactionType, transaction.amount)}
+                      {getTransactionIcon(
+                        transaction.amount > 0 ? 'CREDIT' : 'DEBIT',
+                        transaction.amount
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
@@ -634,12 +639,12 @@ export default function TransactionsPage() {
                         <div className="ml-2 flex-shrink-0 flex">
                           <p
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              transaction.isReconciled
+                              !transaction.isPotentialDuplicate
                                 ? 'bg-green-100 text-green-800'
                                 : 'bg-yellow-100 text-yellow-800'
                             }`}
                           >
-                            {transaction.isReconciled ? 'Abgeglichen' : 'Offen'}
+                            {!transaction.isPotentialDuplicate ? 'Abgeglichen' : 'Offen'}
                           </p>
                         </div>
                       </div>
@@ -653,7 +658,7 @@ export default function TransactionsPage() {
                         </div>
                         <div className="ml-2">
                           <Calendar className="h-4 w-4 mr-1 inline" />
-                          {formatDate(transaction.bookingDate)}
+                          {formatDate(transaction.bankBookingDate)}
                         </div>
                       </div>
                     </div>
@@ -668,7 +673,7 @@ export default function TransactionsPage() {
                         {transaction.amount >= 0 ? '+' : ''}
                         {formatCurrency(transaction.amount, transaction.currency)}
                       </p>
-                      {transaction.isPending && <p className="text-xs text-gray-500">Ausstehend</p>}
+                      {transaction.isNew && <p className="text-xs text-gray-500">Ausstehend</p>}
                     </div>
                     <button
                       onClick={() => openTransactionDetails(transaction)}
@@ -779,7 +784,9 @@ export default function TransactionsPage() {
                       <div className="flex items-center space-x-2">
                         <p className="text-sm text-gray-900 font-mono">{selectedTransaction.id}</p>
                         <button
-                          onClick={() => navigator.clipboard.writeText(selectedTransaction.id)}
+                          onClick={() =>
+                            navigator.clipboard.writeText(selectedTransaction.id.toString())
+                          }
                           className="text-gray-400 hover:text-gray-600"
                         >
                           <Copy className="h-4 w-4" />
@@ -790,8 +797,8 @@ export default function TransactionsPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Konto</label>
                       <p className="text-sm text-gray-900">
-                        {accounts.find(a => a.id === selectedTransaction.accountId)?.accountName ||
-                          'Unbekanntes Konto'}
+                        {accounts.find(a => a.id === selectedTransaction.accountId.toString())
+                          ?.accountName || 'Unbekanntes Konto'}
                       </p>
                     </div>
 
@@ -800,7 +807,7 @@ export default function TransactionsPage() {
                         Buchungsdatum
                       </label>
                       <p className="text-sm text-gray-900">
-                        {formatDate(selectedTransaction.bookingDate)}
+                        {formatDate(selectedTransaction.bankBookingDate)}
                       </p>
                     </div>
 
@@ -928,7 +935,7 @@ export default function TransactionsPage() {
                   const details = `
 Transaktion: ${selectedTransaction.purpose}
 Betrag: ${formatCurrency(selectedTransaction.amount, selectedTransaction.currency)}
-Datum: ${formatDate(selectedTransaction.bookingDate)}
+Datum: ${formatDate(selectedTransaction.bankBookingDate)}
 Gegenstelle: ${selectedTransaction.counterpartName || 'Unbekannt'}
 IBAN: ${selectedTransaction.counterpartIban || 'Nicht verfügbar'}
 ID: ${selectedTransaction.id}
