@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  checkAdminApproval,
+  createApprovalErrorResponse,
+  BLOCKED_ACTIONS,
+} from '@/lib/adminApprovalMiddleware';
 import Stripe from 'stripe';
 
 // Dynamic Firebase imports to prevent build-time issues
@@ -84,6 +89,19 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
 
     const { uid } = resolvedParams;
     const body: PayoutRequest = await request.json();
+
+    // Admin Approval Check - Blockiere Auszahlungen für nicht freigegebene Firmen
+    const approvalResult = await checkAdminApproval(uid);
+    if (!approvalResult.isApproved) {
+      console.log(`Payout blocked for company ${uid}: ${approvalResult.errorCode}`);
+      return NextResponse.json(
+        {
+          ...createApprovalErrorResponse(approvalResult),
+          blockedAction: BLOCKED_ACTIONS.PAYOUT_REQUEST,
+        },
+        { status: 403 }
+      );
+    }
 
     let totalAvailableAmount = 0;
     const orderIds: string[] = [];

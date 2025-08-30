@@ -9,6 +9,7 @@ import CompanyMobileSidebar from '@/components/dashboard/CompanyMobileSidebar';
 import { SidebarVisibilityProvider } from '@/contexts/SidebarVisibilityContext';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
 import { useAuth } from '@/contexts/AuthContext';
+import AdminApprovalStatus from '@/components/AdminApprovalStatus';
 import { Loader2 as FiLoader } from 'lucide-react';
 import {
   Grid as FiGrid,
@@ -272,6 +273,10 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
                     </span>
                   </div>
                 </div>
+
+                {/* Admin Approval Status Banner */}
+                <AdminApprovalStatus companyId={uid} className="mb-6" />
+
                 {children}
               </div>
             </div>

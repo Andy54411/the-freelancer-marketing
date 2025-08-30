@@ -198,6 +198,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       quotesRevenue: quotesTotalRevenue,
       completedOrders: completedOrders,
 
+      // Admin Approval System
+      adminApproved: data?.adminApproved || false,
+      adminApprovedAt: data?.adminApprovedAt?.toDate?.()?.toISOString(),
+      adminApprovedBy: data?.adminApprovedBy,
+      adminNotes: data?.adminNotes,
+      approvalStatus: data?.approvalStatus || 'pending',
+
       // Verifizierung und Status (erweitert)
       verified: data?.verified || data?.profileComplete || false,
       verificationStatus: data?.stripeVerificationStatus || data?.profileStatus || 'pending',

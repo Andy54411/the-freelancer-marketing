@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { QuoteNotificationService } from '@/lib/quote-notifications';
 import { ProposalSubcollectionService } from '@/services/ProposalSubcollectionService';
+import {
+  checkAdminApproval,
+  createApprovalErrorResponse,
+  BLOCKED_ACTIONS,
+} from '@/lib/adminApprovalMiddleware';
 import admin from 'firebase-admin';
 
 /**
@@ -54,6 +59,21 @@ export async function POST(request: NextRequest) {
             userUid: decodedToken.uid,
             providerId: quoteData.providerId,
           },
+        },
+        { status: 403 }
+      );
+    }
+
+    // Admin Approval Check - Blockiere nicht freigegebene Firmen
+    const approvalResult = await checkAdminApproval(decodedToken.uid);
+    if (!approvalResult.isApproved) {
+      console.log(
+        `Quote response blocked for company ${decodedToken.uid}: ${approvalResult.errorCode}`
+      );
+      return NextResponse.json(
+        {
+          ...createApprovalErrorResponse(approvalResult),
+          blockedAction: BLOCKED_ACTIONS.QUOTE_RESPOND,
         },
         { status: 403 }
       );

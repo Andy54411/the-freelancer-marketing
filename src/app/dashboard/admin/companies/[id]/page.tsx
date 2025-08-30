@@ -142,6 +142,13 @@ interface CompanyDetails {
   quotesCount?: number;
   quotesRevenue?: number;
   completedOrders?: number;
+
+  // Admin Approval System
+  adminApproved?: boolean;
+  adminApprovedAt?: string;
+  adminApprovedBy?: string;
+  adminNotes?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected' | 'needs_review';
 }
 
 export default function AdminCompanyDetailsPage() {
@@ -152,6 +159,8 @@ export default function AdminCompanyDetailsPage() {
   const [selectedDocument, setSelectedDocument] = useState<{ url: string; title: string } | null>(
     null
   );
+  const [isUpdatingApproval, setIsUpdatingApproval] = useState(false);
+  const [adminNotes, setAdminNotes] = useState('');
   const companyId = params?.id as string;
 
   useEffect(() => {
@@ -188,6 +197,74 @@ export default function AdminCompanyDetailsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleApprovalAction = async (action: 'approve' | 'reject', notes: string = '') => {
+    if (!company) return;
+
+    setIsUpdatingApproval(true);
+    try {
+      const response = await fetch(`/api/admin/companies/${companyId}/approval`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          notes,
+          adminId: 'current-admin', // TODO: Get from auth context
+        }),
+      });
+
+      if (response.ok) {
+        // Reload company details to get updated status
+        await loadCompanyDetails();
+        setAdminNotes('');
+        alert(
+          `Unternehmen wurde erfolgreich ${action === 'approve' ? 'freigegeben' : 'abgelehnt'}.`
+        );
+      } else {
+        const error = await response.json();
+        alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
+      }
+    } catch (error) {
+      console.error('Error updating approval status:', error);
+      alert('Fehler beim Aktualisieren des Freigabe-Status');
+    } finally {
+      setIsUpdatingApproval(false);
+    }
+  };
+
+  const getApprovalStatusBadge = (status?: string, adminApproved?: boolean) => {
+    if (adminApproved) {
+      return (
+        <Badge className="bg-green-100 text-green-800">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Admin Freigegeben
+        </Badge>
+      );
+    }
+
+    switch (status) {
+      case 'approved':
+        return (
+          <Badge className="bg-green-100 text-green-800">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Freigegeben
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge className="bg-red-100 text-red-800">
+            <Ban className="h-3 w-3 mr-1" />
+            Abgelehnt
+          </Badge>
+        );
+      case 'needs_review':
+        return <Badge className="bg-yellow-100 text-yellow-800">Überprüfung erforderlich</Badge>;
+      default:
+        return <Badge className="bg-orange-100 text-orange-800">Ausstehende Freigabe</Badge>;
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -260,6 +337,7 @@ export default function AdminCompanyDetailsPage() {
         <div className="flex items-center space-x-2">
           {getStatusBadge(company.status)}
           {getVerificationBadge(company.verificationStatus)}
+          {getApprovalStatusBadge(company.approvalStatus, company.adminApproved)}
         </div>
       </div>
 
@@ -767,6 +845,99 @@ export default function AdminCompanyDetailsPage() {
                 <div className="border-t pt-3">
                   <label className="text-sm font-medium text-gray-500">IBAN</label>
                   <p className="font-mono text-sm bg-gray-100 p-2 rounded">{company.iban}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Admin Freigabe */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Shield className="h-5 w-5 mr-2" />
+                Admin Freigabe
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Status</label>
+                <div className="mt-1">
+                  {getApprovalStatusBadge(company.approvalStatus, company.adminApproved)}
+                </div>
+              </div>
+
+              {company.adminApprovedAt && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Freigegeben am</label>
+                  <p className="text-sm">
+                    {new Date(company.adminApprovedAt).toLocaleDateString('de-DE', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+              )}
+
+              {company.adminApprovedBy && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Freigegeben von</label>
+                  <p className="text-sm">{company.adminApprovedBy}</p>
+                </div>
+              )}
+
+              {company.adminNotes && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Admin Notizen</label>
+                  <p className="text-sm bg-gray-50 p-2 rounded">{company.adminNotes}</p>
+                </div>
+              )}
+
+              {!company.adminApproved && company.approvalStatus !== 'approved' && (
+                <div className="space-y-3 border-t pt-4">
+                  <div>
+                    <label htmlFor="adminNotes" className="text-sm font-medium text-gray-700">
+                      Notizen (optional)
+                    </label>
+                    <textarea
+                      id="adminNotes"
+                      value={adminNotes}
+                      onChange={e => setAdminNotes(e.target.value)}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#14ad9f] focus:ring-[#14ad9f] sm:text-sm"
+                      rows={3}
+                      placeholder="Interne Notizen oder Begründung..."
+                    />
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => handleApprovalAction('approve', adminNotes)}
+                      disabled={isUpdatingApproval}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isUpdatingApproval ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      )}
+                      Freigeben
+                    </Button>
+                    <Button
+                      onClick={() => handleApprovalAction('reject', adminNotes)}
+                      disabled={isUpdatingApproval}
+                      variant="outline"
+                      className="flex-1 border-red-300 text-red-700 hover:bg-red-50"
+                    >
+                      {isUpdatingApproval ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2" />
+                      ) : (
+                        <Ban className="h-4 w-4 mr-2" />
+                      )}
+                      Ablehnen
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

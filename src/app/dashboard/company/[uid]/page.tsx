@@ -21,6 +21,7 @@ import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 import FinanceComponent from '@/components/FinanceComponent';
 import { useCompanyOnboardingCheck } from '@/hooks/useCompanyOnboardingCheck';
 import OnboardingBanner from '@/components/onboarding/OnboardingBanner';
+import AdminApprovalStatus from '@/components/AdminApprovalStatus';
 
 // Typ für die Auftragsdaten, die von der API kommen
 type OrderData = {
