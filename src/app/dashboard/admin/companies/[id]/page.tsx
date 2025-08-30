@@ -33,26 +33,101 @@ interface CompanyDetails {
   name: string;
   companyName: string;
   industry?: string;
+  selectedSubcategory?: string;
   website?: string;
   phone?: string;
   status: 'active' | 'inactive' | 'suspended';
+  profileStatus?: string;
+  stripeVerificationStatus?: string;
   createdAt: string;
-  lastLogin?: string;
+  lastLogin?: string; // Legacy-Kompatibilität
+  onboardingCompletedAt?: string;
+  updatedAt?: string;
+
+  // Adressdaten
   address?: string;
   city?: string;
   postalCode?: string;
   country?: string;
+  location?: string;
+  lat?: number;
+  lng?: number;
+  personalAddress?: string;
+  personalCity?: string;
+  personalPostalCode?: string;
+  personalCountry?: string;
+
+  // Beschreibung und Services
   description?: string;
-  services?: string[];
+  skills?: string[];
+  services?: string[]; // Legacy-Kompatibilität
+  languages?: Array<{ language: string; proficiency: string }>;
+  serviceAreas?: string[];
+
+  // Stripe und Payment
   stripeAccountId?: string;
-  verified: boolean;
+  stripeAccountChargesEnabled?: boolean;
+  stripeAccountPayoutsEnabled?: boolean;
+  stripeAccountDetailsSubmitted?: boolean;
+  stripeAccountCreationDate?: string;
+
+  // Geschäftsdaten
   businessType?: string;
+  legalForm?: string;
   vatNumber?: string;
-  registrationNumber?: string;
+  vatId?: string;
+  taxNumber?: string;
+  taxRate?: string;
+  kleinunternehmer?: string;
+
+  // Kontaktperson
+  accountHolder?: string;
+  dateOfBirth?: string;
+
+  // Bank und Finanzen
+  iban?: string;
+  employees?: string;
+  hourlyRate?: number;
+  priceInput?: string;
+  profitMethod?: string;
+
+  // Onboarding und Profile
+  onboardingCompleted?: boolean;
+  onboardingCompletionPercentage?: number;
+  onboardingCurrentStep?: string;
+  profileComplete?: boolean;
+  documentsCompleted?: boolean;
+
+  // Verfügbarkeit und Service
+  availabilityType?: string;
+  advanceBookingHours?: number;
+  maxTravelDistance?: number;
+  travelCosts?: boolean;
+  travelCostPerKm?: number;
+  radiusKm?: number;
+
+  // Bilder und Medien
+  profilePictureURL?: string;
+  profileBannerImage?: string;
+
+  // Dokumente
+  identityFrontUrl?: string;
+  identityBackUrl?: string;
+  businessLicenseURL?: string;
+  companyRegister?: string;
+  hasIdentityDocuments?: boolean;
+  hasBusinessLicense?: boolean;
+  hasCompanyRegister?: boolean;
+
+  // Management
+  isManagingDirectorOwner?: boolean;
+
+  // Platform-Daten
   totalOrders: number;
   totalRevenue: number;
   avgRating: number;
   reviewCount: number;
+  verified: boolean;
   verificationStatus: string;
   lastVerificationUpdate?: string;
 }
@@ -203,6 +278,10 @@ export default function AdminCompanyDetailsPage() {
                   <p className="font-medium">{company.industry || 'Nicht angegeben'}</p>
                 </div>
                 <div>
+                  <label className="text-sm font-medium text-gray-500">Subkategorie</label>
+                  <p className="font-medium">{company.selectedSubcategory || 'Nicht angegeben'}</p>
+                </div>
+                <div>
                   <label className="text-sm font-medium text-gray-500">Telefon</label>
                   <p className="font-medium flex items-center">
                     <Phone className="h-4 w-4 mr-2 text-gray-400" />
@@ -229,7 +308,31 @@ export default function AdminCompanyDetailsPage() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">USt-IdNr.</label>
-                  <p className="font-medium">{company.vatNumber || 'Nicht angegeben'}</p>
+                  <p className="font-medium">
+                    {company.vatId || company.vatNumber || 'Nicht angegeben'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Rechtsform</label>
+                  <p className="font-medium">{company.legalForm || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Mitarbeiter</label>
+                  <p className="font-medium">{company.employees || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Stundensatz</label>
+                  <p className="font-medium">
+                    {company.hourlyRate ? `${company.hourlyRate}€/h` : 'Nicht angegeben'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Kleinunternehmer</label>
+                  <p className="font-medium">{company.kleinunternehmer === 'ja' ? 'Ja' : 'Nein'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Account Holder</label>
+                  <p className="font-medium">{company.accountHolder || 'Nicht angegeben'}</p>
                 </div>
               </div>
 
@@ -275,23 +378,135 @@ export default function AdminCompanyDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Services */}
-          {company.services && company.services.length > 0 && (
+          {/* Skills und Services */}
+          {((company.skills && company.skills.length > 0) ||
+            (company.services && company.services.length > 0)) && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Settings className="h-5 w-5 mr-2" />
-                  Angebotene Services
+                  Skills & Services
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {company.services.map((service, index) => (
-                    <Badge key={index} variant="outline">
-                      {service}
-                    </Badge>
-                  ))}
-                </div>
+              <CardContent className="space-y-4">
+                {company.skills && company.skills.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 mb-2 block">Skills</label>
+                    <div className="flex flex-wrap gap-2">
+                      {company.skills.map((skill, index) => (
+                        <Badge key={index} variant="outline" className="bg-blue-50 text-blue-700">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {company.services && company.services.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 mb-2 block">
+                      Services (Legacy)
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {company.services.map((service, index) => (
+                        <Badge key={index} variant="outline" className="bg-green-50 text-green-700">
+                          {service}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {company.serviceAreas && company.serviceAreas.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 mb-2 block">
+                      Service-Bereiche
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {company.serviceAreas.map((area, index) => (
+                        <Badge
+                          key={index}
+                          variant="outline"
+                          className="bg-purple-50 text-purple-700"
+                        >
+                          {area}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {company.languages && company.languages.length > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 mb-2 block">Sprachen</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {company.languages.map((lang, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center bg-gray-50 p-2 rounded"
+                        >
+                          <span className="font-medium">{lang.language}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {lang.proficiency}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {company.availabilityType && (
+                  <div className="border-t pt-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Verfügbarkeitstyp
+                        </label>
+                        <p className="font-medium">{company.availabilityType}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Vorlaufzeit (Stunden)
+                        </label>
+                        <p className="font-medium">
+                          {company.advanceBookingHours || 'Nicht gesetzt'}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">
+                          Max. Reiseentfernung
+                        </label>
+                        <p className="font-medium">
+                          {company.maxTravelDistance
+                            ? `${company.maxTravelDistance} km`
+                            : 'Nicht gesetzt'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {(company.travelCosts || company.travelCostPerKm) && (
+                      <div className="mt-4 p-3 bg-yellow-50 rounded border">
+                        <h4 className="font-medium text-yellow-800 mb-2">Reisekosten</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-sm text-yellow-700">Reisekosten berechnen</label>
+                            <p className="font-medium text-yellow-800">
+                              {company.travelCosts ? 'Ja' : 'Nein'}
+                            </p>
+                          </div>
+                          <div>
+                            <label className="text-sm text-yellow-700">Kosten pro km</label>
+                            <p className="font-medium text-yellow-800">
+                              {company.travelCostPerKm
+                                ? `${company.travelCostPerKm}€`
+                                : 'Nicht gesetzt'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -337,13 +552,72 @@ export default function AdminCompanyDetailsPage() {
                 Zahlungsinfo
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Stripe Account ID</label>
                 <p className="font-mono text-sm bg-gray-100 p-2 rounded">
                   {company.stripeAccountId || 'Nicht verbunden'}
                 </p>
               </div>
+
+              {company.stripeAccountId && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Charges aktiviert</span>
+                    <Badge
+                      className={
+                        company.stripeAccountChargesEnabled
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }
+                    >
+                      {company.stripeAccountChargesEnabled ? 'Aktiv' : 'Inaktiv'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Payouts aktiviert</span>
+                    <Badge
+                      className={
+                        company.stripeAccountPayoutsEnabled
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }
+                    >
+                      {company.stripeAccountPayoutsEnabled ? 'Aktiv' : 'Inaktiv'}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Details übermittelt</span>
+                    <Badge
+                      className={
+                        company.stripeAccountDetailsSubmitted
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }
+                    >
+                      {company.stripeAccountDetailsSubmitted ? 'Ja' : 'Nein'}
+                    </Badge>
+                  </div>
+
+                  {company.stripeAccountCreationDate && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Account erstellt</label>
+                      <p className="text-sm">
+                        {new Date(company.stripeAccountCreationDate).toLocaleDateString('de-DE')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {company.iban && (
+                <div className="border-t pt-3">
+                  <label className="text-sm font-medium text-gray-500">IBAN</label>
+                  <p className="font-mono text-sm bg-gray-100 p-2 rounded">{company.iban}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -352,7 +626,7 @@ export default function AdminCompanyDetailsPage() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Calendar className="h-5 w-5 mr-2" />
-                Wichtige Daten
+                Wichtige Daten & Status
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -360,17 +634,123 @@ export default function AdminCompanyDetailsPage() {
                 <label className="text-sm font-medium text-gray-500">Registriert</label>
                 <p>{new Date(company.createdAt).toLocaleDateString('de-DE')}</p>
               </div>
+
+              {company.onboardingCompletedAt && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    Onboarding abgeschlossen
+                  </label>
+                  <p>{new Date(company.onboardingCompletedAt).toLocaleDateString('de-DE')}</p>
+                </div>
+              )}
+
               {company.lastLogin && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Letzter Login</label>
                   <p>{new Date(company.lastLogin).toLocaleDateString('de-DE')}</p>
                 </div>
               )}
+
               {company.lastVerificationUpdate && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Letzte Verifizierung</label>
                   <p>{new Date(company.lastVerificationUpdate).toLocaleDateString('de-DE')}</p>
                 </div>
+              )}
+
+              <Separator />
+
+              {company.onboardingCompleted !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Onboarding Status</span>
+                  <Badge
+                    className={
+                      company.onboardingCompleted
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }
+                  >
+                    {company.onboardingCompleted ? 'Abgeschlossen' : 'Ausstehend'}
+                  </Badge>
+                </div>
+              )}
+
+              {company.onboardingCompletionPercentage !== undefined && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Fortschritt</label>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-[#14ad9f] h-2 rounded-full"
+                        style={{ width: `${company.onboardingCompletionPercentage}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium">
+                      {company.onboardingCompletionPercentage}%
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {company.profileComplete !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Profil vollständig</span>
+                  <Badge
+                    className={
+                      company.profileComplete
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }
+                  >
+                    {company.profileComplete ? 'Ja' : 'Nein'}
+                  </Badge>
+                </div>
+              )}
+
+              {company.documentsCompleted !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Dokumente vollständig</span>
+                  <Badge
+                    className={
+                      company.documentsCompleted
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }
+                  >
+                    {company.documentsCompleted ? 'Ja' : 'Nein'}
+                  </Badge>
+                </div>
+              )}
+
+              {(company.hasIdentityDocuments ||
+                company.hasBusinessLicense ||
+                company.hasCompanyRegister) && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-500">
+                      Hochgeladene Dokumente
+                    </label>
+                    {company.hasIdentityDocuments && (
+                      <div className="flex items-center text-sm text-green-600">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Ausweisdokumente
+                      </div>
+                    )}
+                    {company.hasBusinessLicense && (
+                      <div className="flex items-center text-sm text-green-600">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Gewerbeschein
+                      </div>
+                    )}
+                    {company.hasCompanyRegister && (
+                      <div className="flex items-center text-sm text-green-600">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Handelsregister
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
