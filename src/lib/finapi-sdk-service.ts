@@ -745,9 +745,8 @@ export class FinAPISDKService {
         url.searchParams.set('search', search.trim());
       }
 
-      if (includeTestBanks) {
-        url.searchParams.set('isTestBank', 'true');
-      }
+      // Note: finAPI returns test banks by default in sandbox environment
+      // We don't need to filter them here as they are useful for testing
 
       const response = await fetch(url.toString(), {
         method: 'GET',

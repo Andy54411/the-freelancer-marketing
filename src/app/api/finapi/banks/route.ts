@@ -11,8 +11,9 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('perPage') || '20');
+    const includeTestBanks = searchParams.get('includeTestBanks') === 'true';
 
-    console.log('🏛️ Getting banks list from finAPI');
+    console.log('🏛️ Getting banks list from finAPI', { search, page, perPage, includeTestBanks });
 
     // Use the same service as other finAPI endpoints
     const finapiService = createFinAPIService();
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
       search: search || undefined,
       page,
       perPage,
+      includeTestBanks,
     });
 
     console.log(`✅ Retrieved ${result.banks?.length || 0} banks from finAPI`);

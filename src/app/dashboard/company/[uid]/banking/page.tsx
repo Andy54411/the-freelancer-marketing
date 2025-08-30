@@ -193,22 +193,29 @@ export default function BankingDashboardPage() {
   const loadAvailableBanks = async () => {
     try {
       setError(null);
+      console.log('🔍 Loading available banks from API...');
       const response = await fetch('/api/finapi/banks?includeTestBanks=true&perPage=50');
 
+      console.log('🔍 API response status:', response.status);
       if (!response.ok) {
         throw new Error(`Failed to load banks: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('🔍 API response data:', data);
 
       if (data.success && data.data && Array.isArray(data.data.banks)) {
+        console.log('🔍 Setting banks from data.data.banks:', data.data.banks.length);
         setAvailableBanks(data.data.banks);
       } else if (data.banks && Array.isArray(data.banks)) {
+        console.log('🔍 Setting banks from data.banks:', data.banks.length);
         setAvailableBanks(data.banks);
       } else {
+        console.log('🔍 No valid banks data found in response');
         throw new Error('Invalid response format - no banks data received');
       }
     } catch (error) {
+      console.error('🔍 loadAvailableBanks error:', error);
       setError(
         'Die Bankliste konnte nicht geladen werden. Bitte prüfen Sie die finAPI Sandbox-Konfiguration.'
       );
