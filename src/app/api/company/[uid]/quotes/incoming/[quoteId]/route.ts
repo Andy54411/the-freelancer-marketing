@@ -1,54 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
-
-// Direct Firebase initialization using environment variables (like getSingleOrder API)
-async function initializeFirebase() {
-  console.log('Initializing Firebase for quotes/incoming/[quoteId] API - NO JSON FILES...');
-
-  // If already initialized, return existing instances
-  if (admin.apps.length > 0) {
-    console.log('Using existing Firebase app');
-    const { getAuth } = await import('firebase-admin/auth');
-    const { getFirestore } = await import('firebase-admin/firestore');
-    return {
-      auth: getAuth(),
-      db: getFirestore(),
-      admin,
-    };
-  }
-
-  // Initialize with individual environment variables
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-
-  if (!projectId || !privateKey || !clientEmail) {
-    throw new Error('Missing Firebase configuration environment variables');
-  }
-
-  // Initialize Firebase Admin
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId,
-      privateKey: privateKey.replace(/\\n/g, '\n'),
-      clientEmail,
-    }),
-    projectId,
-    storageBucket: 'tilvo-f142f.firebasestorage.app',
-    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
-  });
-
-  const { getAuth } = await import('firebase-admin/auth');
-  const { getFirestore } = await import('firebase-admin/firestore');
-
-  console.log('Firebase services initialized successfully for quotes/incoming/[quoteId] API');
-
-  return {
-    auth: getAuth(),
-    db: getFirestore(),
-    admin,
-  };
-}
+import { db, auth } from '@/firebase/server';
 
 export async function GET(
   request: NextRequest,
@@ -56,9 +7,6 @@ export async function GET(
 ) {
   const { uid, quoteId } = await params;
   try {
-    // Initialize Firebase services dynamically
-    const { admin, db } = await initializeFirebase();
-
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -69,7 +17,7 @@ export async function GET(
     let decodedToken;
 
     try {
-      decodedToken = await admin.auth().verifyIdToken(token);
+      decodedToken = await auth.verifyIdToken(token);
     } catch (error) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

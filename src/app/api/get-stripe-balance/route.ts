@@ -1,45 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import Stripe from 'stripe';
-import * as admin from 'firebase-admin';
-
-// Direct Firebase initialization using environment variables (like getSingleOrder API)
-async function initializeFirebase() {
-  console.log('Initializing Firebase for get-stripe-balance API - NO JSON FILES...');
-
-  // If already initialized, return existing instances
-  if (admin.apps.length > 0) {
-    console.log('Using existing Firebase app');
-    const { getFirestore } = await import('firebase-admin/firestore');
-    return getFirestore();
-  }
-
-  // Initialize with individual environment variables
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-
-  if (!projectId || !privateKey || !clientEmail) {
-    throw new Error('Missing Firebase configuration environment variables');
-  }
-
-  // Initialize Firebase Admin
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId,
-      privateKey: privateKey.replace(/\\n/g, '\n'),
-      clientEmail,
-    }),
-    projectId,
-    storageBucket: 'tilvo-f142f.firebasestorage.app',
-    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
-  });
-
-  const { getFirestore } = await import('firebase-admin/firestore');
-
-  console.log('Firebase services initialized successfully for get-stripe-balance API');
-
-  return getFirestore();
-}
+import { db } from '@/firebase/server';
 
 // Fast cache for balance data
 const balanceCache = new Map<string, { data: any; timestamp: number }>();
@@ -101,9 +62,6 @@ async function handleBalanceRequest(firebaseUserId: string) {
 }
 
 async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
-  // Get Firebase DB dynamically
-  const db = await initializeFirebase();
-
   // Fast Firebase lookup with timeout
   const firebaseTimeout = new Promise<never>((_, reject) => {
     setTimeout(() => reject(new Error('Firebase timeout')), 6000);
@@ -122,7 +80,7 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
       const userData = userDoc.data();
       stripeAccountId = userData?.stripeAccountId;
     }
-  } catch (error) {}
+  } catch (error) { }
 
   // Fallback: try stripe_accounts collection
   if (!stripeAccountId) {
@@ -136,7 +94,7 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
         const data = doc.data();
         stripeAccountId = data?.stripeAccountId;
       }
-    } catch (error) {}
+    } catch (error) { }
   }
 
   if (!stripeAccountId) {
