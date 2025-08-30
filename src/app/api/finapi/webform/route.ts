@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiService } from '@/lib/finapi-sdk-service';
+import { createFinAPIService } from '@/lib/finapi-sdk-service';
 import { db } from '@/firebase/server';
 
 /**
@@ -39,24 +39,23 @@ export async function POST(request: NextRequest) {
     try {
       console.log('Creating real finAPI WebForm with company email:', companyEmail);
 
+      // Erstelle finAPI Service-Instanz mit automatischer Umgebungsdetection
+      const finapiService = createFinAPIService();
+
       // Verwende die neue, offizielle finAPI WebForm 2.0 API
-      const webForm = await finapiService.createOfficialWebForm(
-        companyEmail,
-        Number(bankId),
-        userId
-      );
+      const webFormUrl = await finapiService.createWebForm(companyEmail, userId, bankId);
 
-      console.log('finAPI WebForm created successfully:', webForm);
+      console.log('finAPI WebForm created successfully:', webFormUrl);
 
-      if (!webForm || !webForm.url) {
+      if (!webFormUrl) {
         throw new Error('finAPI WebForm creation failed');
       }
 
       return NextResponse.json({
         success: true,
-        webFormUrl: webForm.url,
-        webFormId: webForm.id,
-        bankName: webForm.bankName || bankName || 'Unknown Bank',
+        webFormUrl: webFormUrl,
+        webFormId: `webform_${Date.now()}`, // Generate a temporary ID
+        bankName: bankName || 'Unknown Bank',
         message: 'finAPI WebForm erfolgreich erstellt',
         method: 'finapi_official_api',
         isFinAPIFlow: true,
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
         },
         bankInfo: {
           bankId: parseInt(bankId.toString()),
-          bankName: webForm.bankName || bankName || 'Unknown Bank',
+          bankName: bankName || 'Unknown Bank',
           userEmail: companyEmail,
           connectionMethod: 'finapi_webform',
         },

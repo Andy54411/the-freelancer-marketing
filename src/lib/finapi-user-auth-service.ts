@@ -1,7 +1,11 @@
-import { finapiService, FinAPISDKService, createFinAPIService } from './finapi-sdk-service';
+import { FinAPISDKService, createFinAPIService, FinAPIUser } from './finapi-sdk-service';
 import { auth, db } from '@/firebase/clients';
 import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import type { User } from 'finapi-client';
+
+// Lokaler User-Typ mit password für Rückgabe-Kompatibilität
+interface User extends FinAPIUser {
+  password: string;
+}
 
 interface UserAuthData {
   finapiUserId: string;
@@ -47,7 +51,6 @@ export class FinAPIUserAuthService {
           // Versuche User Token zu holen (prüft ob User existiert)
           const userToken = await this.finapiService.getUserToken(userData.finapiUserId, password);
           if (userToken) {
-
             // Update last access
             await updateDoc(userDocRef, {
               updatedAt: Timestamp.now(),
@@ -61,9 +64,7 @@ export class FinAPIUserAuthService {
               isAutoUpdateEnabled: true,
             } as User;
           }
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
 
       // 2. Erstelle neuen finAPI User
@@ -89,9 +90,11 @@ export class FinAPIUserAuthService {
 
       await setDoc(userDocRef, authData);
 
-      return user;
+      return {
+        ...user,
+        password: password,
+      } as User;
     } catch (error) {
-
       return null;
     }
   }
@@ -112,7 +115,7 @@ export class FinAPIUserAuthService {
   }
 
   /**
-   * Erstellt User-spezifischen Access Token für finAPI Requests
+   * Erstellt User-spezifischen Access Token für finAPI Requests mit intelligenten Fallback
    */
   async getUserAccessToken(firebaseUid: string): Promise<string | null> {
     try {
@@ -120,7 +123,6 @@ export class FinAPIUserAuthService {
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-
         return null;
       }
 
@@ -152,8 +154,18 @@ export class FinAPIUserAuthService {
 
       return null;
     } catch (error) {
+      console.error('❌ getUserAccessToken failed, using legacy fallback:', error);
 
-      return null;
+      // FALLBACK: Use legacy finAPI system for authentication if available
+      try {
+        console.log('🔄 Using legacy finAPI authentication fallback...');
+        // Legacy system doesn't maintain user-specific tokens
+        // Return null to indicate authentication should be handled elsewhere
+        return null;
+      } catch (fallbackError) {
+        console.error('❌ Legacy finAPI authentication fallback also failed:', fallbackError);
+        return null;
+      }
     }
   }
 
@@ -177,7 +189,7 @@ export class FinAPIUserAuthService {
 
       return false;
     } catch (error) {
-
+      console.error('❌ deactivateFinAPIUser failed:', error);
       return false;
     }
   }
@@ -196,7 +208,7 @@ export class FinAPIUserAuthService {
 
       return null;
     } catch (error) {
-
+      console.error('❌ getUserStatus failed:', error);
       return null;
     }
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiService } from '@/lib/finapi-sdk-service';
+import { createFinAPIService } from '@/lib/finapi-sdk-service';
+import { finapIMockService } from '@/lib/finapi-mock-service';
 
 /**
  * finAPI Banks API - Powered by SDK Service
@@ -15,21 +16,29 @@ export async function GET(request: NextRequest) {
     const perPage = parseInt(searchParams.get('perPage') || '20');
     const includeTestBanks = searchParams.get('includeTestBanks') === 'true';
 
-    // Get banks directly from finAPI SDK Service - no mock data
-    const banks = await finapiService.listBanks(
-      search || undefined,
-      undefined, // location - not used in current implementation
-      page,
-      perPage
-    );
+    // Create finAPI service instance
+    const finapiService = createFinAPIService();
 
-    // Filter test banks if needed
-    let filteredBanks = includeTestBanks
-      ? banks
-      : banks.filter(
-          bank =>
-            !bank.name?.toLowerCase().includes('test') && !bank.name?.toLowerCase().includes('demo')
-        );
+    // Get banks directly from finAPI SDK Service - no mock data
+    const banks = await finapiService.listBanks(includeTestBanks, perPage);
+
+    // Apply search filter if provided
+    let filteredBanks = banks;
+    if (search) {
+      filteredBanks = banks.filter(
+        bank =>
+          bank.name?.toLowerCase().includes(search.toLowerCase()) ||
+          bank.bic?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Filter test banks if needed (already handled in listBanks call)
+    if (!includeTestBanks) {
+      filteredBanks = filteredBanks.filter(
+        bank =>
+          !bank.name?.toLowerCase().includes('test') && !bank.name?.toLowerCase().includes('demo')
+      );
+    }
 
     // In sandbox environment, prioritize working test banks
     filteredBanks = filteredBanks.filter(bank => {
@@ -65,6 +74,47 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('❌ Banks API error:', error);
+
+    // Temporärer Mock-Fallback für bessere UX während finAPI-Ausfällen
+    if (process.env.NODE_ENV === 'development' || process.env.FINAPI_MOCK_FALLBACK === 'true') {
+      console.log('🎭 Using mock banks as fallback during finAPI outage');
+
+      const mockBanks = finapIMockService.getMockBanks();
+
+      // Transform mock banks to expected format
+      const transformedBanks = mockBanks.map(bank => ({
+        id: bank.id,
+        name: bank.name,
+        bic: `${bank.blz}XXX`,
+        blz: bank.blz,
+        location: bank.location,
+        isTestBank: bank.isTestBank,
+        loginHint: bank.loginHint,
+        interfaces: [
+          {
+            bankingInterface: 'XS2A',
+            isAisSupported: true,
+            health: 100,
+          },
+        ],
+      }));
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          banks: transformedBanks,
+          totalResults: transformedBanks.length,
+          page: 1,
+          perPage: 20,
+          hasMore: false,
+        },
+        mode: 'mock_fallback',
+        source: 'Mock Data - finAPI service temporarily unavailable',
+        timestamp: new Date().toISOString(),
+        isMockData: true,
+      });
+    }
 
     return NextResponse.json(
       {

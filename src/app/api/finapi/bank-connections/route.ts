@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiService } from '@/lib/finapi-sdk-service';
+import { createFinAPIService } from '@/lib/finapi-sdk-service';
+import { finapIMockService } from '@/lib/finapi-mock-service';
 import { db } from '@/firebase/server';
 
 /**
@@ -48,6 +49,9 @@ export async function GET(request: NextRequest) {
 
       console.log('✅ Using REAL company email for bank connections:', companyEmail);
 
+      // Create finAPI service instance
+      const finapiService = createFinAPIService();
+
       // Use the SAME email as WebForm and accounts-enhanced
       const bankData = await finapiService.syncUserBankData(companyEmail, userId);
 
@@ -88,6 +92,35 @@ export async function GET(request: NextRequest) {
       });
     } catch (error: any) {
       console.error('❌ Bank connections error:', error.message);
+
+      // Temporärer Mock-Fallback für bessere UX während finAPI-Ausfällen
+      if (process.env.NODE_ENV === 'development' || process.env.FINAPI_MOCK_FALLBACK === 'true') {
+        console.log('🎭 Using mock bank connections as fallback during finAPI outage');
+
+        const mockConnections = finapIMockService.getMockBankConnections();
+
+        // Transform mock connections to expected format
+        const transformedConnections = mockConnections.map(conn => ({
+          id: conn.id,
+          bankName: conn.bankName,
+          bankId: `mock_bank_${conn.bankName.toLowerCase().replace(/\s+/g, '_')}`,
+          accountIds: [`account_${conn.id}_1`, `account_${conn.id}_2`],
+          status: conn.connectionStatus === 'ONLINE' ? 'READY' : 'ERROR',
+          createdAt: conn.lastSyncDate,
+          lastUpdated: conn.lastSyncDate,
+          isActive: conn.connectionStatus === 'ONLINE',
+          accountsCount: conn.accountsCount,
+        }));
+
+        return NextResponse.json({
+          success: true,
+          connections: transformedConnections,
+          source: 'mock_fallback',
+          message: 'Using demo data - finAPI service temporarily unavailable',
+          timestamp: new Date().toISOString(),
+          isMockData: true,
+        });
+      }
 
       return NextResponse.json({
         success: true,

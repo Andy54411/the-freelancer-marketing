@@ -1,6 +1,11 @@
-import { finapiService, FinAPISDKService, createFinAPIService } from './finapi-sdk-service';
+import { FinAPISDKService, createFinAPIService, FinAPIUser } from './finapi-sdk-service';
 import { db } from '@/firebase/server';
-import type { User } from 'finapi-client';
+import { Timestamp } from 'firebase-admin/firestore';
+
+// Lokaler User-Typ mit password für Rückgabe-Kompatibilität
+interface User extends FinAPIUser {
+  password: string;
+}
 
 interface UserAuthData {
   finapiUserId: string;
@@ -32,7 +37,6 @@ export class FinAPIUserAuthServiceServer {
    */
   async getOrCreateFinAPIUser(firebaseUid: string, userEmail: string): Promise<User | null> {
     try {
-
       // 1. Prüfe ob User bereits in Firestore existiert
       const userDocRef = db.collection('finapi_users').doc(firebaseUid);
       const userDoc = await userDocRef.get();
@@ -47,7 +51,6 @@ export class FinAPIUserAuthServiceServer {
           // Versuche User Token zu holen (prüft ob User existiert)
           const userToken = await this.finapiService.getUserToken(userData.finapiUserId, password);
           if (userToken) {
-
             // Update last access
             await userDocRef.update({
               updatedAt: new Date(),
@@ -61,9 +64,7 @@ export class FinAPIUserAuthServiceServer {
               isAutoUpdateEnabled: true,
             } as User;
           }
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
 
       // 2. Erstelle neuen finAPI User
@@ -89,9 +90,11 @@ export class FinAPIUserAuthServiceServer {
 
       await userDocRef.set(authData);
 
-      return user;
+      return {
+        ...user,
+        password: password,
+      } as User;
     } catch (error) {
-
       return null;
     }
   }
@@ -120,7 +123,6 @@ export class FinAPIUserAuthServiceServer {
       const userDoc = await userDocRef.get();
 
       if (!userDoc.exists) {
-
         return null;
       }
 
@@ -152,7 +154,6 @@ export class FinAPIUserAuthServiceServer {
 
       return null;
     } catch (error) {
-
       return null;
     }
   }
@@ -177,7 +178,6 @@ export class FinAPIUserAuthServiceServer {
 
       return false;
     } catch (error) {
-
       return false;
     }
   }
@@ -196,7 +196,6 @@ export class FinAPIUserAuthServiceServer {
 
       return null;
     } catch (error) {
-
       return null;
     }
   }
