@@ -14,9 +14,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Upload, FileText, Edit, Trash2, Building2, Phone, Mail } from 'lucide-react';
+import { Plus, Upload, FileText, Edit, Trash2, Mail, Phone } from 'lucide-react';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import { PdfPreview } from './PdfPreview';
 
 interface ExpenseData {
   id?: string;
@@ -126,30 +126,84 @@ export function ExpenseComponent({
     }).format(amount);
   };
 
+  const cleanCompanyAddress = (address: string, vatNumber?: string, invoiceNumber?: string) => {
+    if (!address) return '';
+
+    let cleanedAddress = address;
+
+    // Entferne VAT-Nummer und verwandte Begriffe
+    if (vatNumber) {
+      cleanedAddress = cleanedAddress.replace(new RegExp(vatNumber, 'gi'), '');
+    }
+    cleanedAddress = cleanedAddress.replace(/Umsatzsteuer-Identifikationsnummer:?\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/VAT Number:?\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/USt-IdNr:?\s*/gi, '');
+
+    // Entferne Rechnungsinformationen
+    if (invoiceNumber) {
+      cleanedAddress = cleanedAddress.replace(new RegExp(invoiceNumber, 'gi'), '');
+    }
+    cleanedAddress = cleanedAddress.replace(/Rechnungsnummer:?\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/Invoice Number:?\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/Rechnungsdatum:?\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/Invoice Date:?\s*/gi, '');
+
+    // Entferne Betragsangaben
+    cleanedAddress = cleanedAddress.replace(/Gesamtsumme\s+in\s+\w+:?\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/Total\s+in\s+\w+:?\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/\d+[.,]\d+\s*€/g, '');
+
+    // Entferne weitere Details
+    cleanedAddress = cleanedAddress.replace(/Details\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/Abrechnungs-ID:?\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/Billing ID:?\s*/gi, '');
+
+    // Bereinige Datumsangaben (Format: XX. Monat YYYY)
+    cleanedAddress = cleanedAddress.replace(/\d{1,2}\.\s*\w+\.?\s*\d{4}/g, '');
+
+    // Entferne mehrfache Zeilenumbrüche und Leerzeichen
+    cleanedAddress = cleanedAddress
+      .replace(/\\n+/g, '\n')
+      .replace(/\n\s*\n/g, '\n')
+      .replace(/^\s+|\s+$/g, '')
+      .replace(/\n\s*/g, '\n');
+
+    // Entferne leere Zeilen am Anfang und Ende
+    const lines = cleanedAddress.split('\n').filter(line => line.trim().length > 0);
+
+    return lines.join('\n');
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !companyId) return;
 
     setUploadingFile(true);
-
-    toast.info('🤖 Intelligente Rechnungsanalyse startet...', {
-      description: 'Versuche OCR-Extraktion aus PDF-Inhalt, Fallback auf Dateiname-Analyse',
+    toast.info('OCR-Extraktion startet...', {
+      description: 'Analysiere PDF-Inhalt mit KI',
     });
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('companyId', companyId);
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', file);
+      formDataUpload.append('companyId', companyId);
 
       const response = await fetch('/api/expenses/extract-receipt', {
         method: 'POST',
-        body: formData,
+        body: formDataUpload,
       });
 
       const result = await response.json();
 
       if (result.success) {
         const data = result.data;
+
+        // Bereinige die Firmenadresse vor der Verwendung
+        const cleanedAddress = cleanCompanyAddress(
+          data.companyAddress,
+          data.companyVatNumber,
+          data.invoiceNumber
+        );
 
         // Update form with extracted data
         setFormData(prev => ({
@@ -165,80 +219,24 @@ export function ExpenseComponent({
           netAmount: data.netAmount ? data.netAmount.toString() : prev.netAmount,
           vatRate: data.vatRate ? data.vatRate.toString() : prev.vatRate,
           companyName: data.companyName || prev.companyName,
-          companyAddress: data.companyAddress || prev.companyAddress,
+          companyAddress: cleanedAddress || prev.companyAddress,
           companyVatNumber: data.companyVatNumber || prev.companyVatNumber,
           contactEmail: data.contactEmail || prev.contactEmail,
           contactPhone: data.contactPhone || prev.contactPhone,
         }));
 
-        // Store the uploaded file
         setCurrentReceipt(file);
-
-        // Smart success message based on extraction method and data quality
-        if (result.extractionMethod === 'advanced_ocr') {
-          if (data.amount && data.vendor && data.invoiceNumber) {
-            toast.success('🎉 Vollständige OCR-Extraktion erfolgreich!', {
-              description: `${result.message} | Konfidenz: ${result.ocr?.confidence ? Math.round(result.ocr.confidence * 100) : 'N/A'}%`,
-              duration: 8000,
-            });
-          } else {
-            toast.success('✅ OCR-Verarbeitung abgeschlossen', {
-              description: result.message,
-              duration: 6000,
-            });
-          }
-        } else if (result.extractionMethod === 'enhanced_filename_analysis_fallback') {
-          if (data.amount && data.invoiceNumber && data.vendor) {
-            toast.success('🎯 Dateiname-Analyse erfolgreich!', {
-              description: `${result.message} | OCR war nicht verfügbar`,
-              duration: 6000,
-            });
-          } else {
-            toast.warning('📋 Grundlegende Analyse', {
-              description: `${result.message} | Für bessere Ergebnisse OCR aktivieren`,
-              duration: 7000,
-            });
-          }
-        } else {
-          // Legacy filename analysis
-          toast.info('📁 Dateiname analysiert', {
-            description: result.message,
-            duration: 5000,
-          });
-        }
-
-        // Show helpful tips based on extraction results
-        if (!data.amount && result.tip) {
-          setTimeout(() => {
-            toast.info('💡 Tipp für bessere Erkennung', {
-              description: result.tip,
-              duration: 10000,
-            });
-          }, 3000);
-        }
-
-        // Show OCR performance info if available
-        if (result.ocr && result.extractionMethod === 'advanced_ocr') {
-          setTimeout(() => {
-            toast.info('📊 OCR-Details', {
-              description: `Verarbeitungszeit: ${result.ocr.processingTime}ms | Textlänge: ${result.ocr.textLength} Zeichen`,
-              duration: 6000,
-            });
-          }, 5000);
-        }
+        toast.success('Daten erfolgreich extrahiert!');
       } else {
-        toast.error('❌ Analyse fehlgeschlagen', {
+        toast.error('Analyse fehlgeschlagen', {
           description: result.error || 'Datei konnte nicht verarbeitet werden',
         });
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('❌ Upload-Fehler', {
-        description: 'Verbindungsfehler beim Hochladen der Datei',
-      });
+      toast.error('Upload-Fehler');
     } finally {
       setUploadingFile(false);
-      // Reset file input
       if (e.target) {
         e.target.value = '';
       }
@@ -309,20 +307,25 @@ export function ExpenseComponent({
         });
         setCurrentReceipt(null);
         setShowForm(false);
+        toast.success('Ausgabe erfolgreich gespeichert');
         await onRefresh?.();
       }
     } catch (error) {
       console.error('Save error:', error);
-      toast.error('Fehler beim Speichern der Ausgabe');
+      toast.error('Fehler beim Speichern');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header nur Button - Titel kommt von der page.tsx */}
-      <div className="flex justify-end items-center">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Ausgaben verwalten</h2>
+          <p className="text-gray-600">Geschäftsausgaben erfassen und verwalten</p>
+        </div>
         <Button
           onClick={() => setShowForm(!showForm)}
           className="bg-[#14ad9f] hover:bg-[#129488] text-white"
@@ -363,7 +366,7 @@ export function ExpenseComponent({
                     <div>
                       <div>PDF-Beleg oder Rechnung hochladen für automatische Datenextraktion</div>
                       <div className="text-xs text-gray-500 mt-1">
-                        💡 Tipp: Für Beträge Datei wie &quot;Rechnung-123-45.67.pdf&quot; benennen
+                        Tipp: Für Beträge Datei wie &quot;Rechnung-123-45.67.pdf&quot; benennen
                       </div>
                     </div>
                   )}
@@ -381,10 +384,10 @@ export function ExpenseComponent({
               </div>
             </div>
 
-            {/* Form Fields - 2 Columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column */}
-              <div className="space-y-4">
+            {/* Side-by-Side Layout: Form und PDF Preview */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              {/* Left Column: Form Fields */}
+              <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Grundinformationen
                 </h3>
@@ -452,7 +455,7 @@ export function ExpenseComponent({
                       onChange={e =>
                         setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))
                       }
-                      placeholder="z.B. INV-2024-001"
+                      placeholder="z.B. RG-2024-001"
                       className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                     />
                   </div>
@@ -460,187 +463,230 @@ export function ExpenseComponent({
 
                 <div>
                   <Label htmlFor="vendor">Anbieter/Lieferant</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="vendor"
-                      value={formData.vendor}
-                      onChange={e => setFormData(prev => ({ ...prev, vendor: e.target.value }))}
-                      placeholder="z.B. Amazon, Microsoft, etc."
-                      className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                    />
-                    <Link href={`/dashboard/company/${companyId}/finance/customers`}>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white whitespace-nowrap"
-                      >
-                        <Building2 className="h-4 w-4 mr-1" />
-                        Neuer Lieferant
-                      </Button>
-                    </Link>
-                  </div>
+                  <Input
+                    id="vendor"
+                    value={formData.vendor}
+                    onChange={e => setFormData(prev => ({ ...prev, vendor: e.target.value }))}
+                    placeholder="Name des Anbieters"
+                    className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                  />
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Detaillierte Beschreibung</Label>
+                  <Label htmlFor="description">Beschreibung/Notizen</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Weitere Details zur Ausgabe..."
+                    placeholder="Zusätzliche Details zur Ausgabe..."
                     rows={3}
                     className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                   />
                 </div>
-              </div>
 
-              {/* Right Column */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                  Steuer & Kontaktdaten
-                </h3>
+                {/* VAT Section */}
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="font-medium text-gray-900">Steuerinformationen</h4>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label htmlFor="vatRate">MwSt.-Satz (%)</Label>
-                    <Select
-                      value={formData.vatRate}
-                      onValueChange={value => setFormData(prev => ({ ...prev, vatRate: value }))}
-                    >
-                      <SelectTrigger className="focus:ring-[#14ad9f] focus:border-[#14ad9f]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">0%</SelectItem>
-                        <SelectItem value="7">7%</SelectItem>
-                        <SelectItem value="19">19%</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="vatRate">USt-Satz (%)</Label>
+                      <Select
+                        value={formData.vatRate}
+                        onValueChange={value => setFormData(prev => ({ ...prev, vatRate: value }))}
+                      >
+                        <SelectTrigger className="focus:ring-[#14ad9f] focus:border-[#14ad9f]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0% (steuerbefreit)</SelectItem>
+                          <SelectItem value="7">7% (ermäßigt)</SelectItem>
+                          <SelectItem value="19">19% (regulär)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="netAmount">Nettobetrag (€)</Label>
+                      <Input
+                        id="netAmount"
+                        type="number"
+                        step="0.01"
+                        value={formData.netAmount}
+                        onChange={e =>
+                          setFormData(prev => ({ ...prev, netAmount: e.target.value }))
+                        }
+                        placeholder="0.00"
+                        className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="vatAmount">USt-Betrag (€)</Label>
+                      <Input
+                        id="vatAmount"
+                        type="number"
+                        step="0.01"
+                        value={formData.vatAmount}
+                        onChange={e =>
+                          setFormData(prev => ({ ...prev, vatAmount: e.target.value }))
+                        }
+                        placeholder="0.00"
+                        className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                      />
+                    </div>
                   </div>
+
                   <div>
-                    <Label htmlFor="netAmount">Nettobetrag (€)</Label>
+                    <Label htmlFor="companyVatNumber">USt-IdNr./Steuernummer des Anbieters</Label>
                     <Input
-                      id="netAmount"
-                      type="number"
-                      step="0.01"
-                      value={formData.netAmount}
-                      onChange={e => setFormData(prev => ({ ...prev, netAmount: e.target.value }))}
-                      placeholder="0.00"
-                      className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="vatAmount">MwSt.-Betrag (€)</Label>
-                    <Input
-                      id="vatAmount"
-                      type="number"
-                      step="0.01"
-                      value={formData.vatAmount}
-                      onChange={e => setFormData(prev => ({ ...prev, vatAmount: e.target.value }))}
-                      placeholder="0.00"
-                      className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="companyName">
-                    <Building2 className="h-4 w-4 inline mr-1" />
-                    Firmenname
-                  </Label>
-                  <Input
-                    id="companyName"
-                    value={formData.companyName}
-                    onChange={e => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
-                    placeholder="Vollständiger Firmenname"
-                    className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="companyAddress">Firmenadresse</Label>
-                  <Textarea
-                    id="companyAddress"
-                    value={formData.companyAddress}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, companyAddress: e.target.value }))
-                    }
-                    placeholder="Straße, PLZ Ort, Land"
-                    rows={2}
-                    className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="companyVatNumber">USt-IdNr./Steuernummer</Label>
-                  <Input
-                    id="companyVatNumber"
-                    value={formData.companyVatNumber}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, companyVatNumber: e.target.value }))
-                    }
-                    placeholder="DE123456789 oder 12/345/67890"
-                    className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="contactEmail">
-                      <Mail className="h-4 w-4 inline mr-1" />
-                      E-Mail
-                    </Label>
-                    <Input
-                      id="contactEmail"
-                      type="email"
-                      value={formData.contactEmail}
+                      id="companyVatNumber"
+                      value={formData.companyVatNumber}
                       onChange={e =>
-                        setFormData(prev => ({ ...prev, contactEmail: e.target.value }))
+                        setFormData(prev => ({ ...prev, companyVatNumber: e.target.value }))
                       }
-                      placeholder="kontakt@firma.de"
-                      className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="contactPhone">
-                      <Phone className="h-4 w-4 inline mr-1" />
-                      Telefon
-                    </Label>
-                    <Input
-                      id="contactPhone"
-                      value={formData.contactPhone}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, contactPhone: e.target.value }))
-                      }
-                      placeholder="+49 xxx xxx xxxx"
+                      placeholder="z.B. DE123456789 oder IE3668997OH"
                       className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                {/* Company Information */}
+                <div className="space-y-4 border-t pt-4">
+                  <h4 className="font-medium text-gray-900">Firmeninformationen</h4>
+
+                  <div>
+                    <Label htmlFor="companyName">Firmenname</Label>
+                    <Input
+                      id="companyName"
+                      value={formData.companyName}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, companyName: e.target.value }))
+                      }
+                      placeholder="Name der Firma"
+                      className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="companyAddress">Firmenadresse</Label>
+                    <Textarea
+                      id="companyAddress"
+                      value={formData.companyAddress}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, companyAddress: e.target.value }))
+                      }
+                      placeholder="Straße, PLZ Ort, Land"
+                      rows={2}
+                      className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="contactEmail">E-Mail</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="contactEmail"
+                          type="email"
+                          value={formData.contactEmail}
+                          onChange={e =>
+                            setFormData(prev => ({ ...prev, contactEmail: e.target.value }))
+                          }
+                          placeholder="kontakt@firma.de"
+                          className="pl-10 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="contactPhone">Telefon</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="contactPhone"
+                          value={formData.contactPhone}
+                          onChange={e =>
+                            setFormData(prev => ({ ...prev, contactPhone: e.target.value }))
+                          }
+                          placeholder="+49 123 456789"
+                          className="pl-10 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tax Deductible Checkbox */}
+                <div className="flex items-center space-x-2 border-t pt-4">
                   <Checkbox
                     id="taxDeductible"
                     checked={formData.taxDeductible}
                     onCheckedChange={checked =>
-                      setFormData(prev => ({ ...prev, taxDeductible: checked as boolean }))
+                      setFormData(prev => ({ ...prev, taxDeductible: !!checked }))
                     }
-                    className="border-[#14ad9f] data-[state=checked]:bg-[#14ad9f]"
                   />
-                  <Label htmlFor="taxDeductible" className="text-sm">
+                  <Label
+                    htmlFor="taxDeductible"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
                     Steuerlich absetzbar
                   </Label>
                 </div>
               </div>
+
+              {/* Right Column: PDF Preview */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                  PDF-Vorschau
+                </h3>
+
+                <PdfPreview file={currentReceipt} className="h-[800px]" />
+
+                {currentReceipt && (
+                  <div className="bg-[#14ad9f]/10 rounded-lg p-4 border border-[#14ad9f]/20">
+                    <div className="flex items-start space-x-3">
+                      <FileText className="h-5 w-5 text-[#14ad9f] mt-0.5" />
+                      <div>
+                        <div className="text-sm font-medium text-[#14ad9f] mb-1">
+                          Beleg hochgeladen: {currentReceipt.name}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Überprüfen Sie die automatisch extrahierten Daten links mit dem PDF-Inhalt
+                          rechts auf Korrektheit
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <div className="flex justify-between items-center pt-6 border-t">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowForm(false)}
-                disabled={isLoading}
+                onClick={() => {
+                  setShowForm(false);
+                  setFormData({
+                    title: '',
+                    amount: '',
+                    category: 'Sonstiges',
+                    date: new Date().toISOString().split('T')[0],
+                    description: '',
+                    vendor: '',
+                    invoiceNumber: '',
+                    vatAmount: '',
+                    netAmount: '',
+                    vatRate: '19',
+                    companyName: '',
+                    companyAddress: '',
+                    companyVatNumber: '',
+                    contactEmail: '',
+                    contactPhone: '',
+                    taxDeductible: false,
+                  });
+                  setCurrentReceipt(null);
+                }}
               >
                 Abbrechen
               </Button>
