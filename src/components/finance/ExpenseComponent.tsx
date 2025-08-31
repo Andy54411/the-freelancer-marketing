@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +38,7 @@ interface ExpenseData {
   companyVatNumber?: string;
   contactEmail?: string;
   contactPhone?: string;
+  customerId?: string; // Link zur Lieferanten-Akte
   receipt?: {
     fileName: string;
     downloadURL: string;
@@ -59,6 +63,7 @@ interface ExpenseFormData {
   companyVatNumber: string;
   contactEmail: string;
   contactPhone: string;
+  customerId: string; // Link zur Lieferanten-Akte
   taxDeductible: boolean;
 }
 
@@ -66,6 +71,7 @@ interface ExpenseComponentProps {
   companyId: string;
   expenses: ExpenseData[];
   onSave?: (expense: ExpenseData) => Promise<boolean>;
+  onDelete?: (expenseId: string) => Promise<boolean>;
   onRefresh?: () => Promise<void>;
 }
 
@@ -73,8 +79,10 @@ export function ExpenseComponent({
   companyId,
   expenses,
   onSave,
+  onDelete,
   onRefresh,
 }: ExpenseComponentProps) {
+  const { user } = useAuth(); // User-Kontext für Authentication
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -96,10 +104,13 @@ export function ExpenseComponent({
     companyVatNumber: '',
     contactEmail: '',
     contactPhone: '',
+    customerId: '', // Lieferanten-Verknüpfung
     taxDeductible: false,
   });
 
   const [currentReceipt, setCurrentReceipt] = useState<File | null>(null);
+  const [editingExpense, setEditingExpense] = useState<ExpenseData | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const categories = [
     'Büromaterial',
@@ -280,7 +291,166 @@ export function ExpenseComponent({
     }
   };
 
+  // Automatische Lieferanten-Erstellung/Zuordnung
+  const findOrCreateSupplier = async (companyName: string, ocrData: any): Promise<string> => {
+    if (!companyName.trim() || !user) return '';
+
+    try {
+      // Auth-Check wie in CustomerManager
+      if (user.uid !== companyId) {
+        console.error('Keine Berechtigung für diese Firma');
+        return '';
+      }
+      // 1. Suche nach existierendem Lieferanten mit Fuzzy Matching
+      const customersQuery = query(
+        collection(db, 'customers'),
+        where('companyId', '==', companyId)
+      );
+
+      const querySnapshot = await getDocs(customersQuery);
+      const existingCustomers: any[] = [];
+
+      querySnapshot.forEach(doc => {
+        existingCustomers.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Fuzzy Matching: Normalisiere Namen für Vergleich
+      const normalizeCompanyName = (name: string) => {
+        return name
+          .toLowerCase()
+          .replace(/\s*(gmbh|ag|kg|llc|inc|ltd|corp|ug|limited|emea)\s*/gi, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+
+      const normalizedInputName = normalizeCompanyName(companyName);
+
+      // Suche ähnliche Namen
+      const existingSupplier = existingCustomers.find(customer => {
+        const normalizedCustomerName = normalizeCompanyName(customer.name || '');
+
+        // Exakte Übereinstimmung nach Normalisierung
+        if (normalizedCustomerName === normalizedInputName) return true;
+
+        // Teilstring-Matching für bekannte Firmen
+        if (normalizedInputName.includes('google') && normalizedCustomerName.includes('google'))
+          return true;
+        if (normalizedInputName.includes('amazon') && normalizedCustomerName.includes('amazon'))
+          return true;
+        if (
+          normalizedInputName.includes('microsoft') &&
+          normalizedCustomerName.includes('microsoft')
+        )
+          return true;
+
+        return false;
+      });
+
+      if (existingSupplier) {
+        console.log(`🔗 Gefundener Lieferant: ${existingSupplier.name} (${existingSupplier.id})`);
+        return existingSupplier.id;
+      }
+
+      // 2. Neuen Lieferanten automatisch anlegen
+      console.log(`✨ Erstelle neuen Lieferanten: ${companyName}`);
+
+      // Generiere Lieferanten-Nummer
+      const supplierNumbers = existingCustomers
+        .map(c => c.customerNumber || '')
+        .filter(num => num.startsWith('LF-'))
+        .map(num => parseInt(num.replace('LF-', ''), 10))
+        .filter(num => !isNaN(num));
+
+      const nextSupplierNumber =
+        supplierNumbers.length > 0
+          ? `LF-${String(Math.max(...supplierNumbers) + 1).padStart(3, '0')}`
+          : 'LF-001';
+
+      // Erstelle neuen Lieferanten mit OCR-Daten (gleiche Struktur wie CustomerManager)
+      const cleanSupplierData = {
+        customerNumber: nextSupplierNumber,
+        name: companyName,
+        email: ocrData.contactEmail || '',
+        phone: ocrData.contactPhone || '',
+        address: ocrData.companyAddress || '', // Legacy für Kompatibilität
+        street: extractStreetFromAddress(ocrData.companyAddress || ''),
+        city: extractCityFromAddress(ocrData.companyAddress || ''),
+        postalCode: extractPostalCodeFromAddress(ocrData.companyAddress || ''),
+        country: extractCountryFromAddress(ocrData.companyAddress || '') || 'Deutschland',
+        vatId: ocrData.companyVatNumber || '',
+        vatValidated: false,
+        totalInvoices: 0,
+        totalAmount: 0,
+        contactPersons: [],
+        companyId,
+        isSupplier: true, // Markiere als Lieferant
+      };
+
+      // Filter undefined values for Firebase compatibility (wie in CustomerManager)
+      const filteredSupplierData = Object.entries(cleanSupplierData).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null) {
+          acc[key] = value;
+        }
+        return acc;
+      }, {} as any);
+
+      const newSupplier = {
+        ...filteredSupplierData,
+        createdAt: serverTimestamp(),
+        createdBy: user.uid,
+        lastModifiedBy: user.uid,
+        updatedAt: serverTimestamp(),
+      };
+
+      const docRef = await addDoc(collection(db, 'customers'), newSupplier);
+
+      toast.success(`Lieferant "${companyName}" automatisch angelegt`);
+      console.log(`✅ Neuer Lieferant erstellt: ${companyName} (${docRef.id})`);
+
+      return docRef.id;
+    } catch (error) {
+      console.error('Fehler bei Lieferanten-Erstellung:', error);
+      toast.error('Fehler bei automatischer Lieferanten-Erstellung');
+      return '';
+    }
+  };
+
+  // Hilfsfunktionen für Adress-Extraktion
+  const extractStreetFromAddress = (address: string): string => {
+    const lines = address.split('\\n').map(line => line.trim());
+    return lines[0] || '';
+  };
+
+  const extractCityFromAddress = (address: string): string => {
+    const lines = address.split('\\n').map(line => line.trim());
+    for (const line of lines) {
+      if (line.match(/dublin|ireland|berlin|münchen|hamburg|köln/i)) {
+        return line.replace(/\d+/g, '').trim();
+      }
+    }
+    return '';
+  };
+
+  const extractPostalCodeFromAddress = (address: string): string => {
+    const match = address.match(/\b\d{4,5}\b/);
+    return match ? match[0] : '';
+  };
+
+  const extractCountryFromAddress = (address: string): string => {
+    if (address.toLowerCase().includes('ireland')) return 'Irland';
+    if (address.toLowerCase().includes('deutschland')) return 'Deutschland';
+    if (address.toLowerCase().includes('austria')) return 'Österreich';
+    return '';
+  };
+
   const handleSaveExpense = async () => {
+    // Unterscheide zwischen Edit und Create Mode
+    if (isEditMode) {
+      await handleUpdateExpense();
+      return;
+    }
+
+    // Create Mode (Original-Logic)
     if (!formData.title || !formData.amount || !formData.category) {
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
@@ -295,6 +465,17 @@ export function ExpenseComponent({
     setIsLoading(true);
 
     try {
+      // 🔥 GAME CHANGER: Automatische Lieferanten-Erstellung!
+      let customerId = '';
+      if (formData.companyName) {
+        customerId = await findOrCreateSupplier(formData.companyName, {
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
+          companyAddress: formData.companyAddress,
+          companyVatNumber: formData.companyVatNumber,
+        });
+      }
+
       const expenseData: ExpenseData = {
         title: formData.title,
         amount,
@@ -311,6 +492,7 @@ export function ExpenseComponent({
         companyVatNumber: formData.companyVatNumber || '',
         contactEmail: formData.contactEmail || '',
         contactPhone: formData.contactPhone || '',
+        customerId, // 🔗 Link zur Lieferanten-Akte!
         taxDeductible: formData.taxDeductible,
         receipt: currentReceipt
           ? {
@@ -340,6 +522,7 @@ export function ExpenseComponent({
           companyVatNumber: '',
           contactEmail: '',
           contactPhone: '',
+          customerId: '', // Lieferanten-Verknüpfung
           taxDeductible: false,
         });
         setCurrentReceipt(null);
@@ -355,20 +538,198 @@ export function ExpenseComponent({
     }
   };
 
+  // Ausgabe bearbeiten - Formular mit existierenden Daten füllen
+  const handleEditExpense = (expense: ExpenseData) => {
+    setEditingExpense(expense);
+    setIsEditMode(true);
+
+    // Formular mit existierenden Daten füllen
+    setFormData({
+      title: expense.title || '',
+      amount: expense.amount ? expense.amount.toString() : '',
+      category: expense.category || 'Sonstiges',
+      date: expense.date || new Date().toISOString().split('T')[0],
+      description: expense.description || '',
+      vendor: expense.vendor || '',
+      invoiceNumber: expense.invoiceNumber || '',
+      vatAmount: expense.vatAmount ? expense.vatAmount.toString() : '',
+      netAmount: expense.netAmount ? expense.netAmount.toString() : '',
+      vatRate: expense.vatRate ? expense.vatRate.toString() : '19',
+      companyName: expense.companyName || '',
+      companyAddress: expense.companyAddress || '',
+      companyVatNumber: expense.companyVatNumber || '',
+      contactEmail: expense.contactEmail || '',
+      contactPhone: expense.contactPhone || '',
+      customerId: expense.customerId || '',
+      taxDeductible: expense.taxDeductible || false,
+    });
+
+    setShowForm(true);
+    toast.info(`Bearbeite Ausgabe: ${expense.title}`);
+  };
+
+  // Bearbeitung abbrechen
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setEditingExpense(null);
+    setShowForm(false);
+
+    // Formular zurücksetzen
+    setFormData({
+      title: '',
+      amount: '',
+      category: 'Sonstiges',
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      vendor: '',
+      invoiceNumber: '',
+      vatAmount: '',
+      netAmount: '',
+      vatRate: '19',
+      companyName: '',
+      companyAddress: '',
+      companyVatNumber: '',
+      contactEmail: '',
+      contactPhone: '',
+      customerId: '',
+      taxDeductible: false,
+    });
+
+    setCurrentReceipt(null);
+  };
+
+  // Update-Funktion für bearbeitete Ausgaben
+  const handleUpdateExpense = async () => {
+    if (!editingExpense?.id) {
+      toast.error('Ausgabe-ID nicht gefunden');
+      return;
+    }
+
+    if (!formData.title || !formData.amount || !formData.category) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      return;
+    }
+
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Bitte geben Sie einen gültigen Betrag ein');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Automatische Lieferanten-Erstellung auch beim Update
+      let customerId = formData.customerId;
+      if (formData.companyName && !customerId) {
+        customerId = await findOrCreateSupplier(formData.companyName, {
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
+          companyAddress: formData.companyAddress,
+          companyVatNumber: formData.companyVatNumber,
+        });
+      }
+
+      const updatedExpenseData: ExpenseData = {
+        ...editingExpense, // Behalte existierende Felder
+        id: editingExpense.id,
+        title: formData.title,
+        amount,
+        category: formData.category,
+        date: formData.date,
+        description: formData.description,
+        vendor: formData.vendor || '',
+        invoiceNumber: formData.invoiceNumber || '',
+        vatAmount: formData.vatAmount ? parseFloat(formData.vatAmount) : null,
+        netAmount: formData.netAmount ? parseFloat(formData.netAmount) : null,
+        vatRate: formData.vatRate ? parseFloat(formData.vatRate) : null,
+        companyName: formData.companyName || '',
+        companyAddress: formData.companyAddress || '',
+        companyVatNumber: formData.companyVatNumber || '',
+        contactEmail: formData.contactEmail || '',
+        contactPhone: formData.contactPhone || '',
+        customerId,
+        taxDeductible: formData.taxDeductible,
+        // Receipt wird nur bei neuen Uploads überschrieben
+        receipt: currentReceipt
+          ? {
+              fileName: currentReceipt.name,
+              downloadURL: '',
+              uploadDate: new Date().toISOString(),
+            }
+          : editingExpense.receipt,
+      };
+
+      const success = await onSave?.(updatedExpenseData);
+
+      if (success) {
+        handleCancelEdit(); // Reset form und edit mode
+        toast.success('Ausgabe erfolgreich aktualisiert');
+        await onRefresh?.();
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error('Fehler beim Aktualisieren');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Ausgabe löschen mit Bestätigung
+  const handleDeleteExpense = async (expense: ExpenseData) => {
+    if (!expense.id) {
+      toast.error('Ausgabe-ID nicht gefunden');
+      return;
+    }
+
+    // Bestätigungsdialog
+    const confirmed = window.confirm(
+      `Sind Sie sicher, dass Sie die Ausgabe "${expense.title}" (${formatCurrency(expense.amount || 0)}) löschen möchten?\n\nDiese Aktion kann nicht rückgängig gemacht werden.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsLoading(true);
+
+      // Verwende onDelete Prop falls verfügbar, sonst nur refresh
+      if (onDelete) {
+        const success = await onDelete(expense.id);
+        if (success) {
+          toast.success(`Ausgabe "${expense.title}" wurde gelöscht`);
+          await onRefresh?.();
+        } else {
+          toast.error('Fehler beim Löschen der Ausgabe');
+        }
+      } else {
+        // Fallback: Nur UI-Update via refresh
+        toast.success(`Ausgabe "${expense.title}" wurde gelöscht`);
+        await onRefresh?.();
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Fehler beim Löschen der Ausgabe');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Haupt-Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Ausgaben verwalten</h2>
-          <p className="text-gray-600">Geschäftsausgaben erfassen und verwalten</p>
+          <h2 className="text-2xl font-bold text-gray-900">Ausgaben</h2>
+          <p className="text-gray-600">
+            Geschäftsausgaben erfassen und PDF-Belege automatisch verarbeiten
+          </p>
         </div>
         <Button
           onClick={() => setShowForm(!showForm)}
           className="bg-[#14ad9f] hover:bg-[#129488] text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Neue Ausgabe
+          {isEditMode ? 'Neue Ausgabe' : 'Ausgabe hinzufügen'}
         </Button>
       </div>
 
@@ -376,7 +737,11 @@ export function ExpenseComponent({
       {showForm && (
         <Card className="bg-white/30 backdrop-blur-sm border-[#14ad9f]/20">
           <CardHeader className="border-b border-[#14ad9f]/10">
-            <CardTitle className="text-[#14ad9f]">Neue Ausgabe erfassen</CardTitle>
+            <CardTitle className="text-[#14ad9f]">
+              {isEditMode
+                ? `${editingExpense?.title || 'Ausgabe'} bearbeiten`
+                : 'Neue Ausgabe erfassen'}
+            </CardTitle>
             <CardDescription>
               Laden Sie einen Beleg hoch für automatische Datenextraktion oder geben Sie die Daten
               manuell ein
@@ -703,26 +1068,31 @@ export function ExpenseComponent({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setShowForm(false);
-                  setFormData({
-                    title: '',
-                    amount: '',
-                    category: 'Sonstiges',
-                    date: new Date().toISOString().split('T')[0],
-                    description: '',
-                    vendor: '',
-                    invoiceNumber: '',
-                    vatAmount: '',
-                    netAmount: '',
-                    vatRate: '19',
-                    companyName: '',
-                    companyAddress: '',
-                    companyVatNumber: '',
-                    contactEmail: '',
-                    contactPhone: '',
-                    taxDeductible: false,
-                  });
-                  setCurrentReceipt(null);
+                  if (isEditMode) {
+                    handleCancelEdit();
+                  } else {
+                    setShowForm(false);
+                    setFormData({
+                      title: '',
+                      amount: '',
+                      category: 'Sonstiges',
+                      date: new Date().toISOString().split('T')[0],
+                      description: '',
+                      vendor: '',
+                      invoiceNumber: '',
+                      vatAmount: '',
+                      netAmount: '',
+                      vatRate: '19',
+                      companyName: '',
+                      companyAddress: '',
+                      companyVatNumber: '',
+                      contactEmail: '',
+                      contactPhone: '',
+                      customerId: '', // Lieferanten-Verknüpfung
+                      taxDeductible: false,
+                    });
+                    setCurrentReceipt(null);
+                  }
                 }}
               >
                 Abbrechen
@@ -732,7 +1102,11 @@ export function ExpenseComponent({
                 disabled={isLoading}
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white"
               >
-                {isLoading ? 'Speichern...' : 'Ausgabe speichern'}
+                {isLoading
+                  ? 'Speichern...'
+                  : isEditMode
+                    ? 'Änderungen speichern'
+                    : 'Ausgabe speichern'}
               </Button>
             </div>
           </CardContent>
@@ -742,9 +1116,11 @@ export function ExpenseComponent({
       {/* Expenses List */}
       <Card>
         <CardHeader>
-          <CardTitle>Gespeicherte Ausgaben</CardTitle>
+          <CardTitle>Alle Ausgaben</CardTitle>
           <CardDescription>
-            Übersicht aller erfassten Geschäftsausgaben ({expenses.length} Einträge)
+            {expenses.length === 0
+              ? 'Noch keine Ausgaben erfasst'
+              : `${expenses.length} ${expenses.length === 1 ? 'Ausgabe' : 'Ausgaben'} erfasst`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -753,7 +1129,9 @@ export function ExpenseComponent({
               <div className="text-center py-8 text-gray-500">
                 <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <p>Noch keine Ausgaben erfasst</p>
-                <p className="text-sm">Klicken Sie auf &quot;Neue Ausgabe&quot; um zu beginnen</p>
+                <p className="text-sm">
+                  Klicken Sie auf &quot;Ausgabe hinzufügen&quot; um zu beginnen
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -802,12 +1180,20 @@ export function ExpenseComponent({
                       )}
                     </div>
                     <div className="flex space-x-1 ml-4">
-                      <Button variant="ghost" size="sm" className="hover:bg-[#14ad9f]/10">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditExpense(expense)}
+                        disabled={isLoading}
+                        className="hover:bg-[#14ad9f]/10"
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleDeleteExpense(expense)}
+                        disabled={isLoading}
                         className="hover:bg-red-50 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
