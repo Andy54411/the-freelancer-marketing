@@ -49,10 +49,26 @@ export async function POST(request: NextRequest) {
       // Erstelle finAPI Service-Instanz mit automatischer Umgebungsdetection
       const finapiService = createFinAPIService();
 
+      // WICHTIG: Erstelle und speichere zuerst den finAPI User
+      console.log('🔄 Creating finAPI user before WebForm...');
+      const consistentPassword = `Taskilo_${actualCompanyId}_2024!`;
+      const finapiUser = await finapiService.getOrCreateUser(
+        companyEmail,
+        consistentPassword,
+        actualCompanyId,
+        true // forceCreate: true für eindeutige User
+      );
+
+      console.log('✅ finAPI User created and saved:', {
+        userId: finapiUser.user.id,
+        hasPassword: !!consistentPassword,
+        hasToken: !!finapiUser.userToken,
+      });
+
       // Verwende die neue, offizielle finAPI WebForm 2.0 API
       const webFormUrl = await finapiService.createWebForm(companyEmail, actualCompanyId, bankId);
 
-      console.log('finAPI WebForm created successfully:', webFormUrl);
+      console.log('✅ finAPI WebForm created successfully:', webFormUrl);
 
       if (!webFormUrl) {
         throw new Error('finAPI WebForm creation failed');

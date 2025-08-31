@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import FinAPIWebFormModal from '@/components/FinAPIWebFormModal';
+import BankDisconnectDialog from '@/components/BankDisconnectDialog';
 import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
   Building2,
@@ -71,6 +72,11 @@ export default function BankingDashboardPage() {
   const [isWebFormModalOpen, setIsWebFormModalOpen] = useState(false);
   const [webFormUrl, setWebFormUrl] = useState<string>('');
   const [webFormBankName, setWebFormBankName] = useState<string>('');
+
+  // Bank Disconnect Dialog States
+  const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
+  const [selectedConnectionForDisconnect, setSelectedConnectionForDisconnect] =
+    useState<BankConnection | null>(null);
 
   useEffect(() => {
     if (user && user.uid === uid) {
@@ -294,63 +300,73 @@ export default function BankingDashboardPage() {
   const handleWebFormSuccess = async (bankConnectionId?: string) => {
     console.log('🎉 WebForm success, performing real finAPI sync...');
 
-    setIsWebFormModalOpen(false);
-    setSelectedBank(null);
     setIsConnecting(false);
+    setSelectedBank(null);
+    setIsWebFormModalOpen(false);
 
-    if (selectedBank) {
-      setConnectedBanks(prev => ({
-        ...prev,
-        [selectedBank.id.toString()]: true,
-      }));
-    }
+    // Reload connections after successful connection
+    setTimeout(() => {
+      loadBankConnections();
+      loadConnectedBanks();
+    }, 2000);
+  };
 
-    // Trigger immediate sync of real finAPI data after WebForm completion
+  const handleOpenDisconnectDialog = (connection: BankConnection) => {
+    setSelectedConnectionForDisconnect(connection);
+    setIsDisconnectDialogOpen(true);
+  };
+
+  const handleDisconnectBank = async () => {
+    if (!selectedConnectionForDisconnect) return;
+
     try {
-      console.log('🔄 Syncing real bank data after WebForm completion...');
-
-      // Call import-transactions API to sync data from finAPI after WebForm
-      const syncResponse = await fetch('/api/finapi/import-transactions', {
+      const response = await fetch('/api/finapi/disconnect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.uid,
-          credentialType: credentialType,
-          forceSync: true, // Force immediate sync after WebForm
+          companyId: uid,
         }),
       });
 
-      if (syncResponse.ok) {
-        const syncData = await syncResponse.json();
-        console.log('✅ Post-WebForm sync successful:', syncData);
-      } else {
-        console.warn('⚠️ Post-WebForm sync failed, but WebForm was successful');
+      if (!response.ok) {
+        throw new Error('Fehler beim Trennen der Bankverbindung');
       }
-    } catch (syncError: any) {
-      console.warn('⚠️ Post-WebForm sync error:', syncError.message);
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Erfolgreich getrennt - lade Verbindungen neu
+        loadBankConnections();
+        loadConnectedBanks();
+
+        // Reset states
+        setSelectedConnectionForDisconnect(null);
+        setIsDisconnectDialogOpen(false);
+
+        // Zeige Erfolg-Nachricht (optional)
+        console.log('Bank disconnect successful:', data.message);
+      } else {
+        throw new Error(data.error || 'Unbekannter Fehler');
+      }
+    } catch (error: any) {
+      console.error('Bank disconnect error:', error);
+      setError(error.message || 'Fehler beim Trennen der Bankverbindung');
     }
-
-    // Reload data after sync attempt
-    setTimeout(() => {
-      loadConnectedBanks();
-      loadBankConnections();
-    }, 2000); // Increased delay for sync to complete
-
-    setError(`✅ ${webFormBankName} wurde erfolgreich verbunden! Daten werden synchronisiert...`);
-    setShowBankSelection(false);
-  };
-
-  const handleWebFormError = (error: string) => {
-    setIsWebFormModalOpen(false);
-    setError(`Verbindungsfehler: ${error}`);
   };
 
   const handleWebFormClose = () => {
     setIsWebFormModalOpen(false);
     setIsConnecting(false);
     setSelectedBank(null);
+  };
+
+  const handleWebFormError = (error: string) => {
+    setError(error);
+    setIsConnecting(false);
+    setSelectedBank(null);
+    setIsWebFormModalOpen(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -706,7 +722,11 @@ export default function BankingDashboardPage() {
                                 : 'Ausstehend'}
                           </Badge>
                         </div>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenDisconnectDialog(connection)}
+                        >
                           <Settings className="h-4 w-4" />
                         </Button>
                       </div>
@@ -782,6 +802,17 @@ export default function BankingDashboardPage() {
         webFormUrl={webFormUrl}
         bankName={webFormBankName}
         title={`${webFormBankName} verbinden`}
+      />
+
+      {/* Bank Disconnect Dialog */}
+      <BankDisconnectDialog
+        isOpen={isDisconnectDialogOpen}
+        onClose={() => {
+          setIsDisconnectDialogOpen(false);
+          setSelectedConnectionForDisconnect(null);
+        }}
+        onConfirm={handleDisconnectBank}
+        bankName={selectedConnectionForDisconnect?.bankName || 'Bank'}
       />
     </div>
   );

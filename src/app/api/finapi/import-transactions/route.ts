@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
       // Create finAPI service instance
       const finapiService = createFinAPIService();
 
-      // Get user token using getOrCreateUser method
-      const userData = await finapiService.getOrCreateUser(companyEmail, 'demo123', userId);
+      // Get user token using getOrCreateUser method (false = don't force creation)
+      const userData = await finapiService.getOrCreateUser(companyEmail, 'demo123', userId, false);
       const userToken = userData.userToken;
 
       // First get bank connections

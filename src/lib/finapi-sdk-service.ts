@@ -4,6 +4,7 @@
 
 import { finApiService } from './finapi';
 import { getFinAPICredentialType } from './finapi-config';
+import { db } from '../firebase/server';
 
 export interface FinAPICredentials {
   clientId: string;
@@ -153,8 +154,15 @@ export class FinAPISDKService {
    * Get admin client credentials access token (for user management operations only)
    */
   async getAdminClientToken(): Promise<string> {
-    const adminClientId = process.env.FINAPI_ADMIN_CLIENT_ID;
-    const adminClientSecret = process.env.FINAPI_ADMIN_CLIENT_SECRET;
+    // Use the same credentials as normal operations - in sandbox there's no separate admin client
+    const adminClientId =
+      this.config.environment === 'production'
+        ? process.env.FINAPI_ADMIN_CLIENT_ID
+        : process.env.FINAPI_SANDBOX_CLIENT_ID;
+    const adminClientSecret =
+      this.config.environment === 'production'
+        ? process.env.FINAPI_ADMIN_CLIENT_SECRET
+        : process.env.FINAPI_SANDBOX_CLIENT_SECRET;
 
     if (!adminClientId || !adminClientSecret) {
       throw new Error('finAPI admin credentials are not configured for user management operations');
@@ -179,6 +187,7 @@ export class FinAPISDKService {
           grant_type: 'client_credentials',
           client_id: adminClientId,
           client_secret: adminClientSecret,
+          scope: 'all',
         }),
       });
 
@@ -251,7 +260,8 @@ export class FinAPISDKService {
   async getOrCreateUser(
     userEmail: string,
     password: string,
-    companyId: string
+    companyId: string,
+    forceCreate: boolean = false
   ): Promise<{ user: FinAPIUser; userToken: string }> {
     try {
       // FIRST: Check Firestore for existing finAPI user data
@@ -264,6 +274,7 @@ export class FinAPISDKService {
         hasPassword: !!firestoreFinAPIUser?.password,
         userEmail: firestoreFinAPIUser?.userEmail,
         userId: firestoreFinAPIUser?.userId,
+        fullUserData: firestoreFinAPIUser,
       });
 
       if (firestoreFinAPIUser && firestoreFinAPIUser.userId && firestoreFinAPIUser.password) {
@@ -295,44 +306,46 @@ export class FinAPISDKService {
       } else {
         console.log('⚠️ No valid finAPI user found in Firestore');
       }
-
-      // FALLBACK: Try to get user token directly and then get user info
-      try {
-        console.log('🔍 Attempting to get user token with email and password...');
-        const userToken = await this.getUserToken(userEmail, password);
-
-        const existingUser = await this.getUser(userToken);
-        if (existingUser) {
-          console.log('🔍 Found existing finAPI user in finAPI:', {
-            userId: existingUser.id,
-            email: existingUser.email,
-          });
-
-          return {
-            user: existingUser,
-            userToken,
-          };
-        }
-      } catch (error) {
-        console.log('🔍 User not found in finAPI, creating new user...');
-      }
     } catch (error) {
-      console.log('🔍 Error checking existing users, creating new user...');
+      console.log('🔍 Error checking existing users, will create new user...');
     }
 
-    // Create new user if not found
+    // Check if we should create a new user or return error for read operations
+    if (!forceCreate) {
+      throw new Error(
+        'No existing finAPI user found and forceCreate is false. Use forceCreate: true for operations that should create users.'
+      );
+    }
+
+    // Create new user if not found (only when forceCreate is true)
     const adminToken = await this.getAdminClientToken();
 
+    // Use consistent userId generation
+    const finapiUserId = this.generateFinapiUserId(companyId);
+
+    // Validate email before creating user
+    console.log('🔍 Email validation debug:', {
+      userEmail,
+      isValidEmail: userEmail && userEmail.includes('@') && userEmail.includes('.'),
+      emailLength: userEmail?.length || 0,
+    });
+
+    if (!userEmail || !userEmail.includes('@') || !userEmail.includes('.')) {
+      throw new Error(`Invalid email address provided: "${userEmail}". Cannot create finAPI user.`);
+    }
+
     const userData = {
-      id: `tk${companyId.substring(0, 10)}`,
+      id: finapiUserId,
       password,
       email: userEmail,
       phone: '+49 99 999999-999',
       isAutoUpdateEnabled: false,
     };
 
-    console.log('🔍 Admin credentials debug (user management):', {
+    console.log('🔍 Creating new finAPI user:', {
       environment: 'sandbox',
+      userId: finapiUserId,
+      email: userEmail,
       hasAdminCredentials: !!(
         process.env.FINAPI_ADMIN_CLIENT_ID && process.env.FINAPI_ADMIN_CLIENT_SECRET
       ),
@@ -349,6 +362,101 @@ export class FinAPISDKService {
 
     if (!response.ok) {
       const errorText = await response.text();
+
+      console.log('🔍 User creation failed - debugging error details:', {
+        status: response.status,
+        errorText: errorText.substring(0, 200),
+        isEntityExists: errorText.includes('ENTITY_EXISTS'),
+        isStatus422: response.status === 422,
+      });
+
+      // Handle case where user already exists (422 ENTITY_EXISTS)
+      if (response.status === 422 && errorText.includes('ENTITY_EXISTS')) {
+        console.log('🔍 User already exists in finAPI, attempting to get token...');
+
+        const finapiUserId = this.generateFinapiUserId(companyId);
+
+        // Try multiple passwords in order (new consistent password first, then old ones)
+        const passwordsToTry = [
+          password, // The new consistent password
+          'demo123', // Legacy hardcoded password
+        ];
+
+        for (const tryPassword of passwordsToTry) {
+          try {
+            console.log(
+              `🔑 Trying password method: ${tryPassword === password ? 'NEW_CONSISTENT' : 'LEGACY'}`
+            );
+            const userToken = await this.getUserToken(finapiUserId, tryPassword);
+
+            // Get user details
+            const existingUser = await this.getUser(userToken);
+            if (existingUser) {
+              console.log('✅ Successfully retrieved existing finAPI user with password method:', {
+                userId: existingUser.id,
+                email: existingUser.email,
+                passwordMethod: tryPassword === password ? 'NEW_CONSISTENT' : 'LEGACY',
+              });
+
+              return {
+                user: existingUser,
+                userToken,
+              };
+            }
+          } catch (tokenError: any) {
+            console.log(
+              `⚠️ Password method failed: ${tryPassword === password ? 'NEW_CONSISTENT' : 'LEGACY'} - ${tokenError.message}`
+            );
+            // Continue to next password
+          }
+        }
+
+        console.log('🔍 All password methods failed for existing user');
+
+        // Since we can't delete users in sandbox (403 Access Denied),
+        // try creating a user with a timestamped unique ID (max 36 chars)
+        console.log(
+          '🔄 Cannot delete existing user (403 Access Denied). Trying unique ID strategy...'
+        );
+        try {
+          const timestamp = Date.now().toString();
+          // Create shorter unique ID: max 36 chars for finAPI
+          const shortCompanyId = companyId.substring(0, 10);
+          const uniqueFinapiUserId = `taskilo_${shortCompanyId}_${timestamp}`;
+
+          console.log('🆔 Creating user with unique ID:', {
+            uniqueId: uniqueFinapiUserId,
+            length: uniqueFinapiUserId.length,
+            maxAllowed: 36,
+          });
+
+          // Ensure ID is not too long
+          if (uniqueFinapiUserId.length > 36) {
+            throw new Error(`Generated ID too long: ${uniqueFinapiUserId.length} chars (max 36)`);
+          }
+
+          const newUser = await this.createUser(uniqueFinapiUserId, password, userEmail);
+
+          console.log('✅ Successfully created finAPI user with unique ID:', {
+            userId: newUser.user.id,
+            email: newUser.user.email,
+          });
+
+          // Save the new user to Firestore
+          await this.saveFinAPIUserToFirestore(companyId, {
+            userId: uniqueFinapiUserId,
+            userEmail,
+            password,
+            createdAt: Date.now(),
+          });
+          console.log('💾 Saved unique finAPI user to Firestore');
+
+          return newUser;
+        } catch (uniqueError: any) {
+          console.log('⚠️ Unique ID strategy also failed:', uniqueError.message);
+        }
+      }
+
       throw new Error(`User creation failed: ${response.status} ${errorText}`);
     }
 
@@ -358,8 +466,17 @@ export class FinAPISDKService {
       email: user.email,
     });
 
-    // Get user token for the newly created user
-    const userToken = await this.getUserToken(userEmail, password);
+    // Get user token for the newly created user - use userId not email!
+    const userToken = await this.getUserToken(user.id, password);
+
+    // Save the new user to Firestore
+    await this.saveFinAPIUserToFirestore(companyId, {
+      userId: user.id,
+      userEmail,
+      password,
+      createdAt: Date.now(),
+    });
+    console.log('💾 Saved finAPI user to Firestore');
 
     return {
       user,
@@ -400,6 +517,13 @@ export class FinAPISDKService {
     password: string,
     email: string
   ): Promise<{ user: FinAPIUser; userToken: string }> {
+    console.log('🔍 createUser called with parameters:', {
+      userId: userId ? `${userId.substring(0, 10)}...` : 'UNDEFINED',
+      password: password ? 'PROVIDED' : 'MISSING',
+      email: email || 'UNDEFINED',
+      emailValid: email && email.includes('@'),
+    });
+
     const adminToken = await this.getAdminClientToken();
 
     const userData = {
@@ -443,10 +567,14 @@ export class FinAPISDKService {
    * Force delete user and recreate (for error recovery)
    */
   async forceDeleteUser(userId: string): Promise<void> {
+    console.log('🗑️ forceDeleteUser called for userId:', userId);
+
     try {
       const adminToken = await this.getAdminClientToken();
+      console.log('🔍 Got admin token for deletion');
 
       // Search for user by ID
+      console.log('🔍 Searching for user to delete...');
       const response = await fetch(`${this.baseUrl}/api/v2/users?ids=${userId}`, {
         method: 'GET',
         headers: {
@@ -455,25 +583,57 @@ export class FinAPISDKService {
         },
       });
 
+      console.log('🔍 User search response:', {
+        status: response.status,
+        ok: response.ok,
+      });
+
       if (response.ok) {
         const searchResult = await response.json();
+        console.log('🔍 User search result:', {
+          hasUsers: !!searchResult.users,
+          userCount: searchResult.users?.length || 0,
+          firstUserId: searchResult.users?.[0]?.id,
+        });
 
         if (searchResult.users && searchResult.users.length > 0) {
           const user = searchResult.users[0];
           if (user.id) {
-            await fetch(`${this.baseUrl}/api/v2/users/${user.id}`, {
+            console.log('🗑️ Attempting to delete user:', user.id);
+            const deleteResponse = await fetch(`${this.baseUrl}/api/v2/users/${user.id}`, {
               method: 'DELETE',
               headers: {
                 Authorization: `Bearer ${adminToken}`,
                 Accept: 'application/json',
               },
             });
-            console.log(`✅ Force deleted finAPI user: ${userId}`);
+
+            console.log('🗑️ Delete response:', {
+              status: deleteResponse.status,
+              ok: deleteResponse.ok,
+            });
+
+            if (deleteResponse.ok) {
+              console.log(`✅ Force deleted finAPI user: ${userId}`);
+            } else {
+              const deleteError = await deleteResponse.text();
+              console.log(`❌ Delete failed: ${deleteResponse.status} ${deleteError}`);
+              throw new Error(`Failed to delete user: ${deleteResponse.status} ${deleteError}`);
+            }
+          } else {
+            console.log('⚠️ User found but no ID available');
           }
+        } else {
+          console.log('🔍 No user found with that ID (maybe already deleted)');
         }
+      } else {
+        const searchError = await response.text();
+        console.log(`❌ User search failed: ${response.status} ${searchError}`);
+        throw new Error(`Failed to search for user: ${response.status} ${searchError}`);
       }
     } catch (error: any) {
       console.log(`⚠️ Could not delete user ${userId}: ${error.message}`);
+      throw error; // Re-throw to stop the recreation process
     }
   }
 
@@ -491,15 +651,36 @@ export class FinAPISDKService {
         companyId: companyId.substring(0, 10) + '...',
         bankId,
         userEmail,
+        emailValid: userEmail && userEmail.includes('@'),
+        emailLength: userEmail?.length || 0,
       });
+
+      // Validate input parameters
+      if (!userEmail || typeof userEmail !== 'string') {
+        throw new Error(`Invalid userEmail parameter: "${userEmail}" (type: ${typeof userEmail})`);
+      }
+
+      if (!companyId || typeof companyId !== 'string') {
+        throw new Error(`Invalid companyId parameter: "${companyId}" (type: ${typeof companyId})`);
+      }
 
       // WebForm 2.0 ist ein User-related Service - braucht User Token
       // Erstelle oder hole finAPI User für die Company
       let userAccessToken: string;
 
       try {
-        // Erstelle neuen User oder hole existierenden aus der Datenbank
-        const userData = await this.getOrCreateUser(userEmail, 'demo123', companyId);
+        // Erstelle neuen User oder hole existierenden aus der Datenbank (true = force creation for WebForm)
+        // Use consistent password generation instead of hardcoded 'demo123'
+        const consistentPassword = this.generateFinapiPassword(companyId);
+
+        console.log('🔍 WebForm debug before getOrCreateUser:', {
+          userEmail,
+          consistentPassword: consistentPassword ? 'GENERATED' : 'MISSING',
+          companyId: companyId.substring(0, 10) + '...',
+          forceCreate: true,
+        });
+
+        const userData = await this.getOrCreateUser(userEmail, consistentPassword, companyId, true);
         if (!userData.user.id) {
           throw new Error(`Could not create/get user for ${userEmail}`);
         }
@@ -849,6 +1030,39 @@ export class FinAPISDKService {
         stack: error.stack?.substring(0, 200),
       });
       return null;
+    }
+  }
+
+  /**
+   * Save finAPI user data to Firestore
+   */
+  private async saveFinAPIUserToFirestore(
+    companyId: string,
+    finapiUserData: {
+      userId: string;
+      userEmail: string;
+      password: string;
+      createdAt: number;
+    }
+  ): Promise<void> {
+    try {
+      console.log('💾 Saving finAPI user to Firestore...', {
+        companyId: companyId.substring(0, 10) + '...',
+        userId: finapiUserData.userId.substring(0, 15) + '...',
+        userEmail: finapiUserData.userEmail,
+      });
+
+      // Update the company document with finAPI user data
+      await db.collection('companies').doc(companyId).update({
+        finapiUser: finapiUserData,
+        updatedAt: new Date().toISOString(),
+        lastModifiedBy: 'finapi-service',
+      });
+
+      console.log('✅ finAPI user data saved to Firestore successfully');
+    } catch (error: any) {
+      console.error('❌ Error saving finAPI user to Firestore:', error.message);
+      // Don't throw - this is not critical for WebForm creation
     }
   }
 }

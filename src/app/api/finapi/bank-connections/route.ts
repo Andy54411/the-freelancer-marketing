@@ -85,14 +85,50 @@ export async function GET(request: NextRequest) {
         // Create finAPI service instance
         const finapiService = createFinAPIService();
 
-        // Use getOrCreateUser method to get proper user token
-        const userData = await finapiService.getOrCreateUser(companyEmail, 'demo123', userId);
-        const userToken = userData.userToken;
+        // FIRST: Check if we have a saved finAPI user in Firestore
+        const userDoc = await db.collection('companies').doc(userId).get();
+        const userData = userDoc.data();
+        let finapiUser;
 
-        if (userToken) {
-          console.log('✅ Got user token, fetching connections...');
+        if (userData?.finapiUser?.userId && userData?.finapiUser?.password) {
+          console.log('🔍 Found existing finAPI user in Firestore:', userData.finapiUser.userId);
 
-          // Get bank connections from finAPI
+          // Use the saved finAPI user credentials
+          finapiUser = {
+            userId: userData.finapiUser.userId,
+            password: userData.finapiUser.password,
+            userToken: null, // Will be refreshed
+          };
+
+          try {
+            // Get fresh user token for the saved user
+            const refreshedUser = await finapiService.getOrCreateUser(
+              companyEmail,
+              finapiUser.password,
+              userId,
+              false // Don't force create - use existing
+            );
+            finapiUser.userToken = refreshedUser.userToken;
+            console.log('✅ Refreshed token for existing finAPI user');
+          } catch (tokenError) {
+            console.error('❌ Failed to refresh token for saved user:', tokenError.message);
+            throw tokenError;
+          }
+        } else {
+          console.log('❌ No finAPI user found in Firestore, cannot get connections');
+          return NextResponse.json({
+            success: true,
+            connections: [],
+            source: 'no_finapi_user',
+            message: 'No finAPI user found. Please connect your bank first via WebForm.',
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        if (finapiUser.userToken) {
+          console.log('✅ Got user token for saved user, fetching connections...');
+
+          // Get bank connections from finAPI using the saved user
           const bankData = await finapiService.syncUserBankData(companyEmail, userId);
 
           if (bankData.connections && bankData.connections.length > 0) {

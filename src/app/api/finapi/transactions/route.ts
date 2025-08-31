@@ -69,8 +69,15 @@ export async function GET(request: NextRequest) {
       // Create finAPI service instance
       const finapiService = createFinAPIService();
 
-      // Use getOrCreateUser method to get proper user token
-      const userData = await finapiService.getOrCreateUser(companyEmail, 'demo123', userId);
+      // Use getOrCreateUser method to get proper user token (false = don't force creation)
+      // Use consistent password generation
+      const consistentPassword = `Taskilo_${userId}_2024!`; // Match generateFinapiPassword
+      const userData = await finapiService.getOrCreateUser(
+        companyEmail,
+        consistentPassword,
+        userId,
+        false
+      );
       const userToken = userData.userToken;
 
       if (userToken) {
