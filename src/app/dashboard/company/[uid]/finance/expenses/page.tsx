@@ -20,6 +20,7 @@ interface ExpenseData {
   vatRate?: number;
   companyName?: string;
   companyAddress?: string;
+  companyVatNumber?: string;
   contactEmail?: string;
   contactPhone?: string;
   receipt?: {
@@ -73,6 +74,7 @@ export default function ExpensesPage() {
           vatRate: expense.vatRate || null,
           companyName: expense.companyName || '',
           companyAddress: expense.companyAddress || '',
+          companyVatNumber: expense.companyVatNumber || '',
           contactEmail: expense.contactEmail || '',
           contactPhone: expense.contactPhone || '',
           receipt: expense.receipt || null,

@@ -32,6 +32,7 @@ interface ExpenseData {
   vatRate?: number | null;
   companyName?: string;
   companyAddress?: string;
+  companyVatNumber?: string;
   contactEmail?: string;
   contactPhone?: string;
   receipt?: {
@@ -55,6 +56,7 @@ interface ExpenseFormData {
   vatRate: string;
   companyName: string;
   companyAddress: string;
+  companyVatNumber: string;
   contactEmail: string;
   contactPhone: string;
   taxDeductible: boolean;
@@ -91,6 +93,7 @@ export function ExpenseComponent({
     vatRate: '19',
     companyName: '',
     companyAddress: '',
+    companyVatNumber: '',
     contactEmail: '',
     contactPhone: '',
     taxDeductible: false,
@@ -163,6 +166,7 @@ export function ExpenseComponent({
           vatRate: data.vatRate ? data.vatRate.toString() : prev.vatRate,
           companyName: data.companyName || prev.companyName,
           companyAddress: data.companyAddress || prev.companyAddress,
+          companyVatNumber: data.companyVatNumber || prev.companyVatNumber,
           contactEmail: data.contactEmail || prev.contactEmail,
           contactPhone: data.contactPhone || prev.contactPhone,
         }));
@@ -269,6 +273,7 @@ export function ExpenseComponent({
         vatRate: formData.vatRate ? parseFloat(formData.vatRate) : null,
         companyName: formData.companyName || '',
         companyAddress: formData.companyAddress || '',
+        companyVatNumber: formData.companyVatNumber || '',
         contactEmail: formData.contactEmail || '',
         contactPhone: formData.contactPhone || '',
         taxDeductible: formData.taxDeductible,
@@ -297,6 +302,7 @@ export function ExpenseComponent({
           vatRate: '19',
           companyName: '',
           companyAddress: '',
+          companyVatNumber: '',
           contactEmail: '',
           contactPhone: '',
           taxDeductible: false,
@@ -561,6 +567,19 @@ export function ExpenseComponent({
                     }
                     placeholder="Straße, PLZ Ort, Land"
                     rows={2}
+                    className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="companyVatNumber">USt-IdNr./Steuernummer</Label>
+                  <Input
+                    id="companyVatNumber"
+                    value={formData.companyVatNumber}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, companyVatNumber: e.target.value }))
+                    }
+                    placeholder="DE123456789 oder 12/345/67890"
                     className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                   />
                 </div>
