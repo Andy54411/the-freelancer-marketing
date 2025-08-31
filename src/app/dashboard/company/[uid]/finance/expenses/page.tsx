@@ -4,63 +4,137 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExpenseComponent } from '@/components/finance/ExpenseComponent';
-import { ExpenseRecord } from '@/services/financeService';
 import { toast } from 'sonner';
+
+interface ExpenseData {
+  id: string;
+  title: string;
+  amount: number;
+  category: string;
+  date: string;
+  description: string;
+  vendor?: string;
+  invoiceNumber?: string;
+  vatAmount?: number;
+  netAmount?: number;
+  vatRate?: number;
+  companyName?: string;
+  companyAddress?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  receipt?: {
+    fileName: string;
+    downloadURL: string;
+    uploadDate: string;
+  };
+  taxDeductible?: boolean;
+  createdAt?: Date;
+}
 
 export default function ExpensesPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
-  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Ausgaben laden
-    const loadExpenses = async () => {
-      try {
-        setLoading(true);
-        // Direkte Firestore-Abfrage für Ausgaben
-        const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
-        const { db } = await import('@/firebase/clients');
+  // Ausgaben von API laden
+  const loadExpenses = async () => {
+    try {
+      setLoading(true);
 
-        const expensesQuery = query(
-          collection(db, 'expenses'),
-          where('companyId', '==', uid),
-          orderBy('date', 'desc')
-        );
+      const response = await fetch(`/api/expenses?companyId=${uid}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-        const querySnapshot = await getDocs(expensesQuery);
-        const loadedExpenses: ExpenseRecord[] = [];
-
-        querySnapshot.forEach(doc => {
-          const data = doc.data();
-          loadedExpenses.push({
-            id: doc.id,
-            companyId: data.companyId,
-            amount: data.amount || 0,
-            category: data.category || '',
-            description: data.description || '',
-            date: data.date?.toDate?.() || new Date(),
-            receipt: data.receipt,
-            taxDeductible: data.taxDeductible || false,
-            createdAt: data.createdAt?.toDate?.() || new Date(),
-          });
-        });
-
-        setExpenses(loadedExpenses);
-      } catch (error) {
-
-        toast.error('Fehler beim Laden der Ausgaben');
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    };
 
-    if (uid) {
+      const result = await response.json();
+
+      if (result.success && result.expenses) {
+        // Konvertiere API-Daten zu Component-Format
+        const formattedExpenses: ExpenseData[] = result.expenses.map((expense: any) => ({
+          id: expense.id,
+          title: expense.title || expense.description || 'Ausgabe',
+          amount: expense.amount || 0,
+          category: expense.category || 'Sonstiges',
+          date: expense.date || new Date().toISOString().split('T')[0],
+          description: expense.description || '',
+          vendor: expense.vendor || '',
+          invoiceNumber: expense.invoiceNumber || '',
+          vatAmount: expense.vatAmount || null,
+          netAmount: expense.netAmount || null,
+          vatRate: expense.vatRate || null,
+          companyName: expense.companyName || '',
+          companyAddress: expense.companyAddress || '',
+          contactEmail: expense.contactEmail || '',
+          contactPhone: expense.contactPhone || '',
+          receipt: expense.receipt || null,
+          taxDeductible: expense.taxDeductible || false,
+          createdAt: expense.createdAt ? new Date(expense.createdAt) : new Date(),
+        }));
+
+        setExpenses(formattedExpenses);
+        console.log('Loaded expenses from API:', formattedExpenses.length);
+      } else {
+        console.error('API response error:', result);
+        toast.error('Fehler beim Laden der Ausgaben: ' + (result.error || 'Unbekannter Fehler'));
+      }
+    } catch (error) {
+      console.error('Error loading expenses:', error);
+      toast.error('Fehler beim Laden der Ausgaben');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Neue Ausgabe speichern
+  const handleSaveExpense = async (expenseData: any) => {
+    try {
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...expenseData,
+          companyId: uid,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Ausgabe erfolgreich gespeichert');
+        // Ausgaben neu laden
+        await loadExpenses();
+        return true;
+      } else {
+        toast.error('Fehler beim Speichern: ' + (result.error || 'Unbekannter Fehler'));
+        return false;
+      }
+    } catch (error) {
+      console.error('Error saving expense:', error);
+      toast.error('Fehler beim Speichern der Ausgabe');
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (uid && user) {
       loadExpenses();
     }
-  }, [uid]);
+  }, [uid, user]);
 
   // Autorisierung prüfen
   if (!user || user.uid !== uid) {
@@ -86,17 +160,24 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <ExpenseComponent
-        expenses={expenses.map(e => ({
-          id: e.id,
-          title: e.description,
-          amount: e.amount,
-          category: e.category,
-          date: e.date.toISOString().split('T')[0],
-          description: e.description,
-        }))}
-      />
+    <div className="space-y-6 p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h1 className="text-2xl font-bold text-gray-900">Ausgaben verwalten</h1>
+          <p className="text-gray-600 mt-1">
+            Geschäftsausgaben erfassen und PDF-Belege automatisch verarbeiten
+          </p>
+        </div>
+
+        <div className="p-6">
+          <ExpenseComponent
+            companyId={uid}
+            expenses={expenses}
+            onSave={handleSaveExpense}
+            onRefresh={loadExpenses}
+          />
+        </div>
+      </div>
     </div>
   );
 }

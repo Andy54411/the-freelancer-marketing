@@ -20,6 +20,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@aws-sdk/client-textract": "^3.879.0",
     "@google/generative-ai": "^0.24.1",
     "@sendgrid/mail": "^8.1.5",
     "busboy": "^1.6.0",
@@ -29,7 +30,8 @@
     "firebase-functions": "^6.3.2",
     "geofire-common": "^6.0.0",
     "nanoid": "^3.3.7",
-    "stripe": "^16.12.0"
+    "stripe": "^16.12.0",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@types/busboy": "^1.5.4",

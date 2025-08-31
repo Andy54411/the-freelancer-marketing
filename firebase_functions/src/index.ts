@@ -38,6 +38,7 @@ import * as onCallFunctions from './on_call_functions';
 import * as chatbot from './chatbot';
 import * as enhancedChatbotAPI from "./enhanced-chatbot-api";
 import * as financeApiModule from './finance/api/finance-api';
+import * as financeHttpModule from './finance/functions/finance-http';
 import * as fixInconsistentPaymentModule from './fix_inconsistent_payment';
 import * as quoteNotifications from './quote_notifications';
 import * as chatNotifications from './chat_notifications';
@@ -124,6 +125,7 @@ export const supportDashboard = enhancedChatbotAPI.supportDashboardAPI;
 
 // Finance Module APIs
 export const financeApi = financeApiModule.financeApi;
+export const financeApiWithOCR = financeHttpModule.financeApi;
 
 // Manual Fix Functions
 export const fixInconsistentPayment = fixInconsistentPaymentModule.fixInconsistentPayment;
