@@ -85,6 +85,7 @@ export default function BankingReconciliationPage() {
   const [showReconciled, setShowReconciled] = useState(true); // Standardmäßig alle Rechnungen anzeigen
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
+  const [transactionType, setTransactionType] = useState<'ALL' | 'CREDIT' | 'DEBIT'>('ALL'); // Neuer Filter für Transaktionstypen
 
   // Reconciliation State
   const [reconcilingInvoice, setReconcilingInvoice] = useState<string | null>(null);
@@ -149,12 +150,39 @@ export default function BankingReconciliationPage() {
       );
       const data = await response.json();
 
-      if (data.success && data.transactions) {
-        setTransactions(data.transactions);
+      console.log('🔍 Transaction API Response:', {
+        success: data.success,
+        hasData: !!data.data,
+        hasTransactions: !!data.data?.transactions,
+        transactionCount: data.data?.transactions?.length || 0,
+      });
+
+      if (data.success && data.data?.transactions) {
+        // Transform transactions to match expected format
+        const transformedTransactions = data.data.transactions.map((txn: any) => ({
+          id: txn.id?.toString() || '',
+          accountId: txn.accountId?.toString() || '',
+          amount: txn.amount || 0,
+          currency: txn.currency || 'EUR',
+          purpose: txn.purpose || '',
+          counterpartName: txn.counterpartName || '',
+          counterpartIban: txn.counterpartIban || '',
+          bookingDate: txn.bankBookingDate || txn.valueDate || '',
+          valueDate: txn.valueDate || '',
+          transactionType: txn.amount > 0 ? 'CREDIT' : 'DEBIT',
+          category: txn.category?.name || txn.type || '',
+          isReconciled: false,
+          isPending: false,
+        }));
+
+        console.log('✅ Transformed transactions:', { count: transformedTransactions.length });
+        setTransactions(transformedTransactions);
       } else {
+        console.log('❌ No transactions found in API response');
         setTransactions([]);
       }
     } catch (err: unknown) {
+      console.error('❌ Error loading transactions:', err);
       setTransactions([]);
     } finally {
       setLoadingTransactions(false);
@@ -299,8 +327,13 @@ export default function BankingReconciliationPage() {
       (transaction.counterpartName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (transaction.amount || 0).toString().includes(searchTerm);
 
-    // Only show credit transactions (incoming payments) for reconciliation
-    return matchesSearch && transaction.transactionType === 'CREDIT';
+    // Filter by transaction type
+    const matchesType =
+      transactionType === 'ALL' ||
+      (transactionType === 'CREDIT' && transaction.transactionType === 'CREDIT') ||
+      (transactionType === 'DEBIT' && transaction.transactionType === 'DEBIT');
+
+    return matchesSearch && matchesType;
   });
 
   // Loading state
@@ -411,7 +444,9 @@ export default function BankingReconciliationPage() {
               <div className="ml-5 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">
-                    Eingänge (verfügbar)
+                    {transactionType === 'CREDIT' && 'Eingänge (verfügbar)'}
+                    {transactionType === 'DEBIT' && 'Ausgaben (verfügbar)'}
+                    {transactionType === 'ALL' && 'Transaktionen (verfügbar)'}
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
                     {filteredTransactions.length}
@@ -447,7 +482,7 @@ export default function BankingReconciliationPage() {
 
       {/* Filter Controls */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -458,6 +493,19 @@ export default function BankingReconciliationPage() {
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] w-full"
             />
+          </div>
+
+          {/* Transaction Type Filter */}
+          <div>
+            <select
+              value={transactionType}
+              onChange={e => setTransactionType(e.target.value as 'ALL' | 'CREDIT' | 'DEBIT')}
+              className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+            >
+              <option value="ALL">Alle Transaktionen</option>
+              <option value="CREDIT">Nur Eingänge</option>
+              <option value="DEBIT">Nur Ausgaben</option>
+            </select>
           </div>
 
           {/* Show Reconciled Toggle */}
@@ -613,8 +661,11 @@ export default function BankingReconciliationPage() {
         <div className="bg-white shadow rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 flex items-center">
-              <CreditCard className="h-5 w-5 mr-2 text-green-500" />
-              Transaktionen (Eingänge)
+              <CreditCard className="h-5 w-5 mr-2 text-[#14ad9f]" />
+              Transaktionen
+              {transactionType === 'CREDIT' && ' (Eingänge)'}
+              {transactionType === 'DEBIT' && ' (Ausgaben)'}
+              {transactionType === 'ALL' && ' (Alle)'}
               {loadingTransactions && (
                 <RefreshCw className="h-4 w-4 ml-2 animate-spin text-[#14ad9f]" />
               )}
@@ -649,8 +700,15 @@ export default function BankingReconciliationPage() {
                       </p>
                     </div>
                     <div className="ml-4 flex-shrink-0 text-right">
-                      <p className="text-sm font-semibold text-green-600">
-                        +{formatCurrency(transaction.amount || 0, transaction.currency || 'EUR')}
+                      <p
+                        className={`text-sm font-semibold ${
+                          transaction.transactionType === 'CREDIT'
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
+                        {transaction.transactionType === 'CREDIT' ? '+' : ''}
+                        {formatCurrency(transaction.amount || 0, transaction.currency || 'EUR')}
                       </p>
                       {transaction.category && (
                         <p className="text-xs text-gray-500">{transaction.category}</p>
@@ -663,7 +721,9 @@ export default function BankingReconciliationPage() {
           </div>
           {filteredTransactions.length === 0 && (
             <div className="px-6 py-8 text-center text-gray-500">
-              Keine Eingangstransaktionen gefunden
+              {transactionType === 'CREDIT' && 'Keine Eingangstransaktionen gefunden'}
+              {transactionType === 'DEBIT' && 'Keine Ausgangstransaktionen gefunden'}
+              {transactionType === 'ALL' && 'Keine Transaktionen gefunden'}
             </div>
           )}
         </div>
