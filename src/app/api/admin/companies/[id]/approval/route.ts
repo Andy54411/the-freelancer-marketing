@@ -131,7 +131,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
 
       const notificationResponse = await fetch(
-        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/company/${companyId}/notifications/approval`,
+        `https://taskilo.de/api/company/${companyId}/notifications/approval`,
         {
           method: 'POST',
           headers: {
@@ -171,23 +171,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         globalMessage = 'Ihr Account wurde entsperrt und alle Funktionen sind wieder verfügbar.';
       }
 
-      const globalNotificationResponse = await fetch(
-        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: companyId,
-            type: 'approval',
-            title: globalTitle,
-            message: globalMessage,
-            link: `/dashboard/company/${companyId}`,
-            isRead: false,
-          }),
-        }
-      );
+      // Direkte Notification-Erstellung ohne fetch (im gleichen Server)
+      const notificationData = {
+        userId: companyId,
+        type: 'approval',
+        title: globalTitle,
+        message: globalMessage,
+        link: `/dashboard/company`,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        id: `approval_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      };
+
+      // Direkt in Firestore schreiben statt fetch
+      await db.collection('notifications').add(notificationData);
+      console.log(`✅ Global notification created directly for company ${companyId}`);
+
+      const globalNotificationResponse = { ok: true }; // Dummy response für bestehende Logik
 
       if (!globalNotificationResponse.ok) {
         console.error('Failed to send global notification to user');
