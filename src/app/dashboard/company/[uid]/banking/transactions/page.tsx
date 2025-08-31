@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
   Search,
-  Filter,
   Download,
   RefreshCw,
   TrendingUp,
@@ -75,7 +74,7 @@ export default function TransactionsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [dateRange, setDateRange] = useState('30');
+  const [dateRange, setDateRange] = useState('all');
   const [customDate, setCustomDate] = useState('');
   const [showCustomDate, setShowCustomDate] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
@@ -115,8 +114,8 @@ export default function TransactionsPage() {
 
       const data = await transactionsResponse.json();
 
-      if (data.success && data.transactions) {
-        setTransactions(data.transactions);
+      if (data.success && data.data && data.data.transactions) {
+        setTransactions(data.data.transactions);
       } else {
         setTransactions([]);
         // Don't set error for "no user found" message - this is normal
@@ -216,7 +215,24 @@ export default function TransactionsPage() {
 
     const matchesAccount =
       selectedAccount === 'all' || transaction.accountId.toString() === selectedAccount;
-    const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
+
+    const matchesCategory =
+      selectedCategory === 'all' ||
+      (() => {
+        if (!transaction.category) return false;
+
+        // Handle category object from finAPI
+        if (typeof transaction.category === 'object' && transaction.category.name) {
+          return transaction.category.name === selectedCategory;
+        }
+
+        // Handle category string
+        if (typeof transaction.category === 'string') {
+          return transaction.category === selectedCategory;
+        }
+
+        return false;
+      })();
 
     // Date range filtering
     let matchesDateRange = true;
@@ -230,44 +246,36 @@ export default function TransactionsPage() {
           const currentYear = today.getFullYear();
 
           if (dateRange === '365') {
-            // "Letztes Jahr" = komplettes vorheriges Jahr (z.B. 2024)
-            const lastYear = currentYear - 1;
-            const yearStart = new Date(lastYear, 0, 1); // 1. Januar des letzten Jahres
-            const yearEnd = new Date(lastYear, 11, 31, 23, 59, 59); // 31. Dezember des letzten Jahres
+            // "Letztes Jahr" = Letzte 365 Tage von heute zurück
+            const cutoffDate = new Date(today);
+            cutoffDate.setDate(today.getDate() - 365);
 
             // Debug logging for first transaction
             if (transaction.id === transactions[0]?.id) {
               const debugData = {
-                dateRange: `Letztes Jahr (${lastYear})`,
-                currentYear: currentYear,
-                lastYear: lastYear,
-                yearStart: yearStart.toDateString(),
-                yearEnd: yearEnd.toDateString(),
+                dateRange: 'Letzte 365 Tage',
+                today: today.toDateString(),
+                cutoffDate: cutoffDate.toDateString(),
                 transactionDate: isNaN(transactionDate.getTime())
                   ? 'Invalid Date'
                   : transactionDate.toDateString(),
-                transactionYear: isNaN(transactionDate.getTime())
-                  ? 'Invalid'
-                  : transactionDate.getFullYear(),
-                isInRange:
+                isAfterCutoff:
                   !isNaN(transactionDate.getTime()) &&
-                  transactionDate >= yearStart &&
-                  transactionDate <= yearEnd,
-                logic: `Aktuelles Jahr: ${currentYear} → Letztes Jahr: ${lastYear}`,
+                  !isNaN(cutoffDate.getTime()) &&
+                  transactionDate >= cutoffDate,
                 totalTransactions: transactions.length,
-                yearTransactions: transactions.filter(t => {
+                last365DaysTransactions: transactions.filter(t => {
                   const td = new Date(t.bankBookingDate || t.valueDate);
-                  return !isNaN(td.getTime()) && td >= yearStart && td <= yearEnd;
+                  return !isNaN(td.getTime()) && !isNaN(cutoffDate.getTime()) && td >= cutoffDate;
                 }).length,
               };
+              console.log('🗓️ Date Range Debug (365 days):', debugData);
             }
 
             matchesDateRange =
               !isNaN(transactionDate.getTime()) &&
-              !isNaN(yearStart.getTime()) &&
-              !isNaN(yearEnd.getTime()) &&
-              transactionDate >= yearStart &&
-              transactionDate <= yearEnd;
+              !isNaN(cutoffDate.getTime()) &&
+              transactionDate >= cutoffDate;
           } else if (dateRange === 'custom' && customDate) {
             // Benutzerdefiniertes Datum: Exakt an diesem Tag
             const selectedDate = new Date(customDate);
@@ -368,7 +376,27 @@ export default function TransactionsPage() {
   });
 
   // Get unique categories
-  const categories = [...new Set(transactions.map(t => t.category).filter(Boolean))];
+  const categories = [
+    ...new Set(
+      transactions
+        .map(t => {
+          if (!t.category) return null;
+
+          // Handle category object from finAPI
+          if (typeof t.category === 'object' && t.category.name) {
+            return t.category.name;
+          }
+
+          // Handle category string
+          if (typeof t.category === 'string') {
+            return t.category;
+          }
+
+          return null;
+        })
+        .filter(Boolean)
+    ),
+  ];
 
   // Calculate summary statistics from filtered transactions
   const totalIncome = filteredTransactions
@@ -537,8 +565,8 @@ export default function TransactionsPage() {
             className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
           >
             <option value="all">Alle Kategorien</option>
-            {categories.map(category => (
-              <option key={category} value={category}>
+            {categories.map((category, index) => (
+              <option key={`category-${index}-${category}`} value={category}>
                 {category}
               </option>
             ))}
@@ -654,7 +682,17 @@ export default function TransactionsPage() {
                             <span>{transaction.counterpartName} • </span>
                           )}
                           <span>{account?.accountName || 'Unbekanntes Konto'}</span>
-                          {transaction.category && <span> • {transaction.category}</span>}
+                          {transaction.category && (
+                            <span>
+                              {' '}
+                              •{' '}
+                              {typeof transaction.category === 'object' && transaction.category.name
+                                ? transaction.category.name
+                                : typeof transaction.category === 'string'
+                                  ? transaction.category
+                                  : 'Kategorie'}
+                            </span>
+                          )}
                         </div>
                         <div className="ml-2">
                           <Calendar className="h-4 w-4 mr-1 inline" />
@@ -749,7 +787,7 @@ export default function TransactionsPage() {
                 <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                   <div className="flex-shrink-0">
                     {getTransactionIcon(
-                      selectedTransaction.transactionType,
+                      selectedTransaction.amount > 0 ? 'CREDIT' : 'DEBIT',
                       selectedTransaction.amount
                     )}
                   </div>
@@ -824,12 +862,12 @@ export default function TransactionsPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Typ</label>
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          selectedTransaction.transactionType === 'CREDIT'
+                          selectedTransaction.amount > 0
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {selectedTransaction.transactionType === 'CREDIT' ? 'Einnahme' : 'Ausgabe'}
+                        {selectedTransaction.amount > 0 ? 'Einnahme' : 'Ausgabe'}
                       </span>
                     </div>
                   </div>
@@ -882,7 +920,14 @@ export default function TransactionsPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Kategorie
                         </label>
-                        <p className="text-sm text-gray-900">{selectedTransaction.category}</p>
+                        <p className="text-sm text-gray-900">
+                          {typeof selectedTransaction.category === 'object' &&
+                          selectedTransaction.category.name
+                            ? selectedTransaction.category.name
+                            : typeof selectedTransaction.category === 'string'
+                              ? selectedTransaction.category
+                              : 'Nicht verfügbar'}
+                        </p>
                       </div>
                     )}
 
@@ -891,14 +936,14 @@ export default function TransactionsPage() {
                       <div className="flex space-x-2">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            selectedTransaction.isReconciled
+                            !selectedTransaction.isPotentialDuplicate
                               ? 'bg-green-100 text-green-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}
                         >
-                          {selectedTransaction.isReconciled ? 'Abgeglichen' : 'Offen'}
+                          {!selectedTransaction.isPotentialDuplicate ? 'Abgeglichen' : 'Offen'}
                         </span>
-                        {selectedTransaction.isPending && (
+                        {selectedTransaction.isNew && (
                           <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                             Ausstehend
                           </span>

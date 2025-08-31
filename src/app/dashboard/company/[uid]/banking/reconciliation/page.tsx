@@ -3,24 +3,307 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { AlertTriangle, RefreshCw, FileText, CreditCard, Ban, ExternalLink } from 'lucide-react';
+import { getFinAPICredentialType } from '@/lib/finapi-config';
+import {
+  CheckCircle,
+  Search,
+  RefreshCw,
+  FileText,
+  AlertTriangle,
+  CreditCard,
+  ArrowUpRight,
+  DollarSign,
+  Link,
+  Unlink,
+  Clock,
+} from 'lucide-react';
+
+interface BankTransaction {
+  id: string;
+  accountId?: string;
+  amount?: number;
+  currency?: string;
+  purpose?: string;
+  counterpartName?: string;
+  counterpartIban?: string;
+  bookingDate?: string;
+  valueDate?: string;
+  transactionType?: 'CREDIT' | 'DEBIT';
+  category?: string;
+  isReconciled?: boolean;
+  isPending?: boolean;
+}
+
+interface Invoice {
+  id: string;
+  invoiceNumber?: string;
+  amount?: number;
+  total: number;
+  status?: string;
+  issueDate?: string;
+  dueDate?: string;
+  customerName?: string;
+  customerEmail?: string;
+  description?: string;
+  createdAt?: string;
+  finalizedAt?: string;
+  companyId?: string;
+  companyName?: string;
+  tax?: number;
+  vatRate?: number;
+  priceInput?: string;
+  template?: string;
+  items?: Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>;
+  isReconciled?: boolean;
+  reconciledTransactionId?: string;
+  reconciledAt?: string;
+}
 
 export default function BankingReconciliationPage() {
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  const { user } = useAuth();
 
-  const [error, setError] = useState<string | null>(null);
+  // Get environment-specific credential type
+  const credentialType = getFinAPICredentialType();
+
+  // State Management
+  const [transactions, setTransactions] = useState<BankTransaction[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showReconciled, setShowReconciled] = useState(true); // Standardmäßig alle Rechnungen anzeigen
+  const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
+
+  // Reconciliation State
+  const [reconcilingInvoice, setReconcilingInvoice] = useState<string | null>(null);
+
+  // Load Invoices from Firestore - ULTIMATE CACHE BREAK VERSION
+  const loadInvoices = async () => {
+    setLoadingInvoices(true);
+    try {
+      // NUCLEAR OPTION: Komplett neue URL mit Random String
+      const randomCacheBuster = Math.random().toString(36).substring(7);
+      const timestamp = new Date().getTime();
+      const apiUrl = `/api/banking/reconciliation/invoices?companyId=${uid}&v=${timestamp}&r=${randomCacheBuster}&force=true`;
+
+      // ALLE Cache-Breaking Methoden gleichzeitig
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-Cache-Bust': timestamp.toString(),
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const responseText = await response.text();
+
+      const data = JSON.parse(responseText);
+
+      if (data.success && data.invoices) {
+        // Die API gibt bereits das korrekte Format zurück
+        setInvoices(data.invoices);
+
+        // Debug: Log each invoice
+        data.invoices.forEach((invoice: Invoice, index: number) => {});
+      } else {
+        setError(data.error || 'Fehler beim Laden der Rechnungen');
+        setInvoices([]); // Ensure invoices array is empty on error
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Fehler beim Laden der Rechnungen: ' + errorMessage);
+      setInvoices([]); // Ensure invoices array is empty on error
+    } finally {
+      setLoadingInvoices(false);
+    }
+  };
+
+  // Load Transactions from finAPI
+  const loadTransactions = async () => {
+    setLoadingTransactions(true);
+    try {
+      const response = await fetch(
+        `/api/finapi/transactions?userId=${uid}&credentialType=${credentialType}&page=1&perPage=100`
+      );
+      const data = await response.json();
+
+      if (data.success && data.transactions) {
+        setTransactions(data.transactions);
+      } else {
+        setTransactions([]);
+      }
+    } catch (err: unknown) {
+      setTransactions([]);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+
+  // Reconcile Invoice with Transaction
+  const reconcileInvoice = async (invoiceId: string, transactionId: string) => {
+    if (!selectedInvoice || !selectedTransaction) return;
+
+    setReconcilingInvoice(invoiceId);
+    try {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      const transaction = transactions.find(txn => txn.id === transactionId);
+
+      if (!invoice || !transaction) {
+        throw new Error('Rechnung oder Transaktion nicht gefunden');
+      }
+
+      // Betragsvalidierung: Rechnung und Transaktion müssen übereinstimmen
+      const invoiceAmount = invoice.total || 0;
+      const transactionAmount = transaction.amount || 0;
+      const difference = Math.abs(invoiceAmount - transactionAmount);
+      const tolerance = 0.01; // 1 Cent Toleranz für Rundungsfehler
+
+      if (difference > tolerance) {
+        const errorMessage = `Beträge stimmen nicht überein!\n\nRechnung: ${formatCurrency(invoiceAmount)}\nTransaktion: ${formatCurrency(transactionAmount)}\n\nDifferenz: ${formatCurrency(difference)}\n\nBitte wählen Sie eine Transaktion mit dem passenden Betrag aus.`;
+        alert(errorMessage);
+        setReconcilingInvoice(null);
+        return;
+      }
+
+      const response = await fetch('/api/banking/reconciliation/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoiceId: invoiceId,
+          transactionId: transactionId,
+          companyId: uid,
+          action: 'reconcile',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Refresh data
+        await Promise.all([loadInvoices(), loadTransactions()]);
+        setSelectedInvoice(null);
+        setSelectedTransaction(null);
+      } else {
+        setError(data.error || 'Fehler beim Abgleich');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Fehler beim Abgleich: ' + errorMessage);
+    } finally {
+      setReconcilingInvoice(null);
+    }
+  };
+
+  // Undo Reconciliation
+  const undoReconciliation = async (invoiceId: string) => {
+    try {
+      const response = await fetch('/api/banking/reconciliation/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invoiceId: invoiceId,
+          companyId: uid,
+          action: 'unreconcile',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        await loadInvoices();
+      } else {
+        setError(data.error || 'Fehler beim Rückgängigmachen');
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError('Fehler beim Rückgängigmachen: ' + errorMessage);
+    }
+  };
+
+  // Load data on component mount
   useEffect(() => {
-    // Banking reconciliation system has been removed
-    setLoading(false);
-    setError(
-      'Das Banking-Reconciliation-System wurde entfernt. Verwenden Sie finAPI WebForm für Banking-Integrationen.'
-    );
-  }, []);
+    if (uid) {
+      setLoading(true);
+      Promise.all([loadInvoices(), loadTransactions()]).finally(() => setLoading(false));
+    }
+  }, [uid]); // Entferne Dependencies um Endlosschleifen zu vermeiden
 
+  // Utility Functions
+  const formatCurrency = (amount: number, currency: string = 'EUR') => {
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'Kein Datum';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  // Filter functions
+  const filteredInvoices = invoices.filter(invoice => {
+    // Sicherheitscheck: Invoice muss existieren
+    if (!invoice || typeof invoice !== 'object') {
+      return false;
+    }
+
+    const matchesSearch =
+      (invoice.invoiceNumber || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (invoice.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (invoice.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Standardmäßig alle Rechnungen anzeigen, nur verstecken wenn explizit ausgeschaltet
+    // showReconciled = true: Zeige alle (auch abgeglichene)
+    // showReconciled = false: Zeige nur offene (nicht abgeglichene)
+    const matchesReconcileFilter = showReconciled || !invoice.isReconciled;
+
+    return matchesSearch && matchesReconcileFilter;
+  });
+
+  const filteredTransactions = transactions.filter(transaction => {
+    // Sicherheitscheck: Transaction muss existieren
+    if (!transaction || typeof transaction !== 'object') {
+      return false;
+    }
+
+    const matchesSearch =
+      (transaction.purpose || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (transaction.counterpartName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (transaction.amount || 0).toString().includes(searchTerm);
+
+    // Only show credit transactions (incoming payments) for reconciliation
+    return matchesSearch && transaction.transactionType === 'CREDIT';
+  });
+
+  // Loading state
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -39,72 +322,30 @@ export default function BankingReconciliationPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Banking Reconciliation</h1>
-            <p className="text-gray-600 mt-1">Banking-System wurde vereinfacht</p>
+            <p className="text-gray-600 mt-1">Gleiche deine Rechnungen mit Banktransaktionen ab</p>
           </div>
-        </div>
-      </div>
-
-      {/* System Removed Notice */}
-      <div className="rounded-md bg-yellow-50 border border-yellow-200 p-6">
-        <div className="flex">
-          <Ban className="h-6 w-6 text-yellow-600 flex-shrink-0" />
-          <div className="ml-3">
-            <h3 className="text-lg font-medium text-yellow-800">
-              Banking Reconciliation System entfernt
-            </h3>
-            <div className="mt-2 text-sm text-yellow-700">
-              <p className="mb-3">
-                Das interne Banking-Reconciliation-System wurde aus Datenschutz- und
-                Sicherheitsgründen entfernt. Für Banking-Integrationen verwenden Sie bitte das
-                finAPI WebForm System.
-              </p>
-
-              <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-4">
-                <h4 className="font-medium text-yellow-900 mb-2">Verfügbare Banking-Features:</h4>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-[#14ad9f] rounded-full mr-2"></div>
-                    finAPI WebForm 2.0 Integration
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-[#14ad9f] rounded-full mr-2"></div>
-                    Sichere Bank-Verbindungen
-                  </li>
-                  <li className="flex items-center">
-                    <div className="w-2 h-2 bg-[#14ad9f] rounded-full mr-2"></div>
-                    Keine Speicherung sensibler Daten
-                  </li>
-                </ul>
-              </div>
-
-              <div className="flex space-x-3">
-                <a
-                  href={`/dashboard/company/${uid}/banking`}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Banking Dashboard
-                </a>
-                <a
-                  href={`/dashboard/company/${uid}/banking/webform`}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  finAPI WebForm
-                </a>
-              </div>
-            </div>
+          <div className="flex space-x-3">
+            <button
+              onClick={() => Promise.all([loadInvoices(), loadTransactions()])}
+              disabled={loadingInvoices || loadingTransactions}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${loadingInvoices || loadingTransactions ? 'animate-spin' : ''}`}
+              />
+              Aktualisieren
+            </button>
           </div>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="rounded-md bg-red-50 border border-red-200 p-4">
+        <div className="rounded-md bg-red-50 p-4">
           <div className="flex">
             <AlertTriangle className="h-5 w-5 text-red-400" />
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Information</h3>
+              <h3 className="text-sm font-medium text-red-800">Fehler</h3>
               <div className="mt-2 text-sm text-red-700">
                 <p>{error}</p>
               </div>
@@ -113,7 +354,7 @@ export default function BankingReconciliationPage() {
                   onClick={() => setError(null)}
                   className="text-sm font-medium text-red-800 hover:text-red-600"
                 >
-                  Verstanden
+                  Schließen
                 </button>
               </div>
             </div>
@@ -121,66 +362,389 @@ export default function BankingReconciliationPage() {
         </div>
       )}
 
-      {/* Feature Information Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <FileText className="h-8 w-8 text-blue-500" />
-            <h3 className="ml-3 text-lg font-medium text-gray-900">Rechnungsstellung</h3>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <FileText className="h-6 w-6 text-blue-400" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Offene Rechnungen</dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {invoices.filter(inv => !inv.isReconciled).length}
+                  </dd>
+                </dl>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600 mb-4">
-            Erstellen und verwalten Sie Rechnungen weiterhin über das Rechnungssystem.
-          </p>
-          <a
-            href={`/dashboard/company/${uid}/invoices`}
-            className="inline-flex items-center text-sm font-medium text-[#14ad9f] hover:text-[#129488]"
-          >
-            Zu den Rechnungen
-            <ExternalLink className="h-4 w-4 ml-1" />
-          </a>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <CreditCard className="h-8 w-8 text-green-500" />
-            <h3 className="ml-3 text-lg font-medium text-gray-900">Banking WebForm</h3>
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <CheckCircle className="h-6 w-6 text-green-400" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Abgeglichene Rechnungen
+                  </dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {invoices.filter(inv => inv && inv.isReconciled).length}
+                  </dd>
+                </dl>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600 mb-4">
-            Sichere Bankverbindungen über finAPI WebForm 2.0 ohne Datenspeicherung.
-          </p>
-          <a
-            href={`/dashboard/company/${uid}/banking/webform`}
-            className="inline-flex items-center text-sm font-medium text-[#14ad9f] hover:text-[#129488]"
-          >
-            WebForm öffnen
-            <ExternalLink className="h-4 w-4 ml-1" />
-          </a>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex items-center mb-4">
-            <Ban className="h-8 w-8 text-gray-400" />
-            <h3 className="ml-3 text-lg font-medium text-gray-900">Datenschutz</h3>
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <ArrowUpRight className="h-6 w-6 text-[#14ad9f]" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Eingänge (verfügbar)
+                  </dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {filteredTransactions.length}
+                  </dd>
+                </dl>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600 mb-4">
-            Keine Speicherung von Kontodaten oder Transaktionen für maximalen Datenschutz.
-          </p>
-          <span className="inline-flex items-center text-sm font-medium text-gray-500">
-            DSGVO-konform
-          </span>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <DollarSign className="h-6 w-6 text-yellow-400" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Offener Betrag</dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {formatCurrency(
+                      invoices
+                        .filter(inv => inv && !inv.isReconciled)
+                        .reduce((sum, inv) => sum + (inv.total || 0), 0)
+                    )}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Migration Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-medium text-blue-800 mb-3">System-Migration abgeschlossen</h3>
-        <div className="text-sm text-blue-700 space-y-2">
-          <p>✅ Interne Banking-APIs entfernt für besseren Datenschutz</p>
-          <p>✅ finAPI WebForm 2.0 als sichere Alternative implementiert</p>
-          <p>✅ Keine persistente Speicherung von Banking-Daten</p>
-          <p>✅ Rechnungssystem weiterhin verfügbar</p>
+      {/* Filter Controls */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Suchen..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] w-full"
+            />
+          </div>
+
+          {/* Show Reconciled Toggle */}
+          <div className="flex items-center">
+            <input
+              id="show-reconciled"
+              type="checkbox"
+              checked={showReconciled}
+              onChange={e => setShowReconciled(e.target.checked)}
+              className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
+            />
+            <label htmlFor="show-reconciled" className="ml-2 block text-sm text-gray-900">
+              Abgeglichene Rechnungen anzeigen
+            </label>
+          </div>
+
+          {/* Action Button */}
+          <div className="flex justify-end">
+            {(() => {
+              // Prüfe ob Beträge übereinstimmen
+              let amountsMatch = true;
+              if (selectedInvoice && selectedTransaction) {
+                const invoice = invoices.find(inv => inv.id === selectedInvoice);
+                const transaction = transactions.find(txn => txn.id === selectedTransaction);
+                const invoiceAmount = invoice?.total || 0;
+                const transactionAmount = transaction?.amount || 0;
+                const difference = Math.abs(invoiceAmount - transactionAmount);
+                const tolerance = 0.01;
+                amountsMatch = difference <= tolerance;
+              }
+
+              const isDisabled =
+                !selectedInvoice ||
+                !selectedTransaction ||
+                reconcilingInvoice !== null ||
+                !amountsMatch;
+
+              return (
+                <button
+                  onClick={() => {
+                    if (selectedInvoice && selectedTransaction) {
+                      reconcileInvoice(selectedInvoice, selectedTransaction);
+                    }
+                  }}
+                  disabled={isDisabled}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Link className="h-4 w-4 mr-2" />
+                  {reconcilingInvoice
+                    ? 'Gleiche ab...'
+                    : amountsMatch
+                      ? 'Abgleichen'
+                      : 'Beträge stimmen nicht überein'}
+                </button>
+              );
+            })()}
+          </div>
         </div>
       </div>
+
+      {/* Two Column Layout: Invoices and Transactions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Invoices */}
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <FileText className="h-5 w-5 mr-2 text-blue-500" />
+              Rechnungen
+              {loadingInvoices && (
+                <RefreshCw className="h-4 w-4 ml-2 animate-spin text-[#14ad9f]" />
+              )}
+            </h3>
+          </div>
+          <div className="max-h-96 overflow-y-auto">
+            <ul className="divide-y divide-gray-200">
+              {filteredInvoices.map(invoice => (
+                <li
+                  key={invoice.id}
+                  className={`px-6 py-4 hover:bg-gray-50 cursor-pointer border-l-4 ${
+                    selectedInvoice === invoice.id
+                      ? 'border-[#14ad9f] bg-[#14ad9f]/5'
+                      : invoice.isReconciled
+                        ? 'border-green-400'
+                        : 'border-transparent'
+                  }`}
+                  onClick={() =>
+                    setSelectedInvoice(selectedInvoice === invoice.id ? null : invoice.id)
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {invoice.invoiceNumber || 'Keine Nummer'}
+                      </p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {invoice.customerName || 'Unbekannter Kunde'}
+                      </p>
+                      <p className="text-xs text-gray-400">{formatDate(invoice.issueDate || '')}</p>
+                    </div>
+                    <div className="ml-4 flex-shrink-0 text-right">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {formatCurrency(invoice.total || 0)}
+                      </p>
+                      {invoice.isReconciled ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Abgeglichen
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Offen
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {invoice.isReconciled && (
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          undoReconciliation(invoice.id);
+                        }}
+                        className="text-xs text-red-600 hover:text-red-800"
+                      >
+                        <Unlink className="h-3 w-3 mr-1 inline" />
+                        Rückgängig
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+          {filteredInvoices.length === 0 && (
+            <div className="px-6 py-8 text-center text-gray-500">
+              <div className="space-y-2">
+                <p>Keine Rechnungen gefunden</p>
+                <div className="text-xs bg-gray-100 p-2 rounded">
+                  <p>🔍 Debug Info:</p>
+                  <p>Company ID: {uid}</p>
+                  <p>Total Invoices Loaded: {invoices.length}</p>
+                  <p>Loading: {loadingInvoices ? 'Ja' : 'Nein'}</p>
+                  <p>Show Reconciled: {showReconciled ? 'Ja' : 'Nein'}</p>
+                  <p>Search Term: &quot;{searchTerm}&quot;</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Transactions */}
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <CreditCard className="h-5 w-5 mr-2 text-green-500" />
+              Transaktionen (Eingänge)
+              {loadingTransactions && (
+                <RefreshCw className="h-4 w-4 ml-2 animate-spin text-[#14ad9f]" />
+              )}
+            </h3>
+          </div>
+          <div className="max-h-96 overflow-y-auto">
+            <ul className="divide-y divide-gray-200">
+              {filteredTransactions.map(transaction => (
+                <li
+                  key={transaction.id}
+                  className={`px-6 py-4 hover:bg-gray-50 cursor-pointer border-l-4 ${
+                    selectedTransaction === transaction.id
+                      ? 'border-[#14ad9f] bg-[#14ad9f]/5'
+                      : 'border-transparent'
+                  }`}
+                  onClick={() =>
+                    setSelectedTransaction(
+                      selectedTransaction === transaction.id ? null : transaction.id
+                    )
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {transaction.purpose || 'Kein Verwendungszweck'}
+                      </p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {transaction.counterpartName || 'Unbekannter Absender'}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {formatDate(transaction.bookingDate || '')}
+                      </p>
+                    </div>
+                    <div className="ml-4 flex-shrink-0 text-right">
+                      <p className="text-sm font-semibold text-green-600">
+                        +{formatCurrency(transaction.amount || 0, transaction.currency || 'EUR')}
+                      </p>
+                      {transaction.category && (
+                        <p className="text-xs text-gray-500">{transaction.category}</p>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {filteredTransactions.length === 0 && (
+            <div className="px-6 py-8 text-center text-gray-500">
+              Keine Eingangstransaktionen gefunden
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Selection Info */}
+      {(selectedInvoice || selectedTransaction) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <CheckCircle className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-blue-800">Ausgewählt für Abgleich</h3>
+              <div className="mt-2 text-sm text-blue-700">
+                {selectedInvoice && (
+                  <p>
+                    <strong>Rechnung:</strong>{' '}
+                    {invoices.find(inv => inv.id === selectedInvoice)?.invoiceNumber}
+                    {' - '}
+                    {formatCurrency(invoices.find(inv => inv.id === selectedInvoice)?.total || 0)}
+                  </p>
+                )}
+                {selectedTransaction && (
+                  <p>
+                    <strong>Transaktion:</strong>{' '}
+                    {transactions.find(txn => txn.id === selectedTransaction)?.purpose}
+                    {' - '}
+                    {formatCurrency(
+                      transactions.find(txn => txn.id === selectedTransaction)?.amount || 0
+                    )}
+                  </p>
+                )}
+                {selectedInvoice &&
+                  selectedTransaction &&
+                  (() => {
+                    const invoice = invoices.find(inv => inv.id === selectedInvoice);
+                    const transaction = transactions.find(txn => txn.id === selectedTransaction);
+                    const invoiceAmount = invoice?.total || 0;
+                    const transactionAmount = transaction?.amount || 0;
+                    const difference = Math.abs(invoiceAmount - transactionAmount);
+                    const tolerance = 0.01;
+
+                    if (difference > tolerance) {
+                      return (
+                        <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded">
+                          <p className="text-red-800 text-xs font-medium">
+                            ⚠️ Warnung: Beträge stimmen nicht überein!
+                          </p>
+                          <p className="text-red-700 text-xs">
+                            Differenz: {formatCurrency(difference)}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {invoices.length === 0 && transactions.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <div className="flex flex-col items-center">
+            <CreditCard className="h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Daten verfügbar</h3>
+            <p className="text-gray-600 mb-6">
+              Verbinden Sie zuerst ein Bankkonto und erstellen Sie Rechnungen.
+            </p>
+            <button
+              onClick={() => Promise.all([loadInvoices(), loadTransactions()])}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+            >
+              Daten neu laden
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
