@@ -24,6 +24,9 @@ import { Request, Response } from 'express';
 // AWS SDK for Textract
 import { TextractClient, AnalyzeDocumentCommand } from '@aws-sdk/client-textract';
 
+// Google AI Studio für intelligente OCR-Nachbearbeitung
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
 // Validation schemas
 const updateInvoiceStatusSchema = z.object({
     status: z.enum(['DRAFT', 'PENDING', 'SENT', 'VIEWED', 'PAID', 'OVERDUE', 'CANCELLED', 'REFUNDED'])
@@ -89,6 +92,22 @@ if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
     logger.warn('[AWS] AWS credentials not fully configured - OCR may fall back to mock mode');
 } else {
     logger.info('[AWS] ✅ AWS Textract configured with region:', process.env.AWS_REGION || 'eu-central-1');
+}
+
+// Google AI Studio Client für OCR-Nachbearbeitung
+let genAI: GoogleGenerativeAI | null = null;
+
+function getGoogleAIClient(): GoogleGenerativeAI {
+    if (!genAI) {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            logger.error("FATAL: GEMINI_API_KEY ist nicht konfiguriert. Google AI Studio OCR-Verbesserung deaktiviert.");
+            throw new Error("GEMINI_API_KEY is not configured in the environment.");
+        }
+        genAI = new GoogleGenerativeAI(apiKey);
+        logger.info('[Google AI] ✅ Google AI Studio configured for OCR enhancement');
+    }
+    return genAI;
 }
 
 // Model-Instanzen
@@ -501,8 +520,8 @@ async function handleReceiptExtraction(
         // Convert base64 to buffer
         const fileBuffer = Buffer.from(base64File, 'base64');
 
-        // Simulate OCR processing with AWS Textract
-        const ocrResult = await performAdvancedOCR(fileBuffer, fileName, ocrProvider);
+        // Hybrid OCR processing: AWS Textract + Google AI Studio
+        const ocrResult = await performHybridOCR(fileBuffer, fileName, ocrProvider);
 
         // Extract structured receipt data
         const extractedData = await extractReceiptDataFromOCR(ocrResult, fileName);
@@ -518,13 +537,14 @@ async function handleReceiptExtraction(
             success: true,
             data: extractedData,
             ocr: {
-                provider: ocrProvider,
+                provider: ocrResult.enhanced ? 'AWS_TEXTRACT + GOOGLE_AI_STUDIO' : ocrProvider,
                 confidence: ocrResult.confidence,
                 textLength: ocrResult.text.length,
-                processingTime: ocrResult.processingTime
+                processingTime: ocrResult.processingTime,
+                enhanced: ocrResult.enhanced || false
             },
-            message: generateExtractionMessage(extractedData),
-            extractionMethod: 'advanced_ocr'
+            message: generateExtractionMessage(extractedData, ocrResult.enhanced),
+            extractionMethod: ocrResult.enhanced ? 'hybrid_ocr' : 'advanced_ocr'
         });
 
     } catch (error) {
@@ -538,7 +558,128 @@ async function handleReceiptExtraction(
     }
 }
 
-// Advanced OCR Processing with AWS Textract
+// Hybrid OCR Processing: AWS Textract + Google AI Studio
+async function performHybridOCR(
+    fileBuffer: Buffer,
+    fileName: string,
+    provider: string
+): Promise<{ text: string; confidence: number; processingTime: number; blocks: any[]; enhanced: boolean }> {
+    try {
+        logger.info(`[OCR Hybrid] Starting hybrid processing for ${fileName}`);
+        
+        // Step 1: AWS Textract für initiale OCR
+        const textractResult = await performAWSTextractOCR(fileBuffer, fileName);
+        
+        // Step 2: Google AI Studio für intelligente Nachbearbeitung
+        const enhancedResult = await enhanceOCRWithGoogleAI(textractResult.text, fileName);
+        
+        return {
+            text: enhancedResult.enhancedText,
+            confidence: Math.max(textractResult.confidence, enhancedResult.confidence),
+            processingTime: textractResult.processingTime + enhancedResult.processingTime,
+            blocks: textractResult.blocks,
+            enhanced: enhancedResult.enhanced
+        };
+        
+    } catch (error) {
+        logger.error('[OCR Hybrid] Hybrid processing failed, falling back to AWS only:', error);
+        // Fallback zu AWS Textract only
+        const fallbackResult = await performAdvancedOCR(fileBuffer, fileName, provider);
+        return {
+            ...fallbackResult,
+            enhanced: false
+        };
+    }
+}
+
+// Google AI Studio OCR Enhancement
+async function enhanceOCRWithGoogleAI(
+    rawOcrText: string,
+    fileName: string
+): Promise<{ enhancedText: string; confidence: number; processingTime: number; enhanced: boolean }> {
+    const startTime = Date.now();
+    
+    try {
+        logger.info('[Google AI] Starting OCR enhancement...');
+        
+        const genAI = getGoogleAIClient();
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash-latest",
+            generationConfig: {
+                temperature: 0.1,
+                topK: 1,
+                topP: 0.1,
+                maxOutputTokens: 2048,
+            }
+        });
+
+        const prompt = `Du bist ein OCR-Verbesserungs-Experte. Analysiere den folgenden fragmentierten OCR-Text von einer Rechnung und strukturiere ihn intelligent.
+
+Roher OCR-Text:
+${rawOcrText}
+
+Aufgabe:
+1. Korrigiere OCR-Fehler und verbinde fragmentierte Textteile
+2. Identifiziere und extrahiere folgende Daten:
+   - Rechnungsnummer
+   - Rechnungsdatum (Format: YYYY-MM-DD)
+   - Anbieter/Firma
+   - Gesamtbetrag (nur Zahlen mit Dezimalstellen)
+   - MwSt-Betrag
+   - Netto-Betrag
+   - MwSt-Satz
+   - Firmenadresse
+   - Kontaktdaten
+
+Gib eine strukturierte Antwort im folgenden Format zurück:
+---
+VENDOR: [Firmenname]
+INVOICE_NUMBER: [Rechnungsnummer]
+DATE: [YYYY-MM-DD]
+TOTAL_AMOUNT: [Betrag]
+VAT_AMOUNT: [MwSt-Betrag]
+NET_AMOUNT: [Netto-Betrag]
+VAT_RATE: [MwSt-Satz in %]
+COMPANY_ADDRESS: [Adresse]
+CONTACT_EMAIL: [E-Mail]
+CONTACT_PHONE: [Telefon]
+---
+
+Verbesserter Text:
+[Hier den vollständig korrigierten und strukturierten Text einfügen]`;
+
+        const result = await model.generateContent(prompt);
+        const enhancedText = result.response.text();
+        
+        const processingTime = Date.now() - startTime;
+        
+        logger.info('[Google AI] OCR enhancement completed:', {
+            originalLength: rawOcrText.length,
+            enhancedLength: enhancedText.length,
+            processingTime
+        });
+        
+        return {
+            enhancedText,
+            confidence: 0.95, // Google AI Studio ist sehr zuverlässig bei Textverbesserung
+            processingTime,
+            enhanced: true
+        };
+        
+    } catch (error) {
+        logger.error('[Google AI] Enhancement failed:', error);
+        
+        // Fallback zum ursprünglichen Text
+        return {
+            enhancedText: rawOcrText,
+            confidence: 0.7,
+            processingTime: Date.now() - startTime,
+            enhanced: false
+        };
+    }
+}
+
+// Advanced OCR Processing with AWS Textract (original function, kept for fallback)
 async function performAdvancedOCR(
     fileBuffer: Buffer,
     fileName: string,
@@ -1079,14 +1220,28 @@ function extractInvoiceNumber(text: string): string {
     return '';
 }
 
-// Extract structured data from OCR text with enhanced AWS Textract block analysis and Queries
+// Extract structured data from OCR text with enhanced AWS Textract + Google AI Studio
 async function extractReceiptDataFromOCR(
-    ocrResult: { text: string; confidence: number; blocks?: any[] },
+    ocrResult: { text: string; confidence: number; blocks?: any[]; enhanced?: boolean },
     fileName: string
 ) {
     const text = ocrResult.text.toLowerCase();
     const originalText = ocrResult.text;
     const blocks = ocrResult.blocks || [];
+    
+    logger.info('[OCR] Processing extraction with enhanced:', ocrResult.enhanced || false);
+    
+    // If enhanced by Google AI Studio, try to parse structured format first
+    if (ocrResult.enhanced) {
+        const structuredData = parseGoogleAIStructuredData(originalText);
+        if (structuredData) {
+            logger.info('[OCR] Using Google AI Studio structured data');
+            return createReceiptDataFromStructured(structuredData, fileName);
+        }
+    }
+    
+    // Fallback to traditional extraction methods
+    logger.info('[OCR] Using traditional extraction methods');
     
     // Extract query results first (most reliable)
     const queryResults = extractQueryResults(blocks);
@@ -1668,13 +1823,140 @@ function parseDate(dateText: string): string | null {
 }
 
 // Generate user-friendly extraction message
-function generateExtractionMessage(data: any): string {
+function generateExtractionMessage(data: any, enhanced?: boolean): string {
     const foundItems = [];
     if (data.amount) foundItems.push(`Betrag ${data.amount}€`);
     if (data.vendor) foundItems.push(`Anbieter ${data.vendor}`);
     if (data.invoiceNumber) foundItems.push(`RG-Nr. ${data.invoiceNumber}`);
     
-    return foundItems.length > 0 
+    const baseMessage = foundItems.length > 0 
         ? `✅ OCR erkannt: ${foundItems.join(', ')}`
         : '📋 OCR-Verarbeitung abgeschlossen - Daten manuell prüfen';
+    
+    if (enhanced) {
+        return `🚀 ${baseMessage} (AWS Textract + Google AI Studio)`;
+    }
+    
+    return baseMessage;
+}
+
+// Parse structured data from Google AI Studio response
+function parseGoogleAIStructuredData(text: string): any | null {
+    try {
+        // Look for the structured data section between --- markers
+        const structuredMatch = text.match(/---\s*([\s\S]*?)\s*---/);
+        if (!structuredMatch) return null;
+        
+        const structuredText = structuredMatch[1];
+        const data: any = {};
+        
+        // Parse each line: KEY: VALUE
+        const lines = structuredText.split('\n');
+        for (const line of lines) {
+            const colonIndex = line.indexOf(':');
+            if (colonIndex > 0) {
+                const key = line.substring(0, colonIndex).trim();
+                const value = line.substring(colonIndex + 1).trim();
+                
+                if (value && value !== '[' && value !== 'N/A' && value !== '') {
+                    data[key] = value.replace(/[\[\]]/g, ''); // Remove brackets
+                }
+            }
+        }
+        
+        logger.info('[Google AI] Parsed structured data:', data);
+        return Object.keys(data).length > 0 ? data : null;
+        
+    } catch (error) {
+        logger.error('[Google AI] Failed to parse structured data:', error);
+        return null;
+    }
+}
+
+// Create receipt data from Google AI Studio structured data
+function createReceiptDataFromStructured(structuredData: any, fileName: string): any {
+    const parseAmount = (amountStr: string): number | null => {
+        if (!amountStr) return null;
+        const match = amountStr.match(/(\d+[.,]\d+)/);
+        return match ? parseFloat(match[1].replace(',', '.')) : null;
+    };
+    
+    const parseDate = (dateStr: string): string => {
+        if (!dateStr) return new Date().toISOString().split('T')[0];
+        
+        // Try to parse the date string
+        try {
+            if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return dateStr; // Already in correct format
+            }
+            
+            // Convert other formats to YYYY-MM-DD
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                return date.toISOString().split('T')[0];
+            }
+        } catch (e) {
+            // Ignore parsing errors
+        }
+        
+        return new Date().toISOString().split('T')[0];
+    };
+    
+    const determineCategory = (vendor: string, text: string): string => {
+        const v = vendor.toLowerCase();
+        const t = text.toLowerCase();
+        
+        if (v.includes('amazon') || v.includes('aws')) return 'Software/Tools';
+        if (t.includes('hosting') || t.includes('server') || t.includes('cloud')) return 'IT/Hosting';
+        if (t.includes('software') || t.includes('lizenz') || t.includes('subscription')) return 'Software/Lizenzen';
+        if (t.includes('werbung') || t.includes('marketing') || t.includes('ads')) return 'Marketing/Werbung';
+        if (t.includes('büro') || t.includes('office') || t.includes('material')) return 'Büroausstattung';
+        return 'Sonstiges';
+    };
+    
+    const vendor = structuredData.VENDOR || '';
+    const invoiceNumber = structuredData.INVOICE_NUMBER || '';
+    const totalAmount = parseAmount(structuredData.TOTAL_AMOUNT);
+    const netAmount = parseAmount(structuredData.NET_AMOUNT);
+    const vatAmount = parseAmount(structuredData.VAT_AMOUNT);
+    const vatRate = structuredData.VAT_RATE ? parseInt(structuredData.VAT_RATE) : 19;
+    const date = parseDate(structuredData.DATE);
+    const category = determineCategory(vendor, JSON.stringify(structuredData));
+    
+    // Generate appropriate title
+    let title = 'Google AI - Rechnung';
+    if (vendor && invoiceNumber) {
+        title = `${vendor} - Rechnung ${invoiceNumber}`;
+    } else if (vendor) {
+        title = `${vendor} - Rechnung`;
+    } else if (invoiceNumber) {
+        title = `Rechnung ${invoiceNumber}`;
+    }
+    
+    const result = {
+        title,
+        amount: totalAmount,
+        category,
+        description: `Google AI Studio OCR: ${fileName}`,
+        vendor,
+        date,
+        invoiceNumber,
+        vatAmount: vatAmount || (totalAmount && netAmount ? totalAmount - netAmount : null),
+        netAmount: netAmount || (totalAmount ? Math.round((totalAmount / 1.19) * 100) / 100 : null),
+        vatRate,
+        companyName: vendor,
+        companyAddress: structuredData.COMPANY_ADDRESS || '',
+        contactEmail: structuredData.CONTACT_EMAIL || '',
+        contactPhone: structuredData.CONTACT_PHONE || '',
+        enhanced: true
+    };
+    
+    logger.info('[Google AI] Created structured receipt data:', {
+        vendor: result.vendor,
+        amount: result.amount,
+        invoiceNumber: result.invoiceNumber,
+        category: result.category
+    });
+    
+    return result;
 }
