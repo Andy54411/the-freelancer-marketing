@@ -276,7 +276,6 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
     !status.accountSuspended &&
     status.isApproved &&
     status.adminApproved &&
-    !status.adminNotes &&
     !isRecentlyApproved
   ) {
     return null;

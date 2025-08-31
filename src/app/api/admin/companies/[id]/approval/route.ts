@@ -175,7 +175,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         type: 'approval',
         title: globalTitle,
         message: globalMessage,
-        link: `/dashboard/company/${companyId}`, // MIT COMPANY-ID!
+        link: `/dashboard/company/${companyId}`, // RELATIVER Link!
         isRead: false,
         createdAt: Timestamp.now(), // FIRESTORE TIMESTAMP statt String!
         id: `approval_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

@@ -18,6 +18,7 @@ import {
   orderBy,
   limit,
   updateDoc,
+  deleteDoc,
   Timestamp,
 } from 'firebase/firestore';
 import { categories, Category } from '@/lib/categoriesData'; // Categories for search
@@ -513,37 +514,26 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     window.dispatchEvent(new CustomEvent('openChatbot'));
   };
 
-  // NEU: Funktion zum Markieren einer Benachrichtigung als gelesen über API
-  const handleNotificationClick = async (notificationId: string) => {
-    setIsNotificationDropdownOpen(false); // Dropdown schließen
-
+  // NEU: Funktion zum LÖSCHEN einer Benachrichtigung aus der Datenbank
+  const handleNotificationClick = async (notificationId: string, link: string) => {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        return;
-      }
+      // LÖSCHEN statt als gelesen markieren - verhindert Datenbank-Überladung
+      if (notificationId) {
+        const notificationRef = doc(db, 'notifications', notificationId);
+        await deleteDoc(notificationRef);
+        console.log(`✅ Notification ${notificationId} deleted from database`);
 
-      const token = await user.getIdToken();
-
-      const response = await fetch('/api/notifications/mark-read', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ notificationId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Fehler beim Markieren der Benachrichtigung');
+        // Auch aus lokalem State entfernen
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
       }
     } catch (error) {
-      // Fallback zur direkten Firebase-Methode
-      try {
-        const notificationRef = doc(db, 'notifications', notificationId);
-        await updateDoc(notificationRef, { isRead: true });
-      } catch (fallbackError) {}
+      console.error('Error deleting notification:', error);
+      // Continue anyway - don't block navigation
+    }
+
+    // Navigate to the link
+    if (link) {
+      window.location.href = link;
     }
   };
 
@@ -714,7 +704,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                           <li key={notification.id}>
                             <Link
                               href={notification.link || '#'}
-                              onClick={() => handleNotificationClick(notification.id)}
+                              onClick={() =>
+                                handleNotificationClick(notification.id, notification.link || '#')
+                              }
                               className="block p-3 hover:bg-gray-100 bg-blue-50"
                             >
                               <div className="flex items-start gap-3">
