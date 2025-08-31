@@ -57,3 +57,56 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 }
+
+/**
+ * POST /api/company/[uid]/notifications
+ * Creates a new notification for a company
+ */
+export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+  try {
+    const { uid } = await params;
+    const body = await request.json();
+    const { type, title, message, link, metadata } = body;
+
+    if (!uid || !type || !title || !message) {
+      return NextResponse.json(
+        { error: 'Company ID, type, title und message sind erforderlich' },
+        { status: 400 }
+      );
+    }
+
+    // Create notification document
+    const notification = {
+      companyId: uid,
+      type,
+      title,
+      message,
+      link: link || `/dashboard/company/${uid}`,
+      metadata: metadata || {},
+      createdAt: new Date().toISOString(),
+      readAt: null,
+    };
+
+    const docRef = await db.collection('notifications').add(notification);
+
+    console.log(`✅ Created notification for company ${uid}:`, { type, title });
+
+    return NextResponse.json({
+      success: true,
+      notificationId: docRef.id,
+      notification: {
+        id: docRef.id,
+        ...notification,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    return NextResponse.json(
+      {
+        error: 'Fehler beim Erstellen der Benachrichtigung',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}

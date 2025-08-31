@@ -149,6 +149,49 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (!notificationResponse.ok) {
         console.error('Failed to send notification to company');
       }
+
+      // ZUSÄTZLICH: Erstelle globale User-Benachrichtigung für Header-Bell
+      let globalTitle = 'Status-Update';
+      let globalMessage = 'Ihr Account-Status wurde aktualisiert.';
+
+      if (action === 'approve') {
+        globalTitle = '🎉 Profil freigegeben!';
+        globalMessage =
+          'Glückwunsch! Ihr Unternehmensprofil wurde von einem Administrator freigegeben. Sie können jetzt alle Platform-Features nutzen.';
+      } else if (action === 'reject') {
+        globalTitle = '⚠️ Überprüfung erforderlich';
+        globalMessage =
+          'Ihr Profil konnte nicht freigegeben werden. Bitte überprüfen Sie die Admin-Notizen und nehmen Sie entsprechende Korrekturen vor.';
+      } else if (action === 'suspend') {
+        globalTitle = '🚫 Account gesperrt';
+        globalMessage =
+          'Ihr Account wurde gesperrt. Kontaktieren Sie den Support für weitere Informationen.';
+      } else if (action === 'unsuspend') {
+        globalTitle = '✅ Account entsperrt';
+        globalMessage = 'Ihr Account wurde entsperrt und alle Funktionen sind wieder verfügbar.';
+      }
+
+      const globalNotificationResponse = await fetch(
+        `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: companyId,
+            type: 'approval',
+            title: globalTitle,
+            message: globalMessage,
+            link: `/dashboard/company/${companyId}`,
+            isRead: false,
+          }),
+        }
+      );
+
+      if (!globalNotificationResponse.ok) {
+        console.error('Failed to send global notification to user');
+      }
     } catch (notificationError) {
       console.error('Error sending notification:', notificationError);
       // Don't fail the approval process if notification fails

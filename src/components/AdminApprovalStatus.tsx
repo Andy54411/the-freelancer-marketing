@@ -179,6 +179,16 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
     }
 
     if (status.isApproved) {
+      // Prüfe zuerst adminApproved für korrekte Anzeige
+      if (status.adminApproved) {
+        return (
+          <Badge className="bg-green-100 text-green-800">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Admin Freigegeben
+          </Badge>
+        );
+      }
+
       // Legacy-Firma mit pending profile review
       if (status.profileStatus === 'pending_review') {
         return (
@@ -188,6 +198,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
           </Badge>
         );
       }
+
       return (
         <Badge className="bg-green-100 text-green-800">
           <CheckCircle className="h-3 w-3 mr-1" />
@@ -218,11 +229,17 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
       return `Ihr Account wurde am ${status.suspendedAt ? new Date(status.suspendedAt).toLocaleDateString('de-DE') : 'unbekanntem Datum'} gesperrt. ${status.suspensionReason ? `Grund: ${status.suspensionReason}` : ''} Kontaktieren Sie den Support für weitere Informationen.`;
     }
 
-    if (status.isApproved) {
-      // Legacy-Firma mit pending profile review
-      if (status.profileStatus === 'pending_review') {
+    if (status.isApproved || status.adminApproved) {
+      // Wenn adminApproved true ist, dann ist das Unternehmen vollständig freigegeben
+      if (status.adminApproved) {
+        return 'Ihr Unternehmen wurde von einem Administrator freigegeben. Sie können alle Platform-Features nutzen.';
+      }
+
+      // Legacy-Firma mit pending profile review (nur wenn adminApproved nicht explizit true ist)
+      if (status.profileStatus === 'pending_review' && !status.adminApproved) {
         return 'Ihr Unternehmen ist als Legacy-Kunde technisch freigeschaltet, aber Ihr Profil befindet sich noch in der Überprüfung. Sie können alle Platform-Features nutzen.';
       }
+
       return 'Ihr Unternehmen wurde von einem Administrator freigegeben. Sie können alle Platform-Features nutzen.';
     }
 
@@ -254,13 +271,12 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
     status.adminApprovedAt &&
     new Date(status.adminApprovedAt) > new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  // Zeige nichts an, wenn bereits freigegeben und Profile vollständig approved und keine ungelesenen Benachrichtigungen
+  // Zeige nichts an, wenn bereits freigegeben - Benachrichtigung über globales System
   if (
-    !status.accountSuspended && // Gesperrte Accounts IMMER anzeigen
+    !status.accountSuspended &&
     status.isApproved &&
-    (!status.profileStatus || status.profileStatus === 'approved') &&
+    status.adminApproved &&
     !status.adminNotes &&
-    unreadNotifications.length === 0 &&
     !isRecentlyApproved
   ) {
     return null;
