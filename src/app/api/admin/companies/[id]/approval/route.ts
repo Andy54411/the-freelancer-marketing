@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
+import { Timestamp } from 'firebase-admin/firestore';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 
@@ -130,25 +131,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         notificationType = 'account_unsuspended';
       }
 
-      const notificationResponse = await fetch(
-        `https://taskilo.de/api/company/${companyId}/notifications/approval`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            type: notificationType,
-            status: 'unread',
-            adminNotes: notes,
-            adminApprovedBy: adminUserId,
-          }),
-        }
-      );
+      // DIREKT in Firebase schreiben - KEIN fetch!
+      const companyNotificationData = {
+        type: notificationType,
+        status: 'unread',
+        adminNotes: notes,
+        adminApprovedBy: adminUserId,
+        createdAt: Timestamp.now(), // FIRESTORE TIMESTAMP statt String!
+        id: `approval_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      };
 
-      if (!notificationResponse.ok) {
-        console.error('Failed to send notification to company');
-      }
+      await db
+        .collection('companies')
+        .doc(companyId)
+        .collection('notifications')
+        .add(companyNotificationData);
+      console.log(`✅ Company notification created directly for ${companyId}`);
 
       // ZUSÄTZLICH: Erstelle globale User-Benachrichtigung für Header-Bell
       let globalTitle = 'Status-Update';
@@ -177,9 +175,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         type: 'approval',
         title: globalTitle,
         message: globalMessage,
-        link: `/dashboard/company`,
+        link: `/dashboard/company/${companyId}`, // MIT COMPANY-ID!
         isRead: false,
-        createdAt: new Date().toISOString(),
+        createdAt: Timestamp.now(), // FIRESTORE TIMESTAMP statt String!
         id: `approval_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       };
 

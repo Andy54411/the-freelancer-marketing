@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
           title: 'Freigabe-Status Update',
           message:
             'Ihr Unternehmen befindet sich derzeit in der Prüfung. Wir werden Sie informieren, sobald die Überprüfung abgeschlossen ist.',
-          link: '/dashboard/company',
+          link: `/dashboard/company/${companyId}`,
           isRead: false,
         }),
       });

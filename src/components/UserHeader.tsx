@@ -753,7 +753,19 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                     {notification.message}
                                   </p>
                                   <p className="text-xs text-gray-400 mt-1">
-                                    {notification.createdAt.toDate().toLocaleString('de-DE')}
+                                    {(() => {
+                                      if (notification.createdAt?.toDate) {
+                                        return notification.createdAt
+                                          .toDate()
+                                          .toLocaleString('de-DE');
+                                      } else if (typeof notification.createdAt === 'string') {
+                                        return new Date(notification.createdAt).toLocaleString(
+                                          'de-DE'
+                                        );
+                                      } else {
+                                        return new Date().toLocaleString('de-DE');
+                                      }
+                                    })()}
                                   </p>
                                 </div>
                               </div>
