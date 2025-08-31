@@ -106,6 +106,21 @@ service firebase.storage {
                       (isDelete() || (isUpload() && isValidDocumentType()));
     }
 
+    // Ausgaben-Belege - Firmen können ihre Rechnungsbelege verwalten
+    // Pfad: expense-receipts/{companyId}/{fileName}
+    match /expense-receipts/{companyId}/{fileName} {
+      allow read: if request.auth != null && 
+                     (isSupportStaff() || 
+                      (isCompany() && request.auth.uid == companyId) ||
+                      request.auth.uid == companyId);
+      allow write: if request.auth != null && 
+                      (isSupportStaff() || 
+                       (isCompany() && request.auth.uid == companyId) ||
+                       request.auth.uid == companyId) &&
+                      (isDelete() || (isUpload() && 
+                       request.resource.contentType.matches('application/pdf')));
+    }
+
     // Workspace Task Anhänge - Authentifizierte Benutzer können Dateien zu Tasks hinzufügen
     // Pfad: workspaces/{workspaceId}/tasks/{taskId}/attachments/{fileName}
     match /workspaces/{workspaceId}/tasks/{taskId}/attachments/{fileName} {

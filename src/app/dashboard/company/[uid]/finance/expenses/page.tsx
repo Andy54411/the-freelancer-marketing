@@ -132,6 +132,38 @@ export default function ExpensesPage() {
     }
   };
 
+  // Ausgabe löschen
+  const handleDeleteExpense = async (expenseId: string) => {
+    try {
+      const response = await fetch(`/api/expenses?id=${expenseId}&companyId=${uid}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Ausgabe erfolgreich gelöscht');
+        // Ausgaben neu laden
+        await loadExpenses();
+        return true;
+      } else {
+        toast.error('Fehler beim Löschen: ' + (result.error || 'Unbekannter Fehler'));
+        return false;
+      }
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast.error('Fehler beim Löschen der Ausgabe');
+      return false;
+    }
+  };
+
   useEffect(() => {
     if (uid && user) {
       loadExpenses();
@@ -169,6 +201,7 @@ export default function ExpensesPage() {
             companyId={uid}
             expenses={expenses}
             onSave={handleSaveExpense}
+            onDelete={handleDeleteExpense}
             onRefresh={loadExpenses}
           />
         </div>

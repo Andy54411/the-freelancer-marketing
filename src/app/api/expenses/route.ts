@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const {
+      id, // Für Updates
       companyId,
       title,
       amount,
@@ -113,8 +114,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Firebase Admin SDK - Verwendung von FieldValue für Timestamps
-    const now = new Date();
     const expenseData = {
       companyId,
       title,
@@ -134,24 +133,123 @@ export async function POST(request: NextRequest) {
       contactPhone: contactPhone || '',
       taxDeductible: taxDeductible || false,
       receipt: receipt || null,
-      createdAt: now,
-      updatedAt: now,
+      updatedAt: new Date(),
     };
 
-    // Firebase Admin SDK Syntax
-    const docRef = await db.collection('expenses').add(expenseData);
+    if (id) {
+      // UPDATE: Bestehende Ausgabe aktualisieren
+      const docRef = db.collection('expenses').doc(id);
+      const docSnapshot = await docRef.get();
 
-    return NextResponse.json({
-      success: true,
-      expenseId: docRef.id,
-      message: 'Ausgabe erfolgreich erstellt',
-    });
+      if (!docSnapshot.exists) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Ausgabe nicht gefunden',
+          },
+          { status: 404 }
+        );
+      }
+
+      // Prüfe Berechtigung
+      const existingData = docSnapshot.data();
+      if (existingData?.companyId !== companyId) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Keine Berechtigung für diese Ausgabe',
+          },
+          { status: 403 }
+        );
+      }
+
+      await docRef.update(expenseData);
+
+      return NextResponse.json({
+        success: true,
+        expenseId: id,
+        message: 'Ausgabe erfolgreich aktualisiert',
+      });
+    } else {
+      // CREATE: Neue Ausgabe erstellen
+      const createData = {
+        ...expenseData,
+        createdAt: new Date(),
+      };
+
+      const docRef = await db.collection('expenses').add(createData);
+
+      return NextResponse.json({
+        success: true,
+        expenseId: docRef.id,
+        message: 'Ausgabe erfolgreich erstellt',
+      });
+    }
   } catch (error) {
-    console.error('Error creating expense:', error);
+    console.error('Error saving expense:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Fehler beim Erstellen der Ausgabe',
+        error: 'Fehler beim Speichern der Ausgabe',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const expenseId = searchParams.get('id');
+    const companyId = searchParams.get('companyId');
+
+    if (!expenseId || !companyId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Expense ID und Company ID sind erforderlich',
+        },
+        { status: 400 }
+      );
+    }
+
+    const docRef = db.collection('expenses').doc(expenseId);
+    const docSnapshot = await docRef.get();
+
+    if (!docSnapshot.exists) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Ausgabe nicht gefunden',
+        },
+        { status: 404 }
+      );
+    }
+
+    // Prüfe Berechtigung
+    const existingData = docSnapshot.data();
+    if (existingData?.companyId !== companyId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Keine Berechtigung für diese Ausgabe',
+        },
+        { status: 403 }
+      );
+    }
+
+    await docRef.delete();
+
+    return NextResponse.json({
+      success: true,
+      message: 'Ausgabe erfolgreich gelöscht',
+    });
+  } catch (error) {
+    console.error('Error deleting expense:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Fehler beim Löschen der Ausgabe',
       },
       { status: 500 }
     );

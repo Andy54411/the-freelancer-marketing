@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -211,6 +212,36 @@ export function ExpenseComponent({
       .trim();
 
     return result;
+  };
+
+  // PDF-Datei zu Firebase Storage hochladen
+  const uploadPdfToStorage = async (file: File, expenseId?: string): Promise<string> => {
+    try {
+      const storage = getStorage();
+
+      // Generiere eindeutigen Pfad für die PDF-Datei
+      const timestamp = Date.now();
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = expenseId
+        ? `expense_${expenseId}_${sanitizedFileName}`
+        : `expense_${timestamp}_${sanitizedFileName}`;
+
+      const storagePath = `expense-receipts/${companyId}/${fileName}`;
+      const storageRef = ref(storage, storagePath);
+
+      // Upload der Datei
+      const uploadResult = await uploadBytes(storageRef, file);
+
+      // Download-URL abrufen
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+
+      console.log('PDF erfolgreich hochgeladen:', downloadURL);
+      return downloadURL;
+    } catch (error) {
+      console.error('Fehler beim PDF-Upload:', error);
+      toast.error('Fehler beim Hochladen der PDF-Datei');
+      throw error;
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -476,6 +507,21 @@ export function ExpenseComponent({
         });
       }
 
+      // 📄 PDF-Upload zu Firebase Storage
+      let pdfDownloadURL = '';
+      if (currentReceipt) {
+        try {
+          toast.info('PDF wird hochgeladen...', {
+            description: 'Beleg wird für Steuerberater gespeichert',
+          });
+          pdfDownloadURL = await uploadPdfToStorage(currentReceipt);
+          toast.success('PDF erfolgreich gespeichert!');
+        } catch (error) {
+          console.error('PDF-Upload Fehler:', error);
+          toast.error('PDF-Upload fehlgeschlagen, Ausgabe wird trotzdem gespeichert');
+        }
+      }
+
       const expenseData: ExpenseData = {
         title: formData.title,
         amount,
@@ -497,7 +543,7 @@ export function ExpenseComponent({
         receipt: currentReceipt
           ? {
               fileName: currentReceipt.name,
-              downloadURL: '',
+              downloadURL: pdfDownloadURL, // 🎯 Echte Firebase Storage URL!
               uploadDate: new Date().toISOString(),
             }
           : null,
@@ -630,6 +676,21 @@ export function ExpenseComponent({
         });
       }
 
+      // 📄 PDF-Upload zu Firebase Storage (nur bei neuen Uploads)
+      let pdfDownloadURL = editingExpense.receipt?.downloadURL || '';
+      if (currentReceipt) {
+        try {
+          toast.info('PDF wird hochgeladen...', {
+            description: 'Neuer Beleg wird gespeichert',
+          });
+          pdfDownloadURL = await uploadPdfToStorage(currentReceipt, editingExpense.id);
+          toast.success('PDF erfolgreich gespeichert!');
+        } catch (error) {
+          console.error('PDF-Upload Fehler:', error);
+          toast.error('PDF-Upload fehlgeschlagen, Änderungen werden trotzdem gespeichert');
+        }
+      }
+
       const updatedExpenseData: ExpenseData = {
         ...editingExpense, // Behalte existierende Felder
         id: editingExpense.id,
@@ -654,7 +715,7 @@ export function ExpenseComponent({
         receipt: currentReceipt
           ? {
               fileName: currentReceipt.name,
-              downloadURL: '',
+              downloadURL: pdfDownloadURL, // 🎯 Echte Firebase Storage URL!
               uploadDate: new Date().toISOString(),
             }
           : editingExpense.receipt,
@@ -1041,7 +1102,20 @@ export function ExpenseComponent({
                   PDF-Vorschau
                 </h3>
 
-                <PdfPreview file={currentReceipt} className="h-[800px]" />
+                {/* Zeige aktuelle Datei oder bereits gespeicherte PDF */}
+                {currentReceipt ? (
+                  <PdfPreview file={currentReceipt} className="h-[800px]" />
+                ) : isEditMode && editingExpense?.receipt?.downloadURL ? (
+                  <PdfPreview fileUrl={editingExpense.receipt.downloadURL} className="h-[800px]" />
+                ) : (
+                  <div className="h-[800px] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+                    <div className="text-center text-gray-500">
+                      <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Keine PDF-Datei ausgewählt</p>
+                      <p className="text-xs">Laden Sie einen Beleg hoch für die Vorschau</p>
+                    </div>
+                  </div>
+                )}
 
                 {currentReceipt && (
                   <div className="bg-[#14ad9f]/10 rounded-lg p-4 border border-[#14ad9f]/20">
@@ -1054,6 +1128,23 @@ export function ExpenseComponent({
                         <div className="text-xs text-gray-600">
                           Überprüfen Sie die automatisch extrahierten Daten links mit dem PDF-Inhalt
                           rechts auf Korrektheit
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isEditMode && editingExpense?.receipt && !currentReceipt && (
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-start space-x-3">
+                      <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div>
+                        <div className="text-sm font-medium text-blue-700 mb-1">
+                          Gespeicherter Beleg: {editingExpense.receipt.fileName}
+                        </div>
+                        <div className="text-xs text-blue-600">
+                          Dieser Beleg wurde bereits gespeichert und steht für Steuerberater zur
+                          Verfügung
                         </div>
                       </div>
                     </div>
@@ -1175,7 +1266,18 @@ export function ExpenseComponent({
                       {expense.receipt && (
                         <div className="text-xs text-[#14ad9f] mt-1 flex items-center">
                           <FileText className="h-3 w-3 mr-1" />
-                          Beleg: {expense.receipt.fileName}
+                          {expense.receipt.downloadURL ? (
+                            <a
+                              href={expense.receipt.downloadURL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-[#129488] hover:underline"
+                            >
+                              Beleg: {expense.receipt.fileName}
+                            </a>
+                          ) : (
+                            <span>Beleg: {expense.receipt.fileName}</span>
+                          )}
                         </div>
                       )}
                     </div>

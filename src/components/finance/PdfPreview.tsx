@@ -36,20 +36,21 @@ if (typeof window !== 'undefined') {
 }
 
 interface PdfPreviewProps {
-  file: File | null;
+  file?: File | null;
+  fileUrl?: string;
   className?: string;
 }
 
-export function PdfPreview({ file, className = '' }: PdfPreviewProps) {
+export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(0.8);
 
   useEffect(() => {
-    if (file && file.type === 'application/pdf') {
+    if ((file && file.type === 'application/pdf') || fileUrl) {
       setPageNumber(1);
     }
-  }, [file]);
+  }, [file, fileUrl]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -71,7 +72,7 @@ export function PdfPreview({ file, className = '' }: PdfPreviewProps) {
     setScale(prev => Math.max(prev - 0.1, 0.4));
   };
 
-  if (!file || file.type !== 'application/pdf') {
+  if ((!file || file.type !== 'application/pdf') && !fileUrl) {
     return (
       <div className={`bg-gray-50 rounded-lg border border-gray-200 p-8 ${className}`}>
         <div className="text-center text-gray-500">
@@ -82,11 +83,15 @@ export function PdfPreview({ file, className = '' }: PdfPreviewProps) {
     );
   }
 
+  // Bestimme die PDF-Quelle und den Dateinamen
+  const pdfSource = file || fileUrl;
+  const fileName = file?.name || (fileUrl ? 'Gespeicherter Beleg.pdf' : 'PDF-Datei');
+
   return (
     <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
       {/* Header mit Controls */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50 rounded-t-lg">
-        <div className="text-sm font-medium text-gray-700 truncate flex-1 mr-4">{file.name}</div>
+        <div className="text-sm font-medium text-gray-700 truncate flex-1 mr-4">{fileName}</div>
 
         <div className="flex items-center space-x-2">
           {/* Zoom Controls */}
@@ -150,39 +155,37 @@ export function PdfPreview({ file, className = '' }: PdfPreviewProps) {
       {/* PDF Content */}
       <div className="p-4 max-h-[600px] overflow-auto">
         <div className="flex justify-center">
-          {file && file.type === 'application/pdf' && (
-            <Document
-              file={file}
-              onLoadSuccess={onDocumentLoadSuccess}
+          <Document
+            file={pdfSource}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
+                <span className="ml-3 text-sm text-gray-600">PDF wird geladen...</span>
+              </div>
+            }
+            error={
+              <div className="text-center py-8 text-red-600">
+                <div className="text-sm">Fehler beim Laden der PDF-Datei</div>
+                <div className="text-xs mt-1 text-gray-500">
+                  Bitte versuchen Sie es mit einer anderen Datei
+                </div>
+              </div>
+            }
+          >
+            <Page
+              pageNumber={pageNumber}
+              scale={scale}
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
               loading={
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
-                  <span className="ml-3 text-sm text-gray-600">PDF wird geladen...</span>
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f]"></div>
                 </div>
               }
-              error={
-                <div className="text-center py-8 text-red-600">
-                  <div className="text-sm">Fehler beim Laden der PDF-Datei</div>
-                  <div className="text-xs mt-1 text-gray-500">
-                    Bitte versuchen Sie es mit einer anderen Datei
-                  </div>
-                </div>
-              }
-            >
-              <Page
-                pageNumber={pageNumber}
-                scale={scale}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                loading={
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f]"></div>
-                  </div>
-                }
-                className="shadow-sm border"
-              />
-            </Document>
-          )}
+              className="shadow-sm border"
+            />
+          </Document>
         </div>
       </div>
     </div>
