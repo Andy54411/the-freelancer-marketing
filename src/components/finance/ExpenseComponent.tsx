@@ -151,27 +151,55 @@ export function ExpenseComponent({
     // Entferne Betragsangaben
     cleanedAddress = cleanedAddress.replace(/Gesamtsumme\s+in\s+\w+:?\s*/gi, '');
     cleanedAddress = cleanedAddress.replace(/Total\s+in\s+\w+:?\s*/gi, '');
-    cleanedAddress = cleanedAddress.replace(/\d+[.,]\d+\s*€/g, '');
+    cleanedAddress = cleanedAddress.replace(/\d+[.,]\s*\d+\s*€/g, '');
 
-    // Entferne weitere Details
+    // Entferne weitere Details und Service-Namen
     cleanedAddress = cleanedAddress.replace(/Details\s*/gi, '');
+    cleanedAddress = cleanedAddress.replace(/Google Workspace\s*/gi, '');
     cleanedAddress = cleanedAddress.replace(/Abrechnungs-ID:?\s*/gi, '');
     cleanedAddress = cleanedAddress.replace(/Billing ID:?\s*/gi, '');
 
     // Bereinige Datumsangaben (Format: XX. Monat YYYY)
     cleanedAddress = cleanedAddress.replace(/\d{1,2}\.\s*\w+\.?\s*\d{4}/g, '');
 
+    // Entferne alles nach der ersten Stadt/Land-Kombination
+    // Stoppe nach typischen Adressmustern wie "Stadt\nLand"
+    const lines = cleanedAddress.split(/\\n|\n/);
+    const cleanLines: string[] = [];
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+
+      // Stoppe bei Details-Markern
+      if (
+        /^(Details|Rechnungsnummer|Invoice|Gesamtsumme|Total|Abrechnungs|Billing)/i.test(
+          trimmedLine
+        )
+      ) {
+        break;
+      }
+
+      cleanLines.push(trimmedLine);
+
+      // Stoppe nach Land (typische Länder-Pattern)
+      if (
+        /^(Deutschland|Germany|Ireland|Irland|France|Frankreich|Italy|Italien|Spain|Spanien|Netherlands|Niederlande|UK|United Kingdom|USA|America)$/i.test(
+          trimmedLine
+        )
+      ) {
+        break;
+      }
+    }
+
     // Entferne mehrfache Zeilenumbrüche und Leerzeichen
-    cleanedAddress = cleanedAddress
-      .replace(/\\n+/g, '\n')
-      .replace(/\n\s*\n/g, '\n')
-      .replace(/^\s+|\s+$/g, '')
-      .replace(/\n\s*/g, '\n');
+    const result = cleanLines
+      .filter(line => line.length > 0)
+      .join('\n')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    // Entferne leere Zeilen am Anfang und Ende
-    const lines = cleanedAddress.split('\n').filter(line => line.trim().length > 0);
-
-    return lines.join('\n');
+    return result;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,9 +243,18 @@ export function ExpenseComponent({
           vendor: data.vendor || prev.vendor,
           date: data.date || prev.date,
           invoiceNumber: data.invoiceNumber || prev.invoiceNumber,
-          vatAmount: data.vatAmount ? data.vatAmount.toString() : prev.vatAmount,
-          netAmount: data.netAmount ? data.netAmount.toString() : prev.netAmount,
-          vatRate: data.vatRate ? data.vatRate.toString() : prev.vatRate,
+          vatAmount:
+            data.vatAmount !== null && data.vatAmount !== undefined
+              ? data.vatAmount.toString()
+              : prev.vatAmount,
+          netAmount:
+            data.netAmount !== null && data.netAmount !== undefined
+              ? data.netAmount.toString()
+              : prev.netAmount,
+          vatRate:
+            data.vatRate !== null && data.vatRate !== undefined
+              ? data.vatRate.toString()
+              : prev.vatRate,
           companyName: data.companyName || prev.companyName,
           companyAddress: cleanedAddress || prev.companyAddress,
           companyVatNumber: data.companyVatNumber || prev.companyVatNumber,

@@ -1405,6 +1405,9 @@ async function extractReceiptDataFromOCR(
     // Enhanced amount extraction with query results
     const { amount, netAmount, vatAmount } = extractAmountsWithQueries(queryResults, blocks, originalText);
 
+    // Extract VAT rate dynamically based on amounts and text content
+    const vatRate = extractVatRate(originalText, amount, vatAmount, netAmount);
+
     // Determine category based on vendor and content
     let category = 'Sonstiges';
     if (vendor.toLowerCase().includes('amazon')) category = 'Software/Tools';
@@ -1414,7 +1417,7 @@ async function extractReceiptDataFromOCR(
     else if (vendor.toLowerCase().includes('freelancer') || vendor.toLowerCase().includes('marketing')) category = 'Marketing/Werbung';
 
     // Generate title
-    let title = 'OCR-verarbeitete Rechnung';
+    let title = 'Rechnung';
     if (vendor && invoiceNumber) {
         title = `${vendor} - Rechnung ${invoiceNumber}`;
     } else if (vendor) {
@@ -1427,13 +1430,13 @@ async function extractReceiptDataFromOCR(
         title,
         amount,
         category,
-        description: `OCR-verarbeitete Rechnung: ${fileName}`,
+        description: `Rechnung: ${fileName}`,
         vendor: vendor || '',
         date,
         invoiceNumber,
-        vatAmount: vatAmount || (amount && netAmount ? amount - netAmount : (amount ? Math.round((amount * 0.19 / 1.19) * 100) / 100 : null)),
-        netAmount: netAmount || (amount ? Math.round((amount / 1.19) * 100) / 100 : null),
-        vatRate: 19,
+        vatAmount: vatAmount || (amount && netAmount ? amount - netAmount : (amount ? Math.round((amount * (vatRate/100) / (1 + vatRate/100)) * 100) / 100 : null)),
+        netAmount: netAmount || (amount ? Math.round((amount / (1 + vatRate/100)) * 100) / 100 : null),
+        vatRate,
         companyName: vendor || '',
         companyAddress: extractCompanyAddress(originalText),
         companyVatNumber: extractCompanyVatNumber(originalText),
@@ -1880,6 +1883,91 @@ function extractCompanyVatNumber(text: string): string {
     }
 
     return '';
+}
+
+// Extract VAT rate from text
+function extractVatRate(text: string, amount: number | null, vatAmount: number | null, netAmount: number | null): number {
+    // First try to calculate from amounts if available
+    if (amount && vatAmount && netAmount) {
+        const calculatedRate = Math.round((vatAmount / netAmount) * 100);
+        if (calculatedRate >= 0 && calculatedRate <= 30) {
+            return calculatedRate;
+        }
+    }
+    
+    // Special case: If vatAmount is 0 or very small compared to total, it's likely 0%
+    if (amount && vatAmount !== null && vatAmount <= 0.01) {
+        return 0;
+    }
+    
+    // Pattern matching for explicit VAT rate mentions
+    const vatRatePatterns = [
+        // Direct percentage mentions: "19%", "0%", "7%" etc.
+        /(?:mwst|vat|tax|steuer|mehrwertsteuer)[\s\-:]*(\d{1,2})[,.]?(\d{1,2})?[\s]*[%]/i,
+        // "0% VAT", "19% MwSt" etc.
+        /(\d{1,2})[,.]?(\d{1,2})?[\s]*[%][\s]*(?:mwst|vat|tax|steuer|mehrwertsteuer)/i,
+        // "Steuersatz: 19%", "VAT Rate: 0%"
+        /(?:steuersatz|vat[\s\-]*rate|tax[\s\-]*rate)[\s\-:]*(\d{1,2})[,.]?(\d{1,2})?[\s]*[%]/i,
+        // Zero VAT indicators for international transactions
+        /(?:reverse[\s\-]*charge|grenzüberschreitend|international|umsatzsteuer[\s\-]*befreit|vat[\s\-]*exempt)/i
+    ];
+    
+    for (const pattern of vatRatePatterns) {
+        const match = text.match(pattern);
+        if (match) {
+            // Special case for reverse charge / exempt patterns
+            if (pattern.source.includes('reverse|grenzüberschreitend|international|befreit|exempt')) {
+                return 0;
+            }
+            
+            // Extract numeric rate
+            const mainDigits = parseInt(match[1] || '0');
+            const decimals = match[2] ? parseInt(match[2]) : 0;
+            const rate = decimals > 0 ? parseFloat(`${mainDigits}.${decimals}`) : mainDigits;
+            
+            if (rate >= 0 && rate <= 30) {
+                return Math.round(rate);
+            }
+        }
+    }
+    
+    // Check for specific zero VAT indicators in German/English
+    const zeroVatIndicators = [
+        /umsatzsteuer[\s\-]*befreit/i,
+        /steuerbefreit/i,
+        /vat[\s\-]*exempt/i,
+        /no[\s\-]*vat/i,
+        /ohne[\s\-]*mehrwertsteuer/i,
+        /0[,.]00[\s]*€[\s]*(?:mwst|vat|steuer)/i,
+        /(?:mwst|vat|steuer)[\s\-:]*0[,.]00/i
+    ];
+    
+    for (const indicator of zeroVatIndicators) {
+        if (text.match(indicator)) {
+            return 0;
+        }
+    }
+    
+    // Default fallback based on country patterns
+    // Irish companies (like IE3668997OH) often have 0% VAT for B2B international
+    if (text.match(/IE\d{7}[A-Z]{1,2}/)) {
+        // Check if it's likely B2B international (no VAT)
+        if (vatAmount === null || vatAmount === 0 || (amount && vatAmount && (vatAmount / amount) < 0.05)) {
+            return 0;
+        }
+    }
+    
+    // German companies usually have 19% or 7%
+    if (text.match(/DE\d{9}/)) {
+        // If small VAT amount suggests 7% (reduced rate)
+        if (amount && vatAmount && Math.abs((vatAmount / amount) - (7/107)) < 0.01) {
+            return 7;
+        }
+        return 19; // Standard German VAT
+    }
+    
+    // Default fallback
+    return 19;
 }
 
 // Extract contact phone from text

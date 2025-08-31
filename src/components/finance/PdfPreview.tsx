@@ -185,13 +185,6 @@ export function PdfPreview({ file, className = '' }: PdfPreviewProps) {
           )}
         </div>
       </div>
-
-      {/* Footer */}
-      <div className="p-3 border-t bg-gray-50 rounded-b-lg">
-        <div className="text-xs text-gray-600 text-center">
-          ✅ Überprüfen Sie die extrahierten Daten mit dem PDF-Inhalt
-        </div>
-      </div>
     </div>
   );
 }
