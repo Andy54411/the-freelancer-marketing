@@ -1809,14 +1809,16 @@ function extractContactEmail(text: string): string {
 function extractCompanyVatNumber(text: string): string {
     // VAT number patterns for various European countries
     const vatPatterns = [
+        // German VAT with description: "Umsatzsteuer-Identifikationsnummer: DE123456789"
+        /(?:Umsatzsteuer[\-\s]*Identifikationsnummer|USt[\.\-\s]*ID[\.\-\s]*Nr?|VAT[\s\-]*ID|Steuer[\-\s]*Nr?)[\.\-\s]*:?\s*([A-Z]{2}[A-Z0-9]{8,12})/i,
+        // Irish VAT: IE3668997OH with description
+        /(?:Umsatzsteuer[\-\s]*Identifikationsnummer|VAT[\s\-]*(?:reg[\s\-]*)?(?:no[\s\-]*)?|USt[\.\-\s]*ID[\.\-\s]*Nr?)[\.\-\s]*:?\s*(IE\d{7}[A-Z]{1,2})/i,
         // German VAT number: DE123456789
         /(?:USt[\.\-\s]*ID[\.\-\s]*Nr?[\.\-\s]*:?\s*|VAT[\s\-]*ID[\s\-]*:?\s*|Steuer[\.\-\s]*Nr?[\.\-\s]*:?\s*)?(DE\d{9})/i,
         // German tax number: 12/345/67890
         /(?:Steuer[\.\-\s]*Nr?[\.\-\s]*:?\s*)(\d{2,3}\/\d{3}\/\d{5})/i,
         // EU VAT numbers with country codes
         /(?:USt[\.\-\s]*ID[\.\-\s]*Nr?[\.\-\s]*:?\s*|VAT[\s\-]*ID[\s\-]*:?\s*)([A-Z]{2}\d{8,12})/i,
-        // Irish VAT: IE3668997OH
-        /(?:VAT[\s\-]*(?:reg[\s\-]*)?(?:no[\s\-]*)?:?\s*|USt[\.\-\s]*ID[\.\-\s]*Nr?[\.\-\s]*:?\s*)(IE\d{7}[A-Z]{1,2})/i,
         // Austrian VAT: ATU12345678
         /(ATU\d{8})/i,
         // French VAT: FR12345678901
@@ -1825,8 +1827,15 @@ function extractCompanyVatNumber(text: string): string {
         /(NL\d{9}B\d{2})/i,
         // Belgian VAT: BE0123456789
         /(BE\d{10})/i,
-        // General European pattern
-        /(?:VAT[\s\-]*(?:reg[\s\-]*)?(?:no[\s\-]*)?:?\s*|USt[\.\-\s]*ID[\.\-\s]*Nr?[\.\-\s]*:?\s*)([A-Z]{2}[A-Z0-9]{8,12})/i
+        // General European pattern - more specific
+        /(?:VAT[\s\-]*(?:reg[\s\-]*)?(?:no[\s\-]*)?:?\s*|USt[\.\-\s]*ID[\.\-\s]*Nr?[\.\-\s]*:?\s*)([A-Z]{2}[A-Z0-9]{8,12})/i,
+        // Standalone pattern for known formats
+        /(IE\d{7}[A-Z]{1,2})/i,
+        /(DE\d{9})/i,
+        /(ATU\d{8})/i,
+        /(FR\d{11})/i,
+        /(NL\d{9}B\d{2})/i,
+        /(BE\d{10})/i
     ];
 
     for (const pattern of vatPatterns) {
@@ -1850,6 +1859,18 @@ function extractCompanyVatNumber(text: string): string {
                 }
                 if (vatNumber.startsWith('IE') && vatNumber.length >= 9) {
                     return vatNumber; // IE3668997OH
+                }
+                if (vatNumber.startsWith('ATU') && vatNumber.length === 11) {
+                    return vatNumber; // ATU12345678
+                }
+                if (vatNumber.startsWith('FR') && vatNumber.length === 13) {
+                    return vatNumber; // FR12345678901
+                }
+                if (vatNumber.startsWith('NL') && vatNumber.length === 13) {
+                    return vatNumber; // NL123456789B01
+                }
+                if (vatNumber.startsWith('BE') && vatNumber.length === 12) {
+                    return vatNumber; // BE0123456789
                 }
                 if (vatNumber.match(/^[A-Z]{2}[A-Z0-9]{8,12}$/)) {
                     return vatNumber; // Other EU VAT numbers
