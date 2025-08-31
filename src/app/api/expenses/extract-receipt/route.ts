@@ -88,9 +88,10 @@ async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
   const fileBuffer = await file.arrayBuffer();
   const base64File = Buffer.from(fileBuffer).toString('base64');
 
-  // Get Firebase Function URL (use the new Cloud Run URL)
+  // Get Firebase Function URL (use the new Cloud Run URL with secrets)
   const functionUrl =
-    process.env.FIREBASE_FUNCTION_URL || 'https://financeapiwithocr-d4kdcd73ia-ew.a.run.app';
+    process.env.FIREBASE_FUNCTION_URL ||
+    'https://europe-west1-tilvo-f142f.cloudfunctions.net/financeApiWithOCR';
 
   const payload = {
     file: base64File,

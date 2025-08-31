@@ -88,26 +88,38 @@ const textractClient = new TextractClient({
 });
 
 // Validate AWS credentials at startup
-if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+const awsAccessKey = process.env.AWS_ACCESS_KEY_ID;
+const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY;
+const awsRegion = process.env.AWS_REGION || 'eu-central-1';
+
+logger.info('[AWS] Environment check:', {
+    hasAccessKey: !!awsAccessKey,
+    hasSecretKey: !!awsSecretKey,
+    region: awsRegion,
+    accessKeyLength: awsAccessKey?.length || 0,
+    isFromSecret: !!process.env.AWS_ACCESS_KEY_ID // This will be true if loaded from Firebase Secret
+});
+
+if (!awsAccessKey || !awsSecretKey) {
     logger.warn('[AWS] AWS credentials not fully configured - OCR may fall back to mock mode');
 } else {
-    logger.info('[AWS] ✅ AWS Textract configured with region:', process.env.AWS_REGION || 'eu-central-1');
+    logger.info('[AWS] ✅ AWS Textract configured with region:', awsRegion);
 }
 
 // Google AI Studio Client für OCR-Nachbearbeitung
 let genAI: GoogleGenerativeAI | null = null;
 
-function getGoogleAIClient(): GoogleGenerativeAI {
-    if (!genAI) {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            logger.error("FATAL: GEMINI_API_KEY ist nicht konfiguriert. Google AI Studio OCR-Verbesserung deaktiviert.");
-            throw new Error("GEMINI_API_KEY is not configured in the environment.");
-        }
+// Initialize Google AI Studio immediately at startup
+try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
         genAI = new GoogleGenerativeAI(apiKey);
-        logger.info('[Google AI] ✅ Google AI Studio configured for OCR enhancement');
+        logger.info('[Google AI] ✅ Google AI Studio initialized successfully with API key from Firebase Secret');
+    } else {
+        logger.warn('[Google AI] ⚠️ GEMINI_API_KEY not found in environment variables');
     }
-    return genAI;
+} catch (error) {
+    logger.error('[Google AI] ❌ Failed to initialize Google AI Studio:', error);
 }
 
 // Model-Instanzen
@@ -116,9 +128,21 @@ const customerModel = new CustomerModel();
 const syncService = new OrderToInvoiceSyncService();
 
 /**
- * Zentrale HTTP-API für das Finance-Modul
+ * Zentrale HTTP-API für das Finance-Modul mit OCR-Integration
  */
-export const financeApi = onRequest(async (request, response) => {
+export const financeApi = onRequest({
+    secrets: [
+        'AWS_ACCESS_KEY_ID',
+        'AWS_SECRET_ACCESS_KEY', 
+        'AWS_REGION',
+        'GEMINI_API_KEY'
+    ],
+    cors: true,
+    memory: '1GiB',
+    cpu: 1,
+    timeoutSeconds: 60,
+    region: 'europe-west1'
+}, async (request, response) => {
     return cors(request, response, async () => {
         try {
             const { method, url } = request;
@@ -564,31 +588,162 @@ async function performHybridOCR(
     fileName: string,
     provider: string
 ): Promise<{ text: string; confidence: number; processingTime: number; blocks: any[]; enhanced: boolean }> {
+    const startTime = Date.now();
+    
     try {
-        logger.info(`[OCR Hybrid] Starting hybrid processing for ${fileName}`);
+        logger.info(`[OCR Hybrid] Starting hybrid processing for ${fileName}, size: ${fileBuffer.length} bytes`);
         
-        // Step 1: AWS Textract für initiale OCR
-        const textractResult = await performAWSTextractOCR(fileBuffer, fileName);
+        // Step 1: Versuche AWS Textract für initiale OCR
+        let textractResult: { text: string; confidence: number; processingTime: number; blocks: any[] } | null = null;
+        let awsError: Error | null = null;
         
-        // Step 2: Google AI Studio für intelligente Nachbearbeitung
-        const enhancedResult = await enhanceOCRWithGoogleAI(textractResult.text, fileName);
+        try {
+            textractResult = await performAWSTextractOCR(fileBuffer, fileName);
+            logger.info('[OCR Hybrid] ✅ AWS Textract successful');
+        } catch (error) {
+            awsError = error as Error;
+            logger.warn('[OCR Hybrid] ⚠️ AWS Textract failed, will try Google AI Studio only:', (error as Error).message);
+        }
+        
+        // Step 2: Google AI Studio Processing
+        if (textractResult && textractResult.text.trim()) {
+            // AWS Textract successful -> Use as enhancement base
+            try {
+                const enhancedResult = await enhanceOCRWithGoogleAI(textractResult.text, fileName);
+                logger.info('[OCR Hybrid] ✅ Hybrid processing successful (AWS + Google AI)');
+                
+                return {
+                    text: enhancedResult.enhancedText,
+                    confidence: Math.max(textractResult.confidence, enhancedResult.confidence),
+                    processingTime: Date.now() - startTime,
+                    blocks: textractResult.blocks,
+                    enhanced: enhancedResult.enhanced
+                };
+            } catch (enhancementError) {
+                logger.warn('[OCR Hybrid] Google AI enhancement failed, using AWS only:', enhancementError);
+                return {
+                    ...textractResult,
+                    enhanced: false
+                };
+            }
+        } else {
+            // AWS Textract failed -> Try Google AI Studio with direct PDF processing
+            try {
+                logger.info('[OCR Hybrid] 🤖 Attempting Google AI Studio direct PDF processing...');
+                const directResult = await processWithGoogleAIStudioDirect(fileBuffer, fileName);
+                logger.info('[OCR Hybrid] ✅ Google AI Studio direct processing successful');
+                
+                return {
+                    text: directResult.extractedText,
+                    confidence: directResult.confidence,
+                    processingTime: Date.now() - startTime,
+                    blocks: [],
+                    enhanced: true
+                };
+            } catch (googleError) {
+                logger.error('[OCR Hybrid] Both AWS Textract and Google AI Studio failed:', {
+                    awsError: awsError?.message,
+                    googleError: (googleError as Error).message
+                });
+                
+                // Final fallback to mock OCR
+                logger.info('[OCR Hybrid] 📄 Using filename-based fallback extraction');
+                const mockResult = await performMockOCR(fileBuffer, fileName);
+                return {
+                    ...mockResult,
+                    enhanced: false
+                };
+            }
+        }
+        
+    } catch (error) {
+        logger.error('[OCR Hybrid] Complete hybrid processing failed:', error);
+        throw new Error(`Hybrid OCR processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+// Google AI Studio direktes PDF Processing
+async function processWithGoogleAIStudioDirect(
+    fileBuffer: Buffer,
+    fileName: string
+): Promise<{ extractedText: string; confidence: number; enhanced: boolean }> {
+    try {
+        logger.info(`[Google AI Studio Direct] Processing ${fileName} directly with Google AI`);
+        
+        // Konvertiere Buffer zu Base64 für Google AI Studio
+        const base64Data = fileBuffer.toString('base64');
+        const mimeType = 'application/pdf';
+        
+        // Structured prompt für direkte OCR-Verarbeitung
+        const ocrPrompt = `
+Extrahiere ALLE Informationen aus diesem PDF-Dokument und strukturiere sie als JSON.
+
+**WICHTIG:** Ich benötige eine vollständige OCR-Extraktion mit strukturierten Daten.
+
+**Ausgabe-Format (JSON):**
+{
+  "documentType": "receipt|invoice|document",
+  "rawText": "VOLLSTÄNDIGER extrahierter Text",
+  "structured": {
+    "company": "Firmenname",
+    "date": "YYYY-MM-DD",
+    "amount": "XX.XX",
+    "items": [{"description": "Artikel", "price": "XX.XX"}],
+    "address": "Vollständige Adresse",
+    "metadata": {"documentNumber": "", "paymentMethod": "", "category": ""}
+  },
+  "confidence": 0.95
+}
+
+**Verarbeitungsregeln:**
+- Extrahiere JEDEN sichtbaren Text im Dokument
+- Erkenne Rechnungen, Quittungen, Lieferscheine
+- Strukturiere Daten intelligent
+- Bei unlesbaren Bereichen: kennzeichne als "[UNCLEAR]"
+- Gib realistische Confidence-Werte an (0.0-1.0)
+- Verwende deutsche Datumsformate falls erkannt
+
+Beginne die Verarbeitung:
+`;
+
+        // Google AI Studio Request
+        if (!genAI) {
+            throw new Error('Google AI Studio not initialized - API key missing');
+        }
+        
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    data: base64Data,
+                    mimeType: mimeType
+                }
+            },
+            ocrPrompt
+        ]);
+        
+        const response = await result.response;
+        const responseText = response.text();
+        
+        logger.info('[Google AI Studio Direct] Raw response length:', responseText.length);
+        
+        // Parse strukturierte Response
+        const parsedData = parseGoogleAIStructuredData(responseText);
+        
+        // Baue finalen Text zusammen
+        const finalText = parsedData.structured ? 
+            `${parsedData.rawText}\n\n--- STRUKTURIERTE DATEN ---\n${JSON.stringify(parsedData.structured, null, 2)}` :
+            parsedData.rawText;
         
         return {
-            text: enhancedResult.enhancedText,
-            confidence: Math.max(textractResult.confidence, enhancedResult.confidence),
-            processingTime: textractResult.processingTime + enhancedResult.processingTime,
-            blocks: textractResult.blocks,
-            enhanced: enhancedResult.enhanced
+            extractedText: finalText,
+            confidence: parsedData.confidence || 0.85,
+            enhanced: true
         };
         
     } catch (error) {
-        logger.error('[OCR Hybrid] Hybrid processing failed, falling back to AWS only:', error);
-        // Fallback zu AWS Textract only
-        const fallbackResult = await performAdvancedOCR(fileBuffer, fileName, provider);
-        return {
-            ...fallbackResult,
-            enhanced: false
-        };
+        logger.error('[Google AI Studio Direct] Processing failed:', error);
+        throw new Error(`Google AI Studio direct processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 
@@ -602,7 +757,9 @@ async function enhanceOCRWithGoogleAI(
     try {
         logger.info('[Google AI] Starting OCR enhancement...');
         
-        const genAI = getGoogleAIClient();
+        if (!genAI) {
+            throw new Error('Google AI Studio not initialized - API key missing');
+        }
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash-latest",
             generationConfig: {
@@ -676,26 +833,6 @@ Verbesserter Text:
             processingTime: Date.now() - startTime,
             enhanced: false
         };
-    }
-}
-
-// Advanced OCR Processing with AWS Textract (original function, kept for fallback)
-async function performAdvancedOCR(
-    fileBuffer: Buffer,
-    fileName: string,
-    provider: string
-): Promise<{ text: string; confidence: number; processingTime: number; blocks: any[] }> {
-    try {
-        if (provider === 'AWS_TEXTRACT') {
-            // Real AWS Textract implementation
-            return await performAWSTextractOCR(fileBuffer, fileName);
-        } else {
-            // Fallback to mock for other providers
-            return await performMockOCR(fileBuffer, fileName);
-        }
-    } catch (error) {
-        logger.error('[OCR] AWS Textract processing failed:', error);
-        throw new Error(`OCR processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 
@@ -977,41 +1114,14 @@ function calculateWeightedConfidence(blocks: any[]): number {
     return totalWeight > 0 ? (weightedSum / totalWeight) / 100 : 0.9;
 }
 
-// Mock OCR for fallback
+// Mock OCR for fallback - THROWS ERROR TO FORCE REAL OCR
 async function performMockOCR(
     fileBuffer: Buffer,
     fileName: string
 ): Promise<{ text: string; confidence: number; processingTime: number; blocks: any[] }> {
     
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing time
-
-    // Mock OCR result - replace with actual AWS Textract implementation
-    const mockText = `
-RECHNUNG / INVOICE
-${fileName.includes('amazon') ? 'Amazon.com LLC' : 'Example Company GmbH'}
-Musterstraße 123
-12345 Berlin
-
-Rechnungsnummer: ${Math.floor(Math.random() * 100000)}
-Datum: ${new Date().toLocaleDateString('de-DE')}
-
-Artikel                        Menge    Preis
-Software Lizenz                   1    49,99 €
-Hosting Services                  1    29,99 €
-
-Nettobetrag:                           67,22 €
-MwSt. 19%:                            12,77 €
-Gesamtbetrag:                         80,00 €
-
-Vielen Dank für Ihren Einkauf!
-    `.trim();
-
-    return {
-        text: mockText,
-        confidence: 0.85, // Lower confidence for mock
-        processingTime: 1000,
-        blocks: [] // Would contain AWS Textract blocks in real implementation
-    };
+    logger.error('[Mock OCR] ❌ Mock OCR called - this should not happen! Real OCR should be used.');
+    throw new Error(`Mock OCR should not be used for production. File: ${fileName}, Size: ${fileBuffer.length} bytes. Please fix OCR configuration.`);
 }
 
 // Advanced amount extraction with international currency support
@@ -1019,8 +1129,8 @@ function extractAmountsAdvanced(text: string): { amount: number | null; netAmoun
     // Comprehensive amount patterns for multiple currencies and formats
     const amountPatterns = [
         // German/European formats
-        /(?:gesamtbetrag|total|summe|betrag|gesamt|brutto)[\s:]*([0-9]{1,5}[.,]\d{2})[\s]*[€$£¥]/i,
-        /(?:total|grand\s*total|final\s*amount)[\s:]*([0-9]{1,5}[.,]\d{2})[\s]*[€$£¥]/i,
+        /(?:gesamtbetrag|total|summe|betrag|gesamt|brutto)[\s:]*([0-9]{1,5}[.,]\d{2})[\s]*[€$£¥]/gi,
+        /(?:total|grand\s*total|final\s*amount)[\s:]*([0-9]{1,5}[.,]\d{2})[\s]*[€$£¥]/gi,
         
         // Table-style amounts (common in invoices)
         /([0-9]{1,5}[.,]\d{2})[\s]*[€$£¥][\s]*$/gm, // End of line amounts
@@ -1030,19 +1140,19 @@ function extractAmountsAdvanced(text: string): { amount: number | null; netAmoun
         /([0-9]{1,5}[.,]\d{2})[\s]*[€$£¥]/g,
         
         // Specific invoice terms
-        /(?:zu\s*zahlen|payable|amount\s*due)[\s:]*([0-9]{1,5}[.,]\d{2})/i,
+        /(?:zu\s*zahlen|payable|amount\s*due)[\s:]*([0-9]{1,5}[.,]\d{2})/gi,
         
         // Pattern for amounts in table format
         /\|\s*([0-9]{1,5}[.,]\d{2})\s*[€$£¥]?\s*\|/g,
     ];
 
     const vatPatterns = [
-        /(?:mwst|vat|tax|steuer)[\s:]*([0-9]{1,4}[.,]\d{2})[\s]*[€$£¥]/i,
-        /(?:mehrwertsteuer|umsatzsteuer)[\s:]*([0-9]{1,4}[.,]\d{2})[\s]*[€$£¥]/i,
+        /(?:mwst|vat|tax|steuer)[\s:]*([0-9]{1,4}[.,]\d{2})[\s]*[€$£¥]/gi,
+        /(?:mehrwertsteuer|umsatzsteuer)[\s:]*([0-9]{1,4}[.,]\d{2})[\s]*[€$£¥]/gi,
     ];
 
     const netPatterns = [
-        /(?:netto|net|subtotal|zwischensumme)[\s:]*([0-9]{1,5}[.,]\d{2})[\s]*[€$£¥]/i,
+        /(?:netto|net|subtotal|zwischensumme)[\s:]*([0-9]{1,5}[.,]\d{2})[\s]*[€$£¥]/gi,
     ];
 
     // Extract all potential amounts
