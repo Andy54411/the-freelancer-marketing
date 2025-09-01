@@ -1195,6 +1195,37 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
+    // Finance: Projects Collection (Projektmanagement)
+    match /companies/{companyId}/projects/{projectId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.companyId == companyId &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
     // Performance Reviews Collection
     match /companies/{companyId}/performance_reviews/{reviewId} {
       // Lesen: Nur eigene Firma oder Support Staff

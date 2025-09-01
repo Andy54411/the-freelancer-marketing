@@ -125,8 +125,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
     try {
       setLoading(true);
       const projectsQuery = query(
-        collection(db, 'projects'),
-        where('companyId', '==', companyId),
+        collection(db, 'companies', companyId, 'projects'),
         orderBy('createdAt', 'desc')
       );
 
@@ -224,7 +223,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
     }
 
     try {
-      const projectRef = doc(db, 'projects', projectId);
+      const projectRef = doc(db, 'companies', companyId, 'projects', projectId);
       await deleteDoc(projectRef);
 
       // Entferne das Projekt aus dem lokalen State
@@ -378,8 +377,8 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         updatedAt: serverTimestamp(),
       };
 
-      // Add to Firebase
-      const docRef = await addDoc(collection(db, 'projects'), projectData);
+      // Add to Firebase - Use company-specific collection
+      const docRef = await addDoc(collection(db, 'companies', companyId, 'projects'), projectData);
 
       // Create local project object for immediate UI update
       const project: Project = {
@@ -421,14 +420,15 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       toast.success('Projekt wurde erfolgreich erstellt');
     } catch (error) {
-      toast.error('Projekt konnte nicht erstellt werden');
+      console.error('Error creating project:', error);
+      toast.error('Projekt konnte nicht erstellt werden: ' + (error as Error).message);
     }
   };
 
   const handleStatusUpdate = async (projectId: string, newStatus: Project['status']) => {
     try {
-      // Update in Firebase
-      const projectRef = doc(db, 'projects', projectId);
+      // Update in Firebase - Use company-specific collection
+      const projectRef = doc(db, 'companies', companyId, 'projects', projectId);
       await updateDoc(projectRef, {
         status: newStatus,
         updatedAt: serverTimestamp(),
@@ -840,137 +840,166 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
           </Tabs>
 
           {/* Create Project Modal */}
-          <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Neues Projekt erstellen</DialogTitle>
-                <DialogDescription>
-                  Erstellen Sie ein neues Projekt mit Budget- und Zeitplanung
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Projektname *</Label>
-                  <Input
-                    value={newProject.name}
-                    onChange={e => setNewProject(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="z.B. Website Redesign"
-                  />
-                </div>
+          {showCreateModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              {/* Backdrop - Nur Blur, kein Schwarz */}
+              <div
+                className="fixed inset-0 backdrop-blur-md"
+                onClick={() => setShowCreateModal(false)}
+              />
 
-                <div className="space-y-2">
-                  <Label>Kunde *</Label>
-                  <Select
-                    value={newProject.client}
-                    onValueChange={value => setNewProject(prev => ({ ...prev, client: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Kunde auswählen..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingCustomers ? (
-                        <SelectItem value="loading" disabled>
-                          <div className="flex items-center">
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Lade Kunden...
-                          </div>
-                        </SelectItem>
-                      ) : customers.length === 0 ? (
-                        <SelectItem value="no-customers" disabled>
-                          Keine Kunden verfügbar
-                        </SelectItem>
-                      ) : (
-                        customers.map(customer => (
-                          <SelectItem key={customer.id} value={customer.name}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{customer.name}</span>
-                              <span className="text-xs text-gray-500">
-                                {customer.customerNumber}
-                              </span>
+              {/* Modal Content - Optimale Breite */}
+              <div className="relative bg-white rounded-lg shadow-lg p-6 w-[85vw] max-w-[1000px] max-h-[90vh] overflow-y-auto">
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+
+                {/* Header */}
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Neues Projekt erstellen</h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Erstellen Sie ein neues Projekt mit Budget- und Zeitplanung
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Projektname *</Label>
+                    <Input
+                      value={newProject.name}
+                      onChange={e => setNewProject(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="z.B. Website Redesign"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Kunde *</Label>
+                    <Select
+                      value={newProject.client}
+                      onValueChange={value => setNewProject(prev => ({ ...prev, client: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Kunde auswählen..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingCustomers ? (
+                          <SelectItem value="loading" disabled>
+                            <div className="flex items-center">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Lade Kunden...
                             </div>
                           </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                        ) : customers.length === 0 ? (
+                          <SelectItem value="no-customers" disabled>
+                            Keine Kunden verfügbar
+                          </SelectItem>
+                        ) : (
+                          customers.map(customer => (
+                            <SelectItem key={customer.id} value={customer.name}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{customer.name}</span>
+                                <span className="text-xs text-gray-500">
+                                  {customer.customerNumber}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="col-span-2 space-y-2">
+                    <Label>Beschreibung</Label>
+                    <Textarea
+                      value={newProject.description}
+                      onChange={e =>
+                        setNewProject(prev => ({ ...prev, description: e.target.value }))
+                      }
+                      placeholder="Kurze Projektbeschreibung..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Budget (€)</Label>
+                    <Input
+                      type="number"
+                      value={newProject.budget}
+                      onChange={e => setNewProject(prev => ({ ...prev, budget: e.target.value }))}
+                      placeholder="25000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Stundensatz (€)</Label>
+                    <Input
+                      type="number"
+                      value={newProject.hourlyRate}
+                      onChange={e =>
+                        setNewProject(prev => ({ ...prev, hourlyRate: e.target.value }))
+                      }
+                      placeholder="85"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Geschätzte Stunden</Label>
+                    <Input
+                      type="number"
+                      value={newProject.estimatedHours}
+                      onChange={e =>
+                        setNewProject(prev => ({ ...prev, estimatedHours: e.target.value }))
+                      }
+                      placeholder="300"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Startdatum</Label>
+                    <Input
+                      type="date"
+                      value={newProject.startDate}
+                      onChange={e =>
+                        setNewProject(prev => ({ ...prev, startDate: e.target.value }))
+                      }
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Enddatum</Label>
+                    <Input
+                      type="date"
+                      value={newProject.endDate}
+                      onChange={e => setNewProject(prev => ({ ...prev, endDate: e.target.value }))}
+                    />
+                  </div>
                 </div>
 
-                <div className="col-span-2 space-y-2">
-                  <Label>Beschreibung</Label>
-                  <Textarea
-                    value={newProject.description}
-                    onChange={e =>
-                      setNewProject(prev => ({ ...prev, description: e.target.value }))
-                    }
-                    placeholder="Kurze Projektbeschreibung..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Budget (€)</Label>
-                  <Input
-                    type="number"
-                    value={newProject.budget}
-                    onChange={e => setNewProject(prev => ({ ...prev, budget: e.target.value }))}
-                    placeholder="25000"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Stundensatz (€)</Label>
-                  <Input
-                    type="number"
-                    value={newProject.hourlyRate}
-                    onChange={e => setNewProject(prev => ({ ...prev, hourlyRate: e.target.value }))}
-                    placeholder="85"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Geschätzte Stunden</Label>
-                  <Input
-                    type="number"
-                    value={newProject.estimatedHours}
-                    onChange={e =>
-                      setNewProject(prev => ({ ...prev, estimatedHours: e.target.value }))
-                    }
-                    placeholder="300"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Startdatum</Label>
-                  <Input
-                    type="date"
-                    value={newProject.startDate}
-                    onChange={e => setNewProject(prev => ({ ...prev, startDate: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Enddatum</Label>
-                  <Input
-                    type="date"
-                    value={newProject.endDate}
-                    onChange={e => setNewProject(prev => ({ ...prev, endDate: e.target.value }))}
-                  />
+                <div className="flex gap-2 mt-6">
+                  <Button
+                    onClick={handleCreateProject}
+                    className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                  >
+                    Projekt erstellen
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowCreateModal(false)}>
+                    Abbrechen
+                  </Button>
                 </div>
               </div>
-
-              <div className="flex gap-2 mt-6">
-                <Button
-                  onClick={handleCreateProject}
-                  className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-                >
-                  Projekt erstellen
-                </Button>
-                <Button variant="outline" onClick={() => setShowCreateModal(false)}>
-                  Abbrechen
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+            </div>
+          )}
 
           {/* Project Detail Modal */}
           {selectedProject && (
