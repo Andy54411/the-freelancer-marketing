@@ -55,17 +55,17 @@ export default function RevolutConnectModal({
     try {
       console.log('🏦 Starting Revolut connection for user:', userId);
 
-      // Call our API to get authorization URL
+      // Call our OAuth authorize endpoint
       const response = await fetch(
-        `/api/revolut/auth?userId=${userId}&companyEmail=${encodeURIComponent(companyEmail)}`
+        `/api/revolut/oauth/authorize?userId=${userId}&companyEmail=${encodeURIComponent(companyEmail)}`
       );
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to initialize Revolut connection');
+        throw new Error(data.error || 'Failed to initialize Revolut OAuth');
       }
 
-      console.log('✅ Got Revolut auth URL, redirecting...');
+      console.log('✅ Got Revolut OAuth URL, redirecting...');
 
       // Redirect to Revolut OAuth
       window.location.href = data.authUrl;
@@ -158,6 +158,29 @@ export default function RevolutConnectModal({
                 <span className="text-sm text-gray-700">Multi-Währungsunterstützung</span>
               </div>
             </div>
+
+            {/* Sandbox Test Account Info */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <FiCheckCircle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-yellow-900">Sandbox Test-Account</h4>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Für die Revolut Sandbox verwenden Sie diese Test-Daten:
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs font-mono bg-yellow-100 px-2 py-1 rounded">
+                        📞 Telefon: +447240354142
+                      </p>
+                      <p className="text-xs font-mono bg-yellow-100 px-2 py-1 rounded">
+                        🔐 Passcode: 0000
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Security Info */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

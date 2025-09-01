@@ -1,0 +1,146 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/firebase/server';
+
+/**
+ * GET /api/revolut/oauth/callback
+ * Handle Revolut OAuth callback
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const error = searchParams.get('error');
+
+    if (error) {
+      console.error('❌ Revolut OAuth error:', error);
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_oauth_failed&details=${encodeURIComponent(error)}`
+      );
+    }
+
+    if (!code || !state) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_oauth_invalid&details=Missing code or state`
+      );
+    }
+
+    // Parse state to get user info and return URL
+    const stateParts = state.split('|');
+    if (stateParts.length < 3) {
+      return NextResponse.redirect(
+        `https://taskilo.de/dashboard/company?error=revolut_oauth_state&details=Invalid state parameter`
+      );
+    }
+
+    const [userId, companyEmail, returnBaseUrl] = stateParts;
+    if (!userId || !companyEmail) {
+      return NextResponse.redirect(
+        `https://taskilo.de/dashboard/company?error=revolut_oauth_state&details=Missing user data`
+      );
+    }
+
+    console.log('🔄 Processing Revolut OAuth callback for:', {
+      userId,
+      companyEmail,
+      code: code.substring(0, 10) + '...',
+    });
+
+    // Exchange code for access token
+    const tokenUrl =
+      process.env.REVOLUT_ENVIRONMENT === 'production'
+        ? 'https://business.revolut.com/oauth/token'
+        : 'https://sandbox-business.revolut.com/oauth/token';
+
+    const clientId = process.env.REVOLUT_CLIENT_ID;
+    const redirectUri = 'https://taskilo.de/api/revolut/oauth/callback';
+
+    // Create JWT for client authentication
+    const jwt = await import('jsonwebtoken');
+    const fs = await import('fs');
+    const privateKey = fs.readFileSync(process.env.REVOLUT_PRIVATE_KEY_PATH!, 'utf8');
+
+    const now = Math.floor(Date.now() / 1000);
+    const clientAssertion = jwt.default.sign(
+      {
+        iss: clientId,
+        sub: clientId,
+        aud: tokenUrl,
+        iat: now,
+        exp: now + 300,
+      },
+      privateKey,
+      {
+        algorithm: 'RS256',
+        header: {
+          alg: 'RS256',
+          kid: clientId,
+        },
+      }
+    );
+
+    const tokenResponse = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri,
+        client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+        client_assertion: clientAssertion,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('❌ Token exchange failed:', tokenResponse.status, errorText);
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_token_failed&details=${encodeURIComponent(errorText)}`
+      );
+    }
+
+    const tokenData = await tokenResponse.json();
+    console.log('✅ Revolut access token obtained:', tokenData.token_type);
+
+    // Store connection in Firestore
+    const connectionId = `revolut_${Date.now()}`;
+    const connectionData = {
+      provider: 'revolut',
+      connectionId: connectionId,
+      authData: {
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        tokenType: tokenData.token_type,
+        expiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
+        scope: tokenData.scope,
+      },
+      userEmail: companyEmail,
+      createdAt: new Date(),
+      lastSync: new Date(),
+      isActive: true,
+    };
+
+    await db
+      .collection('companies')
+      .doc(userId)
+      .update({
+        [`revolut_connections.${connectionId}`]: connectionData,
+      });
+
+    console.log('✅ Revolut connection stored:', connectionId);
+
+    // Redirect back to dashboard with success - use the return URL from state
+    const finalRedirectUrl = returnBaseUrl.includes('localhost')
+      ? `${returnBaseUrl}/dashboard/company/${userId}/banking?success=revolut_connected&connectionId=${connectionId}`
+      : `https://taskilo.de/dashboard/company/${userId}/banking?success=revolut_connected&connectionId=${connectionId}`;
+
+    return NextResponse.redirect(finalRedirectUrl);
+  } catch (error: any) {
+    console.error('❌ Revolut OAuth callback error:', error.message);
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_callback_failed&details=${encodeURIComponent(error.message)}`
+    );
+  }
+}

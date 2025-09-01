@@ -147,11 +147,28 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Fetch accounts from Revolut API
-      console.log('🔄 Fetching accounts from Revolut API...');
-      const apiAccounts = await revolutOpenBankingService.getAccounts(
-        connection.authData.accessToken
-      );
+      // Fetch accounts from Revolut API using stored OAuth token
+      console.log('🔄 Fetching accounts from Revolut API using OAuth token...');
+
+      // Make direct API call with OAuth token
+      const apiUrl =
+        process.env.REVOLUT_ENVIRONMENT === 'production'
+          ? 'https://b2b.revolut.com/api/1.0/accounts'
+          : 'https://sandbox-b2b.revolut.com/api/1.0/accounts';
+
+      const apiResponse = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${connection.authData.accessToken}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (!apiResponse.ok) {
+        const errorText = await apiResponse.text();
+        throw new Error(`Revolut API Error: ${apiResponse.status} - ${errorText}`);
+      }
+
+      const apiAccounts = await apiResponse.json();
       console.log('✅ Retrieved', apiAccounts.length, 'accounts from Revolut API');
 
       // Store accounts in Firestore for future use
