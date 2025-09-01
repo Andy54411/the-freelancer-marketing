@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { collection, addDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -322,28 +320,28 @@ export function ExpenseComponent({
     }
   };
 
-  // Automatische Lieferanten-Erstellung/Zuordnung
+  // Automatische Lieferanten-Erstellung/Zuordnung über API
   const findOrCreateSupplier = async (companyName: string, ocrData: any): Promise<string> => {
     if (!companyName.trim() || !user) return '';
 
     try {
-      // Auth-Check wie in CustomerManager
+      // Auth-Check
       if (user.uid !== companyId) {
         console.error('Keine Berechtigung für diese Firma');
         return '';
       }
-      // 1. Suche nach existierendem Lieferanten mit Fuzzy Matching
-      const customersQuery = query(
-        collection(db, 'customers'),
-        where('companyId', '==', companyId)
-      );
 
-      const querySnapshot = await getDocs(customersQuery);
-      const existingCustomers: any[] = [];
+      // 1. Suche nach existierendem Lieferanten über API
+      const response = await fetch(`/api/suppliers?companyId=${companyId}`);
+      const result = await response.json();
 
-      querySnapshot.forEach(doc => {
-        existingCustomers.push({ id: doc.id, ...doc.data() });
-      });
+      if (!result.success) {
+        console.error('Fehler beim Laden der Lieferanten:', result.error);
+        toast.error('Fehler beim Laden der Lieferanten');
+        return '';
+      }
+
+      const existingCustomers = result.customers || [];
 
       // Fuzzy Matching: Normalisiere Namen für Vergleich
       const normalizeCompanyName = (name: string) => {
@@ -357,7 +355,7 @@ export function ExpenseComponent({
       const normalizedInputName = normalizeCompanyName(companyName);
 
       // Suche ähnliche Namen
-      const existingSupplier = existingCustomers.find(customer => {
+      const existingSupplier = existingCustomers.find((customer: any) => {
         const normalizedCustomerName = normalizeCompanyName(customer.name || '');
 
         // Exakte Übereinstimmung nach Normalisierung
@@ -382,63 +380,54 @@ export function ExpenseComponent({
         return existingSupplier.id;
       }
 
-      // 2. Neuen Lieferanten automatisch anlegen
+      // 2. Neuen Lieferanten automatisch anlegen über API
       console.log(`✨ Erstelle neuen Lieferanten: ${companyName}`);
 
       // Generiere Lieferanten-Nummer
       const supplierNumbers = existingCustomers
-        .map(c => c.customerNumber || '')
-        .filter(num => num.startsWith('LF-'))
-        .map(num => parseInt(num.replace('LF-', ''), 10))
-        .filter(num => !isNaN(num));
+        .map((c: any) => c.customerNumber || '')
+        .filter((num: string) => num.startsWith('LF-'))
+        .map((num: string) => parseInt(num.replace('LF-', ''), 10))
+        .filter((num: number) => !isNaN(num));
 
       const nextSupplierNumber =
         supplierNumbers.length > 0
           ? `LF-${String(Math.max(...supplierNumbers) + 1).padStart(3, '0')}`
           : 'LF-001';
 
-      // Erstelle neuen Lieferanten mit OCR-Daten (gleiche Struktur wie CustomerManager)
-      const cleanSupplierData = {
-        customerNumber: nextSupplierNumber,
-        name: companyName,
-        email: ocrData.contactEmail || '',
-        phone: ocrData.contactPhone || '',
-        address: ocrData.companyAddress || '', // Legacy für Kompatibilität
-        street: extractStreetFromAddress(ocrData.companyAddress || ''),
-        city: extractCityFromAddress(ocrData.companyAddress || ''),
-        postalCode: extractPostalCodeFromAddress(ocrData.companyAddress || ''),
-        country: extractCountryFromAddress(ocrData.companyAddress || '') || 'Deutschland',
-        vatId: ocrData.companyVatNumber || '',
-        vatValidated: false,
-        totalInvoices: 0,
-        totalAmount: 0,
-        contactPersons: [],
-        companyId,
-        isSupplier: true, // Markiere als Lieferant
-      };
+      // Erstelle neuen Lieferanten über API
+      const createResponse = await fetch('/api/suppliers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId,
+          name: companyName,
+          email: ocrData.contactEmail || '',
+          phone: ocrData.contactPhone || '',
+          address: ocrData.companyAddress || '',
+          street: extractStreetFromAddress(ocrData.companyAddress || ''),
+          city: extractCityFromAddress(ocrData.companyAddress || ''),
+          postalCode: extractPostalCodeFromAddress(ocrData.companyAddress || ''),
+          country: extractCountryFromAddress(ocrData.companyAddress || '') || 'Deutschland',
+          vatId: ocrData.companyVatNumber || '',
+          customerNumber: nextSupplierNumber,
+          isSupplier: true,
+        }),
+      });
 
-      // Filter undefined values for Firebase compatibility (wie in CustomerManager)
-      const filteredSupplierData = Object.entries(cleanSupplierData).reduce((acc, [key, value]) => {
-        if (value !== undefined && value !== null) {
-          acc[key] = value;
-        }
-        return acc;
-      }, {} as any);
+      const createResult = await createResponse.json();
 
-      const newSupplier = {
-        ...filteredSupplierData,
-        createdAt: serverTimestamp(),
-        createdBy: user.uid,
-        lastModifiedBy: user.uid,
-        updatedAt: serverTimestamp(),
-      };
-
-      const docRef = await addDoc(collection(db, 'customers'), newSupplier);
-
-      toast.success(`Lieferant "${companyName}" automatisch angelegt`);
-      console.log(`✅ Neuer Lieferant erstellt: ${companyName} (${docRef.id})`);
-
-      return docRef.id;
+      if (createResult.success) {
+        toast.success(`Lieferant "${companyName}" automatisch angelegt`);
+        console.log(`✅ Neuer Lieferant erstellt: ${companyName} (${createResult.customerId})`);
+        return createResult.customerId;
+      } else {
+        console.error('Fehler bei Lieferanten-Erstellung:', createResult.error);
+        toast.error('Fehler bei automatischer Lieferanten-Erstellung');
+        return '';
+      }
     } catch (error) {
       console.error('Fehler bei Lieferanten-Erstellung:', error);
       toast.error('Fehler bei automatischer Lieferanten-Erstellung');

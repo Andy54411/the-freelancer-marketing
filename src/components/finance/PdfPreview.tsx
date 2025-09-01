@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
@@ -45,10 +45,12 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(0.8);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if ((file && file.type === 'application/pdf') || fileUrl) {
       setPageNumber(1);
+      setLoadError(null);
     }
   }, [file, fileUrl]);
 
@@ -72,6 +74,18 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
     setScale(prev => Math.max(prev - 0.1, 0.4));
   };
 
+  // Memoize options to prevent unnecessary reloads
+  const documentOptions = useMemo(
+    () => ({
+      cMapUrl: '/pdf-worker/',
+      cMapPacked: true,
+      standardFontDataUrl: '/pdf-worker/',
+      // CORS-freundliche Einstellungen
+      withCredentials: false,
+    }),
+    []
+  );
+
   if ((!file || file.type !== 'application/pdf') && !fileUrl) {
     return (
       <div className={`bg-gray-50 rounded-lg border border-gray-200 p-8 ${className}`}>
@@ -84,8 +98,17 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
   }
 
   // Bestimme die PDF-Quelle und den Dateinamen
-  const pdfSource = file || fileUrl;
+  let pdfSource = file || fileUrl;
   const fileName = file?.name || (fileUrl ? 'Gespeicherter Beleg.pdf' : 'PDF-Datei');
+
+  // Für Firebase Storage URLs: Verwende Proxy-Route für CORS-kompatiblen Zugriff
+  if (
+    fileUrl &&
+    (fileUrl.includes('firebasestorage.googleapis.com') ||
+      fileUrl.includes('firebase.googleapis.com'))
+  ) {
+    pdfSource = `/api/pdf-proxy?url=${encodeURIComponent(fileUrl)}`;
+  }
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
@@ -158,6 +181,13 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
           <Document
             file={pdfSource}
             onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={error => {
+              console.error('PDF Load Error:', error);
+              console.error('PDF Source:', pdfSource);
+              console.error('File URL:', fileUrl);
+              setLoadError(`Fehler beim Laden: ${error.message || 'Unbekannter Fehler'}`);
+            }}
+            options={documentOptions}
             loading={
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
@@ -165,12 +195,41 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
               </div>
             }
             error={
-              <div className="text-center py-8 text-red-600">
-                <div className="text-sm">Fehler beim Laden der PDF-Datei</div>
-                <div className="text-xs mt-1 text-gray-500">
-                  Bitte versuchen Sie es mit einer anderen Datei
+              loadError ? (
+                <div className="text-center py-8 text-red-600">
+                  <div className="text-sm">PDF-Ladefehler</div>
+                  <div className="text-xs mt-1 text-gray-500">{loadError}</div>
+                  <div className="text-xs mt-1 text-gray-400">
+                    {typeof pdfSource === 'string'
+                      ? `URL: ${pdfSource.substring(0, 80)}...`
+                      : 'File object'}
+                  </div>
+                  {typeof pdfSource === 'string' && pdfSource.includes('firebasestorage') && (
+                    <div className="text-xs mt-2 text-blue-600">
+                      <a
+                        href={pdfSource}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
+                      >
+                        PDF direkt öffnen
+                      </a>
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-8 text-red-600">
+                  <div className="text-sm">Fehler beim Laden der PDF-Datei</div>
+                  <div className="text-xs mt-1 text-gray-500">
+                    CORS-Problem oder ungültige PDF-URL
+                  </div>
+                  <div className="text-xs mt-1 text-gray-400">
+                    {typeof pdfSource === 'string'
+                      ? `URL: ${pdfSource.substring(0, 50)}...`
+                      : 'File object'}
+                  </div>
+                </div>
+              )
             }
           >
             <Page

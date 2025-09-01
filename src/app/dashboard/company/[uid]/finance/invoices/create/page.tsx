@@ -35,6 +35,7 @@ import { InvoicePreview } from '@/components/finance/InvoicePreview';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { FirestoreDebugPanel } from '@/components/debug/FirestoreDebugPanel';
+import { findOrCreateCustomer } from '@/utils/customerUtils';
 
 interface Customer {
   id: string;

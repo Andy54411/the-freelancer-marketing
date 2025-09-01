@@ -15,11 +15,12 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/firebase/clients';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Search, Eye, Mail, Phone, MapPin } from 'lucide-react';
+import { Edit, Search, Eye, Mail, Phone, MapPin, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddCustomerModal, Customer } from './AddCustomerModal';
 import { CustomerDetailModal } from './CustomerDetailModal';
@@ -60,10 +61,55 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     return `KD-${String(highestNumber + 1).padStart(3, '0')}`;
   };
 
+  // Normalize customer name for fuzzy matching (similar to supplier system)
+  const normalizeCustomerName = (name: string): string => {
+    if (!name) return '';
+
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '') // Remove special characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+  };
+
+  // Fuzzy match customer names (similar to supplier system)
+  const fuzzyMatchCustomer = (
+    searchName: string,
+    existingCustomers: Customer[]
+  ): Customer | null => {
+    if (!searchName) return null;
+
+    const normalizedSearch = normalizeCustomerName(searchName);
+
+    for (const customer of existingCustomers) {
+      const normalizedCustomer = normalizeCustomerName(customer.name);
+
+      // Exact match
+      if (normalizedCustomer === normalizedSearch) {
+        return customer;
+      }
+
+      // Partial match (search name contains customer name or vice versa)
+      if (
+        normalizedSearch.includes(normalizedCustomer) ||
+        normalizedCustomer.includes(normalizedSearch)
+      ) {
+        // Only match if significant overlap (avoid false positives)
+        const overlapRatio =
+          Math.min(normalizedSearch.length, normalizedCustomer.length) /
+          Math.max(normalizedSearch.length, normalizedCustomer.length);
+        if (overlapRatio > 0.6) {
+          return customer;
+        }
+      }
+    }
+
+    return null;
+  };
+
   // Lade Kundenstatistiken im Hintergrund (ohne DB-Update)
   const loadCustomerStatsInBackground = async (customerList: Customer[]) => {
     try {
-
       const stats: { [customerId: string]: { totalAmount: number; totalInvoices: number } } = {};
 
       for (const customer of customerList) {
@@ -79,32 +125,24 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           ) {
             try {
               await updateCustomerStats(customer.id, customerStats, user.uid);
-
-            } catch (error) {
-
-            }
+            } catch (error) {}
           }
         } catch (error) {
-
           stats[customer.id] = { totalAmount: 0, totalInvoices: 0 };
         }
       }
 
       setCustomerStats(stats);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   // Aktualisiere Kundenstatistiken im Hintergrund
   const updateCustomerStatsInBackground = async (customerList: Customer[]) => {
     if (!user?.uid) {
-
       return;
     }
 
     try {
-
       for (const customer of customerList) {
         try {
           const stats = await calculateCustomerStats(companyId, customer.name);
@@ -125,18 +163,35 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
               )
             );
           }
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   // Load customers from Firestore
   const loadCustomers = async () => {
     try {
+      console.log('🔍 Loading customers...');
+      console.log('📍 Company ID:', companyId);
+      console.log('👤 Current User:', user?.uid);
+
+      // Debug: Auth information
+      console.log('🔐 Auth Debug:');
+      console.log('- User UID:', user?.uid);
+      console.log('- Company ID:', companyId);
+      console.log('- User object:', user);
+
+      // Debug: Token information (if available)
+      if (user && auth.currentUser) {
+        try {
+          const tokenResult = await auth.currentUser.getIdTokenResult();
+          console.log('- Custom Claims:', tokenResult.claims);
+          console.log('- Role:', tokenResult.claims.role);
+        } catch (tokenError) {
+          console.log('- Token Error:', tokenError);
+        }
+      }
+
       setLoading(true);
       const customersQuery = query(
         collection(db, 'customers'),
@@ -144,11 +199,16 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         orderBy('createdAt', 'desc')
       );
 
+      console.log('🔍 Executing customers query...');
       const querySnapshot = await getDocs(customersQuery);
+      console.log('📋 Raw query result - documents found:', querySnapshot.size);
+
       const loadedCustomers: Customer[] = [];
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
+        console.log(`📄 Customer document ${doc.id}:`, data);
+
         loadedCustomers.push({
           id: doc.id,
           customerNumber: data.customerNumber || 'KD-000',
@@ -173,13 +233,19 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         });
       });
 
+      console.log('✅ Processed customers:', loadedCustomers.length);
+      console.log('📊 Customer details:', loadedCustomers);
+
       setCustomers(loadedCustomers);
       setNextCustomerNumber(generateNextCustomerNumber(loadedCustomers));
+
+      console.log('🔢 Next customer number:', generateNextCustomerNumber(loadedCustomers));
 
       // Lade die korrekten Statistiken für jeden Kunden
       loadCustomerStatsInBackground(loadedCustomers);
     } catch (error) {
-
+      console.error('❌ Error loading customers:', error);
+      console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
       toast.error('Fehler beim Laden der Kundendaten');
     } finally {
       setLoading(false);
@@ -191,15 +257,12 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ) => {
     try {
-
       if (!user) {
-
         throw new Error('Benutzer nicht authentifiziert');
       }
 
       // Verify user has permission to add customers to this company
       if (user.uid !== companyId) {
-
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
@@ -250,13 +313,138 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       toast.success(`Kunde ${customerData.name} erfolgreich hinzugefügt`);
     } catch (error) {
-
       // More detailed error logging
       if (error instanceof Error) {
-
       }
 
       throw error;
+    }
+  };
+
+  // Automatically create customers from existing invoices
+  const createCustomersFromInvoices = async () => {
+    try {
+      console.log('🔍 Starting automatic customer creation from invoices...');
+      console.log('📍 Company ID:', companyId);
+      console.log('👤 Current User:', user?.uid);
+      console.log('📊 Current customers count:', customers.length);
+
+      // Load existing invoices
+      console.log('🔍 Querying invoices collection...');
+      const invoicesQuery = query(
+        collection(db, 'invoices'),
+        where('companyId', '==', companyId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const invoicesSnapshot = await getDocs(invoicesQuery);
+      console.log('📋 Invoice documents found:', invoicesSnapshot.size);
+
+      const uniqueCustomerNames = new Set<string>();
+      const allInvoices: any[] = [];
+
+      // Collect unique customer names from invoices
+      invoicesSnapshot.forEach(doc => {
+        const invoice = doc.data();
+        allInvoices.push({ id: doc.id, ...invoice });
+        console.log('📄 Invoice:', doc.id, '- Customer:', invoice.customerName);
+
+        if (invoice.customerName && invoice.customerName.trim()) {
+          uniqueCustomerNames.add(invoice.customerName.trim());
+        }
+      });
+
+      console.log('📋 Total invoices found:', allInvoices.length);
+      console.log('👥 Unique customer names found:', Array.from(uniqueCustomerNames));
+      console.log('🔢 Unique customers count:', uniqueCustomerNames.size);
+
+      let createdCount = 0;
+      const creationErrors: string[] = [];
+
+      // Create customers that don't exist yet
+      for (const customerName of uniqueCustomerNames) {
+        console.log(`\n🔍 Processing customer: "${customerName}"`);
+
+        const existingCustomer = fuzzyMatchCustomer(customerName, customers);
+        console.log(
+          '🔍 Fuzzy match result:',
+          existingCustomer ? `Found: ${existingCustomer.name}` : 'Not found'
+        );
+
+        if (!existingCustomer) {
+          try {
+            console.log(`👤 Creating new customer: ${customerName}`);
+
+            const newCustomerNumber = generateNextCustomerNumber([
+              ...customers,
+              ...Array(createdCount).fill(null),
+            ]);
+            console.log('🔢 Generated customer number:', newCustomerNumber);
+
+            const newCustomerData = {
+              customerNumber: newCustomerNumber,
+              name: customerName,
+              email: '', // Will be empty initially
+              phone: '',
+              address: '',
+              street: '',
+              city: '',
+              postalCode: '',
+              country: 'Deutschland',
+              taxNumber: '',
+              vatId: '',
+              vatValidated: false,
+              contactPersons: [],
+            };
+
+            console.log('📝 Customer data to create:', newCustomerData);
+
+            await handleAddCustomer(newCustomerData);
+            createdCount++;
+            console.log(
+              `✅ Successfully created customer: ${customerName} (${createdCount} total)`
+            );
+
+            // Small delay to avoid overwhelming the system
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } catch (error) {
+            const errorMessage = `Failed to create customer ${customerName}: ${error instanceof Error ? error.message : String(error)}`;
+            console.error(`❌ ${errorMessage}`);
+            creationErrors.push(errorMessage);
+          }
+        } else {
+          console.log(
+            `✅ Customer already exists: ${customerName} (matched: ${existingCustomer.name})`
+          );
+        }
+      }
+
+      console.log('\n📊 FINAL RESULTS:');
+      console.log('✅ Customers created:', createdCount);
+      console.log('❌ Creation errors:', creationErrors.length);
+      if (creationErrors.length > 0) {
+        console.log('🚨 Error details:', creationErrors);
+      }
+
+      if (createdCount > 0) {
+        toast.success(`${createdCount} Kunden automatisch aus Rechnungen erstellt`);
+        console.log(`✅ SUCCESS: Created ${createdCount} customers from invoices`);
+      } else if (uniqueCustomerNames.size === 0) {
+        toast.info('Keine Rechnungen mit Kundennamen gefunden');
+        console.log('ℹ️ INFO: No invoices with customer names found');
+      } else {
+        toast.info('Alle Kunden aus Rechnungen sind bereits vorhanden');
+        console.log('ℹ️ INFO: All customers from invoices already exist');
+      }
+
+      if (creationErrors.length > 0) {
+        toast.error(`${creationErrors.length} Fehler beim Erstellen von Kunden (siehe Konsole)`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('❌ CRITICAL ERROR in createCustomersFromInvoices:', errorMessage);
+      console.error('🔍 Error details:', error);
+      toast.error(`Kritischer Fehler: ${errorMessage}`);
     }
   };
 
@@ -273,15 +461,12 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   // Update customer in Firebase
   const handleUpdateCustomer = async (updatedCustomer: Customer) => {
     try {
-
       if (!user) {
-
         throw new Error('Benutzer nicht authentifiziert');
       }
 
       // Verify user has permission to update customers for this company
       if (user.uid !== companyId) {
-
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
@@ -314,12 +499,9 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       // Update local state
       setCustomers(prev => prev.map(c => (c.id === updatedCustomer.id ? updatedCustomer : c)));
-
     } catch (error) {
-
       // More detailed error logging
       if (error instanceof Error) {
-
       }
 
       throw error;
