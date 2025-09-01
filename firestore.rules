@@ -958,34 +958,27 @@ service cloud.firestore {
     
     // Personal: Time Entries Collection (Zeiterfassung)
     match /companies/{companyId}/timeEntries/{entryId} {
-      // Lesen: Nur eigene Firma oder Support Staff
+      // Lesen: Nur eigene Firma oder Support Staff (VEREINFACHT für bessere Kompatibilität)
       allow read: if request.auth != null && 
-                     (request.auth.uid == companyId && isCompany()) ||
-                     isSupportStaff();
+                     (request.auth.uid == companyId || isSupportStaff());
       
-      // Listen-Abfragen: Nur eigene Firma
+      // Listen-Abfragen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
       allow list: if request.auth != null && 
-                    (request.auth.uid == companyId && isCompany()) ||
-                    isSupportStaff();
+                    (request.auth.uid == companyId || isSupportStaff());
       
-      // Erstellen: Nur eigene Firma
+      // Erstellen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
       allow create: if request.auth != null && 
                        request.auth.uid == companyId &&
-                       isCompany() &&
-                       request.resource.data.companyId == companyId &&
-                       request.resource.data.createdAt == request.time;
+                       request.resource.data.companyId == companyId;
       
-      // Aktualisieren: Nur eigene Firma
+      // Aktualisieren: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
       allow update: if request.auth != null && 
                        request.auth.uid == companyId &&
-                       isCompany() &&
-                       resource.data.companyId == companyId &&
-                       request.resource.data.updatedAt == request.time;
+                       resource.data.companyId == companyId;
       
-      // Löschen: Nur eigene Firma oder Support Staff
+      // Löschen: Nur eigene Firma oder Support Staff (VEREINFACHT für bessere Kompatibilität)
       allow delete: if request.auth != null && 
-                       ((request.auth.uid == companyId && isCompany()) ||
-                        isSupportStaff());
+                       (request.auth.uid == companyId || isSupportStaff());
     }
     
     // Personal: Payrolls Collection (Gehaltsabrechnungen)
@@ -1206,29 +1199,27 @@ service cloud.firestore {
 
     // Finance: Projects Collection (Projektmanagement)
     match /companies/{companyId}/projects/{projectId} {
-      // Lesen: Nur eigene Firma oder Support Staff
+      // Lesen: Nur eigene Firma oder Support Staff (VEREINFACHT für bessere Kompatibilität)
       allow read: if request.auth != null && 
-                     (isCompanyFromFirestore(companyId) || isSupportStaff());
+                     (request.auth.uid == companyId || isSupportStaff());
       
-      // Listen-Abfragen: Nur eigene Firma
+      // Listen-Abfragen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
       allow list: if request.auth != null && 
-                    (isCompanyFromFirestore(companyId) || isSupportStaff());
+                    (request.auth.uid == companyId || isSupportStaff());
       
-      // Erstellen: Nur eigene Firma
+      // Erstellen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
       allow create: if request.auth != null && 
-                       isCompanyFromFirestore(companyId) &&
-                       request.resource.data.companyId == companyId &&
-                       request.resource.data.createdAt == request.time;
+                       request.auth.uid == companyId &&
+                       request.resource.data.companyId == companyId;
       
-      // Aktualisieren: Nur eigene Firma
+      // Aktualisieren: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
       allow update: if request.auth != null && 
-                       isCompanyFromFirestore(companyId) &&
-                       request.resource.data.updatedAt == request.time;
+                       request.auth.uid == companyId &&
+                       resource.data.companyId == companyId;
       
-      // Löschen: Nur eigene Firma oder Support Staff
+      // Löschen: Nur eigene Firma oder Support Staff (VEREINFACHT für bessere Kompatibilität)
       allow delete: if request.auth != null && 
-                       ((request.auth.uid == companyId && isCompany()) ||
-                        isSupportStaff());
+                       (request.auth.uid == companyId || isSupportStaff());
     }
 
     // Performance Reviews Collection

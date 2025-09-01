@@ -89,11 +89,10 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
           }));
         setEmployees(mappedEmployees);
       } catch (error) {
-        // Fallback auf direkte Firestore-Abfrage
-
+        // Fallback auf direkte Firestore-Abfrage (korrigierter Pfad)
+        console.log('📄 Fallback: Lade Mitarbeiter direkt aus Firestore');
         const employeesQuery = query(
-          collection(db, 'employees'),
-          where('companyId', '==', companyId),
+          collection(db, 'companies', companyId, 'employees'),
           where('isActive', '==', true)
         );
 
@@ -119,7 +118,6 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
         setEmployees(employeeData);
       }
     } catch (error) {
-
       toast.error('Fehler beim Laden der Mitarbeiter');
     } finally {
       setLoading(false);
@@ -128,10 +126,16 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
 
   const updateTeamMembersAndAvailable = useCallback(async () => {
     if (!project.teamMembers || project.teamMembers.length === 0) {
+      setTeamMembers([]);
       setAvailableEmployees(employees);
       return;
     }
 
+    // Lade Team-Mitglieder basierend auf IDs
+    const teamMemberObjects = employees.filter(emp => project.teamMembers.includes(emp.id));
+    setTeamMembers(teamMemberObjects);
+
+    // Verfügbare Mitarbeiter sind alle minus die bereits im Team
     const teamMemberIds = new Set(project.teamMembers);
     const available = employees.filter(emp => !teamMemberIds.has(emp.id));
     setAvailableEmployees(available);
@@ -141,8 +145,8 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
     try {
       const updatedTeamMembers = [...project.teamMembers, employee.id];
 
-      // Update im Firestore
-      const projectRef = doc(db, 'projects', project.id);
+      // Update im Firestore (korrigierter Pfad)
+      const projectRef = doc(db, 'companies', companyId, 'projects', project.id);
       await updateDoc(projectRef, {
         teamMembers: updatedTeamMembers,
         updatedAt: new Date(),
@@ -157,7 +161,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
       onProjectUpdate(updatedProject);
       toast.success(`${employee.firstName} ${employee.lastName} wurde zum Team hinzugefügt`);
     } catch (error) {
-
+      console.error('❌ Fehler beim Hinzufügen des Teammitglieds:', error);
       toast.error('Fehler beim Hinzufügen des Teammitglieds');
     }
   };
@@ -166,8 +170,8 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
     try {
       const updatedTeamMembers = project.teamMembers.filter(id => id !== employee.id);
 
-      // Update im Firestore
-      const projectRef = doc(db, 'projects', project.id);
+      // Update im Firestore (korrigierter Pfad)
+      const projectRef = doc(db, 'companies', companyId, 'projects', project.id);
       await updateDoc(projectRef, {
         teamMembers: updatedTeamMembers,
         updatedAt: new Date(),
@@ -182,7 +186,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
       onProjectUpdate(updatedProject);
       toast.success(`${employee.firstName} ${employee.lastName} wurde aus dem Team entfernt`);
     } catch (error) {
-
+      console.error('❌ Fehler beim Entfernen des Teammitglieds:', error);
       toast.error('Fehler beim Entfernen des Teammitglieds');
     }
   };
