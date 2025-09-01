@@ -50,13 +50,19 @@ export default function RevolutConnectModal({
   // Listen for OAuth success messages from popup
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      console.log('🔍 Received message in RevolutConnectModal:', event);
+
       // Ensure message is from our domain
-      if (event.origin !== window.location.origin) return;
+      if (event.origin !== window.location.origin) {
+        console.log('⚠️ Message from different origin, ignoring:', event.origin);
+        return;
+      }
 
       if (event.data.type === 'REVOLUT_OAUTH_SUCCESS') {
         console.log('✅ Received OAuth success message:', event.data);
         setIsLoading(false);
         if (onSuccess) {
+          console.log('🔄 Calling onSuccess callback with connectionId:', event.data.connectionId);
           onSuccess(event.data.connectionId);
         }
         onClose();
@@ -68,8 +74,12 @@ export default function RevolutConnectModal({
     };
 
     if (isOpen) {
+      console.log('👂 Adding message event listener');
       window.addEventListener('message', handleMessage);
-      return () => window.removeEventListener('message', handleMessage);
+      return () => {
+        console.log('🧹 Removing message event listener');
+        window.removeEventListener('message', handleMessage);
+      };
     }
   }, [isOpen, onSuccess, onClose]);
 
