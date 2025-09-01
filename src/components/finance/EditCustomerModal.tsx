@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Loader2, Trash2, UserPlus, Star, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { validateVATNumber, getVATFormat } from '@/utils/vatValidation';
+import { validateVATNumber, getVATFormat, detectCountryFromVAT } from '@/utils/vatValidation';
 import { Customer, ContactPerson } from './AddCustomerModal';
 
 interface EditCustomerModalProps {
@@ -69,21 +69,48 @@ export function EditCustomerModal({
       });
 
       setContactPersons(customer.contactPersons || []);
+
+      // VAT-Validierung auch beim Laden durchführen
+      if (customer.vatId && customer.vatId.length > 2) {
+        const validation = validateVATNumber(customer.vatId);
+        console.log('Initial VAT validation on load:', {
+          vatId: customer.vatId,
+          validation: validation,
+          isValid: validation.isValid,
+        });
+        setFormData(prev => ({ ...prev, vatValidated: validation.isValid }));
+      }
     }
   }, [customer, isOpen]);
 
   // VAT Validation
   const handleVATChange = (value: string) => {
     const upperValue = value.toUpperCase();
+
+    // Automatische Länder-Erkennung basierend auf VAT-Nummer
+    const detectedCountry = detectCountryFromVAT(upperValue);
+
     setFormData(prev => ({
       ...prev,
       vatId: upperValue,
+      // Setze Land automatisch basierend auf VAT-Nummer
+      country: detectedCountry && upperValue.length >= 2 ? detectedCountry : prev.country,
       // Leere Steuernummer wenn VAT befüllt wird
       taxNumber: upperValue ? '' : prev.taxNumber,
     }));
 
     if (upperValue.length > 2) {
       const validation = validateVATNumber(upperValue);
+      console.log('EditModal VAT Debug:', {
+        input: upperValue,
+        validation: validation,
+        isValid: validation.isValid,
+        currentCountry: formData.country,
+        detectedCountry: detectedCountry,
+        willShowGermanSection:
+          (detectedCountry && upperValue.length >= 2 ? detectedCountry : formData.country) ===
+          'Deutschland',
+      });
       setFormData(prev => ({ ...prev, vatValidated: validation.isValid }));
     } else {
       setFormData(prev => ({ ...prev, vatValidated: false }));
@@ -176,7 +203,6 @@ export function EditCustomerModal({
       onClose();
       toast.success('Kunde erfolgreich aktualisiert');
     } catch (error) {
-
       toast.error('Fehler beim Aktualisieren des Kunden');
     } finally {
       setLoading(false);
@@ -366,6 +392,56 @@ export function EditCustomerModal({
                 <option value="Spanien">Spanien</option>
                 <option value="Polen">Polen</option>
                 <option value="Tschechien">Tschechien</option>
+                <option value="Slowakei">Slowakei</option>
+                <option value="Ungarn">Ungarn</option>
+                <option value="Slowenien">Slowenien</option>
+                <option value="Kroatien">Kroatien</option>
+                <option value="Rumänien">Rumänien</option>
+                <option value="Bulgarien">Bulgarien</option>
+                <option value="Litauen">Litauen</option>
+                <option value="Lettland">Lettland</option>
+                <option value="Estland">Estland</option>
+                <option value="Finnland">Finnland</option>
+                <option value="Schweden">Schweden</option>
+                <option value="Dänemark">Dänemark</option>
+                <option value="Norwegen">Norwegen</option>
+                <option value="Island">Island</option>
+                <option value="Großbritannien">Großbritannien</option>
+                <option value="Irland">Irland</option>
+                <option value="Portugal">Portugal</option>
+                <option value="Griechenland">Griechenland</option>
+                <option value="Malta">Malta</option>
+                <option value="Zypern">Zypern</option>
+                <option value="Luxemburg">Luxemburg</option>
+                <option value="USA">USA</option>
+                <option value="Kanada">Kanada</option>
+                <option value="Mexiko">Mexiko</option>
+                <option value="Australien">Australien</option>
+                <option value="Neuseeland">Neuseeland</option>
+                <option value="Japan">Japan</option>
+                <option value="Singapur">Singapur</option>
+                <option value="Hongkong">Hongkong</option>
+                <option value="Indien">Indien</option>
+                <option value="Malaysia">Malaysia</option>
+                <option value="Thailand">Thailand</option>
+                <option value="Philippinen">Philippinen</option>
+                <option value="Indonesien">Indonesien</option>
+                <option value="Südkorea">Südkorea</option>
+                <option value="Taiwan">Taiwan</option>
+                <option value="Brasilien">Brasilien</option>
+                <option value="Argentinien">Argentinien</option>
+                <option value="Chile">Chile</option>
+                <option value="Kolumbien">Kolumbien</option>
+                <option value="Peru">Peru</option>
+                <option value="Uruguay">Uruguay</option>
+                <option value="Südafrika">Südafrika</option>
+                <option value="VAE">VAE</option>
+                <option value="Saudi-Arabien">Saudi-Arabien</option>
+                <option value="Israel">Israel</option>
+                <option value="Türkei">Türkei</option>
+                <option value="Ägypten">Ägypten</option>
+                <option value="Russland">Russland</option>
+                <option value="China">China</option>
                 <option value="Andere">Andere</option>
               </select>
             </div>
@@ -449,11 +525,31 @@ export function EditCustomerModal({
                               ? 'CHE123456789'
                               : formData.country === 'Niederlande'
                                 ? 'NL123456789B01'
-                                : formData.country === 'USA'
-                                  ? '12-3456789'
-                                  : formData.country === 'Brasilien'
-                                    ? '12.345.678/0001-90'
-                                    : 'Länderkürzel + Nummer'
+                                : formData.country === 'Irland'
+                                  ? 'IE3668997OH'
+                                  : formData.country === 'Großbritannien'
+                                    ? 'GB123456789'
+                                    : formData.country === 'Frankreich'
+                                      ? 'FR12345678901'
+                                      : formData.country === 'Italien'
+                                        ? 'IT12345678901'
+                                        : formData.country === 'Spanien'
+                                          ? 'ESA12345674'
+                                          : formData.country === 'USA'
+                                            ? '12-3456789'
+                                            : formData.country === 'Brasilien'
+                                              ? '12.345.678/0001-90'
+                                              : formData.country === 'Australien'
+                                                ? '12345678901'
+                                                : formData.country === 'Kanada'
+                                                  ? '123456789RT0001'
+                                                  : formData.country === 'Japan'
+                                                    ? 'T1234567890123'
+                                                    : formData.country === 'Singapur'
+                                                      ? '12345678A'
+                                                      : formData.country === 'Indien'
+                                                        ? '12ABCDE1234F1Z5'
+                                                        : 'Länderkürzel + Nummer'
                         }
                         autoComplete="off"
                         className={

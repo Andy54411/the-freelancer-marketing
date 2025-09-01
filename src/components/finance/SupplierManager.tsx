@@ -142,6 +142,26 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
     loadSuppliers();
   }, [user, companyId]);
 
+  // Event-Listener für das Öffnen des EditModals von CustomerDetailModal
+  useEffect(() => {
+    const handleOpenEditModal = (event: CustomEvent) => {
+      const supplier = event.detail;
+      console.log('🎧 Event openEditModal empfangen für Lieferant:', supplier.name);
+      if (supplier && supplier.isSupplier) {
+        setEditingSupplier(supplier);
+        setShowEditModal(true);
+      }
+    };
+
+    // @ts-ignore
+    window.addEventListener('openEditModal', handleOpenEditModal);
+
+    return () => {
+      // @ts-ignore
+      window.removeEventListener('openEditModal', handleOpenEditModal);
+    };
+  }, []);
+
   // Add new supplier
   const handleAddSupplier = async (
     supplierData: Omit<Supplier, 'id' | 'createdAt' | 'totalAmount' | 'totalInvoices'>

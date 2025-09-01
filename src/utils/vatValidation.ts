@@ -37,7 +37,7 @@ const VAT_PATTERNS: Record<string, RegExp> = {
   NO: /^NO[0-9]{9}(MVA)?$/, // Norwegen
   IS: /^IS[0-9]{5,6}$/, // Island
   GB: /^GB([0-9]{9}([0-9]{3})?|[0-9]{12})$/, // Großbritannien
-  IE: /^IE[0-9]S[0-9]{5}L$/, // Irland
+  IE: /^IE([0-9]{7}[A-Z]{1,2}|[0-9]S[0-9]{5}L)$/, // Irland - verschiedene Formate
   PT: /^PT[0-9]{9}$/, // Portugal
   GR: /^(EL|GR)[0-9]{9}$/, // Griechenland
   MT: /^MT[0-9]{8}$/, // Malta
@@ -215,6 +215,7 @@ export function getVATFormat(countryName: string): string {
     Slowakei: 'SK + 10 Ziffern (z.B. SK1234567890)',
     Ungarn: 'HU + 8 Ziffern (z.B. HU12345678)',
     Großbritannien: 'GB + 9 oder 12 Ziffern (z.B. GB123456789)',
+    Irland: 'IE + 7 Ziffern + 1-2 Buchstaben (z.B. IE3668997OH)',
     Norwegen: 'NO + 9 Ziffern + MVA (z.B. NO123456789MVA)',
 
     // Nordamerika
@@ -247,6 +248,16 @@ export function getVATFormat(countryName: string): string {
   };
 
   return formats[countryName] || 'Länderkürzel + Nummer';
+}
+
+/**
+ * Detects the country based on VAT number
+ */
+export function detectCountryFromVAT(vatNumber: string): string | null {
+  if (!vatNumber || vatNumber.length < 2) return null;
+
+  const countryCode = vatNumber.replace(/\s/g, '').toUpperCase().substring(0, 2);
+  return COUNTRY_NAMES[countryCode] || null;
 }
 
 /**
