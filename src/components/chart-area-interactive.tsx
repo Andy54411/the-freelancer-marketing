@@ -5,6 +5,8 @@ import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
 import { callHttpsFunction } from '@/lib/httpsFunctions';
 import { useAuth } from '@/contexts/AuthContext';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AlertCircle as FiAlertCircle, Loader2 as FiLoader } from 'lucide-react';
@@ -31,7 +33,7 @@ import {
 } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-export const description = 'Ein interaktiver Flächenchart, der den Gesamtumsatz anzeigt';
+export const description = 'Ein interaktiver Flächenchart, der Umsatz und Ausgaben anzeigt';
 
 // Typ für die Rohdaten, die wir von der Funktion erwarten
 type OrderData = {
@@ -41,10 +43,31 @@ type OrderData = {
   status: string;
 };
 
+// Typ für Ausgaben
+type ExpenseData = {
+  id: string;
+  amount: number;
+  date:
+    | Date
+    | { seconds: number; nanoseconds: number }
+    | { _seconds: number; _nanoseconds: number }
+    | string;
+  createdAt?:
+    | Date
+    | { seconds: number; nanoseconds: number }
+    | { _seconds: number; _nanoseconds: number }
+    | string
+    | any;
+};
+
 const chartConfigStatic = {
   umsatz: {
     label: 'Umsatz',
     color: 'var(--primary)',
+  },
+  ausgaben: {
+    label: 'Ausgaben',
+    color: '#ef4444', // Rot für Ausgaben
   },
 } satisfies ChartConfig;
 
@@ -53,6 +76,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
   const { user, loading: authLoading } = useAuth();
   const [timeRange, setTimeRange] = React.useState('90d');
   const [orders, setOrders] = React.useState<OrderData[]>([]);
+  const [expenses, setExpenses] = React.useState<ExpenseData[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -63,6 +87,10 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
         umsatz: {
           label: 'Umsatz',
           color: 'var(--primary)',
+        },
+        ausgaben: {
+          label: 'Ausgaben',
+          color: '#ef4444',
         },
       }) satisfies ChartConfig,
     []
@@ -90,29 +118,81 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
         );
         setOrders(result.orders || []);
       } catch (err: any) {
-
         setError(err.message || 'Fehler beim Laden der Umsatzdaten');
       } finally {
         setLoading(false);
       }
     };
 
+    const fetchExpenses = () => {
+      try {
+        const expensesQuery = query(
+          collection(db, 'customers'),
+          where('companyId', '==', companyUid),
+          where('isSupplier', '==', true)
+        );
+
+        // Real-time listener für Ausgaben - dieselbe Logik wie SectionCards
+        const unsubscribe = onSnapshot(expensesQuery, expensesSnapshot => {
+          const expenseData: ExpenseData[] = [];
+          let totalAmount = 0;
+
+          expensesSnapshot.forEach(doc => {
+            const supplier = doc.data();
+            if (supplier.totalAmount && supplier.totalAmount > 0) {
+              totalAmount += supplier.totalAmount;
+            }
+          });
+
+          // Erstelle einen einzelnen Expense-Eintrag mit der Gesamtsumme für heute
+          if (totalAmount > 0) {
+            expenseData.push({
+              id: 'total-expenses',
+              amount: totalAmount,
+              date: new Date(), // Immer heute
+              createdAt: new Date(),
+            });
+          }
+
+          setExpenses(expenseData);
+        });
+
+        return unsubscribe;
+      } catch (err) {
+        console.error('Fehler beim Laden der Ausgaben:', err);
+        return () => {};
+      }
+    };
+
     fetchOrders();
+    const unsubscribeExpenses = fetchExpenses();
+
+    // Cleanup function
+    return () => {
+      if (unsubscribeExpenses) {
+        unsubscribeExpenses();
+      }
+    };
   }, [companyUid, user, authLoading]);
 
-  const { chartData, totalRevenue } = React.useMemo(() => {
-    if (!orders.length) return { chartData: [], totalRevenue: 0 };
+  const { chartData, totalRevenue, totalExpenses } = React.useMemo(() => {
+    if (!orders.length && !expenses.length)
+      return { chartData: [], totalRevenue: 0, totalExpenses: 0 };
 
     const referenceDate = new Date();
     let daysToSubtract = 90;
     if (timeRange === '30d') daysToSubtract = 30;
     else if (timeRange === '7d') daysToSubtract = 7;
+    else if (timeRange === '365d') daysToSubtract = 365;
     const startDate = new Date(referenceDate);
     startDate.setDate(startDate.getDate() - daysToSubtract);
 
     const dailyRevenue: { [key: string]: number } = {};
+    const dailyExpenses: { [key: string]: number } = {};
     let currentTotalRevenue = 0;
+    let currentTotalExpenses = 0;
 
+    // Umsatz verarbeiten
     orders.forEach(order => {
       if (!order.orderDate) {
         return;
@@ -138,15 +218,38 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
       }
     });
 
-    const finalChartData = Object.keys(dailyRevenue)
+    // Ausgaben verarbeiten - verwende dieselbe Logik wie SectionCards
+    expenses.forEach(expense => {
+      // Da wir jetzt immer das aktuelle Datum verwenden, ist es einfach
+      const expenseDate = expense.date instanceof Date ? expense.date : new Date();
+
+      if (expenseDate >= startDate) {
+        const dateString = expenseDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        if (!dailyExpenses[dateString]) {
+          dailyExpenses[dateString] = 0;
+        }
+        dailyExpenses[dateString] += expense.amount;
+        currentTotalExpenses += expense.amount;
+      }
+    });
+
+    // Alle Daten sammeln und Chart-Daten erstellen
+    const allDates = new Set([...Object.keys(dailyRevenue), ...Object.keys(dailyExpenses)]);
+
+    const finalChartData = Array.from(allDates)
       .map(date => ({
         date,
-        umsatz: dailyRevenue[date],
+        umsatz: dailyRevenue[date] || 0,
+        ausgaben: dailyExpenses[date] || 0,
       }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    return { chartData: finalChartData, totalRevenue: currentTotalRevenue };
-  }, [orders, timeRange]);
+    return {
+      chartData: finalChartData,
+      totalRevenue: currentTotalRevenue,
+      totalExpenses: currentTotalExpenses,
+    };
+  }, [orders, expenses, timeRange]);
 
   if (loading) {
     return (
@@ -178,10 +281,9 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
   return (
     <Card className="@container/card">
       <CardHeader>
-        <CardTitle>Umsatz</CardTitle>
+        <CardTitle>Umsatz und Ausgaben</CardTitle>
         <CardDescription>
-          Gesamtumsatz im ausgewählten Zeitraum{' '}
-          <span className="font-bold">{totalRevenue.toFixed(2)} €</span>
+          Überblick über Ihre Einnahmen und Ausgaben im ausgewählten Zeitraum
         </CardDescription>
         <CardAction>
           <ToggleGroup
@@ -191,6 +293,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
           >
+            <ToggleGroupItem value="365d">1 Jahr</ToggleGroupItem>
             <ToggleGroupItem value="90d">90 Tage</ToggleGroupItem>
             <ToggleGroupItem value="30d">30 Tage</ToggleGroupItem>
             <ToggleGroupItem value="7d">7 Tage</ToggleGroupItem>
@@ -204,6 +307,9 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
               <SelectValue placeholder="90 Tage" />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
+              <SelectItem value="365d" className="rounded-lg">
+                1 Jahr
+              </SelectItem>
               <SelectItem value="90d" className="rounded-lg">
                 90 Tage
               </SelectItem>
@@ -224,6 +330,10 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
               <linearGradient id="fillUmsatz" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--color-umsatz)" stopOpacity={1.0} />
                 <stop offset="95%" stopColor="var(--color-umsatz)" stopOpacity={0.1} />
+              </linearGradient>
+              <linearGradient id="fillAusgaben" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-ausgaben)" stopOpacity={1.0} />
+                <stop offset="95%" stopColor="var(--color-ausgaben)" stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
@@ -264,6 +374,13 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
               fill="url(#fillUmsatz)"
               stroke="var(--color-umsatz)"
               stackId="a"
+            />
+            <Area
+              dataKey="ausgaben"
+              type="natural"
+              fill="url(#fillAusgaben)"
+              stroke="var(--color-ausgaben)"
+              stackId="b"
             />
           </AreaChart>
         </ChartContainer>

@@ -172,12 +172,26 @@ export function EditCustomerModal({
     try {
       setLoading(true);
 
-      const updatedCustomer: Customer = {
+      // Hilfsfunktion um undefined Werte zu filtern
+      const cleanObject = (obj: any): any => {
+        const cleaned: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+          if (value !== undefined && value !== null && value !== '') {
+            if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+              cleaned[key] = cleanObject(value);
+            } else {
+              cleaned[key] = value;
+            }
+          }
+        }
+        return cleaned;
+      };
+
+      const updatedCustomerData = {
         ...customer,
         customerNumber: formData.customerNumber,
         name: formData.name.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim() || undefined,
         // Legacy address für Kompatibilität - kombiniert aus strukturierten Feldern
         address: `${formData.street}, ${formData.postalCode} ${formData.city}, ${formData.country}`,
         // Strukturierte Adresse
@@ -185,21 +199,34 @@ export function EditCustomerModal({
         city: formData.city.trim(),
         postalCode: formData.postalCode.trim(),
         country: formData.country,
-        taxNumber: formData.taxNumber.trim() || undefined,
-        vatId: formData.vatId.trim() || undefined,
         vatValidated: formData.vatValidated,
-        contactPersons: validContactPersons.map(cp => ({
-          ...cp,
-          firstName: cp.firstName.trim(),
-          lastName: cp.lastName.trim(),
-          email: cp.email.trim(),
-          phone: cp.phone?.trim() || undefined,
-          position: cp.position?.trim() || undefined,
-          department: cp.department?.trim() || undefined,
-        })),
+        contactPersons: validContactPersons.map(cp =>
+          cleanObject({
+            ...cp,
+            firstName: cp.firstName.trim(),
+            lastName: cp.lastName.trim(),
+            email: cp.email.trim(),
+            phone: cp.phone?.trim() || null,
+            position: cp.position?.trim() || null,
+            department: cp.department?.trim() || null,
+          })
+        ),
       };
 
-      await onUpdateCustomer(updatedCustomer);
+      // Füge optionale Felder nur hinzu, wenn sie Werte haben
+      if (formData.phone.trim()) {
+        updatedCustomerData.phone = formData.phone.trim();
+      }
+      if (formData.taxNumber.trim()) {
+        updatedCustomerData.taxNumber = formData.taxNumber.trim();
+      }
+      if (formData.vatId.trim()) {
+        updatedCustomerData.vatId = formData.vatId.trim();
+      }
+
+      const cleanedCustomer = cleanObject(updatedCustomerData) as Customer;
+
+      await onUpdateCustomer(cleanedCustomer);
       onClose();
       toast.success('Kunde erfolgreich aktualisiert');
     } catch (error) {

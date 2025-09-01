@@ -1486,6 +1486,34 @@ service cloud.firestore {
       }
     }
 
+    // Suppliers (Lieferanten/Ausgaben) Collection
+    match /suppliers/{supplierId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Listen: Nur eigene Firma oder Support Staff  
+      allow list: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Erstellen: Nur eigene Firma oder Support Staff
+      allow create: if request.auth != null && 
+                       (request.resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+      
+      // Aktualisieren: Nur eigene Firma oder Support Staff
+      allow update: if request.auth != null && 
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+    }
+
     // Project Requests Collection - für User-Projekte
     match /project_requests/{projectRequestId} {
       // Lesen: Eigene Project Requests als Kunde

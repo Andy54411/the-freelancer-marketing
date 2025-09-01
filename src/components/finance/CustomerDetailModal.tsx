@@ -64,6 +64,14 @@ export function CustomerDetailModal({
     totalInvoices: number;
   }>({ totalAmount: 0, totalInvoices: 0 });
 
+  // Lokaler State für Kundendaten, um Updates aus der DB zu reflektieren
+  const [localCustomer, setLocalCustomer] = useState<Customer | null>(null);
+
+  // Aktualisiere lokalen State wenn sich der customer prop ändert
+  useEffect(() => {
+    setLocalCustomer(customer);
+  }, [customer]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
@@ -71,8 +79,9 @@ export function CustomerDetailModal({
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE', {
+  const formatDate = (date: string | Date) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -154,23 +163,23 @@ export function CustomerDetailModal({
 
   // Rechnungshistorie und Ausgaben laden
   const loadInvoiceHistory = async () => {
-    if (!customer) return;
+    if (!localCustomer) return;
 
     try {
       setLoading(true);
       const loadedInvoices: InvoiceData[] = [];
 
       console.log('🔍 Loading data for customer:', {
-        customerName: customer.name,
-        isSupplier: customer.isSupplier,
-        companyId: customer.companyId,
+        customerName: localCustomer.name,
+        isSupplier: localCustomer.isSupplier,
+        companyId: localCustomer.companyId,
       });
 
       // 1. IMMER Rechnungen laden (für alle Kunden/Supplier)
       const invoicesQuery = query(
         collection(db, 'invoices'),
-        where('companyId', '==', customer.companyId),
-        where('customerName', '==', customer.name),
+        where('companyId', '==', localCustomer.companyId),
+        where('customerName', '==', localCustomer.name),
         orderBy('createdAt', 'desc')
       );
 
@@ -187,11 +196,11 @@ export function CustomerDetailModal({
       });
 
       // 2. ZUSÄTZLICH für Supplier: Ausgaben laden und als "Rechnungen" anzeigen
-      if (customer.isSupplier) {
+      if (localCustomer.isSupplier) {
         const expensesQuery = query(
           collection(db, 'expenses'),
-          where('supplierId', '==', customer.id),
-          where('companyId', '==', customer.companyId),
+          where('supplierId', '==', localCustomer.id),
+          where('companyId', '==', localCustomer.companyId),
           orderBy('createdAt', 'desc')
         );
 
@@ -204,12 +213,12 @@ export function CustomerDetailModal({
           loadedInvoices.push({
             id: doc.id,
             invoiceNumber: data.invoiceNumber || `EXP-${doc.id.slice(-6)}`,
-            customerName: customer.name,
+            customerName: localCustomer.name,
             total: data.amount || 0,
             status: 'paid' as any, // Expenses sind immer "bezahlt"
             createdAt: data.createdAt?.toDate?.() || new Date(),
             dueDate: data.date || new Date().toISOString().split('T')[0],
-            companyId: customer.companyId,
+            companyId: localCustomer.companyId,
             // Markiere als Ausgabe für UI-Unterscheidung
             isExpense: true,
             description: data.description || data.title || 'Ausgabe',
@@ -229,22 +238,22 @@ export function CustomerDetailModal({
   };
 
   useEffect(() => {
-    if (isOpen && customer) {
+    if (isOpen && localCustomer?.id) {
       loadInvoiceHistory();
       // Reload customer data to ensure we have latest contactPersons
       reloadCustomerData();
     }
-  }, [isOpen, customer]);
+  }, [isOpen, localCustomer?.id]); // Nur ID als Dependency verwenden
 
   // Reload customer data from database
   const reloadCustomerData = async () => {
-    if (!customer?.id) return;
+    if (!localCustomer?.id) return;
 
     try {
-      console.log('🔄 Reloading customer data for:', customer.name);
-      const customerDocRef = doc(db, 'customers', customer.id);
+      console.log('🔄 Reloading customer data for:', localCustomer.name);
+      const customerDocRef = doc(db, 'customers', localCustomer.id);
       const customerDocSnapshot = await getDocs(
-        query(collection(db, 'customers'), where('__name__', '==', customer.id))
+        query(collection(db, 'customers'), where('__name__', '==', localCustomer.id))
       );
 
       if (!customerDocSnapshot.empty) {
@@ -255,15 +264,27 @@ export function CustomerDetailModal({
           contactPersonsLength: freshData.contactPersons?.length || 0,
         });
 
-        // If current customer object doesn't have contactPersons but DB does, update the display
-        if (
-          (!customer.contactPersons || customer.contactPersons.length === 0) &&
-          freshData.contactPersons &&
-          freshData.contactPersons.length > 0
-        ) {
-          console.log('🔄 Updating customer object with fresh contactPersons');
-          // We would need to update the parent component here
-          // For now, just log the fresh data
+        // Nur aktualisieren wenn sich contactPersons wirklich geändert haben
+        const currentContactPersonsLength = localCustomer.contactPersons?.length || 0;
+        const freshContactPersonsLength = freshData.contactPersons?.length || 0;
+
+        if (currentContactPersonsLength !== freshContactPersonsLength) {
+          console.log('🔄 Contact persons changed, updating local state');
+          setLocalCustomer(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              contactPersons: freshData.contactPersons || [],
+              // Weitere Felder könnten hier auch aktualisiert werden
+              name: freshData.name || prev.name,
+              email: freshData.email || prev.email,
+              phone: freshData.phone || prev.phone,
+              address: freshData.address || prev.address,
+              vatId: freshData.vatId || prev.vatId,
+            };
+          });
+        } else {
+          console.log('📄 Contact persons unchanged, skipping update');
         }
       } else {
         console.log('❌ Customer document not found in DB');
@@ -273,19 +294,18 @@ export function CustomerDetailModal({
     }
   };
 
-  if (!customer) return null;
+  if (!localCustomer) return null;
 
-  const primaryContact = customer.contactPersons?.find(cp => cp.isPrimary);
-  const otherContacts = customer.contactPersons?.filter(cp => !cp.isPrimary) || [];
+  const primaryContact = localCustomer.contactPersons?.find(cp => cp.isPrimary);
+  const otherContacts = localCustomer.contactPersons?.filter(cp => !cp.isPrimary) || [];
 
-  // Debug: Ansprechpartner-Daten loggen
-  console.log('Customer Debug:', {
-    customerName: customer.name,
-    contactPersons: customer.contactPersons,
-    contactPersonsLength: customer.contactPersons?.length || 0,
-    primaryContact: primaryContact,
-    otherContactsLength: otherContacts.length,
-  });
+  // Debug: Ansprechpartner-Daten loggen (reduziert)
+  console.log(
+    '💼 Customer:',
+    localCustomer.name,
+    'Contact persons:',
+    localCustomer.contactPersons?.length || 0
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -298,14 +318,14 @@ export function CustomerDetailModal({
             <div>
               <DialogTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-[#14ad9f]" />
-                {customer.name}
+                {localCustomer.name}
               </DialogTitle>
               <DialogDescription>
-                Kunde {customer.customerNumber} - Detailansicht und Rechnungshistorie
+                Kunde {localCustomer.customerNumber} - Detailansicht und Rechnungshistorie
               </DialogDescription>
             </div>
-            {(customer.totalAmount !== calculatedStats.totalAmount ||
-              customer.totalInvoices !== calculatedStats.totalInvoices) && (
+            {(localCustomer.totalAmount !== calculatedStats.totalAmount ||
+              localCustomer.totalInvoices !== calculatedStats.totalInvoices) && (
               <Button
                 onClick={handleSyncStats}
                 disabled={syncingStats}
@@ -339,33 +359,34 @@ export function CustomerDetailModal({
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-gray-500" />
-                  <span>{customer.email}</span>
+                  <span>{localCustomer.email}</span>
                 </div>
 
-                {customer.phone && (
+                {localCustomer.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-gray-500" />
-                    <span>{customer.phone}</span>
+                    <span>{localCustomer.phone}</span>
                   </div>
                 )}
 
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-gray-500 mt-0.5" />
-                  <span className="text-sm">{customer.address}</span>
+                  <span className="text-sm">{localCustomer.address}</span>
                 </div>
 
-                {(customer.taxNumber || customer.vatId) && (
+                {(localCustomer.taxNumber || localCustomer.vatId) && (
                   <>
                     <Separator />
                     <div className="space-y-1">
-                      {customer.taxNumber && (
+                      {localCustomer.taxNumber && (
                         <div className="text-sm text-gray-600">
-                          <span className="font-medium">Steuernummer:</span> {customer.taxNumber}
+                          <span className="font-medium">Steuernummer:</span>{' '}
+                          {localCustomer.taxNumber}
                         </div>
                       )}
-                      {customer.vatId && (
+                      {localCustomer.vatId && (
                         <div className="text-sm text-gray-600">
-                          <span className="font-medium">USt-IdNr:</span> {customer.vatId}
+                          <span className="font-medium">USt-IdNr:</span> {localCustomer.vatId}
                         </div>
                       )}
                     </div>
@@ -379,24 +400,26 @@ export function CustomerDetailModal({
                     <div className="text-lg font-semibold text-[#14ad9f]">
                       {formatCurrency(calculatedStats.totalAmount)}
                     </div>
-                    {customer.totalAmount !== calculatedStats.totalAmount && (
+                    {localCustomer.totalAmount !== calculatedStats.totalAmount && (
                       <div className="text-xs text-gray-500">
-                        (DB: {formatCurrency(customer.totalAmount)})
+                        (DB: {formatCurrency(localCustomer.totalAmount)})
                       </div>
                     )}
                   </div>
                   <div>
                     <span className="font-medium text-gray-700">Rechnungen:</span>
                     <div className="text-lg font-semibold">{calculatedStats.totalInvoices}</div>
-                    {customer.totalInvoices !== calculatedStats.totalInvoices && (
-                      <div className="text-xs text-gray-500">(DB: {customer.totalInvoices})</div>
+                    {localCustomer.totalInvoices !== calculatedStats.totalInvoices && (
+                      <div className="text-xs text-gray-500">
+                        (DB: {localCustomer.totalInvoices})
+                      </div>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Calendar className="h-4 w-4" />
-                  <span>Kunde seit {formatDate(customer.createdAt)}</span>
+                  <span>Kunde seit {formatDate(localCustomer.createdAt)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -405,12 +428,12 @@ export function CustomerDetailModal({
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">
-                  {customer.isSupplier ? 'Rechnungen & Ausgaben' : 'Rechnungshistorie'}
+                  {localCustomer.isSupplier ? 'Rechnungen & Ausgaben' : 'Rechnungshistorie'}
                 </CardTitle>
                 <CardDescription>
-                  {customer.isSupplier
-                    ? `Alle Rechnungen und Ausgaben für ${customer.name}`
-                    : `Alle Rechnungen für ${customer.name}`}
+                  {localCustomer.isSupplier
+                    ? `Alle Rechnungen und Ausgaben für ${localCustomer.name}`
+                    : `Alle Rechnungen für ${localCustomer.name}`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -498,7 +521,9 @@ export function CustomerDetailModal({
                     size="sm"
                     onClick={() => {
                       // Öffne EditCustomerModal für Ansprechpartner-Verwaltung
-                      window.dispatchEvent(new CustomEvent('openEditModal', { detail: customer }));
+                      window.dispatchEvent(
+                        new CustomEvent('openEditModal', { detail: localCustomer })
+                      );
                     }}
                   >
                     <Plus className="h-3 w-3 mr-1" />
@@ -507,7 +532,7 @@ export function CustomerDetailModal({
                 </div>
               </CardHeader>
               <CardContent>
-                {customer.contactPersons && customer.contactPersons.length > 0 ? (
+                {localCustomer.contactPersons && localCustomer.contactPersons.length > 0 ? (
                   <div className="space-y-4">
                     {/* Hauptansprechpartner */}
                     {primaryContact && (
@@ -602,7 +627,7 @@ export function CustomerDetailModal({
                       className="mt-3"
                       onClick={() => {
                         window.dispatchEvent(
-                          new CustomEvent('openEditModal', { detail: customer })
+                          new CustomEvent('openEditModal', { detail: localCustomer })
                         );
                       }}
                     >

@@ -104,6 +104,37 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
 
       snapshot.forEach(doc => {
         const data = doc.data();
+
+        // Robuste Datums-Konvertierung
+        let createdAtDate: Date;
+        try {
+          if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+            createdAtDate = data.createdAt.toDate();
+          } else if (data.createdAt && data.createdAt.seconds) {
+            createdAtDate = new Date(data.createdAt.seconds * 1000);
+          } else if (data.createdAt && typeof data.createdAt === 'string') {
+            createdAtDate = new Date(data.createdAt);
+          } else {
+            createdAtDate = new Date();
+          }
+        } catch (error) {
+          console.warn('Error converting createdAt for supplier:', doc.id, error);
+          createdAtDate = new Date();
+        }
+
+        let updatedAtDate: Date | undefined;
+        try {
+          if (data.updatedAt && typeof data.updatedAt.toDate === 'function') {
+            updatedAtDate = data.updatedAt.toDate();
+          } else if (data.updatedAt && data.updatedAt.seconds) {
+            updatedAtDate = new Date(data.updatedAt.seconds * 1000);
+          } else if (data.updatedAt && typeof data.updatedAt === 'string') {
+            updatedAtDate = new Date(data.updatedAt);
+          }
+        } catch (error) {
+          console.warn('Error converting updatedAt for supplier:', doc.id, error);
+        }
+
         suppliersData.push({
           id: doc.id,
           name: data.name || '',
@@ -121,9 +152,9 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
           isSupplier: true,
           totalAmount: data.totalAmount || 0,
           totalInvoices: data.totalInvoices || 0,
-          createdAt: data.createdAt?.toDate?.() || new Date(),
+          createdAt: createdAtDate,
           lastModifiedBy: data.lastModifiedBy,
-          updatedAt: data.updatedAt?.toDate?.(),
+          updatedAt: updatedAtDate,
           contactPersons: data.contactPersons || [],
         });
       });
@@ -311,12 +342,50 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
   };
 
   // Format date
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('de-DE', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }).format(date);
+  const formatDate = (date: Date | string | undefined | null | any) => {
+    if (!date) return 'Unbekannt';
+
+    try {
+      let dateObj: Date;
+
+      // Handle verschiedene Date-Typen
+      if (date instanceof Date) {
+        dateObj = date;
+      } else if (typeof date === 'string') {
+        dateObj = new Date(date);
+      } else if (date && typeof date === 'object') {
+        // Firestore Timestamp Objekt
+        if (date.toDate && typeof date.toDate === 'function') {
+          dateObj = date.toDate();
+        } else if (date.seconds) {
+          // Firestore Timestamp mit seconds
+          dateObj = new Date(date.seconds * 1000);
+        } else if (date._seconds) {
+          // Alternative Firestore Timestamp Struktur
+          dateObj = new Date(date._seconds * 1000);
+        } else {
+          // Fallback für unbekannte Objekte
+          console.warn('Unknown date object format:', date);
+          return 'Unbekannt';
+        }
+      } else {
+        return 'Unbekannt';
+      }
+
+      // Überprüfe ob das Datum gültig ist
+      if (!dateObj || typeof dateObj.getTime !== 'function' || isNaN(dateObj.getTime())) {
+        return 'Unbekannt';
+      }
+
+      return new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).format(dateObj);
+    } catch (error) {
+      console.error('Error formatting date:', error, 'Date value:', date);
+      return 'Unbekannt';
+    }
   };
 
   if (loading) {

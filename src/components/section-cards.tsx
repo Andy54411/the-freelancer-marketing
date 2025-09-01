@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   TrendingUp as IconTrendingUp,
   Package as IconPackage,
-  Mail as IconMail,
+  CreditCard as IconCreditCard,
   Euro as IconCurrencyEuro,
   Wallet as IconWallet,
   Download as IconDownload,
@@ -31,6 +31,7 @@ interface DashboardStats {
   activeOrders: number;
   availableBalance: number;
   pendingBalance: number;
+  totalExpenses: number;
   hasActiveOrders?: boolean;
   pendingApprovals?: number;
 }
@@ -44,6 +45,7 @@ export function SectionCards() {
     activeOrders: 0,
     availableBalance: 0,
     pendingBalance: 0,
+    totalExpenses: 0,
     hasActiveOrders: false,
     pendingApprovals: 0,
   });
@@ -90,9 +92,7 @@ export function SectionCards() {
               order.status === 'geld_freigegeben'
             ) {
               orderTotalRevenue += order.jobCalculatedPriceInCents;
-
             } else {
-
             }
           }
 
@@ -110,9 +110,7 @@ export function SectionCards() {
                   entry.paymentStatus === 'paid')
               ) {
                 orderTotalRevenue += entry.billableAmount;
-
               } else {
-
               }
             });
           }
@@ -136,7 +134,7 @@ export function SectionCards() {
           }
         });
 
-        // 2. Stripe-Guthaben abrufen
+        // Stripe-Guthaben abrufen (ohne Ausgaben hier)
         let availableBalance = 0;
         let pendingBalance = 0;
         let hasActiveOrders = false;
@@ -174,15 +172,13 @@ export function SectionCards() {
             availableBalance = (balanceData.available || 0) / 100;
             pendingBalance = (balanceData.pending || 0) / 100;
           } else {
-
             const errorData = await balanceResponse.json().catch(() => ({}));
-
           }
-        } catch (balanceError) {
+        } catch (balanceError) {}
 
-        }
-
-        setStats({
+        // Stats aktualisieren (ohne totalExpenses hier, das wird per Real-time aktualisiert)
+        setStats(prevStats => ({
+          ...prevStats,
           monthlyRevenue: monthlyRevenue / 100,
           newOrders,
           activeOrders,
@@ -190,10 +186,10 @@ export function SectionCards() {
           pendingBalance,
           hasActiveOrders,
           pendingApprovals,
-        });
+        }));
       } catch (error) {
-
-        setStats({
+        setStats(prevStats => ({
+          ...prevStats,
           monthlyRevenue: 0,
           newOrders: 0,
           activeOrders: 0,
@@ -201,11 +197,46 @@ export function SectionCards() {
           pendingBalance: 0,
           hasActiveOrders: false,
           pendingApprovals: 0,
-        });
+        }));
       }
     };
 
     fetchStatsAndBalance().finally(() => setLoading(false));
+  }, [currentUser]);
+
+  // Separater useEffect für Real-time Ausgaben
+  useEffect(() => {
+    if (!currentUser) {
+      return;
+    }
+
+    const uid = currentUser.uid;
+
+    // Real-time listener für Ausgaben
+    const expensesQuery = query(
+      collection(db, 'customers'),
+      where('companyId', '==', uid),
+      where('isSupplier', '==', true)
+    );
+
+    const unsubscribe = onSnapshot(expensesQuery, expensesSnapshot => {
+      let totalExpenses = 0;
+
+      expensesSnapshot.forEach(doc => {
+        const supplier = doc.data();
+        if (supplier.totalAmount && supplier.totalAmount > 0) {
+          totalExpenses += supplier.totalAmount;
+        }
+      });
+
+      // Nur totalExpenses aktualisieren
+      setStats(prevStats => ({
+        ...prevStats,
+        totalExpenses,
+      }));
+    });
+
+    return () => unsubscribe();
   }, [currentUser]);
 
   const formatCurrency = (value: number) => {
@@ -248,12 +279,13 @@ export function SectionCards() {
           <div className="flex flex-col gap-0.5">
             <Badge
               variant="outline"
-              className={`border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[9px] px-1 py-0 font-medium leading-tight ${stats.hasActiveOrders || (stats.pendingApprovals && stats.pendingApprovals > 0)
+              className={`border-green-300 text-green-700 dark:border-green-700 dark:text-green-300 w-fit text-[9px] px-1 py-0 font-medium leading-tight ${
+                stats.hasActiveOrders || (stats.pendingApprovals && stats.pendingApprovals > 0)
                   ? 'border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-300'
                   : stats.pendingBalance > 0
                     ? 'border-yellow-300 text-yellow-700 dark:border-yellow-700 dark:text-yellow-300'
                     : ''
-                }`}
+              }`}
             >
               {stats.hasActiveOrders
                 ? '⏳ Aufträge aktiv'
@@ -343,25 +375,20 @@ export function SectionCards() {
         </Card>
       </Link>
 
-      {/* Ungelesene Nachrichten Card */}
-      <Link href={`/dashboard/company/${currentUser?.uid}/inbox`} className="block group">
+      {/* Ausgaben Card */}
+      <Link
+        href={`/dashboard/company/${currentUser?.uid}/finance?tab=suppliers`}
+        className="block group"
+      >
         <Card className="h-[140px] flex flex-col hover:shadow-md transition-all duration-200 group-hover:scale-[1.01] border-red-200 dark:border-red-800 cursor-pointer">
           <CardHeader className="pb-2 flex-grow">
             <CardDescription className="flex items-center gap-1 text-red-600 dark:text-red-400 text-xs font-medium">
-              <IconMail size={14} className="flex-shrink-0" />
-              <span className="truncate">Nachrichten</span>
+              <IconCreditCard size={14} className="flex-shrink-0" />
+              <span className="truncate">Ausgaben</span>
             </CardDescription>
             <CardTitle className="text-lg font-bold tabular-nums text-red-800 dark:text-red-200">
-              {unreadMessagesCount}
+              {stats.totalExpenses.toFixed(2)} €
             </CardTitle>
-            <CardAction className="mt-auto">
-              <Badge
-                variant={unreadMessagesCount > 0 ? 'destructive' : 'outline'}
-                className="text-xs font-medium"
-              >
-                {unreadMessagesCount > 0 ? 'Neu' : 'Leer'}
-              </Badge>
-            </CardAction>
           </CardHeader>
         </Card>
       </Link>
