@@ -45,6 +45,10 @@ export function ManualTimeEntry({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [workType, setWorkType] = useState<'full-day' | 'split-shift'>('full-day');
+  
+  const handleOpen = (isOpen: boolean) => {
+    setOpen(isOpen);
+  };
   const [formData, setFormData] = useState({
     description: '',
     date: new Date().toISOString().split('T')[0],
@@ -93,6 +97,11 @@ export function ManualTimeEntry({
 
     if (!formData.description.trim()) {
       toast.error('Bitte geben Sie eine Beschreibung ein');
+      return;
+    }
+
+    if (!formData.projectId) {
+      toast.error('Bitte wählen Sie ein Projekt aus');
       return;
     }
 
@@ -202,22 +211,22 @@ export function ManualTimeEntry({
       setOpen(false);
       onTimeEntryCreated();
     } catch (error) {
-
-      toast.error('Zeiteintrag konnte nicht erstellt werden');
+      console.error('❌ Fehler beim Erstellen des Zeiteintrags:', error);
+      toast.error(`Zeiteintrag konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <Plus size={16} />
           Manueller Eintrag
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">{/* Breiter: max-w-2xl statt max-w-lg */}
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Clock size={20} />
@@ -238,6 +247,83 @@ export function ManualTimeEntry({
                 onChange={e => setFormData({ ...formData, description: e.target.value })}
                 required
               />
+            </div>
+
+            {/* Projektauswahl */}
+            <div>
+              <Label htmlFor="project">Projekt * ({projects?.length || 0} verfügbar)</Label>
+              
+              {(!projects || projects.length === 0) ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-sm text-yellow-800">
+                      Keine Projekte verfügbar. Sie können entweder:
+                    </p>
+                    <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
+                      <li>Ein neues Projekt im "Projekte" Tab erstellen</li>
+                      <li>Oder manuell Projekt-Details eingeben</li>
+                    </ul>
+                  </div>
+                  
+                  {/* Manuelle Projekt-Eingabe */}
+                  <div className="space-y-3 p-3 bg-gray-50 border rounded-md">
+                    <h4 className="font-medium text-gray-900">Manueller Projekt-Eintrag</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="projectName">Projekt-Name</Label>
+                        <Input
+                          id="projectName"
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          placeholder="z.B. Website-Entwicklung"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="clientName">Kunde</Label>
+                        <Input
+                          id="clientName"
+                          value={formData.customerName}
+                          onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                          placeholder="z.B. Musterfirma GmbH"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Select
+                    value={formData.projectId}
+                    onValueChange={(value) => {
+                      const selectedProject = projects.find(p => p.id === value);
+                      setFormData({ 
+                        ...formData, 
+                        projectId: value,
+                        customerName: selectedProject?.client || '',
+                        hourlyRate: selectedProject?.hourlyRate || 50
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Projekt auswählen..." />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {projects.filter(project => project.id && project.id.trim() !== '').map((project) => (
+                        <SelectItem 
+                          key={project.id} 
+                          value={project.id}
+                          className="cursor-pointer hover:bg-gray-100"
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">{project.name || 'Unnamed Project'}</span>
+                            <span className="text-xs text-gray-500">{project.client || 'No Client'}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Arbeitszeit-Modus */}
@@ -395,41 +481,7 @@ export function ManualTimeEntry({
               )}
             </div>
 
-            {projects.length > 0 && (
-              <div>
-                <Label htmlFor="projectId">Projekt</Label>
-                <Select
-                  value={formData.projectId}
-                  onValueChange={value => {
-                    const selectedProject = projects.find(p => p.id === value);
-                    setFormData({
-                      ...formData,
-                      projectId: value,
-                      // Übernehme Projekt-Daten wenn verfügbar
-                      hourlyRate: selectedProject?.hourlyRate || formData.hourlyRate,
-                      customerName: selectedProject?.client || formData.customerName,
-                    });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Projekt auswählen (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Kein Projekt</SelectItem>
-                    {projects.map(project => (
-                      <SelectItem key={project.id} value={project.id}>
-                        <div className="flex flex-col">
-                          <span>{project.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {project.client} • {project.hourlyRate}€/h
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+
 
             <div className="grid grid-cols-2 gap-2">
               <div>

@@ -217,7 +217,18 @@ export class TimeTrackingService {
    * Firestore unterstützt keine undefined Werte
    */
   private static cleanDataForFirestore(data: Record<string, any>): Record<string, any> {
-    return Object.fromEntries(Object.entries(data).filter(([_, value]) => value !== undefined));
+    const cleaned = Object.fromEntries(
+      Object.entries(data).filter(([_, value]) => {
+        // Filtere undefined und null Werte heraus
+        if (value === undefined || value === null) return false;
+        // Filtere leere Strings heraus (optional)
+        if (value === '') return false;
+        return true;
+      })
+    );
+    
+    console.log('🧹 Cleaned data for Firestore:', cleaned);
+    return cleaned;
   }
 
   /**
@@ -361,12 +372,13 @@ export class TimeTrackingService {
         updatedAt: new Date(),
       });
 
+      console.log('🔍 Versuche Zeiteintrag zu speichern:', cleanedData);
       const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), cleanedData);
 
       return docRef.id;
     } catch (error) {
-
-      throw new Error('Zeiteintrag konnte nicht erstellt werden');
+      console.error('❌ Firestore Error beim Erstellen des Zeiteintrags:', error);
+      throw new Error(`Zeiteintrag konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     }
   }
 

@@ -1,14 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, getDocs, updateDoc, doc, query, where, orderBy } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, query, where, orderBy, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, TrendingUp, Pause, CheckCircle, RefreshCw, BarChart3 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Clock, TrendingUp, Pause, CheckCircle, RefreshCw, BarChart3, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import ProjectTeamManagement from './ProjectTeamManagement';
@@ -63,6 +67,22 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   const [loading, setLoading] = useState(false);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<string | null>(null);
+  const [deletingEntry, setDeletingEntry] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<{
+    description: string;
+    startTime: string;
+    endTime: string;
+    date: string;
+  }>({
+    description: '',
+    startTime: '',
+    endTime: '',
+    date: ''
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [timeEntriesUnsubscribe, setTimeEntriesUnsubscribe] = useState<Unsubscribe | null>(null);
 
   // Berechne die aktuell erfassten Stunden basierend auf den geladenen timeEntries
   const currentTrackedHours = useMemo(() => {
@@ -71,42 +91,125 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   }, [timeEntries]);
 
   useEffect(() => {
-    if (project?.id) {
-      loadTimeEntries();
+    if (project?.id && companyId) {
+      console.log('🔄 ProjectDetailView useEffect triggered:', { projectId: project.id, companyId });
+      setupRealtimeTimeEntriesListener();
     }
-  }, [project?.id, companyId]);
+
+    // Cleanup function
+    return () => {
+      if (timeEntriesUnsubscribe) {
+        timeEntriesUnsubscribe();
+      }
+    };
+  }, [project?.id, companyId]); // Entferne alle anderen Dependencies um Re-renders zu vermeiden
+
+  const setupRealtimeTimeEntriesListener = () => {
+    // Cleanup existing listener
+    if (timeEntriesUnsubscribe) {
+      timeEntriesUnsubscribe();
+    }
+
+    if (!project?.id || !companyId) return;
+
+    console.log('🔄 Setting up realtime time entries listener for project:', project.id);
+
+    // Realtime Listener für Zeiteinträge
+    const timeEntriesQuery = query(
+      collection(db, 'timeEntries'),
+      where('companyId', '==', companyId),
+      where('projectId', '==', project.id),
+      orderBy('startTime', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(
+      timeEntriesQuery,
+      (snapshot) => {
+        console.log('⏱️ Time entries realtime update for project:', project.id, snapshot.docs.length, 'entries');
+        
+        // Sichere Funktion zur Konvertierung von Firestore Timestamps oder Date-Objekten
+        const safeToDate = (value: any): Date => {
+          if (!value) return new Date();
+          if (value instanceof Date) return value;
+          if (typeof value.toDate === 'function') return value.toDate();
+          if (typeof value === 'string') return new Date(value);
+          return new Date();
+        };
+        
+        // Konvertiere Firestore-Daten zu TimeEntry Format
+        const entries: TimeEntry[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+          const startTime = safeToDate(data.startTime);
+          const endTime = safeToDate(data.endTime);
+          const createdAt = safeToDate(data.createdAt);
+          
+          return {
+            id: doc.id,
+            projectId: data.projectId || '',
+            projectName: data.projectName || '',
+            description: data.description || '',
+            duration: data.duration || 0,
+            startTime,
+            endTime,
+            date: startTime.toISOString().split('T')[0],
+            companyId: data.companyId || '',
+            createdAt,
+          };
+        });
+
+        setTimeEntries(entries);
+        setLoading(false);
+        
+        console.log('✅ Time entries updated via realtime listener:', entries.length, 'entries');
+      },
+      (error) => {
+        console.error('❌ Time entries realtime listener error:', error);
+        setLoading(false);
+        // Fallback: Lade Daten über API
+        loadTimeEntries();
+      }
+    );
+
+    setTimeEntriesUnsubscribe(() => unsubscribe);
+  };
 
   const loadTimeEntries = async () => {
     if (!project?.id || !companyId) return;
 
     try {
       setLoading(true);
-      const timeEntriesQuery = query(
-        collection(db, 'timeEntries'),
-        where('companyId', '==', companyId),
-        where('projectId', '==', project.id),
-        orderBy('startTime', 'desc')
-      );
+      console.log('🔍 ProjectDetailView: Lade Zeiteinträge für Projekt:', project.id);
+      
+      // Verwende die neue API anstatt direkter Firestore-Abfrage
+      const response = await fetch(`/api/company/${companyId}/time-entries?projectId=${project.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load time entries');
+      }
+      
+      console.log('📊 ProjectDetailView API response:', data);
+      
+      // Konvertiere API-Daten zu TimeEntry Format
+      const entries: TimeEntry[] = data.timeEntries.map((entry: any) => ({
+        id: entry.id,
+        projectId: entry.projectId || '',
+        projectName: entry.projectName || '',
+        description: entry.description || '',
+        duration: entry.duration || 0,
+        startTime: new Date(entry.startTime),
+        endTime: new Date(entry.endTime),
+        date: entry.startTime ? new Date(entry.startTime).toISOString().split('T')[0] : '',
+        companyId: entry.companyId || '',
+        createdAt: new Date(entry.createdAt || Date.now()),
+      }));
 
-      const querySnapshot = await getDocs(timeEntriesQuery);
-      const entries: TimeEntry[] = [];
-
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        entries.push({
-          id: doc.id,
-          projectId: data.projectId || '',
-          projectName: data.projectName || '',
-          description: data.description || '',
-          duration: data.duration || 0,
-          startTime: data.startTime?.toDate?.() || new Date(),
-          endTime: data.endTime?.toDate?.() || new Date(),
-          date: data.date || '',
-          companyId: data.companyId || '',
-          createdAt: data.createdAt?.toDate?.() || new Date(),
-        });
-      });
-
+      console.log('✅ ProjectDetailView: Konvertierte Zeiteinträge:', entries.length, 'Einträge');
       setTimeEntries(entries);
     } catch (error) {
 
@@ -117,20 +220,17 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
   const refreshProjectData = async () => {
     setRefreshing(true);
-    await loadTimeEntries();
-
-    // Berechne die aktuellen erfassten Stunden neu
-    const totalMinutes = timeEntries.reduce((sum, entry) => sum + entry.duration, 0);
-    const trackedHours = Math.round((totalMinutes / 60) * 100) / 100;
-
-    // Aktualisiere das Projekt mit den neuen Stunden
-    const updatedProject = {
-      ...project,
-      trackedHours,
-    };
-
-    onProjectUpdate(updatedProject);
-    setRefreshing(false);
+    
+    try {
+      // Lade Zeiteinträge neu
+      await loadTimeEntries();
+      
+      console.log('🔄 Project data refreshed');
+    } catch (error) {
+      console.error('❌ Fehler beim Aktualisieren der Projektdaten:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const updateProjectStatus = async (newStatus: Project['status']) => {
@@ -151,6 +251,129 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       onProjectUpdate(updatedProject);
     } catch (error) {
 
+    }
+  };
+
+  const handleEditEntry = async (entryId: string) => {
+    const entry = timeEntries.find(e => e.id === entryId);
+    if (!entry) return;
+
+    // Setze die Formulardaten
+    setEditFormData({
+      description: entry.description || '',
+      startTime: format(entry.startTime, 'HH:mm'),
+      endTime: format(entry.endTime, 'HH:mm'),
+      date: format(entry.startTime, 'yyyy-MM-dd')
+    });
+
+    setEditingEntry(entryId);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+
+    try {
+      setSavingEdit(true);
+
+      // Berechne neue Start- und Endzeiten
+      const startDateTime = new Date(`${editFormData.date}T${editFormData.startTime}:00`);
+      const endDateTime = new Date(`${editFormData.date}T${editFormData.endTime}:00`);
+      
+      // Berechne Dauer in Minuten
+      const duration = Math.round((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
+
+      if (duration <= 0) {
+        alert('Die Endzeit muss nach der Startzeit liegen.');
+        return;
+      }
+
+      const updateData = {
+        description: editFormData.description,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        duration: duration,
+        date: editFormData.date
+      };
+
+      // API-Aufruf zum Aktualisieren
+      const response = await fetch(`/api/company/${companyId}/time-entries/${editingEntry}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Fehler beim Aktualisieren des Zeiteintrags');
+      }
+
+      // Aktualisiere die lokale Liste
+      setTimeEntries(prev => prev.map(entry => 
+        entry.id === editingEntry 
+          ? {
+              ...entry,
+              description: editFormData.description,
+              startTime: startDateTime,
+              endTime: endDateTime,
+              duration: duration,
+              date: editFormData.date
+            }
+          : entry
+      ));
+
+      // Schließe das Modal
+      setEditModalOpen(false);
+      setEditingEntry(null);
+      
+      console.log('✅ Zeiteintrag erfolgreich aktualisiert:', editingEntry);
+    } catch (error) {
+      console.error('❌ Fehler beim Aktualisieren des Zeiteintrags:', error);
+      alert('Fehler beim Aktualisieren des Zeiteintrags. Bitte versuchen Sie es erneut.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteEntry = async (entryId: string) => {
+    if (!confirm('Sind Sie sicher, dass Sie diesen Zeiteintrag löschen möchten?')) {
+      return;
+    }
+
+    try {
+      setDeletingEntry(entryId);
+      
+      // API-Aufruf zum Löschen des Zeiteintrags
+      const response = await fetch(`/api/company/${companyId}/time-entries/${entryId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Fehler beim Löschen des Zeiteintrags');
+      }
+
+      // Entferne den Eintrag aus der lokalen Liste
+      setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
+      
+      console.log('✅ Zeiteintrag erfolgreich gelöscht:', entryId);
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen des Zeiteintrags:', error);
+      alert('Fehler beim Löschen des Zeiteintrags. Bitte versuchen Sie es erneut.');
+    } finally {
+      setDeletingEntry(null);
     }
   };
 
@@ -393,36 +616,154 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
               <p>Noch keine Zeiteinträge für dieses Projekt</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {timeEntries.map(entry => (
-                <div
-                  key={entry.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">
-                        {entry.description || 'Ohne Beschreibung'}
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        {formatDuration(entry.duration)}
-                      </Badge>
+            <div className="space-y-4">
+              {/* Gruppiere Zeiteinträge nach Datum und sortiere chronologisch */}
+              {Object.entries(
+                timeEntries.reduce((groups, entry) => {
+                  const date = format(entry.startTime, 'yyyy-MM-dd');
+                  if (!groups[date]) {
+                    groups[date] = [];
+                  }
+                  groups[date].push(entry);
+                  return groups;
+                }, {} as Record<string, typeof timeEntries>)
+              )
+              .sort(([dateA], [dateB]) => {
+                // Sortiere Daten absteigend (neueste zuerst)
+                return new Date(dateB).getTime() - new Date(dateA).getTime();
+              })
+              .map(([date, dayEntries]) => {
+                // Sortiere auch die Einträge innerhalb eines Tages nach Startzeit (neueste zuerst)
+                const sortedDayEntries = [...dayEntries].sort((a, b) => 
+                  b.startTime.getTime() - a.startTime.getTime()
+                );
+                
+                const totalDayMinutes = sortedDayEntries.reduce((sum, entry) => sum + entry.duration, 0);
+                const totalDayHours = Math.round((totalDayMinutes / 60) * 100) / 100;
+                const totalDayRevenue = sortedDayEntries.reduce((sum, entry) => 
+                  sum + ((entry.duration / 60) * (project?.hourlyRate || 0)), 0
+                );
+
+                return (
+                  <div
+                    key={date}
+                    className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200"
+                  >
+                    {/* Datum Header */}
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-5 w-5 text-[#14ad9f]" />
+                          <h4 className="font-semibold text-gray-900 text-lg">
+                            {format(new Date(date), 'EEEE, dd.MM.yyyy', { locale: de })}
+                          </h4>
+                        </div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#14ad9f] text-white">
+                          {sortedDayEntries.length} {sortedDayEntries.length === 1 ? 'Schicht' : 'Schichten'}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-[#14ad9f]">{totalDayHours}h</div>
+                          <div className="text-sm text-gray-600">{totalDayRevenue.toFixed(2)} €</div>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              // Bearbeite alle Einträge des Tages
+                              sortedDayEntries.forEach(entry => handleEditEntry(entry.id));
+                            }}
+                            className="h-8 w-8 p-0 hover:bg-[#14ad9f] hover:text-white"
+                            title="Alle Einträge dieses Tages bearbeiten"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Sind Sie sicher, dass Sie alle ${sortedDayEntries.length} Zeiteinträge vom ${format(new Date(date), 'dd.MM.yyyy', { locale: de })} löschen möchten?`)) {
+                                sortedDayEntries.forEach(entry => handleDeleteEntry(entry.id));
+                              }
+                            }}
+                            className="h-8 w-8 p-0 hover:bg-red-500 hover:text-white"
+                            title="Alle Einträge dieses Tages löschen"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {format(entry.startTime, 'dd.MM.yyyy, HH:mm', { locale: de })} -
-                      {format(entry.endTime, 'HH:mm', { locale: de })}
+
+                    {/* Schichten für diesen Tag */}
+                    <div className="space-y-3">
+                      {sortedDayEntries.map((entry) => {
+                        const hours = Math.round((entry.duration / 60) * 100) / 100;
+                        const revenue = hours * (project?.hourlyRate || 0);
+                        
+                        return (
+                          <div
+                            key={entry.id}
+                            className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900 mb-1">
+                                {entry.description || 'Ohne Beschreibung'}
+                              </div>
+                              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                <span className="flex items-center space-x-1">
+                                  <Clock className="h-4 w-4" />
+                                  <span>
+                                    {format(entry.startTime, 'HH:mm', { locale: de })} - 
+                                    {format(entry.endTime, 'HH:mm', { locale: de })}
+                                  </span>
+                                </span>
+                                <span className="text-[#14ad9f] font-medium">{hours}h</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="text-right">
+                                <div className="font-semibold text-gray-900">{revenue.toFixed(2)} €</div>
+                                <div className="text-sm text-gray-500">
+                                  {hours}h × {project?.hourlyRate || 0}€
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEditEntry(entry.id)}
+                                  disabled={editingEntry === entry.id}
+                                  className="h-8 w-8 p-0 hover:bg-[#14ad9f] hover:text-white"
+                                  title="Zeiteintrag bearbeiten"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteEntry(entry.id)}
+                                  disabled={deletingEntry === entry.id}
+                                  className="h-8 w-8 p-0 hover:bg-red-500 hover:text-white"
+                                  title="Zeiteintrag löschen"
+                                >
+                                  {deletingEntry === entry.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium text-[#14ad9f]">
-                      {((entry.duration / 60) * project.hourlyRate).toFixed(2)} €
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {(entry.duration / 60).toFixed(1)}h × {project.hourlyRate}€
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
@@ -439,6 +780,88 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         onProjectUpdate={onProjectUpdate}
         companyId={companyId}
       />
+
+      {/* Edit Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Zeiteintrag bearbeiten</DialogTitle>
+            <DialogDescription>
+              Bearbeiten Sie die Details des Zeiteintrags.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="description">Beschreibung</Label>
+              <Textarea
+                id="description"
+                value={editFormData.description}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Beschreibung der Tätigkeit..."
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="date">Datum</Label>
+              <Input
+                id="date"
+                type="date"
+                value={editFormData.date}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, date: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startTime">Startzeit</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={editFormData.startTime}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, startTime: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="endTime">Endzeit</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={editFormData.endTime}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, endTime: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setEditModalOpen(false);
+                setEditingEntry(null);
+              }}
+              disabled={savingEdit}
+            >
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={handleSaveEdit}
+              disabled={savingEdit}
+              className="bg-[#14ad9f] hover:bg-[#129488]"
+            >
+              {savingEdit ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Speichert...
+                </>
+              ) : (
+                'Speichern'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

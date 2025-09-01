@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PersonalService, Employee as EmployeeType } from '@/services/personalService';
 import { toast } from 'react-hot-toast';
+import { auth } from '@/firebase/clients';
 import {
   ArrowLeft,
   User,
@@ -51,6 +52,11 @@ import VacationContainer from '@/components/personal/tabs/VacationContainer';
 export default function AddEmployeePage() {
   const params = useParams();
   const router = useRouter();
+  
+  if (!params || !params.uid) {
+    throw new Error('Company ID nicht gefunden');
+  }
+  
   const companyId = params.uid as string;
 
   const [employee, setEmployee] = useState<Partial<EmployeeType>>({
@@ -201,12 +207,26 @@ export default function AddEmployeePage() {
   };
 
   const handleSave = async () => {
+    console.log('🔄 handleSave aufgerufen');
+    console.log('📊 Employee data:', employee);
+    console.log('🔑 CompanyId:', companyId);
+    console.log('👤 Current user auth state:', auth.currentUser?.uid);
+    
     if (!validateForm()) {
+      console.log('❌ Validierung fehlgeschlagen:', errors);
       return;
     }
 
+    console.log('✅ Validierung erfolgreich, beginne Speichervorgang...');
     setLoading(true);
     try {
+      // Debug: Test Firebase Auth & Token
+      if (auth.currentUser) {
+        const idTokenResult = await auth.currentUser.getIdTokenResult(true);
+        console.log('🔑 User Token Claims:', idTokenResult.claims);
+        console.log('📧 User Email:', auth.currentUser.email);
+        console.log('🆔 User UID:', auth.currentUser.uid);
+      }
 
       // Bereinige undefined Werte für Firebase und füge erweiterte Daten hinzu
       const cleanEmployeeData = {
@@ -236,9 +256,9 @@ export default function AddEmployeePage() {
         additionalCosts: employee.additionalCosts!,
         ...(employee.address && {
           address: {
-            ...(employee.address.street && { street: employee.address.street }),
-            ...(employee.address.city && { city: employee.address.city }),
-            ...(employee.address.postalCode && { postalCode: employee.address.postalCode }),
+            street: employee.address.street || '',
+            city: employee.address.city || '',
+            postalCode: employee.address.postalCode || '',
             country: employee.address.country || 'Deutschland',
           },
         }),
@@ -265,7 +285,9 @@ export default function AddEmployeePage() {
       };
 
       // Verwende PersonalService für echte Datenbankoperationen
+      console.log('📝 Sende Daten an PersonalService:', cleanEmployeeData);
       const newEmployee = await PersonalService.addEmployee(companyId, cleanEmployeeData);
+      console.log('✅ Neuer Mitarbeiter erstellt:', newEmployee);
 
       // **PHASE 2: Tab-spezifische Daten speichern (falls vorhanden)**
       if (newEmployee.id) {
@@ -288,11 +310,13 @@ export default function AddEmployeePage() {
       toast.success(`${employee.firstName} ${employee.lastName} wurde erfolgreich mit allen Daten hinzugefügt!`);
 
       // Zurück zur Übersicht
+      console.log('🔙 Navigiere zurück zu employees...');
       router.push(`/dashboard/company/${companyId}/personal/employees`);
     } catch (error) {
-
+      console.error('❌ Fehler beim Speichern:', error);
       toast.error('Fehler beim Speichern des Mitarbeiters');
     } finally {
+      console.log('🏁 Speichervorgang beendet');
       setLoading(false);
     }
   };
@@ -331,7 +355,10 @@ export default function AddEmployeePage() {
                 Abbrechen
               </Button>
               <Button
-                onClick={handleSave}
+                onClick={() => {
+                  console.log('🖱️ Speichern-Button geklickt');
+                  handleSave();
+                }}
                 disabled={loading}
                 className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
               >

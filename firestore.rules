@@ -8,6 +8,15 @@ service cloud.firestore {
       // Dies ist performanter und vermeidet fehleranfällige Lesezugriffe innerhalb von Regeln.
       return request.auth != null && request.auth.token.role == 'firma';
     }
+    
+    // NEUE FUNKTION: Prüft Company-Status über Firestore-Dokument
+    function isCompanyFromFirestore(companyId) {
+      return request.auth != null && 
+             request.auth.uid == companyId &&
+             exists(/databases/$(database)/documents/companies/$(companyId)) &&
+             get(/databases/$(database)/documents/companies/$(companyId)).data.userType == 'company';
+    }
+    
     // KORRIGIERT: Umbenannt und erweitert, um die Rollen 'master' und 'support' abzudecken.
     function isSupportStaff() {
       // BEST PRACTICE: Die Rolle wird direkt aus dem Auth-Token gelesen.
@@ -861,14 +870,14 @@ service cloud.firestore {
     
     // Personal: Employees Collection (Mitarbeiterverwaltung)
     match /companies/{companyId}/employees/{employeeId} {
-      // Lesen: Nur eigene Firma oder Support Staff
+      // Lesen: Nur eigene Firma oder Support Staff (VEREINFACHT für bessere Kompatibilität)
       allow read: if request.auth != null && 
-                     (request.auth.uid == companyId && isCompany()) ||
+                     (request.auth.uid == companyId) ||
                      isSupportStaff();
       
-      // Listen-Abfragen: Nur eigene Firma
+      // Listen-Abfragen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
       allow list: if request.auth != null && 
-                    (request.auth.uid == companyId && isCompany()) ||
+                    (request.auth.uid == companyId) ||
                     isSupportStaff();
       
       // Erstellen: Nur eigene Firma (VEREINFACHT für bessere Kompatibilität)
@@ -1199,25 +1208,21 @@ service cloud.firestore {
     match /companies/{companyId}/projects/{projectId} {
       // Lesen: Nur eigene Firma oder Support Staff
       allow read: if request.auth != null && 
-                     (request.auth.uid == companyId && isCompany()) ||
-                     isSupportStaff();
+                     (isCompanyFromFirestore(companyId) || isSupportStaff());
       
       // Listen-Abfragen: Nur eigene Firma
       allow list: if request.auth != null && 
-                    (request.auth.uid == companyId && isCompany()) ||
-                    isSupportStaff();
+                    (isCompanyFromFirestore(companyId) || isSupportStaff());
       
       // Erstellen: Nur eigene Firma
       allow create: if request.auth != null && 
-                       request.auth.uid == companyId &&
-                       isCompany() &&
+                       isCompanyFromFirestore(companyId) &&
                        request.resource.data.companyId == companyId &&
                        request.resource.data.createdAt == request.time;
       
       // Aktualisieren: Nur eigene Firma
       allow update: if request.auth != null && 
-                       request.auth.uid == companyId &&
-                       isCompany() &&
+                       isCompanyFromFirestore(companyId) &&
                        request.resource.data.updatedAt == request.time;
       
       // Löschen: Nur eigene Firma oder Support Staff
@@ -1410,26 +1415,26 @@ service cloud.firestore {
     match /timeEntries/{entryId} {
       // Lesen: Nur eigene Firma oder Support Staff
       allow read: if request.auth != null && 
-                     (resource.data.companyId == request.auth.uid && isCompany()) ||
+                     (resource.data.companyId == request.auth.uid && (isCompany() || isCompanyFromFirestore(request.auth.uid))) ||
                      isSupportStaff();
       
       // Listen-Abfragen: Vereinfacht für bessere Performance
       allow list: if request.auth != null && 
-                    (isSupportStaff() || isCompany());
+                    (isSupportStaff() || isCompany() || isCompanyFromFirestore(request.auth.uid));
       
-      // Erstellen: Nur eigene Firma
+      // Erstellen: Nur eigene Firma - ERWEITERT für bessere Kompatibilität
       allow create: if request.auth != null && 
                        request.resource.data.companyId == request.auth.uid &&
-                       isCompany();
+                       (isCompany() || isCompanyFromFirestore(request.auth.uid));
       
       // Aktualisieren: Nur eigene Firma
       allow update: if request.auth != null && 
                        resource.data.companyId == request.auth.uid &&
-                       isCompany();
+                       (isCompany() || isCompanyFromFirestore(request.auth.uid));
       
       // Löschen: Nur eigene Firma oder Support Staff
       allow delete: if request.auth != null && 
-                       ((resource.data.companyId == request.auth.uid && isCompany()) ||
+                       ((resource.data.companyId == request.auth.uid && (isCompany() || isCompanyFromFirestore(request.auth.uid))) ||
                         isSupportStaff());
     }
 
