@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Users, Search, Filter, Plus, Download, Upload, Eye } from 'lucide-react';
+import { Users, Search, Filter, Plus, Download, Upload, Eye, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 
@@ -39,7 +39,6 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
     if (user && resolvedParams.uid && retryCount < maxRetries) {
       loadEmployees();
     } else if (retryCount >= maxRetries) {
-
     }
   }, [user, resolvedParams.uid, retryCount]);
 
@@ -49,14 +48,12 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
 
   const loadEmployees = async () => {
     try {
-
       setLoading(true);
 
       const employeeData = await PersonalService.getEmployees(resolvedParams.uid);
       setEmployees(employeeData || []);
       setRetryCount(0); // Reset auf Erfolg
     } catch (error) {
-
       setRetryCount(prev => prev + 1);
       toast.error('Fehler beim Laden der Mitarbeiter');
     } finally {
@@ -120,7 +117,6 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
       window.URL.revokeObjectURL(url);
       toast.success('Mitarbeiterdaten exportiert');
     } catch (error) {
-
       toast.error('Fehler beim Export');
     }
   };
@@ -156,6 +152,11 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
   };
 
   const handleDeactivateEmployee = async (employee: Employee) => {
+    if (!employee.id) {
+      toast.error('Mitarbeiter-ID nicht gefunden');
+      return;
+    }
+
     try {
       await PersonalService.updateEmployee(resolvedParams.uid, employee.id, {
         ...employee,
@@ -170,7 +171,6 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
       setSelectedEmployee(null);
       toast.success('Mitarbeiter wurde deaktiviert');
     } catch (error) {
-
       toast.error('Fehler beim Deaktivieren des Mitarbeiters');
     }
   };
@@ -365,6 +365,17 @@ export default function EmployeesPage({ params }: { params: Promise<{ uid: strin
                     Bearbeiten
                   </Button>
                 </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => {
+                    setSelectedEmployee(employee);
+                    setShowDeleteDialog(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
 
               <div className="space-y-3">
