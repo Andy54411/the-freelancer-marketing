@@ -25,24 +25,33 @@ export class RevolutOpenBankingService {
 
     this.clientId = process.env.REVOLUT_CLIENT_ID!;
 
-    // Load certificates for mTLS - with fallbacks for build environment
-    const transportCertPath =
-      process.env.REVOLUT_TRANSPORT_CERT_PATH || './certs/revolut/transport.pem';
-    const privateKeyPath = process.env.REVOLUT_PRIVATE_KEY_PATH || './certs/revolut/private.key';
+    // Load certificates - prefer environment variables over files (for Vercel deployment)
+    if (process.env.REVOLUT_TRANSPORT_CERT && process.env.REVOLUT_PRIVATE_KEY) {
+      // Use certificates from environment variables (Vercel deployment)
+      this.transportCert = process.env.REVOLUT_TRANSPORT_CERT;
+      this.privateKey = process.env.REVOLUT_PRIVATE_KEY;
+      console.log('🔐 Using Revolut certificates from environment variables');
+    } else {
+      // Fallback to file system (local development)
+      const transportCertPath =
+        process.env.REVOLUT_TRANSPORT_CERT_PATH || './certs/revolut/transport.pem';
+      const privateKeyPath = process.env.REVOLUT_PRIVATE_KEY_PATH || './certs/revolut/private.key';
 
-    try {
-      if (fs.existsSync(transportCertPath) && fs.existsSync(privateKeyPath)) {
-        this.transportCert = fs.readFileSync(transportCertPath, 'utf8');
-        this.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
-      } else {
-        console.warn('🚨 Revolut certificates not found, using placeholder');
+      try {
+        if (fs.existsSync(transportCertPath) && fs.existsSync(privateKeyPath)) {
+          this.transportCert = fs.readFileSync(transportCertPath, 'utf8');
+          this.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+          console.log('🔐 Using Revolut certificates from files');
+        } else {
+          console.warn('🚨 Revolut certificates not found, using placeholder');
+          this.transportCert = 'placeholder-cert';
+          this.privateKey = 'placeholder-key';
+        }
+      } catch (error) {
+        console.warn('🚨 Error loading Revolut certificates:', error);
         this.transportCert = 'placeholder-cert';
         this.privateKey = 'placeholder-key';
       }
-    } catch (error) {
-      console.warn('🚨 Error loading Revolut certificates:', error);
-      this.transportCert = 'placeholder-cert';
-      this.privateKey = 'placeholder-key';
     }
   }
 
