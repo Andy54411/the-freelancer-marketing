@@ -1006,8 +1006,12 @@ export default function BankingDashboardPage() {
                     {/* Revolut Option */}
                     <div className="border border-gray-200 rounded-lg p-4 hover:border-[#14ad9f] transition-colors">
                       <div className="flex flex-col items-center text-center">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-3">
-                          <span className="text-white font-bold text-lg">R</span>
+                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center mb-3 p-1">
+                          <img
+                            src="/icon/unnamed.webp"
+                            alt="Revolut Logo"
+                            className="w-10 h-10 object-contain"
+                          />
                         </div>
                         <h4 className="font-medium text-gray-900 mb-1">Revolut</h4>
                         <p className="text-xs text-gray-600 mb-3">Business Banking</p>

@@ -199,8 +199,19 @@ export default function RevolutConnectModal({
           <div className="space-y-6">
             {/* Revolut Info */}
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-xl">R</span>
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M7.5 6C6.67 6 6 6.67 6 7.5V16.5C6 17.33 6.67 18 7.5 18H9V16.5H7.5V13.5H11.25C13.32 13.5 15 11.82 15 9.75C15 7.68 13.32 6 11.25 6H7.5ZM7.5 7.5H11.25C12.49 7.5 13.5 8.51 13.5 9.75C13.5 10.99 12.49 12 11.25 12H7.5V7.5Z"
+                    fill="white"
+                  />
+                </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 Revolut Business verbinden
