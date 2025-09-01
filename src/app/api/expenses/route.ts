@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     querySnapshot.forEach(doc => {
       const data = doc.data();
-      expenses.push({
+      const expense = {
         id: doc.id,
         companyId: data.companyId,
         title: data.title || data.description || 'Ausgabe',
@@ -48,9 +48,19 @@ export async function GET(request: NextRequest) {
         receipt: data.receipt || null,
         taxDeductible: data.taxDeductible || false,
         createdAt: data.createdAt?.toDate?.() || new Date(),
-      });
-    });
+      };
 
+      console.log('🔍 Loaded expense from DB:', {
+        id: expense.id,
+        title: expense.title,
+        raw_amount: data.amount,
+        processed_amount: expense.amount,
+        typeof_raw: typeof data.amount,
+        typeof_processed: typeof expense.amount,
+      });
+
+      expenses.push(expense);
+    });
     return NextResponse.json({
       success: true,
       expenses,
@@ -114,6 +124,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('🔍 Received expense data:', {
+      id,
+      companyId,
+      title,
+      amount,
+      category,
+      typeof_amount: typeof amount,
+      amount_value: amount,
+    });
+
     const expenseData = {
       companyId,
       title,
@@ -136,6 +156,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     };
 
+    console.log('🔍 Expense data to save:', expenseData);
     if (id) {
       // UPDATE: Bestehende Ausgabe aktualisieren
       const docRef = db.collection('expenses').doc(id);
