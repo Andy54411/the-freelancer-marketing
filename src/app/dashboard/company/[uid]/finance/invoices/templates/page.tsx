@@ -302,7 +302,7 @@ export default function InvoiceTemplatesPage() {
           {/* Full Preview Modal */}
           {previewTemplate && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
+              <div className="bg-white rounded-lg max-w-7xl w-full max-h-[90vh] overflow-auto">
                 <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
                   <h3 className="font-semibold text-lg">
                     Vorschau: {INVOICE_TEMPLATES.find(t => t.id === previewTemplate)?.name}
@@ -320,7 +320,7 @@ export default function InvoiceTemplatesPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="p-6 invoice-modal-container">
                   <InvoiceTemplateRenderer
                     template={previewTemplate}
                     data={previewData}

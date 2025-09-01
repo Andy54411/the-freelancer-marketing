@@ -48,7 +48,12 @@ export interface InvoiceData {
 
   // Template-spezifische Felder
   paymentTerms?: string;
-  bankDetails?: string;
+  bankDetails?: {
+    iban: string;
+    bic?: string;
+    accountHolder: string;
+    bankName?: string;
+  };
   notes?: string;
 }
 

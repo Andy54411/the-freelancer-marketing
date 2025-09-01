@@ -236,3 +236,15 @@
 /* Der zweite @layer base-Block wurde entfernt, da alle Regeln
   bereits im ersten Block enthalten waren.
 */
+
+/* Invoice Modal Container - macht Rechnung breiter im Modal */
+.invoice-modal-container > div {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 100% !important;
+}
+
+.invoice-modal-container > div > div {
+  width: 100% !important;
+  max-width: none !important;
+}

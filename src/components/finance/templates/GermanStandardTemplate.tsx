@@ -162,7 +162,28 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
       {data.bankDetails && (
         <div className="mb-6">
           <div className="text-sm font-semibold text-gray-900 mb-2">Bankverbindung:</div>
-          <div className="text-gray-700 text-sm whitespace-pre-line">{data.bankDetails}</div>
+          <div className="text-gray-700 text-sm">
+            {data.bankDetails.iban && (
+              <div>
+                <strong>IBAN:</strong> {data.bankDetails.iban}
+              </div>
+            )}
+            {data.bankDetails.bic && (
+              <div>
+                <strong>BIC:</strong> {data.bankDetails.bic}
+              </div>
+            )}
+            {data.bankDetails.accountHolder && (
+              <div>
+                <strong>Kontoinhaber:</strong> {data.bankDetails.accountHolder}
+              </div>
+            )}
+            {data.bankDetails.bankName && (
+              <div>
+                <strong>Bank:</strong> {data.bankDetails.bankName}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

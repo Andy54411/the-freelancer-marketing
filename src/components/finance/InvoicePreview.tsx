@@ -88,12 +88,10 @@ export function InvoicePreview({
 
   const handleDownloadPDF = () => {
     // In real app: Generate and download PDF
-
   };
 
   const handleSendEmail = () => {
     // In real app: Send invoice via email
-
   };
 
   const handlePrint = () => {
@@ -112,7 +110,7 @@ export function InvoicePreview({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-6xl max-h-[95vh] overflow-hidden">
+      <DialogContent className="sm:max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
@@ -144,8 +142,13 @@ export function InvoicePreview({
         </DialogHeader>
 
         <div className="overflow-y-auto max-h-[80vh] p-1">
-          <div className="bg-white rounded-lg shadow-lg border">
-            <InvoiceTemplateRenderer template={template} data={previewData} preview={false} />
+          <div
+            className="bg-white rounded-lg shadow-lg border w-full invoice-modal-container"
+            style={{ width: '100%' }}
+          >
+            <div style={{ width: '100%', maxWidth: 'none' }}>
+              <InvoiceTemplateRenderer template={template} data={previewData} preview={false} />
+            </div>
           </div>
         </div>
 
@@ -203,11 +206,16 @@ export function InvoiceTemplatePreview({
       <div className="p-3 border-t">
         <h3 className="font-medium text-gray-900 capitalize">{template}</h3>
         <p className="text-sm text-gray-600">
-          {template === 'classic' && 'Traditionelles Design für klassische Geschäftsdokumente'}
-          {template === 'modern' && 'Modernes und cleanes Design für zeitgemäße Unternehmen'}
-          {template === 'minimal' && 'Minimalistisches Design mit Fokus auf Inhalte'}
-          {template === 'corporate' && 'Professionelles Corporate Design für B2B'}
-          {template === 'creative' && 'Kreatives Design für innovative Unternehmen'}
+          {template === 'german-standard' &&
+            'GoBD-konform, E-Rechnungs-kompatibel, deutsche Rechtsrichtlinien'}
+          {template === 'modern-business' &&
+            'Professionell mit Taskilo-Branding und modernem Design'}
+          {template === 'classic-professional' &&
+            'Traditionelles Geschäftsdesign, seriös und vertrauenswürdig'}
+          {template === 'minimal-clean' &&
+            'Minimalistisches Design mit Fokus auf Klarheit und Lesbarkeit'}
+          {template === 'corporate-formal' &&
+            'Formelles Corporate Design für große Unternehmen und B2B'}
         </p>
       </div>
     </div>
