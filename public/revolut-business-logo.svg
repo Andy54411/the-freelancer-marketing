@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" width="200" height="60">
+  <!-- White background with rounded corners -->
+  <rect width="200" height="60" fill="#ffffff" rx="8" ry="8"/>
+  
+  <!-- Revolut circular icon -->
+  <circle cx="30" cy="30" r="18" fill="#0075FF"/>
+  
+  <!-- R symbol inside circle -->
+  <path d="M22 38V22h8c3 0 5 2 5 5s-2 5-5 5h-3l6 6h-3l-5-5h-1v5z M25 27h5c1 0 2-1 2-2s-1-2-2-2h-5z" fill="white"/>
+  
+  <!-- Revolut text -->
+  <text x="55" y="25" fill="#0075FF" font-family="Arial, sans-serif" font-size="14" font-weight="bold">Revolut</text>
+  <text x="55" y="42" fill="#666666" font-family="Arial, sans-serif" font-size="11">Business</text>
+  
+  <!-- Verified badge -->
+  <circle cx="170" cy="30" r="12" fill="#00D924"/>
+  <path d="M165 30l3 3 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

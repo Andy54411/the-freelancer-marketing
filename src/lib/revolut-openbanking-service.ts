@@ -1,4 +1,4 @@
-// Revolut Open Banking API Service
+// Revolut Open Banking Service
 // https://developer.revolut.com/docs/open-banking/open-banking-api
 
 import fs from 'fs';
@@ -15,8 +15,8 @@ export class RevolutOpenBankingService {
   constructor() {
     this.baseUrl =
       process.env.REVOLUT_ENVIRONMENT === 'production'
-        ? 'https://b2b.revolut.com/api'
-        : 'https://sandbox-b2b.revolut.com/api';
+        ? 'https://b2b.revolut.com/api/1.0'
+        : 'https://sandbox-b2b.revolut.com/api/1.0';
 
     this.authUrl =
       process.env.REVOLUT_ENVIRONMENT === 'production'
@@ -25,12 +25,25 @@ export class RevolutOpenBankingService {
 
     this.clientId = process.env.REVOLUT_CLIENT_ID!;
 
-    // Load certificates for mTLS
-    const transportCertPath = process.env.REVOLUT_TRANSPORT_CERT_PATH!;
-    const privateKeyPath = process.env.REVOLUT_PRIVATE_KEY_PATH!;
+    // Load certificates for mTLS - with fallbacks for build environment
+    const transportCertPath =
+      process.env.REVOLUT_TRANSPORT_CERT_PATH || './certs/revolut/transport.pem';
+    const privateKeyPath = process.env.REVOLUT_PRIVATE_KEY_PATH || './certs/revolut/private.key';
 
-    this.transportCert = fs.readFileSync(transportCertPath, 'utf8');
-    this.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+    try {
+      if (fs.existsSync(transportCertPath) && fs.existsSync(privateKeyPath)) {
+        this.transportCert = fs.readFileSync(transportCertPath, 'utf8');
+        this.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+      } else {
+        console.warn('🚨 Revolut certificates not found, using placeholder');
+        this.transportCert = 'placeholder-cert';
+        this.privateKey = 'placeholder-key';
+      }
+    } catch (error) {
+      console.warn('🚨 Error loading Revolut certificates:', error);
+      this.transportCert = 'placeholder-cert';
+      this.privateKey = 'placeholder-key';
+    }
   }
 
   /**

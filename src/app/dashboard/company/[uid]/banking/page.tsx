@@ -709,6 +709,53 @@ export default function BankingDashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Revolut Business Affiliate Banner */}
+      <Card className="relative overflow-hidden bg-gradient-to-r from-[#14ad9f] to-[#0f9d84] border-[#14ad9f] shadow-lg">
+        {/* Background Image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop&auto=format&q=80')",
+          }}
+        />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#14ad9f]/80 to-[#0f9d84]/80" />
+
+        <CardContent className="relative z-10 p-6">
+          <div className="flex items-center gap-6">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-white mb-2">
+                🎉 Revolutioniere dein Business Banking!
+              </h3>
+              <p className="text-white/90 text-sm mb-3">
+                Eröffne ein Revolut Business Konto und erhalte deinen ersten Monat ohne
+                Abo-Gebühren. Globales Geschäftskonto mit Taskilo-Integration.
+              </p>
+              <div className="flex items-center gap-2 text-white/80 text-xs">
+                <CheckCircle className="h-4 w-4" />
+                <span>Kostenloser erster Monat</span>
+                <CheckCircle className="h-4 w-4 ml-2" />
+                <span>Direkte Taskilo-Integration</span>
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              <Button
+                onClick={() =>
+                  window.open(
+                    'https://business.revolut.com/signup?promo=b2b-ref-029-H2-TXC&ext=c77b9c27-bb0b-39b0-ac44-5b34dff30c6e&context=B2B_REFERRAL',
+                    '_blank'
+                  )
+                }
+                className="bg-white text-[#14ad9f] hover:bg-gray-100 font-semibold px-6 py-2 shadow-md"
+              >
+                Jetzt anmelden
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Error Display */}
       {error && !error.includes('✅') && (
         <Card className="border-red-200 bg-red-50">
