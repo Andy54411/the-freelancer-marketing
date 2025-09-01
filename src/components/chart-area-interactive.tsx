@@ -176,6 +176,15 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
   }, [companyUid, user, authLoading]);
 
   const { chartData, totalRevenue, totalExpenses } = React.useMemo(() => {
+    console.log(
+      'Chart recalculating with timeRange:',
+      timeRange,
+      'Orders:',
+      orders.length,
+      'Expenses:',
+      expenses.length
+    );
+
     if (!orders.length && !expenses.length)
       return { chartData: [], totalRevenue: 0, totalExpenses: 0 };
 
@@ -186,6 +195,8 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
     else if (timeRange === '365d') daysToSubtract = 365;
     const startDate = new Date(referenceDate);
     startDate.setDate(startDate.getDate() - daysToSubtract);
+
+    console.log('Date range:', startDate, 'to', referenceDate);
 
     const dailyRevenue: { [key: string]: number } = {};
     const dailyExpenses: { [key: string]: number } = {};
@@ -218,11 +229,29 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
       }
     });
 
-    // Ausgaben verarbeiten - verwende dieselbe Logik wie SectionCards
+    // Ausgaben verarbeiten - vereinfachte Logik da alle Ausgaben aktuelles Datum haben
     expenses.forEach(expense => {
-      // Da wir jetzt immer das aktuelle Datum verwenden, ist es einfach
-      const expenseDate = expense.date instanceof Date ? expense.date : new Date();
+      // Konvertiere expense.date zu einem Date-Objekt
+      let expenseDate: Date;
 
+      if (expense.date instanceof Date) {
+        expenseDate = expense.date;
+      } else if (typeof expense.date === 'string') {
+        expenseDate = new Date(expense.date);
+      } else if (typeof expense.date === 'object' && expense.date !== null) {
+        // Firestore Timestamp handling
+        if ('seconds' in expense.date) {
+          expenseDate = new Date(expense.date.seconds * 1000);
+        } else if ('_seconds' in expense.date) {
+          expenseDate = new Date(expense.date._seconds * 1000);
+        } else {
+          expenseDate = new Date();
+        }
+      } else {
+        expenseDate = new Date();
+      }
+
+      // Da alle Ausgaben dasselbe Datum (heute) haben, prüfe nur ob sie innerhalb des Zeitraums liegen
       if (expenseDate >= startDate) {
         const dateString = expenseDate.toISOString().split('T')[0]; // YYYY-MM-DD
         if (!dailyExpenses[dateString]) {
@@ -250,6 +279,8 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
       totalExpenses: currentTotalExpenses,
     };
   }, [orders, expenses, timeRange]);
+
+  console.log('Final chart state:', { chartData: chartData.length, totalRevenue, totalExpenses });
 
   if (loading) {
     return (
@@ -289,7 +320,9 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
           <ToggleGroup
             type="single"
             value={timeRange}
-            onValueChange={setTimeRange}
+            onValueChange={value => {
+              if (value) setTimeRange(value);
+            }}
             variant="outline"
             className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
           >
@@ -298,7 +331,12 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
             <ToggleGroupItem value="30d">30 Tage</ToggleGroupItem>
             <ToggleGroupItem value="7d">7 Tage</ToggleGroupItem>
           </ToggleGroup>
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select
+            value={timeRange}
+            onValueChange={value => {
+              if (value) setTimeRange(value);
+            }}
+          >
             <SelectTrigger
               className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
               size="sm"
