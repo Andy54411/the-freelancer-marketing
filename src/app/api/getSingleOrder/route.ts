@@ -1,74 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Global variables for caching Firebase services
-let auth: any;
-let db: any;
-let initializationPromise: Promise<any> | null = null;
-
-// Robust Firebase initialization function
-async function getFirebaseServices() {
-  if (initializationPromise) {
-    return await initializationPromise;
-  }
-
-  if (!auth || !db) {
-    initializationPromise = initializeFirebase();
-    return await initializationPromise;
-  }
-
-  return { auth, db };
-}
-
-async function initializeFirebase() {
-  try {
-    console.log('Initializing Firebase for getSingleOrder API - NO JSON FILES...');
-
-    // DIRECT Firebase initialization without JSON imports
-    const firebaseAdmin = await import('firebase-admin');
-
-    // Check if app is already initialized
-    let app;
-    try {
-      app = firebaseAdmin.app();
-      console.log('Using existing Firebase app');
-    } catch (appError) {
-      console.log('Initializing new Firebase app for getSingleOrder...');
-
-      if (
-        process.env.FIREBASE_PROJECT_ID &&
-        process.env.FIREBASE_PRIVATE_KEY &&
-        process.env.FIREBASE_CLIENT_EMAIL
-      ) {
-        app = firebaseAdmin.initializeApp({
-          credential: firebaseAdmin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-          }),
-        });
-        console.log('Initialized with service account credentials');
-      } else if (process.env.FIREBASE_PROJECT_ID) {
-        app = firebaseAdmin.initializeApp({
-          credential: firebaseAdmin.credential.applicationDefault(),
-          projectId: process.env.FIREBASE_PROJECT_ID,
-        });
-        console.log('Initialized with application default credentials');
-      } else {
-        throw new Error('No Firebase configuration available');
-      }
-    }
-
-    auth = firebaseAdmin.auth();
-    db = firebaseAdmin.firestore();
-    console.log('Firebase services initialized successfully for getSingleOrder API');
-    initializationPromise = null; // Reset promise after successful initialization
-    return { auth, db };
-  } catch (error: any) {
-    console.error('Firebase initialization failed:', error);
-    initializationPromise = null; // Reset promise on error
-    throw error;
-  }
-}
+import { db, auth } from '../../../firebase/server';
 
 export async function POST(request: NextRequest) {
   let orderId: string = '';
@@ -81,10 +12,6 @@ export async function POST(request: NextRequest) {
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
-
-    // Use robust Firebase initialization
-    const firebaseServices = await getFirebaseServices();
-    const { auth, db } = firebaseServices;
 
     // Check if Firebase is properly initialized
     if (!auth || !db) {
