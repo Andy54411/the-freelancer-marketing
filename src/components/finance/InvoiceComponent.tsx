@@ -51,7 +51,7 @@ export function InvoiceComponent({
   };
 
   const handleEditInvoice = (invoiceId: string) => {
-    router.push(`./invoices/edit/${invoiceId}`);
+    router.push(`./invoices/${invoiceId}/edit`);
   };
 
   const handleCreateStorno = (invoiceId: string) => {
