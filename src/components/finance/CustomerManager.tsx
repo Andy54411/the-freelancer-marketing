@@ -7,6 +7,7 @@ import {
   getDocs,
   doc,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -20,7 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Search, Eye, Mail, Phone, MapPin, Download } from 'lucide-react';
+import { Edit, Search, Eye, Mail, Phone, MapPin, Download, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddCustomerModal, Customer } from './AddCustomerModal';
 import { CustomerDetailModal } from './CustomerDetailModal';
@@ -196,6 +197,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       const customersQuery = query(
         collection(db, 'customers'),
         where('companyId', '==', companyId),
+        where('isSupplier', '!=', true), // Nur echte Kunden, keine Lieferanten
         orderBy('createdAt', 'desc')
       );
 
@@ -508,6 +510,37 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     }
   };
 
+  // Delete customer from Firebase
+  const handleDeleteCustomer = async (customer: Customer) => {
+    try {
+      if (!user) {
+        throw new Error('Benutzer nicht authentifiziert');
+      }
+
+      // Verify user has permission to delete customers for this company
+      if (user.uid !== companyId) {
+        throw new Error('Keine Berechtigung für diese Firma');
+      }
+
+      // Confirm deletion
+      if (!confirm(`Möchten Sie den Kunden "${customer.name}" wirklich löschen?`)) {
+        return;
+      }
+
+      const customerRef = doc(db, 'customers', customer.id);
+      await deleteDoc(customerRef);
+
+      // Update local state
+      setCustomers(prev => prev.filter(c => c.id !== customer.id));
+
+      toast.success('Kunde erfolgreich gelöscht');
+    } catch (error) {
+      console.error('Fehler beim Löschen des Kunden:', error);
+      toast.error('Fehler beim Löschen des Kunden');
+      throw error;
+    }
+  };
+
   // Filter customers based on search term
   const filteredCustomers = customers.filter(
     customer =>
@@ -689,6 +722,15 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
                           title="Kunde bearbeiten"
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCustomer(customer)}
+                          title="Kunde löschen"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

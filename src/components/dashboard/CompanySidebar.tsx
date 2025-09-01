@@ -115,6 +115,7 @@ const navigationItems: NavigationItem[] = [
       { label: 'Gutschriften', value: 'finance-credits', href: 'finance/credits' },
       { label: 'Mahnungen', value: 'finance-reminders', href: 'finance/reminders' },
       { label: 'Kunden', value: 'finance-customers', href: 'finance/customers' },
+      { label: 'Lieferanten', value: 'finance-suppliers', href: 'finance/suppliers' },
       { label: 'Ausgaben', value: 'finance-expenses', href: 'finance/expenses' },
       { label: 'Zahlungen', value: 'finance-payments', href: 'finance/payments' },
       { label: 'Zeiterfassung', value: 'finance-time-tracking', href: 'finance/time-tracking' },

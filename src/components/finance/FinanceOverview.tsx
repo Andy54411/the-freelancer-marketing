@@ -21,6 +21,7 @@ import {
   Target,
   PieChart,
   Activity,
+  Truck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -345,6 +346,16 @@ export function FinanceOverview({ stats }: FinanceOverviewProps) {
             >
               <Users className="h-6 w-6 text-[#14ad9f]" />
               <span className="text-xs">Kunden</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(window.location.pathname + '/suppliers')}
+              className="flex flex-col h-auto p-4 space-y-2"
+            >
+              <Truck className="h-6 w-6 text-blue-600" />
+              <span className="text-xs">Lieferanten</span>
             </Button>
 
             <Button

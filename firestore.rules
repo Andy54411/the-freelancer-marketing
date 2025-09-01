@@ -650,8 +650,9 @@ service cloud.firestore {
                        request.resource.data.lastModifiedBy == request.auth.uid &&
                        request.resource.data.updatedAt == request.time;
       
-      // Löschen: Nur Support Staff
-      allow delete: if isSupportStaff();
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       (resource.data.companyId == request.auth.uid || isSupportStaff());
     }
 
     // Finance: Expenses Collection

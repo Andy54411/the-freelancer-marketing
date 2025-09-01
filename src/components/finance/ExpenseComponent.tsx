@@ -37,7 +37,7 @@ interface ExpenseData {
   companyVatNumber?: string;
   contactEmail?: string;
   contactPhone?: string;
-  customerId?: string; // Link zur Lieferanten-Akte
+  supplierId?: string; // Link zur Lieferanten-Akte (war supplierId)
   receipt?: {
     fileName: string;
     downloadURL: string;
@@ -62,7 +62,7 @@ interface ExpenseFormData {
   companyVatNumber: string;
   contactEmail: string;
   contactPhone: string;
-  customerId: string; // Link zur Lieferanten-Akte
+  supplierId: string; // Link zur Lieferanten-Akte (war supplierId)
   taxDeductible: boolean;
 }
 
@@ -103,7 +103,7 @@ export function ExpenseComponent({
     companyVatNumber: '',
     contactEmail: '',
     contactPhone: '',
-    customerId: '', // Lieferanten-Verknüpfung
+    supplierId: '', // Lieferanten-Verknüpfung
     taxDeductible: false,
   });
 
@@ -431,7 +431,7 @@ export function ExpenseComponent({
       if (createResult.success) {
         toast.success(`Lieferant "${companyName}" automatisch angelegt`);
         console.log(`✅ Neuer Lieferant erstellt: ${companyName} (${createResult.customerId})`);
-        return createResult.customerId;
+        return createResult.customerId; // API gibt customerId zurück, wir verwenden es als supplierId
       } else {
         console.error('Fehler bei Lieferanten-Erstellung:', createResult.error);
         toast.error('Fehler bei automatischer Lieferanten-Erstellung');
@@ -495,9 +495,9 @@ export function ExpenseComponent({
 
     try {
       // 🔥 GAME CHANGER: Automatische Lieferanten-Erstellung!
-      let customerId = '';
+      let supplierId = '';
       if (formData.companyName) {
-        customerId = await findOrCreateSupplier(formData.companyName, {
+        supplierId = await findOrCreateSupplier(formData.companyName, {
           contactEmail: formData.contactEmail,
           contactPhone: formData.contactPhone,
           companyAddress: formData.companyAddress,
@@ -536,7 +536,7 @@ export function ExpenseComponent({
         companyVatNumber: formData.companyVatNumber || '',
         contactEmail: formData.contactEmail || '',
         contactPhone: formData.contactPhone || '',
-        customerId, // 🔗 Link zur Lieferanten-Akte!
+        supplierId, // 🔗 Link zur Lieferanten-Akte!
         taxDeductible: formData.taxDeductible,
         receipt: currentReceipt
           ? {
@@ -566,7 +566,7 @@ export function ExpenseComponent({
           companyVatNumber: '',
           contactEmail: '',
           contactPhone: '',
-          customerId: '', // Lieferanten-Verknüpfung
+          supplierId: '', // Lieferanten-Verknüpfung
           taxDeductible: false,
         });
         setCurrentReceipt(null);
@@ -604,7 +604,7 @@ export function ExpenseComponent({
       companyVatNumber: expense.companyVatNumber || '',
       contactEmail: expense.contactEmail || '',
       contactPhone: expense.contactPhone || '',
-      customerId: expense.customerId || '',
+      supplierId: expense.supplierId || '',
       taxDeductible: expense.taxDeductible || false,
     });
 
@@ -635,7 +635,7 @@ export function ExpenseComponent({
       companyVatNumber: '',
       contactEmail: '',
       contactPhone: '',
-      customerId: '',
+      supplierId: '',
       taxDeductible: false,
     });
 
@@ -664,9 +664,9 @@ export function ExpenseComponent({
 
     try {
       // Automatische Lieferanten-Erstellung auch beim Update
-      let customerId = formData.customerId;
-      if (formData.companyName && !customerId) {
-        customerId = await findOrCreateSupplier(formData.companyName, {
+      let supplierId = formData.supplierId;
+      if (formData.companyName && !supplierId) {
+        supplierId = await findOrCreateSupplier(formData.companyName, {
           contactEmail: formData.contactEmail,
           contactPhone: formData.contactPhone,
           companyAddress: formData.companyAddress,
@@ -707,7 +707,7 @@ export function ExpenseComponent({
         companyVatNumber: formData.companyVatNumber || '',
         contactEmail: formData.contactEmail || '',
         contactPhone: formData.contactPhone || '',
-        customerId,
+        supplierId,
         taxDeductible: formData.taxDeductible,
         // Receipt wird nur bei neuen Uploads überschrieben
         receipt: currentReceipt
@@ -1177,7 +1177,7 @@ export function ExpenseComponent({
                       companyVatNumber: '',
                       contactEmail: '',
                       contactPhone: '',
-                      customerId: '', // Lieferanten-Verknüpfung
+                      supplierId: '', // Lieferanten-Verknüpfung
                       taxDeductible: false,
                     });
                     setCurrentReceipt(null);
