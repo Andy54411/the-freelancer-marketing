@@ -11,55 +11,66 @@ function RevolutOAuthSuccessContent() {
   useEffect(() => {
     console.log('🔍 OAuth Success Page loaded with params:', { connectionId, error });
 
-    try {
-      if (error) {
-        console.log('❌ Sending error message to parent:', error);
-        // Send error message to parent window
-        window.opener?.postMessage(
-          {
-            type: 'REVOLUT_OAUTH_ERROR',
-            error: decodeURIComponent(error),
-          },
-          window.location.origin
-        );
-      } else if (connectionId) {
-        console.log('✅ Sending success message to parent:', connectionId);
-        // Send success message to parent window
-        window.opener?.postMessage(
-          {
-            type: 'REVOLUT_OAUTH_SUCCESS',
-            connectionId: connectionId,
-          },
-          window.location.origin
-        );
-      } else {
-        console.log('⚠️ No connectionId or error found, checking for success param');
-        // Check for success parameter as fallback
-        const success = searchParams?.get('success');
-        if (success === 'revolut_connected') {
-          console.log('✅ Found success parameter, sending generic success message');
+    // Prevent multiple executions
+    let messageAlreadySent = false;
+
+    const sendMessageAndClose = () => {
+      if (messageAlreadySent) return;
+      messageAlreadySent = true;
+
+      try {
+        if (error) {
+          console.log('❌ Sending error message to parent:', error);
+          // Send error message to parent window
+          window.opener?.postMessage(
+            {
+              type: 'REVOLUT_OAUTH_ERROR',
+              error: decodeURIComponent(error),
+            },
+            '*' // Allow any origin for popup communication
+          );
+        } else if (connectionId) {
+          console.log('✅ Sending success message to parent:', connectionId);
+          // Send success message to parent window
           window.opener?.postMessage(
             {
               type: 'REVOLUT_OAUTH_SUCCESS',
-              connectionId: connectionId || 'unknown',
+              connectionId: connectionId,
             },
-            window.location.origin
+            '*' // Allow any origin for popup communication
           );
+        } else {
+          console.log('⚠️ No connectionId or error found, checking for success param');
+          // Check for success parameter as fallback
+          const success = searchParams?.get('success');
+          if (success === 'revolut_connected') {
+            console.log('✅ Found success parameter, sending generic success message');
+            window.opener?.postMessage(
+              {
+                type: 'REVOLUT_OAUTH_SUCCESS',
+                connectionId: connectionId || 'unknown',
+              },
+              '*' // Allow any origin for popup communication
+            );
+          }
         }
-      }
 
-      // Close the popup window
-      setTimeout(() => {
-        console.log('🔄 Closing popup window');
-        window.close();
-      }, 1000);
-    } catch (err) {
-      console.error('Error communicating with parent window:', err);
-      // Fallback: just close the window
-      setTimeout(() => {
-        window.close();
-      }, 2000);
-    }
+        // Close the popup window
+        setTimeout(() => {
+          console.log('🔄 Closing popup window');
+          window.close();
+        }, 1000);
+      } catch (err) {
+        console.error('Error communicating with parent window:', err);
+        // Fallback: just close the window
+        setTimeout(() => {
+          window.close();
+        }, 2000);
+      }
+    };
+
+    // Send message immediately
+    sendMessageAndClose();
   }, [connectionId, error, searchParams]);
 
   return (

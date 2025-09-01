@@ -52,9 +52,10 @@ export default function RevolutConnectModal({
     const handleMessage = (event: MessageEvent) => {
       console.log('🔍 Received message in RevolutConnectModal:', event);
 
-      // Ensure message is from our domain
-      if (event.origin !== window.location.origin) {
-        console.log('⚠️ Message from different origin, ignoring:', event.origin);
+      // Ensure message is from trusted domain
+      const trustedOrigins = ['https://taskilo.de', 'http://localhost:3000'];
+      if (!trustedOrigins.includes(event.origin)) {
+        console.log('⚠️ Message from untrusted origin, ignoring:', event.origin);
         return;
       }
 
