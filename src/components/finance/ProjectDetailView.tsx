@@ -468,7 +468,37 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   };
 
   const handleCreateInvoice = () => {
-    // Erstelle Rechnung basierend auf Projektdaten
+    // Gruppiere Zeiteinträge nach Datum für tagesweise Rechnungsposten
+    const groupedByDate = timeEntries.reduce(
+      (groups, entry) => {
+        const date = entry.date; // Date ist bereits im YYYY-MM-DD Format
+        if (!groups[date]) {
+          groups[date] = {
+            date: date,
+            hours: 0,
+            entries: [],
+          };
+        }
+        // Konvertiere duration von Minuten zu Stunden
+        const hours = entry.duration / 60;
+        groups[date].hours += hours;
+        groups[date].entries.push(entry);
+        return groups;
+      },
+      {} as Record<string, { date: string; hours: number; entries: any[] }>
+    );
+
+    // Konvertiere gruppierte Daten in Array für Rechnungsposten
+    const dailyLineItems = Object.values(groupedByDate).map(dayData => ({
+      date: dayData.date,
+      description: `${dayData.date}: ${project.name} (${dayData.hours.toFixed(1)}h)`,
+      hours: dayData.hours,
+      hourlyRate: project.hourlyRate || 0,
+      amount: dayData.hours * (project.hourlyRate || 0),
+      entries: dayData.entries,
+    }));
+
+    // Erstelle Rechnung basierend auf Projektdaten mit tagesweiser Aufschlüsselung
     const invoiceData = {
       projectId: project.id,
       projectName: project.name,
@@ -476,7 +506,8 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       hourlyRate: project.hourlyRate || 0,
       totalHours: currentTrackedHours,
       revenue: calculateRevenue(),
-      timeEntries: timeEntries,
+      dailyLineItems: dailyLineItems, // Tagesweise Aufschlüsselung
+      timeEntries: timeEntries, // Original-Zeiteinträge zur Referenz
       teamMembers: project.teamMembers,
       description: project.description,
     };

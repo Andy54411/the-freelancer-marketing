@@ -12,11 +12,10 @@ import { Timestamp } from 'firebase-admin/firestore';
 // GET - Einzelnes Projekt laden
 export async function GET(
   request: NextRequest,
-  { params }: { params: { uid: string; projectId: string } }
+  { params }: { params: Promise<{ uid: string; projectId: string }> }
 ) {
   try {
-    const companyId = params.uid;
-    const projectId = params.projectId;
+    const { uid: companyId, projectId } = await params;
 
     if (!companyId || !projectId) {
       return NextResponse.json(
@@ -34,10 +33,7 @@ export async function GET(
       .get();
 
     if (!projectDoc.exists) {
-      return NextResponse.json(
-        { error: 'Projekt nicht gefunden' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 });
     }
 
     const projectData = projectDoc.data();
@@ -51,26 +47,21 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      project
+      project,
     });
-
   } catch (error) {
     console.error('🚨 Error loading project:', error);
-    return NextResponse.json(
-      { error: 'Projekt konnte nicht geladen werden' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Projekt konnte nicht geladen werden' }, { status: 500 });
   }
 }
 
 // PUT - Projekt aktualisieren
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { uid: string; projectId: string } }
+  { params }: { params: Promise<{ uid: string; projectId: string }> }
 ) {
   try {
-    const companyId = params.uid;
-    const projectId = params.projectId;
+    const { uid: companyId, projectId } = await params;
     const body = await request.json();
 
     if (!companyId || !projectId) {
@@ -110,9 +101,8 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      message: 'Projekt erfolgreich aktualisiert'
+      message: 'Projekt erfolgreich aktualisiert',
     });
-
   } catch (error) {
     console.error('🚨 Error updating project:', error);
     return NextResponse.json(
@@ -125,11 +115,10 @@ export async function PUT(
 // DELETE - Projekt löschen
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { uid: string; projectId: string } }
+  { params }: { params: Promise<{ uid: string; projectId: string }> }
 ) {
   try {
-    const companyId = params.uid;
-    const projectId = params.projectId;
+    const { uid: companyId, projectId } = await params;
 
     if (!companyId || !projectId) {
       return NextResponse.json(
@@ -139,23 +128,14 @@ export async function DELETE(
     }
 
     // Projekt aus Firestore löschen
-    await db
-      .collection('companies')
-      .doc(companyId)
-      .collection('projects')
-      .doc(projectId)
-      .delete();
+    await db.collection('companies').doc(companyId).collection('projects').doc(projectId).delete();
 
     return NextResponse.json({
       success: true,
-      message: 'Projekt erfolgreich gelöscht'
+      message: 'Projekt erfolgreich gelöscht',
     });
-
   } catch (error) {
     console.error('🚨 Error deleting project:', error);
-    return NextResponse.json(
-      { error: 'Projekt konnte nicht gelöscht werden' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Projekt konnte nicht gelöscht werden' }, { status: 500 });
   }
 }

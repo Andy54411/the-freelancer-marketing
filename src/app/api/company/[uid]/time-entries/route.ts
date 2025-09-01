@@ -6,23 +6,18 @@ import { db } from '@/firebase/server';
  * GET /api/company/[uid]/time-entries
  */
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { uid: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
-    const { uid: companyId } = params;
+    const { uid: companyId } = await params;
     const { searchParams } = new URL(request.url);
-    
+
     // Optional: Filter nach Projekt-ID
     const projectId = searchParams.get('projectId');
-    
+
     console.log('🔍 Loading time entries for company:', companyId, 'projectId:', projectId);
 
     // Basis-Query für alle Zeiteinträge der Company
-    let query = db
-      .collection('timeEntries')
-      .where('companyId', '==', companyId);
+    let query = db.collection('timeEntries').where('companyId', '==', companyId);
 
     // Optional: Filter nach Projekt
     if (projectId) {
@@ -48,7 +43,7 @@ export async function GET(
     const totalEntries = timeEntries.length;
     const totalDuration = timeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
     const totalHours = Math.round((totalDuration / 60) * 100) / 100; // Minuten zu Stunden
-    
+
     // Gruppiere nach Projekt
     const projectBreakdown: Record<string, any> = {};
     timeEntries.forEach(entry => {
@@ -60,20 +55,21 @@ export async function GET(
           totalEntries: 0,
           totalDuration: 0,
           totalHours: 0,
-          entries: []
+          entries: [],
         };
       }
-      
+
       projectBreakdown[projId].totalEntries++;
       projectBreakdown[projId].totalDuration += entry.duration || 0;
-      projectBreakdown[projId].totalHours = Math.round((projectBreakdown[projId].totalDuration / 60) * 100) / 100;
+      projectBreakdown[projId].totalHours =
+        Math.round((projectBreakdown[projId].totalDuration / 60) * 100) / 100;
       projectBreakdown[projId].entries.push(entry);
     });
 
     console.log('✅ Loaded time entries:', {
       total: totalEntries,
       totalHours,
-      projects: Object.keys(projectBreakdown).length
+      projects: Object.keys(projectBreakdown).length,
     });
 
     return NextResponse.json({
@@ -82,16 +78,15 @@ export async function GET(
       totalDuration,
       totalHours,
       timeEntries,
-      projectBreakdown
+      projectBreakdown,
     });
-
   } catch (error) {
     console.error('❌ Error loading time entries:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to load time entries',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

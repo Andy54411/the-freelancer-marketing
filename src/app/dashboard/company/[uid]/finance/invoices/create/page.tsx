@@ -94,6 +94,7 @@ export default function CreateInvoicePage() {
     customerName: '',
     customerEmail: '',
     customerAddress: '',
+    customerVatId: '', // VAT-ID des Kunden
     invoiceNumber: '',
     issueDate: new Date().toISOString().split('T')[0],
     dueDate: '',
@@ -237,7 +238,21 @@ export default function CreateInvoicePage() {
         }));
 
         // Erstelle Items basierend auf den erfassten Stunden
-        if (projectData.totalHours > 0 && projectData.hourlyRate > 0) {
+        if (projectData.dailyLineItems && projectData.dailyLineItems.length > 0) {
+          // Verwende tagesweise Aufschlüsselung
+          const projectItems: InvoiceItem[] = projectData.dailyLineItems.map(
+            (dayItem: any, index: number) => ({
+              id: `day_${index}`,
+              description: dayItem.description, // Format: "2025-01-19: Projektname (8.5h)"
+              quantity: dayItem.hours,
+              unitPrice: dayItem.hourlyRate,
+              total: dayItem.amount,
+            })
+          );
+
+          setItems(projectItems);
+        } else if (projectData.totalHours > 0 && projectData.hourlyRate > 0) {
+          // Fallback für alte Projektdaten ohne dailyLineItems
           const projectItems: InvoiceItem[] = [
             {
               id: 'project_hours',
@@ -317,6 +332,7 @@ export default function CreateInvoicePage() {
         customerName: customer.name,
         customerEmail: customer.email,
         customerAddress: customerAddress,
+        customerVatId: customer.vatId || '', // VAT-ID aus Kundendaten übernehmen
       }));
     }
   };
@@ -359,12 +375,12 @@ export default function CreateInvoicePage() {
   const calculateTotals = () => {
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
 
-    // Use company settings for VAT calculation
+    // Use formData.taxRate for VAT calculation (user's selected rate)
     let tax = 0;
     let total = subtotal;
 
     if (companySettings?.ust !== 'kleinunternehmer') {
-      const taxRate = parseFloat(companySettings?.defaultTaxRate || '19') / 100;
+      const taxRate = parseFloat(formData.taxRate || '19') / 100;
       tax = subtotal * taxRate;
       total = subtotal + tax;
     }
@@ -485,6 +501,7 @@ export default function CreateInvoicePage() {
         customerName: formData.customerName,
         customerEmail: formData.customerEmail,
         customerAddress: formData.customerAddress,
+        customerVatId: formData.customerVatId, // VAT-ID des Kunden
         description: formData.description,
 
         // Company information from settings
@@ -650,17 +667,33 @@ export default function CreateInvoicePage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="customerAddress">Rechnungsadresse</Label>
-                  <Textarea
-                    id="customerAddress"
-                    value={formData.customerAddress}
-                    onChange={e =>
-                      setFormData(prev => ({ ...prev, customerAddress: e.target.value }))
-                    }
-                    placeholder="Musterstraße 123&#10;12345 Berlin&#10;Deutschland"
-                    rows={3}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="customerAddress">Rechnungsadresse</Label>
+                    <Textarea
+                      id="customerAddress"
+                      value={formData.customerAddress}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, customerAddress: e.target.value }))
+                      }
+                      placeholder="Musterstraße 123&#10;12345 Berlin&#10;Deutschland"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="customerVatId">USt-IdNr. / VAT-ID</Label>
+                    <Input
+                      id="customerVatId"
+                      value={formData.customerVatId}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, customerVatId: e.target.value }))
+                      }
+                      placeholder="DE123456789"
+                    />
+                    <p className="text-xs text-gray-500">
+                      Umsatzsteuer-Identifikationsnummer des Kunden (optional)
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -808,13 +841,14 @@ export default function CreateInvoicePage() {
                         <div className="flex items-center gap-2">
                           <span>MwSt.:</span>
                           <Select
-                            value={formData.taxRate}
-                            onValueChange={value =>
-                              setFormData(prev => ({ ...prev, taxRate: value }))
-                            }
+                            value={formData.taxRate.toString()}
+                            onValueChange={value => {
+                              console.log('MwSt changed to:', value);
+                              setFormData(prev => ({ ...prev, taxRate: value }));
+                            }}
                           >
                             <SelectTrigger className="w-20 h-8">
-                              <SelectValue />
+                              <SelectValue placeholder="19%" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="0">0%</SelectItem>

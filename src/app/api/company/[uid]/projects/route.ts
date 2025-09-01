@@ -9,18 +9,12 @@ import { Timestamp } from 'firebase-admin/firestore';
  */
 
 // GET - Alle Projekte eines Unternehmens laden
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { uid: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
-    const companyId = params.uid;
+    const { uid: companyId } = await params;
 
     if (!companyId) {
-      return NextResponse.json(
-        { error: 'Company ID ist erforderlich' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Company ID ist erforderlich' }, { status: 400 });
     }
 
     // Projekte aus der companies/{companyId}/projects Collection laden
@@ -44,32 +38,22 @@ export async function GET(
     return NextResponse.json({
       success: true,
       projects,
-      count: projects.length
+      count: projects.length,
     });
-
   } catch (error) {
     console.error('🚨 Error loading projects:', error);
-    return NextResponse.json(
-      { error: 'Projekte konnten nicht geladen werden' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Projekte konnten nicht geladen werden' }, { status: 500 });
   }
 }
 
 // POST - Neues Projekt erstellen
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { uid: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
-    const companyId = params.uid;
+    const { uid: companyId } = await params;
     const body = await request.json();
 
     if (!companyId) {
-      return NextResponse.json(
-        { error: 'Company ID ist erforderlich' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Company ID ist erforderlich' }, { status: 400 });
     }
 
     // Validierung der erforderlichen Felder
@@ -120,14 +104,10 @@ export async function POST(
     return NextResponse.json({
       success: true,
       project: createdProject,
-      message: 'Projekt erfolgreich erstellt'
+      message: 'Projekt erfolgreich erstellt',
     });
-
   } catch (error) {
     console.error('🚨 Error creating project:', error);
-    return NextResponse.json(
-      { error: 'Projekt konnte nicht erstellt werden' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Projekt konnte nicht erstellt werden' }, { status: 500 });
   }
 }
