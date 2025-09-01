@@ -30,7 +30,7 @@ import {
 import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceTemplatePicker } from '@/components/finance/InvoiceTemplatePicker';
-import { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
+import { InvoiceTemplate, InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useAuth } from '@/contexts/AuthContext';
@@ -82,7 +82,7 @@ export default function CreateInvoicePage() {
   } = useCompanySettings(uid);
 
   // State for template loading and selection
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('modern');
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('german-standard');
   const [templateLoading, setTemplateLoading] = useState(true);
 
   // State für echte Kunden
@@ -919,42 +919,46 @@ export default function CreateInvoicePage() {
                   {/* Quick Preview */}
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                     <div className="h-96 overflow-hidden relative">
-                      <div className="transform scale-[0.15] origin-top-left w-[1000px] h-[1200px] pointer-events-none">
-                        <div className="bg-white p-8">
-                          {/* Mini Preview Content */}
-                          <div className="border-b-2 border-gray-800 pb-4 mb-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h1 className="text-2xl font-bold text-gray-800 mb-1">
-                                  {companySettings?.companyName || 'Ihr Unternehmen'}
-                                </h1>
-                                <div className="text-gray-600 text-xs">
-                                  {companySettings?.companyAddress || 'Ihre Firmenadresse'}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <h2 className="text-xl font-bold text-gray-800 mb-1">RECHNUNG</h2>
-                                <div className="text-xs text-gray-600">
-                                  <div>Nr.: {formData.invoiceNumber || 'R-2025-000'}</div>
-                                  <div>Datum: {formData.issueDate || 'TT.MM.JJJJ'}</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="mb-4">
-                            <h3 className="font-semibold text-gray-800 mb-1">
-                              Rechnungsempfänger:
-                            </h3>
-                            <div className="text-gray-700 text-xs">
-                              {formData.customerName || 'Kunden auswählen...'}
-                            </div>
-                          </div>
-                          <div className="border rounded p-2 mb-4">
-                            <div className="text-xs text-gray-600">
-                              {items.length} Position(en) • Gesamt: {formatCurrency(total)}
-                            </div>
-                          </div>
-                        </div>
+                      <div className="transform scale-[0.3] origin-top-left w-[1000px] h-[1200px] pointer-events-none">
+                        <InvoiceTemplateRenderer
+                          template={selectedTemplate}
+                          data={{
+                            id: 'preview',
+                            number: formData.invoiceNumber || 'R-2025-000',
+                            invoiceNumber: formData.invoiceNumber || 'R-2025-000',
+                            sequentialNumber: 1,
+                            date: formData.issueDate,
+                            issueDate: formData.issueDate,
+                            dueDate: formData.dueDate,
+                            customerName: formData.customerName || 'Kunden auswählen...',
+                            customerAddress: formData.customerAddress || '',
+                            customerEmail: formData.customerEmail,
+                            description: formData.description,
+                            companyName: companySettings?.companyName || 'Ihr Unternehmen',
+                            companyAddress: companySettings?.companyAddress || 'Ihre Firmenadresse',
+                            companyEmail: companySettings?.companyEmail || '',
+                            companyPhone: companySettings?.companyPhone || '',
+                            companyWebsite: companySettings?.companyWebsite || '',
+                            companyLogo: companySettings?.companyLogo || '',
+                            companyVatId: companySettings?.vatId || '',
+                            companyTaxNumber: companySettings?.taxNumber || '',
+                            companyRegister: companySettings?.companyRegister || '',
+                            districtCourt: companySettings?.districtCourt || '',
+                            legalForm: companySettings?.legalForm || '',
+                            companyTax: companySettings?.taxNumber || '',
+                            iban: companySettings?.iban || '',
+                            accountHolder: companySettings?.accountHolder || '',
+                            items: items.filter(item => item.description && item.quantity > 0),
+                            amount: subtotal,
+                            tax,
+                            total,
+                            isSmallBusiness: companySettings?.ust === 'kleinunternehmer',
+                            vatRate: parseFloat(companySettings?.defaultTaxRate || '19'),
+                            priceInput: companySettings?.priceInput || 'netto',
+                            status: 'draft',
+                          }}
+                          preview={false}
+                        />
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent pointer-events-none"></div>
                     </div>

@@ -21,7 +21,7 @@ export default function InvoiceTemplatesPage() {
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('modern');
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('german-standard');
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -238,12 +238,12 @@ export default function InvoiceTemplatesPage() {
 
                 <CardContent>
                   {/* Mini Preview */}
-                  <div className="bg-gray-50 rounded-lg p-4 h-48 overflow-hidden relative">
-                    <div className="transform scale-[0.15] origin-top-left w-[800px] h-[1000px] pointer-events-none">
+                  <div className="bg-gray-50 rounded-lg p-4 h-72 overflow-hidden relative">
+                    <div className="transform scale-[0.2] origin-top-left w-[595px] h-[842px] pointer-events-none">
                       <InvoiceTemplateRenderer
                         template={template.id}
                         data={previewData}
-                        preview={true}
+                        preview={false}
                       />
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-gray-50 via-transparent to-transparent pointer-events-none"></div>
@@ -254,21 +254,21 @@ export default function InvoiceTemplatesPage() {
                     <div className="flex items-center justify-between text-xs text-gray-600">
                       <span>Stil:</span>
                       <span className="font-medium">
-                        {template.id === 'classic' && 'Traditionell'}
-                        {template.id === 'modern' && 'Zeitgemäß'}
-                        {template.id === 'minimal' && 'Reduziert'}
-                        {template.id === 'corporate' && 'Professionell'}
-                        {template.id === 'creative' && 'Farbenfroh'}
+                        {template.id === 'german-standard' && 'GoBD-konform'}
+                        {template.id === 'modern-business' && 'Modern & Professionell'}
+                        {template.id === 'classic-professional' && 'Traditionell'}
+                        {template.id === 'minimal-clean' && 'Minimalistisch'}
+                        {template.id === 'corporate-formal' && 'Konzernstandard'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-600">
                       <span>Für:</span>
                       <span className="font-medium">
-                        {template.id === 'classic' && 'Alle Branchen'}
-                        {template.id === 'modern' && 'Tech & Digital'}
-                        {template.id === 'minimal' && 'Design & Beratung'}
-                        {template.id === 'corporate' && 'B2B & Konzerne'}
-                        {template.id === 'creative' && 'Kreativ & Marketing'}
+                        {template.id === 'german-standard' && 'Alle deutschen Unternehmen'}
+                        {template.id === 'modern-business' && 'Tech & Startups'}
+                        {template.id === 'classic-professional' && 'Traditionelle Branchen'}
+                        {template.id === 'minimal-clean' && 'Design & Beratung'}
+                        {template.id === 'corporate-formal' && 'B2B & Konzerne'}
                       </span>
                     </div>
                   </div>
