@@ -547,6 +547,12 @@ export function ExpenseComponent({
           : null,
       };
 
+      console.log(
+        '🔍 ExpenseComponent: About to save expense data:',
+        JSON.stringify(expenseData, null, 2)
+      );
+      console.log('🔍 ExpenseComponent: supplierId value:', supplierId || 'MISSING!');
+
       const success = await onSave?.(expenseData);
 
       if (success) {

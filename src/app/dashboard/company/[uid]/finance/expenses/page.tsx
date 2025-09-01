@@ -23,6 +23,7 @@ interface ExpenseData {
   companyVatNumber?: string;
   contactEmail?: string;
   contactPhone?: string;
+  supplierId?: string; // 🔗 Lieferanten-Verknüpfung
   receipt?: {
     fileName: string;
     downloadURL: string;
@@ -77,6 +78,7 @@ export default function ExpensesPage() {
           companyVatNumber: expense.companyVatNumber || '',
           contactEmail: expense.contactEmail || '',
           contactPhone: expense.contactPhone || '',
+          supplierId: expense.supplierId || '', // 🔗 Lieferanten-Verknüpfung
           receipt: expense.receipt || null,
           taxDeductible: expense.taxDeductible || false,
           createdAt: expense.createdAt ? new Date(expense.createdAt) : new Date(),
@@ -99,6 +101,11 @@ export default function ExpensesPage() {
   // Neue Ausgabe speichern
   const handleSaveExpense = async (expenseData: any) => {
     try {
+      console.log(
+        '🔍 Frontend: Sending expense data to API:',
+        JSON.stringify(expenseData, null, 2)
+      );
+
       const response = await fetch('/api/expenses', {
         method: 'POST',
         headers: {
@@ -110,11 +117,15 @@ export default function ExpensesPage() {
         }),
       });
 
+      console.log('🔍 Frontend: API response status:', response.status);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
+
+      console.log('🔍 Frontend: API response result:', JSON.stringify(result, null, 2));
 
       if (result.success) {
         toast.success('Ausgabe erfolgreich gespeichert');

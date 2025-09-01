@@ -45,6 +45,7 @@ export interface Customer {
   taxNumber?: string;
   vatId?: string;
   vatValidated?: boolean;
+  isSupplier?: boolean; // Unterscheidung zwischen Kunde und Lieferant
   totalInvoices: number;
   totalAmount: number;
   createdAt: string;
@@ -227,7 +228,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       setOpen(false);
       toast.success('Kunde erfolgreich hinzugefügt');
     } catch (error) {
-
       toast.error('Fehler beim Hinzufügen des Kunden');
     } finally {
       setLoading(false);
