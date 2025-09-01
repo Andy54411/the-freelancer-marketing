@@ -10,8 +10,8 @@ export async function GET() {
     diagnosis: 'Client ID und Client Secret passen nicht zusammen',
 
     currentConfig: {
-      clientId: '6111ad8e8cae82d1a805950f2ae4adc4',
-      clientSecret: '8caca150... (32 Zeichen)',
+      clientId: 'CONFIGURED_BUT_INVALID',
+      clientSecret: 'CONFIGURED_BUT_INVALID',
       baseUrl: 'https://sandbox-api.datev.de',
       status: '❌ FEHLSCHLAG - Invalid Token',
     },
@@ -56,8 +56,8 @@ export async function GET() {
     ],
 
     vercelConfig: {
-      DATEV_CLIENT_ID: 'Neue korrekte Client ID',
-      DATEV_CLIENT_SECRET: 'Neues korrektes Client Secret',
+      DATEV_CLIENT_ID: '[ENTER_YOUR_DATEV_CLIENT_ID]',
+      DATEV_CLIENT_SECRET: '[ENTER_YOUR_DATEV_CLIENT_SECRET]',
     },
   };
 

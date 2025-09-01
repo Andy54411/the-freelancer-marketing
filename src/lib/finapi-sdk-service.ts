@@ -79,10 +79,11 @@ export class FinAPISDKService {
         ? process.env.FINAPI_PROD_CLIENT_SECRET
         : process.env.FINAPI_SANDBOX_CLIENT_SECRET;
 
+    // Security: Only log environment and availability, never actual credentials
     console.log('🔍 Normal credentials debug:', {
       environment: this.config.environment,
-      clientId: clientId ? `${clientId.substring(0, 8)}...` : 'UNDEFINED',
-      clientSecret: clientSecret ? `${clientSecret.substring(0, 8)}...` : 'UNDEFINED',
+      clientId: clientId ? 'CONFIGURED' : 'UNDEFINED',
+      clientSecret: clientSecret ? 'CONFIGURED' : 'UNDEFINED',
     });
 
     if (!clientId || !clientSecret) {
@@ -107,14 +108,11 @@ export class FinAPISDKService {
       );
     }
 
+    // Security: Only log environment and availability, never actual credentials
     console.log('🔍 Default credentials debug:', {
       environment: this.config.environment,
-      clientId: this.config.credentials.clientId
-        ? `${this.config.credentials.clientId.substring(0, 8)}...`
-        : 'UNDEFINED',
-      clientSecret: this.config.credentials.clientSecret
-        ? `${this.config.credentials.clientSecret.substring(0, 8)}...`
-        : 'UNDEFINED',
+      clientId: this.config.credentials.clientId ? 'CONFIGURED' : 'UNDEFINED',
+      clientSecret: this.config.credentials.clientSecret ? 'CONFIGURED' : 'UNDEFINED',
     });
 
     try {
@@ -168,12 +166,11 @@ export class FinAPISDKService {
       throw new Error('finAPI admin credentials are not configured for user management operations');
     }
 
+    // Security: Only log environment and availability, never actual credentials
     console.log('🔍 Admin credentials debug (user management):', {
       environment: this.config.environment,
-      adminClientId: adminClientId ? `${adminClientId.substring(0, 8)}...` : 'UNDEFINED',
-      adminClientSecret: adminClientSecret
-        ? `${adminClientSecret.substring(0, 8)}...`
-        : 'UNDEFINED',
+      adminClientId: adminClientId ? 'CONFIGURED' : 'UNDEFINED',
+      adminClientSecret: adminClientSecret ? 'CONFIGURED' : 'UNDEFINED',
     });
 
     try {
@@ -1079,13 +1076,12 @@ export function createFinAPIService(environment?: 'sandbox' | 'production'): Fin
   const defaultClientId = process.env.FINAPI_SANDBOX_CLIENT_ID;
   const defaultClientSecret = process.env.FINAPI_SANDBOX_CLIENT_SECRET;
 
+  // Security: Only log environment and availability, never actual credentials
   console.log('🔍 createFinAPIService debug:', {
     requestedEnvironment: environment,
     detectedEnvironment,
-    defaultClientId: defaultClientId ? `${defaultClientId.substring(0, 8)}...` : 'UNDEFINED',
-    defaultClientSecret: defaultClientSecret
-      ? `${defaultClientSecret.substring(0, 8)}...`
-      : 'UNDEFINED',
+    defaultClientId: defaultClientId ? 'CONFIGURED' : 'UNDEFINED',
+    defaultClientSecret: defaultClientSecret ? 'CONFIGURED' : 'UNDEFINED',
     availableEnvVars: {
       FINAPI_ADMIN_CLIENT_ID: process.env.FINAPI_ADMIN_CLIENT_ID ? 'SET' : 'UNDEFINED',
       FINAPI_ADMIN_CLIENT_SECRET: process.env.FINAPI_ADMIN_CLIENT_SECRET ? 'SET' : 'UNDEFINED',

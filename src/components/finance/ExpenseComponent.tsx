@@ -141,17 +141,26 @@ export function ExpenseComponent({
 
     let cleanedAddress = address;
 
-    // Entferne VAT-Nummer und verwandte Begriffe
-    if (vatNumber) {
-      cleanedAddress = cleanedAddress.replace(new RegExp(vatNumber, 'gi'), '');
+    // Sichere String-Escape-Funktion für RegExp
+    const escapeRegExp = (str: string): string => {
+      return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
+    // Entferne VAT-Nummer und verwandte Begriffe (sicher)
+    if (vatNumber && vatNumber.length <= 50) {
+      // Length limit für Sicherheit
+      const escapedVatNumber = escapeRegExp(vatNumber);
+      cleanedAddress = cleanedAddress.replace(new RegExp(escapedVatNumber, 'gi'), '');
     }
     cleanedAddress = cleanedAddress.replace(/Umsatzsteuer-Identifikationsnummer:?\s*/gi, '');
     cleanedAddress = cleanedAddress.replace(/VAT Number:?\s*/gi, '');
     cleanedAddress = cleanedAddress.replace(/USt-IdNr:?\s*/gi, '');
 
-    // Entferne Rechnungsinformationen
-    if (invoiceNumber) {
-      cleanedAddress = cleanedAddress.replace(new RegExp(invoiceNumber, 'gi'), '');
+    // Entferne Rechnungsinformationen (sicher)
+    if (invoiceNumber && invoiceNumber.length <= 50) {
+      // Length limit für Sicherheit
+      const escapedInvoiceNumber = escapeRegExp(invoiceNumber);
+      cleanedAddress = cleanedAddress.replace(new RegExp(escapedInvoiceNumber, 'gi'), '');
     }
     cleanedAddress = cleanedAddress.replace(/Rechnungsnummer:?\s*/gi, '');
     cleanedAddress = cleanedAddress.replace(/Invoice Number:?\s*/gi, '');

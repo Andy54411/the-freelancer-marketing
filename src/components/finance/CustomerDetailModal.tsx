@@ -71,7 +71,6 @@ export function CustomerDetailModal({
 
   // Berechne Statistiken basierend auf geladenen Rechnungen
   const calculateCustomerStats = (invoiceList: InvoiceData[]) => {
-
     // Alle Rechnungen außer draft/cancelled für Umsatzberechnung
     const validInvoices = invoiceList.filter(
       invoice => invoice.status !== 'draft' && invoice.status !== 'cancelled'
@@ -99,7 +98,6 @@ export function CustomerDetailModal({
       toast.success('Kundenstatistiken erfolgreich synchronisiert');
       onCustomerUpdated?.();
     } catch (error) {
-
       toast.error('Fehler beim Synchronisieren der Statistiken');
     } finally {
       setSyncingStats(false);
@@ -112,6 +110,32 @@ export function CustomerDetailModal({
 
     try {
       setLoading(true);
+
+      console.log('🔍 Loading invoice history for customer:', {
+        customerName: customer.name,
+        companyId: customer.companyId,
+      });
+
+      // First, check all invoices for this company to see what's available
+      const allInvoicesQuery = query(
+        collection(db, 'invoices'),
+        where('companyId', '==', customer.companyId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const allInvoicesSnapshot = await getDocs(allInvoicesQuery);
+      console.log(`🔍 Total invoices in company: ${allInvoicesSnapshot.size}`);
+
+      const allCustomerNames = new Set<string>();
+      allInvoicesSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.customerName) {
+          allCustomerNames.add(data.customerName);
+        }
+      });
+
+      console.log('🔍 All customer names in invoices:', Array.from(allCustomerNames));
+
       const invoicesQuery = query(
         collection(db, 'invoices'),
         where('companyId', '==', customer.companyId),
@@ -124,6 +148,13 @@ export function CustomerDetailModal({
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
+        console.log('🔍 Found invoice:', {
+          id: doc.id,
+          customerName: data.customerName,
+          total: data.total,
+          status: data.status,
+        });
+
         loadedInvoices.push({
           ...data,
           id: doc.id,
@@ -131,10 +162,11 @@ export function CustomerDetailModal({
         } as InvoiceData);
       });
 
+      console.log(`🔍 Total invoices found: ${loadedInvoices.length}`);
       setInvoices(loadedInvoices);
       calculateCustomerStats(loadedInvoices);
     } catch (error) {
-
+      console.error('❌ Error loading invoice history:', error);
       toast.error('Fehler beim Laden der Rechnungshistorie');
     } finally {
       setLoading(false);
