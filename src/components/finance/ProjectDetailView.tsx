@@ -38,6 +38,7 @@ import {
   BarChart3,
   Edit,
   Trash2,
+  FileText,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -466,6 +467,29 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     }
   };
 
+  const handleCreateInvoice = () => {
+    // Erstelle Rechnung basierend auf Projektdaten
+    const invoiceData = {
+      projectId: project.id,
+      projectName: project.name,
+      client: project.client,
+      hourlyRate: project.hourlyRate || 0,
+      totalHours: currentTrackedHours,
+      revenue: calculateRevenue(),
+      timeEntries: timeEntries,
+      teamMembers: project.teamMembers,
+      description: project.description,
+    };
+
+    // Navigiere zur Rechnungserstellung mit vorausgefüllten Daten
+    const params = new URLSearchParams({
+      project: JSON.stringify(invoiceData),
+    });
+
+    // Verwende companyId aus Props
+    window.location.href = `/dashboard/company/${companyId}/finance/invoices/create?${params.toString()}`;
+  };
+
   if (!project) {
     return (
       <Card>
@@ -491,10 +515,20 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             </Badge>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={refreshProjectData} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Aktualisieren
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button
+            onClick={handleCreateInvoice}
+            className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+            disabled={currentTrackedHours === 0}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Rechnung erstellen
+          </Button>
+          <Button variant="outline" size="sm" onClick={refreshProjectData} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Aktualisieren
+          </Button>
+        </div>
       </div>
 
       {/* Projekt-Informationen */}

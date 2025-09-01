@@ -2,7 +2,7 @@
 
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import {
   doc,
   getDoc,
@@ -71,6 +71,7 @@ interface InvoiceItem {
 export default function CreateInvoicePage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
 
@@ -218,6 +219,57 @@ export default function CreateInvoicePage() {
 
     loadCustomers();
   }, [uid, user]);
+
+  // Lade Projektdaten aus URL-Parametern und fülle Formular vor
+  useEffect(() => {
+    if (!searchParams) return;
+
+    const projectParam = searchParams.get('project');
+    if (projectParam) {
+      try {
+        const projectData = JSON.parse(projectParam);
+
+        // Fülle Formular mit Projektdaten vor
+        setFormData(prev => ({
+          ...prev,
+          customerName: projectData.client || prev.customerName,
+          description: `Rechnung für Projekt: ${projectData.projectName}${projectData.description ? `\n\n${projectData.description}` : ''}`,
+        }));
+
+        // Erstelle Items basierend auf den erfassten Stunden
+        if (projectData.totalHours > 0 && projectData.hourlyRate > 0) {
+          const projectItems: InvoiceItem[] = [
+            {
+              id: 'project_hours',
+              description: `Projektarbeit: ${projectData.projectName}`,
+              quantity: projectData.totalHours,
+              unitPrice: projectData.hourlyRate,
+              total: projectData.revenue,
+            },
+          ];
+
+          // Füge detaillierte Zeiteinträge hinzu, falls verfügbar
+          if (projectData.timeEntries && projectData.timeEntries.length > 0) {
+            const timeEntriesDescription = projectData.timeEntries
+              .map(
+                (entry: any) =>
+                  `${entry.date}: ${entry.description} (${Math.round((entry.duration / 60) * 100) / 100}h)`
+              )
+              .join('\n');
+
+            projectItems[0].description += `\n\nDetaillierte Zeiterfassung:\n${timeEntriesDescription}`;
+          }
+
+          setItems(projectItems);
+        }
+
+        console.log('✅ Projektdaten erfolgreich in Rechnung übertragen:', projectData);
+      } catch (error) {
+        console.error('❌ Fehler beim Parsen der Projektdaten:', error);
+        toast.error('Fehler beim Laden der Projektdaten');
+      }
+    }
+  }, [searchParams]);
 
   // Auto-generate invoice number only when finalizing (not for drafts)
   React.useEffect(() => {
