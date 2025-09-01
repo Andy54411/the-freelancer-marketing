@@ -2,8 +2,14 @@
 import { db } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 
+// Multi-Provider Support: FinAPI + Revolut
+export type BankProvider = 'finapi' | 'revolut';
+
 export interface StoredBankConnection {
-  finapiConnectionId: string;
+  provider: BankProvider; // NEW: Provider identifier
+  connectionId: string; // Generic connection ID
+  finapiConnectionId?: string; // FinAPI specific
+  revolutConnectionId?: string; // Revolut specific
   bankId: string;
   bankName: string;
   bankCode?: string; // BLZ
@@ -13,22 +19,27 @@ export interface StoredBankConnection {
   lastSync: Date;
   createdAt: Date;
   updatedAt: Date;
-  finapiUserId: string;
+  // Provider-specific data
+  finapiUserId?: string;
+  revolutBusinessId?: string;
   webFormId?: string;
   interfaces?: string[]; // XS2A, FinTS, etc.
   loginHint?: string; // Benutzerhinweis für Login
 }
 
 export interface StoredBankAccount {
-  finapiAccountId: string;
+  provider: BankProvider; // NEW: Provider identifier
+  accountId: string; // Generic account ID
+  finapiAccountId?: string; // FinAPI specific
+  revolutAccountId?: string; // Revolut specific
   accountName: string;
-  iban: string;
+  iban?: string; // Optional for Revolut
   bankName: string;
   bankCode?: string; // BLZ
   bic?: string;
-  accountNumber: string;
+  accountNumber?: string; // May not exist for Revolut
   balance: number;
-  availableBalance: number;
+  availableBalance?: number; // May not exist for Revolut
   currency: string;
   accountType: string;
   accountTypeName?: string; // Girokonto, Sparkonto, etc.
@@ -52,7 +63,6 @@ export async function storeBankConnection(
   connectionData: Omit<StoredBankConnection, 'createdAt' | 'updatedAt'>
 ): Promise<void> {
   try {
-
     const userDocRef = db.collection('users').doc(firebaseUid);
     const now = new Date();
 
@@ -108,9 +118,7 @@ export async function storeBankConnection(
 
     // Aktualisiere Bank- und Konto-Zähler
     await updateBankingStatistics(firebaseUid);
-
   } catch (error) {
-
     throw new Error(`Failed to store bank connection: ${error}`);
   }
 }
@@ -124,7 +132,6 @@ export async function storeBankAccounts(
   accounts: StoredBankAccount[]
 ): Promise<void> {
   try {
-
     const userDocRef = db.collection('users').doc(firebaseUid);
     const now = new Date();
 
@@ -167,9 +174,7 @@ export async function storeBankAccounts(
 
     // Aktualisiere Statistiken
     await updateBankingStatistics(firebaseUid);
-
   } catch (error) {
-
     throw new Error(`Failed to store bank accounts: ${error}`);
   }
 }
@@ -218,10 +223,7 @@ export async function updateBankingStatistics(firebaseUid: string): Promise<void
       'banking.currencies': Array.from(currencies),
       'banking.lastStatsUpdate': FieldValue.serverTimestamp(),
     });
-
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }
 
 /**
@@ -240,7 +242,6 @@ export async function getUserBankConnections(firebaseUid: string): Promise<Store
     const connectionsData = userDoc.data()!.banking.connections;
     return Object.values(connectionsData) as StoredBankConnection[];
   } catch (error) {
-
     return [];
   }
 }
@@ -260,7 +261,6 @@ export async function getUserBankAccounts(firebaseUid: string): Promise<StoredBa
     const accountsData = userDoc.data()!.banking.accounts;
     return Object.values(accountsData) as StoredBankAccount[];
   } catch (error) {
-
     return [];
   }
 }
@@ -287,7 +287,6 @@ export async function getUserBankAccountsByBank(
 
     return accountsByBank;
   } catch (error) {
-
     return {};
   }
 }
@@ -330,7 +329,6 @@ export async function getUserBankingOverview(firebaseUid: string): Promise<{
       },
     };
   } catch (error) {
-
     return null;
   }
 }
@@ -346,7 +344,6 @@ export async function getAccountsByBank(
     const accounts = await getUserBankAccounts(firebaseUid);
     return accounts.filter(account => account.bankId === bankId);
   } catch (error) {
-
     return [];
   }
 }
@@ -361,7 +358,6 @@ export async function hasUserBankingSetup(firebaseUid: string): Promise<boolean>
       Object.keys(userDoc.data()?.banking?.connections || {}).length > 0
     );
   } catch (error) {
-
     return false;
   }
 }
@@ -382,9 +378,7 @@ export async function deactivateBankConnection(
       'banking.lastSync': FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
-
   } catch (error) {
-
     throw new Error(`Failed to deactivate bank connection: ${error}`);
   }
 }
@@ -413,9 +407,7 @@ export async function updateAccountBalances(
     });
 
     await userDocRef.update(updateData);
-
   } catch (error) {
-
     throw new Error(`Failed to update account balances: ${error}`);
   }
 }

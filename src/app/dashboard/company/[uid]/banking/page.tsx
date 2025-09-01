@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import FinAPIWebFormModal from '@/components/FinAPIWebFormModal';
+import RevolutConnectModal from '@/components/RevolutConnectModal';
 import BankDisconnectDialog from '@/components/BankDisconnectDialog';
 import { getFinAPICredentialType } from '@/lib/finapi-config';
 import {
@@ -73,6 +74,9 @@ export default function BankingDashboardPage() {
   const [webFormUrl, setWebFormUrl] = useState<string>('');
   const [webFormBankName, setWebFormBankName] = useState<string>('');
 
+  // Revolut Modal States
+  const [isRevolutModalOpen, setIsRevolutModalOpen] = useState(false);
+
   // Bank Disconnect Dialog States
   const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
   const [selectedConnectionForDisconnect, setSelectedConnectionForDisconnect] =
@@ -85,11 +89,14 @@ export default function BankingDashboardPage() {
       loadConnectedBanks();
     }
 
-    // Check for success callback from WebForm
+    // Check for success callback from WebForm or Revolut
     const urlParams = new URLSearchParams(window.location.search);
     const connectionStatus = urlParams.get('connection');
     const mode = urlParams.get('mode');
     const bankId = urlParams.get('bank');
+    const revolutSuccess = urlParams.get('revolut_success');
+    const revolutError = urlParams.get('revolut_error');
+    const revolutAccounts = urlParams.get('accounts');
 
     if (connectionStatus === 'success') {
       if (mode === 'mock') {
@@ -104,6 +111,26 @@ export default function BankingDashboardPage() {
         }, 1000);
       }
 
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // Handle Revolut success callback
+    if (revolutSuccess === 'true') {
+      setTimeout(() => {
+        loadBankConnections();
+        // Show success message
+        setError(null);
+        console.log(`✅ Revolut successfully connected with ${revolutAccounts} accounts`);
+      }, 1000);
+
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    // Handle Revolut error callback
+    if (revolutError) {
+      setError(`Revolut Verbindung fehlgeschlagen: ${decodeURIComponent(revolutError)}`);
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
@@ -131,35 +158,70 @@ export default function BankingDashboardPage() {
   const loadBankConnections = async () => {
     try {
       setLoading(true);
+      const allConnections: BankConnection[] = [];
 
-      // First try finAPI bank connections API
-      const finapiResponse = await fetch(
-        `/api/finapi/bank-connections?userId=${encodeURIComponent(uid)}&credentialType=${credentialType}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // Load FinAPI connections
+      try {
+        const finapiResponse = await fetch(
+          `/api/finapi/bank-connections?userId=${encodeURIComponent(uid)}&credentialType=${credentialType}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
-      if (finapiResponse.ok) {
-        const finapiData = await finapiResponse.json();
-        if (finapiData.success && finapiData.connections && finapiData.connections.length > 0) {
-          // Enhance finAPI data with Firestore last sync information
-          const enhancedConnections = await enhanceConnectionsWithFirestoreData(
-            finapiData.connections
-          );
-          setConnections(enhancedConnections);
-          console.log(
-            '✅ Loaded finAPI bank connections with Firestore data:',
-            enhancedConnections
-          );
-          return;
+        if (finapiResponse.ok) {
+          const finapiData = await finapiResponse.json();
+          if (finapiData.success && finapiData.connections && finapiData.connections.length > 0) {
+            // Enhance finAPI data with Firestore last sync information
+            const enhancedConnections = await enhanceConnectionsWithFirestoreData(
+              finapiData.connections
+            );
+            allConnections.push(...enhancedConnections);
+            console.log('✅ Loaded FinAPI bank connections:', enhancedConnections.length);
+          }
         }
+      } catch (finapiError) {
+        console.warn('⚠️ FinAPI connections failed:', finapiError);
       }
 
-      // Fallback: Use enhanced accounts API to check for accounts
+      // Load Revolut connections
+      try {
+        const revolutResponse = await fetch(
+          `/api/revolut/accounts?userId=${encodeURIComponent(uid)}`
+        );
+
+        if (revolutResponse.ok) {
+          const revolutData = await revolutResponse.json();
+          if (revolutData.success && revolutData.accounts && revolutData.accounts.length > 0) {
+            // Transform Revolut accounts to connection format
+            const revolutConnections: BankConnection[] = [
+              {
+                id: 'revolut_business',
+                bankName: 'Revolut Business',
+                status: 'connected' as const,
+                accountCount: revolutData.accounts.length,
+                lastSync: revolutData.accounts[0]?.lastUpdated || new Date().toISOString(),
+              },
+            ];
+
+            allConnections.push(...revolutConnections);
+            console.log('✅ Loaded Revolut connections:', revolutConnections.length);
+          }
+        }
+      } catch (revolutError) {
+        console.warn('⚠️ Revolut connections failed:', revolutError);
+      }
+
+      // If we have any connections, use them
+      if (allConnections.length > 0) {
+        setConnections(allConnections);
+        return;
+      }
+
+      // Fallback: Use enhanced accounts API to check for FinAPI accounts
       const accountsResponse = await fetch(
         `/api/finapi/accounts-enhanced?userId=${encodeURIComponent(uid)}&credentialType=${credentialType}`,
         {
@@ -202,7 +264,7 @@ export default function BankingDashboardPage() {
         }
       }
 
-      // No more fallbacks - finAPI WebForm is the only banking integration
+      // No connections found
       setConnections([]);
     } catch (error) {
       console.error('❌ Failed to load bank connections:', error);
@@ -870,16 +932,53 @@ export default function BankingDashboardPage() {
                   <Building2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bankverbindungen</h3>
                   <p className="text-gray-600 mb-6">
-                    Verbinden Sie Ihre erste Bank über den &ldquo;Verbinden&rdquo; Button oben im
-                    Menü.
+                    Verbinden Sie Ihre erste Bank mit einem unserer Banking-Provider.
                   </p>
-                  <Button
-                    onClick={() => setShowBankSelection(true)}
-                    className="bg-[#14ad9f] hover:bg-[#129488]"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Bank auswählen
-                  </Button>
+
+                  {/* Provider Selection */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto mb-6">
+                    {/* FinAPI Option */}
+                    <div className="border border-gray-200 rounded-lg p-4 hover:border-[#14ad9f] transition-colors">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+                          <Building2 className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <h4 className="font-medium text-gray-900 mb-1">FinAPI</h4>
+                        <p className="text-xs text-gray-600 mb-3">Deutsche Banken & PSD2</p>
+                        <Button
+                          onClick={() => setShowBankSelection(true)}
+                          size="sm"
+                          className="bg-[#14ad9f] hover:bg-[#129488] w-full"
+                        >
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Bank auswählen
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Revolut Option */}
+                    <div className="border border-gray-200 rounded-lg p-4 hover:border-[#14ad9f] transition-colors">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-3">
+                          <span className="text-white font-bold text-lg">R</span>
+                        </div>
+                        <h4 className="font-medium text-gray-900 mb-1">Revolut</h4>
+                        <p className="text-xs text-gray-600 mb-3">Business Banking</p>
+                        <Button
+                          onClick={() => setIsRevolutModalOpen(true)}
+                          size="sm"
+                          className="bg-[#14ad9f] hover:bg-[#129488] w-full"
+                        >
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Verbinden
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    Wählen Sie Ihren bevorzugten Banking-Provider für die Kontoverbindung.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -989,6 +1088,28 @@ export default function BankingDashboardPage() {
         webFormUrl={webFormUrl}
         bankName={webFormBankName}
         title={`${webFormBankName} verbinden`}
+      />
+
+      {/* Revolut Connect Modal */}
+      <RevolutConnectModal
+        isOpen={isRevolutModalOpen}
+        onClose={() => setIsRevolutModalOpen(false)}
+        onSuccess={connectionId => {
+          console.log('✅ Revolut connected successfully:', connectionId);
+          setIsRevolutModalOpen(false);
+          // Reload connections after successful connection
+          setTimeout(() => {
+            loadBankConnections();
+          }, 1000);
+        }}
+        onError={error => {
+          console.error('❌ Revolut connection error:', error);
+          setError(`Revolut Verbindung fehlgeschlagen: ${error}`);
+          setIsRevolutModalOpen(false);
+        }}
+        userId={uid}
+        companyEmail={user?.email || ''}
+        title="Revolut Business verbinden"
       />
 
       {/* Bank Disconnect Dialog */}

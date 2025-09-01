@@ -27,6 +27,14 @@ out/
 .env
 .env.* # schließt .env.local, .env.production etc. ein
 
+# Certificates & Private Keys
+certs/
+*.key
+*.csr
+*.pem
+*.p12
+*.pfx
+
 # Firebase
 .firebase/
 firebase-debug.log

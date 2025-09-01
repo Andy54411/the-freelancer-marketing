@@ -47,6 +47,8 @@ export async function GET(req: NextRequest) {
 
           // Speichere Bank-Verbindung in Firestore
           await storeBankConnection(userId, {
+            connectionId: connectionId,
+            provider: 'finapi' as const,
             finapiConnectionId: connectionId,
             bankId: connection.bankId?.toString() || bankId || 'unknown',
             bankName: connection.bankName || 'Unknown Bank',
@@ -70,6 +72,8 @@ export async function GET(req: NextRequest) {
 
             // Konvertiere finAPI Accounts zu StoredBankAccount Format
             const storedAccounts = connectionAccounts.map((account: any) => ({
+              accountId: account.id?.toString() || 'unknown',
+              provider: 'finapi' as const,
               finapiAccountId: account.id?.toString() || 'unknown',
               accountName: account.accountName || account.name || 'Unbekanntes Konto',
               iban: account.iban || '',
