@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function RevolutOAuthSuccessPage() {
+function RevolutOAuthSuccessContent() {
   const searchParams = useSearchParams();
   const connectionId = searchParams?.get('connectionId') || null;
   const error = searchParams?.get('error') || null;
@@ -95,5 +95,24 @@ export default function RevolutOAuthSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function RevolutOAuthSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+            <div className="w-16 h-16 bg-[#14ad9f] rounded-full flex items-center justify-center mx-auto mb-4 animate-spin">
+              <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full"></div>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Lädt...</h2>
+          </div>
+        </div>
+      }
+    >
+      <RevolutOAuthSuccessContent />
+    </Suspense>
   );
 }
