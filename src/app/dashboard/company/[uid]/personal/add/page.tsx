@@ -5,38 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { PersonalService, Employee as EmployeeType } from '@/services/personalService';
 import { toast } from 'react-hot-toast';
 import { auth } from '@/firebase/clients';
-import {
-  ArrowLeft,
-  User,
-  Mail,
-  Phone,
-  Calendar,
-  MapPin,
-  DollarSign,
-  Clock,
-  Award,
-  FileText,
-  Edit,
-  Trash2,
-  Save,
-  X,
-  Plus,
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Save, X } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 // Import der 8 Tab-Komponenten
 import BasicInfoTab from '@/components/personal/BasicInfoTab';
@@ -52,11 +24,11 @@ import VacationContainer from '@/components/personal/tabs/VacationContainer';
 export default function AddEmployeePage() {
   const params = useParams();
   const router = useRouter();
-  
+
   if (!params || !params.uid) {
     throw new Error('Company ID nicht gefunden');
   }
-  
+
   const companyId = params.uid as string;
 
   const [employee, setEmployee] = useState<Partial<EmployeeType>>({
@@ -154,30 +126,6 @@ export default function AddEmployeePage() {
     return monthlyHours > 0 ? totalCosts / monthlyHours : 0;
   };
 
-  const handleInputChange = (field: string, value: any) => {
-    setEmployee(prev => {
-      const keys = field.split('.');
-      if (keys.length === 1) {
-        return { ...prev, [field]: value };
-      } else if (keys.length === 2) {
-        const parentKey = keys[0] as keyof typeof prev;
-        const childKey = keys[1];
-        const parentValue = prev[parentKey];
-
-        if (parentValue && typeof parentValue === 'object') {
-          return {
-            ...prev,
-            [parentKey]: {
-              ...parentValue,
-              [childKey]: value,
-            },
-          };
-        }
-      }
-      return prev;
-    });
-  };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -211,7 +159,7 @@ export default function AddEmployeePage() {
     console.log('📊 Employee data:', employee);
     console.log('🔑 CompanyId:', companyId);
     console.log('👤 Current user auth state:', auth.currentUser?.uid);
-    
+
     if (!validateForm()) {
       console.log('❌ Validierung fehlgeschlagen:', errors);
       return;
@@ -291,23 +239,24 @@ export default function AddEmployeePage() {
 
       // **PHASE 2: Tab-spezifische Daten speichern (falls vorhanden)**
       if (newEmployee.id) {
-
         // Urlaubseinstellungen speichern (falls konfiguriert)
         if (employee.vacation?.settings) {
           try {
-            await PersonalService.updateVacationSettings(companyId, newEmployee.id, employee.vacation.settings);
-
-          } catch (error) {
-
-          }
+            await PersonalService.updateVacationSettings(
+              companyId,
+              newEmployee.id,
+              employee.vacation.settings
+            );
+          } catch (error) {}
         }
 
         // Hier können weitere Tab-spezifische Speichervorgänge hinzugefügt werden
         // z.B. Dokumente, Qualifikationen, etc.
-
       }
 
-      toast.success(`${employee.firstName} ${employee.lastName} wurde erfolgreich mit allen Daten hinzugefügt!`);
+      toast.success(
+        `${employee.firstName} ${employee.lastName} wurde erfolgreich mit allen Daten hinzugefügt!`
+      );
 
       // Zurück zur Übersicht
       console.log('🔙 Navigiere zurück zu employees...');

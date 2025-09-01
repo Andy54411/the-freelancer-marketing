@@ -45,7 +45,7 @@ export function ManualTimeEntry({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [workType, setWorkType] = useState<'full-day' | 'split-shift'>('full-day');
-  
+
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
   };
@@ -212,7 +212,9 @@ export function ManualTimeEntry({
       onTimeEntryCreated();
     } catch (error) {
       console.error('❌ Fehler beim Erstellen des Zeiteintrags:', error);
-      toast.error(`Zeiteintrag konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      toast.error(
+        `Zeiteintrag konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     } finally {
       setLoading(false);
     }
@@ -226,7 +228,8 @@ export function ManualTimeEntry({
           Manueller Eintrag
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">{/* Breiter: max-w-2xl statt max-w-lg */}
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        {/* Breiter: max-w-2xl statt max-w-lg */}
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Clock size={20} />
@@ -252,19 +255,19 @@ export function ManualTimeEntry({
             {/* Projektauswahl */}
             <div>
               <Label htmlFor="project">Projekt * ({projects?.length || 0} verfügbar)</Label>
-              
-              {(!projects || projects.length === 0) ? (
+
+              {!projects || projects.length === 0 ? (
                 <div className="space-y-3">
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                     <p className="text-sm text-yellow-800">
                       Keine Projekte verfügbar. Sie können entweder:
                     </p>
                     <ul className="mt-2 text-sm text-yellow-700 list-disc list-inside">
-                      <li>Ein neues Projekt im "Projekte" Tab erstellen</li>
+                      <li>Ein neues Projekt im &quot;Projekte&quot; Tab erstellen</li>
                       <li>Oder manuell Projekt-Details eingeben</li>
                     </ul>
                   </div>
-                  
+
                   {/* Manuelle Projekt-Eingabe */}
                   <div className="space-y-3 p-3 bg-gray-50 border rounded-md">
                     <h4 className="font-medium text-gray-900">Manueller Projekt-Eintrag</h4>
@@ -274,7 +277,7 @@ export function ManualTimeEntry({
                         <Input
                           id="projectName"
                           value={formData.description}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          onChange={e => setFormData({ ...formData, description: e.target.value })}
                           placeholder="z.B. Website-Entwicklung"
                         />
                       </div>
@@ -283,7 +286,7 @@ export function ManualTimeEntry({
                         <Input
                           id="clientName"
                           value={formData.customerName}
-                          onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                          onChange={e => setFormData({ ...formData, customerName: e.target.value })}
                           placeholder="z.B. Musterfirma GmbH"
                         />
                       </div>
@@ -294,13 +297,13 @@ export function ManualTimeEntry({
                 <div className="space-y-3">
                   <Select
                     value={formData.projectId}
-                    onValueChange={(value) => {
+                    onValueChange={value => {
                       const selectedProject = projects.find(p => p.id === value);
-                      setFormData({ 
-                        ...formData, 
+                      setFormData({
+                        ...formData,
                         projectId: value,
                         customerName: selectedProject?.client || '',
-                        hourlyRate: selectedProject?.hourlyRate || 50
+                        hourlyRate: selectedProject?.hourlyRate || 50,
                       });
                     }}
                   >
@@ -308,18 +311,24 @@ export function ManualTimeEntry({
                       <SelectValue placeholder="Projekt auswählen..." />
                     </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-y-auto">
-                      {projects.filter(project => project.id && project.id.trim() !== '').map((project) => (
-                        <SelectItem 
-                          key={project.id} 
-                          value={project.id}
-                          className="cursor-pointer hover:bg-gray-100"
-                        >
-                          <div className="flex flex-col">
-                            <span className="font-medium">{project.name || 'Unnamed Project'}</span>
-                            <span className="text-xs text-gray-500">{project.client || 'No Client'}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {projects
+                        .filter(project => project.id && project.id.trim() !== '')
+                        .map(project => (
+                          <SelectItem
+                            key={project.id}
+                            value={project.id}
+                            className="cursor-pointer hover:bg-gray-100"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                {project.name || 'Unnamed Project'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {project.client || 'No Client'}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -480,8 +489,6 @@ export function ManualTimeEntry({
                 </p>
               )}
             </div>
-
-
 
             <div className="grid grid-cols-2 gap-2">
               <div>
