@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { finapiService } from '@/lib/finapi-sdk-service';
+import { createFinAPIService } from '@/lib/finapi-sdk-service';
 import { storeBankConnection, storeBankAccounts } from '@/lib/bank-connection-storage';
 import { db } from '@/firebase/server';
 
@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
         console.log('🎉 WebForm success callback - using company email:', companyEmail);
 
         // Use the SAME session as WebForm creation via syncUserBankData
+        const finapiService = createFinAPIService();
         const bankData = await finapiService.syncUserBankData(companyEmail, userId);
 
         // Find the specific connection by ID
@@ -101,9 +102,83 @@ export async function GET(req: NextRequest) {
     // - Benachrichtigungen senden
     // - Logging für Analytics
 
-    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/company/${userId || 'unknown'}/finance/banking?connection=success&webFormId=${webFormId}&connectionId=${connectionId}`;
+    // Create success page with postMessage to close modal
+    const successPageHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bank-Verbindung erfolgreich</title>
+    <meta charset="utf-8">
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            margin: 0; 
+            background: linear-gradient(135deg, #14ad9f, #129488);
+            color: white;
+        }
+        .container { 
+            text-align: center; 
+            max-width: 400px; 
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+        .success-icon { 
+            font-size: 4rem; 
+            margin-bottom: 1rem; 
+        }
+        h1 { 
+            margin: 0 0 1rem 0; 
+            font-size: 1.5rem; 
+        }
+        p { 
+            margin: 0; 
+            opacity: 0.9; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>Bank erfolgreich verbunden!</h1>
+        <p>Dieses Fenster wird automatisch geschlossen...</p>
+    </div>
+    
+    <script>
+        // Send success message to parent window
+        if (window.opener) {
+            window.opener.postMessage({
+                type: 'BANK_CONNECTION_SUCCESS',
+                bankConnectionId: '${connectionId}',
+                webFormId: '${webFormId}',
+                source: 'finapi-taskilo'
+            }, '*');
+            
+            // Close popup after sending message
+            setTimeout(() => {
+                window.close();
+            }, 2000);
+        } else {
+            // If no opener, redirect to dashboard
+            setTimeout(() => {
+                window.location.href = '${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/company/${userId || 'unknown'}/finance/banking?connection=success&webFormId=${webFormId}&connectionId=${connectionId}';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>`;
 
-    return NextResponse.redirect(redirectUrl);
+    return new NextResponse(successPageHtml, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten des Success Callbacks' },

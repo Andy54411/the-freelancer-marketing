@@ -99,6 +99,8 @@ export default function BankingDashboardPage() {
       } else {
         setTimeout(() => {
           loadBankConnections();
+          // Automatically trigger sync after successful connection
+          triggerAutoSyncAfterConnection();
         }, 1000);
       }
 
@@ -144,8 +146,15 @@ export default function BankingDashboardPage() {
       if (finapiResponse.ok) {
         const finapiData = await finapiResponse.json();
         if (finapiData.success && finapiData.connections && finapiData.connections.length > 0) {
-          setConnections(finapiData.connections);
-          console.log('✅ Loaded finAPI bank connections:', finapiData.connections);
+          // Enhance finAPI data with Firestore last sync information
+          const enhancedConnections = await enhanceConnectionsWithFirestoreData(
+            finapiData.connections
+          );
+          setConnections(enhancedConnections);
+          console.log(
+            '✅ Loaded finAPI bank connections with Firestore data:',
+            enhancedConnections
+          );
           return;
         }
       }
@@ -181,8 +190,14 @@ export default function BankingDashboardPage() {
             })
           );
 
-          setConnections(transformedConnections);
-          console.log('✅ Loaded connections from accounts data:', transformedConnections);
+          // Also enhance these with Firestore data
+          const enhancedConnections =
+            await enhanceConnectionsWithFirestoreData(transformedConnections);
+          setConnections(enhancedConnections);
+          console.log(
+            '✅ Loaded connections from accounts data with Firestore data:',
+            enhancedConnections
+          );
           return;
         }
       }
@@ -196,6 +211,173 @@ export default function BankingDashboardPage() {
       setLoading(false);
     }
   };
+
+  // Helper function to enhance connections with Firestore data
+  const enhanceConnectionsWithFirestoreData = async (connections: BankConnection[]) => {
+    try {
+      console.log('🔗 Enhancing connections with Firestore data...');
+
+      // Get Firestore bank connection data
+      const firestoreResponse = await fetch(`/api/user/bank-connections?userId=${uid}`);
+      if (firestoreResponse.ok) {
+        const firestoreData = await firestoreResponse.json();
+        console.log('📁 Firestore data:', firestoreData);
+
+        // Correct property name: bankConnections (not connections)
+        const firestoreConnections = firestoreData.bankConnections || [];
+        const lastSync = firestoreData.lastSync;
+        const syncStatus = firestoreData.syncStatus;
+
+        console.log(`📊 Found ${firestoreConnections.length} Firestore bank connections`);
+        console.log(`🕒 Last sync: ${lastSync}`);
+        console.log(`📈 Sync status: ${syncStatus}`);
+
+        // If we have finAPI connections but no Firestore data, update status to "connected"
+        if (connections.length > 0 && firestoreConnections.length === 0) {
+          console.log(
+            '🔄 finAPI connections exist but no Firestore data - updating status to connected'
+          );
+
+          // Update Firestore with current connection data
+          try {
+            const updateResponse = await fetch('/api/user/bank-connections', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userId: uid,
+                bankConnections: connections.map(conn => ({
+                  id: conn.id,
+                  bankName: conn.bankName,
+                  status: 'connected',
+                  accountCount: conn.accountCount,
+                  lastSync: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                })),
+                lastSync: new Date().toISOString(),
+                syncStatus: 'connected',
+              }),
+            });
+
+            if (updateResponse.ok) {
+              console.log('✅ Successfully updated Firestore with current connection data');
+            }
+          } catch (updateError) {
+            console.error('❌ Failed to update Firestore:', updateError);
+          }
+        }
+
+        // Merge finAPI and Firestore data
+        return connections.map(connection => {
+          const firestoreConnection = firestoreConnections.find(
+            (fc: any) => fc.bankName === connection.bankName || fc.id === connection.id
+          );
+
+          const enhancedConnection = {
+            ...connection,
+            status:
+              firestoreConnection?.status ||
+              (connections.length > 0 ? 'connected' : connection.status),
+            lastSync:
+              firestoreConnection?.lastSync ||
+              lastSync ||
+              connection.lastSync ||
+              new Date().toISOString(),
+            firestoreData: firestoreConnection || null,
+          };
+
+          console.log(`🔗 Enhanced connection "${connection.bankName}":`, {
+            originalStatus: connection.status,
+            firestoreStatus: firestoreConnection?.status,
+            finalStatus: enhancedConnection.status,
+            lastSync: enhancedConnection.lastSync,
+          });
+
+          return enhancedConnection;
+        });
+      }
+    } catch (error) {
+      console.log('Could not load Firestore bank connection data:', error);
+    }
+
+    // If Firestore data is unavailable, default to "connected" if we have finAPI connections
+    if (connections.length > 0) {
+      console.log(
+        '🔄 Firestore unavailable - defaulting to connected status for existing connections'
+      );
+      return connections.map(connection => ({
+        ...connection,
+        status: 'connected' as const,
+        lastSync: connection.lastSync || new Date().toISOString(),
+      }));
+    }
+
+    return connections;
+  };
+
+  // Auto-sync function to trigger after successful bank connection
+  const triggerAutoSyncAfterConnection = async () => {
+    try {
+      console.log('🔄 Triggering automatic sync after bank connection...');
+
+      // Wait a moment for the connection to be fully established
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Try to import transactions (this will sync all bank data)
+      const importResponse = await fetch('/api/finapi/import-transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: uid,
+          credentialType: credentialType,
+          forceSync: true,
+        }),
+      });
+
+      if (importResponse.ok) {
+        const importData = await importResponse.json();
+        console.log('✅ Auto-import successful:', importData);
+
+        // Reload connections to show updated status
+        setTimeout(() => {
+          loadBankConnections();
+        }, 2000);
+
+        // Show success message to user
+        setTimeout(() => {
+          console.log('🎉 Bank connection and initial sync completed successfully!');
+        }, 1000);
+      } else {
+        console.log('⚠️ Auto-import failed, trying sync-transactions as fallback');
+
+        // Fallback to sync-transactions
+        const syncResponse = await fetch('/api/finapi/sync-transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: uid,
+            credentialType: credentialType,
+          }),
+        });
+
+        if (syncResponse.ok) {
+          console.log('✅ Fallback sync successful');
+          setTimeout(() => {
+            loadBankConnections();
+          }, 2000);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Auto-sync error:', error);
+      // Don't show error to user since the connection itself was successful
+    }
+  };
+
   const loadAvailableBanks = async () => {
     try {
       setError(null);
@@ -298,7 +480,7 @@ export default function BankingDashboardPage() {
   };
 
   const handleWebFormSuccess = async (bankConnectionId?: string) => {
-    console.log('🎉 WebForm success, performing real finAPI sync...');
+    console.log('🎉 WebForm success, triggering auto-sync...');
 
     setIsConnecting(false);
     setSelectedBank(null);
@@ -308,6 +490,11 @@ export default function BankingDashboardPage() {
     setTimeout(() => {
       loadBankConnections();
       loadConnectedBanks();
+    }, 1000);
+
+    // Trigger automatic sync after successful connection
+    setTimeout(() => {
+      triggerAutoSyncAfterConnection();
     }, 2000);
   };
 

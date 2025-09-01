@@ -50,20 +50,34 @@ export default function FinAPIWebFormModal({
   // Listen to iframe messages for WebForm completion
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Only listen to finAPI messages
-      if (!event.origin.includes('finapi.io')) {
+      // Listen to both finAPI and Taskilo success messages
+      if (
+        !event.origin.includes('finapi.io') &&
+        !event.origin.includes('taskilo.de') &&
+        event.origin !== window.location.origin
+      ) {
         return;
       }
 
-      if (event.data.type === 'BANK_CONNECTION_SUCCESS') {
+      console.log('📨 WebForm message received:', event.data);
 
+      if (event.data.type === 'BANK_CONNECTION_SUCCESS') {
+        console.log('✅ Bank connection success - closing modal and refreshing');
+        // Mark that we received a success message
+        (window as any).finapiSuccessReceived = true;
         onSuccess(event.data.bankConnectionId);
         onClose();
+        // Force page refresh to show new bank connection
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else if (event.data.type === 'BANK_CONNECTION_ERROR') {
-
+        console.log('❌ Bank connection error:', event.data.error);
+        (window as any).finapiSuccessReceived = false;
         onError(event.data.error || 'Bank-Verbindung fehlgeschlagen');
       } else if (event.data.type === 'WEBFORM_CANCELLED') {
-
+        console.log('🚫 WebForm cancelled');
+        (window as any).finapiSuccessReceived = false;
         onClose();
       }
     };
@@ -96,13 +110,61 @@ export default function FinAPIWebFormModal({
       return;
     }
 
-    // Monitor popup
+    let hasReceivedMessage = false;
+    let popupClosedByUser = false;
+    const popupOpenTime = Date.now();
+
+    // Listen for focus event when user returns to main window
+    const handleWindowFocus = () => {
+      if (popup.closed && !hasReceivedMessage) {
+        console.log('🔄 Window regained focus and popup is closed - checking for bank connections');
+
+        // Wait a moment then check if we should refresh
+        setTimeout(() => {
+          // Check if we received a success message
+          const successReceived = (window as any).finapiSuccessReceived;
+
+          if (successReceived === true) {
+            console.log('✅ Success message was received - refreshing page');
+            onSuccess('success-confirmed');
+            onClose();
+            window.location.reload();
+          } else if (successReceived === false) {
+            console.log('❌ Error or cancel message was received - not refreshing');
+            // Don't refresh, user cancelled or error occurred
+          } else {
+            // No message received - assume success if popup was open long enough
+            console.log('⚠️ No message received - checking time spent in popup');
+            // Only refresh if user was in popup for more than 30 seconds (likely completed flow)
+            const timeInPopup = Date.now() - popupOpenTime;
+            if (timeInPopup > 30000) {
+              console.log('✅ User was in popup long enough - assuming success and refreshing');
+              onSuccess('time-based-success');
+              onClose();
+              window.location.reload();
+            } else {
+              console.log('⏭️ User closed popup quickly - assuming cancellation');
+            }
+          }
+        }, 1000);
+
+        window.removeEventListener('focus', handleWindowFocus);
+      }
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+
+    // Monitor popup for closing
     const checkClosed = setInterval(() => {
       if (popup.closed) {
         clearInterval(checkClosed);
+        clearTimeout(timeoutTimer);
         setIsLoading(false);
-        // Popup was closed - assume cancelled unless we got a success message
 
+        // Don't automatically refresh here - wait for focus event
+        if (!hasReceivedMessage) {
+          console.log('⏳ Popup closed - waiting for window focus to determine action');
+        }
       }
     }, 1000);
 
@@ -111,12 +173,13 @@ export default function FinAPIWebFormModal({
       if (!popup.closed) {
         clearInterval(checkClosed);
         popup.close();
+        popupClosedByUser = true;
+        hasReceivedMessage = true;
+        window.removeEventListener('focus', handleWindowFocus);
         setError('WebForm-Timeout erreicht. Bitte versuchen Sie es erneut.');
         setIsLoading(false);
       }
     }, 600000); // 10 minutes
-
-    // Loading bleibt aktiv bis das Popup geschlossen wird oder Success/Error Message kommt
   };
 
   // Handle iframe error (fallback)
