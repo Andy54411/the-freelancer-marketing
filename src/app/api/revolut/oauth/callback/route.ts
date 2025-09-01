@@ -14,9 +14,12 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('❌ Revolut OAuth error:', error);
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_oauth_failed&details=${encodeURIComponent(error)}`
-      );
+      // Try to extract userId from state for proper redirect
+      const stateUserId = state ? state.split('|')[0] : null;
+      const redirectUrl = stateUserId
+        ? `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${stateUserId}/banking?error=revolut_oauth_failed&details=${encodeURIComponent(error)}`
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_oauth_failed&details=${encodeURIComponent(error)}`;
+      return NextResponse.redirect(redirectUrl);
     }
 
     if (!code || !state) {
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
     const [userId, companyEmail, returnBaseUrl] = stateParts;
     if (!userId || !companyEmail) {
       return NextResponse.redirect(
-        `https://taskilo.de/dashboard/company?error=revolut_oauth_state&details=Missing user data`
+        `https://taskilo.de/dashboard/company/${userId || 'unknown'}/banking?error=revolut_oauth_state&details=Missing user data`
       );
     }
 
@@ -57,8 +60,19 @@ export async function GET(request: NextRequest) {
 
     // Create JWT for client authentication
     const jwt = await import('jsonwebtoken');
-    const fs = await import('fs');
-    const privateKey = fs.readFileSync(process.env.REVOLUT_PRIVATE_KEY_PATH!, 'utf8');
+
+    // Load private key - prefer environment variable over file (for Vercel deployment)
+    let privateKey: string;
+    if (process.env.REVOLUT_PRIVATE_KEY) {
+      privateKey = process.env.REVOLUT_PRIVATE_KEY;
+      console.log('🔐 Using Revolut private key from environment variable');
+    } else {
+      // Fallback to file system (local development)
+      const fs = await import('fs');
+      const privateKeyPath = process.env.REVOLUT_PRIVATE_KEY_PATH || './certs/revolut/private.key';
+      privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+      console.log('🔐 Using Revolut private key from file system');
+    }
 
     const now = Math.floor(Date.now() / 1000);
     const clientAssertion = jwt.default.sign(
@@ -97,7 +111,7 @@ export async function GET(request: NextRequest) {
       const errorText = await tokenResponse.text();
       console.error('❌ Token exchange failed:', tokenResponse.status, errorText);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_token_failed&details=${encodeURIComponent(errorText)}`
+        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${userId}/banking?error=revolut_token_failed&details=${encodeURIComponent(errorText)}`
       );
     }
 
@@ -139,8 +153,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(finalRedirectUrl);
   } catch (error: any) {
     console.error('❌ Revolut OAuth callback error:', error.message);
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_callback_failed&details=${encodeURIComponent(error.message)}`
-    );
+    // Try to extract userId from the request URL or state for proper redirect
+    const searchParams = request.nextUrl.searchParams;
+    const state = searchParams.get('state');
+    const userId = state ? state.split('|')[0] : null;
+
+    const redirectUrl = userId
+      ? `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${userId}/banking?error=revolut_callback_failed&details=${encodeURIComponent(error.message)}`
+      : `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_callback_failed&details=${encodeURIComponent(error.message)}`;
+
+    return NextResponse.redirect(redirectUrl);
   }
 }
