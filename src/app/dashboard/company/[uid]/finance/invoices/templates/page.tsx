@@ -25,6 +25,7 @@ export default function InvoiceTemplatesPage() {
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [companyData, setCompanyData] = useState<any>(null);
 
   // Load user's preferred template from database
   useEffect(() => {
@@ -40,18 +41,32 @@ export default function InvoiceTemplatesPage() {
 
         if (companyDoc.exists()) {
           userData = companyDoc.data();
+          setCompanyData(userData); // Speichere Firmendaten für Vorschau
         } else {
           // Fallback: users collection
           const userDoc = await getDoc(doc(db, 'users', uid));
           if (userDoc.exists()) {
             userData = userDoc.data();
+            setCompanyData(userData); // Speichere Firmendaten für Vorschau
           }
         }
 
         if (userData) {
-          const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
+          let preferredTemplate = userData.preferredInvoiceTemplate as string;
+
+          // Migration: Alte Template-Namen auf neue mappen
+          if (preferredTemplate === 'modern') {
+            preferredTemplate = 'modern-business';
+          } else if (preferredTemplate === 'classic') {
+            preferredTemplate = 'classic-professional';
+          } else if (preferredTemplate === 'minimal') {
+            preferredTemplate = 'minimal-clean';
+          } else if (preferredTemplate === 'corporate') {
+            preferredTemplate = 'corporate-formal';
+          }
+
           if (preferredTemplate && INVOICE_TEMPLATES.some(t => t.id === preferredTemplate)) {
-            setSelectedTemplate(preferredTemplate);
+            setSelectedTemplate(preferredTemplate as InvoiceTemplate);
           }
         }
       } catch (error) {
@@ -63,8 +78,12 @@ export default function InvoiceTemplatesPage() {
     loadUserTemplate();
   }, [uid]);
 
-  // Template-Vorschau-Daten erstellen
+  // Template-Vorschau-Daten erstellen mit echten Firmendaten
   const createPreviewData = (): InvoiceData => {
+    const companyAddress = companyData
+      ? `${companyData.companyStreet || companyData.street || ''}\n${companyData.companyPostalCode || companyData.postalCode || ''} ${companyData.companyCity || companyData.city || ''}\n${companyData.companyCountry || companyData.country || 'Deutschland'}`
+      : 'Firmenstraße 456\n54321 Hamburg\nDeutschland';
+
     return {
       id: 'preview_template',
       number: 'R-2025-001',
@@ -77,26 +96,56 @@ export default function InvoiceTemplatesPage() {
       customerEmail: 'info@mustermann.de',
       customerAddress: 'Musterstraße 123\n12345 Berlin\nDeutschland',
       description: 'Beratungsleistungen - Projektmanagement und Strategie',
-      companyName: 'Ihre Firma GmbH',
-      companyAddress: 'Firmenstraße 456\n54321 Hamburg\nDeutschland',
-      companyEmail: 'kontakt@ihrefirma.de',
-      companyPhone: '+49 40 123456789',
-      companyWebsite: 'https://ihrefirma.de',
-      companyLogo: '',
-      companyVatId: 'DE123456789',
-      companyTaxNumber: '12345/67890',
-      companyRegister: 'HRB 12345',
-      districtCourt: 'Amtsgericht Hamburg',
-      legalForm: 'GmbH',
-      companyTax: 'DE123456789',
-      isSmallBusiness: false,
+      companyName: companyData?.companyName || 'Ihre Firma GmbH',
+      companyAddress: companyAddress,
+      companyEmail: companyData?.email || companyData?.companyEmail || 'kontakt@ihrefirma.de',
+      companyPhone:
+        companyData?.companyPhoneNumber ||
+        companyData?.step1?.phoneNumber ||
+        companyData?.phone ||
+        '+49 40 123456789',
+      companyWebsite: companyData?.website || companyData?.step1?.website || 'https://ihrefirma.de',
+      companyLogo:
+        companyData?.profilePictureURL ||
+        companyData?.step3?.profilePictureURL ||
+        companyData?.companyLogo ||
+        companyData?.profilePictureFirebaseUrl ||
+        companyData?.bannerUrl ||
+        companyData?.photoURL ||
+        '',
+      companyVatId: companyData?.vatId || companyData?.step3?.vatId || 'DE123456789',
+      companyTaxNumber: companyData?.taxNumber || companyData?.step3?.taxNumber || '12345/67890',
+      companyRegister:
+        companyData?.companyRegister || companyData?.step3?.companyRegister || 'HRB 12345',
+      districtCourt: companyData?.districtCourt || 'Amtsgericht Hamburg',
+      legalForm: companyData?.legalForm || companyData?.step2?.legalForm || 'GmbH',
+      companyTax: companyData?.vatId || companyData?.step3?.vatId || 'DE123456789',
+      isSmallBusiness:
+        companyData?.kleinunternehmer === 'ja' ||
+        companyData?.step2?.kleinunternehmer === 'ja' ||
+        false,
       vatRate: 19,
-      priceInput: 'netto' as const,
+      priceInput:
+        ((companyData?.priceInput || companyData?.step2?.priceInput) as 'netto' | 'brutto') ||
+        'netto',
       amount: 5800.0,
       tax: 1102.0,
       total: 6902.0,
       status: 'draft',
       isStorno: false,
+      // Bankverbindung aus echten Firmendaten
+      bankDetails: companyData?.iban
+        ? {
+            iban: companyData.iban,
+            bic: companyData.bic || '',
+            accountHolder:
+              companyData.accountHolder ||
+              companyData.step4?.accountHolder ||
+              companyData.companyName ||
+              'Ihre Firma GmbH',
+            bankName: companyData.bankName || '',
+          }
+        : undefined,
       items: [
         {
           id: 'item_1',

@@ -18,23 +18,10 @@ interface TemplateProps {
  */
 export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview = false }) => {
   return (
-    <div className="w-[595px] h-[842px] bg-white p-8 font-sans text-sm leading-normal">
+    <div className="w-full max-w-[595px] min-h-[842px] bg-white p-8 font-sans text-sm leading-normal flex flex-col mx-auto">
       {/* Header mit Logo und Firmenangaben */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex-1 mr-8">
-          {data.companyLogo && (
-            <div className="mb-4">
-              <img
-                src={data.companyLogo}
-                alt={`${data.companyName} Logo`}
-                className="h-16 w-auto object-contain"
-                onError={e => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-
           <div className="text-lg font-bold text-gray-900 mb-2">{data.companyName}</div>
           <div className="text-gray-700 whitespace-pre-line">{data.companyAddress}</div>
 
@@ -43,7 +30,26 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
           {data.companyWebsite && <div className="text-gray-700">Web: {data.companyWebsite}</div>}
         </div>
 
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end min-w-[200px]">
+          {/* Logo rechts oben */}
+          {data.companyLogo && data.companyLogo.trim() !== '' ? (
+            <div className="mb-4">
+              <img
+                src={data.companyLogo}
+                alt={`${data.companyName} Logo`}
+                className="h-16 w-auto max-w-[150px] object-contain"
+                onError={e => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+          ) : (
+            <div className="mb-4 p-3 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center min-w-[120px]">
+              <div className="text-xs text-gray-500 font-medium">Logo</div>
+              <div className="text-xs text-gray-400 mt-1">{data.companyName}</div>
+            </div>
+          )}
+
           <h1 className="text-2xl font-bold text-[#14ad9f] mb-4">RECHNUNG</h1>
           <div className="text-gray-700">
             <div className="mb-1">
@@ -204,10 +210,25 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
         </div>
       )}
 
+      {/* Spacer um Footer nach unten zu drücken */}
+      <div className="flex-grow"></div>
+
       {/* Footer mit Rechtlichen Hinweisen */}
-      <div className="mt-auto pt-4 border-t border-gray-300">
+      <div className="mt-8 pt-4 border-t border-gray-300">
         <div className="text-xs text-gray-500 text-center">
           Diese Rechnung entspricht den Anforderungen des UStG §14 und ist GoBD-konform archiviert.
+        </div>
+
+        {/* Zusätzliche rechtliche Hinweise */}
+        <div className="text-xs text-gray-500 text-center mt-2 space-y-1">
+          <div>
+            Geschäftsführer: {data.companyName} |{' '}
+            {data.districtCourt && `Amtsgericht: ${data.districtCourt}`}
+          </div>
+          {data.companyRegister && <div>Handelsregister: {data.companyRegister}</div>}
+          <div className="mt-1 text-[#14ad9f] font-semibold">
+            Erstellt mit Taskilo.de - Professionelle Rechnungsstellung
+          </div>
         </div>
       </div>
     </div>
