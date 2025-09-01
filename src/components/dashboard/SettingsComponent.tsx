@@ -452,6 +452,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           accountHolder: get('step4.accountHolder', get('accountHolder', '')),
           iban: get('step4.iban', get('iban', '')),
           bankCountry: get('step4.bankCountry', get('bankCountry', get('companyCountry', null))),
+          bic: get('step4.bic', get('bic', '')),
+          bankName: get('step4.bankName', get('bankName', '')),
         },
         lat: (() => {
           const existingLat = get('lat', null);
