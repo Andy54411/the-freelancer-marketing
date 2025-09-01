@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Global variables for caching Firebase services
+let auth: any;
+let db: any;
+let initializationPromise: Promise<any> | null = null;
+
 // Robust Firebase initialization function
 async function getFirebaseServices() {
+  if (initializationPromise) {
+    return await initializationPromise;
+  }
+
+  if (!auth || !db) {
+    initializationPromise = initializeFirebase();
+    return await initializationPromise;
+  }
+
+  return { auth, db };
+}
+
+async function initializeFirebase() {
   try {
     console.log('Initializing Firebase for getSingleOrder API - NO JSON FILES...');
 
@@ -40,29 +58,37 @@ async function getFirebaseServices() {
       }
     }
 
-    const auth = firebaseAdmin.auth();
-    const db = firebaseAdmin.firestore();
+    auth = firebaseAdmin.auth();
+    db = firebaseAdmin.firestore();
     console.log('Firebase services initialized successfully for getSingleOrder API');
+    initializationPromise = null; // Reset promise after successful initialization
     return { auth, db };
   } catch (error: any) {
     console.error('Firebase initialization failed:', error);
+    initializationPromise = null; // Reset promise on error
     throw error;
   }
 }
 
 export async function POST(request: NextRequest) {
+  let orderId: string = '';
+  let userId: string = '';
+
   try {
-    const { orderId } = await request.json();
+    const requestBody = await request.json();
+    orderId = requestBody.orderId;
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
     // Use robust Firebase initialization
-    const { auth, db } = await getFirebaseServices();
+    const firebaseServices = await getFirebaseServices();
+    const { auth, db } = firebaseServices;
 
     // Check if Firebase is properly initialized
     if (!auth || !db) {
+      console.error('Firebase services not available:', { auth: !!auth, db: !!db });
       return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
@@ -73,7 +99,6 @@ export async function POST(request: NextRequest) {
     }
 
     const idToken = authHeader.substring(7);
-    let userId: string;
 
     try {
       const decodedToken = await auth.verifyIdToken(idToken);
@@ -84,13 +109,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the order from Firestore
+    console.log(`Fetching order: ${orderId} for user: ${userId}`);
+
     const orderDoc = await db.collection('auftraege').doc(orderId).get();
 
     if (!orderDoc.exists) {
+      console.log(`Order not found: ${orderId}`);
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     const orderData = orderDoc.data();
+    console.log(`Order data retrieved for: ${orderId}`, {
+      hasCustomerId: !!orderData?.kundeId || !!orderData?.customerFirebaseUid,
+      hasProviderId: !!orderData?.selectedAnbieterId || !!orderData?.providerFirebaseUid,
+    });
 
     // Check if user has permission to view this order (support multiple field names)
     const isCustomer = orderData?.kundeId === userId || orderData?.customerFirebaseUid === userId;
@@ -111,7 +143,36 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('getSingleOrder API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('getSingleOrder API error:', {
+      error: error.message,
+      stack: error.stack,
+      orderId: orderId || 'unknown',
+      userId: userId || 'unknown',
+      timestamp: new Date().toISOString(),
+    });
+
+    // More specific error handling
+    if (error.message?.includes('permission') || error.message?.includes('Access denied')) {
+      return NextResponse.json(
+        { error: 'Keine Berechtigung zum Zugriff auf diese Bestellung' },
+        { status: 403 }
+      );
+    }
+
+    if (error.message?.includes('not found')) {
+      return NextResponse.json({ error: 'Bestellung nicht gefunden' }, { status: 404 });
+    }
+
+    if (error.message?.includes('Invalid token') || error.message?.includes('auth')) {
+      return NextResponse.json({ error: 'Authentifizierung fehlgeschlagen' }, { status: 401 });
+    }
+
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      },
+      { status: 500 }
+    );
   }
 }
