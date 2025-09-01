@@ -14,17 +14,15 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('❌ Revolut OAuth error:', error);
-      // Try to extract userId from state for proper redirect
-      const stateUserId = state ? state.split('|')[0] : null;
-      const redirectUrl = stateUserId
-        ? `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${stateUserId}/banking?error=revolut_oauth_failed&details=${encodeURIComponent(error)}`
-        : `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_oauth_failed&details=${encodeURIComponent(error)}`;
-      return NextResponse.redirect(redirectUrl);
+      // Redirect to OAuth success page with error
+      return NextResponse.redirect(
+        `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent(error)}`
+      );
     }
 
     if (!code || !state) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_oauth_invalid&details=Missing code or state`
+        `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Missing code or state')}`
       );
     }
 
@@ -32,14 +30,14 @@ export async function GET(request: NextRequest) {
     const stateParts = state.split('|');
     if (stateParts.length < 3) {
       return NextResponse.redirect(
-        `https://taskilo.de/dashboard/company?error=revolut_oauth_state&details=Invalid state parameter`
+        `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Invalid state parameter')}`
       );
     }
 
     const [userId, companyEmail, returnBaseUrl] = stateParts;
     if (!userId || !companyEmail) {
       return NextResponse.redirect(
-        `https://taskilo.de/dashboard/company/${userId || 'unknown'}/banking?error=revolut_oauth_state&details=Missing user data`
+        `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent('Missing user data')}`
       );
     }
 
@@ -111,7 +109,7 @@ export async function GET(request: NextRequest) {
       const errorText = await tokenResponse.text();
       console.error('❌ Token exchange failed:', tokenResponse.status, errorText);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${userId}/banking?error=revolut_token_failed&details=${encodeURIComponent(errorText)}`
+        `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent(`Token exchange failed: ${errorText}`)}`
       );
     }
 
@@ -145,23 +143,16 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Revolut connection stored:', connectionId);
 
-    // Redirect back to dashboard with success - use the return URL from state
+    // Redirect to OAuth success page that will communicate with parent window
     const finalRedirectUrl = returnBaseUrl.includes('localhost')
-      ? `${returnBaseUrl}/dashboard/company/${userId}/banking?success=revolut_connected&connectionId=${connectionId}`
-      : `https://taskilo.de/dashboard/company/${userId}/banking?success=revolut_connected&connectionId=${connectionId}`;
+      ? `${returnBaseUrl}/revolut/oauth-success?success=revolut_connected&connectionId=${connectionId}`
+      : `https://taskilo.de/revolut/oauth-success?success=revolut_connected&connectionId=${connectionId}`;
 
     return NextResponse.redirect(finalRedirectUrl);
   } catch (error: any) {
     console.error('❌ Revolut OAuth callback error:', error.message);
-    // Try to extract userId from the request URL or state for proper redirect
-    const searchParams = request.nextUrl.searchParams;
-    const state = searchParams.get('state');
-    const userId = state ? state.split('|')[0] : null;
-
-    const redirectUrl = userId
-      ? `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company/${userId}/banking?error=revolut_callback_failed&details=${encodeURIComponent(error.message)}`
-      : `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/company?error=revolut_callback_failed&details=${encodeURIComponent(error.message)}`;
-
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(
+      `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent(`Callback failed: ${error.message}`)}`
+    );
   }
 }

@@ -47,6 +47,32 @@ export default function RevolutConnectModal({
     }
   }, [isOpen]);
 
+  // Listen for OAuth success messages from popup
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Ensure message is from our domain
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data.type === 'REVOLUT_OAUTH_SUCCESS') {
+        console.log('✅ Received OAuth success message:', event.data);
+        setIsLoading(false);
+        if (onSuccess) {
+          onSuccess(event.data.connectionId);
+        }
+        onClose();
+      } else if (event.data.type === 'REVOLUT_OAUTH_ERROR') {
+        console.error('❌ Received OAuth error message:', event.data);
+        setIsLoading(false);
+        setError(event.data.error || 'OAuth-Verbindung fehlgeschlagen');
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('message', handleMessage);
+      return () => window.removeEventListener('message', handleMessage);
+    }
+  }, [isOpen, onSuccess, onClose]);
+
   // Handle Revolut OAuth flow
   const handleConnectRevolut = async () => {
     setIsLoading(true);
@@ -65,10 +91,48 @@ export default function RevolutConnectModal({
         throw new Error(data.error || 'Failed to initialize Revolut OAuth');
       }
 
-      console.log('✅ Got Revolut OAuth URL, redirecting...');
+      console.log('✅ Got Revolut OAuth URL, opening in new tab...');
 
-      // Redirect to Revolut OAuth
-      window.location.href = data.authUrl;
+      // Open OAuth in new tab/window instead of redirecting
+      const authWindow = window.open(
+        data.authUrl,
+        'revolut-oauth',
+        'width=600,height=800,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
+      );
+
+      if (!authWindow) {
+        throw new Error('Popup wurde blockiert. Bitte erlauben Sie Popups für diese Seite.');
+      }
+
+      // Monitor the popup window for completion
+      const checkClosed = setInterval(() => {
+        if (authWindow.closed) {
+          clearInterval(checkClosed);
+          setIsLoading(false);
+
+          // Give a moment for any potential success callbacks
+          setTimeout(() => {
+            // Check if we should refresh or close modal
+            if (onSuccess) {
+              onSuccess(); // Let parent component handle the success
+            }
+            onClose(); // Close the modal
+          }, 1000);
+        }
+      }, 1000);
+
+      // Auto-close monitoring after 15 minutes
+      setTimeout(
+        () => {
+          if (!authWindow.closed) {
+            authWindow.close();
+            clearInterval(checkClosed);
+            setIsLoading(false);
+            setError('OAuth-Flow wurde abgebrochen oder ist abgelaufen.');
+          }
+        },
+        15 * 60 * 1000
+      );
     } catch (error: any) {
       console.error('❌ Revolut connection error:', error.message);
       setError(error.message);
