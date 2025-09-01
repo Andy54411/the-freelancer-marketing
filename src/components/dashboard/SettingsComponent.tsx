@@ -818,11 +818,11 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       'step3.accountingSystem': updatedForm.step3.accountingSystem,
       'step3.priceInput': updatedForm.step3.priceInput,
       'step3.lastInvoiceNumber': updatedForm.step3.lastInvoiceNumber,
-      'step4.accountHolder': updatedForm.step4.accountHolder,
-      'step4.iban': updatedForm.step4.iban,
-      'step4.bankCountry': updatedForm.step4.bankCountry,
-      'step4.bic': updatedForm.step4.bic,
-      'step4.bankName': updatedForm.step4.bankName,
+      'step4.accountHolder': updatedForm.step4?.accountHolder || '',
+      'step4.iban': updatedForm.step4?.iban || '',
+      'step4.bankCountry': updatedForm.step4?.bankCountry || '',
+      'step4.bic': updatedForm.step4?.bic || '',
+      'step4.bankName': updatedForm.step4?.bankName || '',
       firstName: updatedForm.step1.firstName,
       lastName: updatedForm.step1.lastName,
       phoneNumber: updatedForm.step1.phoneNumber,
@@ -839,11 +839,11 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       companyCountryForBackend: updatedForm.step2.country,
       companyWebsiteForBackend: updatedForm.step2.website,
       companyPhoneNumberForBackend: updatedForm.step2.companyPhoneNumber,
-      iban: updatedForm.step4.iban,
-      accountHolder: updatedForm.step4.accountHolder,
-      bankCountry: updatedForm.step4.bankCountry,
-      bic: updatedForm.step4.bic,
-      bankName: updatedForm.step4.bankName,
+      iban: updatedForm.step4?.iban || '',
+      accountHolder: updatedForm.step4?.accountHolder || '',
+      bankCountry: updatedForm.step4?.bankCountry || '',
+      bic: updatedForm.step4?.bic || '',
+      bankName: updatedForm.step4?.bankName || '',
       taxNumber: updatedForm.step3.taxNumber,
       vatId: updatedForm.step3.vatId,
       companyRegister: updatedForm.step3.companyRegister,
@@ -919,8 +919,39 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
     try {
       // KRITISCHE KORREKTUR: Separate Updates für users und companies
-      await updateDoc(doc(db, 'users', updatedForm.uid), userUpdateData);
-      await updateDoc(doc(db, 'companies', updatedForm.uid), companyUpdateData);
+
+      // Validate und clean data before sending to Firestore
+      const cleanUserUpdateData = Object.fromEntries(
+        Object.entries(userUpdateData).filter(([key, value]) => value !== undefined)
+      );
+
+      const cleanCompanyUpdateData = Object.fromEntries(
+        Object.entries(companyUpdateData).filter(([key, value]) => value !== undefined)
+      );
+
+      console.log('User update data:', cleanUserUpdateData);
+      console.log('Company update data:', cleanCompanyUpdateData);
+
+      try {
+        await updateDoc(doc(db, 'users', updatedForm.uid), cleanUserUpdateData);
+        console.log('✅ User update successful');
+      } catch (userError) {
+        console.error('❌ User update failed:', userError);
+        throw new Error(
+          `User update failed: ${userError instanceof Error ? userError.message : 'Unknown error'}`
+        );
+      }
+
+      try {
+        await updateDoc(doc(db, 'companies', updatedForm.uid), cleanCompanyUpdateData);
+        console.log('✅ Company update successful');
+      } catch (companyError) {
+        console.error('❌ Company update failed:', companyError);
+        throw new Error(
+          `Company update failed: ${companyError instanceof Error ? companyError.message : 'Unknown error'}`
+        );
+      }
+
       toast.success('Profildaten in Firestore gespeichert!');
 
       if (form.profilePictureFile && profilePictureFirebaseDownloadUrl) {
