@@ -76,6 +76,7 @@ export interface AnbieterDetails {
   selectedSubcategory?: string;
   subCategory?: string;
   languages?: string;
+  skills?: string[]; // Hinzugefügt für Skills/Fähigkeiten Badges
   postalCode?: string;
   city?: string;
   address?: string;

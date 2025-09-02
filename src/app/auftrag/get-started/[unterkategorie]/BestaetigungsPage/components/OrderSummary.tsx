@@ -60,17 +60,14 @@ export function OrderSummary({
       : anbieterDetails.hourlyRate?.toString() || 'Preis n/a';
 
   // Bild-URL: Immer vollständige URL an <Image> übergeben
-  const imageUrl =
-    anbieterDetails.profilePictureURL && anbieterDetails.profilePictureURL.startsWith('http')
-      ? anbieterDetails.profilePictureURL
-      : getFirebaseImageUrl(anbieterDetails.profilePictureURL ?? '');
+  const imageUrl = anbieterDetails.profilePictureURL
+    ? decodeURIComponent(anbieterDetails.profilePictureURL)
+    : null;
 
   // Nur in Development-Modus loggen
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
-
-    // eslint-disable-next-line no-console
-
+    console.log('OrderSummary anbieterDetails:', anbieterDetails);
+    console.log('OrderSummary imageUrl:', imageUrl);
   }
 
   return (
@@ -78,29 +75,34 @@ export function OrderSummary({
       {/* Anbieter Info */}
       <div>
         <div className="flex items-center mb-4">
-          <Image
-            src={imageUrl}
-            alt={anbieterDetails.companyName || 'Anbieter'}
-            className="w-12 h-12 rounded-full border object-cover mr-4"
-            width={48}
-            height={48}
-            onError={e => {
-              if (process.env.NODE_ENV === 'development') {
-                // eslint-disable-next-line no-console
-
-              }
-              const img = e.target as HTMLImageElement;
-              if (img && img.style) {
-                img.style.border = '2px solid red';
-              }
-            }}
-            onLoad={() => {
-              if (process.env.NODE_ENV === 'development') {
-                // eslint-disable-next-line no-console
-
-              }
-            }}
-          />
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt={anbieterDetails.companyName || 'Anbieter'}
+              className="w-12 h-12 rounded-full border object-cover mr-4"
+              width={48}
+              height={48}
+              onError={e => {
+                const img = e.target as HTMLImageElement;
+                img.style.display = 'none';
+                const parent = img.parentElement;
+                if (parent) {
+                  const fallback = document.createElement('div');
+                  fallback.className =
+                    'w-12 h-12 rounded-full border bg-[#14ad9f] flex items-center justify-center text-white font-semibold mr-4';
+                  fallback.textContent = (anbieterDetails.companyName || 'A')
+                    .charAt(0)
+                    .toUpperCase();
+                  parent.appendChild(fallback);
+                }
+              }}
+              priority
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full border bg-[#14ad9f] flex items-center justify-center text-white font-semibold mr-4">
+              {(anbieterDetails.companyName || 'A').charAt(0).toUpperCase()}
+            </div>
+          )}
           <div>
             <p className="text-xs text-gray-500 mb-0.5">
               {anbieterDetails.selectedSubcategory || 'Dienstleistung'}
@@ -112,33 +114,56 @@ export function OrderSummary({
         </div>
 
         {/* Auftragsdetails */}
-        <div className="space-y-2">
-          <div className="flex items-center">
-            <FiCalendar className="w-4 h-4 mr-2 text-gray-500" />
-            <span>{displayDate}</span>
+        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-800 mb-2">Auftragsdetails</h3>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <FiCalendar className="w-4 h-4 mr-2 text-gray-500" />
+              <span className="text-sm">Datum:</span>
+            </div>
+            <span className="text-sm font-medium">{displayDate}</span>
           </div>
+
           {time && (
-            <div className="flex items-center">
-              <FiClock className="w-4 h-4 mr-2 text-gray-500" />
-              <span>{time} Uhr</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FiClock className="w-4 h-4 mr-2 text-gray-500" />
+                <span className="text-sm">Uhrzeit:</span>
+              </div>
+              <span className="text-sm font-medium">{time} Uhr</span>
             </div>
           )}
+
           {anbieterDetails.location && anbieterDetails.location !== 'Ort nicht spezifiziert' && (
-            <div className="flex items-center">
-              <FiUser className="w-4 h-4 mr-2 text-gray-500" />
-              <span>{anbieterDetails.location}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FiUser className="w-4 h-4 mr-2 text-gray-500" />
+                <span className="text-sm">Postleitzahl:</span>
+              </div>
+              <span className="text-sm font-medium">{anbieterDetails.location}</span>
             </div>
           )}
+
           {anbieterDetails.estimatedDuration && (
-            <div className="flex items-center">
-              <FiClock className="w-4 h-4 mr-2 text-gray-500" />
-              <span>Dauer: {anbieterDetails.estimatedDuration}</span>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center">
+                <FiClock className="w-4 h-4 mr-2 text-gray-500 mt-0.5" />
+                <span className="text-sm">Dauer:</span>
+              </div>
+              <span className="text-sm font-medium text-right max-w-[60%]">
+                {anbieterDetails.estimatedDuration}
+              </span>
             </div>
           )}
+
           {anbieterDetails.taskRequiresCar && (
-            <div className="flex items-center">
-              <FiTruck className="w-4 h-4 mr-2 text-gray-500" />
-              <span>Auto erforderlich</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FiTruck className="w-4 h-4 mr-2 text-gray-500" />
+                <span className="text-sm">Fahrzeug:</span>
+              </div>
+              <span className="text-sm font-medium">Auto erforderlich</span>
             </div>
           )}
         </div>

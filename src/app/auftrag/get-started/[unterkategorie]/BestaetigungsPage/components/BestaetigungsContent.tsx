@@ -2,13 +2,12 @@
 'use client';
 
 import { useSearchParams, useParams } from 'next/navigation';
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 import AnbieterDetailsFetcher from './AnbieterDetailsFetcher';
 import { PAGE_LOG, PAGE_WARN, PAGE_ERROR, TRUST_AND_SUPPORT_FEE_EUR } from '@/lib/constants';
 // FEHLER BEHOBEN: 'format' zu den Importen hinzugefügt
 import { differenceInCalendarDays, parseISO, isValid as isValidDate, format } from 'date-fns';
-import { Label } from '@/components/ui/label';
 
 function parseDurationStringToHours(durationStr?: string): number | null {
   if (!durationStr || typeof durationStr !== 'string') {
@@ -53,8 +52,6 @@ export default function BestaetigungsContent({
   const searchParams = useSearchParams();
   const pathParams = useParams();
 
-  const [taskDescription, setTaskDescription] = useState(initialJobDescription || '');
-
   const unterkategorieAusPfad = useMemo(
     () =>
       pathParams && typeof pathParams.unterkategorie === 'string'
@@ -68,7 +65,6 @@ export default function BestaetigungsContent({
       try {
         return decodeURIComponent(initialJobDurationString);
       } catch (e) {
-
         return undefined;
       }
     }
@@ -77,7 +73,6 @@ export default function BestaetigungsContent({
       try {
         return decodeURIComponent(auftragsDauerFromQuery);
       } catch (e) {
-
         return undefined;
       }
     }
@@ -135,18 +130,7 @@ export default function BestaetigungsContent({
     return { durationError: errorMsg };
   }, [unterkategorieAusPfad, decodedAuftragsDauer, initialJobDateFrom, initialJobDateTo]);
 
-  const handleDescriptionChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setTaskDescription(e.target.value);
-      if (onDetailsChange) {
-        onDetailsChange();
-      }
-    },
-    [onDetailsChange]
-  );
-
   if (!anbieterId || !unterkategorie || !postalCodeJob) {
-
     const missingParams: string[] = [];
     if (!anbieterId) missingParams.push('Anbieter-ID');
     if (!unterkategorie) missingParams.push('Unterkategorie');
@@ -175,45 +159,6 @@ export default function BestaetigungsContent({
     <div className="bg-white p-6 rounded-lg shadow-lg">
       <h2 className="text-2xl font-semibold text-gray-800 mb-6">Auftragsdetails</h2>
 
-      <div className="mb-4">
-        <Label htmlFor="taskDescription" className="block text-md font-medium text-gray-700 mb-2">
-          Ihre Auftragsbeschreibung:
-        </Label>
-        <textarea
-          id="taskDescription"
-          value={taskDescription}
-          onChange={handleDescriptionChange}
-          rows={5}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#14ad9f] focus:border-[#14ad9f] sm:text-sm resize-y"
-          placeholder="Beschreiben Sie hier Ihren Auftrag im Detail..."
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <p className="text-gray-700 font-medium">Datum:</p>
-          {/* FEHLER BEHOBEN: format-Funktion hier verwendet */}
-          <p className="text-gray-900">
-            {initialJobDateFrom && format(parseISO(initialJobDateFrom), 'dd.MM.yyyy')}
-          </p>
-          {initialJobDateTo && initialJobDateTo !== initialJobDateFrom && (
-            <p className="text-gray-900"> bis {format(parseISO(initialJobDateTo), 'dd.MM.yyyy')}</p>
-          )}
-        </div>
-        <div>
-          <p className="text-gray-700 font-medium">Uhrzeit:</p>
-          <p className="text-gray-900">{initialJobTime || 'Ganztägig'}</p>
-        </div>
-        <div>
-          <p className="text-gray-700 font-medium">Dauer:</p>
-          <p className="text-gray-900">{decodedAuftragsDauer || 'Nicht angegeben'}</p>
-        </div>
-        <div>
-          <p className="text-gray-700 font-medium">Postleitzahl:</p>
-          <p className="text-gray-900">{postalCodeJob}</p>
-        </div>
-      </div>
-
       <AnbieterDetailsFetcher
         anbieterId={anbieterId}
         unterkategorie={unterkategorie}
@@ -221,7 +166,7 @@ export default function BestaetigungsContent({
         initialJobDateFrom={initialJobDateFrom}
         initialJobDateTo={initialJobDateTo}
         initialJobTime={initialJobTime}
-        initialJobDescription={taskDescription}
+        initialJobDescription={initialJobDescription}
         initialJobDurationString={decodedAuftragsDauer}
         onPriceCalculated={onPriceCalculated}
         onDetailsChange={onDetailsChange}

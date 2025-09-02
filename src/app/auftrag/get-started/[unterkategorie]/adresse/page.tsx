@@ -67,7 +67,6 @@ export default function AddressPage() {
       const place = autocomplete.getPlace();
 
       if (!place || !place.address_components) {
-
         return;
       }
 
@@ -116,12 +115,10 @@ export default function AddressPage() {
       // Aktualisiere die Zustände
       if (foundCity) {
         setCityState(foundCity);
-
       }
 
       if (foundPostalCode) {
         setPostalCodeState(foundPostalCode);
-
       }
 
       if (foundCountry) {
@@ -134,7 +131,6 @@ export default function AddressPage() {
       }
 
       // Debug-Ausgabe für bessere Nachverfolgung
-
     }
   }, [autocomplete]);
 
@@ -194,7 +190,6 @@ export default function AddressPage() {
         registration.setSelectedSubcategory(initialSubcategory);
       }
     } else {
-
     }
 
     // BESCHREIBUNG: Beschreibung aus URL-Parametern lesen und im Context speichern.
@@ -208,9 +203,7 @@ export default function AddressPage() {
       try {
         const decodedDescription = decodeURIComponent(descriptionFromUrl);
         registration.setDescription(decodedDescription);
-
       } catch (e) {
-
         registration.setDescription(descriptionFromUrl); // Fallback auf nicht-dekodierten Wert
       }
     }
@@ -269,7 +262,6 @@ export default function AddressPage() {
         setDynamicSliderMax(newMax);
         setPriceDistribution(data.distribution || null);
       } catch (err: unknown) {
-
         setAveragePriceForSubcategory(null);
         setDynamicSliderMin(GLOBAL_FALLBACK_MIN_PRICE);
         setDynamicSliderMax(GLOBAL_FALLBACK_MAX_PRICE);
@@ -330,7 +322,6 @@ export default function AddressPage() {
       }
       setRatingMap(newRatingMap);
     } catch (err: unknown) {
-
       let message = 'Fehler beim Laden der Anbieter.';
       if (err instanceof Error) {
         message = err.message;
@@ -546,10 +537,7 @@ export default function AddressPage() {
         // DEBUG: Teste URL-Parsing
         try {
           const testUrl = new URL(bestaetigungsPagePath, window.location.origin);
-
-        } catch (urlError) {
-
-        }
+        } catch (urlError) {}
 
         // BENUTZER-AUTHENTIFIZIERUNG: Prüfung beim Klick auf Bestätigen von Datum/Uhrzeit
         const user = auth.currentUser;
@@ -565,7 +553,6 @@ export default function AddressPage() {
           router.push(registrationRedirectUrl);
         }
       } else if (dateFromFormatted) {
-
         fetchCompanyProfiles();
       }
       setSelectedCompanyForPopup(null);
@@ -600,18 +587,16 @@ export default function AddressPage() {
         </div>
       }
     >
-      <div className="min-h-screen bg-gradient-to-r from-[#d2f1fd] to-[#a0f4e4] px-4 py-20 flex flex-col items-center">
+      <div className="min-h-screen px-4 py-20 flex flex-col items-center">
         <div className="w-full max-w-3xl">
           <button
             onClick={() => router.back()}
-            className="text-[#14ad9f] hover:underline flex items-center gap-2 mb-4"
+            className="text-white hover:text-white/80 flex items-center gap-2 mb-4 transition-colors"
           >
             <FiArrowLeft /> Zurück
           </button>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white mb-10">
-          Wähle einen Taskter{' '}
-        </h1>
+        <h1 className="text-3xl sm:text-4xl font-bold text-white mb-10">Wähle einen Taskter </h1>
         {error && (
           <div className="w-full max-w-3xl mb-4 p-3 bg-red-100 text-red-700 rounded-md flex items-center">
             <FiAlertCircle className="mr-2 h-5 w-5" /> {error}

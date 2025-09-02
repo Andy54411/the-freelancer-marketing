@@ -7,7 +7,6 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-
     return null;
   }
 
@@ -21,7 +20,6 @@ export async function POST(request: NextRequest) {
 
   const stripe = getStripeInstance();
   if (!stripe) {
-
     return NextResponse.json(
       { error: 'Stripe-Konfiguration auf dem Server fehlt.' },
       { status: 500 }
@@ -43,12 +41,11 @@ export async function POST(request: NextRequest) {
       billingDetails, // Rechnungsdetails, falls für zukünftige Nutzung gespeichert werden
     } = body;
 
-     // NEU: Log
+    // NEU: Log
 
     // Validierung der empfangenen Daten mit detaillierteren Logs
     // ANPASSUNG: amount wird nun später gegen backend-berechneten Wert validiert
     if (typeof amount !== 'number' || amount <= 0) {
-
       return NextResponse.json(
         { error: 'Ungültiger Betrag (amount). Muss eine positive Zahl sein.' },
         { status: 400 }
@@ -56,14 +53,12 @@ export async function POST(request: NextRequest) {
     }
     // NEU: Validierung für jobPriceInCents
     if (typeof jobPriceInCents !== 'number' || jobPriceInCents <= 0) {
-
       return NextResponse.json(
         { error: 'Ungültiger Basispreis. Muss eine positive Zahl sein.' },
         { status: 400 }
       );
     }
     if (typeof currency !== 'string' || currency.length !== 3) {
-
       return NextResponse.json({ error: 'Ungültige Währung.' }, { status: 400 });
     }
     if (
@@ -71,7 +66,6 @@ export async function POST(request: NextRequest) {
       typeof connectedAccountId !== 'string' ||
       !connectedAccountId.startsWith('acct_')
     ) {
-
       return NextResponse.json(
         { error: 'Ungültige Connected Account ID. Muss mit "acct_" beginnen.' },
         { status: 400 }
@@ -79,11 +73,9 @@ export async function POST(request: NextRequest) {
     }
     // ANPASSUNG: Entfernung der Validierung für `platformFee`, da sie nicht mehr direkt empfangen wird.
     if (!taskId || typeof taskId !== 'string') {
-
       return NextResponse.json({ error: 'Ungültige Task-ID (tempJobDraftId).' }, { status: 400 });
     }
     if (!firebaseUserId || typeof firebaseUserId !== 'string') {
-
       return NextResponse.json({ error: 'Ungültige Firebase User ID.' }, { status: 400 });
     }
     if (
@@ -91,7 +83,6 @@ export async function POST(request: NextRequest) {
       typeof stripeCustomerId !== 'string' ||
       !stripeCustomerId.startsWith('cus_')
     ) {
-
       return NextResponse.json(
         { error: 'Ungültige Stripe Customer ID. Muss mit "cus_" beginnen.' },
         { status: 400 }
@@ -105,7 +96,6 @@ export async function POST(request: NextRequest) {
       !billingDetails.address?.city ||
       !billingDetails.address?.country
     ) {
-
       return NextResponse.json(
         { error: 'Vollständige Rechnungsadresse ist erforderlich.' },
         { status: 400 }
@@ -123,10 +113,8 @@ export async function POST(request: NextRequest) {
         currentConnectedAccount = await stripe.accounts.retrieve(connectedAccountId);
 
         if (currentConnectedAccount.charges_enabled && currentConnectedAccount.payouts_enabled) {
-
           break;
         } else {
-
           await new Promise(resolve => setTimeout(resolve, delayMs));
           attempts++;
         }
@@ -139,20 +127,16 @@ export async function POST(request: NextRequest) {
             retrieveError.type === 'StripeInvalidRequestError' &&
             retrieveError.code === 'resource_missing'
           ) {
-
             currentConnectedAccount = null;
             break;
           }
           if (retrieveError.type === 'StripeAuthenticationError') {
-
             currentConnectedAccount = null;
             break;
           }
         } else if (retrieveError instanceof Error) {
           errorMessage = retrieveError.message;
-
         } else {
-
         }
 
         await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -183,15 +167,45 @@ export async function POST(request: NextRequest) {
     }
     // --- ENDE DER WARTE-LOGIK ---
 
-    // ANPASSUNG: Neue Gebührenlogik, bei der die Gebühr vom Dienstleister getragen wird.
-    const SELLER_SERVICE_FEE_RATE = 0.045; // 4.5% Servicegebühr, die vom Verkäufer (Dienstleister) getragen wird.
+    // Lade temporaryJobDraft um customerType zu ermitteln
+    const admin = await import('firebase-admin');
+    let db: FirebaseFirestore.Firestore;
+
+    try {
+      if (!admin.default.apps.length) {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}');
+        admin.default.initializeApp({
+          credential: admin.default.credential.cert(serviceAccount),
+          projectId: serviceAccount.project_id,
+        });
+      }
+      db = admin.default.firestore();
+    } catch (error) {
+      console.error('Firebase Admin SDK Fehler:', error);
+      return NextResponse.json({ error: 'Server-Konfigurationsfehler' }, { status: 500 });
+    }
+
+    // Lade Job Draft für B2B/B2C Logik
+    const jobDraftDoc = await db.collection('temporaryJobDrafts').doc(taskId).get();
+    if (!jobDraftDoc.exists) {
+      return NextResponse.json({ error: 'Job-Entwurf nicht gefunden' }, { status: 404 });
+    }
+
+    const jobDraftData = jobDraftDoc.data();
+    const customerType = jobDraftData?.customerType || 'private';
+    const isB2B = customerType === 'business';
+    const isB2C = customerType === 'private';
+
+    console.log(`[Payment] Erstelle ${isB2B ? 'B2B' : 'B2C'} Payment Intent für ${taskId}`);
+
+    // ANPASSUNG: Neue B2B/B2C spezifische Gebührenlogik
+    const SELLER_SERVICE_FEE_RATE = isB2B ? 0.035 : 0.045; // B2B: 3.5%, B2C: 4.5%
 
     // Der Gesamtbetrag, den der Käufer zahlt, ist jetzt einfach der jobPriceInCents.
     const totalAmountToChargeBuyer = jobPriceInCents;
 
     // WICHTIGE VALIDIERUNG: Der vom Frontend gesendete Betrag MUSS dem Basispreis entsprechen.
     if (amount !== totalAmountToChargeBuyer) {
-
       return NextResponse.json(
         { error: 'Fehler bei der Betragsüberprüfung. Bitte versuchen Sie es erneut.' },
         { status: 400 }
@@ -201,13 +215,19 @@ export async function POST(request: NextRequest) {
     // Die Plattformgebühr (application_fee_amount) ist nun die Gebühr, die vom Verkäufer abgezogen wird.
     const totalApplicationFee = Math.round(jobPriceInCents * SELLER_SERVICE_FEE_RATE);
 
+    // KORREKTUR: Für Stripe Connect verwenden wir destination charges statt application_fee_amount
+    const amountForProvider = jobPriceInCents - totalApplicationFee; // Anbieter erhält weniger
+
     const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
       amount: totalAmountToChargeBuyer, // Der Gesamtbetrag, den der Käufer zahlt
       currency: currency,
       customer: stripeCustomerId,
-      application_fee_amount: totalApplicationFee, // Die Gesamtgebühr für eure Plattform
-      // ✅ CONTROLLED PAYOUT: Keine transfer_data = Geld bleibt auf Platform für manuelle Auszahlung
-      // ENTFERNT: transfer_data für kontrollierte Payouts
+      // ENTFERNT: application_fee_amount (nur für direct charges)
+      // HINZUGEFÜGT: transfer_data für destination charges
+      transfer_data: {
+        destination: connectedAccountId,
+        amount: amountForProvider, // Anbieter erhält den Betrag minus Platform-Gebühr
+      },
       confirm: false, // PaymentIntent wird NICHT sofort bestätigt
       setup_future_usage: 'off_session', // Karte für zukünftige Zahlungen speichern
       automatic_payment_methods: {
@@ -217,11 +237,18 @@ export async function POST(request: NextRequest) {
       metadata: {
         tempJobDraftId: taskId,
         firebaseUserId: firebaseUserId,
+        customerType: customerType, // B2B oder B2C
+        businessModel: jobDraftData?.businessModel || (isB2B ? 'project_based' : 'fixed_price'),
         // NEU: Detaillierte Preiskomponenten in den Metadaten speichern
         originalJobPriceInCents: jobPriceInCents.toString(),
         buyerServiceFeeInCents: '0', // Käufer zahlt keine Gebühr mehr
         sellerCommissionInCents: totalApplicationFee.toString(), // Die Gebühr des Verkäufers
+        sellerCommissionRate: SELLER_SERVICE_FEE_RATE.toString(),
         totalPlatformFeeInCents: totalApplicationFee.toString(),
+        amountForProvider: amountForProvider.toString(), // Was der Anbieter erhält
+        paymentTerms: jobDraftData?.paymentTerms || (isB2B ? 'net_14' : 'immediate'),
+        invoiceRequired: jobDraftData?.invoiceRequired?.toString() || (isB2B ? 'true' : 'false'),
+        taxHandling: jobDraftData?.taxHandling || (isB2B ? 'business' : 'consumer'),
         // Optional: Weitere billingDetails hier hinzufügen, wenn sie für Webhooks relevant sind
         // billingName: billingDetails?.name,
         // billingEmail: billingDetails?.email,
@@ -242,7 +269,6 @@ export async function POST(request: NextRequest) {
     let rawErrorDetails: Stripe.StripeRawError | null = null;
 
     if (error instanceof Stripe.errors.StripeError) {
-
       errorMessage = `Stripe Fehler: ${error.message}`;
       stripeErrorCode = error.code || null;
       stripeErrorType = error.type;
@@ -251,10 +277,8 @@ export async function POST(request: NextRequest) {
         rawErrorDetails = raw;
       }
     } else if (error instanceof Error) {
-
       errorMessage = error.message;
     } else {
-
     }
 
     return NextResponse.json(

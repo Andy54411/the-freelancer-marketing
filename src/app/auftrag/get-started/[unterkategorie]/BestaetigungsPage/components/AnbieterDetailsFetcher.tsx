@@ -44,6 +44,22 @@ function parseDurationStringToHours(durationStr?: string): number | null {
   return isNaN(parsedNum) ? null : parsedNum;
 }
 
+function calculateWorkingDays(startDate: Date, endDate: Date): number {
+  let count = 0;
+  const current = new Date(startDate);
+
+  while (current <= endDate) {
+    const dayOfWeek = current.getDay();
+    // 1 = Montag, 2 = Dienstag, ..., 5 = Freitag (0 = Sonntag, 6 = Samstag)
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+}
+
 interface AnbieterDetailsFetcherProps {
   anbieterId: string;
   unterkategorie: string;
@@ -105,7 +121,6 @@ export default function AnbieterDetailsFetcher({
       finalPriceInCents: number;
       formattedAnbieterData: AnbieterDetailsType | null;
     } => {
-
       if (!fetchedAnbieterData?.hourlyRate) {
         const errorMsg = 'Stundensatz des Anbieters nicht verfügbar für Preisberechnung.';
 
@@ -125,7 +140,8 @@ export default function AnbieterDetailsFetcher({
         if (dateT && isValidDate(parseISO(dateT))) {
           const endDate = parseISO(dateT);
           if (endDate >= startDate) {
-            numberOfDays = differenceInCalendarDays(endDate, startDate) + 1;
+            // Berechne nur Arbeitstage (Mo-Fr) für Services wie Mietkoch
+            numberOfDays = calculateWorkingDays(startDate, endDate);
           } else {
             localDurationError = 'Das Enddatum darf nicht vor dem Startdatum liegen.';
           }
@@ -135,8 +151,7 @@ export default function AnbieterDetailsFetcher({
           if (contextDateTo && isValidDate(parseISO(contextDateTo))) {
             const endDate = parseISO(contextDateTo);
             if (endDate >= startDate) {
-              numberOfDays = differenceInCalendarDays(endDate, startDate) + 1;
-
+              numberOfDays = calculateWorkingDays(startDate, endDate);
             } else {
               localDurationError = 'Das Enddatum darf nicht vor dem Startdatum liegen.';
             }
@@ -154,7 +169,6 @@ export default function AnbieterDetailsFetcher({
       }
 
       if (localDurationError) {
-
         const updatedAnbieterDetailsOnError = fetchedAnbieterData
           ? {
               ...fetchedAnbieterData,
@@ -187,7 +201,6 @@ export default function AnbieterDetailsFetcher({
       }
 
       if (totalCalculatedHours <= 0) {
-
         const updatedAnbieterDetailsOnDurationError = fetchedAnbieterData
           ? {
               ...fetchedAnbieterData,
@@ -221,7 +234,6 @@ export default function AnbieterDetailsFetcher({
       };
 
       if (onPriceCalculated) {
-
         onPriceCalculated(finalPriceInCents);
       }
       return {
@@ -291,7 +303,6 @@ export default function AnbieterDetailsFetcher({
 
         setAnbieterDetails(result.formattedAnbieterData);
       } catch (err: unknown) {
-
         let message = 'Fehler beim Laden der Anbieterdetails.';
         if (err instanceof Error) {
           message = err.message;
@@ -399,12 +410,10 @@ export default function AnbieterDetailsFetcher({
       if (typeof registration.setJobTotalCalculatedHours === 'function') {
         registration.setJobTotalCalculatedHours(totalHours);
       } else {
-
       }
       registration.setJobCalculatedPriceInCents(finalPriceInCents);
       registration.setDescription(finalTaskDesc);
     } else {
-
       if (onPriceCalculated) onPriceCalculated(0);
     }
 

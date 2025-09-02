@@ -28,7 +28,6 @@ async function linkJobToUser(
   const ERROR_CONTEXT = `${PAGE_ERROR} linkJobToUser (${actionType}):`;
 
   if (!jobId || !userId) {
-
     return;
   }
   try {
@@ -39,10 +38,7 @@ async function linkJobToUser(
       kundeId: userId,
       status: 'draft_authenticated_user',
     });
-
-  } catch (error: unknown) {
-
-  }
+  } catch (error: unknown) {}
 }
 
 // Diese Komponente enthält die eigentliche Logik und verwendet Client-Hooks
@@ -128,7 +124,6 @@ function UserRegisterFormContent() {
           setPostalCode(currentPostalCode);
           setCountry(currentCountry); // Setzt den Ländercode (z.B. DE)
         } else {
-
         }
       });
     }
@@ -146,7 +141,6 @@ function UserRegisterFormContent() {
   // useEffect für direkte Weiterleitung nach erfolgreicher Registrierung
   useEffect(() => {
     if (registrationSuccess) {
-
       // Extrahiere die Unterkategorie aus den searchParams für den korrekten Pfad
       const redirectTo = searchParams?.get('redirectTo');
 
@@ -167,7 +161,6 @@ function UserRegisterFormContent() {
 
     // Verhindere mehrfache Registrierung
     if (loading || registrationSuccess) {
-
       return;
     }
 
@@ -232,7 +225,6 @@ function UserRegisterFormContent() {
       // Setze den Erfolgszustand, anstatt direkt weiterzuleiten.
       setRegistrationSuccess(true);
     } catch (err: unknown) {
-
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as AuthError;
         if (firebaseError.code === 'auth/email-already-in-use') {
@@ -274,7 +266,6 @@ function UserRegisterFormContent() {
         }
         finalRedirectUrl = urlObj.toString(); // Sicherstellen, dass alle bestehenden Parameter erhalten bleiben
       } catch (urlParseError) {
-
         finalRedirectUrl = `/auftrag/get-started`; // Fallback
       }
     } else {
@@ -289,8 +280,9 @@ function UserRegisterFormContent() {
 
   return (
     <>
-      <main className="bg-gradient-to-r from-blue-100 to-teal-200 grid place-items-center min-h-screen mx-auto p-6 md:p-12">
-        <Card className="w-full max-w-md shadow-lg rounded-lg bg-white">
+      <main className="bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative grid place-items-center min-h-screen mx-auto p-6 md:p-12">
+        <div className="absolute inset-0 bg-black/20"></div>
+        <Card className="relative z-10 w-full max-w-md shadow-lg rounded-lg bg-white">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-semibold text-[#14ad9f]">
               Benutzer Registrierung
@@ -575,8 +567,9 @@ export default function UserRegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-blue-100 to-teal-200 text-[#14ad9f] font-semibold">
-          Lade Registrierungsseite...
+        <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
+          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="relative z-10 text-white font-semibold">Lade Registrierungsseite...</div>
         </div>
       }
     >

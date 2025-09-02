@@ -135,11 +135,7 @@
             "queryScope": "COLLECTION",
             "fields": [
                 {
-                    "fieldPath": "user_type",
-                    "order": "ASCENDING"
-                },
-                {
-                    "fieldPath": "companyPostalCodeForBackend",
+                    "fieldPath": "companyPostalCode",
                     "order": "ASCENDING"
                 },
                 {
@@ -341,7 +337,7 @@
             "queryScope": "COLLECTION",
             "fields": [
                 {
-                    "fieldPath": "companyPostalCodeForBackend",
+                    "fieldPath": "companyPostalCode",
                     "order": "ASCENDING"
                 },
                 {

@@ -150,16 +150,30 @@ export const createTemporaryJobDraft = onCall(
       const db = getDb();
       const jobDetails = request.data;
 
-      if (
-        !jobDetails.customerType ||
-        !jobDetails.selectedCategory ||
-        !jobDetails.selectedSubcategory ||
-        !jobDetails.description.trim() ||
-        !jobDetails.jobPostalCode ||
-        !jobDetails.selectedAnbieterId ||
-        !(typeof jobDetails.jobCalculatedPriceInCents === 'number' && jobDetails.jobCalculatedPriceInCents > 0)
-      ) {
-        throw new HttpsError('invalid-argument', "Unvollständige oder ungültige Auftragsdetails übermittelt.");
+      // Detaillierte Validierung mit spezifischen Fehlermeldungen
+      const missingFields: string[] = [];
+      if (!jobDetails.customerType) missingFields.push('customerType');
+      if (!jobDetails.selectedCategory) missingFields.push('selectedCategory');
+      if (!jobDetails.selectedSubcategory) missingFields.push('selectedSubcategory');
+      if (!jobDetails.description || !jobDetails.description.trim()) missingFields.push('description');
+      if (!jobDetails.jobPostalCode) missingFields.push('jobPostalCode');
+      if (!jobDetails.selectedAnbieterId) missingFields.push('selectedAnbieterId');
+      if (!(typeof jobDetails.jobCalculatedPriceInCents === 'number' && jobDetails.jobCalculatedPriceInCents > 0)) missingFields.push('jobCalculatedPriceInCents');
+
+      if (missingFields.length > 0) {
+        logger.error('[createTemporaryJobDraft] Fehlende oder ungültige Felder:', { 
+          missingFields,
+          receivedData: {
+            customerType: jobDetails.customerType,
+            selectedCategory: jobDetails.selectedCategory,
+            selectedSubcategory: jobDetails.selectedSubcategory,
+            description: jobDetails.description,
+            jobPostalCode: jobDetails.jobPostalCode,
+            selectedAnbieterId: jobDetails.selectedAnbieterId,
+            jobCalculatedPriceInCents: jobDetails.jobCalculatedPriceInCents
+          }
+        });
+        throw new HttpsError('invalid-argument', `Fehlende oder ungültige Felder: ${missingFields.join(', ')}`);
       }
 
       const customerInfo = {
@@ -188,24 +202,49 @@ export const createTemporaryJobDraft = onCall(
         throw new HttpsError('invalid-argument', "Die ID des ausgewählten Anbieters ist erforderlich.");
       }
 
-      const anbieterUserDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
-      const anbieterUserDoc = await anbieterUserDocRef.get();
-
-      if (!anbieterUserDoc.exists) {
-        throw new HttpsError('not-found', "Der ausgewählte Anbieter wurde nicht gefunden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.");
-      }
-
-      const anbieterData = anbieterUserDoc.data();
-      
-      // Check if provider has company data by checking companies collection
+      // KORREKTUR: Prüfe zuerst companies collection, dann users als Fallback
       const anbieterCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
-      if (!anbieterCompanyDoc.exists) {
-        throw new HttpsError('failed-precondition', "Der ausgewählte Anbieter ist kein gültiges Firmenkonto.");
+      let anbieterData: any = null;
+      let companyData: any = null;
+
+      if (anbieterCompanyDoc.exists) {
+        // Anbieter existiert in companies collection (moderner Ansatz)
+        companyData = anbieterCompanyDoc.data();
+        anbieterData = companyData; // Verwende company data als primary
+        
+        // Optional: Auch users data laden falls vorhanden
+        const anbieterUserDoc = await db.collection('users').doc(jobDetails.selectedAnbieterId).get();
+        if (anbieterUserDoc.exists) {
+          const userData = anbieterUserDoc.data();
+          // Merge user data with company data, company data hat Priorität
+          anbieterData = { ...userData, ...companyData };
+        }
+      } else {
+        // Fallback: Suche in users collection (legacy Anbieter)
+        const anbieterUserDocRef = db.collection('users').doc(jobDetails.selectedAnbieterId);
+        const anbieterUserDoc = await anbieterUserDocRef.get();
+
+        if (!anbieterUserDoc.exists) {
+          throw new HttpsError('not-found', "Der ausgewählte Anbieter wurde nicht gefunden. Bitte versuchen Sie es erneut oder kontaktieren Sie den Support.");
+        }
+
+        anbieterData = anbieterUserDoc.data();
+        
+        // Für legacy users: prüfe ob sie auch company data haben
+        const legacyCompanyDoc = await db.collection('companies').doc(jobDetails.selectedAnbieterId).get();
+        if (legacyCompanyDoc.exists) {
+          companyData = legacyCompanyDoc.data();
+          // Merge: company data überschreibt user data
+          anbieterData = { ...anbieterData, ...companyData };
+        }
       }
 
-      // Priorität: companies collection für Unternehmensdaten, users für Auth-Daten
-      const companyData = anbieterCompanyDoc.exists ? anbieterCompanyDoc.data() : anbieterData;
-      providerName = getUserDisplayName(companyData, getUserDisplayName(anbieterData, UNKNOWN_PROVIDER_NAME));
+      if (!anbieterData) {
+        throw new HttpsError('not-found', "Anbieterdaten konnten nicht geladen werden.");
+      }
+
+      // Provider name aus den verfügbaren Daten ableiten
+      providerName = getUserDisplayName(companyData || anbieterData, UNKNOWN_PROVIDER_NAME);
 
       // Stripe Account ID zuerst aus companies, dann aus users
       if (companyData && companyData.stripeAccountId && typeof companyData.stripeAccountId === 'string' && companyData.stripeAccountId.startsWith('acct_')) {
@@ -215,6 +254,12 @@ export const createTemporaryJobDraft = onCall(
       } else {
         throw new HttpsError('failed-precondition', "Stripe Connect Konto des Anbieters ist nicht korrekt eingerichtet.");
       }
+
+      // B2B/B2C spezifische Logik
+      const isB2B = jobDetails.customerType === 'business';
+      const isB2C = jobDetails.customerType === 'private';
+
+      logger.info(`[createTemporaryJobDraft] Erstelle ${isB2B ? 'B2B' : 'B2C'} Job Draft für Kunde ${kundeId}`);
 
       const draftDataToSave = {
         customerType: jobDetails.customerType,
@@ -238,6 +283,23 @@ export const createTemporaryJobDraft = onCall(
         customerFirstName: customerInfo.firstName,
         customerLastName: customerInfo.lastName,
         customerEmail: customerInfo.email,
+        
+        // B2B spezifische Felder
+        ...(isB2B && {
+          businessModel: 'project_based', // oder 'hourly_billing' je nach Unterkategorie
+          invoiceRequired: true,
+          taxHandling: 'business', // Unterschiedliche Steuerbehandlung
+          paymentTerms: 'net_14', // B2B hat oft andere Zahlungsziele
+        }),
+        
+        // B2C spezifische Felder
+        ...(isB2C && {
+          businessModel: 'fixed_price', // B2C meist Festpreise
+          invoiceRequired: false,
+          taxHandling: 'consumer',
+          paymentTerms: 'immediate',
+        }),
+        
         status: "pending_payment_setup",
         createdAt: FieldValue.serverTimestamp(),
         lastUpdatedAt: FieldValue.serverTimestamp(),

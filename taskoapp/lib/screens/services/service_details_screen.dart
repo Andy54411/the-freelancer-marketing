@@ -1293,9 +1293,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
       
       // Navigation zur Chat-Seite (wenn vorhanden)
       if (mounted) {
-        // TODO: Implementiere Navigation zur Chat-Seite wenn verfügbar
-        // Navigator.of(context).pushNamed('/chat', arguments: {'chatId': chatId});
-        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Chat mit $providerName gestartet'),
@@ -1304,7 +1301,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               label: 'Chat öffnen',
               textColor: Colors.white,
               onPressed: () {
-                // TODO: Navigation zur Chat-Seite implementieren
                 debugPrint('Navigate to chat: $chatId');
               },
             ),

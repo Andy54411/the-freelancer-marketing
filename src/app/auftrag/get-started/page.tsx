@@ -111,12 +111,12 @@ export default function GetStartedPage() {
   return (
     <>
       <HeroHeader />
-      <main className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center space-y-10">
+      <main className="min-h-screen px-4 sm:px-6 lg:px-8 py-20 flex flex-col items-center space-y-10">
         <div className="text-center max-w-2xl space-y-4 w-full">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white">
             Um welchen Auftrag handelt es sich?
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-white/80">
             Finden Sie die Dienstleistung, die Sie benötigen, um geprüfte Handwerker in Ihrer Nähe
             zu kontaktieren.
           </p>
@@ -125,13 +125,13 @@ export default function GetStartedPage() {
             <ProgressBar currentStep={stepForDisplay} totalSteps={TOTAL_STEPS} />
           </div>
 
-          <div className="flex justify-between items-center mt-4 text-sm text-[#14ad9f] font-medium">
+          <div className="flex justify-between items-center mt-4 text-sm text-white font-medium">
             <p>
               Schritt {stepForDisplay} von {TOTAL_STEPS}
             </p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="hover:underline flex items-center gap-1"
+              className="hover:underline flex items-center gap-1 text-white hover:text-white/80"
             >
               Schritte anzeigen <FiInfo className="text-base" />
             </button>

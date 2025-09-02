@@ -93,11 +93,15 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
         return;
       }
       const companyData = companyDoc.data()!;
+      
+      // Try multiple potential profile picture fields (same as in search)
+      const profilePictureURL = companyData.profilePictureURL || companyData.step3?.profilePictureURL || companyData.profilePictureFirebaseUrl;
+      
       res.status(200).json({
         // WICHTIG: Hier werden die Daten für die Detailansicht eines Anbieters zurückgegeben.
         id: companyDoc.id,
         companyName: companyData.companyName || companyData.firmenname,
-        profilePictureURL: companyData.profilePictureURL || companyData.profilePictureFirebaseUrl,
+        profilePictureURL: profilePictureURL,
         hourlyRate: companyData.hourlyRate,
         description: companyData.description,
         stripeAccountId: companyData.stripeAccountId,
@@ -121,7 +125,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
 
     // Wende die obligatorischen Filter an.
     query = query
-      .where("companyPostalCodeForBackend", "==", postalCode as string) // KORREKTUR: Das Feld 'postalCode' existiert nicht. Verwende das korrekte Feld 'companyPostalCodeForBackend'.
+      .where("companyPostalCode", "==", postalCode as string) // KORREKTUR: Korrektes Feld ist 'companyPostalCode' nicht 'companyPostalCodeForBackend'
       .where("selectedSubcategory", "==", selectedSubcategory as string);
 
     // Wende die optionalen Preisfilter an.
@@ -143,7 +147,7 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
       const allCompaniesQuery = await db.collection("companies").limit(5).get();
       const sampleData = allCompaniesQuery.docs.map(doc => ({
         id: doc.id,
-        companyPostalCodeForBackend: doc.data().companyPostalCodeForBackend,
+        companyPostalCode: doc.data().companyPostalCode,
         selectedSubcategory: doc.data().selectedSubcategory,
         hourlyRate: doc.data().hourlyRate
       }));
@@ -159,14 +163,31 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
     const profiles = querySnapshot.docs
       .map((doc) => {
         const data = doc.data();
+        
+        // Debug: Check available profile picture fields
+        const availableProfilePictureFields = {
+          profilePictureURL: data.profilePictureURL,
+          step3_profilePictureURL: data.step3?.profilePictureURL,
+          profilePictureFirebaseUrl: data.profilePictureFirebaseUrl
+        };
+        
+        loggerV2.info(`[searchCompanyProfiles] DEBUG: Profilbild-Felder für ${doc.id}:`, availableProfilePictureFields);
+        
+        // Try multiple potential profile picture fields
+        const profilePictureURL = data.profilePictureURL || data.step3?.profilePictureURL || data.profilePictureFirebaseUrl;
+        
         return {
           // WICHTIG: Dies ist die Struktur für die Ergebnisliste
           id: doc.id,
           companyName: getUserDisplayName(data, UNKNOWN_PROVIDER_NAME),
-          profilePictureURL: data.profilePictureURL || data.profilePictureFirebaseUrl,
+          profilePictureURL: profilePictureURL,
           hourlyRate: data.hourlyRate,
           description: data.description,
           stripeAccountId: data.stripeAccountId,
+          skills: data.skills || [], // Skills für Badge-Anzeige hinzufügen
+          languages: data.languages, // Sprachen hinzufügen
+          postalCode: data.companyPostalCode, // PLZ hinzufügen
+          city: data.companyCity, // Stadt hinzufügen
         };
       });
 
