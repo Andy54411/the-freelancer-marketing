@@ -43,14 +43,39 @@ export const StripeCardCheckout = ({
 
   // Debug-Log für die Initialisierung und readiness der Stripe Elemente
   useEffect(() => {
-
+    console.log('[DEBUG] CheckoutForm - useEffect gestartet');
     if (!stripe || !elements) {
-
+      console.log('[DEBUG] CheckoutForm - Stripe oder Elements nicht bereit:', {
+        stripe: !!stripe,
+        elements: !!elements,
+      });
     } else {
-
+      console.log('[DEBUG] CheckoutForm - Stripe und Elements sind bereit!');
     }
+    console.log('[DEBUG] CheckoutForm - clientSecret erhalten:', {
+      clientSecret: !!clientSecret,
+      length: clientSecret?.length,
+    });
+
+    // Zusätzliche Stripe-Diagnose
+    if (stripe && clientSecret) {
+      console.log('[DEBUG] CheckoutForm - Versuche PaymentElement zu laden...');
+      // Stripe PaymentElement sollte automatisch laden
+
+      // Check if PaymentElement exists in DOM after short delay
+      setTimeout(() => {
+        const paymentElement = document.getElementById('payment-element');
+        const stripeElements = document.querySelectorAll('[data-testid*="payment"]');
+        console.log('[DEBUG] PaymentElement DOM Check:', {
+          paymentElement: !!paymentElement,
+          stripeElementsCount: stripeElements.length,
+          paymentElementHTML: paymentElement?.innerHTML || 'nicht gefunden',
+        });
+      }, 1000);
+    }
+
     // Keine clientSecret-Abrufe hier, da es als Prop kommt.
-  }, [stripe, elements]);
+  }, [stripe, elements, clientSecret]);
 
   // Handler für Änderungen am Address Element
   // const handleAddressChange = (event: StripeAddressElementChangeEvent) => {
@@ -135,7 +160,6 @@ export const StripeCardCheckout = ({
         onPaymentError('Zahlung nicht erfolgreich oder unbekannter Status');
       }
     } catch (error: unknown) {
-
       let errorMessage = 'Allgemeiner Fehler bei der Zahlung';
       if (error instanceof Error) {
         errorMessage = error.message;
@@ -153,6 +177,23 @@ export const StripeCardCheckout = ({
   // Optionen für das PaymentElement (Layout etc.)
   const paymentElementOptions: StripePaymentElementOptions = {
     layout: 'tabs', // oder "accordion"
+    business: {
+      // Business-spezifische Optionen für bessere Kompatibilität
+      name: 'Taskilo',
+    },
+    defaultValues: {
+      billingDetails: {
+        name: '',
+        email: '',
+      },
+    },
+    // Force load auch bei HTTP für Development
+    ...(process.env.NODE_ENV === 'development' && {
+      wallets: {
+        applePay: 'never',
+        googlePay: 'never',
+      },
+    }),
   };
 
   // Der Submit-Button ist nur aktiviert, wenn Stripe, Elements und das clientSecret vorhanden sind,
@@ -161,50 +202,187 @@ export const StripeCardCheckout = ({
 
   // Debug-Log für den Button-Status
   useEffect(() => {
-
+    console.log('[DEBUG] CheckoutForm - Button Status:', {
+      isButtonDisabled,
+      stripe: !!stripe,
+      elements: !!elements,
+      clientSecret: !!clientSecret,
+      isLoading,
+    });
   }, [isButtonDisabled, stripe, elements, clientSecret, isLoading]);
 
+  console.log('[DEBUG] CheckoutForm - Render:', {
+    stripe: !!stripe,
+    elements: !!elements,
+    clientSecret: !!clientSecret,
+    taskAmount,
+    taskId,
+  });
+
   return (
-    <form
-      id="payment-form"
-      onSubmit={handleSubmit}
-      className="space-y-6 p-4 border rounded-lg shadow-sm bg-white"
-    >
-      <h3 className="text-lg font-semibold mb-4">Zahlung</h3>
-
-      {/* PaymentElement sammelt die Zahlungsdaten */}
-      <PaymentElement
-        id="payment-element"
-        options={paymentElementOptions}
-      />
-
-      <button
-        type="submit"
-        disabled={isButtonDisabled}
-        className="mt-6 w-full bg-[#14ad9f] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-base flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+    <div className="w-full max-w-lg mx-auto">
+      <form
+        id="payment-form"
+        onSubmit={handleSubmit}
+        className="space-y-6 p-4 border rounded-lg shadow-sm bg-white w-full"
+        style={{ minHeight: '400px' }} // Mindesthöhe für bessere Sichtbarkeit
       >
-        {isLoading ? (
-          <>
-            <FiLoader className="animate-spin mr-2" /> Verarbeite...
-          </>
-        ) : (
-          `Jetzt bezahlen ${(taskAmount / 100).toFixed(2)} €`
-        )}
-      </button>
+        <h3 className="text-lg font-semibold mb-4">Zahlung</h3>
 
-      {message && (
+        {/* Debug-Info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-gray-600 p-2 bg-yellow-100 rounded mb-4 border">
+            🔍 CheckoutForm Debug:
+            <br />- Stripe: {stripe ? '✓' : '✗'}
+            <br />- Elements: {elements ? '✓' : '✗'}
+            <br />- ClientSecret: {clientSecret ? '✓' : '✗'}
+            <br />- TaskAmount: {taskAmount}
+            <br />- TaskId: {taskId || 'null'}
+          </div>
+        )}
+
+        {/* ABSOLUT MINIMALES PAYMENTELEMENT TEST */}
         <div
-          id="payment-message"
-          className={`mt-4 p-3 rounded-md text-sm flex items-center justify-center ${message.includes('erfolgreich') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+          style={{
+            border: '5px solid red',
+            backgroundColor: 'yellow',
+            padding: '20px',
+            margin: '20px 0',
+            minHeight: '200px',
+          }}
         >
-          {message.includes('erfolgreich') ? (
-            <FiCheckCircle className="mr-2" />
-          ) : (
-            <FiXCircle className="mr-2" />
-          )}
-          {message}
+          <h2 style={{ color: 'red', fontSize: '20px', fontWeight: 'bold' }}>
+            ⚠️ KRITISCHER TEST - PaymentElement MUSS hier erscheinen!
+          </h2>
+
+          {/* STRIPE ENVIRONMENT DIAGNOSE */}
+          <div
+            style={{
+              backgroundColor: 'orange',
+              border: '2px solid black',
+              padding: '10px',
+              marginBottom: '10px',
+              color: 'black',
+            }}
+          >
+            <h3>🔍 STRIPE DIAGNOSE:</h3>
+            <div>
+              • Stripe Key beginnt mit:{' '}
+              {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 7)}...
+            </div>
+            <div>• Environment: {process.env.NODE_ENV}</div>
+            <div>• ClientSecret Type: {typeof clientSecret}</div>
+            <div>• ClientSecret beginnt mit: {clientSecret?.substring(0, 10)}...</div>
+            <div>• Stripe Instance: {stripe?.constructor?.name || 'undefined'}</div>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: 'white',
+              border: '3px solid blue',
+              padding: '20px',
+              minHeight: '150px',
+            }}
+          >
+            <PaymentElement
+              options={{
+                layout: 'tabs',
+                paymentMethodOrder: ['card'],
+                fields: {
+                  billingDetails: 'never',
+                },
+              }}
+              onReady={() => {
+                console.log('🟢 PaymentElement onReady - ELEMENT IST GELADEN!');
+                console.log('🟢 Stripe Environment:', {
+                  publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20),
+                  environment: process.env.NODE_ENV,
+                  clientSecret: clientSecret?.substring(0, 20),
+                  stripeInstance: !!stripe,
+                });
+
+                // Prüfe DOM nach 1 Sekunde
+                setTimeout(() => {
+                  const allIframes = document.querySelectorAll('iframe');
+                  const stripeIframes = Array.from(allIframes).filter(
+                    iframe => iframe.src.includes('stripe') || iframe.src.includes('js.stripe.com')
+                  );
+
+                  console.log('🔍 DOM-Analyse nach onReady:', {
+                    totalIframes: allIframes.length,
+                    stripeIframes: stripeIframes.length,
+                    stripeIframeSources: stripeIframes.map(iframe => iframe.src.substring(0, 50)),
+                  });
+
+                  stripeIframes.forEach((iframe, index) => {
+                    const style = window.getComputedStyle(iframe);
+                    console.log(`🔍 Stripe Iframe ${index} CSS:`, {
+                      display: style.display,
+                      visibility: style.visibility,
+                      opacity: style.opacity,
+                      width: style.width,
+                      height: style.height,
+                      position: style.position,
+                    });
+                  });
+                }, 1000);
+
+                alert('PaymentElement wurde geladen! Prüfe Konsole für Details.');
+              }}
+              onLoadError={error => {
+                console.error('🔴 PaymentElement Load Error:', error);
+                alert(`PaymentElement Fehler: ${JSON.stringify(error)}`);
+              }}
+              onFocus={() => {
+                console.log('🟡 PaymentElement onFocus - User hat Element fokussiert');
+              }}
+              onBlur={() => {
+                console.log('🟡 PaymentElement onBlur - User hat Element verlassen');
+              }}
+              onChange={event => {
+                console.log('🟡 PaymentElement onChange:', event);
+              }}
+            />
+          </div>
+          <p style={{ color: 'red', fontWeight: 'bold', marginTop: '10px' }}>
+            ☝️ Wenn du hier KEINE Stripe-Zahlungsfelder siehst, dann ist das Problem grundsätzlich!
+          </p>
         </div>
-      )}
-    </form>
+
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-gray-600 p-2 bg-blue-100 rounded border">
+            PaymentElement sollte oberhalb dieser Zeile sichtbar sein ☝️
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isButtonDisabled}
+          className="mt-6 w-full bg-[#14ad9f] text-white font-bold py-3 px-4 rounded-lg hover:bg-[#129a8f] transition-colors text-base flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? (
+            <>
+              <FiLoader className="animate-spin mr-2" /> Verarbeite...
+            </>
+          ) : (
+            `Jetzt bezahlen ${(taskAmount / 100).toFixed(2)} €`
+          )}
+        </button>
+
+        {message && (
+          <div
+            id="payment-message"
+            className={`mt-4 p-3 rounded-md text-sm flex items-center justify-center ${message.includes('erfolgreich') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+          >
+            {message.includes('erfolgreich') ? (
+              <FiCheckCircle className="mr-2" />
+            ) : (
+              <FiXCircle className="mr-2" />
+            )}
+            {message}
+          </div>
+        )}
+      </form>
+    </div>
   );
 };
