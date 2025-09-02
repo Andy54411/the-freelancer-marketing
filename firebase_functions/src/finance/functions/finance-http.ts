@@ -580,11 +580,19 @@ async function handleReceiptExtraction(
     companyId: string
 ) {
     try {
-        logger.info(`[OCR] Starting receipt extraction for company: ${companyId}`);
+        logger.info(`[OCR DEBUG] Starting receipt extraction for company: ${companyId}`);
+        logger.info(`[OCR DEBUG] Request body keys:`, Object.keys(request.body || {}));
+        logger.info(`[OCR DEBUG] Request headers:`, {
+            'content-type': request.headers['content-type'],
+            'x-ocr-provider': request.headers['x-ocr-provider'],
+            'x-user-id': request.headers['x-user-id'],
+            'x-company-id': request.headers['x-company-id']
+        });
 
         // Validate request body
         const validationResult = ocrRequestSchema.safeParse(request.body);
         if (!validationResult.success) {
+            logger.error(`[OCR DEBUG] Validation failed:`, validationResult.error.issues);
             response.status(400).json({ 
                 error: 'Invalid OCR request data',
                 issues: validationResult.error.issues.map(issue => ({
@@ -599,23 +607,47 @@ async function handleReceiptExtraction(
         const { file: base64File, fileName = 'receipt.pdf', mimeType = 'application/pdf' } = validationResult.data;
         const ocrProvider = (request.headers['x-ocr-provider'] as string) || 'AWS_TEXTRACT';
 
-        logger.info(`[OCR] Processing file: ${fileName} with provider: ${ocrProvider}`);
-        logger.info(`[OCR] File details: size=${base64File.length} chars, type=${mimeType}`);
+        logger.info(`[OCR DEBUG] Processing file: ${fileName} with provider: ${ocrProvider}`);
+        logger.info(`[OCR DEBUG] File details: size=${base64File.length} chars, type=${mimeType}`);
+        logger.info(`[OCR DEBUG] Base64 sample (first 100 chars):`, base64File.substring(0, 100));
+
+        // Validate base64 format
+        if (!base64File || typeof base64File !== 'string') {
+            logger.error(`[OCR DEBUG] Invalid base64 file data: type=${typeof base64File}, length=${base64File?.length}`);
+            throw new Error('Invalid base64 file data provided');
+        }
 
         // Convert base64 to buffer
-        const fileBuffer = Buffer.from(base64File, 'base64');
+        let fileBuffer: Buffer;
+        try {
+            fileBuffer = Buffer.from(base64File, 'base64');
+            logger.info(`[OCR DEBUG] Buffer conversion successful: ${fileBuffer.length} bytes`);
+        } catch (bufferError) {
+            logger.error(`[OCR DEBUG] Buffer conversion failed:`, bufferError);
+            throw new Error(`Failed to convert base64 to buffer: ${bufferError}`);
+        }
 
         // Hybrid OCR processing: AWS Textract + Google AI Studio
+        logger.info(`[OCR DEBUG] Starting OCR processing with buffer size: ${fileBuffer.length} bytes`);
         const ocrResult = await performHybridOCR(fileBuffer, fileName, ocrProvider);
+        logger.info(`[OCR DEBUG] OCR processing completed:`, {
+            textLength: ocrResult.text.length,
+            confidence: ocrResult.confidence,
+            processingTime: ocrResult.processingTime,
+            enhanced: ocrResult.enhanced,
+            blocksCount: ocrResult.blocks?.length || 0
+        });
 
         // Extract structured receipt data
+        logger.info(`[OCR DEBUG] Starting data extraction from OCR result...`);
         const extractedData = await extractReceiptDataFromOCR(ocrResult, fileName);
-
-        logger.info(`[OCR] Extraction complete for ${fileName}:`, {
+        logger.info(`[OCR DEBUG] Data extraction completed:`, {
             hasAmount: !!extractedData.amount,
             hasVendor: !!extractedData.vendor,
             hasDate: !!extractedData.date,
-            confidence: ocrResult.confidence
+            amount: extractedData.amount,
+            vendor: extractedData.vendor,
+            date: extractedData.date
         });
 
         response.json({
@@ -633,12 +665,22 @@ async function handleReceiptExtraction(
         });
 
     } catch (error) {
-        logger.error('[OCR] Receipt extraction failed:', error);
+        logger.error('[OCR DEBUG] Receipt extraction failed with detailed error:', {
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            errorStack: error instanceof Error ? error.stack : undefined,
+            errorType: typeof error,
+            requestBodyKeys: Object.keys(request.body || {}),
+            companyId: companyId
+        });
         response.status(500).json({
             success: false,
             error: 'OCR processing failed',
             message: error instanceof Error ? error.message : 'Unknown OCR error',
-            extractionMethod: 'error'
+            extractionMethod: 'error',
+            debug: {
+                errorType: typeof error,
+                timestamp: new Date().toISOString()
+            }
         });
     }
 }
@@ -652,15 +694,25 @@ async function performHybridOCR(
     const startTime = Date.now();
     
     try {
-        logger.info(`[OCR Cost-Optimized] Starting Google AI Studio processing for ${fileName}, size: ${fileBuffer.length} bytes`);
+        logger.info(`[OCR Cost-Optimized DEBUG] Starting Google AI Studio processing for ${fileName}`, {
+            fileSizeBytes: fileBuffer.length,
+            fileSizeKB: Math.round(fileBuffer.length / 1024),
+            provider: provider,
+            timestamp: new Date().toISOString()
+        });
         
         // COST OPTIMIZATION: Use only Google AI Studio (much cheaper than AWS Textract)
         // Google AI Studio: ~$0.01 per 1K tokens vs AWS Textract: ~$1.50 per 1K pages
         
         try {
-            logger.info('[OCR Cost-Optimized] Processing with Google AI Studio only...');
+            logger.info('[OCR Cost-Optimized DEBUG] Attempting Google AI Studio processing...');
             const directResult = await processWithGoogleAIStudioDirect(fileBuffer, fileName);
-            logger.info('[OCR Cost-Optimized] ✅ Google AI Studio processing successful - 90% cost savings!');
+            logger.info('[OCR Cost-Optimized DEBUG] ✅ Google AI Studio processing successful!', {
+                textLength: directResult.extractedText?.length || 0,
+                confidence: directResult.confidence,
+                processingTimeMs: Date.now() - startTime,
+                enhanced: directResult.enhanced
+            });
             
             // Track cost savings
             await trackOCRCost({
@@ -725,46 +777,95 @@ async function processWithGoogleAIStudioDirect(
     fileName: string
 ): Promise<{ extractedText: string; confidence: number; enhanced: boolean }> {
     try {
-        logger.info(`[Google AI Cost-Optimized] Processing ${fileName} with cost-optimized extraction`);
+        logger.info(`[Google AI Cost-Optimized DEBUG] Processing ${fileName} with cost-optimized extraction`, {
+            fileSizeBytes: fileBuffer.length,
+            fileSizeKB: Math.round(fileBuffer.length / 1024)
+        });
         
         // Validate file size for cost control
         const maxSizeKB = 4 * 1024; // 4MB limit for cost control
         if (fileBuffer.length > maxSizeKB * 1024) {
+            logger.error(`[Google AI Cost-Optimized DEBUG] File too large:`, {
+                actualSizeBytes: fileBuffer.length,
+                maxSizeBytes: maxSizeKB * 1024
+            });
             throw new Error(`File too large for cost-optimized processing: ${fileBuffer.length} bytes (max: ${maxSizeKB}KB)`);
         }
         
+        logger.info(`[Google AI Cost-Optimized DEBUG] Converting to base64...`);
         const base64Data = fileBuffer.toString('base64');
         const mimeType = 'application/pdf';
+        logger.info(`[Google AI Cost-Optimized DEBUG] Base64 conversion complete, size: ${base64Data.length} chars`);
         
-        // COST-OPTIMIZED: Shorter, focused prompt to reduce token usage by 70%
-        const ocrPrompt = `Extrahiere aus diesem PDF:
+        // COST-OPTIMIZED: Comprehensive but efficient prompt for maximum data extraction
+        const ocrPrompt = `Extrahiere ALLE verfügbaren Daten aus diesem PDF-Dokument:
 
-1. Firmenname
-2. Rechnungsnummer  
-3. Datum (YYYY-MM-DD)
-4. Gesamtbetrag
-5. MwSt-Betrag
-6. Alle Rechnungsposten
+**GRUNDDATEN:**
+1. Firmenname/Anbieter
+2. Rechnungsnummer/Dokumentennummer
+3. Rechnungsdatum (YYYY-MM-DD)
+4. Fälligkeitsdatum
+5. Gesamtbetrag
+6. Netto-Betrag
+7. MwSt-Betrag
+8. MwSt-Satz (%)
 
-Format:
-FIRMA: [Name]
-NR: [Nummer]
+**FIRMEN-DETAILS:**
+9. Vollständige Firmenadresse
+10. USt-IdNr/VAT-Nummer
+11. Telefonnummer
+12. E-Mail-Adresse
+13. Website
+14. Geschäftsführer
+
+**RECHNUNGSPOSTEN:**
+15. Alle Einzelposten mit Beschreibung, Menge, Preis
+16. Leistungszeitraum
+17. Zahlungsbedingungen
+18. Rabatte/Skonto
+
+**BANKING:**
+19. IBAN
+20. BIC
+21. Bankname
+
+Format (strukturiert):
+FIRMA: [Vollständiger Name]
+NR: [Rechnungsnummer]
 DATUM: [YYYY-MM-DD]
-TOTAL: [Betrag]
-MWST: [Betrag]
-POSTEN: [Liste]
+FÄLLIG: [YYYY-MM-DD]
+TOTAL: [Gesamtbetrag mit Währung]
+NETTO: [Netto-Betrag]
+MWST: [MwSt-Betrag]
+MWST_SATZ: [%]
+ADRESSE: [Vollständige Adresse]
+UST_ID: [USt-IdNr]
+TEL: [Telefonnummer]
+EMAIL: [E-Mail]
+WEB: [Website]
+POSTEN: [Detaillierte Liste aller Rechnungsposten]
+ZAHLUNG: [Zahlungsbedingungen]
+IBAN: [IBAN]
+BIC: [BIC]
+BANK: [Bankname]
 
-Dann vollständiger Text:`;
+---
+VOLLTEXT:`;
 
+        logger.info(`[Google AI Cost-Optimized DEBUG] Checking Google AI initialization...`);
         if (!genAI) {
+            logger.warn(`[Google AI Cost-Optimized DEBUG] Google AI not initialized, attempting to reinitialize...`);
             // Try to reinitialize if not available
             const apiKey = process.env.GEMINI_API_KEY;
             if (apiKey) {
                 genAI = new GoogleGenerativeAI(apiKey);
-                logger.info('[Google AI] Reinitialized Google AI Studio during processing');
+                logger.info('[Google AI Cost-Optimized DEBUG] Reinitialized Google AI Studio during processing');
             } else {
+                logger.error('[Google AI Cost-Optimized DEBUG] GEMINI_API_KEY not found in environment');
                 throw new Error('Google AI Studio not configured - GEMINI_API_KEY secret missing');
             }
+        } else {
+            logger.info(`[Google AI Cost-Optimized DEBUG] Google AI already initialized`);
         }
         
         // Use flash model for best cost/performance ratio
@@ -772,7 +873,7 @@ Dann vollständiger Text:`;
             model: "gemini-1.5-flash",
             generationConfig: {
                 temperature: 0.1,
-                maxOutputTokens: 1024, // Reduced from 2048 for cost savings
+                maxOutputTokens: 2048, // Increased for comprehensive extraction
             }
         });
         
@@ -963,7 +1064,8 @@ function extractAmountsAdvanced(text: string): { amount: number | null; netAmoun
     for (const pattern of amountPatterns) {
         const matches = text.matchAll(pattern);
         for (const match of matches) {
-            const amountStr = match[1].replace(',', '.');
+            const amountStr = match[1]?.replace(',', '.') || '';
+            if (!amountStr) continue; // Skip if no amount string found
             const amount = parseFloat(amountStr);
             if (amount > 0 && amount < 50000) { // Reasonable range
                 allAmounts.push(amount);
@@ -975,7 +1077,7 @@ function extractAmountsAdvanced(text: string): { amount: number | null; netAmoun
     let vatAmount: number | null = null;
     for (const pattern of vatPatterns) {
         const match = text.match(pattern);
-        if (match) {
+        if (match && match[1]) {
             const amount = parseFloat(match[1].replace(',', '.'));
             if (amount > 0 && amount < 10000) {
                 vatAmount = amount;
@@ -988,7 +1090,7 @@ function extractAmountsAdvanced(text: string): { amount: number | null; netAmoun
     let netAmount: number | null = null;
     for (const pattern of netPatterns) {
         const match = text.match(pattern);
-        if (match) {
+        if (match && match[1]) {
             const amount = parseFloat(match[1].replace(',', '.'));
             if (amount > 0 && amount < 50000) {
                 netAmount = amount;
@@ -1824,28 +1926,53 @@ function generateExtractionMessage(data: any, enhanced?: boolean): string {
 // Parse structured data from Google AI Studio response
 function parseGoogleAIStructuredData(text: string): any | null {
     try {
-        // Look for the structured data section between --- markers
-        const structuredMatch = text.match(/---\s*([\s\S]*?)\s*---/);
-        if (!structuredMatch) return null;
-        
-        const structuredText = structuredMatch[1];
+        // Look for structured data patterns with new comprehensive format
         const data: any = {};
         
-        // Parse each line: KEY: VALUE
-        const lines = structuredText.split('\n');
-        for (const line of lines) {
-            const colonIndex = line.indexOf(':');
-            if (colonIndex > 0) {
-                const key = line.substring(0, colonIndex).trim();
-                const value = line.substring(colonIndex + 1).trim();
-                
-                if (value && value !== '[' && value !== 'N/A' && value !== '') {
-                    data[key] = value.replace(/[\[\]]/g, ''); // Remove brackets
-                }
+        // Parse each expected field from the comprehensive prompt
+        const extractField = (pattern: string, key: string) => {
+            const regex = new RegExp(`${pattern}:\\s*(.+?)(?=\\n|$)`, 'i');
+            const match = text.match(regex);
+            if (match && match[1] && match[1].trim() !== '' && match[1] !== 'N/A' && !match[1].includes('[')) {
+                data[key] = match[1].trim();
+            }
+        };
+
+        // Extract all comprehensive fields
+        extractField('FIRMA', 'companyName');
+        extractField('NR', 'invoiceNumber');
+        extractField('DATUM', 'date');
+        extractField('FÄLLIG', 'dueDate');
+        extractField('TOTAL', 'totalAmount');
+        extractField('NETTO', 'netAmount');
+        extractField('MWST', 'vatAmount');
+        extractField('MWST_SATZ', 'vatRate');
+        extractField('ADRESSE', 'address');
+        extractField('UST_ID', 'vatNumber');
+        extractField('TEL', 'phone');
+        extractField('EMAIL', 'email');
+        extractField('WEB', 'website');
+        extractField('POSTEN', 'items');
+        extractField('ZAHLUNG', 'paymentTerms');
+        extractField('IBAN', 'iban');
+        extractField('BIC', 'bic');
+        extractField('BANK', 'bankName');
+
+        // Also try legacy format for backward compatibility
+        const legacyFields = ['companyName', 'invoiceNumber', 'date', 'amount', 'vatAmount', 'netAmount'];
+        for (const field of legacyFields) {
+            if (!data[field]) {
+                const upperField = field.toUpperCase();
+                extractField(upperField, field);
             }
         }
+
+        logger.info('[Google AI] Parsed comprehensive structured data:', {
+            fieldCount: Object.keys(data).length,
+            hasBasicData: !!(data.companyName && data.invoiceNumber && data.totalAmount),
+            hasExtendedData: !!(data.address && data.vatNumber && data.iban)
+        });
         
-        logger.info('[Google AI] Parsed structured data:', data);
         return Object.keys(data).length > 0 ? data : null;
         
     } catch (error) {
@@ -1854,7 +1981,7 @@ function parseGoogleAIStructuredData(text: string): any | null {
     }
 }
 
-// Create receipt data from Google AI Studio structured data
+// Create comprehensive receipt data from Google AI Studio structured data
 function createReceiptDataFromStructured(structuredData: any, fileName: string): any {
     const parseAmount = (amountStr: string): number | null => {
         if (!amountStr) return null;
@@ -1882,6 +2009,60 @@ function createReceiptDataFromStructured(structuredData: any, fileName: string):
         
         return new Date().toISOString().split('T')[0];
     };
+
+    const parseVatRate = (vatRateStr: string, vatAmount: number | null, netAmount: number | null): number => {
+        logger.info('[VAT DEBUG] Parsing VAT rate:', {
+            vatRateStr: vatRateStr,
+            vatAmount: vatAmount,
+            netAmount: netAmount
+        });
+        
+        // First try to extract from string
+        if (vatRateStr && vatRateStr.includes('%')) {
+            const rate = parseFloat(vatRateStr.replace('%', ''));
+            if (!isNaN(rate)) {
+                logger.info('[VAT DEBUG] Found VAT rate from string:', rate);
+                return rate;
+            }
+        }
+        
+        // Try to find VAT rate in the raw text
+        if (vatRateStr) {
+            const vatPatterns = [
+                /(\d{1,2}(?:[.,]\d+)?)\s*%/g,
+                /mwst[\s:]*(\d{1,2}(?:[.,]\d+)?)\s*%/gi,
+                /vat[\s:]*(\d{1,2}(?:[.,]\d+)?)\s*%/gi,
+                /steuer[\s:]*(\d{1,2}(?:[.,]\d+)?)\s*%/gi
+            ];
+            
+            for (const pattern of vatPatterns) {
+                const matches = Array.from(vatRateStr.matchAll(pattern));
+                for (const match of matches) {
+                    const rate = parseFloat(match[1].replace(',', '.'));
+                    if (!isNaN(rate) && rate >= 0 && rate <= 30) {
+                        logger.info('[VAT DEBUG] Found VAT rate from pattern:', rate);
+                        return rate;
+                    }
+                }
+            }
+        }
+        
+        // Calculate from amounts if available
+        if (vatAmount && netAmount && netAmount > 0) {
+            const calculatedRate = Math.round((vatAmount / netAmount) * 100);
+            logger.info('[VAT DEBUG] Calculated VAT rate from amounts:', calculatedRate);
+            return calculatedRate;
+        }
+        
+        // Special case: If VAT amount is 0, assume 0% VAT
+        if (vatAmount === 0) {
+            logger.info('[VAT DEBUG] Zero VAT amount detected, returning 0% rate');
+            return 0;
+        }
+        
+        logger.info('[VAT DEBUG] Using default German VAT rate: 19%');
+        return 19; // Default German VAT rate
+    };
     
     const determineCategory = (vendor: string, text: string): string => {
         const v = vendor.toLowerCase();
@@ -1891,56 +2072,76 @@ function createReceiptDataFromStructured(structuredData: any, fileName: string):
         if (t.includes('hosting') || t.includes('server') || t.includes('cloud')) return 'IT/Hosting';
         if (t.includes('software') || t.includes('lizenz') || t.includes('subscription')) return 'Software/Lizenzen';
         if (t.includes('werbung') || t.includes('marketing') || t.includes('ads')) return 'Marketing/Werbung';
-        if (t.includes('büro') || t.includes('office') || t.includes('material')) return 'Büroausstattung';
+        if (v.includes('google')) return 'Marketing/Werbung';
+        if (t.includes('beratung') || t.includes('consulting')) return 'Beratung';
+        if (t.includes('büro') || t.includes('office')) return 'Bürobedarf';
+        if (t.includes('reise') || t.includes('hotel') || t.includes('flug')) return 'Reisekosten';
+        
         return 'Sonstiges';
     };
+
+    // Extract all available data from structured format
+    const vendor = structuredData.companyName || 'Unbekannt';
+    const totalAmount = parseAmount(structuredData.totalAmount || structuredData.amount) || 0;
+    const netAmount = parseAmount(structuredData.netAmount) || totalAmount;
+    const vatAmount = parseAmount(structuredData.vatAmount) || 0;
     
-    const vendor = structuredData.VENDOR || '';
-    const invoiceNumber = structuredData.INVOICE_NUMBER || '';
-    const totalAmount = parseAmount(structuredData.TOTAL_AMOUNT);
-    const netAmount = parseAmount(structuredData.NET_AMOUNT);
-    const vatAmount = parseAmount(structuredData.VAT_AMOUNT);
-    const vatRate = structuredData.VAT_RATE ? parseInt(structuredData.VAT_RATE) : 19;
-    const date = parseDate(structuredData.DATE);
+    // Use the entire structured data text for VAT rate detection
+    const fullText = JSON.stringify(structuredData) + ' ' + Object.values(structuredData).join(' ');
+    const vatRate = parseVatRate(structuredData.vatRate || fullText, vatAmount, netAmount);
+    
+    const invoiceNumber = structuredData.invoiceNumber || '';
+    const date = parseDate(structuredData.date);
+    const dueDate = parseDate(structuredData.dueDate) || '';
     const category = determineCategory(vendor, JSON.stringify(structuredData));
-    
-    // Generate appropriate title
-    let title = 'Google AI - Rechnung';
-    if (vendor && invoiceNumber) {
-        title = `${vendor} - Rechnung ${invoiceNumber}`;
-    } else if (vendor) {
-        title = `${vendor} - Rechnung`;
-    } else if (invoiceNumber) {
-        title = `Rechnung ${invoiceNumber}`;
-    }
-    
-    const result = {
-        title,
-        amount: totalAmount,
-        category,
-        description: `Google AI Studio OCR: ${fileName}`,
-        vendor,
-        date,
-        invoiceNumber,
-        vatAmount: vatAmount || (totalAmount && netAmount ? totalAmount - netAmount : null),
-        netAmount: netAmount || (totalAmount ? Math.round((totalAmount / 1.19) * 100) / 100 : null),
-        vatRate,
-        companyName: vendor,
-        companyAddress: structuredData.COMPANY_ADDRESS || '',
-        companyVatNumber: structuredData.COMPANY_VAT_NUMBER || '',
-        contactEmail: structuredData.CONTACT_EMAIL || '',
-        contactPhone: structuredData.CONTACT_PHONE || '',
-        enhanced: true
-    };
-    
-    logger.info('[Google AI] Created structured receipt data:', {
-        vendor: result.vendor,
-        amount: result.amount,
-        invoiceNumber: result.invoiceNumber,
-        category: result.category
+
+    logger.info('[STRUCTURED DATA DEBUG] Parsed values:', {
+        vendor: vendor,
+        totalAmount: totalAmount,
+        netAmount: netAmount,
+        vatAmount: vatAmount,
+        vatRate: vatRate,
+        invoiceNumber: invoiceNumber
     });
-    
-    return result;
+
+    return {
+        // Basic fields
+        title: `${vendor} - Rechnung ${invoiceNumber}`,
+        amount: totalAmount,
+        category: category,
+        description: `Rechnung: ${fileName}`,
+        vendor: vendor,
+        date: date,
+        invoiceNumber: invoiceNumber,
+        
+        // Financial details
+        vatAmount: vatAmount,
+        netAmount: netAmount,
+        vatRate: vatRate,
+        
+        // Company information
+        companyName: vendor,
+        companyAddress: structuredData.address || '',
+        companyVatNumber: structuredData.vatNumber || '',
+        
+        // Contact information
+        contactEmail: structuredData.email || '',
+        contactPhone: structuredData.phone || '',
+        contactWebsite: structuredData.website || '',
+        
+        // Additional details
+        dueDate: dueDate,
+        paymentTerms: structuredData.paymentTerms || '',
+        items: structuredData.items || '',
+        
+        // Banking information
+        iban: structuredData.iban || '',
+        bic: structuredData.bic || '',
+        bankName: structuredData.bankName || '',
+        
+        // Processing metadata
+        processingMode: 'comprehensive-extraction'
+    };
 }
 
 // =============================================================================

@@ -4,6 +4,7 @@ import type { FirestoreEvent, QueryDocumentSnapshot, Change } from 'firebase-fun
 import * as logger from 'firebase-functions/logger';
 import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
+import { debounceFirestoreTrigger, incrementOperationCount } from './pub-sub-optimization';
 
 // Initialize Firebase Admin SDK
 if (getApps().length === 0) {
@@ -27,25 +28,34 @@ interface QuoteNotification {
 }
 
 /**
- * Trigger: Neue Angebotsanfrage erstellt
- * Sendet Bell-Notifications an Provider und Customer
+ * COST-OPTIMIZED: Quote creation trigger with debouncing
  */
-export const onQuoteCreated = onDocumentCreated('quotes/{quoteId}', async (event: FirestoreEvent<QueryDocumentSnapshot | undefined, { quoteId: string }>) => {
-  const quoteId = event.params.quoteId;
-  const quoteData = event.data?.data();
+export const onQuoteCreated = onDocumentCreated({
+  document: 'quotes/{quoteId}',
+  region: "europe-west1",
+  memory: "128MiB",
+  timeoutSeconds: 60
+}, async (event: FirestoreEvent<QueryDocumentSnapshot | undefined, { quoteId: string }>) => {
+  incrementOperationCount();
+  
+  return debounceFirestoreTrigger(
+    `quote_created_${event.params.quoteId}`,
+    async () => {
+      const quoteId = event.params.quoteId;
+      const quoteData = event.data?.data();
 
-  if (!quoteData) {
-    logger.warn(`[onQuoteCreated] No data for quote ${quoteId}`);
-    return;
-  }
+      if (!quoteData) {
+        logger.warn(`[onQuoteCreated] No data for quote ${quoteId}`);
+        return;
+      }
 
-  logger.info(`[onQuoteCreated] Processing new quote: ${quoteId}`);
+      logger.info(`[onQuoteCreated] Processing new quote: ${quoteId}`);
 
-  // Check if notifications were already sent (to avoid duplicates)
-  if (quoteData.sentViaNotificationSystem) {
-    logger.info(`[onQuoteCreated] Notifications already sent for quote ${quoteId}, skipping trigger`);
-    return;
-  }
+      // Check if notifications were already sent (to avoid duplicates)
+      if (quoteData.sentViaNotificationSystem) {
+        logger.info(`[onQuoteCreated] Notifications already sent for quote ${quoteId}, skipping trigger`);
+        return;
+      }
 
   try {
     const providerId = quoteData.providerId;
@@ -137,6 +147,9 @@ export const onQuoteCreated = onDocumentCreated('quotes/{quoteId}', async (event
   } catch (error) {
     logger.error(`[onQuoteCreated] ❌ Error sending notifications for quote ${quoteId}:`, error);
   }
+    },
+    1000 // 1 second debounce for quote creation
+  );
 });
 
 /**

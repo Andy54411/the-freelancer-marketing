@@ -14,6 +14,9 @@ setGlobalOptions({
     memory: '256MiB', // <-- AUSGEWOGEN: Speicher auf 256MiB erhöht, um Memory-Limit-Probleme zu beheben ohne CPU-Quota zu überschreiten.
     cpu: 0.1, // <-- MINIMAL: CPU-Anforderung minimiert, um Quota-Probleme zu vermeiden.
     concurrency: 1, // <-- Jede Instanz bearbeitet nur eine Anfrage gleichzeitig.
+    // COST OPTIMIZATION: Pub/Sub Trigger-Optimierungen
+    minInstances: 0, // Keine ständig laufenden Instanzen
+    maxInstances: 10 // Begrenze parallele Ausführungen
 });
 
 import * as httpOrders from './http_orders';
@@ -109,7 +112,7 @@ export const getProviderOrders = getProviderOrdersModule.getProviderOrders;
 export const populateChatUserDetails = triggersChat.populateChatUserDetails;
 export const onUserUpdatePropagateToChats = triggersChat.onUserUpdatePropagateToChats;
 export const onChatUpdateManageUserDetails = triggersChat.onChatUpdateManageUserDetails;
-// export const onCompanyUpdatePropagateToChats = triggersChat.onCompanyUpdatePropagateToChats; // DEAKTIVIERT: Companies Collection Trigger
+export const onCompanyUpdatePropagateToChats = triggersChat.onCompanyUpdatePropagateToChats;
 
 // Other HTTP and Triggers
 export const backfillChatUserDetails = httpMigrations.backfillChatUserDetails;
