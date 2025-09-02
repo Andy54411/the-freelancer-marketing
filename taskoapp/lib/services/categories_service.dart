@@ -218,40 +218,115 @@ class CategoriesService {
           
           // Debug: Zeige echte Firebase-Daten
           debugPrint('🔍 Echter Provider gefunden: ${data['companyName']} (ID: ${doc.id})');
-          debugPrint('📊 Daten: $data');
+          debugPrint('📊 Logo/Bild URL: ${data['profilePictureURL'] ?? data['logoURL'] ?? data['avatarURL'] ?? 'KEIN BILD'}');
+          debugPrint('📊 Alle Bild-Felder: logoURL=${data['logoURL']}, profilePictureURL=${data['profilePictureURL']}, avatarURL=${data['avatarURL']}, companyLogoURL=${data['companyLogoURL']}, imageURL=${data['imageURL']}, photoURL=${data['photoURL']}');
+          debugPrint('📊 Bewertungs-Felder: averageRating=${data['averageRating']}, reviewCount=${data['reviewCount']}, totalRatings=${data['totalRatings']}, rating=${data['rating']}');
+          debugPrint('📊 ALLE FELDER-KEYS: ${data.keys.toList()}');
+          debugPrint('📊 FELDER-ANZAHL: ${data.length}');
+          debugPrint('📊 STEP3 DATA: ${data['step3']}');
+          debugPrint('📊 Vollständige Daten: $data');
           
           // Lade echte Bewertungen für diesen Provider
           final reviewData = await _getProviderReviews(doc.id);
           
-          // Verwende nur echte Firebase-Daten
+          // Prüfe auch direkte Bewertungsfelder in den Firebase-Daten
+          final directRating = (data['averageRating'] as num?)?.toDouble() ?? (data['rating'] as num?)?.toDouble();
+          final directReviewCount = (data['reviewCount'] as num?)?.toInt() ?? (data['totalRatings'] as num?)?.toInt() ?? (data['numberOfReviews'] as num?)?.toInt();
+          
+          debugPrint('🔍 Bewertungen für ${data['companyName']}: DB=${reviewData['averageRating']}⭐(${reviewData['reviewCount']}), Direct=$directRating⭐($directReviewCount)');
+          
+          // Verwende DIREKT die originalen Firebase-Daten ohne Umwandlung
           final provider = {
+            // Basis-IDs
             'id': doc.id,
-            'name': data['companyName'] ?? 'Unbekanntes Unternehmen',
-            'providerName': data['companyName'] ?? 'Unbekanntes Unternehmen', 
-            'title': data['companyName'] ?? 'Unbekanntes Unternehmen',
-            'companyName': data['companyName'] ?? '',
-            'description': data['description'] ?? data['publicDescription'] ?? '',
-            'subcategoryName': data['selectedSubcategory'] ?? subcategory,
-            'price': (data['hourlyRate'] as num?)?.toDouble() ?? (data['pricePerHour'] as num?)?.toDouble() ?? 0.0,
+            'providerId': doc.id,
+            
+            // Namen - direkt aus Firebase ohne Fallbacks
+            'name': data['companyName'] ?? data['displayName'] ?? '',
+            'providerName': data['companyName'] ?? data['displayName'] ?? '',
+            'title': data['companyName'] ?? data['displayName'] ?? '',
+            'companyName': data['companyName'] ?? data['displayName'] ?? '',
+            'displayName': data['displayName'] ?? data['companyName'] ?? '',
+            
+            // Beschreibung - direkt aus Firebase
+            'description': data['description'] ?? data['publicDescription'] ?? data['businessDescription'] ?? '',
+            'publicDescription': data['publicDescription'] ?? data['description'] ?? '',
+            
+            // Bilder - ALLE möglichen Bild-Felder aus Firebase
+            'profilePictureURL': data['profilePictureURL'] ?? '',
+            'logoURL': data['logoURL'] ?? '',
+            'avatarURL': data['avatarURL'] ?? '',
+            'companyLogoURL': data['companyLogoURL'] ?? '',
+            'imageURL': data['imageURL'] ?? '',
+            'photoURL': data['photoURL'] ?? '',
+            // Das ERSTE verfügbare Bild verwenden
+            'image': data['logoURL'] ?? data['profilePictureURL'] ?? data['avatarURL'] ?? data['companyLogoURL'] ?? data['imageURL'] ?? data['photoURL'] ?? '',
+            
+            // Preise - alle Varianten
+            'price': (data['hourlyRate'] as num?)?.toDouble() ?? (data['pricePerHour'] as num?)?.toDouble() ?? (data['price'] as num?)?.toDouble() ?? 0.0,
+            'hourlyRate': (data['hourlyRate'] as num?)?.toDouble() ?? 0.0,
+            'pricePerHour': (data['pricePerHour'] as num?)?.toDouble() ?? 0.0,
+            
+            // Bewertungen
             'rating': reviewData['averageRating'],
             'reviewCount': reviewData['reviewCount'],
-            'profilePictureURL': data['profilePictureURL'] ?? data['logoURL'] ?? '',
-            'location': '${data['companyCity'] ?? data['city'] ?? ''}, ${data['companyCountry'] ?? data['country'] ?? ''}'.trim().replaceAll(RegExp(r'^,\s*'), ''),
-            // Echte Firebase-Werte statt Mock-Daten
-            'isPro': data['isPremium'] ?? data['isVerified'] ?? false,
-            'isFastDelivery': data['fastDelivery'] ?? data['quickResponse'] ?? false,
-            'isOnline': data['offersOnlineServices'] ?? false,
-            'isOnsite': data['offersOnsiteServices'] ?? true,
-            'createdAt': data['createdAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
-            'lastActive': data['lastLoginAt']?.toDate()?.toIso8601String() ?? DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
-            'responseTimeHours': (data['averageResponseTime'] as num?)?.toDouble() ?? 24.0,
-            'completionRate': (data['completionRate'] as num?)?.toDouble() ?? 95.0,
-            'source': 'companies',
+            
+            // Standort - alle Varianten
+            'location': data['companyAddress'] ?? '${data['companyCity'] ?? data['city'] ?? ''}, ${data['companyCountry'] ?? data['country'] ?? ''}'.trim().replaceAll(RegExp(r'^,\s*'), ''),
+            'city': data['companyCity'] ?? data['city'] ?? '',
+            'country': data['companyCountry'] ?? data['country'] ?? '',
+            'address': data['companyAddress'] ?? data['address'] ?? '',
+            
+            // Kategorien
+            'subcategoryName': data['selectedSubcategory'] ?? subcategory,
             'category': data['selectedCategory'] ?? '',
             'subcategory': data['selectedSubcategory'] ?? '',
-            // Alle originalen Firebase-Daten beibehalten
-            'originalData': data,
+            
+            // Status-Felder - direkt aus Firebase
+            'isPro': data['isPremium'] ?? data['isVerified'] ?? data['isPro'] ?? false,
+            'isVerified': data['isVerified'] ?? data['isPremium'] ?? false,
+            'isPremium': data['isPremium'] ?? data['isVerified'] ?? false,
+            'isFastDelivery': data['fastDelivery'] ?? data['quickResponse'] ?? false,
+            'isOnline': data['offersOnlineServices'] ?? data['isOnline'] ?? false,
+            'isOnsite': data['offersOnsiteServices'] ?? data['isOnsite'] ?? true,
+            'isActive': data['isActive'] ?? true,
+            
+            // Zeitstempel
+            'createdAt': data['createdAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
+            'lastActive': data['lastLoginAt']?.toDate()?.toIso8601String() ?? data['lastActive']?.toDate()?.toIso8601String() ?? DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+            
+            // Performance-Daten
+            'responseTimeHours': (data['averageResponseTime'] as num?)?.toDouble() ?? 24.0,
+            'completionRate': (data['completionRate'] as num?)?.toDouble() ?? 95.0,
+            
+            // Quelle
+            'source': 'companies',
+            
+            // ALLE originalen Firebase-Daten komplett übernehmen
+            ...data,
           };
+          
+          // Aktualisiere Bilder mit korrekter Priorität - auch aus step3 Daten
+          final step3Data = data['step3'] as Map<String, dynamic>?;
+          final profilePictureFromStep3 = step3Data?['profilePictureURL'];
+          final profileBannerFromStep3 = step3Data?['profileBannerImage'];
+          
+          // Priorität: step3 Banner > step3 Profile > top-level Profile > top-level Logo > andere
+          provider['image'] = profileBannerFromStep3 ?? profilePictureFromStep3 ?? data['profilePictureURL'] ?? data['logoURL'] ?? data['avatarURL'] ?? data['companyLogoURL'] ?? data['imageURL'] ?? data['photoURL'] ?? '';
+          provider['profilePictureURL'] = profilePictureFromStep3 ?? data['profilePictureURL'] ?? '';
+          provider['profileBannerImage'] = profileBannerFromStep3 ?? '';
+          
+          debugPrint('🖼️ Bild-Update: banner=$profileBannerFromStep3, profile=$profilePictureFromStep3, final=${provider['image']}');
+          
+          // Aktualisiere Bewertungen mit echten Daten
+          if (directRating != null) {
+            provider['rating'] = directRating;
+            provider['averageRating'] = directRating;
+          }
+          if (directReviewCount != null) {
+            provider['reviewCount'] = directReviewCount;
+            provider['totalRatings'] = directReviewCount;
+          }
           
           providers.add(provider);
         }
@@ -326,33 +401,84 @@ class CategoriesService {
         for (final doc in firmaQuery.docs) {
           final data = doc.data();
           
+          // Debug: Zeige echte Firebase-Daten aus firma Collection
+          debugPrint('🔍 Firma Provider gefunden: ${data['companyName'] ?? data['displayName']} (ID: ${doc.id})');
+          debugPrint('📊 Logo/Bild URL: ${data['logoURL'] ?? data['profilePictureURL'] ?? data['avatarURL'] ?? 'KEIN BILD'}');
+          debugPrint('📊 Alle Bild-Felder: logoURL=${data['logoURL']}, profilePictureURL=${data['profilePictureURL']}, avatarURL=${data['avatarURL']}, companyLogoURL=${data['companyLogoURL']}, imageURL=${data['imageURL']}, photoURL=${data['photoURL']}');
+          debugPrint('📊 Vollständige Daten: $data');
+          
           // Lade echte Bewertungen für diesen Provider
           final reviewData = await _getProviderReviews(doc.id);
           
+          // Verwende DIREKT die originalen Firebase-Daten ohne Umwandlung
           final provider = {
+            // Basis-IDs
             'id': doc.id,
-            'name': data['companyName'] ?? data['displayName'] ?? 'Unbekanntes Unternehmen',
-            'providerName': data['companyName'] ?? data['displayName'] ?? 'Unbekanntes Unternehmen',
-            'title': data['companyName'] ?? data['displayName'] ?? 'Unbekanntes Unternehmen',
+            'providerId': doc.id,
+            
+            // Namen - direkt aus Firebase ohne Fallbacks
+            'name': data['companyName'] ?? data['displayName'] ?? '',
+            'providerName': data['companyName'] ?? data['displayName'] ?? '',
+            'title': data['companyName'] ?? data['displayName'] ?? '',
             'companyName': data['companyName'] ?? data['displayName'] ?? '',
-            'description': data['publicDescription'] ?? data['description'] ?? '',
-            'subcategoryName': subcategory, // Zeige die Subcategory
-            'price': (data['hourlyRate'] as num?)?.toDouble() ?? 0.0,
+            'displayName': data['displayName'] ?? data['companyName'] ?? '',
+            
+            // Beschreibung - direkt aus Firebase
+            'description': data['publicDescription'] ?? data['description'] ?? data['businessDescription'] ?? '',
+            'publicDescription': data['publicDescription'] ?? data['description'] ?? '',
+            
+            // Bilder - ALLE möglichen Bild-Felder aus Firebase
+            'profilePictureURL': data['profilePictureURL'] ?? '',
+            'logoURL': data['logoURL'] ?? '',
+            'avatarURL': data['avatarURL'] ?? '',
+            'companyLogoURL': data['companyLogoURL'] ?? '',
+            'imageURL': data['imageURL'] ?? '',
+            'photoURL': data['photoURL'] ?? '',
+            // Das ERSTE verfügbare Bild verwenden
+            'image': data['logoURL'] ?? data['profilePictureURL'] ?? data['avatarURL'] ?? data['companyLogoURL'] ?? data['imageURL'] ?? data['photoURL'] ?? '',
+            
+            // Preise - alle Varianten
+            'price': (data['hourlyRate'] as num?)?.toDouble() ?? (data['pricePerHour'] as num?)?.toDouble() ?? (data['price'] as num?)?.toDouble() ?? 0.0,
+            'hourlyRate': (data['hourlyRate'] as num?)?.toDouble() ?? 0.0,
+            'pricePerHour': (data['pricePerHour'] as num?)?.toDouble() ?? 0.0,
+            
+            // Bewertungen
             'rating': reviewData['averageRating'],
             'reviewCount': reviewData['reviewCount'],
-            'profilePictureURL': data['profilePictureURL'] ?? '',
-            'location': '${data['companyCityForBackend'] ?? data['city'] ?? ''}, ${data['companyCountryForBackend'] ?? data['country'] ?? ''}'.trim().replaceAll(RegExp(r'^,\s*'), ''),
-            'isPro': true,
-            'isFastDelivery': true,
-            'isOnline': false,
-            'isOnsite': true,
-            'createdAt': data['createdAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
-            'lastActive': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
-            'responseTimeHours': 24.0,
-            'completionRate': 98.0,
-            'source': 'firma',
+            
+            // Standort - alle Varianten
+            'location': data['companyAddress'] ?? '${data['companyCityForBackend'] ?? data['companyCity'] ?? data['city'] ?? ''}, ${data['companyCountryForBackend'] ?? data['companyCountry'] ?? data['country'] ?? ''}'.trim().replaceAll(RegExp(r'^,\s*'), ''),
+            'city': data['companyCityForBackend'] ?? data['companyCity'] ?? data['city'] ?? '',
+            'country': data['companyCountryForBackend'] ?? data['companyCountry'] ?? data['country'] ?? '',
+            'address': data['companyAddress'] ?? data['address'] ?? '',
+            
+            // Kategorien
+            'subcategoryName': data['selectedSubcategory'] ?? subcategory,
             'category': data['selectedCategory'] ?? '',
             'subcategory': data['selectedSubcategory'] ?? '',
+            
+            // Status-Felder - direkt aus Firebase
+            'isPro': data['isPremium'] ?? data['isVerified'] ?? data['isPro'] ?? true,
+            'isVerified': data['isVerified'] ?? data['isPremium'] ?? true,
+            'isPremium': data['isPremium'] ?? data['isVerified'] ?? true,
+            'isFastDelivery': data['fastDelivery'] ?? data['quickResponse'] ?? true,
+            'isOnline': data['offersOnlineServices'] ?? data['isOnline'] ?? false,
+            'isOnsite': data['offersOnsiteServices'] ?? data['isOnsite'] ?? true,
+            'isActive': data['isActive'] ?? true,
+            
+            // Zeitstempel
+            'createdAt': data['createdAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
+            'lastActive': data['lastLoginAt']?.toDate()?.toIso8601String() ?? data['lastActive']?.toDate()?.toIso8601String() ?? DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+            
+            // Performance-Daten
+            'responseTimeHours': (data['averageResponseTime'] as num?)?.toDouble() ?? 24.0,
+            'completionRate': (data['completionRate'] as num?)?.toDouble() ?? 98.0,
+            
+            // Quelle
+            'source': 'firma',
+            
+            // ALLE originalen Firebase-Daten komplett übernehmen
+            ...data,
           };
           
           providers.add(provider);

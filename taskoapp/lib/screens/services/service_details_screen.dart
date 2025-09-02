@@ -20,7 +20,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _isFavorite = widget.service['isFavorite'] ?? false;
   }
 
@@ -71,26 +71,33 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                 ),
                 child: Stack(
                   children: [
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _getServiceIcon(),
-                            size: 80,
-                            color: Colors.white.withValues(alpha: 0.9),
+                    // Echtes Provider-Bild (Banner oder Hauptbild)
+                    if (_hasValidProviderImage())
+                      Positioned.fill(
+                        child: Image.network(
+                          _getProviderImage(),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildFallbackHeader();
+                          },
+                        ),
+                      )
+                    else
+                      _buildFallbackHeader(),
+                    
+                    // Gradient Overlay für bessere Lesbarkeit
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.1),
+                              Colors.black.withValues(alpha: 0.3),
+                            ],
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            widget.service['title'] ?? 'Service-Titel',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                     if (_isPro())
@@ -129,14 +136,19 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: const Color(0xFF14ad9f).withValues(alpha: 0.2),
-                    child: Text(
-                      _getProviderInitials(),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF14ad9f),
-                      ),
-                    ),
+                    backgroundImage: _hasValidProviderProfileImage()
+                        ? NetworkImage(_getProviderProfileImage())
+                        : null,
+                    child: !_hasValidProviderProfileImage()
+                        ? Text(
+                            _getProviderInitials(),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF14ad9f),
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -208,7 +220,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                 indicatorColor: const Color(0xFF14ad9f),
                 tabs: const [
                   Tab(text: 'Übersicht'),
-                  Tab(text: 'Pakete'),
                   Tab(text: 'Bewertungen'),
                   Tab(text: 'FAQ'),
                 ],
@@ -222,7 +233,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               controller: _tabController,
               children: [
                 _buildOverviewTab(),
-                _buildPackagesTab(),
                 _buildReviewsTab(),
                 _buildFAQTab(),
               ],
@@ -293,165 +303,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               ],
             ),
           )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPackagesTab() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        _buildPackageCard(
-          'Basic',
-          49,
-          '3 Tage',
-          ['1 Konzept', 'Grunddesign', '1 Revision'],
-        ),
-        const SizedBox(height: 16),
-        _buildPackageCard(
-          'Standard',
-          99,
-          '5 Tage',
-          ['3 Konzepte', 'Premium Design', '3 Revisionen', 'Quelldateien'],
-          isPopular: true,
-        ),
-        const SizedBox(height: 16),
-        _buildPackageCard(
-          'Premium',
-          199,
-          '7 Tage',
-          ['5 Konzepte', 'Exklusives Design', 'Unbegrenzte Revisionen', 'Quelldateien', 'Copyright'],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPackageCard(String title, int price, String delivery, List<String> features, {bool isPopular = false}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isPopular ? const Color(0xFF14ad9f) : Colors.grey.shade300,
-          width: isPopular ? 2 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    Text(
-                      '€$price',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF14ad9f),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Lieferung in $delivery',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                ...features.map((feature) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check,
-                        size: 16,
-                        color: const Color(0xFF14ad9f),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          feature,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )),
-                
-                const SizedBox(height: 16),
-                
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _selectPackage(title, price),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isPopular ? const Color(0xFF14ad9f) : Colors.grey.shade100,
-                      foregroundColor: isPopular ? Colors.white : Colors.black87,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Paket auswählen',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          if (isPopular)
-            Positioned(
-              top: -1,
-              right: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF14ad9f),
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
-                ),
-                child: const Text(
-                  'BELIEBT',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -842,33 +693,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     );
   }
 
-  void _selectPackage(String packageName, int price) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Paket auswählen'),
-        content: Text('Sie haben das $packageName-Paket für €$price ausgewählt.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _contactProvider();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF14ad9f),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Weiter'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _contactProvider() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -877,6 +701,97 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  // Bild-Methoden für Header
+  bool _hasValidProviderImage() {
+    final imageUrl = _getProviderImage();
+    return imageUrl.isNotEmpty && 
+           !imageUrl.startsWith('blob:') && 
+           (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+  }
+
+  String _getProviderImage() {
+    // Priorität: Banner > Image > Profile > Logo > andere
+    final bannerImage = widget.service['profileBannerImage']?.toString() ?? '';
+    if (bannerImage.isNotEmpty && !bannerImage.startsWith('blob:')) {
+      return bannerImage;
+    }
+    
+    final image = widget.service['image']?.toString() ?? '';
+    if (image.isNotEmpty && !image.startsWith('blob:')) {
+      return image;
+    }
+    
+    final profilePicture = widget.service['profilePictureURL']?.toString() ?? '';
+    if (profilePicture.isNotEmpty && !profilePicture.startsWith('blob:')) {
+      return profilePicture;
+    }
+    
+    final logoUrl = widget.service['logoURL']?.toString() ?? '';
+    if (logoUrl.isNotEmpty && !logoUrl.startsWith('blob:')) {
+      return logoUrl;
+    }
+    
+    return '';
+  }
+
+  Widget _buildFallbackHeader() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _getServiceIcon(),
+            size: 80,
+            color: Colors.white.withValues(alpha: 0.9),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            widget.service['title'] ?? widget.service['companyName'] ?? 'Service-Titel',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Bild-Methoden für Provider-Avatar
+  bool _hasValidProviderProfileImage() {
+    final imageUrl = _getProviderProfileImage();
+    return imageUrl.isNotEmpty && 
+           !imageUrl.startsWith('blob:') && 
+           (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+  }
+
+  String _getProviderProfileImage() {
+    // Priorität für Avatar: Profile > Logo > Avatar > andere
+    final profilePicture = widget.service['profilePictureURL']?.toString() ?? '';
+    if (profilePicture.isNotEmpty && !profilePicture.startsWith('blob:')) {
+      return profilePicture;
+    }
+    
+    final logoUrl = widget.service['logoURL']?.toString() ?? '';
+    if (logoUrl.isNotEmpty && !logoUrl.startsWith('blob:')) {
+      return logoUrl;
+    }
+    
+    final avatarUrl = widget.service['avatarURL']?.toString() ?? '';
+    if (avatarUrl.isNotEmpty && !avatarUrl.startsWith('blob:')) {
+      return avatarUrl;
+    }
+    
+    final image = widget.service['image']?.toString() ?? '';
+    if (image.isNotEmpty && !image.startsWith('blob:')) {
+      return image;
+    }
+    
+    return '';
   }
 }
 

@@ -61,14 +61,32 @@ class _ServiceCardState extends State<ServiceCard> {
                 ),
                 child: Stack(
                   children: [
-                    // Placeholder für Service-Bild
-                    Center(
-                      child: Icon(
-                        _getServiceIcon(),
-                        size: 48,
-                        color: Colors.white.withValues(alpha: 0.8),
+                    // Echtes Provider-Bild (Banner oder Profile)
+                    if (_hasValidImage())
+                      Positioned.fill(
+                        child: Image.network(
+                          _getProviderImage(),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Icon(
+                                _getServiceIcon(),
+                                size: 48,
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    else
+                      // Fallback Icon wenn kein Bild verfügbar
+                      Center(
+                        child: Icon(
+                          _getServiceIcon(),
+                          size: 48,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
                       ),
-                    ),
                     
                     // Pro Badge
                     if (_isPro())
@@ -138,125 +156,144 @@ class _ServiceCardState extends State<ServiceCard> {
             // Service Content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8), // Reduziertes Padding
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Provider Info
+                    // Provider Info - kompakter
                     Row(
                       children: [
                         CircleAvatar(
-                          radius: 10, // Kleinerer Radius
+                          radius: 8, // Noch kleinerer Radius
                           backgroundColor: const Color(0xFF14ad9f).withValues(alpha: 0.2),
                           backgroundImage: (widget.service['profilePictureURL'] != null && 
                                           widget.service['profilePictureURL'].toString().isNotEmpty)
                               ? NetworkImage(widget.service['profilePictureURL'])
-                              : null,
+                              : (widget.service['logoURL'] != null && 
+                                 widget.service['logoURL'].toString().isNotEmpty)
+                                  ? NetworkImage(widget.service['logoURL'])
+                                  : (widget.service['image'] != null && 
+                                     widget.service['image'].toString().isNotEmpty)
+                                      ? NetworkImage(widget.service['image'])
+                                      : null,
                           child: (widget.service['profilePictureURL'] == null || 
-                                  widget.service['profilePictureURL'].toString().isEmpty)
+                                  widget.service['profilePictureURL'].toString().isEmpty) &&
+                                 (widget.service['logoURL'] == null || 
+                                  widget.service['logoURL'].toString().isEmpty) &&
+                                 (widget.service['image'] == null || 
+                                  widget.service['image'].toString().isEmpty)
                               ? Text(
                                   _getProviderInitials(),
                                   style: const TextStyle(
-                                    fontSize: 8, // Kleinere Schrift
+                                    fontSize: 7, // Noch kleinere Schrift
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF14ad9f),
                                   ),
                                 )
                               : null,
                         ),
-                        const SizedBox(width: 6), // Kleinerer Abstand
+                        const SizedBox(width: 4), // Noch kleinerer Abstand
                         Expanded(
                           child: Text(
-                            widget.service['providerName'] ?? 'Unbekannter Anbieter',
+                            widget.service['providerName'] ?? widget.service['companyName'] ?? 'Unbekannter Anbieter',
                             style: TextStyle(
-                              fontSize: 11, // Kleinere Schrift
+                              fontSize: 10, // Noch kleinere Schrift
                               color: Colors.grey.shade600,
                               fontWeight: FontWeight.w500,
                             ),
                             overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
                       ],
                     ),
                     
-                    const SizedBox(height: 6), // Kleinerer Abstand
+                    const SizedBox(height: 3), // Noch kleinerer Abstand
                     
-                    // Service Title
+                    // Service Title - kompakter
                     Text(
-                      widget.service['title'] ?? 'Service-Titel',
+                      widget.service['title'] ?? widget.service['companyName'] ?? 'Service-Titel',
                       style: const TextStyle(
-                        fontSize: 13, // Kleinere Schrift
+                        fontSize: 12, // Kleinere Schrift
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
-                        height: 1.1,
+                        height: 1.0, // Reduzierte Zeilenhöhe
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     
-                    // Subcategory
+                    // Subcategory - nur bei Platz anzeigen
                     if (widget.service['subcategoryName'] != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         widget.service['subcategoryName'],
                         style: const TextStyle(
-                          fontSize: 10, // Kleinere Schrift
+                          fontSize: 9, // Noch kleinere Schrift
                           color: Color(0xFF14ad9f),
                           fontWeight: FontWeight.w500,
                         ),
                         overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ],
                     
                     const Spacer(),
                     
-                    // Rating und Reviews
+                    // Rating und Reviews - kompakter
                     Row(
                       children: [
                         Icon(
                           Icons.star,
-                          size: 12, // Kleineres Icon
+                          size: 10, // Noch kleineres Icon
                           color: Colors.amber.shade600,
                         ),
-                        const SizedBox(width: 2), // Kleinerer Abstand
+                        const SizedBox(width: 1), // Noch kleinerer Abstand
                         Text(
                           '${widget.service['rating'] ?? 4.8}',
                           style: const TextStyle(
-                            fontSize: 11, // Kleinere Schrift
+                            fontSize: 9, // Noch kleinere Schrift
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
                           ),
                         ),
-                        const SizedBox(width: 2), // Kleinerer Abstand
+                        const SizedBox(width: 1), // Noch kleinerer Abstand
                         Text(
-                          '(${widget.service['reviewCount'] ?? 127})',
+                          '(${widget.service['reviewCount'] ?? 0})',
                           style: TextStyle(
-                            fontSize: 11, // Kleinere Schrift
+                            fontSize: 9, // Noch kleinere Schrift
                             color: Colors.grey.shade600,
                           ),
                         ),
                       ],
                     ),
                     
-                    const SizedBox(height: 4), // Kleinerer Abstand
+                    const SizedBox(height: 2), // Noch kleinerer Abstand
                     
-                    // Preis
+                    // Preis - kompakter
                     Row(
                       children: [
                         Text(
                           'Ab ',
                           style: TextStyle(
-                            fontSize: 10, // Kleinere Schrift
+                            fontSize: 8, // Noch kleinere Schrift
                             color: Colors.grey.shade600,
                           ),
                         ),
                         Text(
-                          '€${widget.service['price'] ?? 49}',
+                          '€${widget.service['price']?.toStringAsFixed(0) ?? widget.service['hourlyRate']?.toStringAsFixed(0) ?? '35'}',
                           style: const TextStyle(
-                            fontSize: 12, // Kleinere Schrift
+                            fontSize: 10, // Kleinere Schrift
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF14ad9f),
+                          ),
+                        ),
+                        Text(
+                          '/h',
+                          style: TextStyle(
+                            fontSize: 8, // Noch kleinere Schrift
+                            color: Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -294,5 +331,43 @@ class _ServiceCardState extends State<ServiceCard> {
       return '${words[0][0]}${words[1][0]}'.toUpperCase();
     }
     return name[0].toUpperCase();
+  }
+
+  bool _hasValidImage() {
+    // Prüfe alle möglichen Bildquellen in Prioritäts-Reihenfolge
+    final imageUrl = _getProviderImage();
+    return imageUrl.isNotEmpty && 
+           !imageUrl.startsWith('blob:') && 
+           (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+  }
+
+  String _getProviderImage() {
+    // Priorität: Banner > Profile > Logo > andere Bildfelder
+    final bannnerImage = widget.service['profileBannerImage']?.toString() ?? '';
+    if (bannnerImage.isNotEmpty && !bannnerImage.startsWith('blob:')) {
+      return bannnerImage;
+    }
+    
+    final image = widget.service['image']?.toString() ?? '';
+    if (image.isNotEmpty && !image.startsWith('blob:')) {
+      return image;
+    }
+    
+    final profilePicture = widget.service['profilePictureURL']?.toString() ?? '';
+    if (profilePicture.isNotEmpty && !profilePicture.startsWith('blob:')) {
+      return profilePicture;
+    }
+    
+    final logoUrl = widget.service['logoURL']?.toString() ?? '';
+    if (logoUrl.isNotEmpty && !logoUrl.startsWith('blob:')) {
+      return logoUrl;
+    }
+    
+    final avatarUrl = widget.service['avatarURL']?.toString() ?? '';
+    if (avatarUrl.isNotEmpty && !avatarUrl.startsWith('blob:')) {
+      return avatarUrl;
+    }
+    
+    return '';
   }
 }
