@@ -335,6 +335,24 @@
                     "order": "ASCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "companies",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "companyPostalCodeForBackend",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "selectedSubcategory",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "hourlyRate",
+                    "order": "ASCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []

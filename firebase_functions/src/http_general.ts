@@ -131,7 +131,24 @@ export const searchCompanyProfiles = onRequest({ region: "europe-west1", cors: t
     if (!isNaN(numMaxPrice) && maxPrice !== undefined) query = query.where("hourlyRate", "<=", numMaxPrice);
 
     const querySnapshot = await query.get();
+    
+    // DEBUG: Log query results
+    loggerV2.info("[searchCompanyProfiles] DEBUG: Query-Ergebnisse:", {
+      documentsFound: querySnapshot.size,
+      isEmpty: querySnapshot.empty
+    });
+    
     if (querySnapshot.empty) {
+      // DEBUG: Let's check what data actually exists in companies collection
+      const allCompaniesQuery = await db.collection("companies").limit(5).get();
+      const sampleData = allCompaniesQuery.docs.map(doc => ({
+        id: doc.id,
+        companyPostalCodeForBackend: doc.data().companyPostalCodeForBackend,
+        selectedSubcategory: doc.data().selectedSubcategory,
+        hourlyRate: doc.data().hourlyRate
+      }));
+      
+      loggerV2.warn(`[searchCompanyProfiles] DEBUG: Keine Profile gefunden. Sample-Daten aus companies collection:`, sampleData);
       // --- Hinzugefügtes Logging für den "Nichts gefunden"-Fall ---
       loggerV2.warn(`[searchCompanyProfiles] Keine Profile für die Abfrage gefunden.`, { postalCode, selectedSubcategory, minPrice, maxPrice });
       // --- Ende Logging ---
