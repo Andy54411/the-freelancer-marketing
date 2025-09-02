@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
+import '../../services/review_service.dart';
+import '../../services/portfolio_service.dart';
+import '../../services/chat_service.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> service;
@@ -16,12 +20,123 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   bool _isFavorite = false;
+  
+  // Daten für die erweiterten Funktionen
+  List<Map<String, dynamic>> _reviews = [];
+  List<Map<String, dynamic>> _portfolio = [];
+  List<String> _skills = [];
+  List<Map<String, dynamic>> _servicePackages = [];
+  List<Map<String, dynamic>> _faqs = [];
+  List<Map<String, dynamic>> _languages = [];
+  Map<String, dynamic> _reviewStats = {};
+  
+  bool _isLoadingReviews = true;
+  bool _isLoadingPortfolio = true;
+  bool _isLoadingExtras = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this); // Erweitert auf 4 Tabs
     _isFavorite = widget.service['isFavorite'] ?? false;
+    _loadProviderData();
+  }
+
+  /// Lädt alle Provider-Daten parallel
+  Future<void> _loadProviderData() async {
+    final providerId = widget.service['id'] ?? widget.service['providerId'] ?? '';
+    
+    if (providerId.isEmpty) {
+      debugPrint('⚠️ Provider ID nicht gefunden');
+      return;
+    }
+    
+    debugPrint('🔄 Lade erweiterte Provider-Daten für: $providerId');
+    
+    // Alle Services parallel laden
+    await Future.wait([
+      _loadReviews(providerId),
+      _loadPortfolio(providerId),
+      _loadExtras(providerId),
+    ]);
+  }
+  
+  /// Lädt Reviews und Review-Statistiken
+  Future<void> _loadReviews(String providerId) async {
+    try {
+      setState(() => _isLoadingReviews = true);
+      
+      final results = await Future.wait([
+        ReviewService.getProviderReviews(providerId),
+        ReviewService.getReviewStats(providerId),
+      ]);
+      
+      if (mounted) {
+        setState(() {
+          _reviews = results[0] as List<Map<String, dynamic>>;
+          _reviewStats = results[1] as Map<String, dynamic>;
+          _isLoadingReviews = false;
+        });
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Fehler beim Laden der Reviews: $e');
+      if (mounted) {
+        setState(() => _isLoadingReviews = false);
+      }
+    }
+  }
+  
+  /// Lädt Portfolio-Daten
+  Future<void> _loadPortfolio(String providerId) async {
+    try {
+      setState(() => _isLoadingPortfolio = true);
+      
+      final portfolio = await PortfolioService.getProviderPortfolio(providerId);
+      
+      if (mounted) {
+        setState(() {
+          _portfolio = portfolio;
+          _isLoadingPortfolio = false;
+        });
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Fehler beim Laden des Portfolios: $e');
+      if (mounted) {
+        setState(() => _isLoadingPortfolio = false);
+      }
+    }
+  }
+  
+  /// Lädt zusätzliche Daten (Skills, Packages, FAQs, Languages)
+  Future<void> _loadExtras(String providerId) async {
+    try {
+      setState(() => _isLoadingExtras = true);
+      
+      final results = await Future.wait([
+        PortfolioService.getProviderSkills(providerId),
+        PortfolioService.getProviderServicePackages(providerId),
+        PortfolioService.getProviderFAQs(providerId),
+        PortfolioService.getProviderLanguages(providerId),
+      ]);
+      
+      if (mounted) {
+        setState(() {
+          _skills = results[0] as List<String>;
+          _servicePackages = results[1] as List<Map<String, dynamic>>;
+          _faqs = results[2] as List<Map<String, dynamic>>;
+          _languages = results[3] as List<Map<String, dynamic>>;
+          _isLoadingExtras = false;
+        });
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Fehler beim Laden der Extra-Daten: $e');
+      if (mounted) {
+        setState(() => _isLoadingExtras = false);
+      }
+    }
   }
 
   @override
@@ -218,8 +333,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                 labelColor: const Color(0xFF14ad9f),
                 unselectedLabelColor: Colors.grey.shade600,
                 indicatorColor: const Color(0xFF14ad9f),
+                isScrollable: true,
                 tabs: const [
                   Tab(text: 'Übersicht'),
+                  Tab(text: 'Portfolio'),
                   Tab(text: 'Bewertungen'),
                   Tab(text: 'FAQ'),
                 ],
@@ -233,6 +350,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               controller: _tabController,
               children: [
                 _buildOverviewTab(),
+                _buildPortfolioTab(),
                 _buildReviewsTab(),
                 _buildFAQTab(),
               ],
@@ -250,6 +368,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Service-Beschreibung
           const Text(
             'Service-Beschreibung',
             style: TextStyle(
@@ -261,6 +380,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
           const SizedBox(height: 12),
           Text(
             widget.service['description'] ?? 
+            widget.service['publicDescription'] ??
+            widget.service['businessDescription'] ??
             'Professioneller Service mit höchster Qualität. Ich biete umfassende Lösungen für Ihre Anforderungen und sorge für eine termingerechte Umsetzung Ihrer Projekte.',
             style: TextStyle(
               fontSize: 14,
@@ -271,6 +392,109 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
           
           const SizedBox(height: 24),
           
+          // Skills & Fähigkeiten
+          if (_skills.isNotEmpty) ...[
+            const Text(
+              'Fähigkeiten & Kompetenzen',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _skills.map((skill) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF14ad9f).withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  skill,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF14ad9f),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              )).toList(),
+            ),
+            const SizedBox(height: 24),
+          ],
+          
+          // Service Packages
+          if (_servicePackages.isNotEmpty) ...[
+            const Text(
+              'Service-Pakete',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...(_servicePackages.take(2).map((package) => _buildServicePackageCard(package))),
+            if (_servicePackages.length > 2)
+              Center(
+                child: TextButton(
+                  onPressed: () => _showAllServicePackages(),
+                  child: Text(
+                    'Alle ${_servicePackages.length} Pakete anzeigen',
+                    style: const TextStyle(color: Color(0xFF14ad9f)),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 24),
+          ],
+          
+          // Sprachen
+          if (_languages.isNotEmpty) ...[
+            const Text(
+              'Sprachen',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...(_languages.map((lang) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.language,
+                    size: 16,
+                    color: const Color(0xFF14ad9f),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    lang['language'] ?? '',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '(${lang['proficiency'] ?? 'Fließend'})',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ))),
+            const SizedBox(height: 24),
+          ],
+          
+          // Was Sie erhalten
           const Text(
             'Was Sie erhalten',
             style: TextStyle(
@@ -308,7 +532,247 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     );
   }
 
+  /// Service Package Card Widget
+  Widget _buildServicePackageCard(Map<String, dynamic> package) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  package['title'] ?? 'Service Package',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              if (package['popular'] == true)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Beliebt',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (package['description']?.isNotEmpty == true)
+            Text(
+              package['description'],
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                'Ab €${package['price']?.toStringAsFixed(0) ?? '0'}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF14ad9f),
+                ),
+              ),
+              const Spacer(),
+              if (package['deliveryTime']?.isNotEmpty == true)
+                Text(
+                  package['deliveryTime'],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Portfolio Tab
+  Widget _buildPortfolioTab() {
+    if (_isLoadingPortfolio) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14ad9f)),
+        ),
+      );
+    }
+
+    if (_portfolio.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.photo_library_outlined,
+              size: 64,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Noch kein Portfolio verfügbar',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(20),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.8,
+      ),
+      itemCount: _portfolio.length,
+      itemBuilder: (context, index) {
+        final item = _portfolio[index];
+        return _buildPortfolioCard(item);
+      },
+    );
+  }
+
+  /// Portfolio Card Widget
+  Widget _buildPortfolioCard(Map<String, dynamic> item) {
+    return GestureDetector(
+      onTap: () => _showPortfolioDetail(item),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Portfolio Bild
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                ),
+                child: item['imageUrl']?.isNotEmpty == true
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                        child: Image.network(
+                          item['imageUrl'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.image_not_supported,
+                              size: 32,
+                              color: Colors.grey.shade400,
+                            );
+                          },
+                        ),
+                      )
+                    : Icon(
+                        Icons.photo_library_outlined,
+                        size: 32,
+                        color: Colors.grey.shade400,
+                      ),
+              ),
+            ),
+            // Portfolio Info
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['title'] ?? 'Portfolio Item',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    if (item['category']?.isNotEmpty == true)
+                      Text(
+                        item['category'],
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF14ad9f),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    const Spacer(),
+                    if (item['completedAt']?.isNotEmpty == true)
+                      Text(
+                        item['completedAt'],
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildReviewsTab() {
+    if (_isLoadingReviews) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14ad9f)),
+        ),
+      );
+    }
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -324,7 +788,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               Column(
                 children: [
                   Text(
-                    '${widget.service['rating'] ?? 4.8}',
+                    '${_reviewStats['averageRating']?.toStringAsFixed(1) ?? widget.service['rating']?.toStringAsFixed(1) ?? '4.8'}',
                     style: const TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -332,11 +796,15 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                     ),
                   ),
                   Row(
-                    children: List.generate(5, (index) => Icon(
-                      Icons.star,
-                      size: 16,
-                      color: index < 4 ? Colors.amber.shade600 : Colors.grey.shade300,
-                    )),
+                    children: List.generate(5, (index) {
+                      final rating = _reviewStats['averageRating']?.toDouble() ?? 
+                                   (widget.service['rating'] as num?)?.toDouble() ?? 4.8;
+                      return Icon(
+                        Icons.star,
+                        size: 16,
+                        color: index < rating.round() ? Colors.amber.shade600 : Colors.grey.shade300,
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -346,7 +814,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${widget.service['reviewCount'] ?? 127} Bewertungen',
+                      '${_reviewStats['totalReviews'] ?? _reviews.length} Bewertungen',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -354,11 +822,13 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    _buildRatingBar('5 Sterne', 0.8),
-                    _buildRatingBar('4 Sterne', 0.15),
-                    _buildRatingBar('3 Sterne', 0.03),
-                    _buildRatingBar('2 Sterne', 0.01),
-                    _buildRatingBar('1 Stern', 0.01),
+                    if (_reviewStats['percentageDistribution'] != null)
+                      ...([5, 4, 3, 2, 1].map((stars) => _buildRatingBar(
+                        '$stars Stern${stars == 1 ? '' : 'e'}', 
+                        (_reviewStats['percentageDistribution'][stars] ?? 0.0) / 100
+                      )))
+                    else
+                      ..._buildDefaultRatingBars(),
                   ],
                 ),
               ),
@@ -369,8 +839,56 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
         const SizedBox(height: 24),
         
         // Individual Reviews
-        ..._getReviews().map((review) => _buildReviewCard(review)),
+        if (_reviews.isNotEmpty)
+          ..._reviews.map((review) => _buildReviewCard(review))
+        else
+          _buildNoReviews(),
       ],
+    );
+  }
+
+  /// Standard Rating Bars wenn keine echten Daten
+  List<Widget> _buildDefaultRatingBars() {
+    return [
+      _buildRatingBar('5 Sterne', 0.8),
+      _buildRatingBar('4 Sterne', 0.15),
+      _buildRatingBar('3 Sterne', 0.03),
+      _buildRatingBar('2 Sterne', 0.01),
+      _buildRatingBar('1 Stern', 0.01),
+    ];
+  }
+
+  /// Widget für keine Reviews
+  Widget _buildNoReviews() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Icon(
+            Icons.star_border,
+            size: 64,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Noch keine Bewertungen vorhanden',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Seien Sie der Erste, der diesen Anbieter bewertet!',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -438,38 +956,55 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               CircleAvatar(
                 radius: 16,
                 backgroundColor: const Color(0xFF14ad9f).withValues(alpha: 0.2),
-                child: Text(
-                  review['customerName'][0].toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF14ad9f),
-                  ),
-                ),
+                backgroundImage: review['customerAvatar']?.isNotEmpty == true
+                    ? NetworkImage(review['customerAvatar'])
+                    : null,
+                child: review['customerAvatar']?.isEmpty != false
+                    ? Text(
+                        (review['customerName'] ?? 'K')[0].toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF14ad9f),
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      review['customerName'],
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          review['customerName'] ?? 'Anonymer Kunde',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        if (review['isVerified'] == true) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.verified,
+                            size: 14,
+                            color: const Color(0xFF14ad9f),
+                          ),
+                        ],
+                      ],
                     ),
                     Row(
                       children: [
                         ...List.generate(5, (index) => Icon(
                           Icons.star,
                           size: 12,
-                          color: index < review['rating'] ? Colors.amber.shade600 : Colors.grey.shade300,
+                          color: index < (review['rating'] as num).round() ? Colors.amber.shade600 : Colors.grey.shade300,
                         )),
                         const SizedBox(width: 8),
                         Text(
-                          review['date'],
+                          review['date'] ?? '',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -484,35 +1019,65 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
           ),
           const SizedBox(height: 12),
           Text(
-            review['comment'],
+            review['comment'] ?? '',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade700,
               height: 1.4,
             ),
           ),
+          if (review['serviceType']?.isNotEmpty == true) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                review['serviceType'],
+                style: TextStyle(
+                  fontSize: 11,
+                  color: const Color(0xFF14ad9f),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildFAQTab() {
+    if (_isLoadingExtras) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14ad9f)),
+        ),
+      );
+    }
+
+    final faqs = _faqs.isNotEmpty ? _faqs : _getDefaultFAQs();
+
     return ListView(
       padding: const EdgeInsets.all(20),
-      children: _getFAQs().map((faq) => ExpansionTile(
+      children: faqs.map((faq) => ExpansionTile(
         title: Text(
-          faq['question'],
+          faq['question'] ?? '',
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
         ),
+        iconColor: const Color(0xFF14ad9f),
+        collapsedIconColor: Colors.grey.shade600,
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              faq['answer'],
+              faq['answer'] ?? '',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade700,
@@ -545,7 +1110,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Ab €${widget.service['price'] ?? 49}',
+                'Ab €${widget.service['price'] ?? widget.service['hourlyRate'] ?? 49}',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -553,7 +1118,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                 ),
               ),
               Text(
-                'Grundpreis',
+                widget.service['hourlyRate'] != null ? 'pro Stunde' : 'Grundpreis',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,
@@ -563,23 +1128,48 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: ElevatedButton(
-              onPressed: _contactProvider,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF14ad9f),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                // Chat Button
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _startChat,
+                    icon: const Icon(Icons.chat_bubble_outline),
+                    label: const Text('Chat'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF14ad9f),
+                      side: const BorderSide(color: Color(0xFF14ad9f)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text(
-                'Anbieter kontaktieren',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                const SizedBox(width: 12),
+                // Booking Button
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    onPressed: _contactProvider,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF14ad9f),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Jetzt buchen',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
@@ -622,50 +1212,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     ];
   }
 
-  List<Map<String, dynamic>> _getReviews() {
-    return [
-      {
-        'customerName': 'Maria Schmidt',
-        'rating': 5,
-        'date': 'vor 2 Wochen',
-        'comment': 'Hervorragende Arbeit! Der Service war genau das, was ich gesucht habe. Sehr professionell und termingerecht geliefert.',
-      },
-      {
-        'customerName': 'Thomas Weber',
-        'rating': 5,
-        'date': 'vor 1 Monat',
-        'comment': 'Perfekte Kommunikation und tolle Ergebnisse. Kann ich nur weiterempfehlen!',
-      },
-      {
-        'customerName': 'Anna Müller',
-        'rating': 4,
-        'date': 'vor 2 Monaten',
-        'comment': 'Sehr zufrieden mit dem Service. Kleine Änderungswünsche wurden schnell umgesetzt.',
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> _getFAQs() {
-    return [
-      {
-        'question': 'Wie lange dauert die Bearbeitung?',
-        'answer': 'Die Bearbeitungszeit hängt vom gewählten Paket ab. Basic-Pakete werden in 3 Tagen geliefert, Premium-Pakete in bis zu 7 Tagen.',
-      },
-      {
-        'question': 'Kann ich Änderungen anfordern?',
-        'answer': 'Ja, abhängig vom gewählten Paket sind verschiedene Anzahlen von Revisionen inklusive. Weitere Änderungen können gegen Aufpreis vorgenommen werden.',
-      },
-      {
-        'question': 'In welchen Formaten erhalte ich die Dateien?',
-        'answer': 'Sie erhalten die Dateien in den gängigen Formaten (PNG, JPG, PDF). Bei Premium-Paketen sind auch Quelldateien (AI, PSD) enthalten.',
-      },
-      {
-        'question': 'Wie läuft die Kommunikation ab?',
-        'answer': 'Die gesamte Kommunikation erfolgt über die Taskilo-Plattform. Sie erhalten regelmäßige Updates zum Fortschritt Ihres Projekts.',
-      },
-    ];
-  }
-
   // Action Methods
   void _toggleFavorite() {
     setState(() {
@@ -694,13 +1240,280 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   }
 
   void _contactProvider() {
+    // Hier kann das Booking Widget geöffnet werden
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Chat mit Anbieter wird geöffnet...'),
+        content: Text('Buchung wird geöffnet...'),
         backgroundColor: Color(0xFF14ad9f),
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  /// Startet Chat mit Provider
+  Future<void> _startChat() async {
+    try {
+      final providerId = widget.service['id'] ?? widget.service['providerId'] ?? '';
+      final providerName = widget.service['providerName'] ?? widget.service['companyName'] ?? 'Anbieter';
+      
+      if (providerId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Provider ID nicht gefunden'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Hole die aktuelle User ID vom AuthService
+      final authService = AuthService();
+      final currentUser = authService.currentUser;
+      
+      if (currentUser == null) {
+        // User ist nicht eingeloggt - zur Login-Seite weiterleiten
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bitte melden Sie sich an, um den Chat zu nutzen'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        // Hier könnte zur Login-Seite navigiert werden
+        return;
+      }
+      
+      final chatId = await ChatService.startChatWithProvider(
+        providerId: providerId,
+        providerName: providerName,
+        customerId: currentUser.uid,
+        customerName: currentUser.displayName ?? '${currentUser.profile?.firstName ?? ''} ${currentUser.profile?.lastName ?? ''}'.trim(),
+      );
+      
+      debugPrint('✅ Chat gestartet: $chatId');
+      
+      // Navigation zur Chat-Seite (wenn vorhanden)
+      if (mounted) {
+        // TODO: Implementiere Navigation zur Chat-Seite wenn verfügbar
+        // Navigator.of(context).pushNamed('/chat', arguments: {'chatId': chatId});
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Chat mit $providerName gestartet'),
+            backgroundColor: const Color(0xFF14ad9f),
+            action: SnackBarAction(
+              label: 'Chat öffnen',
+              textColor: Colors.white,
+              onPressed: () {
+                // TODO: Navigation zur Chat-Seite implementieren
+                debugPrint('Navigate to chat: $chatId');
+              },
+            ),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Fehler beim Starten des Chats: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Chat konnte nicht gestartet werden'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Zeigt alle Service-Packages in einem Modal
+  void _showAllServicePackages() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Alle Service-Pakete',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _servicePackages.length,
+                itemBuilder: (context, index) {
+                  return _buildServicePackageCard(_servicePackages[index]);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Zeigt Portfolio-Details in einem Modal
+  void _showPortfolioDetail(Map<String, dynamic> item) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header mit Close Button
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item['title'] ?? 'Portfolio Item',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              // Portfolio Bild
+              if (item['imageUrl']?.isNotEmpty == true)
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        item['imageUrl'],
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              // Details
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (item['category']?.isNotEmpty == true)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            item['category'],
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF14ad9f),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      if (item['description']?.isNotEmpty == true)
+                        Text(
+                          item['description'],
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                            height: 1.4,
+                          ),
+                        ),
+                      const Spacer(),
+                      if (item['completedAt']?.isNotEmpty == true)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Abgeschlossen: ${item['completedAt']}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Standard FAQs wenn keine Firebase-Daten vorhanden
+  List<Map<String, dynamic>> _getDefaultFAQs() {
+    return [
+      {
+        'question': 'Wie lange dauert die Bearbeitung?',
+        'answer': 'Die Bearbeitungszeit hängt vom gewählten Service ab. In der Regel erfolgt eine erste Rückmeldung innerhalb von 24 Stunden.',
+      },
+      {
+        'question': 'Kann ich Änderungen anfordern?',
+        'answer': 'Ja, Änderungen sind möglich. Die Anzahl der kostenlosen Revisionen hängt vom gewählten Service-Paket ab.',
+      },
+      {
+        'question': 'Wie läuft die Kommunikation ab?',
+        'answer': 'Die gesamte Kommunikation erfolgt über die Taskilo-Plattform. Sie erhalten regelmäßige Updates zum Fortschritt.',
+      },
+      {
+        'question': 'Welche Zahlungsmethoden werden akzeptiert?',
+        'answer': 'Wir akzeptieren alle gängigen Zahlungsmethoden über Stripe, einschließlich Kreditkarten und SEPA-Lastschrift.',
+      },
+    ];
   }
 
   // Bild-Methoden für Header

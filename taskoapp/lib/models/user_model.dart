@@ -104,8 +104,8 @@ class TaskiloUser {
 }
 
 enum UserType {
-  customer,
-  serviceProvider,
+  customer,    // entspricht 'kunde' in der Web-Version
+  serviceProvider,  // entspricht 'anbieter' in der Web-Version
   admin
 }
 
@@ -113,27 +113,35 @@ class UserProfile {
   final String? firstName;
   final String? lastName;
   final String? address;
+  final String? street;
   final String? city;
   final String? postalCode;
   final String? country;
+  final String? phoneNumber;
   final String? bio;
   final List<String>? skills;
   final double? rating;
   final int? completedJobs;
   final bool? isAvailable;
+  final bool? agreesToNewsletter;
+  final DateTime? dateOfBirth;
 
   const UserProfile({
     this.firstName,
     this.lastName,
     this.address,
+    this.street,
     this.city,
     this.postalCode,
     this.country,
+    this.phoneNumber,
     this.bio,
     this.skills,
     this.rating,
     this.completedJobs,
     this.isAvailable,
+    this.agreesToNewsletter,
+    this.dateOfBirth,
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
@@ -141,14 +149,20 @@ class UserProfile {
       firstName: map['firstName'],
       lastName: map['lastName'],
       address: map['address'],
+      street: map['street'],
       city: map['city'],
       postalCode: map['postalCode'],
       country: map['country'],
+      phoneNumber: map['phoneNumber'],
       bio: map['bio'],
       skills: map['skills'] != null ? List<String>.from(map['skills']) : null,
       rating: map['rating']?.toDouble(),
       completedJobs: map['completedJobs'],
       isAvailable: map['isAvailable'],
+      agreesToNewsletter: map['agreesToNewsletter'],
+      dateOfBirth: map['dateOfBirth'] != null 
+          ? (map['dateOfBirth'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -157,14 +171,20 @@ class UserProfile {
       'firstName': firstName,
       'lastName': lastName,
       'address': address,
+      'street': street,
       'city': city,
       'postalCode': postalCode,
       'country': country,
+      'phoneNumber': phoneNumber,
       'bio': bio,
       'skills': skills,
       'rating': rating,
       'completedJobs': completedJobs,
       'isAvailable': isAvailable,
+      'agreesToNewsletter': agreesToNewsletter,
+      'dateOfBirth': dateOfBirth != null 
+          ? Timestamp.fromDate(dateOfBirth!)
+          : null,
     };
   }
 

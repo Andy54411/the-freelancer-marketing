@@ -86,6 +86,85 @@ class AuthService {
     }
   }
 
+  // Erweiterte User Registrierung (Web-kompatibel)
+  Future<TaskiloUser?> registerUser({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String phoneNumber,
+    required String street,
+    required String city,
+    required String postalCode,
+    required String country,
+    UserType userType = UserType.customer,
+    bool agreesToNewsletter = false,
+    DateTime? dateOfBirth,
+  }) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      if (credential.user != null) {
+        final displayName = '$firstName $lastName';
+        await credential.user!.updateDisplayName(displayName);
+        
+        // Erstelle erweiterte User-Profile
+        final profile = UserProfile(
+          firstName: firstName,
+          lastName: lastName,
+          street: street,
+          city: city,
+          postalCode: postalCode,
+          country: country,
+          phoneNumber: phoneNumber,
+          agreesToNewsletter: agreesToNewsletter,
+          dateOfBirth: dateOfBirth,
+          isAvailable: userType == UserType.serviceProvider,
+        );
+
+        // Erstelle User mit erweiterten Daten (Web-kompatibel)
+        final userData = {
+          'uid': credential.user!.uid,
+          'user_type': userType == UserType.customer ? 'kunde' : 'anbieter',
+          'email': email,
+          'firstName': firstName,
+          'lastName': lastName,
+          'phoneNumber': phoneNumber,
+          'postalCode': postalCode,
+          'street': street,
+          'city': city,
+          'country': country,
+          'agreesToNewsletter': agreesToNewsletter,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+
+        if (dateOfBirth != null) {
+          userData['dateOfBirth'] = Timestamp.fromDate(dateOfBirth);
+        }
+
+        await _firestore.collection('users').doc(credential.user!.uid).set(userData);
+        
+        // Sende Email-Verifikation
+        await credential.user!.sendEmailVerification();
+        
+        // Erstelle TaskiloUser-Objekt
+        final user = TaskiloUser.fromFirebaseUser(
+          credential.user!,
+          profile: profile,
+        ).copyWith(userType: userType);
+        
+        return user;
+      }
+      return null;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
   // Password Reset
   Future<void> sendPasswordResetEmail(String email) async {
     try {

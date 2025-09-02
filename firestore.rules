@@ -475,6 +475,91 @@ service cloud.firestore {
       allow delete: if isSupportStaff();
     }
 
+    // --- portfolio Collection ---
+    match /portfolio/{portfolioId} {
+      // Öffentlicher Lesezugriff für Portfolio-Items (Service-Discovery)
+      allow get: if true;
+      allow list: if request.query.limit <= 100;
+      
+      // Nur der Owner kann sein Portfolio erstellen/bearbeiten
+      allow create, update: if request.auth != null && 
+        request.resource.data.providerId == request.auth.uid;
+      
+      // Nur der Owner oder Support kann Portfolio löschen
+      allow delete: if request.auth != null && (
+        resource.data.providerId == request.auth.uid ||
+        isSupportStaff()
+      );
+    }
+
+    // --- skills Collection ---
+    match /skills/{skillId} {
+      // Öffentlicher Lesezugriff für Skills
+      allow get: if true;
+      allow list: if request.query.limit <= 100;
+      
+      // Nur der Owner kann seine Skills verwalten
+      allow create, update: if request.auth != null && 
+        request.resource.data.providerId == request.auth.uid;
+      
+      // Nur der Owner oder Support kann Skills löschen
+      allow delete: if request.auth != null && (
+        resource.data.providerId == request.auth.uid ||
+        isSupportStaff()
+      );
+    }
+
+    // --- servicePackages Collection ---
+    match /servicePackages/{packageId} {
+      // Öffentlicher Lesezugriff für Service-Packages
+      allow get: if true;
+      allow list: if request.query.limit <= 100;
+      
+      // Nur der Owner kann seine Packages verwalten
+      allow create, update: if request.auth != null && 
+        request.resource.data.providerId == request.auth.uid;
+      
+      // Nur der Owner oder Support kann Packages löschen
+      allow delete: if request.auth != null && (
+        resource.data.providerId == request.auth.uid ||
+        isSupportStaff()
+      );
+    }
+
+    // --- faqs Collection ---
+    match /faqs/{faqId} {
+      // Öffentlicher Lesezugriff für FAQs
+      allow get: if true;
+      allow list: if request.query.limit <= 100;
+      
+      // Nur der Owner kann seine FAQs verwalten
+      allow create, update: if request.auth != null && 
+        request.resource.data.providerId == request.auth.uid;
+      
+      // Nur der Owner oder Support kann FAQs löschen
+      allow delete: if request.auth != null && (
+        resource.data.providerId == request.auth.uid ||
+        isSupportStaff()
+      );
+    }
+
+    // --- languages Collection ---
+    match /languages/{languageId} {
+      // Öffentlicher Lesezugriff für Sprachen
+      allow get: if true;
+      allow list: if request.query.limit <= 100;
+      
+      // Nur der Owner kann seine Sprachen verwalten
+      allow create, update: if request.auth != null && 
+        request.resource.data.providerId == request.auth.uid;
+      
+      // Nur der Owner oder Support kann Sprachen löschen
+      allow delete: if request.auth != null && (
+        resource.data.providerId == request.auth.uid ||
+        isSupportStaff()
+      );
+    }
+
     // --- directChats Collection ---
     match /directChats/{chatId} {
       // Erlaubt Lesen und Schreiben für Teilnehmer des Chats
