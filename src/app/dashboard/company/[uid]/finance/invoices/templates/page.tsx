@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +13,8 @@ import {
   InvoiceData,
 } from '@/components/finance/InvoiceTemplates';
 import { toast } from 'sonner';
+// API Imports statt Firebase
+import { getCompanyData, updateCompanyTemplate, handleApiError } from '@/utils/api/companyApi';
 
 export default function InvoiceTemplatesPage() {
   const router = useRouter();
@@ -27,7 +27,7 @@ export default function InvoiceTemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [companyData, setCompanyData] = useState<any>(null);
 
-  // Load user's preferred template from database
+  // Load user's preferred template via API instead of direct Firebase
   useEffect(() => {
     const loadUserTemplate = async () => {
       if (!uid) return;
@@ -35,23 +35,12 @@ export default function InvoiceTemplatesPage() {
       try {
         setLoading(true);
 
-        // Für Firmen: Erst companies collection prüfen
-        const companyDoc = await getDoc(doc(db, 'companies', uid));
-        let userData: any = null;
-
-        if (companyDoc.exists()) {
-          userData = companyDoc.data();
+        // Load company data via API
+        const response = await getCompanyData(uid);
+        if (response.success && response.company) {
+          const userData = response.company;
           setCompanyData(userData); // Speichere Firmendaten für Vorschau
-        } else {
-          // Fallback: users collection
-          const userDoc = await getDoc(doc(db, 'users', uid));
-          if (userDoc.exists()) {
-            userData = userDoc.data();
-            setCompanyData(userData); // Speichere Firmendaten für Vorschau
-          }
-        }
 
-        if (userData) {
           let preferredTemplate = userData.preferredInvoiceTemplate as string;
 
           // Migration: Alte Template-Namen auf neue mappen
@@ -68,8 +57,12 @@ export default function InvoiceTemplatesPage() {
           if (preferredTemplate && INVOICE_TEMPLATES.some(t => t.id === preferredTemplate)) {
             setSelectedTemplate(preferredTemplate as InvoiceTemplate);
           }
+
+          console.log('✅ Template-Präferenz via API geladen:', preferredTemplate);
         }
       } catch (error) {
+        console.error('❌ Fehler beim Laden der Template-Präferenz:', error);
+        toast.error('Fehler beim Laden der Template-Einstellungen');
       } finally {
         setLoading(false);
       }
@@ -187,20 +180,21 @@ export default function InvoiceTemplatesPage() {
     try {
       setSaving(true);
 
-      // Save template preference to database
-      // Für Firmen: Immer in companies collection speichern
-      const companyRef = doc(db, 'companies', uid);
-      await updateDoc(companyRef, {
-        preferredInvoiceTemplate: selectedTemplate,
-        updatedAt: new Date(),
-      });
+      // Save template preference via API instead of direct Firebase
+      const response = await updateCompanyTemplate(uid, selectedTemplate);
 
-      // Also save to localStorage as fallback
-      localStorage.setItem('selectedInvoiceTemplate', selectedTemplate);
+      if (response.success) {
+        // Also save to localStorage as fallback
+        localStorage.setItem('selectedInvoiceTemplate', selectedTemplate);
 
-      toast.success('Template-Einstellung erfolgreich gespeichert!');
-      router.push('../invoices'); // Back to invoices page
+        toast.success('Template-Einstellung erfolgreich gespeichert!');
+        router.push('../invoices'); // Back to invoices page
+      } else {
+        throw new Error(response.error || 'Fehler beim Speichern');
+      }
     } catch (error) {
+      console.error('❌ Fehler beim Speichern der Template-Einstellung:', error);
+      handleApiError(error);
       toast.error('Fehler beim Speichern der Template-Einstellung');
     } finally {
       setSaving(false);

@@ -1,108 +1,58 @@
-// /Users/andystaudinger/Tasko/src/lib/stripeNetworkHandler.ts
 /**
- * Behandelt Stripe Network-Fehler und Rate Limiting
+ * Stripe Network Handler - Behandelt Stripe-spezifische Netzwerkfehler
+ * WICHTIG: Keine window.fetch Überschreibung mehr um Konflikte zu vermeiden
  */
 
-// Service Worker für Stripe-Requests einrichten
+// Network Interception Setup - DEPRECATED
 export function setupStripeNetworkInterception() {
-  if (typeof window !== 'undefined') {
-    // Überwache fetch-Requests und behandle Stripe-spezifische Fehler
-    const originalFetch = window.fetch;
-
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = input.toString();
-
-      // Fange alle Stripe Sentry und Analytics Requests ab
-      if (
-        url.includes('errors.stripe.com') ||
-        url.includes('r.stripe.com/b') ||
-        url.includes('m.stripe.com/4') ||
-        url.includes('sentry_key=') ||
-        (url.includes('stripe.com') && url.includes('/api/'))
-      ) {
-
-        // Simuliere immer erfolgreiche Response für Sentry-Requests
-        return new Response(JSON.stringify({ status: 'ok' }), {
-          status: 200,
-          statusText: 'OK',
-          headers: new Headers({
-            'Content-Type': 'application/json',
-          }),
-        });
-      }
-
-      try {
-        const response = await originalFetch(input, init);
-
-        // Auch bei erfolgreichen Sentry-Requests abfangen
-        if (
-          url.includes('errors.stripe.com') &&
-          (response.status === 429 || response.status === 400)
-        ) {
-
-          return new Response(JSON.stringify({ status: 'ok' }), {
-            status: 200,
-            statusText: 'OK',
-            headers: new Headers({
-              'Content-Type': 'application/json',
-            }),
-          });
-        }
-
-        return response;
-      } catch (error) {
-        // Bei Stripe-Fehlern nicht weiterwerfen
-        if (url.includes('stripe.com')) {
-
-          return new Response('{"status": "ok"}', {
-            status: 200,
-            headers: new Headers({
-              'Content-Type': 'application/json',
-            }),
-          });
-        }
-        throw error;
-      }
-    };
-  }
+  // Diese Funktion ist deprecated - alle Fetch-Interception wurde entfernt
+  // um Konflikte mit anderen Services (Google Analytics, etc.) zu vermeiden
+  console.warn('setupStripeNetworkInterception is deprecated and no longer active');
 }
 
 // Error Event Handler für unbehandelte Promise Rejections
 export function setupStripeErrorHandler() {
   if (typeof window !== 'undefined') {
+    // Handler für unbehandelte Promise Rejections
     window.addEventListener('unhandledrejection', event => {
       const error = event.reason;
       const errorMessage = error?.message || error?.toString() || '';
 
+      // Nur Stripe-spezifische Fehler abfangen
       if (
         errorMessage.includes('stripe.com') ||
-        errorMessage.includes('FetchError: Error fetching') ||
         errorMessage.includes('errors.stripe.com') ||
-        errorMessage.includes('sentry_key=') ||
-        errorMessage.includes('429') ||
-        errorMessage.includes('400') ||
-        (error && error.name === 'TypeError' && errorMessage.includes('fetch'))
+        errorMessage.includes('sentry_key=')
       ) {
-
+        console.warn('Stripe error suppressed:', errorMessage);
         event.preventDefault();
       }
     });
 
-    // Zusätzlicher globaler Error Handler
+    // Handler für globale JavaScript Errors
     window.addEventListener('error', event => {
       const errorMessage = event.message || '';
       const source = event.filename || '';
 
+      // Nur Stripe-spezifische Fehler abfangen
       if (
         source.includes('stripe.com') ||
         errorMessage.includes('errors.stripe.com') ||
-        errorMessage.includes('sentry_key=') ||
-        (errorMessage.includes('429') && source.includes('universal-link-modal')) ||
-        (errorMessage.includes('400') && source.includes('universal-link-modal'))
+        errorMessage.includes('sentry_key=')
       ) {
-
+        console.warn('Stripe error suppressed:', errorMessage);
         event.preventDefault();
       }
     });
   }
+}
+
+// Utility-Funktion für Stripe Error Checking
+export function isStripeError(error: any): boolean {
+  const errorMessage = error?.message || error?.toString() || '';
+  return (
+    errorMessage.includes('stripe.com') ||
+    errorMessage.includes('errors.stripe.com') ||
+    errorMessage.includes('sentry_key=')
+  );
 }

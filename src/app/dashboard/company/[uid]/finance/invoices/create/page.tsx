@@ -3,18 +3,6 @@
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import {
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  addDoc,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,13 +17,19 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { InvoiceTemplatePicker } from '@/components/finance/InvoiceTemplatePicker';
 import { InvoiceTemplate, InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
+import { InvoiceData } from '@/types/invoiceTypes';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useAuth } from '@/contexts/AuthContext';
-import { FirestoreDebugPanel } from '@/components/debug/FirestoreDebugPanel';
 import { findOrCreateCustomer } from '@/utils/customerUtils';
+// API Imports statt Firebase
+import {
+  getCompanyData,
+  getCustomers,
+  createInvoice,
+  handleApiError,
+} from '@/utils/api/companyApi';
 
 interface Customer {
   id: string;
@@ -82,13 +76,98 @@ export default function CreateInvoicePage() {
     error: companyError,
   } = useCompanySettings(uid);
 
-  // State for template loading and selection
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('german-standard');
-  const [templateLoading, setTemplateLoading] = useState(true);
+  // Load company data and template via API instead of direct Firebase
+  useEffect(() => {
+    const loadCompanyDataAndTemplate = async () => {
+      if (!uid) return;
+
+      try {
+        // Load Company data via API
+        const response = await getCompanyData(uid);
+        if (response.success && response.company) {
+          const companyData = response.company;
+          setFullCompanyData(companyData);
+
+          const savedTemplate = companyData.preferredInvoiceTemplate;
+          if (savedTemplate) {
+            setSelectedTemplate(savedTemplate as InvoiceTemplate);
+            console.log('✅ Template aus API geladen:', savedTemplate);
+          } else {
+            console.log('⚠️ Kein Template in Datenbank gefunden, verwende Standard');
+          }
+
+          // Prüfe Kleinunternehmer-Status aus der Datenbank
+          const isKleinunternehmer =
+            companyData.kleinunternehmer === 'ja' || companyData.step2?.kleinunternehmer === 'ja';
+
+          // Prüfe ob die Company aus dem Ausland ist
+          const companyCountry =
+            companyData.companyCountry || companyData.step1?.personalCountry || '';
+          const isGermanCompany =
+            !companyCountry ||
+            companyCountry.toUpperCase() === 'DE' ||
+            companyCountry.toUpperCase() === 'DEUTSCHLAND' ||
+            companyCountry.toUpperCase() === 'GERMANY';
+
+          if (isKleinunternehmer) {
+            setFormData(prev => ({
+              ...prev,
+              taxNote: 'kleinunternehmer',
+              taxRate: '0',
+            }));
+            console.log(
+              '✅ Kleinunternehmer-Status erkannt - Steuerhinweis und Steuersatz automatisch gesetzt'
+            );
+          } else if (!isGermanCompany) {
+            // Ausländische Company stellt Rechnung an deutsche Kunden
+            setFormData(prev => ({
+              ...prev,
+              taxNote: 'reverse-charge',
+              taxRate: '0',
+            }));
+            console.log('✅ Ausländische Company erkannt - Reverse-Charge automatisch aktiviert:', {
+              companyCountry: companyCountry,
+              isGermanCompany: isGermanCompany,
+            });
+          }
+
+          console.log('✅ Vollständige Firmendaten via API geladen:', {
+            logo:
+              companyData.companyLogo ||
+              companyData.profilePictureURL ||
+              companyData.step3?.profilePictureURL,
+            logoDebug: {
+              companyLogo: companyData.companyLogo,
+              profilePictureURL: companyData.profilePictureURL,
+              step3ProfilePictureURL: companyData.step3?.profilePictureURL,
+              step3Full: companyData.step3,
+            },
+            name: companyData.companyName,
+            template: savedTemplate,
+            kleinunternehmer: isKleinunternehmer,
+            kleinunternehmerField: companyData.kleinunternehmer,
+            step2Kleinunternehmer: companyData.step2?.kleinunternehmer,
+            companyCountry: companyCountry,
+            isGermanCompany: isGermanCompany,
+            companyLocation: {
+              companyCountry: companyData.companyCountry,
+              step1PersonalCountry: companyData.step1?.personalCountry,
+            },
+          });
+        }
+      } catch (error) {
+        console.error('❌ Fehler beim Laden der Firmendaten via API:', error);
+        toast.error('Fehler beim Laden der Firmendaten');
+      }
+    };
+
+    loadCompanyDataAndTemplate();
+  }, [uid]);
 
   // State für echte Kunden
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
+  const [fullCompanyData, setFullCompanyData] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -100,10 +179,12 @@ export default function CreateInvoicePage() {
     dueDate: '',
     description: '',
     taxRate: '19', // Standard German VAT
+    taxNote: 'none', // Standard: Kein Steuerhinweis
     notes: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('german-standard');
 
   const [items, setItems] = useState<InvoiceItem[]>([
     {
@@ -115,104 +196,22 @@ export default function CreateInvoicePage() {
     },
   ]);
 
-  // Load user's preferred template from database
-  useEffect(() => {
-    const loadUserTemplate = async () => {
-      if (!uid || !user || user.uid !== uid) return;
-
-      try {
-        setTemplateLoading(true);
-
-        // Für Firmen: Erst companies collection prüfen
-        const companyDoc = await getDoc(doc(db, 'companies', uid));
-        let userData: any = null;
-
-        if (companyDoc.exists()) {
-          userData = companyDoc.data();
-        } else {
-          // Fallback: users collection
-          const userDoc = await getDoc(doc(db, 'users', uid));
-          if (userDoc.exists()) {
-            userData = userDoc.data();
-          }
-        }
-
-        if (userData) {
-          const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
-          if (preferredTemplate) {
-            setSelectedTemplate(preferredTemplate);
-          } else {
-            // Fallback to localStorage if no database preference
-            if (typeof window !== 'undefined') {
-              const savedTemplate = localStorage.getItem(
-                'selectedInvoiceTemplate'
-              ) as InvoiceTemplate;
-              if (savedTemplate) {
-                setSelectedTemplate(savedTemplate);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        // Fallback to localStorage on error
-        if (typeof window !== 'undefined') {
-          const savedTemplate = localStorage.getItem('selectedInvoiceTemplate') as InvoiceTemplate;
-          if (savedTemplate) {
-            setSelectedTemplate(savedTemplate);
-          }
-        }
-      } finally {
-        setTemplateLoading(false);
-      }
-    };
-
-    loadUserTemplate();
-  }, [uid, user]);
-
-  // Lade echte Kunden aus Firestore
+  // Load customers via API instead of direct Firebase
   useEffect(() => {
     const loadCustomers = async () => {
       if (!uid || !user || user.uid !== uid) return;
 
       try {
         setLoadingCustomers(true);
-        const customersQuery = query(
-          collection(db, 'customers'),
-          where('companyId', '==', uid),
-          orderBy('createdAt', 'desc')
-        );
-
-        const querySnapshot = await getDocs(customersQuery);
-        const loadedCustomers: Customer[] = [];
-
-        querySnapshot.forEach(doc => {
-          const data = doc.data();
-          loadedCustomers.push({
-            id: doc.id,
-            customerNumber: data.customerNumber || '',
-            name: data.name || '',
-            email: data.email || '',
-            phone: data.phone,
-            // Legacy address fallback
-            address: data.address || '',
-            // Strukturierte Adresse
-            street: data.street || '',
-            city: data.city || '',
-            postalCode: data.postalCode || '',
-            country: data.country || '',
-            taxNumber: data.taxNumber,
-            vatId: data.vatId,
-            vatValidated: data.vatValidated || false,
-            totalInvoices: data.totalInvoices || 0,
-            totalAmount: data.totalAmount || 0,
-            createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-            contactPersons: data.contactPersons || [],
-            companyId: data.companyId || uid,
-          });
-        });
-
-        setCustomers(loadedCustomers);
+        // Load customers via API
+        const response = await getCustomers(uid);
+        if (response.success && response.customers) {
+          setCustomers(response.customers);
+          console.log('✅ Kunden via API geladen:', response.customers.length);
+        }
       } catch (error) {
+        console.error('❌ Fehler beim Laden der Kunden via API:', error);
+        toast.error('Fehler beim Laden der Kunden');
       } finally {
         setLoadingCustomers(false);
       }
@@ -318,6 +317,584 @@ export default function CreateInvoicePage() {
     );
   }
 
+  // Hilfsfunktion zur Erkennung von ausländischen Unternehmen für Reverse-Charge
+  const isReverseChargeApplicable = (
+    customer: Customer,
+    customerVatId: string,
+    companyData?: any
+  ) => {
+    // Prüfe zuerst ob die Company selbst aus dem Ausland ist
+    if (companyData) {
+      const companyCountry = companyData.companyCountry || companyData.step1?.personalCountry || '';
+      const isGermanCompany =
+        !companyCountry ||
+        companyCountry.toUpperCase() === 'DE' ||
+        companyCountry.toUpperCase() === 'DEUTSCHLAND' ||
+        companyCountry.toUpperCase() === 'GERMANY';
+
+      // Wenn ausländische Company, immer Reverse-Charge für deutsche Kunden
+      if (!isGermanCompany) {
+        console.log('🌍 Ausländische Company erkannt - Reverse-Charge für alle Kunden');
+        return true;
+      }
+    }
+
+    // Dann prüfe anhand der VAT-ID ob es ein ausländisches Unternehmen als Kunde ist
+    if (customerVatId && customerVatId.trim() !== '') {
+      const vatPrefix = customerVatId.substring(0, 2).toUpperCase();
+      // Deutsche VAT-ID beginnt mit DE
+      const isGermanVat = vatPrefix === 'DE';
+
+      // Alle EU-Länder-Codes (ohne Deutschland) - für EU-Reverse-Charge
+      const euCountryCodes = [
+        'AT',
+        'BE',
+        'BG',
+        'HR',
+        'CY',
+        'CZ',
+        'DK',
+        'EE',
+        'FI',
+        'FR',
+        'GR',
+        'HU',
+        'IE',
+        'IT',
+        'LV',
+        'LT',
+        'LU',
+        'MT',
+        'NL',
+        'PL',
+        'PT',
+        'RO',
+        'SK',
+        'SI',
+        'ES',
+        'SE',
+      ];
+
+      // Alle internationalen Länder-Codes (Auswahl der wichtigsten)
+      const internationalCountryCodes = [
+        'US',
+        'CA',
+        'GB',
+        'CH',
+        'NO',
+        'AU',
+        'NZ',
+        'JP',
+        'KR',
+        'CN',
+        'IN',
+        'SG',
+        'HK',
+        'BR',
+        'MX',
+        'AR',
+        'CL',
+        'ZA',
+        'IL',
+        'TR',
+        'RU',
+        'UA',
+        'BY',
+        'MD',
+        'RS',
+        'BA',
+        'ME',
+        'MK',
+        'AL',
+        'XK',
+      ];
+
+      const isEUVat = euCountryCodes.includes(vatPrefix);
+      const isInternationalVat = internationalCountryCodes.includes(vatPrefix);
+
+      // Reverse-Charge gilt für alle ausländischen Unternehmen (EU + International) mit gültiger VAT-ID/Tax-ID
+      return !isGermanVat && (isEUVat || isInternationalVat);
+    }
+
+    // Prüfe anhand der Adresse/Land - ALLE Länder außer Deutschland
+    const customerCountry = customer.country?.toUpperCase().trim();
+    if (
+      customerCountry &&
+      customerCountry !== '' &&
+      customerCountry !== 'DE' &&
+      customerCountry !== 'DEUTSCHLAND' &&
+      customerCountry !== 'GERMANY'
+    ) {
+      // Umfassende Liste aller Länder (Auswahl der wichtigsten + alle EU)
+      const allForeignCountries = [
+        // EU-Länder
+        'AT',
+        'AUSTRIA',
+        'ÖSTERREICH',
+        'BE',
+        'BELGIUM',
+        'BELGIEN',
+        'BG',
+        'BULGARIA',
+        'BULGARIEN',
+        'HR',
+        'CROATIA',
+        'KROATIEN',
+        'CY',
+        'CYPRUS',
+        'ZYPERN',
+        'CZ',
+        'CZECH REPUBLIC',
+        'TSCHECHIEN',
+        'CZECHIA',
+        'DK',
+        'DENMARK',
+        'DÄNEMARK',
+        'EE',
+        'ESTONIA',
+        'ESTLAND',
+        'FI',
+        'FINLAND',
+        'FINNLAND',
+        'FR',
+        'FRANCE',
+        'FRANKREICH',
+        'GR',
+        'GREECE',
+        'GRIECHENLAND',
+        'HU',
+        'HUNGARY',
+        'UNGARN',
+        'IE',
+        'IRELAND',
+        'IRLAND',
+        'IT',
+        'ITALY',
+        'ITALIEN',
+        'LV',
+        'LATVIA',
+        'LETTLAND',
+        'LT',
+        'LITHUANIA',
+        'LITAUEN',
+        'LU',
+        'LUXEMBOURG',
+        'LUXEMBURG',
+        'MT',
+        'MALTA',
+        'NL',
+        'NETHERLANDS',
+        'NIEDERLANDE',
+        'HOLLAND',
+        'PL',
+        'POLAND',
+        'POLEN',
+        'PT',
+        'PORTUGAL',
+        'RO',
+        'ROMANIA',
+        'RUMÄNIEN',
+        'SK',
+        'SLOVAKIA',
+        'SLOWAKEI',
+        'SI',
+        'SLOVENIA',
+        'SLOWENIEN',
+        'ES',
+        'SPAIN',
+        'SPANIEN',
+        'SE',
+        'SWEDEN',
+        'SCHWEDEN',
+
+        // Weitere europäische Länder
+        'GB',
+        'UK',
+        'UNITED KINGDOM',
+        'VEREINIGTES KÖNIGREICH',
+        'ENGLAND',
+        'BRITAIN',
+        'CH',
+        'SWITZERLAND',
+        'SCHWEIZ',
+        'NO',
+        'NORWAY',
+        'NORWEGEN',
+        'IS',
+        'ICELAND',
+        'ISLAND',
+        'LI',
+        'LIECHTENSTEIN',
+        'MC',
+        'MONACO',
+        'AD',
+        'ANDORRA',
+        'SM',
+        'SAN MARINO',
+        'VA',
+        'VATICAN',
+        'VATIKAN',
+        'RS',
+        'SERBIA',
+        'SERBIEN',
+        'BA',
+        'BOSNIA',
+        'BOSNIEN',
+        'ME',
+        'MONTENEGRO',
+        'MK',
+        'MACEDONIA',
+        'MAZEDONIEN',
+        'AL',
+        'ALBANIA',
+        'ALBANIEN',
+        'XK',
+        'KOSOVO',
+        'MD',
+        'MOLDOVA',
+        'UA',
+        'UKRAINE',
+        'BY',
+        'BELARUS',
+        'WEISSRUSSLAND',
+        'RU',
+        'RUSSIA',
+        'RUSSLAND',
+        'TR',
+        'TURKEY',
+        'TÜRKEI',
+
+        // Nordamerika
+        'US',
+        'USA',
+        'UNITED STATES',
+        'VEREINIGTE STAATEN',
+        'AMERICA',
+        'CA',
+        'CANADA',
+        'KANADA',
+        'MX',
+        'MEXICO',
+        'MEXIKO',
+
+        // Südamerika
+        'BR',
+        'BRAZIL',
+        'BRASILIEN',
+        'AR',
+        'ARGENTINA',
+        'ARGENTINIEN',
+        'CL',
+        'CHILE',
+        'CO',
+        'COLOMBIA',
+        'KOLUMBIEN',
+        'PE',
+        'PERU',
+        'VE',
+        'VENEZUELA',
+        'UY',
+        'URUGUAY',
+        'PY',
+        'PARAGUAY',
+        'BO',
+        'BOLIVIA',
+        'BOLIVIEN',
+        'EC',
+        'ECUADOR',
+        'GY',
+        'GUYANA',
+        'SR',
+        'SURINAME',
+
+        // Asien
+        'CN',
+        'CHINA',
+        'JP',
+        'JAPAN',
+        'KR',
+        'KOREA',
+        'SOUTH KOREA',
+        'SÜDKOREA',
+        'IN',
+        'INDIA',
+        'INDIEN',
+        'SG',
+        'SINGAPORE',
+        'SINGAPUR',
+        'HK',
+        'HONG KONG',
+        'HONGKONG',
+        'TW',
+        'TAIWAN',
+        'TH',
+        'THAILAND',
+        'VN',
+        'VIETNAM',
+        'MY',
+        'MALAYSIA',
+        'ID',
+        'INDONESIA',
+        'INDONESIEN',
+        'PH',
+        'PHILIPPINES',
+        'PHILIPPINEN',
+        'BD',
+        'BANGLADESH',
+        'PK',
+        'PAKISTAN',
+        'AF',
+        'AFGHANISTAN',
+        'IR',
+        'IRAN',
+        'IQ',
+        'IRAQ',
+        'IRAK',
+        'IL',
+        'ISRAEL',
+        'JO',
+        'JORDAN',
+        'JORDANIEN',
+        'LB',
+        'LEBANON',
+        'LIBANON',
+        'SY',
+        'SYRIA',
+        'SYRIEN',
+        'SA',
+        'SAUDI ARABIA',
+        'SAUDI-ARABIEN',
+        'AE',
+        'UAE',
+        'UNITED ARAB EMIRATES',
+        'VEREINIGTE ARABISCHE EMIRATE',
+        'QA',
+        'QATAR',
+        'KATAR',
+        'KW',
+        'KUWAIT',
+        'BH',
+        'BAHRAIN',
+        'OM',
+        'OMAN',
+        'YE',
+        'YEMEN',
+        'JEMEN',
+        'UZ',
+        'UZBEKISTAN',
+        'USBEKISTAN',
+        'KZ',
+        'KAZAKHSTAN',
+        'KASACHSTAN',
+        'KG',
+        'KYRGYZSTAN',
+        'KIRGISISTAN',
+        'TJ',
+        'TAJIKISTAN',
+        'TADSCHIKISTAN',
+        'TM',
+        'TURKMENISTAN',
+        'MN',
+        'MONGOLIA',
+        'MONGOLEI',
+
+        // Afrika
+        'ZA',
+        'SOUTH AFRICA',
+        'SÜDAFRIKA',
+        'EG',
+        'EGYPT',
+        'ÄGYPTEN',
+        'NG',
+        'NIGERIA',
+        'KE',
+        'KENYA',
+        'KENIA',
+        'GH',
+        'GHANA',
+        'ET',
+        'ETHIOPIA',
+        'ÄTHIOPIEN',
+        'MA',
+        'MOROCCO',
+        'MAROKKO',
+        'DZ',
+        'ALGERIA',
+        'ALGERIEN',
+        'TN',
+        'TUNISIA',
+        'TUNESIEN',
+        'LY',
+        'LIBYA',
+        'LIBYEN',
+        'SD',
+        'SUDAN',
+        'UG',
+        'UGANDA',
+        'TZ',
+        'TANZANIA',
+        'TANSANIA',
+        'ZW',
+        'ZIMBABWE',
+        'SIMBABWE',
+        'ZM',
+        'ZAMBIA',
+        'SAMBIA',
+        'BW',
+        'BOTSWANA',
+        'BOTSUANA',
+        'NA',
+        'NAMIBIA',
+        'SZ',
+        'SWAZILAND',
+        'ESWATINI',
+        'LS',
+        'LESOTHO',
+        'MW',
+        'MALAWI',
+        'MZ',
+        'MOZAMBIQUE',
+        'MOSAMBIK',
+        'AO',
+        'ANGOLA',
+        'CD',
+        'CONGO',
+        'KONGO',
+        'CM',
+        'CAMEROON',
+        'KAMERUN',
+        'CI',
+        'IVORY COAST',
+        'ELFENBEINKÜSTE',
+        'SN',
+        'SENEGAL',
+        'ML',
+        'MALI',
+        'BF',
+        'BURKINA FASO',
+        'NE',
+        'NIGER',
+        'TD',
+        'CHAD',
+        'TSCHAD',
+        'CF',
+        'CENTRAL AFRICAN REPUBLIC',
+        'ZENTRALAFRIKANISCHE REPUBLIK',
+        'GA',
+        'GABON',
+        'GABUN',
+        'GQ',
+        'EQUATORIAL GUINEA',
+        'ÄQUATORIALGUINEA',
+        'ST',
+        'SAO TOME',
+        'SAO TOME UND PRINCIPE',
+        'CV',
+        'CAPE VERDE',
+        'KAPVERDEN',
+        'GM',
+        'GAMBIA',
+        'GW',
+        'GUINEA-BISSAU',
+        'GN',
+        'GUINEA',
+        'SL',
+        'SIERRA LEONE',
+        'LR',
+        'LIBERIA',
+        'TG',
+        'TOGO',
+        'BJ',
+        'BENIN',
+        'DJ',
+        'DJIBOUTI',
+        'DSCHIBUTI',
+        'ER',
+        'ERITREA',
+        'SO',
+        'SOMALIA',
+        'SC',
+        'SEYCHELLES',
+        'SEYCHELLEN',
+        'MU',
+        'MAURITIUS',
+        'MG',
+        'MADAGASCAR',
+        'MADAGASKAR',
+        'KM',
+        'COMOROS',
+        'KOMOREN',
+        'YT',
+        'MAYOTTE',
+        'RE',
+        'REUNION',
+        'RÉUNION',
+
+        // Ozeanien
+        'AU',
+        'AUSTRALIA',
+        'AUSTRALIEN',
+        'NZ',
+        'NEW ZEALAND',
+        'NEUSEELAND',
+        'FJ',
+        'FIJI',
+        'FIDSCHI',
+        'PG',
+        'PAPUA NEW GUINEA',
+        'PAPUA-NEUGUINEA',
+        'NC',
+        'NEW CALEDONIA',
+        'NEUKALEDONIEN',
+        'PF',
+        'FRENCH POLYNESIA',
+        'FRANZÖSISCH-POLYNESIEN',
+        'WS',
+        'SAMOA',
+        'TO',
+        'TONGA',
+        'VU',
+        'VANUATU',
+        'SB',
+        'SOLOMON ISLANDS',
+        'SALOMONEN',
+        'FM',
+        'MICRONESIA',
+        'MIKRONESIEN',
+        'MH',
+        'MARSHALL ISLANDS',
+        'MARSHALLINSELN',
+        'PW',
+        'PALAU',
+        'NR',
+        'NAURU',
+        'KI',
+        'KIRIBATI',
+        'TV',
+        'TUVALU',
+        'CK',
+        'COOK ISLANDS',
+        'COOKINSELN',
+        'NU',
+        'NIUE',
+        'TK',
+        'TOKELAU',
+        'AS',
+        'AMERICAN SAMOA',
+        'AMERIKANISCH-SAMOA',
+        'GU',
+        'GUAM',
+        'MP',
+        'NORTHERN MARIANA ISLANDS',
+        'NÖRDLICHE MARIANEN',
+      ];
+
+      return allForeignCountries.includes(customerCountry);
+    }
+
+    return false;
+  };
+
   const handleCustomerSelect = (customerName: string) => {
     const customer = customers.find(c => c.name === customerName);
     if (customer) {
@@ -327,13 +904,39 @@ export default function CreateInvoicePage() {
           ? `${customer.street || ''}${customer.street ? '\n' : ''}${customer.postalCode || ''} ${customer.city || ''}${customer.city && customer.country ? '\n' : ''}${customer.country || ''}`
           : customer.address || '';
 
+      const customerVatId = customer.vatId || '';
+
+      // Prüfe Reverse-Charge-Anwendbarkeit
+      const shouldApplyReverseCharge = isReverseChargeApplicable(
+        customer,
+        customerVatId,
+        fullCompanyData
+      );
+
       setFormData(prev => ({
         ...prev,
         customerName: customer.name,
         customerEmail: customer.email,
         customerAddress: customerAddress,
-        customerVatId: customer.vatId || '', // VAT-ID aus Kundendaten übernehmen
+        customerVatId: customerVatId,
+        // Automatisch Reverse-Charge setzen wenn EU-Ausland erkannt
+        taxNote: shouldApplyReverseCharge ? 'reverse-charge' : prev.taxNote,
+        // Bei Reverse-Charge Steuersatz auf 0% setzen
+        taxRate: shouldApplyReverseCharge ? '0' : prev.taxRate,
       }));
+
+      // Benutzer informieren wenn Reverse-Charge automatisch gesetzt wurde
+      if (shouldApplyReverseCharge) {
+        toast.info(
+          'Reverse-Charge-Verfahren erkannt: EU-Auslandsgeschäft mit Unternehmen. Steuersatz automatisch auf 0% gesetzt.'
+        );
+        console.log('✅ Reverse-Charge automatisch gesetzt für:', {
+          customer: customer.name,
+          country: customer.country,
+          vatId: customerVatId,
+          reason: customerVatId ? 'EU-VAT-ID erkannt' : 'EU-Land in Adresse erkannt',
+        });
+      }
     }
   };
 
@@ -436,7 +1039,6 @@ export default function CreateInvoicePage() {
 
     try {
       // Validation
-
       if (!formData.customerName || !formData.issueDate || !formData.dueDate) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         setIsSubmitting(false);
@@ -470,8 +1072,6 @@ export default function CreateInvoicePage() {
         return;
       }
 
-      const { subtotal, tax, total } = calculateTotals();
-
       // Bei Finalisierung Rechnungsnummer verwalten
       let finalInvoiceNumber = formData.invoiceNumber || '';
       let sequentialNumber: number | undefined;
@@ -486,85 +1086,50 @@ export default function CreateInvoicePage() {
         // Für Entwürfe keine Rechnungsnummer setzen
       }
 
-      const newInvoice = {
-        // Rechnungsnummer nur für finalisierte Rechnungen
-        ...(action === 'finalize' &&
-          finalInvoiceNumber && {
-            number: finalInvoiceNumber,
-            invoiceNumber: finalInvoiceNumber,
-          }),
-        // Sequentialumber nur setzen wenn es definiert ist und die Rechnung finalisiert wird
-        ...(action === 'finalize' && sequentialNumber !== undefined && { sequentialNumber }),
-        date: formData.issueDate,
-        issueDate: formData.issueDate,
-        dueDate: formData.dueDate,
+      // Create invoice via API instead of direct Firebase
+      const invoiceData = {
+        invoiceNumber: finalInvoiceNumber,
         customerName: formData.customerName,
         customerEmail: formData.customerEmail,
         customerAddress: formData.customerAddress,
-        customerVatId: formData.customerVatId, // VAT-ID des Kunden
+        customerVatId: formData.customerVatId,
         description: formData.description,
-
-        // Company information from settings
-        companyId: uid,
-        companyName: companySettings?.companyName || '',
-        companyAddress: companySettings?.companyAddress || '',
-        companyEmail: companySettings?.companyEmail || '',
-        companyPhone: companySettings?.companyPhone || '',
-        companyWebsite: companySettings?.companyWebsite || '',
-        companyLogo: companySettings?.companyLogo || '',
-        companyVatId: companySettings?.vatId || '',
-        companyTaxNumber: companySettings?.taxNumber || '',
-        companyRegister: companySettings?.companyRegister || '',
-        districtCourt: companySettings?.districtCourt || '',
-        legalForm: companySettings?.legalForm || '',
-        companyTax: companySettings?.taxNumber || '',
-
-        // Tax settings
-        isSmallBusiness: companySettings?.ust === 'kleinunternehmer',
-        vatRate: parseFloat(companySettings?.defaultTaxRate || '19'),
-        priceInput: companySettings?.priceInput || 'netto',
-
-        // Financial data
+        issueDate: formData.issueDate,
+        dueDate: formData.dueDate,
         items: items.filter(item => item.description && item.quantity > 0),
-        amount: subtotal,
-        tax,
-        total,
-        status: action === 'finalize' ? 'finalized' : 'draft',
-        template: selectedTemplate,
+        taxRate: formData.taxRate,
+        taxNote: formData.taxNote,
         notes: formData.notes,
-
-        // Timestamps
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        createdBy: uid, // Erforderlich für Firestore-Regeln
-        // Nur bei finalisierten Rechnungen das Finalisierungsdatum setzen
-        ...(action === 'finalize' && { finalizedAt: serverTimestamp() }),
+        template: selectedTemplate,
+        status: action === 'finalize' ? 'finalized' : 'draft',
       };
 
-      // Save invoice to Firestore
-      const docRef = await addDoc(collection(db, 'invoices'), newInvoice);
+      // Create invoice via API
+      const response = await createInvoice(uid, invoiceData);
 
-      if (action === 'finalize') {
-        toast.success(`Rechnung ${finalInvoiceNumber} erfolgreich erstellt!`);
-      } else {
-        toast.success('Entwurf erfolgreich gespeichert!');
-      }
-
-      // Leite weiter zur Rechnungsübersicht
-
-      router.push(`/dashboard/company/${uid}/finance/invoices`);
-    } catch (error) {
-      // Detaillierte Fehleranalyse
-      if (error.code) {
-        if (error.code === 'permission-denied') {
-          toast.error('Berechtigung verweigert - bitte kontaktieren Sie den Support');
-        } else if (error.code === 'network-request-failed') {
-          toast.error('Netzwerkfehler - bitte prüfen Sie Ihre Internetverbindung');
+      if (response.success) {
+        if (action === 'finalize') {
+          toast.success(`Rechnung ${finalInvoiceNumber} erfolgreich erstellt!`);
         } else {
-          toast.error(`Firestore Fehler: ${error.message}`);
+          toast.success('Entwurf erfolgreich gespeichert!');
         }
+
+        // Redirect to invoice overview
+        router.push(`/dashboard/company/${uid}/finance/invoices`);
       } else {
-        toast.error('Unbekannter Fehler beim Speichern der Rechnung');
+        throw new Error(response.error || 'Fehler beim Erstellen der Rechnung');
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Erstellen der Rechnung:', error);
+      handleApiError(error);
+
+      // User-friendly error messages
+      if (error.message.includes('Netzwerk')) {
+        toast.error('Netzwerkfehler - bitte prüfen Sie Ihre Internetverbindung');
+      } else if (error.message.includes('Berechtigung')) {
+        toast.error('Berechtigung verweigert - bitte kontaktieren Sie den Support');
+      } else {
+        toast.error(error.message || 'Unbekannter Fehler beim Speichern der Rechnung');
       }
     } finally {
       setIsSubmitting(false);
@@ -685,9 +1250,48 @@ export default function CreateInvoicePage() {
                     <Input
                       id="customerVatId"
                       value={formData.customerVatId}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, customerVatId: e.target.value }))
-                      }
+                      onChange={e => {
+                        const vatId = e.target.value;
+
+                        // Erstelle temporäres Customer-Objekt für Validierung
+                        const tempCustomer: Customer = {
+                          id: 'temp',
+                          name: formData.customerName,
+                          email: formData.customerEmail,
+                          vatId: vatId,
+                          // Versuche Land aus Adresse zu extrahieren
+                          country: formData.customerAddress?.split('\n').pop()?.trim() || '',
+                        };
+
+                        // Prüfe Reverse-Charge bei VAT-ID Eingabe
+                        const shouldApplyReverseCharge = isReverseChargeApplicable(
+                          tempCustomer,
+                          vatId,
+                          fullCompanyData
+                        );
+
+                        setFormData(prev => ({
+                          ...prev,
+                          customerVatId: vatId,
+                          // Nur automatisch setzen wenn noch kein spezifischer Steuerhinweis gesetzt ist
+                          taxNote:
+                            shouldApplyReverseCharge && prev.taxNote === 'none'
+                              ? 'reverse-charge'
+                              : prev.taxNote,
+                          taxRate:
+                            shouldApplyReverseCharge && prev.taxNote === 'none'
+                              ? '0'
+                              : prev.taxRate,
+                        }));
+
+                        // Benutzer informieren
+                        if (shouldApplyReverseCharge && vatId.length >= 4) {
+                          toast.info(
+                            'EU-VAT-ID erkannt: Reverse-Charge-Verfahren wurde automatisch aktiviert.'
+                          );
+                          console.log('✅ Reverse-Charge durch VAT-ID-Eingabe aktiviert:', vatId);
+                        }
+                      }}
                       placeholder="DE123456789"
                     />
                     <p className="text-xs text-gray-500">
@@ -747,6 +1351,46 @@ export default function CreateInvoicePage() {
                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="z.B. Beratungsleistungen für Projekt XYZ"
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Steuerhinweise */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Steuerhinweise</CardTitle>
+                <CardDescription>
+                  Wählen Sie einen passenden Steuerhinweis für Ihre Rechnung
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="taxNote">Steuerhinweis</Label>
+                  <Select
+                    value={formData.taxNote}
+                    onValueChange={value => {
+                      setFormData(prev => ({
+                        ...prev,
+                        taxNote: value,
+                        // Automatisch Steuersatz auf 0% setzen bei Kleinunternehmer
+                        taxRate: value === 'kleinunternehmer' ? '0' : prev.taxRate,
+                      }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Steuerhinweis auswählen (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Kein Steuerhinweis</SelectItem>
+                      <SelectItem value="kleinunternehmer">
+                        Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.
+                      </SelectItem>
+                      <SelectItem value="reverse-charge">
+                        Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als
+                        Leistungsempfänger die Umsatzsteuer als Unternehmer.
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
@@ -843,11 +1487,31 @@ export default function CreateInvoicePage() {
                           <Select
                             value={formData.taxRate.toString()}
                             onValueChange={value => {
+                              // Verhindere Änderung bei Kleinunternehmer
+                              if (formData.taxNote === 'kleinunternehmer') {
+                                toast.error(
+                                  'Bei Kleinunternehmerregelung ist der Steuersatz 0% und kann nicht geändert werden.'
+                                );
+                                return;
+                              }
+                              // Verhindere Änderung bei Reverse-Charge
+                              if (formData.taxNote === 'reverse-charge') {
+                                toast.error(
+                                  'Bei Reverse-Charge-Verfahren ist der Steuersatz 0% und kann nicht geändert werden.'
+                                );
+                                return;
+                              }
                               console.log('MwSt changed to:', value);
                               setFormData(prev => ({ ...prev, taxRate: value }));
                             }}
+                            disabled={
+                              formData.taxNote === 'kleinunternehmer' ||
+                              formData.taxNote === 'reverse-charge'
+                            }
                           >
-                            <SelectTrigger className="w-20 h-8">
+                            <SelectTrigger
+                              className={`w-20 h-8 ${formData.taxNote === 'kleinunternehmer' || formData.taxNote === 'reverse-charge' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
                               <SelectValue placeholder="19%" />
                             </SelectTrigger>
                             <SelectContent>
@@ -866,39 +1530,6 @@ export default function CreateInvoicePage() {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Template Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Design-Template</CardTitle>
-                <CardDescription>
-                  {templateLoading
-                    ? 'Template wird geladen...'
-                    : 'Wählen Sie das Aussehen Ihrer Rechnung'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {templateLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-[#14ad9f]" />
-                    <span className="ml-2 text-gray-600">Template wird geladen...</span>
-                  </div>
-                ) : (
-                  <InvoiceTemplatePicker
-                    selectedTemplate={selectedTemplate}
-                    onTemplateSelect={setSelectedTemplate}
-                    userId={uid}
-                    trigger={
-                      <Button variant="outline" className="w-full justify-start">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Template:{' '}
-                        {selectedTemplate.charAt(0).toUpperCase() + selectedTemplate.slice(1)}
-                      </Button>
-                    }
-                  />
-                )}
               </CardContent>
             </Card>
 
@@ -929,34 +1560,6 @@ export default function CreateInvoicePage() {
               </Button>
 
               <div className="flex gap-3">
-                {/* PDF Preview Button */}
-                <InvoicePreview
-                  invoiceData={{
-                    invoiceNumber: formData.invoiceNumber,
-                    issueDate: formData.issueDate,
-                    dueDate: formData.dueDate,
-                    customerName: formData.customerName,
-                    customerAddress: formData.customerAddress,
-                    customerEmail: formData.customerEmail,
-                    description: formData.description,
-                    items: items,
-                    amount: subtotal,
-                    tax: tax,
-                    total: total,
-                  }}
-                  template={selectedTemplate}
-                  companySettings={companySettings || undefined}
-                  trigger={
-                    <Button
-                      variant="outline"
-                      className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      PDF-Vorschau
-                    </Button>
-                  }
-                />
-
                 <Button
                   type="button"
                   variant="outline"
@@ -989,68 +1592,147 @@ export default function CreateInvoicePage() {
           </form>
         </div>
 
-        {/* Right Column: Live Preview */}
+        {/* Right Column: Live Preview & PDF Actions */}
         <div className="lg:col-span-1">
-          <div className="sticky top-8">
+          <div className="sticky top-8 space-y-4">
+            {/* Live Invoice Preview */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Eye className="h-5 w-5" />
-                  Live PDF-Vorschau
+                  Live Vorschau
                 </CardTitle>
-                <CardDescription>Echtzeit-Vorschau Ihrer Rechnung</CardDescription>
+                <CardDescription>Echtzeitvorschau Ihrer Rechnung</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Quick Preview */}
+                  {/* Live Template Renderer */}
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                     <div className="h-96 overflow-hidden relative">
-                      <div className="transform scale-[0.3] origin-top-left w-[1000px] h-[1200px] pointer-events-none">
+                      <div className="transform scale-[0.55] origin-top-left w-[260%] h-[260%] pointer-events-none">
                         <InvoiceTemplateRenderer
                           template={selectedTemplate}
-                          data={{
-                            id: 'preview',
-                            number: formData.invoiceNumber || 'R-2025-000',
-                            invoiceNumber: formData.invoiceNumber || 'R-2025-000',
-                            sequentialNumber: 1,
-                            date: formData.issueDate,
-                            issueDate: formData.issueDate,
-                            dueDate: formData.dueDate,
-                            customerName: formData.customerName || 'Kunden auswählen...',
-                            customerAddress: formData.customerAddress || '',
-                            customerEmail: formData.customerEmail,
-                            description: formData.description,
-                            companyName: companySettings?.companyName || 'Ihr Unternehmen',
-                            companyAddress: companySettings?.companyAddress || 'Ihre Firmenadresse',
-                            companyEmail: companySettings?.companyEmail || '',
-                            companyPhone: companySettings?.companyPhone || '',
-                            companyWebsite: companySettings?.companyWebsite || '',
-                            companyLogo: companySettings?.companyLogo || '',
-                            companyVatId: companySettings?.vatId || '',
-                            companyTaxNumber: companySettings?.taxNumber || '',
-                            companyRegister: companySettings?.companyRegister || '',
-                            districtCourt: companySettings?.districtCourt || '',
-                            legalForm: companySettings?.legalForm || '',
-                            companyTax: companySettings?.taxNumber || '',
-                            iban: companySettings?.iban || '',
-                            accountHolder: companySettings?.accountHolder || '',
-                            items: items.filter(item => item.description && item.quantity > 0),
-                            amount: subtotal,
-                            tax,
-                            total,
-                            isSmallBusiness: companySettings?.ust === 'kleinunternehmer',
-                            vatRate: parseFloat(companySettings?.defaultTaxRate || '19'),
-                            priceInput: companySettings?.priceInput || 'netto',
-                            status: 'draft',
-                          }}
-                          preview={false}
+                          data={
+                            {
+                              id: 'preview',
+                              number: formData.invoiceNumber || 'R-2025-000',
+                              invoiceNumber: formData.invoiceNumber || 'R-2025-000',
+                              sequentialNumber: 0,
+                              date: formData.issueDate || new Date().toISOString().split('T')[0],
+                              issueDate:
+                                formData.issueDate || new Date().toISOString().split('T')[0],
+                              dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
+                              customerName: formData.customerName || 'Kunden auswählen...',
+                              customerAddress:
+                                formData.customerAddress || 'Kundenadresse wird hier angezeigt',
+                              customerEmail: formData.customerEmail || '',
+                              description: formData.description || '',
+                              companyName:
+                                fullCompanyData?.companyName ||
+                                companySettings?.companyName ||
+                                'Ihr Unternehmen',
+                              companyAddress:
+                                fullCompanyData?.companyAddress ||
+                                (fullCompanyData
+                                  ? [
+                                      fullCompanyData.companyStreet &&
+                                      fullCompanyData.companyHouseNumber
+                                        ? `${fullCompanyData.companyStreet} ${fullCompanyData.companyHouseNumber}`
+                                        : fullCompanyData.companyStreet,
+                                      fullCompanyData.companyPostalCode &&
+                                      fullCompanyData.companyCity
+                                        ? `${fullCompanyData.companyPostalCode} ${fullCompanyData.companyCity}`
+                                        : undefined,
+                                      fullCompanyData.companyCountry,
+                                    ]
+                                      .filter(Boolean)
+                                      .join('\n')
+                                  : companySettings?.companyAddress) ||
+                                'Ihre Firmenadresse',
+                              companyEmail:
+                                fullCompanyData?.email ||
+                                companySettings?.companyEmail ||
+                                'info@ihrunternehmen.de',
+                              companyPhone:
+                                fullCompanyData?.companyPhoneNumber ||
+                                companySettings?.companyPhone ||
+                                '+49 123 456789',
+                              companyWebsite:
+                                fullCompanyData?.companyWebsite ||
+                                companySettings?.companyWebsite ||
+                                '',
+                              companyLogo: (() => {
+                                let logo =
+                                  fullCompanyData?.companyLogo ||
+                                  fullCompanyData?.profilePictureURL ||
+                                  fullCompanyData?.step3?.profilePictureURL ||
+                                  companySettings?.companyLogo ||
+                                  '';
+
+                                // URL dekodieren falls nötig
+                                if (logo) {
+                                  try {
+                                    // Prüfe ob URL encoded ist und dekodiere sie
+                                    if (logo.includes('%2F')) {
+                                      logo = decodeURIComponent(logo);
+                                    }
+                                  } catch (error) {
+                                    console.warn('🖼️ Fehler beim URL-Dekodieren:', error);
+                                  }
+                                }
+
+                                console.log('🖼️ Live Preview Logo Debug:', {
+                                  originalLogo:
+                                    fullCompanyData?.companyLogo ||
+                                    fullCompanyData?.profilePictureURL ||
+                                    fullCompanyData?.step3?.profilePictureURL ||
+                                    companySettings?.companyLogo ||
+                                    '',
+                                  decodedLogo: logo,
+                                  companyLogo: fullCompanyData?.companyLogo,
+                                  profilePictureURL: fullCompanyData?.profilePictureURL,
+                                  step3ProfilePictureURL: fullCompanyData?.step3?.profilePictureURL,
+                                  companySettingsLogo: companySettings?.companyLogo,
+                                  fullCompanyDataAvailable: !!fullCompanyData,
+                                });
+                                return logo;
+                              })(),
+                              companyVatId: fullCompanyData?.vatId || companySettings?.vatId || '',
+                              companyTaxNumber:
+                                fullCompanyData?.taxNumber || companySettings?.taxNumber || '',
+                              companyRegister:
+                                fullCompanyData?.companyRegister ||
+                                companySettings?.companyRegister ||
+                                '',
+                              districtCourt:
+                                fullCompanyData?.districtCourt ||
+                                companySettings?.districtCourt ||
+                                '',
+                              legalForm:
+                                fullCompanyData?.legalForm || companySettings?.legalForm || '',
+                              items: items.filter(item => item.description && item.quantity > 0),
+                              amount: subtotal,
+                              tax: tax,
+                              total: total,
+                              status: 'draft' as const,
+                              notes: formData.notes,
+                              createdAt: new Date(),
+                              year: new Date().getFullYear(),
+                              companyId: 'preview',
+                              isStorno: false,
+                              isSmallBusiness: companySettings?.ust === 'kleinunternehmer' || false,
+                              vatRate: parseFloat(formData.taxRate),
+                              priceInput: 'netto' as const,
+                              ...(formData.taxNote !== 'none' && { taxNote: formData.taxNote }),
+                            } as InvoiceData
+                          }
+                          preview={true}
                         />
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent pointer-events-none"></div>
                     </div>
                   </div>
 
-                  {/* Full Preview Button */}
+                  {/* PDF Preview Button */}
                   <InvoicePreview
                     invoiceData={{
                       invoiceNumber: formData.invoiceNumber,
@@ -1064,6 +1746,7 @@ export default function CreateInvoicePage() {
                       amount: subtotal,
                       tax: tax,
                       total: total,
+                      taxNote: formData.taxNote !== 'none' ? formData.taxNote : undefined,
                     }}
                     template={selectedTemplate}
                     companySettings={companySettings || undefined}
@@ -1073,36 +1756,52 @@ export default function CreateInvoicePage() {
                         className="w-full border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                       >
                         <Eye className="h-4 w-4 mr-2" />
-                        Vollständige PDF-Vorschau
+                        Vollbild PDF-Vorschau
                       </Button>
                     }
                   />
-
-                  {/* Quick Stats */}
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Positionen:</span>
-                      <span className="font-medium">{items.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Zwischensumme:</span>
-                      <span className="font-medium">{formatCurrency(subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">MwSt. ({formData.taxRate}%):</span>
-                      <span className="font-medium">{formatCurrency(tax)}</span>
-                    </div>
-                    <div className="flex justify-between pt-2 border-t">
-                      <span className="font-semibold">Gesamtbetrag:</span>
-                      <span className="font-bold text-[#14ad9f]">{formatCurrency(total)}</span>
-                    </div>
-                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Debug Panel - nur in Development */}
-            {process.env.NODE_ENV === 'development' && <FirestoreDebugPanel uid={uid} />}
+            {/* Quick Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Rechnungsübersicht</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Positionen:</span>
+                    <span className="font-medium">{items.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Zwischensumme:</span>
+                    <span className="font-medium">{formatCurrency(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">MwSt. ({formData.taxRate}%):</span>
+                    <span className="font-medium">{formatCurrency(tax)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="font-semibold">Gesamtbetrag:</span>
+                    <span className="font-bold text-[#14ad9f]">{formatCurrency(total)}</span>
+                  </div>
+
+                  {/* Tax Note Preview */}
+                  {formData.taxNote && formData.taxNote !== 'none' && (
+                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                      <p className="text-xs text-gray-600 font-medium mb-1">Steuerhinweis:</p>
+                      <p className="text-xs text-gray-700">
+                        {formData.taxNote === 'kleinunternehmer'
+                          ? 'Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.'
+                          : 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

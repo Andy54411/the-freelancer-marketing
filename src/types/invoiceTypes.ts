@@ -75,6 +75,7 @@ export interface InvoiceData {
 
   // Optionale Zusatzfelder
   notes?: string;
+  taxNote?: string; // Steuerhinweise (Kleinunternehmer, Reverse-Charge, etc.)
   paymentTerms?: string;
   bankDetails?: {
     iban: string;

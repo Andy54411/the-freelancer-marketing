@@ -1,5 +1,6 @@
 import React from 'react';
 import { InvoiceData } from './types';
+import { getProxiedImageUrl, isFirebaseStorageUrl } from '@/utils/imageProxy';
 
 interface TemplateProps {
   data: InvoiceData;
@@ -31,24 +32,31 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
         </div>
 
         <div className="text-right flex flex-col items-end min-w-[200px]">
-          {/* Logo rechts oben */}
-          {data.companyLogo && data.companyLogo.trim() !== '' ? (
-            <div className="mb-4">
-              <img
-                src={data.companyLogo}
-                alt={`${data.companyName} Logo`}
-                className="h-16 w-auto max-w-[150px] object-contain"
-                onError={e => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            </div>
-          ) : (
-            <div className="mb-4 p-3 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center min-w-[120px]">
+          {/* Logo rechts oben mit Fallback auf lokales Bild */}
+          <div className="mb-4">
+            <img
+              src="/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg"
+              alt={`${data.companyName} Logo`}
+              className="h-40 w-auto max-w-[400px] object-contain"
+              onError={e => {
+                console.error('🖼️ Lokales Logo Error:', e);
+                // Fallback: Logo verstecken und Placeholder anzeigen
+                e.currentTarget.style.display = 'none';
+                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'block';
+              }}
+              onLoad={() => {
+                console.log('🖼️ Lokales Logo erfolgreich geladen für:', data.companyName);
+              }}
+            />
+            <div
+              className="hidden p-3 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center min-w-[120px]"
+              style={{ display: 'none' }}
+            >
               <div className="text-xs text-gray-500 font-medium">Logo</div>
               <div className="text-xs text-gray-400 mt-1">{data.companyName}</div>
             </div>
-          )}
+          </div>
 
           <h1 className="text-2xl font-bold text-[#14ad9f] mb-4">RECHNUNG</h1>
           <div className="text-gray-700">
