@@ -194,7 +194,7 @@ class CategoriesService {
     }
   }
 
-  /// Get providers for a subcategory from Firestore directly (companies, users & firma collections)
+  /// Get providers for a subcategory from Firestore directly (companies collection only)
   static Future<List<Map<String, dynamic>>> getProvidersForSubcategory(String subcategory) async {
     try {
       debugPrint('🔍 Suche Provider für Subcategory: $subcategory');
@@ -216,33 +216,41 @@ class CategoriesService {
         for (final doc in companiesQuery.docs) {
           final data = doc.data();
           
+          // Debug: Zeige echte Firebase-Daten
+          debugPrint('🔍 Echter Provider gefunden: ${data['companyName']} (ID: ${doc.id})');
+          debugPrint('📊 Daten: $data');
+          
           // Lade echte Bewertungen für diesen Provider
           final reviewData = await _getProviderReviews(doc.id);
           
+          // Verwende nur echte Firebase-Daten
           final provider = {
             'id': doc.id,
             'name': data['companyName'] ?? 'Unbekanntes Unternehmen',
-            'providerName': data['companyName'] ?? 'Unbekanntes Unternehmen',
+            'providerName': data['companyName'] ?? 'Unbekanntes Unternehmen', 
             'title': data['companyName'] ?? 'Unbekanntes Unternehmen',
             'companyName': data['companyName'] ?? '',
-            'description': data['description'] ?? '',
-            'subcategoryName': subcategory, // Zeige die Subcategory
-            'price': (data['hourlyRate'] as num?)?.toDouble() ?? 0.0,
+            'description': data['description'] ?? data['publicDescription'] ?? '',
+            'subcategoryName': data['selectedSubcategory'] ?? subcategory,
+            'price': (data['hourlyRate'] as num?)?.toDouble() ?? (data['pricePerHour'] as num?)?.toDouble() ?? 0.0,
             'rating': reviewData['averageRating'],
             'reviewCount': reviewData['reviewCount'],
-            'profilePictureURL': data['profilePictureURL'] ?? '',
-            'location': '${data['companyCity'] ?? ''}, ${data['companyCountry'] ?? ''}'.trim().replaceAll(RegExp(r'^,\s*'), ''),
-            'isPro': true,
-            'isFastDelivery': true,
-            'isOnline': false,
-            'isOnsite': true,
+            'profilePictureURL': data['profilePictureURL'] ?? data['logoURL'] ?? '',
+            'location': '${data['companyCity'] ?? data['city'] ?? ''}, ${data['companyCountry'] ?? data['country'] ?? ''}'.trim().replaceAll(RegExp(r'^,\s*'), ''),
+            // Echte Firebase-Werte statt Mock-Daten
+            'isPro': data['isPremium'] ?? data['isVerified'] ?? false,
+            'isFastDelivery': data['fastDelivery'] ?? data['quickResponse'] ?? false,
+            'isOnline': data['offersOnlineServices'] ?? false,
+            'isOnsite': data['offersOnsiteServices'] ?? true,
             'createdAt': data['createdAt']?.toDate()?.toIso8601String() ?? DateTime.now().toIso8601String(),
-            'lastActive': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
-            'responseTimeHours': 24.0,
-            'completionRate': 98.0,
+            'lastActive': data['lastLoginAt']?.toDate()?.toIso8601String() ?? DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+            'responseTimeHours': (data['averageResponseTime'] as num?)?.toDouble() ?? 24.0,
+            'completionRate': (data['completionRate'] as num?)?.toDouble() ?? 95.0,
             'source': 'companies',
             'category': data['selectedCategory'] ?? '',
             'subcategory': data['selectedSubcategory'] ?? '',
+            // Alle originalen Firebase-Daten beibehalten
+            'originalData': data,
           };
           
           providers.add(provider);
@@ -251,6 +259,9 @@ class CategoriesService {
         debugPrint('⚠️ Fehler bei companies Collection: $e');
       }
       
+      // NOTE: Users collection search disabled due to permission issues
+      // All providers are now in the companies collection only
+      /*
       // Search in users collection for firma users (with limit for security)
       debugPrint('📋 Suche in users Collection (user_type: firma)...');
       try {
@@ -300,6 +311,7 @@ class CategoriesService {
       } catch (e) {
         debugPrint('⚠️ Fehler bei users Collection: $e');
       }
+      */
       
       // Search in firma collection (unlimited public access)
       debugPrint('📋 Suche in firma Collection...');

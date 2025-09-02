@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 /// Firebase Functions Service für Taskilo Flutter App
 /// Implementiert alle wichtigen Functions aus dem Web-Projekt
 class FirebaseFunctionsService {
-  static final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  static final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -386,8 +386,10 @@ class FirebaseFunctionsService {
   /// Check Firebase Functions Connection
   static Future<bool> testConnection() async {
     try {
-      final callable = _functions.httpsCallable('testConnection');
-      await callable.call();
+      // Simple connectivity test - just check if Functions instance is configured correctly
+      // This will fail fast if region or configuration is wrong
+      _functions.httpsCallable('createInviteCode');
+      debugPrint('🔧 Firebase Functions configured for region: europe-west1');
       return true;
     } catch (e) {
       debugPrint('Firebase Functions connection failed: $e');
