@@ -55,7 +55,7 @@ export function AddEmployeeModal({
   const [newBenefit, setNewBenefit] = useState('');
   const [newSkill, setNewSkill] = useState('');
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -113,6 +113,7 @@ export function AddEmployeeModal({
         department: formData.department,
         employmentType: formData.employmentType,
         contractType: 'PERMANENT', // Standard-Vertragsart
+        status: 'ACTIVE', // Neuer Mitarbeiter ist standardmäßig aktiv
         startDate: formData.startDate,
         grossSalary: formData.grossSalary,
         hourlyRate: formData.hourlyRate,
@@ -143,6 +144,32 @@ export function AddEmployeeModal({
           totalDays: 30,
           usedDays: 0,
           remainingDays: 30,
+          yearStart: new Date().getFullYear() + '-01-01',
+          settings: {
+            annualVacationDays: 30,
+            carryOverDays: 0,
+            maxCarryOverDays: 5,
+            carryOverExpiry: new Date().getFullYear() + 1 + '-03-31',
+            allowNegativeBalance: false,
+            requireManagerApproval: true,
+            minimumAdvanceDays: 3,
+            maximumConsecutiveDays: 30,
+            allowWeekends: false,
+            allowHolidays: false,
+            autoApproveAfterDays: 30,
+          },
+          requests: [],
+          history: [
+            {
+              year: new Date().getFullYear(),
+              totalDaysGranted: 30,
+              carryOverFromPreviousYear: 0,
+              usedDays: 0,
+              plannedDays: 0,
+              lostDays: 0,
+              adjustments: [],
+            },
+          ],
         },
       };
 
@@ -165,7 +192,7 @@ export function AddEmployeeModal({
         benefits: [],
         skills: [],
       });
-    } catch (error) {
+    } catch {
       toast.error('Fehler beim Hinzufügen des Mitarbeiters');
     } finally {
       setLoading(false);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import { db } from '@/firebase/clients';
 import { collection, query, where, orderBy, onSnapshot, limit, doc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import MarketplaceProposalModal from '@/components/MarketplaceProposalModal';
 
 interface ProjectRequest {
   id: string;
@@ -37,11 +38,19 @@ interface ProjectRequest {
   isRemote: boolean;
   urgency: 'low' | 'medium' | 'high';
   status: string;
-  createdAt: any;
+  createdAt: { toDate?: () => Date; seconds?: number; nanoseconds?: number } | Date;
   customerUid: string;
   customerEmail: string;
   viewCount: number;
   proposalsCount?: number;
+}
+
+interface CompanyData {
+  selectedCategory?: string;
+  selectedSubcategory?: string;
+  companyName?: string;
+  displayName?: string;
+  [key: string]: unknown;
 }
 
 export default function CompanyMarketplacePage() {
@@ -55,7 +64,38 @@ export default function CompanyMarketplacePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedUrgency, setSelectedUrgency] = useState('');
-  const [companyData, setCompanyData] = useState<any>(null);
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+
+  // Modal States
+  const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<ProjectRequest | null>(null);
+
+  // Hilfsfunktion für Date-Konvertierung
+  const getDateFromFirestore = (timestamp: ProjectRequest['createdAt']): Date => {
+    if (!timestamp) return new Date();
+
+    // Firebase Timestamp mit toDate Methode
+    if (
+      typeof timestamp === 'object' &&
+      'toDate' in timestamp &&
+      typeof timestamp.toDate === 'function'
+    ) {
+      return timestamp.toDate();
+    }
+
+    // Firebase Timestamp Objekt mit seconds
+    if (typeof timestamp === 'object' && 'seconds' in timestamp && timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000);
+    }
+
+    // Bereits ein Date Objekt
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+
+    // Fallback
+    return new Date();
+  };
 
   // Lade Unternehmensdaten
   useEffect(() => {
@@ -170,10 +210,9 @@ export default function CompanyMarketplacePage() {
     router.push(`/dashboard/company/${uid}/marketplace/projects/${projectId}`);
   };
 
-  const handleSubmitProposal = (projectId: string) => {
-    // Hier würde normalerweise ein Proposal Modal geöffnet werden
-    // Für jetzt navigieren wir zur Detail-Seite wo das Quote Modal ist
-    router.push(`/dashboard/company/${uid}/marketplace/projects/${projectId}`);
+  const handleSubmitProposal = (project: ProjectRequest) => {
+    setSelectedProject(project);
+    setIsProposalModalOpen(true);
   };
 
   // Filter-Funktionen
@@ -374,9 +413,7 @@ export default function CompanyMarketplacePage() {
                 <p className="text-2xl font-bold text-blue-600">
                   {
                     filteredProjects.filter(p => {
-                      const projectDate = p.createdAt?.toDate
-                        ? p.createdAt.toDate()
-                        : new Date(p.createdAt);
+                      const projectDate = getDateFromFirestore(p.createdAt);
                       const today = new Date();
                       return projectDate.toDateString() === today.toDateString();
                     }).length
@@ -451,9 +488,7 @@ export default function CompanyMarketplacePage() {
                     <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {project.createdAt?.toDate
-                          ? project.createdAt.toDate().toLocaleDateString('de-DE')
-                          : new Date(project.createdAt).toLocaleDateString('de-DE')}
+                        {getDateFromFirestore(project.createdAt).toLocaleDateString('de-DE')}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
@@ -495,7 +530,7 @@ export default function CompanyMarketplacePage() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => handleSubmitProposal(project.id)}
+                      onClick={() => handleSubmitProposal(project)}
                       className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                     >
                       Angebot abgeben
@@ -507,6 +542,20 @@ export default function CompanyMarketplacePage() {
           ))
         )}
       </div>
+
+      {/* Marketplace Proposal Modal */}
+      {selectedProject && (
+        <MarketplaceProposalModal
+          isOpen={isProposalModalOpen}
+          onClose={() => {
+            setIsProposalModalOpen(false);
+            setSelectedProject(null);
+          }}
+          project={selectedProject}
+          companyId={uid}
+          companyName={companyData?.companyName || companyData?.displayName || 'Unbekannte Firma'}
+        />
+      )}
     </div>
   );
 }
