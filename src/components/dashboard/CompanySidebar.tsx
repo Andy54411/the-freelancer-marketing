@@ -70,6 +70,15 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
+    label: 'Projekt-Marktplatz',
+    icon: FiFolder,
+    value: 'marketplace',
+    subItems: [
+      { label: 'Verfügbare Projekte', value: 'marketplace-projects', href: 'marketplace/projects' },
+      { label: 'Meine Angebote', value: 'marketplace-proposals', href: 'marketplace/proposals' },
+    ],
+  },
+  {
     label: 'Angebots-Anfragen',
     icon: FiFileText,
     value: 'quotes',
