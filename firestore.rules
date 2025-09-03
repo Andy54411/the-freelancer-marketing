@@ -1628,23 +1628,30 @@ service cloud.firestore {
 
     // Project Requests Collection - für User-Projekte
     match /project_requests/{projectRequestId} {
-      // Lesen: Eigene Project Requests als Kunde
+      // Lesen: Eigene Project Requests als Kunde, alle Unternehmen für Marketplace, Support Staff
       allow read: if request.auth != null && 
                      (resource.data.customerUid == request.auth.uid ||
+                      isCompany() ||
+                      exists(/databases/$(database)/documents/companies/$(request.auth.uid)) ||
                       isSupportStaff());
       
-      // Listen: Für eigene Project Requests
+      // Listen: Für eigene Project Requests und alle Unternehmen für Marketplace
       allow list: if request.auth != null && 
-                    (isSupportStaff() || request.auth != null);
+                    (isSupportStaff() || 
+                     request.auth != null ||
+                     isCompany() ||
+                     exists(/databases/$(database)/documents/companies/$(request.auth.uid)));
       
       // Erstellen: User können Project Requests erstellen
       allow create: if request.auth != null && 
                        (request.resource.data.customerUid == request.auth.uid ||
                         isSupportStaff());
       
-      // Aktualisieren: Eigene Project Requests oder Support Staff
+      // Aktualisieren: Eigene Project Requests, Unternehmen für Proposals, Support Staff
       allow update: if request.auth != null && 
                        (resource.data.customerUid == request.auth.uid ||
+                        isCompany() ||
+                        exists(/databases/$(database)/documents/companies/$(request.auth.uid)) ||
                         isSupportStaff());
       
       // Löschen: Eigene Project Requests oder Support Staff

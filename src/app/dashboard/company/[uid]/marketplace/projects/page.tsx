@@ -19,7 +19,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { db } from '@/firebase/clients';
-import { collection, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, limit, doc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -55,19 +55,75 @@ export default function CompanyMarketplacePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedUrgency, setSelectedUrgency] = useState('');
+  const [companyData, setCompanyData] = useState<any>(null);
 
-  // Lade verfügbare Projekte
+  // Lade Unternehmensdaten
   useEffect(() => {
-    if (!uid || !user) return;
+    if (!uid) return;
+
+    const companyRef = doc(db, 'companies', uid);
+    const unsubscribe = onSnapshot(companyRef, doc => {
+      if (doc.exists()) {
+        setCompanyData(doc.data());
+      }
+    });
+
+    return () => unsubscribe();
+  }, [uid]);
+
+  // Lade verfügbare Projekte basierend auf Unternehmenskategorien
+  useEffect(() => {
+    if (!uid || !user || !companyData) return;
+
+    // Debug: Zeige Unternehmensdaten
+    console.log('🏢 Company Data:', companyData);
+
+    // Extrahiere die Kategorien des Unternehmens
+    const companyMainCategory = companyData.selectedCategory;
+    const companySubcategory = companyData.selectedSubcategory;
+
+    console.log('🎯 Company Categories:', { companyMainCategory, companySubcategory });
+
+    // Wenn das Unternehmen keine Hauptkategorie hat, zeige keine Projekte
+    if (!companyMainCategory) {
+      console.log('❌ No main category found for company');
+      setProjects([]);
+      setLoading(false);
+      return;
+    }
 
     const projectRequestsRef = collection(db, 'project_requests');
-    const q = query(
-      projectRequestsRef,
-      where('status', '==', 'open'),
-      where('isActive', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(50)
-    );
+
+    // Erstelle Query basierend auf verfügbaren Daten
+    let q;
+    if (companySubcategory) {
+      // Filtere nach Hauptkategorie UND Subkategorie
+      q = query(
+        projectRequestsRef,
+        where('status', '==', 'open'),
+        where('isActive', '==', true),
+        where('category', '==', companyMainCategory),
+        where('subcategory', '==', companySubcategory), // Zusätzlich nach Subkategorie filtern
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
+      console.log(
+        '🔍 Filtering by main category AND subcategory:',
+        companyMainCategory,
+        companySubcategory
+      );
+    } else {
+      // Nur nach Hauptkategorie filtern (falls keine Subkategorie vorhanden)
+      q = query(
+        projectRequestsRef,
+        where('status', '==', 'open'),
+        where('isActive', '==', true),
+        where('category', '==', companyMainCategory),
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
+      console.log('🔍 Filtering by main category only:', companyMainCategory);
+    }
 
     const unsubscribe = onSnapshot(
       q,
@@ -107,7 +163,7 @@ export default function CompanyMarketplacePage() {
     );
 
     return () => unsubscribe();
-  }, [uid, user]);
+  }, [uid, user, companyData]);
 
   // Handler-Funktionen
   const handleViewProject = (projectId: string) => {
