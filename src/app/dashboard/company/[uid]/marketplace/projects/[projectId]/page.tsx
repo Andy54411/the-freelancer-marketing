@@ -28,11 +28,14 @@ interface ProjectRequestDetail {
   description: string;
   category: string;
   subcategory: string;
-  location: string;
+  location: string | { address?: string; coordinates?: any; type?: string } | any;
   preferredDate?: string;
   budgetAmount?: number;
+  budgetRange?: { min: number; max: number; currency: string };
+  estimatedBudget?: number;
   budgetType: string;
   urgency: string;
+  priority?: string;
   createdAt: any;
   customerName?: string;
   customerEmail: string;
@@ -40,6 +43,13 @@ interface ProjectRequestDetail {
   subcategoryData?: any;
   timeline?: string;
   status: string;
+  projectRequirements?: string;
+  requiredServices?: string[];
+  originalPrompt?: string;
+  projectType?: string;
+  maxProposals?: number;
+  aiGenerated?: boolean;
+  source?: string;
 }
 
 interface CompanyProfile {
@@ -59,7 +69,7 @@ interface CompanyProfile {
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { firebaseUser } = useAuth();
+  const { firebaseUser: _firebaseUser } = useAuth();
   const [project, setProject] = useState<ProjectRequestDetail | null>(null);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,11 +103,19 @@ export default function ProjectDetailPage() {
             projectData.description || projectData.subcategoryData?.projectDescription || '',
           category: projectData.category || projectData.serviceCategory || '',
           subcategory: projectData.subcategory || projectData.serviceSubcategory || '',
-          location: projectData.location || '',
+          location:
+            typeof projectData.location === 'string'
+              ? projectData.location
+              : projectData.location && typeof projectData.location === 'object'
+                ? projectData.location.address || 'Standort verfügbar'
+                : '',
           preferredDate: projectData.preferredDate,
           budgetAmount: projectData.budgetAmount,
+          budgetRange: projectData.budgetRange,
+          estimatedBudget: projectData.estimatedBudget,
           budgetType: projectData.budgetType || 'negotiable',
           urgency: projectData.urgency || 'medium',
+          priority: projectData.priority,
           createdAt: projectData.createdAt,
           customerName: projectData.customerName,
           customerEmail: projectData.customerEmail || '',
@@ -105,6 +123,13 @@ export default function ProjectDetailPage() {
           subcategoryData: projectData.subcategoryData,
           timeline: projectData.timeline,
           status: projectData.status || 'open',
+          projectRequirements: projectData.projectRequirements,
+          requiredServices: projectData.requiredServices,
+          originalPrompt: projectData.originalPrompt,
+          projectType: projectData.projectType,
+          maxProposals: projectData.maxProposals,
+          aiGenerated: projectData.aiGenerated,
+          source: projectData.source,
         });
       } catch (error) {
         console.error('Fehler beim Laden der Projektdetails:', error);
@@ -144,20 +169,23 @@ export default function ProjectDetailPage() {
     loadCompanyProfile();
   }, [projectId, uid, router]);
 
-  const handleSubmitQuote = async (quoteData: any) => {
-    try {
-      // Hier würde die Quote-Erstellung implementiert werden
-      // Erstmal als placeholder
-      toast.success('Angebot wurde erfolgreich eingereicht!');
-      setShowProposalModal(false);
-      router.push(`/dashboard/company/${uid}/marketplace/proposals`);
-    } catch (error) {
-      console.error('Fehler beim Einreichen des Angebots:', error);
-      toast.error('Fehler beim Einreichen des Angebots');
+  const formatBudget = (
+    budgetAmount?: number,
+    budgetType?: string,
+    budgetRange?: { min: number; max: number; currency: string },
+    estimatedBudget?: number
+  ) => {
+    // Zeige Budget-Range wenn verfügbar
+    if (budgetRange && budgetRange.min > 0 && budgetRange.max > 0) {
+      return `${budgetRange.min.toLocaleString('de-DE')} - ${budgetRange.max.toLocaleString('de-DE')} ${budgetRange.currency || 'EUR'}`;
     }
-  };
 
-  const formatBudget = (budgetAmount?: number, budgetType?: string) => {
+    // Zeige geschätztes Budget wenn verfügbar
+    if (estimatedBudget && estimatedBudget > 0) {
+      return `ca. ${estimatedBudget.toLocaleString('de-DE')}€`;
+    }
+
+    // Fallback auf ursprüngliches budgetAmount
     if (budgetAmount && budgetAmount > 0) {
       return `${budgetAmount.toLocaleString('de-DE')}€`;
     }
@@ -282,6 +310,39 @@ export default function ProjectDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Projektanforderungen & Services */}
+          {(project.projectRequirements || project.requiredServices) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-[#14ad9f]" />
+                  Projektanforderungen
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {project.projectRequirements && (
+                  <div>
+                    <h4 className="font-semibold text-gray-800 mb-2">Anforderungen:</h4>
+                    <p className="text-gray-700">{project.projectRequirements}</p>
+                  </div>
+                )}
+
+                {project.requiredServices && project.requiredServices.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-gray-800 mb-2">Benötigte Services:</h4>
+                    <ul className="list-disc list-inside space-y-1">
+                      {project.requiredServices.map((service, index) => (
+                        <li key={index} className="text-gray-700">
+                          {service}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Zusätzliche Details */}
           {project.subcategoryData && (
             <Card>
@@ -328,7 +389,13 @@ export default function ProjectDetailPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3">
                 <MapPin className="h-4 w-4 text-gray-500" />
-                <span>{project.location || 'Standort nicht angegeben'}</span>
+                <span>
+                  {typeof project.location === 'string'
+                    ? project.location
+                    : project.location && typeof project.location === 'object'
+                      ? project.location.address || 'Standort verfügbar'
+                      : 'Standort nicht angegeben'}
+                </span>
               </div>
 
               {project.preferredDate && (
@@ -340,7 +407,14 @@ export default function ProjectDetailPage() {
 
               <div className="flex items-center gap-3">
                 <Euro className="h-4 w-4 text-gray-500" />
-                <span>{formatBudget(project.budgetAmount, project.budgetType)}</span>
+                <span>
+                  {formatBudget(
+                    project.budgetAmount,
+                    project.budgetType,
+                    project.budgetRange,
+                    project.estimatedBudget
+                  )}
+                </span>
               </div>
 
               {project.timeline && (
@@ -354,6 +428,62 @@ export default function ProjectDetailPage() {
                 <Calendar className="h-4 w-4 text-gray-500" />
                 <span>Erstellt: {formatDate(project.createdAt)}</span>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Projekt-Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                Projekt-Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {project.priority && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Priorität:</span>
+                  <Badge variant={project.priority === 'high' ? 'destructive' : 'secondary'}>
+                    {project.priority === 'high'
+                      ? 'Hoch'
+                      : project.priority === 'medium'
+                        ? 'Mittel'
+                        : 'Niedrig'}
+                  </Badge>
+                </div>
+              )}
+
+              {project.projectType && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Projekt-Typ:</span>
+                  <span className="font-medium">{project.projectType}</span>
+                </div>
+              )}
+
+              {project.maxProposals && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Max. Angebote:</span>
+                  <span className="font-medium">{project.maxProposals}</span>
+                </div>
+              )}
+
+              {project.aiGenerated && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Erstellt mit:</span>
+                  <Badge variant="outline" className="text-[#14ad9f] border-[#14ad9f]">
+                    KI-Assistent
+                  </Badge>
+                </div>
+              )}
+
+              {project.originalPrompt && (
+                <div>
+                  <span className="text-gray-600 text-sm">Original-Anfrage:</span>
+                  <p className="text-sm italic text-gray-500 mt-1">
+                    &ldquo;{project.originalPrompt}&rdquo;
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

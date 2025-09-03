@@ -165,7 +165,14 @@ export default function CompanyMarketplacePage() {
             maxBudget: data.maxBudget,
             budgetType: data.budgetType || 'negotiable',
             timeline: data.timeline || '',
-            location: data.location || '',
+            location:
+              typeof data.location === 'string'
+                ? data.location
+                : data.location && typeof data.location === 'object'
+                  ? data.location.address ||
+                    JSON.stringify(data.location.coordinates) ||
+                    'Standort verfügbar'
+                  : '',
             isRemote: data.isRemote || false,
             urgency: data.urgency || 'medium',
             status: data.status || 'open',
@@ -179,25 +186,12 @@ export default function CompanyMarketplacePage() {
 
         console.log('📊 Total projects found by main category:', availableProjects.length);
 
-        // Clientseitige Filterung nach Subkategorie für bessere Datenkompatibilität
-        let filteredProjects = availableProjects;
-        if (companySubcategory) {
-          filteredProjects = availableProjects.filter(project => {
-            // Akzeptiere sowohl exakte Subkategorie als auch Projekte ohne Subkategorie (Fallback)
-            const matchesSubcategory =
-              !project.subcategory || project.subcategory === companySubcategory;
-            console.log(
-              `🎯 Project "${project.title}": subcategory="${project.subcategory}", matches=${matchesSubcategory}`
-            );
-            return matchesSubcategory;
-          });
-          console.log(
-            '🎯 Projects after subcategory filter:',
-            filteredProjects.length,
-            'for subcategory:',
-            companySubcategory
-          );
-        }
+        // TEMPORÄR: Zeige ALLE Projekte der Hauptkategorie (ignoriere Subkategorie-Filter)
+        // Dies hilft bei Dateninkonsistenzen wo Projekte falsche Subkategorien haben
+        const filteredProjects = availableProjects;
+        console.log(
+          '🎯 Showing ALL projects from main category (ignoring subcategory filter for now)'
+        );
 
         console.log('✅ Final filtered projects:', filteredProjects.length);
         setProjects(filteredProjects);
@@ -484,12 +478,14 @@ export default function CompanyMarketplacePage() {
                       <span className="font-medium text-[#14ad9f]">
                         {project.category} • {project.subcategory}
                       </span>
-                      {project.location && (
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          <span>{project.location}</span>
-                        </div>
-                      )}
+                      {project.location &&
+                        typeof project.location === 'string' &&
+                        project.location.trim() && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            <span>{project.location}</span>
+                          </div>
+                        )}
                     </div>
                   </div>
                   <div className="text-right">
