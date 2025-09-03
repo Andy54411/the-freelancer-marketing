@@ -35,8 +35,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { db } from '@/firebase/clients';
-import { collection, query, where, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import { app } from '@/firebase/clients';
+import {
+  collection,
+  query,
+  where,
+  doc,
+  deleteDoc,
+  onSnapshot,
+  getFirestore,
+} from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Gemini } from '@/components/logos';
@@ -158,75 +166,209 @@ const ProjectsPage: React.FC = () => {
   useEffect(() => {
     if (!uid || !user) return;
 
-    // Verwende project_requests Collection als "Projekte" da dort die echten Projekte sind
-    const projectRequestsRef = collection(db, 'project_requests');
-    const projectRequestsQuery = query(projectRequestsRef, where('customerUid', '==', uid));
+    const db = getFirestore(app);
+    let allProjects: Project[] = [];
+    let loadedCollections = 0;
+    const totalCollections = 2; // project_requests + quotes
 
-    // Realtime Subscription für sofortige Updates
-    const unsubscribe = onSnapshot(
-      projectRequestsQuery,
-      snapshot => {
-        const userProjects: Project[] = snapshot.docs.map(doc => {
-          const data = doc.data();
+    const updateProjectsState = () => {
+      setProjects(allProjects);
+      const groups = groupProjectsByTheme(allProjects);
+      setProjectGroups(groups);
+      setLoading(false);
+    };
 
-          return {
-            id: doc.id,
-            title: data.title || 'Unbenanntes Projekt',
-            description: data.description || '',
-            status:
-              data.status === 'completed'
-                ? 'completed'
-                : data.status === 'in_progress'
-                  ? 'active'
-                  : data.status === 'cancelled'
-                    ? 'paused'
-                    : data.status === 'directly_assigned'
-                      ? 'active' // Direkt zugewiesene Projekte als aktiv anzeigen
-                      : data.status === 'active'
+    try {
+      // 1. Verwende project_requests Collection für öffentliche Projekte
+      const projectRequestsRef = collection(db, 'project_requests');
+      const projectRequestsQuery = query(projectRequestsRef, where('customerUid', '==', uid));
+
+      const unsubscribeProjectRequests = onSnapshot(
+        projectRequestsQuery,
+        snapshot => {
+          const publicProjects: Project[] = snapshot.docs.map(doc => {
+            const data = doc.data();
+
+            return {
+              id: doc.id,
+              title: data.title || 'Unbenanntes Projekt',
+              description: data.description || '',
+              status:
+                data.status === 'completed'
+                  ? 'completed'
+                  : data.status === 'in_progress'
+                    ? 'active'
+                    : data.status === 'cancelled'
+                      ? 'paused'
+                      : data.status === 'directly_assigned'
                         ? 'active'
-                        : 'planning',
-            priority:
-              data.urgency === 'high' ? 'high' : data.urgency === 'medium' ? 'medium' : 'low',
-            category: data.category || '',
-            estimatedBudget: data.budgetAmount || data.maxBudget || 0,
-            timeline: data.timeline || '',
-            createdAt: data.createdAt?.toDate
-              ? data.createdAt.toDate()
-              : new Date(data.createdAt || Date.now()),
-            updatedAt: data.updatedAt?.toDate
-              ? data.updatedAt.toDate()
-              : new Date(data.updatedAt || data.createdAt || Date.now()),
-            customerUid: data.customerUid || uid,
-            userUid: data.userUid,
-            proposalsCount: data.proposalsCount || 0,
-            viewCount: data.viewCount || 0,
-            isPartOfBundle: data.isPartOfBundle || false,
-            bundleId: data.bundleId,
-            parentBundle: data.parentBundle,
-            // Neue Felder für direkte Zuweisung
-            selectedProviders: data.selectedProviders || [],
-            hasSelectedProviders: data.hasSelectedProviders || false,
-            isDirectAssignment: data.isDirectAssignment || false,
-            isPublic: data.isPublic !== false, // Default true wenn nicht explizit false
-          };
-        });
+                        : data.status === 'active'
+                          ? 'active'
+                          : 'planning',
+              priority:
+                data.urgency === 'high' ? 'high' : data.urgency === 'medium' ? 'medium' : 'low',
+              category: data.category || '',
+              estimatedBudget: data.budgetAmount || data.maxBudget || 0,
+              timeline: data.timeline || '',
+              createdAt: data.createdAt?.toDate
+                ? data.createdAt.toDate()
+                : new Date(data.createdAt || Date.now()),
+              updatedAt: data.updatedAt?.toDate
+                ? data.updatedAt.toDate()
+                : new Date(data.updatedAt || data.createdAt || Date.now()),
+              customerUid: data.customerUid || uid,
+              userUid: data.userUid,
+              proposalsCount: data.proposalsCount || 0,
+              viewCount: data.viewCount || 0,
+              isPartOfBundle: data.isPartOfBundle || false,
+              bundleId: data.bundleId,
+              parentBundle: data.parentBundle,
+              selectedProviders: data.selectedProviders || [],
+              hasSelectedProviders: data.hasSelectedProviders || false,
+              isDirectAssignment: data.isDirectAssignment || false,
+              isPublic: data.isPublic !== false,
+            };
+          });
 
-        setProjects(userProjects);
+          // Update allProjects array
+          allProjects = allProjects.filter(p => p.isDirectAssignment); // Keep quotes
+          allProjects = [...allProjects, ...publicProjects]; // Add project_requests
+          loadedCollections = Math.max(loadedCollections, 1);
 
-        // Gruppiere Projekte automatisch
-        const groups = groupProjectsByTheme(userProjects);
-        setProjectGroups(groups);
+          if (loadedCollections >= totalCollections) {
+            updateProjectsState();
+          }
+        },
+        error => {
+          console.error('Project requests loading error:', error);
+          loadedCollections = Math.max(loadedCollections, 1);
+          if (loadedCollections >= totalCollections) {
+            updateProjectsState();
+          }
+        }
+      );
 
-        setLoading(false);
-      },
-      error => {
-        toast.error('Fehler beim Laden der Projekte');
-        setLoading(false);
-      }
-    );
+      // 2. Verwende quotes Collection für direkte KI-Anfragen (beide Schemas)
+      const quotesRef = collection(db, 'quotes');
+      // Versuche beide Schemas: customerData.uid UND customerUid
+      const quotesQuery1 = query(quotesRef, where('customerData.uid', '==', uid));
+      const quotesQuery2 = query(quotesRef, where('customerUid', '==', uid));
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+      let quotesLoaded = 0;
+      const processQuotesData = () => {
+        quotesLoaded++;
+        if (quotesLoaded >= 2) {
+          // Beide Quote-Queries sind fertig
+          loadedCollections = Math.max(loadedCollections, 2);
+          if (loadedCollections >= totalCollections) {
+            updateProjectsState();
+          }
+        }
+      };
+
+      const unsubscribeQuotes1 = onSnapshot(
+        quotesQuery1,
+        snapshot => {
+          const quoteProjects: Project[] = snapshot.docs.map(doc => {
+            const data = doc.data();
+
+            return {
+              id: doc.id,
+              title: data.title || data.projectTitle || 'Unbenanntes Projekt',
+              description: data.description || data.projectDescription || '',
+              status: 'active', // KI-generierte Projekte sind standardmäßig aktiv
+              priority: 'medium',
+              category: data.category || data.projectCategory || '',
+              estimatedBudget: data.totalAmount || data.estimatedBudget || 0,
+              timeline: data.timeline || '',
+              createdAt: data.createdAt?.toDate
+                ? data.createdAt.toDate()
+                : new Date(data.createdAt || Date.now()),
+              updatedAt: data.updatedAt?.toDate
+                ? data.updatedAt.toDate()
+                : new Date(data.updatedAt || data.createdAt || Date.now()),
+              customerUid: data.customerData?.uid || data.customerUid || uid,
+              userUid: data.customerData?.uid || data.customerUid,
+              proposalsCount: 0,
+              viewCount: 0,
+              isPartOfBundle: false,
+              selectedProviders: data.selectedProviders || [],
+              hasSelectedProviders: Boolean(data.selectedProviders?.length),
+              isDirectAssignment: true, // Quote-basierte Projekte sind direkte Zuweisungen
+              isPublic: false, // Quotes sind nicht öffentlich
+            };
+          });
+
+          // Update allProjects array für neue Schema
+          allProjects = allProjects.filter(p => !p.isDirectAssignment); // Remove old quotes
+          allProjects = [...allProjects, ...quoteProjects]; // Add new quotes
+          processQuotesData();
+        },
+        error => {
+          console.error('Quotes (new schema) loading error:', error);
+          processQuotesData();
+        }
+      );
+
+      const unsubscribeQuotes2 = onSnapshot(
+        quotesQuery2,
+        snapshot => {
+          // Nur verarbeiten wenn erste Query keine Ergebnisse hatte
+          if (quotesLoaded === 0) {
+            const quoteProjects: Project[] = snapshot.docs.map(doc => {
+              const data = doc.data();
+
+              return {
+                id: doc.id,
+                title: data.title || data.projectTitle || 'Unbenanntes Projekt',
+                description: data.description || data.projectDescription || '',
+                status: 'active',
+                priority: 'medium',
+                category: data.category || data.projectCategory || '',
+                estimatedBudget: data.totalAmount || data.estimatedBudget || 0,
+                timeline: data.timeline || '',
+                createdAt: data.createdAt?.toDate
+                  ? data.createdAt.toDate()
+                  : new Date(data.createdAt || Date.now()),
+                updatedAt: data.updatedAt?.toDate
+                  ? data.updatedAt.toDate()
+                  : new Date(data.updatedAt || data.createdAt || Date.now()),
+                customerUid: data.customerUid || uid,
+                userUid: data.customerUid,
+                proposalsCount: 0,
+                viewCount: 0,
+                isPartOfBundle: false,
+                selectedProviders: data.selectedProviders || [],
+                hasSelectedProviders: Boolean(data.selectedProviders?.length),
+                isDirectAssignment: true,
+                isPublic: false,
+              };
+            });
+
+            // Update für alte Schema nur wenn nötig
+            if (quoteProjects.length > 0) {
+              allProjects = allProjects.filter(p => !p.isDirectAssignment);
+              allProjects = [...allProjects, ...quoteProjects];
+            }
+          }
+          processQuotesData();
+        },
+        error => {
+          console.error('Quotes (old schema) loading error:', error);
+          processQuotesData();
+        }
+      );
+
+      // Cleanup subscriptions on unmount
+      return () => {
+        unsubscribeProjectRequests();
+        unsubscribeQuotes1();
+        unsubscribeQuotes2();
+      };
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+      setLoading(false);
+    }
   }, [uid, user]);
 
   const handleNewProject = () => {
@@ -244,9 +386,18 @@ const ProjectsPage: React.FC = () => {
   const confirmDeleteProject = async () => {
     try {
       const { projectId } = deleteDialog;
+      const db = getFirestore(app);
 
-      // Lösche das Projekt aus der project_requests Collection
-      await deleteDoc(doc(db, 'project_requests', projectId));
+      // Finde das Projekt um zu bestimmen, aus welcher Collection es gelöscht werden soll
+      const project = projects.find(p => p.id === projectId);
+
+      if (project?.isDirectAssignment) {
+        // Lösche aus quotes Collection (direkte KI-Anfragen)
+        await deleteDoc(doc(db, 'quotes', projectId));
+      } else {
+        // Lösche aus project_requests Collection (öffentliche Projekte)
+        await deleteDoc(doc(db, 'project_requests', projectId));
+      }
 
       // Entferne das Projekt aus dem lokalen State
       setProjects(prevProjects => prevProjects.filter(project => project.id !== projectId));
@@ -261,6 +412,7 @@ const ProjectsPage: React.FC = () => {
       });
     } catch (error) {
       toast.error('Fehler beim Löschen des Projekts');
+      console.error('Delete error:', error);
     }
   };
 

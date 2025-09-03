@@ -143,8 +143,15 @@ const ProjectDetailPage: React.FC = () => {
 
     const loadProjectDetails = async () => {
       try {
-        const projectDocRef = doc(db, 'project_requests', projectId);
-        const projectDocSnap = await getDoc(projectDocRef);
+        // Versuche zuerst project_requests Collection
+        let projectDocRef = doc(db, 'project_requests', projectId);
+        let projectDocSnap = await getDoc(projectDocRef);
+
+        // Falls nicht in project_requests gefunden, prüfe quotes Collection
+        if (!projectDocSnap.exists()) {
+          projectDocRef = doc(db, 'quotes', projectId);
+          projectDocSnap = await getDoc(projectDocRef);
+        }
 
         if (!projectDocSnap.exists()) {
           setError('Projekt nicht gefunden.');
@@ -156,8 +163,9 @@ const ProjectDetailPage: React.FC = () => {
 
         // Debug: Logge die rohen Daten um zu verstehen was geladen wird
 
-        // Prüfe ob der User der Eigentümer ist
-        if (data.customerUid !== uid) {
+        // Prüfe ob der User der Eigentümer ist (berücksichtige beide Schemas)
+        const customerUid = data.customerData?.uid || data.customerUid;
+        if (customerUid !== uid) {
           setError('Zugriff verweigert. Sie sind nicht der Eigentümer dieses Projekts.');
           setLoading(false);
           return;
@@ -398,35 +406,62 @@ const ProjectDetailPage: React.FC = () => {
   useEffect(() => {
     if (!projectId) return;
 
-    const projectDocRef = doc(db, 'project_requests', projectId);
-    const unsubscribe = onSnapshot(
-      projectDocRef,
-      docSnapshot => {
-        if (docSnapshot.exists()) {
-          const updatedData = docSnapshot.data();
+    // Bestimme die richtige Collection basierend auf dem geladenen Projekt
+    const getCollectionForProject = async () => {
+      // Prüfe zuerst project_requests
+      const projectDocRef = doc(db, 'project_requests', projectId);
+      const docSnap = await getDoc(projectDocRef);
 
-          // Aktualisiere NUR viewCount und updatedAt
-          // Lasse proposals völlig unberührt (behält enhancedProposals)
-          setProject(prev => {
-            if (!prev) return prev;
+      if (docSnap.exists()) {
+        return 'project_requests';
+      }
 
-            return {
-              ...prev,
-              viewCount: updatedData.viewCount || 0,
-              updatedAt: updatedData.updatedAt?.toDate
-                ? updatedData.updatedAt.toDate()
-                : new Date(updatedData.updatedAt || Date.now()),
-              // proposals bleiben unverändert (enhancedProposals bleiben erhalten)
-            };
-          });
-        }
-      },
-      error => {}
-    );
+      // Falls nicht gefunden, muss es quotes sein
+      return 'quotes';
+    };
 
-    // Cleanup function
+    const setupListener = async () => {
+      const collection = await getCollectionForProject();
+      const projectDocRef = doc(db, collection, projectId);
+
+      const unsubscribe = onSnapshot(
+        projectDocRef,
+        docSnapshot => {
+          if (docSnapshot.exists()) {
+            const updatedData = docSnapshot.data();
+
+            // Aktualisiere NUR viewCount und updatedAt
+            // Lasse proposals völlig unberührt (behält enhancedProposals)
+            setProject(prev => {
+              if (!prev) return prev;
+
+              return {
+                ...prev,
+                viewCount: updatedData.viewCount || 0,
+                updatedAt: updatedData.updatedAt?.toDate
+                  ? updatedData.updatedAt.toDate()
+                  : new Date(updatedData.updatedAt || Date.now()),
+                // proposals bleiben unverändert (enhancedProposals bleiben erhalten)
+              };
+            });
+          }
+        },
+        error => {}
+      );
+
+      // Cleanup function
+      return unsubscribe;
+    };
+
+    let unsubscribe: (() => void) | null = null;
+    setupListener().then(cleanup => {
+      unsubscribe = cleanup;
+    });
+
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [projectId]);
 

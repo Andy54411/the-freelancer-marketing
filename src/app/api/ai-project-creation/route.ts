@@ -42,10 +42,14 @@ export async function POST(request: Request) {
           assignedTo: providerId,
           isDirectQuest: true,
 
-          // Benutzerinformationen
+          // Benutzerinformationen - KORRIGIERT für Quotes Schema
           userId: userId,
           customerId: userId,
           customerUid: userId,
+          customerData: {
+            uid: userId,
+            // Weitere Kundendaten können hier hinzugefügt werden
+          },
 
           // Budget und Timeline
           estimatedBudget: projectData.estimatedBudget || 0,
