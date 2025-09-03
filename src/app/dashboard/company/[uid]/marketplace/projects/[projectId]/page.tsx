@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import RequestQuoteModal from '@/components/RequestQuoteModal';
+import MarketplaceProposalModal from '@/components/MarketplaceProposalModal';
 
 interface ProjectRequestDetail {
   id: string;
@@ -63,7 +63,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<ProjectRequestDetail | null>(null);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [showProposalModal, setShowProposalModal] = useState(false);
 
   const uid = params?.uid ? (Array.isArray(params.uid) ? params.uid[0] : params.uid) : '';
   const projectId = params?.projectId
@@ -149,7 +149,7 @@ export default function ProjectDetailPage() {
       // Hier würde die Quote-Erstellung implementiert werden
       // Erstmal als placeholder
       toast.success('Angebot wurde erfolgreich eingereicht!');
-      setShowQuoteModal(false);
+      setShowProposalModal(false);
       router.push(`/dashboard/company/${uid}/marketplace/proposals`);
     } catch (error) {
       console.error('Fehler beim Einreichen des Angebots:', error);
@@ -255,7 +255,7 @@ export default function ProjectDetailPage() {
             {getUrgencyLabel(project.urgency)}
           </Badge>
           <Button
-            onClick={() => setShowQuoteModal(true)}
+            onClick={() => setShowProposalModal(true)}
             className="bg-[#14ad9f] hover:bg-[#129488] text-white"
           >
             <Send className="h-4 w-4 mr-2" />
@@ -377,15 +377,27 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* Quote Modal */}
-      {showQuoteModal && companyProfile && (
-        <RequestQuoteModal
-          isOpen={showQuoteModal}
-          onClose={() => setShowQuoteModal(false)}
-          provider={companyProfile}
-          preselectedCategory={project.category}
-          preselectedSubcategory={project.subcategory}
-          onSubmit={handleSubmitQuote}
+      {/* Proposal Modal */}
+      {showProposalModal && companyProfile && project && (
+        <MarketplaceProposalModal
+          isOpen={showProposalModal}
+          onClose={() => setShowProposalModal(false)}
+          project={{
+            id: project.id,
+            title: project.title,
+            description: project.description,
+            category: project.category,
+            subcategory: project.subcategory,
+            location: project.location,
+            budgetAmount: project.budgetAmount,
+            budgetType: project.budgetType,
+            customerUid: project.customerUid,
+            customerEmail: project.customerEmail,
+            preferredDate: project.preferredDate,
+            maxBudget: project.budgetAmount,
+          }}
+          companyId={uid}
+          companyName={companyProfile.companyName}
         />
       )}
     </div>
