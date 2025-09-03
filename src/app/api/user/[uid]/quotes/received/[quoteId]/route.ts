@@ -78,9 +78,13 @@ export async function GET(
           if (companiesDoc.exists) {
             const companyData = companiesDoc.data();
             companyInfo = {
-              companyName: companyData?.step1?.companyName || 'Unbekanntes Unternehmen',
-              companyEmail: companyData?.step1?.email || null,
-              companyPhone: companyData?.step1?.phone || null,
+              companyName:
+                companyData?.companyName ||
+                companyData?.step2?.companyName ||
+                'Unbekanntes Unternehmen',
+              companyEmail: companyData?.email || companyData?.step1?.email || null,
+              companyPhone:
+                companyData?.companyPhoneNumber || companyData?.step1?.phoneNumber || null,
               companyLogo: companyData?.step3?.profilePictureURL || null,
             };
           } else {
@@ -133,9 +137,13 @@ export async function GET(
             if (companiesDoc.exists) {
               const companyData = companiesDoc.data();
               companyInfo = {
-                companyName: companyData?.step1?.companyName || 'Unbekanntes Unternehmen',
-                companyEmail: companyData?.step1?.email || null,
-                companyPhone: companyData?.step1?.phone || null,
+                companyName:
+                  companyData?.companyName ||
+                  companyData?.step2?.companyName ||
+                  'Unbekanntes Unternehmen',
+                companyEmail: companyData?.email || companyData?.step1?.email || null,
+                companyPhone:
+                  companyData?.companyPhoneNumber || companyData?.step1?.phoneNumber || null,
                 companyLogo: companyData?.step3?.profilePictureURL || null,
               };
             } else {
