@@ -32,12 +32,12 @@ interface ContactExchangeDisplayProps {
   status?: string;
 }
 
-export function ContactExchangeDisplay({ 
-  contactExchange, 
-  currentUserUid, 
-  customerUid, 
+export function ContactExchangeDisplay({
+  contactExchange,
+  currentUserUid,
+  customerUid,
   providerUid,
-  status 
+  status,
 }: ContactExchangeDisplayProps) {
   const { firebaseUser } = useAuth();
   const [contactsFromCompanies, setContactsFromCompanies] = useState<{
@@ -45,6 +45,53 @@ export function ContactExchangeDisplay({
     providerContact?: ContactData;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Hilfsfunktion für hybride UID-Erkennung
+  const loadUserOrCompanyData = async (uid: string, token: string) => {
+    try {
+      // Versuche zuerst Company API (für Firmen und hybrid accounts)
+      const companyResponse = await fetch(`/api/companies/${uid}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (companyResponse.ok) {
+        const companyData = await companyResponse.json();
+        if (companyData?.company) {
+          return { company: companyData.company, source: 'company' };
+        }
+      }
+
+      // Fallback: Lade direkt aus users collection (für reine Kunden)
+      const userResponse = await fetch(`/api/user/${uid}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        if (userData?.user) {
+          // Transformiere User-Daten zu Company-ähnlicher Struktur
+          return {
+            company: {
+              companyName: userData.user.displayName || userData.user.name || 'Privatkunde',
+              name: userData.user.displayName || userData.user.name || 'Privatkunde',
+              email: userData.user.email || '',
+              phone: userData.user.phoneNumber || userData.user.phone || null,
+              address: userData.user.address || '',
+              city: userData.user.city || '',
+              contactPerson: userData.user.displayName || userData.user.name || 'Nicht angegeben',
+            },
+            source: 'user',
+          };
+        }
+      }
+
+      console.log(`❌ No data found for UID ${uid} in either companies or users`);
+      return null;
+    } catch (error) {
+      console.error(`❌ Error loading data for UID ${uid}:`, error);
+      return null;
+    }
+  };
 
   // Lade Kontaktdaten aus Companies Collection wenn nicht vorhanden
   useEffect(() => {
@@ -55,17 +102,25 @@ export function ContactExchangeDisplay({
       }
 
       if (!customerUid || !providerUid) {
-        console.log('❌ ContactExchangeDisplay: Missing UIDs', { customerUid, providerUid, status });
+        console.log('❌ ContactExchangeDisplay: Missing UIDs', {
+          customerUid,
+          providerUid,
+          status,
+        });
         return; // Benötigte UIDs fehlen
       }
 
       // Akzeptiere verschiedene Status-Varianten für Kontaktaustausch
-      const isContactExchangeStatus = status === 'contacts_exchanged' || 
-                                     status === 'paid' || 
-                                     (contactExchange && contactExchange.status === 'completed');
+      const isContactExchangeStatus =
+        status === 'contacts_exchanged' ||
+        status === 'paid' ||
+        (contactExchange && contactExchange.status === 'completed');
 
       if (!isContactExchangeStatus) {
-        console.log('❌ ContactExchangeDisplay: Status not suitable for contact exchange', { status, contactExchange });
+        console.log('❌ ContactExchangeDisplay: Status not suitable for contact exchange', {
+          status,
+          contactExchange,
+        });
         return; // Status nicht geeignet
       }
 
@@ -74,28 +129,25 @@ export function ContactExchangeDisplay({
         return;
       }
 
-      console.log('🔄 ContactExchangeDisplay: Loading company contacts', { customerUid, providerUid, status });
+      console.log('🔄 ContactExchangeDisplay: Loading company contacts', {
+        customerUid,
+        providerUid,
+        status,
+      });
 
       setLoading(true);
       try {
         const token = await firebaseUser.getIdToken();
-        
-        // Lade Customer Company Daten
-        const customerResponse = await fetch(`/api/companies/${customerUid}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        // Lade Provider Company Daten  
-        const providerResponse = await fetch(`/api/companies/${providerUid}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
 
-        const customerData = customerResponse.ok ? await customerResponse.json() : null;
-        const providerData = providerResponse.ok ? await providerResponse.json() : null;
+        // Intelligente Datenabfrage für hybrides System
+        const customerData = await loadUserOrCompanyData(customerUid, token);
+        const providerData = await loadUserOrCompanyData(providerUid, token);
 
-        console.log('📦 Company data loaded:', { 
-          customerData: !!customerData?.company, 
-          providerData: !!providerData?.company 
+        console.log('📦 Company data loaded:', {
+          customerData: !!customerData?.company,
+          customerSource: customerData?.source,
+          providerData: !!providerData?.company,
+          providerSource: providerData?.source,
         });
 
         if (customerData?.company && providerData?.company) {
@@ -105,26 +157,37 @@ export function ContactExchangeDisplay({
               name: customerData.company.companyName || customerData.company.name || 'Kunde',
               email: customerData.company.email || '',
               phone: customerData.company.phone || customerData.company.phoneNumber || null,
-              address: `${customerData.company.address || customerData.company.street || ''}, ${customerData.company.city || ''}`.trim().replace(/^,\s*/, '').replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
+              address:
+                `${customerData.company.address || customerData.company.street || ''}, ${customerData.company.city || ''}`
+                  .trim()
+                  .replace(/^,\s*/, '')
+                  .replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
               contactPerson: customerData.company.contactPerson || 'Nicht angegeben',
-              uid: customerUid
+              uid: customerUid,
             },
             providerContact: {
               type: 'company',
               name: providerData.company.companyName || providerData.company.name || 'Anbieter',
               email: providerData.company.email || '',
               phone: providerData.company.phone || providerData.company.phoneNumber || null,
-              address: `${providerData.company.address || providerData.company.street || ''}, ${providerData.company.city || ''}`.trim().replace(/^,\s*/, '').replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
+              address:
+                `${providerData.company.address || providerData.company.street || ''}, ${providerData.company.city || ''}`
+                  .trim()
+                  .replace(/^,\s*/, '')
+                  .replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
               contactPerson: providerData.company.contactPerson || 'Nicht angegeben',
-              uid: providerUid
-            }
+              uid: providerUid,
+            },
           });
           console.log('✅ ContactExchangeDisplay: Company contacts loaded successfully');
         } else {
           console.log('❌ ContactExchangeDisplay: Failed to load company data');
         }
       } catch (error) {
-        console.error('❌ ContactExchangeDisplay: Fehler beim Laden der Company-Kontaktdaten:', error);
+        console.error(
+          '❌ ContactExchangeDisplay: Fehler beim Laden der Company-Kontaktdaten:',
+          error
+        );
       } finally {
         setLoading(false);
       }
@@ -135,9 +198,9 @@ export function ContactExchangeDisplay({
 
   // Verwende entweder contactExchange Daten oder geladene Company-Daten
   // Aber nur wenn contactExchange auch wirklich Kontaktdaten hat
-  const hasValidContactExchange = contactExchange && 
-    (contactExchange.customerContact || contactExchange.providerContact);
-  
+  const hasValidContactExchange =
+    contactExchange && (contactExchange.customerContact || contactExchange.providerContact);
+
   const effectiveContacts = hasValidContactExchange ? contactExchange : contactsFromCompanies;
 
   // Debug: Zeige effectiveContacts
@@ -158,7 +221,7 @@ export function ContactExchangeDisplay({
         </div>
       );
     }
-    
+
     return (
       <div className="bg-green-50 border border-green-200 rounded-lg p-6 mt-6">
         <div className="flex items-center gap-3 mb-4">
@@ -175,12 +238,15 @@ export function ContactExchangeDisplay({
     );
   }
 
-  if (!effectiveContacts || (!effectiveContacts.customerContact && !effectiveContacts.providerContact)) {
+  if (
+    !effectiveContacts ||
+    (!effectiveContacts.customerContact && !effectiveContacts.providerContact)
+  ) {
     console.log('❌ ContactExchangeDisplay: Returning null because:', {
       hasEffectiveContacts: !!effectiveContacts,
       hasCustomerContact: !!effectiveContacts?.customerContact,
       hasProviderContact: !!effectiveContacts?.providerContact,
-      effectiveContacts
+      effectiveContacts,
     });
     return null;
   }
@@ -201,7 +267,8 @@ export function ContactExchangeDisplay({
       </div>
 
       <p className="text-green-700 mb-6">
-        Die Zahlung war erfolgreich! Die Kontaktdaten wurden automatisch zwischen beiden Parteien ausgetauscht.
+        Die Zahlung war erfolgreich! Die Kontaktdaten wurden automatisch zwischen beiden Parteien
+        ausgetauscht.
       </p>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -220,7 +287,7 @@ export function ContactExchangeDisplay({
               {otherContact.email && (
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-gray-500" />
-                  <a 
+                  <a
                     href={`mailto:${otherContact.email}`}
                     className="text-[#14ad9f] hover:text-[#129488] hover:underline"
                   >
@@ -231,7 +298,7 @@ export function ContactExchangeDisplay({
               {otherContact.phone && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-500" />
-                  <a 
+                  <a
                     href={`tel:${otherContact.phone}`}
                     className="text-[#14ad9f] hover:text-[#129488] hover:underline"
                   >
@@ -248,7 +315,9 @@ export function ContactExchangeDisplay({
               {otherContact.contactPerson && otherContact.contactPerson !== 'Nicht angegeben' && (
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-600">Ansprechpartner: {otherContact.contactPerson}</span>
+                  <span className="text-gray-600">
+                    Ansprechpartner: {otherContact.contactPerson}
+                  </span>
                 </div>
               )}
             </div>
@@ -297,10 +366,9 @@ export function ContactExchangeDisplay({
       </div>
 
       <div className="mt-4 text-xs text-green-600">
-        {contactExchange?.completedAt 
+        {contactExchange?.completedAt
           ? `Kontakte ausgetauscht am: ${new Date(contactExchange.completedAt).toLocaleString('de-DE')}`
-          : 'Kontakte wurden automatisch ausgetauscht'
-        }
+          : 'Kontakte wurden automatisch ausgetauscht'}
       </div>
     </div>
   );

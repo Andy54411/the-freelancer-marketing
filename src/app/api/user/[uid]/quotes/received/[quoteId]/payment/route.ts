@@ -99,22 +99,22 @@ export async function POST(
       return NextResponse.json({ error: 'Angebot wurde bereits bearbeitet' }, { status: 400 });
     }
 
-    // Get the provider's userId from the proposal
-    const providerUserId = proposal.companyUid;
-    if (!providerUserId) {
+    // Get the provider's companyUid from the proposal
+    const providerCompanyUid = proposal.companyUid;
+    if (!providerCompanyUid) {
       return NextResponse.json({ error: 'Anbieter-ID nicht im Angebot gefunden' }, { status: 400 });
     }
 
-    // Get company's Stripe Account ID from users collection using the correct userId
-    const companyUserRef = db.collection('users').doc(providerUserId);
-    const companyUserDoc = await companyUserRef.get();
+    // Get company's Stripe Account ID from companies collection using the companyUid
+    const companyRef = db.collection('companies').doc(providerCompanyUid);
+    const companyDoc = await companyRef.get();
 
-    if (!companyUserDoc.exists) {
+    if (!companyDoc.exists) {
       return NextResponse.json({ error: 'Unternehmenskonto nicht gefunden' }, { status: 404 });
     }
 
-    const companyUserData = companyUserDoc.data();
-    const finalCompanyStripeAccountId = companyUserData?.stripeAccountId;
+    const companyData = companyDoc.data();
+    const finalCompanyStripeAccountId = companyData?.stripeAccountId;
 
     if (!finalCompanyStripeAccountId) {
       return NextResponse.json(
@@ -308,7 +308,7 @@ export async function PATCH(
     let providerStripeAccountId = '';
 
     try {
-      const providerDoc = await db.collection('users').doc(acceptedProposal.companyUid).get();
+      const providerDoc = await db.collection('companies').doc(acceptedProposal.companyUid).get();
       if (providerDoc.exists) {
         const providerData = providerDoc.data();
         providerName = providerData?.companyName || providerName;
