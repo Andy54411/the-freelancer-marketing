@@ -49,40 +49,73 @@ export function ContactExchangeDisplay({
   // Hilfsfunktion für hybride UID-Erkennung
   const loadUserOrCompanyData = async (uid: string, token: string) => {
     try {
-      // Versuche zuerst Company API (für Firmen und hybrid accounts)
-      const companyResponse = await fetch(`/api/companies/${uid}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      console.log(`🔄 ContactExchangeDisplay: Loading data for UID ${uid}`);
 
-      if (companyResponse.ok) {
-        const companyData = await companyResponse.json();
-        if (companyData?.company) {
-          return { company: companyData.company, source: 'company' };
-        }
-      }
+      // Direkte Firebase-Zugriffe verwenden, da API-Endpoints nicht zuverlässig sind
+      const { doc, getDoc } = await import('firebase/firestore');
+      const { db } = await import('@/firebase/clients');
 
-      // Fallback: Lade direkt aus users collection (für reine Kunden)
-      const userResponse = await fetch(`/api/user/${uid}/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Versuche zuerst Company Collection
+      try {
+        const companyDocRef = doc(db, 'companies', uid);
+        const companyDoc = await getDoc(companyDocRef);
 
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        if (userData?.user) {
-          // Transformiere User-Daten zu Company-ähnlicher Struktur
+        if (companyDoc.exists()) {
+          const companyData = companyDoc.data();
+          console.log(`✅ Found company data for UID ${uid}`);
           return {
             company: {
-              companyName: userData.user.displayName || userData.user.name || 'Privatkunde',
-              name: userData.user.displayName || userData.user.name || 'Privatkunde',
-              email: userData.user.email || '',
-              phone: userData.user.phoneNumber || userData.user.phone || null,
-              address: userData.user.address || '',
-              city: userData.user.city || '',
-              contactPerson: userData.user.displayName || userData.user.name || 'Nicht angegeben',
+              companyName: companyData.companyName || 'Unbekanntes Unternehmen',
+              name: companyData.companyName || companyData.name || 'Unbekanntes Unternehmen',
+              email: companyData.email || companyData.contactEmail || '',
+              phone: companyData.phone || companyData.contactPhone || null,
+              address: companyData.address || companyData.companyAddress || '',
+              city: companyData.city || companyData.companyCity || '',
+              contactPerson:
+                companyData.contactPerson || companyData.companyContactPerson || 'Nicht angegeben',
+            },
+            source: 'company',
+          };
+        }
+      } catch (companyError) {
+        console.log(`⚠️ Company lookup failed for ${uid}:`, companyError);
+      }
+
+      // Fallback: Versuche Users Collection
+      try {
+        const userDocRef = doc(db, 'users', uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          console.log(`✅ Found user data for UID ${uid}`);
+          return {
+            company: {
+              companyName:
+                userData.displayName ||
+                userData.name ||
+                userData.firstName + ' ' + userData.lastName ||
+                'Privatkunde',
+              name:
+                userData.displayName ||
+                userData.name ||
+                userData.firstName + ' ' + userData.lastName ||
+                'Privatkunde',
+              email: userData.email || '',
+              phone: userData.phoneNumber || userData.phone || null,
+              address: userData.address || '',
+              city: userData.city || '',
+              contactPerson:
+                userData.displayName ||
+                userData.name ||
+                userData.firstName + ' ' + userData.lastName ||
+                'Nicht angegeben',
             },
             source: 'user',
           };
         }
+      } catch (userError) {
+        console.log(`⚠️ User lookup failed for ${uid}:`, userError);
       }
 
       console.log(`❌ No data found for UID ${uid} in either companies or users`);
@@ -133,14 +166,18 @@ export function ContactExchangeDisplay({
         customerUid,
         providerUid,
         status,
+        currentUser: currentUserUid,
       });
 
       setLoading(true);
       try {
         const token = await firebaseUser.getIdToken();
+        console.log('🔑 Token obtained, starting data load...');
 
         // Intelligente Datenabfrage für hybrides System
+        console.log('📞 Loading customer data for UID:', customerUid);
         const customerData = await loadUserOrCompanyData(customerUid, token);
+        console.log('📞 Loading provider data for UID:', providerUid);
         const providerData = await loadUserOrCompanyData(providerUid, token);
 
         console.log('📦 Company data loaded:', {

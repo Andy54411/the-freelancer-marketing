@@ -17,7 +17,7 @@ export async function POST(
       return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
     }
 
-    const { uid, orderId } = params;
+    const { uid, orderId } = await params;
     const body = await request.json();
     const { reason, requestType = 'full_refund', additionalDetails } = body;
 
@@ -161,7 +161,7 @@ export async function GET(
       return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
     }
 
-    const { uid, orderId } = params;
+    const { uid, orderId } = await params;
 
     // Prüfe ob Auftrag dem Kunden gehört
     const auftragRef = adminDb.collection('auftraege').doc(orderId);

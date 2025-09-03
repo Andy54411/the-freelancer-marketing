@@ -66,7 +66,7 @@ export async function POST(
   { params }: { params: { uid: string; orderId: string } }
 ) {
   try {
-    const { uid, orderId } = params;
+    const { uid, orderId } = await params;
     const body: OrderCompletionRequest = await request.json();
 
     // Check if Firebase is available
@@ -163,7 +163,7 @@ export async function PATCH(
   { params }: { params: { uid: string; orderId: string } }
 ) {
   try {
-    const { uid, orderId } = params;
+    const { uid, orderId } = await params;
     const body: Partial<OrderCompletionRequest> = await request.json();
 
     // 1. Prüfe ob Order existiert und dem User gehört

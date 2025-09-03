@@ -8,12 +8,9 @@ interface RouteParams {
   };
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: RouteParams
-): Promise<NextResponse> {
+export async function DELETE(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   try {
-    const { uid, entryId } = params;
+    const { uid, entryId } = await params;
 
     if (!uid || !entryId) {
       return NextResponse.json(
@@ -31,7 +28,7 @@ export async function DELETE(
 
     // Prüfe ob der Zeiteintrag existiert und zur Company gehört
     const entryDoc = await db.collection('timeEntries').doc(entryId).get();
-    
+
     if (!entryDoc.exists) {
       return NextResponse.json(
         { success: false, error: 'Zeiteintrag nicht gefunden' },
@@ -40,7 +37,7 @@ export async function DELETE(
     }
 
     const entryData = entryDoc.data();
-    
+
     // Sicherheitsprüfung: Gehört der Eintrag zur angegebenen Company?
     if (entryData?.companyId !== uid) {
       return NextResponse.json(
@@ -57,29 +54,25 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       message: 'Zeiteintrag erfolgreich gelöscht',
-      deletedEntryId: entryId
+      deletedEntryId: entryId,
     });
-
   } catch (error) {
     console.error('❌ Fehler beim Löschen des Zeiteintrags:', error);
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Interner Serverfehler beim Löschen des Zeiteintrags',
-        details: error instanceof Error ? error.message : 'Unbekannter Fehler'
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
       },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: RouteParams
-): Promise<NextResponse> {
+export async function PUT(request: NextRequest, { params }: RouteParams): Promise<NextResponse> {
   try {
-    const { uid, entryId } = params;
+    const { uid, entryId } = await params;
     const body = await request.json();
 
     if (!uid || !entryId) {
@@ -98,7 +91,7 @@ export async function PUT(
 
     // Prüfe ob der Zeiteintrag existiert und zur Company gehört
     const entryDoc = await db.collection('timeEntries').doc(entryId).get();
-    
+
     if (!entryDoc.exists) {
       return NextResponse.json(
         { success: false, error: 'Zeiteintrag nicht gefunden' },
@@ -107,7 +100,7 @@ export async function PUT(
     }
 
     const entryData = entryDoc.data();
-    
+
     // Sicherheitsprüfung: Gehört der Eintrag zur angegebenen Company?
     if (entryData?.companyId !== uid) {
       return NextResponse.json(
@@ -135,18 +128,17 @@ export async function PUT(
       message: 'Zeiteintrag erfolgreich aktualisiert',
       timeEntry: {
         id: entryId,
-        ...updatedData
-      }
+        ...updatedData,
+      },
     });
-
   } catch (error) {
     console.error('❌ Fehler beim Aktualisieren des Zeiteintrags:', error);
-    
+
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Interner Serverfehler beim Aktualisieren des Zeiteintrags',
-        details: error instanceof Error ? error.message : 'Unbekannter Fehler'
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
       },
       { status: 500 }
     );

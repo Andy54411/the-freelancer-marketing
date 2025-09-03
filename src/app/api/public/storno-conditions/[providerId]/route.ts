@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
     }
 
-    const { providerId } = params;
+    const { providerId } = await params;
     const url = new URL(request.url);
     const auftragId = url.searchParams.get('auftragId');
     const format = url.searchParams.get('format') || 'detailed'; // 'summary' oder 'detailed'

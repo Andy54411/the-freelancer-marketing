@@ -129,7 +129,7 @@ function checkStornoEligibility(orderData: any, stornoSettings: any) {
 
 export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    const { uid } = params;
+    const { uid } = await params;
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
 
@@ -204,7 +204,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
 
 export async function PUT(request: NextRequest, { params }: { params: { uid: string } }) {
   try {
-    const { uid } = params;
+    const { uid } = await params;
     const body = await request.json();
 
     // Validiere Eingabedaten

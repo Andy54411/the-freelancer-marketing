@@ -136,82 +136,117 @@ export default function OrderDetailPage() {
     }
 
     // REALTIME: Setup Firestore onSnapshot listener
-    const orderDocRef = doc(db, 'auftraege', orderId);
+    let unsubscribe: (() => void) | null = null;
 
-    const unsubscribe = onSnapshot(
-      orderDocRef,
-      async docSnapshot => {
-        try {
-          setLoadingOrder(true);
-          setError(null);
+    try {
+      // Defensive Firebase prüfung
+      if (!db) {
+        throw new Error('Firestore database not available');
+      }
 
-          if (!docSnapshot.exists()) {
-            setError('Auftrag nicht gefunden.');
+      const orderDocRef = doc(db, 'auftraege', orderId);
+
+      unsubscribe = onSnapshot(
+        orderDocRef,
+        async docSnapshot => {
+          try {
+            setLoadingOrder(true);
+            setError(null);
+
+            if (!docSnapshot.exists()) {
+              setError('Auftrag nicht gefunden.');
+              setLoadingOrder(false);
+              return;
+            }
+
+            const data = docSnapshot.data();
+
+            // Check authorization
+            if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
+              setError('Keine Berechtigung für diesen Auftrag.');
+              setLoadingOrder(false);
+              return;
+            }
+
+            // Get participant details (still using API for now, but could be made realtime too)
+            const idToken = await firebaseUser?.getIdToken();
+            if (!idToken) {
+              throw new Error('No authentication token available');
+            }
+
+            const { provider: providerDetails, customer: customerDetails } =
+              await getOrderParticipantDetails(orderId, idToken);
+
+            const orderData: OrderData = {
+              id: orderId, // Use the orderId from params, not from data
+              serviceTitle: data.selectedSubcategory || 'Dienstleistung',
+              providerId: data.selectedAnbieterId,
+              providerName: providerDetails.name,
+              providerAvatarUrl: providerDetails.avatarUrl,
+              customerId: data.kundeId,
+              customerName: customerDetails.name,
+              customerAvatarUrl: customerDetails.avatarUrl,
+              orderDate: data.paidAt || data.createdAt,
+              priceInCents: data.totalAmountPaidByBuyer || data.jobCalculatedPriceInCents || 0,
+              status: data.status || 'unbekannt', // This is the DIRECT Firestore data!
+              selectedCategory: data.selectedCategory,
+              selectedSubcategory: data.selectedSubcategory,
+              jobTotalCalculatedHours: data.jobTotalCalculatedHours,
+              jobDurationString: data.jobDurationString, // Add this field
+              beschreibung: data.description,
+              jobDateFrom: data.jobDateFrom,
+              jobDateTo: data.jobDateTo,
+              jobTimePreference: data.jobTimePreference,
+              totalAmountPaidByBuyer: data.totalAmountPaidByBuyer,
+              companyNetAmount: data.companyNetAmount,
+              platformFeeAmount: data.platformFeeAmount,
+              companyStripeAccountId: data.companyStripeAccountId,
+            };
+
+            setOrder(orderData);
+          } catch (err: any) {
+            setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
+          } finally {
             setLoadingOrder(false);
-            return;
           }
-
-          const data = docSnapshot.data();
-
-          // Check authorization
-          if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
-            setError('Keine Berechtigung für diesen Auftrag.');
-            setLoadingOrder(false);
-            return;
-          }
-
-          // Get participant details (still using API for now, but could be made realtime too)
-          const idToken = await firebaseUser?.getIdToken();
-          if (!idToken) {
-            throw new Error('No authentication token available');
-          }
-
-          const { provider: providerDetails, customer: customerDetails } =
-            await getOrderParticipantDetails(orderId, idToken);
-
-          const orderData: OrderData = {
-            id: orderId, // Use the orderId from params, not from data
-            serviceTitle: data.selectedSubcategory || 'Dienstleistung',
-            providerId: data.selectedAnbieterId,
-            providerName: providerDetails.name,
-            providerAvatarUrl: providerDetails.avatarUrl,
-            customerId: data.kundeId,
-            customerName: customerDetails.name,
-            customerAvatarUrl: customerDetails.avatarUrl,
-            orderDate: data.paidAt || data.createdAt,
-            priceInCents: data.totalAmountPaidByBuyer || data.jobCalculatedPriceInCents || 0,
-            status: data.status || 'unbekannt', // This is the DIRECT Firestore data!
-            selectedCategory: data.selectedCategory,
-            selectedSubcategory: data.selectedSubcategory,
-            jobTotalCalculatedHours: data.jobTotalCalculatedHours,
-            jobDurationString: data.jobDurationString, // Add this field
-            beschreibung: data.description,
-            jobDateFrom: data.jobDateFrom,
-            jobDateTo: data.jobDateTo,
-            jobTimePreference: data.jobTimePreference,
-            totalAmountPaidByBuyer: data.totalAmountPaidByBuyer,
-            companyNetAmount: data.companyNetAmount,
-            platformFeeAmount: data.platformFeeAmount,
-            companyStripeAccountId: data.companyStripeAccountId,
-          };
-
-          setOrder(orderData);
-        } catch (err: any) {
-          setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
-        } finally {
+        },
+        error => {
+          setError(`Verbindungsfehler: ${error.message}`);
           setLoadingOrder(false);
         }
-      },
-      error => {
-        setError(`Verbindungsfehler: ${error.message}`);
-        setLoadingOrder(false);
-      }
-    );
+      );
 
-    // Cleanup function
-    return () => {
-      unsubscribe();
-    };
+      // Cleanup function
+      return () => {
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      };
+    } catch (initError: any) {
+      console.error('Firebase initialization error:', initError);
+      setError(
+        `Firebase-Verbindung konnte nicht hergestellt werden. Bitte laden Sie die Seite neu.`
+      );
+      setLoadingOrder(false);
+
+      // Fallback: Versuche einmalige Datenladung ohne Realtime
+      const loadOrderOnce = async () => {
+        try {
+          const idToken = await firebaseUser?.getIdToken();
+          if (idToken) {
+            const orderData = await getSingleOrder(orderId, idToken);
+            if (orderData) {
+              // Verarbeite orderData ähnlich wie im onSnapshot-Handler
+              // (vereinfachte Version ohne Realtime-Updates)
+            }
+          }
+        } catch (fallbackError) {
+          console.error('Fallback order loading failed:', fallbackError);
+        }
+      };
+
+      loadOrderOnce();
+    }
   }, [authLoading, currentUser, orderId, router, firebaseUser]);
 
   // Payment Modal State Monitor

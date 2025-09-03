@@ -16,7 +16,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
     }
 
     const adminDb = admin.firestore();
-    const { orderId } = params;
+    const { orderId } = await params;
     const { feedback } = await request.json();
 
     if (!feedback?.trim()) {
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest, { params }: { params: { orderId:
     }
 
     const adminDb = admin.firestore();
-    const { orderId } = params;
+    const { orderId } = await params;
 
     const orderDoc = await adminDb.collection('auftraege').doc(orderId).get();
 
