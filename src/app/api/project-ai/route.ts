@@ -661,6 +661,54 @@ export async function POST(request: Request) {
             "Erwartetes Ergebnis 2"
           ]
         }`;
+
+        // Führe Gemini AI Aufruf aus
+        try {
+          const result = await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemContext}\n\n${prompt}` }],
+              },
+            ],
+            generationConfig,
+            safetySettings,
+          });
+
+          const response = result.response;
+          const text = response.text();
+
+          let parsedResponse;
+          try {
+            const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            const jsonText = jsonMatch ? jsonMatch[1] : text;
+            parsedResponse = JSON.parse(jsonText);
+          } catch {
+            // Falls kein JSON parsbar ist, versuche direktes Parsen
+            try {
+              parsedResponse = JSON.parse(text);
+            } catch {
+              parsedResponse = { error: 'Konnte Antwort nicht als JSON parsen', rawText: text };
+            }
+          }
+
+          return NextResponse.json({
+            success: true,
+            data: parsedResponse,
+            action: action,
+          });
+        } catch (error) {
+          console.error('Error in createDetailedProject:', error);
+          const errorMessage =
+            error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+          return NextResponse.json(
+            {
+              error: 'Fehler beim Erstellen der detaillierten Projektbeschreibung',
+              details: errorMessage,
+            },
+            { status: 500 }
+          );
+        }
         break;
 
       case 'analyzeProject':
@@ -839,6 +887,21 @@ export async function POST(request: Request) {
 
                 const realCompletedJobs = completedProjectsSnapshot.size;
 
+                // Berechne Account-Alter in Monaten
+                const accountCreatedAt =
+                  userData.createdAt?.toDate?.() ||
+                  userData.onboardingStartedAt?.toDate?.() ||
+                  new Date();
+                const accountAgeMonths = Math.floor(
+                  (Date.now() - accountCreatedAt.getTime()) / (1000 * 60 * 60 * 24 * 30)
+                );
+
+                // Verifizierungslogik: > 1 Monat alt + >= 5 abgeschlossene Projekte
+                const isQualifiedVerified = accountAgeMonths >= 1 && realCompletedJobs >= 5;
+                const isVerified =
+                  (userData.stripeAccountChargesEnabled || userData.onboardingCompleted) &&
+                  isQualifiedVerified;
+
                 return {
                   id: doc.id,
                   companyName: userData.companyName || 'Unbekanntes Unternehmen',
@@ -853,8 +916,8 @@ export async function POST(request: Request) {
                       ? [userData.industry || userData.selectedCategory]
                       : [],
                   location: {
-                    city: userData.city,
-                    postalCode: userData.postalCode,
+                    city: userData.companyCity || userData.city,
+                    postalCode: userData.companyPostalCode || userData.postalCode,
                     lat: userData.lat,
                     lng: userData.lng,
                   },
@@ -867,12 +930,14 @@ export async function POST(request: Request) {
                   specialties: userData.skills || userData.specialties || [],
                   distance: '< 25 km',
                   reviews: realReviews,
-                  isVerified:
-                    userData.stripeAccountChargesEnabled || userData.onboardingCompleted || false,
+                  isVerified: isVerified,
+                  accountAge: accountAgeMonths,
+                  createdAt: accountCreatedAt.toISOString(),
                   responseTime: userData.responseTime ? `${userData.responseTime}h` : 'Binnen 24h',
                   availability: 'Nach Absprache',
                   profilePictureURL:
                     userData.profilePictureURL ||
+                    userData.step3?.profilePictureURL ||
                     userData.profilePictureFirebaseUrl ||
                     userData.companyLogo ||
                     null,
@@ -893,8 +958,8 @@ export async function POST(request: Request) {
                       ? [userData.industry || userData.selectedCategory]
                       : [],
                   location: {
-                    city: userData.city,
-                    postalCode: userData.postalCode,
+                    city: userData.companyCity || userData.city,
+                    postalCode: userData.companyPostalCode || userData.postalCode,
                     lat: userData.lat,
                     lng: userData.lng,
                   },
