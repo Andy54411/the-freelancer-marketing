@@ -33,7 +33,14 @@ interface QuoteRequest {
   serviceCategory: string;
   serviceSubcategory: string;
   projectType: 'fixed_price' | 'hourly' | 'project';
-  status: 'open' | 'pending' | 'responded' | 'accepted' | 'declined' | 'contacts_exchanged';
+  status:
+    | 'open'
+    | 'pending'
+    | 'responded'
+    | 'accepted'
+    | 'declined'
+    | 'contacts_exchanged'
+    | 'active';
   budget?: {
     min: number;
     max: number;
@@ -462,14 +469,58 @@ export default function QuoteResponsePage({
   };
 
   // Format Datum
-  const formatDate = (date: Date | string) => {
-    return new Intl.DateTimeFormat('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
+  const formatDate = (dateString: string | Date) => {
+    if (!dateString) return 'Nicht angegeben';
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString('de-DE', {
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(date));
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  // Funktion zum Extrahieren der Stadt aus der Adresse
+  const extractCity = (location: string | { address?: string } | undefined): string => {
+    if (!location) return '';
+
+    const address = typeof location === 'string' ? location : location.address;
+    if (!address) return '';
+
+    // Versuche Stadt nach PLZ-Muster zu finden (z.B. "10115 Berlin")
+    const lines = address.split('\n');
+    for (const line of lines) {
+      const match = line.match(/\d{5}\s+(.+)/);
+      if (match) return match[1].trim();
+    }
+
+    // Alternative: Suche nach Komma-getrennten Teilen (z.B. "Straße, 10115 Berlin")
+    if (address.includes(',')) {
+      const parts = address.split(',');
+      const lastPart = parts[parts.length - 1].trim();
+      const cityMatch = lastPart.match(/\d{5}\s+(.+)/);
+      if (cityMatch) return cityMatch[1].trim();
+    }
+
+    // Fallback: Verwende die letzte Zeile der Adresse als Stadt
+    const lastLine = lines[lines.length - 1];
+    if (lastLine && lastLine.trim()) {
+      // Entferne PLZ falls vorhanden und nimm den Rest
+      const cityPart = lastLine.replace(/^\d{5}\s*/, '').trim();
+      if (cityPart) return cityPart;
+    }
+
+    // Letzter Fallback: Wenn keine PLZ gefunden, versuche nur den Stadtnamen zu extrahieren
+    // Entferne typische Straßenangaben und nimm den letzten relevanten Teil
+    const cleanAddress = address.replace(/\d+[a-zA-Z]?\s*$/, '').trim(); // Entferne Hausnummern am Ende
+    const addressParts = cleanAddress.split(/[,\n]/);
+    const cityCandidate = addressParts[addressParts.length - 1].trim();
+
+    // Prüfe ob es sich um eine Stadt handelt (keine Zahlen am Anfang)
+    if (cityCandidate && !/^\d/.test(cityCandidate)) {
+      return cityCandidate;
+    }
+
+    return 'Stadt nicht verfügbar';
   };
 
   // Format Budget
@@ -702,19 +753,19 @@ export default function QuoteResponsePage({
                   </div>
                 )}
 
-                {quote.location && (
-                  <div>
-                    <div className="flex items-center text-gray-600 mb-2">
-                      <FiMapPin className="mr-2 h-4 w-4" />
-                      Standort
+                {quote.location &&
+                  (quote.status === 'contacts_exchanged' ||
+                    (quote.status === 'accepted' && quote.payment?.provisionStatus === 'paid')) && (
+                    <div>
+                      <div className="flex items-center text-gray-600 mb-2">
+                        <FiMapPin className="mr-2 h-4 w-4" />
+                        Stadt
+                      </div>
+                      <p className="text-gray-900 font-medium">
+                        {extractCity(quote.location) || 'Stadt nicht verfügbar'}
+                      </p>
                     </div>
-                    <p className="text-gray-900 font-medium">
-                      {typeof quote.location === 'string'
-                        ? quote.location
-                        : quote.location.address || 'Standort angegeben'}
-                    </p>
-                  </div>
-                )}
+                  )}
 
                 {quote.isRemote !== undefined && (
                   <div>
@@ -960,7 +1011,9 @@ export default function QuoteResponsePage({
                             : 'bg-yellow-50 border border-yellow-200'
                           : quote.status === 'contacts_exchanged'
                             ? 'bg-green-50 border border-green-200'
-                            : 'bg-red-50 border border-red-200'
+                            : quote.status === 'active'
+                              ? 'bg-blue-50 border border-blue-200'
+                              : 'bg-red-50 border border-red-200'
                   }`}
                 >
                   <div className="flex items-center">
@@ -976,7 +1029,9 @@ export default function QuoteResponsePage({
                                 : 'bg-yellow-400'
                               : quote.status === 'contacts_exchanged'
                                 ? 'bg-green-400'
-                                : 'bg-red-400'
+                                : quote.status === 'active'
+                                  ? 'bg-blue-400'
+                                  : 'bg-red-400'
                       }`}
                     />
                     <span
@@ -993,7 +1048,9 @@ export default function QuoteResponsePage({
                                 ? 'text-green-800'
                                 : quote.status === 'open'
                                   ? 'text-gray-800'
-                                  : 'text-red-800'
+                                  : quote.status === 'active'
+                                    ? 'text-blue-800'
+                                    : 'text-red-800'
                       }`}
                     >
                       {quote.status === 'pending'
@@ -1008,9 +1065,11 @@ export default function QuoteResponsePage({
                               ? 'Kontakte ausgetauscht'
                               : quote.status === 'open'
                                 ? 'Offen für Angebote'
-                                : quote.status === 'declined'
-                                  ? 'Angebot abgelehnt'
-                                  : 'Unbekannter Status'}
+                                : quote.status === 'active'
+                                  ? 'Aktiv - Angebot möglich'
+                                  : quote.status === 'declined'
+                                    ? 'Angebot abgelehnt'
+                                    : 'Unbekannter Status'}
                     </span>
                   </div>
                 </div>
@@ -1020,28 +1079,35 @@ export default function QuoteResponsePage({
         </div>
 
         {/* Action Buttons - Angebot erstellen */}
-        {(quote.status === 'open' || quote.status === 'pending') && !response && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Angebot erstellen</h3>
-              <p className="text-gray-600 mb-6">
-                Erstellen Sie ein detailliertes Angebot für diese Anfrage
-              </p>
-              <button
-                onClick={() => setShowResponseForm(true)}
-                disabled={submitting}
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? (
-                  <FiLoader className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                ) : (
-                  <FiFileText className="-ml-1 mr-2 h-4 w-4" />
-                )}
-                Angebot jetzt erstellen
-              </button>
+        {(quote.status === 'open' ||
+          quote.status === 'pending' ||
+          quote.status === 'active' ||
+          (quote.status !== 'accepted' &&
+            quote.status !== 'contacts_exchanged' &&
+            quote.status !== 'declined' &&
+            quote.status !== 'responded')) &&
+          !response && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Angebot erstellen</h3>
+                <p className="text-gray-600 mb-6">
+                  Erstellen Sie ein detailliertes Angebot für diese Anfrage
+                </p>
+                <button
+                  onClick={() => setShowResponseForm(true)}
+                  disabled={submitting}
+                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? (
+                    <FiLoader className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                  ) : (
+                    <FiFileText className="-ml-1 mr-2 h-4 w-4" />
+                  )}
+                  Angebot jetzt erstellen
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Kontaktdaten für Status contacts_exchanged */}
         {(quote.status === 'contacts_exchanged' ||
@@ -1226,6 +1292,25 @@ export default function QuoteResponsePage({
 
                 <QuoteFormToggle
                   companyId={getCompanyId()}
+                  quote={{
+                    title: quote.title,
+                    description: quote.description,
+                    budgetRange: quote.budgetRange,
+                    budget:
+                      quote.budget && typeof quote.budget === 'object'
+                        ? {
+                            min: quote.budget.min || 0,
+                            max: quote.budget.max || 0,
+                            currency: quote.budget.currency || 'EUR',
+                          }
+                        : undefined,
+                    timeline: quote.timeline,
+                    location: quote.location,
+                    serviceCategory: quote.serviceCategory,
+                    serviceSubcategory: quote.serviceSubcategory,
+                    requiredSkills: Array.isArray(quote.requiredSkills) ? quote.requiredSkills : [],
+                    serviceDetails: quote.serviceDetails,
+                  }}
                   onSubmit={async data => {
                     try {
                       let quoteData;

@@ -19,6 +19,19 @@ interface QuoteResponseFormProps {
   onCancel: () => void;
   loading?: boolean;
   companyId: string; // Neu hinzugefügt für Inventar-Zugriff
+  quoteDetails?: {
+    title: string;
+    description: string;
+    budget?: { min: number; max: number; currency: string };
+    budgetRange?: string;
+    timeline?: string;
+    location?: string | { address?: string };
+    serviceCategory?: string;
+    subcategory?: string;
+    urgency?: string;
+    requiredSkills?: string[];
+    serviceDetails?: any;
+  };
 }
 
 interface QuoteResponseData {
@@ -47,6 +60,7 @@ export default function QuoteResponseForm({
   onCancel,
   loading = false,
   companyId,
+  quoteDetails,
 }: QuoteResponseFormProps) {
   const [formData, setFormData] = useState<QuoteResponseData>({
     message: '',
@@ -321,7 +335,6 @@ export default function QuoteResponseForm({
 
       await onSubmit(dataToSubmit);
     } catch (error) {
-
       // TODO: Benutzer über Fehler informieren
       alert('Fehler beim Reservieren der Artikel. Bitte versuchen Sie es erneut.');
     }
@@ -338,6 +351,134 @@ export default function QuoteResponseForm({
 
   return (
     <div>
+      {/* Auftragszusammenfassung */}
+      {quoteDetails && (
+        <div className="mb-6 p-6 bg-gray-50 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Auftragszusammenfassung</h3>
+
+          <div className="space-y-4">
+            {/* Titel */}
+            <div>
+              <h4 className="font-medium text-gray-900">{quoteDetails.title}</h4>
+            </div>
+
+            {/* Beschreibung */}
+            <div>
+              <p className="text-gray-700">{quoteDetails.description}</p>
+            </div>
+
+            {/* Details in Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+              {/* Budget */}
+              {(quoteDetails.budget || quoteDetails.budgetRange) && (
+                <div>
+                  <span className="text-sm font-medium text-gray-600">Budget:</span>
+                  <p className="text-gray-900">
+                    {quoteDetails.budgetRange ||
+                      (quoteDetails.budget && typeof quoteDetails.budget === 'object'
+                        ? `${quoteDetails.budget.min?.toLocaleString() || '0'} - ${quoteDetails.budget.max?.toLocaleString() || '0'} ${quoteDetails.budget.currency || 'EUR'}`
+                        : 'Nicht angegeben')}
+                  </p>
+                </div>
+              )}
+
+              {/* Kategorie */}
+              {quoteDetails.serviceCategory && (
+                <div>
+                  <span className="text-sm font-medium text-gray-600">Kategorie:</span>
+                  <p className="text-gray-900">
+                    {quoteDetails.serviceCategory}
+                    {quoteDetails.subcategory && ` > ${quoteDetails.subcategory}`}
+                  </p>
+                </div>
+              )}
+
+              {/* Zeitrahmen */}
+              {quoteDetails.timeline && (
+                <div>
+                  <span className="text-sm font-medium text-gray-600">Zeitrahmen:</span>
+                  <p className="text-gray-900">{quoteDetails.timeline}</p>
+                </div>
+              )}
+
+              {/* Priorität */}
+              {quoteDetails.urgency && (
+                <div>
+                  <span className="text-sm font-medium text-gray-600">Priorität:</span>
+                  <span
+                    className={`ml-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      quoteDetails.urgency === 'high' || quoteDetails.urgency === 'urgent'
+                        ? 'bg-red-100 text-red-800'
+                        : quoteDetails.urgency === 'medium'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                    }`}
+                  >
+                    {quoteDetails.urgency === 'high' || quoteDetails.urgency === 'urgent'
+                      ? 'Dringend'
+                      : quoteDetails.urgency === 'medium'
+                        ? 'Normal'
+                        : 'Niedrig'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Benötigte Fähigkeiten */}
+            {quoteDetails.requiredSkills &&
+              Array.isArray(quoteDetails.requiredSkills) &&
+              quoteDetails.requiredSkills.length > 0 && (
+                <div className="pt-4 border-t border-gray-200">
+                  <span className="text-sm font-medium text-gray-600">Benötigte Fähigkeiten:</span>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {quoteDetails.requiredSkills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#14ad9f] bg-opacity-10 text-[#14ad9f]"
+                      >
+                        {String(skill)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Service-Details (für Mietkoch etc.) */}
+            {quoteDetails.serviceDetails && typeof quoteDetails.serviceDetails === 'object' && (
+              <div className="pt-4 border-t border-gray-200">
+                <span className="text-sm font-medium text-gray-600">Service-Details:</span>
+                <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+                  {quoteDetails.serviceDetails.guestCount && (
+                    <div>
+                      <span className="text-gray-600">Gäste:</span>{' '}
+                      {String(quoteDetails.serviceDetails.guestCount)}
+                    </div>
+                  )}
+                  {quoteDetails.serviceDetails.duration && (
+                    <div>
+                      <span className="text-gray-600">Dauer:</span>{' '}
+                      {String(quoteDetails.serviceDetails.duration)}
+                    </div>
+                  )}
+                  {quoteDetails.serviceDetails.cuisine && (
+                    <div>
+                      <span className="text-gray-600">Küche:</span>{' '}
+                      {String(quoteDetails.serviceDetails.cuisine)}
+                    </div>
+                  )}
+                  {quoteDetails.serviceDetails.eventType && (
+                    <div>
+                      <span className="text-gray-600">Event-Typ:</span>{' '}
+                      {String(quoteDetails.serviceDetails.eventType)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Hinweis zum Datenschutz */}
       <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex">
