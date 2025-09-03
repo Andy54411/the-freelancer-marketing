@@ -153,6 +153,12 @@ export async function POST(request: NextRequest) {
     // 2. Standard E-Mail und Public Notifications (immer ausführen für öffentliche Subcategory)
     if (subcategory) {
       try {
+        console.log('🚀 STARTING EMAIL NOTIFICATION PROCESS:', {
+          subcategory,
+          category: projectRequestData.category,
+          projectId: docRef.id,
+        });
+
         const emailService = ProjectEmailNotificationService.getInstance();
         const emailResult = await emailService.notifyCompaniesAboutNewProject({
           projectId: docRef.id,
@@ -177,7 +183,18 @@ export async function POST(request: NextRequest) {
           createdAt: new Date(),
         });
 
+        console.log('📊 EMAIL NOTIFICATION RESULT:', {
+          success: emailResult.success,
+          sentCount: emailResult.sentCount,
+          failedCount: emailResult.failedCount,
+          details: emailResult.details,
+        });
+
         if (emailResult.failedCount > 0) {
+          console.error(
+            '⚠️ SOME EMAILS FAILED:',
+            emailResult.details.filter(d => !d.success)
+          );
         }
 
         // 3. ÖFFENTLICHE FIRESTORE-NOTIFICATIONS: Erstelle Notifications für relevante Unternehmen (zusätzlich zu direkten)

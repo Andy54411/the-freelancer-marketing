@@ -11,7 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Clock, FileText } from 'lucide-react';
 import { AbsenceRequest, PersonalService } from '@/services/personalService';
@@ -118,7 +124,6 @@ export function CreateAbsenceRequestModal({
         notes: '',
       });
     } catch (error) {
-
       toast.error('Fehler beim Erstellen des Abwesenheitsantrags');
     } finally {
       setLoading(false);
@@ -146,6 +151,9 @@ export function CreateAbsenceRequestModal({
             <Calendar className="h-5 w-5 text-[#14ad9f]" />
             Abwesenheitsantrag erstellen
           </DialogTitle>
+          <DialogDescription>
+            Erstellen Sie einen neuen Abwesenheitsantrag für einen Mitarbeiter.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

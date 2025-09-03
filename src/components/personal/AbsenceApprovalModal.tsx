@@ -2,7 +2,13 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -116,12 +122,13 @@ export function AbsenceApprovalModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-[#14ad9f]" />
-            Abwesenheitsantrag bearbeiten
+          <DialogTitle>
+            Abwesenheitsantrag {request.status === 'APPROVED' ? 'bestätigen' : 'bearbeiten'}
           </DialogTitle>
-        </DialogHeader>
-
+          <DialogDescription>
+            Bestätigen oder bearbeiten Sie den Abwesenheitsantrag des Mitarbeiters.
+          </DialogDescription>
+        </DialogHeader>{' '}
         <div className="space-y-4">
           {/* Antragssteller */}
           <Card>

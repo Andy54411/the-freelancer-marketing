@@ -22,9 +22,15 @@ export async function GET(
     const auftragId = url.searchParams.get('auftragId');
     const format = url.searchParams.get('format') || 'detailed'; // 'summary' oder 'detailed'
 
-    // Hole Provider-Daten
-    const providerRef = adminDb.collection('users').doc(providerId);
-    const providerDoc = await providerRef.get();
+    // Hole Provider-Daten - erst in companies, dann in users suchen
+    let providerRef = adminDb.collection('companies').doc(providerId);
+    let providerDoc = await providerRef.get();
+    
+    // Falls nicht in companies gefunden, versuche users collection
+    if (!providerDoc.exists) {
+      providerRef = adminDb.collection('users').doc(providerId);
+      providerDoc = await providerRef.get();
+    }
 
     if (!providerDoc.exists) {
       return NextResponse.json(

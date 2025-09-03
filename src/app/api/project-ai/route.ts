@@ -212,6 +212,7 @@ const CATEGORY_QUESTION_DATABASE = {
 export async function POST(request: Request) {
   try {
     const { action, data } = await request.json();
+
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -312,6 +313,49 @@ export async function POST(request: Request) {
         }
 
         Stelle intelligente, kategorie-spezifische Fragen!`;
+
+        // Führe Gemini AI Aufruf direkt hier aus
+        try {
+          const result = await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemContext}\n\n${prompt}` }],
+              },
+            ],
+            generationConfig,
+            safetySettings,
+          });
+
+          const response = result.response;
+          const text = response.text();
+
+          let parsedResponse;
+          try {
+            const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            const jsonText = jsonMatch ? jsonMatch[1] : text;
+            parsedResponse = JSON.parse(jsonText);
+          } catch {
+            try {
+              parsedResponse = JSON.parse(text);
+            } catch {
+              parsedResponse = { text: text };
+            }
+          }
+
+          return NextResponse.json({
+            success: true,
+            data: parsedResponse,
+            action: action,
+          });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+          return NextResponse.json(
+            { error: 'Ein interner Serverfehler ist aufgetreten.', details: errorMessage },
+            { status: 500 }
+          );
+        }
         break;
 
       case 'askDetailedQuestions':
@@ -382,6 +426,49 @@ export async function POST(request: Request) {
         }
 
         Passe die Fragen an die spezifische Kategorie an!`;
+
+        // Führe Gemini AI Aufruf direkt hier aus
+        try {
+          const result = await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemContext}\n\n${prompt}` }],
+              },
+            ],
+            generationConfig,
+            safetySettings,
+          });
+
+          const response = result.response;
+          const text = response.text();
+
+          let parsedResponse;
+          try {
+            const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            const jsonText = jsonMatch ? jsonMatch[1] : text;
+            parsedResponse = JSON.parse(jsonText);
+          } catch {
+            try {
+              parsedResponse = JSON.parse(text);
+            } catch {
+              parsedResponse = { text: text };
+            }
+          }
+
+          return NextResponse.json({
+            success: true,
+            data: parsedResponse,
+            action: action,
+          });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+          return NextResponse.json(
+            { error: 'Ein interner Serverfehler ist aufgetreten.', details: errorMessage },
+            { status: 500 }
+          );
+        }
         break;
 
       case 'generateProjectIdeas':
@@ -462,6 +549,49 @@ export async function POST(request: Request) {
         ]
 
         Sei spezifisch und praktisch in deinen Vorschlägen!`;
+
+        // Führe Gemini AI Aufruf direkt hier aus
+        try {
+          const result = await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: `${systemContext}\n\n${prompt}` }],
+              },
+            ],
+            generationConfig,
+            safetySettings,
+          });
+
+          const response = result.response;
+          const text = response.text();
+
+          let parsedResponse;
+          try {
+            const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            const jsonText = jsonMatch ? jsonMatch[1] : text;
+            parsedResponse = JSON.parse(jsonText);
+          } catch {
+            try {
+              parsedResponse = JSON.parse(text);
+            } catch {
+              parsedResponse = { text: text };
+            }
+          }
+
+          return NextResponse.json({
+            success: true,
+            data: parsedResponse,
+            action: action,
+          });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
+          return NextResponse.json(
+            { error: 'Ein interner Serverfehler ist aufgetreten.', details: errorMessage },
+            { status: 500 }
+          );
+        }
         break;
 
       case 'createDetailedProject':
@@ -857,7 +987,7 @@ export async function POST(request: Request) {
             error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
 
           return NextResponse.json(
-            { error: 'Ein interner Serverfehler ist aufgetreten.' },
+            { error: 'Ein interner Serverfehler ist aufgetreten.', details: errorMessage },
             { status: 500 }
           );
         }

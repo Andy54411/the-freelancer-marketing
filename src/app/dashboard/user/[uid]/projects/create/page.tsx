@@ -14,6 +14,7 @@ import {
   Sparkles,
   Target,
   CheckCircle2,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -196,7 +197,10 @@ export default function CreateProjectRequestPage() {
 
   const selectedCategory = categories.find(cat => cat.title === formData.category);
 
-  const handleInputChange = (field: keyof ProjectRequest, value: string | boolean | string[] | number | undefined | File[]) => {
+  const handleInputChange = (
+    field: keyof ProjectRequest,
+    value: string | boolean | string[] | number | undefined | File[]
+  ) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -266,7 +270,6 @@ export default function CreateProjectRequestPage() {
       toast.success('Projektanfrage erfolgreich erstellt!');
       router.push(`/dashboard/user/${uid}/projects`);
     } catch (error) {
-
       toast.error(
         error instanceof Error ? error.message : 'Fehler beim Erstellen der Projektanfrage'
       );
@@ -825,7 +828,10 @@ export default function CreateProjectRequestPage() {
       </div>
 
       <div>
-        <Label className="text-white font-medium">Anhänge (optional)</Label>
+        <Label className="text-[#14ad9f] font-medium">Anhänge (optional)</Label>
+        <p className="text-[#14ad9f]/80 text-sm mt-1 mb-3">
+          Laden Sie relevante Dateien für Ihr Projekt hoch (PDFs, Bilder, Dokumente)
+        </p>
         <div className="mt-2">
           <input
             type="file"
@@ -837,23 +843,29 @@ export default function CreateProjectRequestPage() {
           />
           <Label
             htmlFor="file-upload"
-            className="flex items-center justify-center w-full h-24 border-2 border-dashed border-white/40 rounded-lg cursor-pointer hover:border-white/60 transition-colors"
+            className="flex items-center justify-center w-full h-24 border-2 border-dashed border-[#14ad9f]/40 rounded-lg cursor-pointer hover:border-[#14ad9f]/60 transition-colors bg-white/95 backdrop-blur-sm"
           >
-            <div className="text-center text-white/80">
+            <div className="text-center text-[#14ad9f]">
               <Upload className="mx-auto mb-2 h-6 w-6" />
-              <p className="text-sm">Dateien hochladen</p>
-              <p className="text-xs">PDF, DOC, Bilder</p>
+              <p className="text-sm font-medium">Dateien hochladen</p>
+              <p className="text-xs text-[#14ad9f]/80">PDF, DOC, Bilder</p>
             </div>
           </Label>
 
           {formData.attachments.length > 0 && (
-            <div className="mt-3 space-y-1">
+            <div className="mt-3 space-y-2">
               {formData.attachments.map((file, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between bg-white/10 p-2 rounded"
+                  className="flex items-center justify-between bg-white/20 backdrop-blur-sm p-3 rounded-lg border border-white/30"
                 >
-                  <span className="text-white text-sm">{file.name}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                    <span className="text-white text-sm font-medium">{file.name}</span>
+                    <span className="text-white/70 text-xs">
+                      ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                    </span>
+                  </div>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -861,9 +873,9 @@ export default function CreateProjectRequestPage() {
                       const newAttachments = formData.attachments.filter((_, i) => i !== index);
                       handleInputChange('attachments', newAttachments);
                     }}
-                    className="text-white hover:bg-white/20"
+                    className="text-white hover:bg-white/20 hover:text-red-300"
                   >
-                    ×
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
               ))}
@@ -965,7 +977,9 @@ export default function CreateProjectRequestPage() {
                   {currentStep < 3 ? (
                     <Button
                       onClick={nextStep}
-                      disabled={!!(currentStep === 2 && formData.subcategory && !subcategoryFormValid)}
+                      disabled={
+                        !!(currentStep === 2 && formData.subcategory && !subcategoryFormValid)
+                      }
                       className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                     >
                       Weiter

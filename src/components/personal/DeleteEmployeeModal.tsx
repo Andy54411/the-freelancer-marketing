@@ -2,7 +2,13 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, Trash2 } from 'lucide-react';
@@ -36,7 +42,6 @@ export function DeleteEmployeeModal({
       onEmployeeDeleted(employee.id!);
       onClose();
     } catch (error) {
-
       toast.error('Fehler beim Löschen des Mitarbeiters');
     } finally {
       setLoading(false);
@@ -51,6 +56,10 @@ export function DeleteEmployeeModal({
             <AlertCircle className="h-5 w-5" />
             Mitarbeiter löschen
           </DialogTitle>
+          <DialogDescription>
+            Bestätigen Sie die Löschung des Mitarbeiters. Diese Aktion kann nicht rückgängig gemacht
+            werden.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
+import { ProjectEmailNotificationService } from '@/lib/project-email-notifications';
 
 export async function POST(request: Request) {
   try {
@@ -74,7 +75,10 @@ export async function POST(request: Request) {
       projectType: 'service_request',
       isPublic: (projectData.selectedProviders || []).length === 0, // Nur öffentlich wenn keine Provider ausgewählt
       allowsProposals: true,
-      maxProposals: (projectData.selectedProviders || []).length > 0 ? (projectData.selectedProviders || []).length : 10, // Begrenzt auf ausgewählte Provider
+      maxProposals:
+        (projectData.selectedProviders || []).length > 0
+          ? (projectData.selectedProviders || []).length
+          : 10, // Begrenzt auf ausgewählte Provider
 
       // Zusätzliche KI-Informationen
       aiGenerated: true,
@@ -92,7 +96,6 @@ export async function POST(request: Request) {
 
     // Wenn Dienstleister ausgewählt wurden, erstelle automatisch Einladungen
     if (projectData.selectedProviders && projectData.selectedProviders.length > 0) {
-
       for (const provider of projectData.selectedProviders) {
         try {
           // Erstelle eine Benachrichtigung für den Dienstleister
@@ -106,12 +109,9 @@ export async function POST(request: Request) {
             customerId: userId,
             createdAt: Timestamp.now(),
             read: false,
-            priority: 'high'
+            priority: 'high',
           });
-
-        } catch (error) {
-
-        }
+        } catch (error) {}
       }
     }
 
@@ -122,6 +122,38 @@ export async function POST(request: Request) {
       ...createdProject.data(),
     };
 
+    // NEUES E-MAIL-NOTIFICATION SYSTEM für KI-generierte Projekte
+    if (projectData.category) {
+      try {
+        const emailService = ProjectEmailNotificationService.getInstance();
+
+        // Für KI-Projekte: category ist eigentlich die subcategory
+        // Wir verwenden eine leere category und lassen das E-Mail-System
+        // die Hauptkategorie aus der subcategory ableiten
+        const emailResult = await emailService.notifyCompaniesAboutNewProject({
+          projectId: projectRef.id,
+          title: projectData.title,
+          description: projectData.description,
+          category: '', // Leere category - das System wird sie aus subcategory ableiten
+          subcategory: projectData.category, // KI-category ist eigentlich die subcategory
+          customerName: 'KI-Generated Project',
+          location: projectData.location || '',
+          budget: projectData.estimatedBudget
+            ? {
+                amount: projectData.estimatedBudget,
+                type: 'fixed',
+              }
+            : undefined,
+          timeline: projectData.timeline,
+          urgency: projectData.priority || 'medium',
+          createdAt: new Date(),
+        });
+      } catch (emailError) {
+        console.error('Fehler beim Versenden der E-Mails für KI-Projekt:', emailError);
+        // Projekt wurde trotzdem erfolgreich erstellt
+      }
+    }
+
     return NextResponse.json({
       success: true,
       project: projectWithId,
@@ -129,7 +161,6 @@ export async function POST(request: Request) {
       projectUrl: `/dashboard/user/${userId}/projects/${projectRef.id}`,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Erstellen des Projekts' }, { status: 500 });
   }
 }

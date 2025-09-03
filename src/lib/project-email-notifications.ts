@@ -51,6 +51,137 @@ export class ProjectEmailNotificationService {
   }
 
   /**
+   * Hilfsfunktion: Ermittelt die Hauptkategorie basierend auf der Subcategory
+   */
+  private getCategoryFromSubcategory(subcategory: string): string | null {
+    // Mapping der Subcategories zu Hauptkategorien basierend auf categoriesData.ts
+    const categoryMap: { [key: string]: string } = {
+      // Handwerk
+      Tischler: 'Handwerk',
+      Klempner: 'Handwerk',
+      'Maler & Lackierer': 'Handwerk',
+      Elektriker: 'Handwerk',
+      HeizungSanitär: 'Handwerk',
+      Fliesenleger: 'Handwerk',
+      Dachdecker: 'Handwerk',
+      Maurer: 'Handwerk',
+      Trockenbauer: 'Handwerk',
+      Schreiner: 'Handwerk',
+      Zimmerer: 'Handwerk',
+      Bodenleger: 'Handwerk',
+      Glaser: 'Handwerk',
+      Schlosser: 'Handwerk',
+      Metallbauer: 'Handwerk',
+      FensterTürenbau: 'Handwerk',
+      Heizung: 'Handwerk',
+      Autoreparatur: 'Handwerk',
+      Montageservice: 'Handwerk',
+      Umzugshelfer: 'Handwerk',
+
+      // Haushalt
+      Reinigungskraft: 'Haushalt',
+      Haushaltshilfe: 'Haushalt',
+      Fensterputzer: 'Haushalt',
+      Teppichreinigung: 'Haushalt',
+      Bodenreinigung: 'Haushalt',
+      Hausreinigung: 'Haushalt',
+
+      // Transport
+      Fahrer: 'Transport',
+      Kurierdienst: 'Transport',
+      Transportdienstleistungen: 'Transport',
+      Lagerlogistik: 'Transport',
+      Logistik: 'Transport',
+      MöbelTransportieren: 'Transport',
+
+      // IT & Digital
+      Webentwicklung: 'IT & Digital',
+      'App-Entwicklung': 'IT & Digital',
+      'IT-Support': 'IT & Digital',
+      Systemadministration: 'IT & Digital',
+      Cybersecurity: 'IT & Digital',
+      Softwareentwicklung: 'IT & Digital',
+      Datenanalyse: 'IT & Digital',
+      'Cloud Services': 'IT & Digital',
+      Netzwerktechnik: 'IT & Digital',
+
+      // Garten
+      Gartenpflege: 'Garten',
+      Landschaftsgärtner: 'Garten',
+      Rasenpflege: 'Garten',
+      Heckenschnitt: 'Garten',
+      Baumpflege: 'Garten',
+      Gartenplanung: 'Garten',
+      Bewässerungsanlagen: 'Garten',
+
+      // Wellness
+      Massage: 'Wellness',
+      Physiotherapie: 'Wellness',
+      Ernährungsberatung: 'Wellness',
+      Kosmetik: 'Wellness',
+      Friseur: 'Wellness',
+      FitnessTraining: 'Wellness',
+      Seniorenbetreuung: 'Wellness',
+
+      // Hotel & Gastronomie
+      Mietkoch: 'Hotel & Gastronomie',
+      Mietkellner: 'Hotel & Gastronomie',
+      Catering: 'Hotel & Gastronomie',
+
+      // Marketing & Vertrieb
+      OnlineMarketing: 'Marketing & Vertrieb',
+      'Social Media Marketing': 'Marketing & Vertrieb',
+      ContentMarketing: 'Marketing & Vertrieb',
+      Marketingberater: 'Marketing & Vertrieb',
+      Marktforschung: 'Marketing & Vertrieb',
+
+      // Finanzen & Recht
+      Buchhaltung: 'Finanzen & Recht',
+      Steuerberatung: 'Finanzen & Recht',
+      Rechtsberatung: 'Finanzen & Recht',
+      Finanzberatung: 'Finanzen & Recht',
+      Versicherungsberatung: 'Finanzen & Recht',
+      Rechnungswesen: 'Finanzen & Recht',
+      Unternehmensberatung: 'Finanzen & Recht',
+      Verwaltung: 'Finanzen & Recht',
+
+      // Bildung & Unterstützung
+      Nachhilfe: 'Bildung & Unterstützung',
+      Nachhilfelehrer: 'Bildung & Unterstützung',
+      Sprachunterricht: 'Bildung & Unterstützung',
+      Musikunterricht: 'Bildung & Unterstützung',
+      Übersetzer: 'Bildung & Unterstützung',
+      Kinderbetreuung: 'Bildung & Unterstützung',
+
+      // Tiere & Pflanzen
+      Tierbetreuung: 'Tiere & Pflanzen',
+      Hundetrainer: 'Tiere & Pflanzen',
+      TierarztAssistenz: 'Tiere & Pflanzen',
+      Tierpflege: 'Tiere & Pflanzen',
+
+      // Kreativ & Kunst
+      Fotograf: 'Kreativ & Kunst',
+      Videograf: 'Kreativ & Kunst',
+      Grafiker: 'Kreativ & Kunst',
+      Musiker: 'Kreativ & Kunst',
+      Texter: 'Kreativ & Kunst',
+      Dekoration: 'Kreativ & Kunst',
+
+      // Event & Veranstaltung
+      Eventplanung: 'Event & Veranstaltung',
+      Sicherheitsdienst: 'Event & Veranstaltung',
+      DJService: 'Event & Veranstaltung',
+
+      // Büro & Administration
+      Telefonservice: 'Büro & Administration',
+      Inventur: 'Büro & Administration',
+      Recherche: 'Büro & Administration',
+    };
+
+    return categoryMap[subcategory] || null;
+  }
+
+  /**
    * Sendet E-Mail-Benachrichtigungen an alle Unternehmen, die für die Subcategory registriert sind
    */
   async notifyCompaniesAboutNewProject(projectData: ProjectEmailData): Promise<{
@@ -72,11 +203,27 @@ export class ProjectEmailNotificationService {
         };
       }
 
-      // 1. Finde alle Unternehmen in der companies Collection mit der entsprechenden Subcategory
-      const companiesQuery = await db
-        .collection('companies')
-        .where('selectedSubcategory', '==', projectData.subcategory)
-        .get();
+      // 1. Finde alle Unternehmen in der companies Collection mit der entsprechenden Hauptkategorie UND Subcategory
+
+      // Zuerst: Finde alle Unternehmen in der Hauptkategorie (falls eine Subcategory angegeben wird)
+      let companiesQuery;
+
+      // Mapping der Subcategories zu Hauptkategorien
+      const categoryMapping = this.getCategoryFromSubcategory(projectData.subcategory);
+
+      if (categoryMapping) {
+        // Suche nach allen Unternehmen in der Hauptkategorie
+        companiesQuery = await db
+          .collection('companies')
+          .where('selectedCategory', '==', categoryMapping)
+          .get();
+      } else {
+        // Fallback: Suche nur nach der Subcategory (bisheriges Verhalten)
+        companiesQuery = await db
+          .collection('companies')
+          .where('selectedSubcategory', '==', projectData.subcategory)
+          .get();
+      }
 
       // 2. Only check companies collection - no legacy support needed
       if (companiesQuery.docs.length === 0) {
@@ -127,7 +274,7 @@ export class ProjectEmailNotificationService {
 
       // 4. Erstelle E-Mail-Inhalte
       const emails = uniqueCompanies.map(company => ({
-        from: 'hello@send.taskilo.de',
+        from: 'hello@taskilo.de',
         to: [company.email],
         subject: `🔔 Neue Projektanfrage: ${projectData.subcategory} in ${projectData.location || 'Deutschland'}`,
         htmlContent: this.generateProjectEmailHTML(projectData, company),

@@ -11,7 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { UserPlus, X, Plus } from 'lucide-react';
@@ -160,7 +166,6 @@ export function AddEmployeeModal({
         skills: [],
       });
     } catch (error) {
-
       toast.error('Fehler beim Hinzufügen des Mitarbeiters');
     } finally {
       setLoading(false);
@@ -175,6 +180,10 @@ export function AddEmployeeModal({
             <UserPlus className="h-5 w-5 text-[#14ad9f]" />
             Neuen Mitarbeiter hinzufügen
           </DialogTitle>
+          <DialogDescription>
+            Fügen Sie einen neuen Mitarbeiter zu Ihrem Unternehmen hinzu und konfigurieren Sie
+            dessen Berechtigungen.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

@@ -108,7 +108,6 @@ export class ResendEmailService {
 
       return { success: true, messageId: result.data?.id };
     } catch (error) {
-
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unbekannter Fehler',
@@ -147,7 +146,6 @@ export class ResendEmailService {
         results: mappedResults,
       };
     } catch (error) {
-
       return {
         success: false,
         results: messages.map(m => ({ error: 'Bulk-Versand fehlgeschlagen', to: m.to })),
@@ -195,7 +193,6 @@ export class ResendEmailService {
         metadata: { templateId, variables },
       });
     } catch (error) {
-
       return { success: false, error: error instanceof Error ? error.message : 'Template-Fehler' };
     }
   }
@@ -211,7 +208,6 @@ export class ResendEmailService {
       // Hier würde normalerweise eine Datenbankabfrage stehen
       return { status: 'sent' };
     } catch (error) {
-
       return { status: 'sent', error: 'Status nicht verfügbar' };
     }
   }
@@ -281,7 +277,6 @@ export class ResendEmailService {
 
       return { success: true };
     } catch (error) {
-
       return { success: false, error: error instanceof Error ? error.message : 'Domain-Fehler' };
     }
   }
@@ -291,23 +286,16 @@ export class ResendEmailService {
     try {
       switch (event.type) {
         case 'email.sent':
-
           break;
         case 'email.delivered':
-
           break;
         case 'email.bounced':
-
           break;
         case 'email.complained':
-
           break;
         default:
-
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   // Neue Angebot Email an Kunden senden
@@ -318,7 +306,6 @@ export class ResendEmailService {
     proposalAmount: number
   ): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-
       const emailHtml = `
         <!DOCTYPE html>
         <html>
@@ -384,7 +371,6 @@ export class ResendEmailService {
 
       return result;
     } catch (error) {
-
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unbekannter Fehler',

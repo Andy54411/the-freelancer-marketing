@@ -11,7 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -129,7 +135,6 @@ export function EditEmployeeModal({
       onEmployeeUpdated(updatedEmployee);
       onClose();
     } catch (error) {
-
       toast.error('Fehler beim Aktualisieren des Mitarbeiters');
     } finally {
       setLoading(false);
@@ -144,6 +149,9 @@ export function EditEmployeeModal({
             <Edit className="h-5 w-5 text-[#14ad9f]" />
             Mitarbeiter bearbeiten: {employee.firstName} {employee.lastName}
           </DialogTitle>
+          <DialogDescription>
+            Bearbeiten Sie die Daten und Einstellungen für diesen Mitarbeiter.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

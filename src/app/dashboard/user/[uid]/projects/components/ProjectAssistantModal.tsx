@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -586,6 +592,9 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
             <Gemini className="h-6 w-6" />
             KI-Projekt Assistent
           </DialogTitle>
+          <DialogDescription>
+            Lassen Sie sich von der KI bei der Erstellung und Verwaltung Ihrer Projekte helfen.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Tab Navigation */}
