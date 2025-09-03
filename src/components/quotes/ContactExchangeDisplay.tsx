@@ -47,7 +47,7 @@ export function ContactExchangeDisplay({
   const [loading, setLoading] = useState(false);
 
   // Hilfsfunktion für hybride UID-Erkennung
-  const loadUserOrCompanyData = async (uid: string, token: string) => {
+  const loadUserOrCompanyData = async (uid: string, _token: string) => {
     try {
       console.log(`🔄 ContactExchangeDisplay: Loading data for UID ${uid}`);
 
@@ -193,9 +193,9 @@ export function ContactExchangeDisplay({
               type: 'company',
               name: customerData.company.companyName || customerData.company.name || 'Kunde',
               email: customerData.company.email || '',
-              phone: customerData.company.phone || customerData.company.phoneNumber || null,
+              phone: customerData.company.phone || null,
               address:
-                `${customerData.company.address || customerData.company.street || ''}, ${customerData.company.city || ''}`
+                `${customerData.company.address || ''}, ${customerData.company.city || ''}`
                   .trim()
                   .replace(/^,\s*/, '')
                   .replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
@@ -206,9 +206,9 @@ export function ContactExchangeDisplay({
               type: 'company',
               name: providerData.company.companyName || providerData.company.name || 'Anbieter',
               email: providerData.company.email || '',
-              phone: providerData.company.phone || providerData.company.phoneNumber || null,
+              phone: providerData.company.phone || null,
               address:
-                `${providerData.company.address || providerData.company.street || ''}, ${providerData.company.city || ''}`
+                `${providerData.company.address || ''}, ${providerData.company.city || ''}`
                   .trim()
                   .replace(/^,\s*/, '')
                   .replace(/,\s*$/, '') || 'Adresse nicht verfügbar',
@@ -293,6 +293,9 @@ export function ContactExchangeDisplay({
   const otherContact = isCustomer ? providerContact : customerContact;
   const myContact = isCustomer ? customerContact : providerContact;
 
+  // Debug: Zeige aktuellen Status
+  console.log('🔍 ContactExchangeDisplay: Current status for order notice:', status);
+
   return (
     <div className="bg-green-50 border border-green-200 rounded-lg p-6 mt-6">
       <div className="flex items-center gap-3 mb-4">
@@ -307,6 +310,27 @@ export function ContactExchangeDisplay({
         Die Zahlung war erfolgreich! Die Kontaktdaten wurden automatisch zwischen beiden Parteien
         ausgetauscht.
       </p>
+
+      {/* Hinweis zur Auftragserstellung - nur bei akzeptierten/bezahlten Aufträgen */}
+      {(status === 'paid' || status === 'accepted' || status === 'contacts_exchanged') && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-1">Auftrag wurde erstellt</h4>
+              <p className="text-sm text-gray-600">
+                Ein neuer Auftrag wurde automatisch erstellt. Die weitere Bearbeitung und
+                Kommunikation findet nun im Auftragsbereich statt. Sie finden den Auftrag in Ihrem
+                Dashboard unter &quot;Aufträge&quot;.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Andere Partei */}

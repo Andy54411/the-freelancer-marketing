@@ -260,6 +260,8 @@ export default function IncomingQuotesPage() {
       accepted: 'bg-green-100 text-green-800 border-green-200',
       declined: 'bg-red-100 text-red-800 border-red-200',
       contacts_exchanged: 'bg-green-100 text-green-800 border-green-200',
+      completed: 'bg-purple-100 text-purple-800 border-purple-200',
+      order_created: 'bg-purple-100 text-purple-800 border-purple-200',
     };
 
     const statusLabels = {
@@ -269,6 +271,8 @@ export default function IncomingQuotesPage() {
       accepted: 'Angenommen',
       declined: 'Abgelehnt',
       contacts_exchanged: 'Kontakte ausgetauscht',
+      completed: 'Abgeschlossen',
+      order_created: 'Auftrag erstellt',
     };
 
     const statusIcons = {
@@ -278,6 +282,8 @@ export default function IncomingQuotesPage() {
       accepted: FiCheckCircle,
       declined: FiXCircle,
       contacts_exchanged: FiCheckCircle,
+      completed: FiCheckCircle,
+      order_created: FiCheckCircle,
     };
 
     const StatusIcon = statusIcons[status] || FiClock;
