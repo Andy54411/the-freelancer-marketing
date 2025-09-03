@@ -34,16 +34,26 @@ interface ProjectRequest {
   subcategory: string;
   budgetAmount?: number;
   maxBudget?: number;
+  budgetRange?: { min: number; max: number; currency: string };
+  estimatedBudget?: number;
   budgetType: 'fixed' | 'hourly' | 'negotiable';
   timeline: string;
   startDate?: string;
   endDate?: string;
   preferredDate?: string;
-  location: string;
+  location: string | { address?: string; coordinates?: any; type?: string } | any;
   isRemote: boolean;
   isActive: boolean;
   urgency: 'low' | 'medium' | 'high';
+  priority?: string;
   requiredSkills: string[];
+  projectRequirements?: string;
+  requiredServices?: string[];
+  originalPrompt?: string;
+  projectType?: string;
+  maxProposals?: number;
+  aiGenerated?: boolean;
+  source?: string;
   status:
     | 'open'
     | 'in_progress'
@@ -184,27 +194,31 @@ const ProjectDetailPage: React.FC = () => {
           budgetAmount:
             data.budgetRange?.min || data.estimatedBudget || data.budgetAmount || data.budget,
           maxBudget: data.budgetRange?.max || data.maxBudget,
+          budgetRange: data.budgetRange,
+          estimatedBudget: data.estimatedBudget,
           budgetType: data.budgetRange ? 'negotiable' : data.budgetType || 'negotiable',
           timeline: data.timeline || data.timeframe || '',
           startDate: data.startDate || undefined,
           endDate: data.endDate || undefined,
           preferredDate: data.preferredDate || undefined,
-          location: (() => {
-            const location = data.location;
-            if (typeof location === 'object' && location?.type === 'tbd') {
-              return 'Wird noch festgelegt';
-            } else if (typeof location === 'object' && location?.address) {
-              return location.address;
-            } else if (typeof location === 'string') {
-              return location;
-            } else {
-              return 'Wird noch festgelegt';
-            }
-          })(),
+          location:
+            typeof data.location === 'string'
+              ? data.location
+              : data.location && typeof data.location === 'object'
+                ? data.location.address || 'Standort verfügbar'
+                : data.location || '',
           isRemote: data.isRemote || false,
-          isActive: data.isActive !== false, // Default true
-          urgency: data.priority || data.urgency || 'medium', // Backend nutzt 'priority', Frontend 'urgency'
-          requiredSkills: data.requiredSkills || [],
+          isActive: data.isActive !== false,
+          urgency: (data.urgency as 'low' | 'medium' | 'high') || 'medium',
+          priority: data.priority,
+          requiredSkills: Array.isArray(data.requiredSkills) ? data.requiredSkills : [],
+          projectRequirements: data.projectRequirements,
+          requiredServices: data.requiredServices,
+          originalPrompt: data.originalPrompt,
+          projectType: data.projectType,
+          maxProposals: data.maxProposals,
+          aiGenerated: data.aiGenerated,
+          source: data.source,
           status: data.status || 'open',
           customerUid: data.customerUid || '',
           customerEmail: data.customerEmail || '',
@@ -433,6 +447,41 @@ const ProjectDetailPage: React.FC = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const formatBudget = (project: ProjectRequest) => {
+    // Zeige Budget-Range wenn verfügbar
+    if (project.budgetRange && project.budgetRange.min > 0 && project.budgetRange.max > 0) {
+      return `${project.budgetRange.min.toLocaleString('de-DE')} - ${project.budgetRange.max.toLocaleString('de-DE')} ${project.budgetRange.currency || 'EUR'}`;
+    }
+
+    // Zeige geschätztes Budget wenn verfügbar
+    if (project.estimatedBudget && project.estimatedBudget > 0) {
+      return `ca. ${project.estimatedBudget.toLocaleString('de-DE')}€`;
+    }
+
+    // Fallback auf ursprüngliche Logik
+    if (project.maxBudget && project.budgetAmount) {
+      return `${project.budgetAmount.toLocaleString('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+      })} - ${project.maxBudget.toLocaleString('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+      })}`;
+    } else if (project.budgetAmount) {
+      return `${project.budgetAmount.toLocaleString('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+      })}${project.budgetType === 'hourly' ? '/h' : ''}`;
+    } else if (project.maxBudget) {
+      return `Bis zu ${project.maxBudget.toLocaleString('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+      })}`;
+    }
+
+    return 'Verhandelbar';
   };
 
   const getUrgencyColor = (urgency: string) => {
@@ -986,27 +1035,12 @@ const ProjectDetailPage: React.FC = () => {
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">Budget</h4>
                       <div className="text-2xl font-bold text-[#14ad9f]">
-                        {project.maxBudget && project.budgetAmount
-                          ? `${project.budgetAmount.toLocaleString('de-DE', {
-                              style: 'currency',
-                              currency: 'EUR',
-                            })} - ${project.maxBudget.toLocaleString('de-DE', {
-                              style: 'currency',
-                              currency: 'EUR',
-                            })}`
-                          : project.budgetAmount
-                            ? `${project.budgetAmount.toLocaleString('de-DE', {
-                                style: 'currency',
-                                currency: 'EUR',
-                              })}${project.budgetType === 'hourly' ? '/h' : ''}`
-                            : project.maxBudget
-                              ? `Bis zu ${project.maxBudget.toLocaleString('de-DE', {
-                                  style: 'currency',
-                                  currency: 'EUR',
-                                })}`
-                              : 'Verhandelbar'}
+                        {formatBudget(project)}
                       </div>
-                      {(project.budgetAmount || project.maxBudget) && (
+                      {(project.budgetAmount ||
+                        project.maxBudget ||
+                        project.budgetRange ||
+                        project.estimatedBudget) && (
                         <p className="text-sm text-gray-600 mt-1">
                           {project.budgetType === 'fixed'
                             ? 'Festpreis'
@@ -1189,6 +1223,87 @@ const ProjectDetailPage: React.FC = () => {
                         </p>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Erweiterte Projekt-Details */}
+              {(project.projectRequirements ||
+                project.requiredServices?.length ||
+                project.priority ||
+                project.projectType ||
+                project.maxProposals ||
+                project.aiGenerated ||
+                project.originalPrompt) && (
+                <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                  <CardHeader>
+                    <CardTitle>Projekt-Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {project.projectRequirements && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-2">Anforderungen:</h4>
+                        <p className="text-gray-700 text-sm">{project.projectRequirements}</p>
+                      </div>
+                    )}
+
+                    {project.requiredServices && project.requiredServices.length > 0 && (
+                      <div>
+                        <h4 className="font-semibold text-gray-900 mb-2">Benötigte Services:</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {project.requiredServices.map((service, index) => (
+                            <li key={index} className="text-gray-700 text-sm">
+                              {service}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {project.priority && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Priorität:</span>
+                        <Badge variant={project.priority === 'high' ? 'destructive' : 'secondary'}>
+                          {project.priority === 'high'
+                            ? 'Hoch'
+                            : project.priority === 'medium'
+                              ? 'Mittel'
+                              : 'Niedrig'}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {project.projectType && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Projekt-Typ:</span>
+                        <span className="font-medium text-sm">{project.projectType}</span>
+                      </div>
+                    )}
+
+                    {project.maxProposals && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Max. Angebote:</span>
+                        <span className="font-medium text-sm">{project.maxProposals}</span>
+                      </div>
+                    )}
+
+                    {project.aiGenerated && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Erstellt mit:</span>
+                        <Badge variant="outline" className="text-[#14ad9f] border-[#14ad9f]">
+                          KI-Assistent
+                        </Badge>
+                      </div>
+                    )}
+
+                    {project.originalPrompt && (
+                      <div>
+                        <span className="text-gray-600 text-sm block mb-1">Original-Anfrage:</span>
+                        <p className="text-sm italic text-gray-500">
+                          &ldquo;{project.originalPrompt}&rdquo;
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
