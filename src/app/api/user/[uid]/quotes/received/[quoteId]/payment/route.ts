@@ -99,8 +99,14 @@ export async function POST(
       return NextResponse.json({ error: 'Angebot wurde bereits bearbeitet' }, { status: 400 });
     }
 
-    // Get company's Stripe Account ID from users collection
-    const companyUserRef = db.collection('users').doc(proposalId);
+    // Get the provider's userId from the proposal
+    const providerUserId = proposal.companyUid;
+    if (!providerUserId) {
+      return NextResponse.json({ error: 'Anbieter-ID nicht im Angebot gefunden' }, { status: 400 });
+    }
+
+    // Get company's Stripe Account ID from users collection using the correct userId
+    const companyUserRef = db.collection('users').doc(providerUserId);
     const companyUserDoc = await companyUserRef.get();
 
     if (!companyUserDoc.exists) {
