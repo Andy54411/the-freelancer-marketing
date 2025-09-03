@@ -7,11 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRegistration } from '@/contexts/Registration-Context';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/firebase/clients';
-import { Elements } from '@stripe/react-stripe-js';
-import { stripePromise } from '@/lib/stripe';
-import { StripeCardCheckout } from '@/components/CheckoutForm';
+import SimpleStripeForm from '@/components/SimpleStripeForm';
 import BestaetigungsContent from './components/BestaetigungsContent';
-import type { Stripe } from '@stripe/stripe-js';
 
 // Interface für temporären Job-Entwurf
 interface TemporaryJobDraftData {
@@ -52,53 +49,14 @@ export default function BestaetigungsPage() {
   const [anbieterStripeAccountId, setAnbieterStripeAccountId] = useState<string | null>(null);
   const [tempJobDraftId, setTempJobDraftId] = useState<string | null>(null);
   const [forceRerender, setForceRerender] = useState(0); // Force re-render trigger
-  const [stripe, setStripe] = useState<Stripe | null>(null); // Geladenes Stripe-Objekt
-
-  // Stripe laden
-  useEffect(() => {
-    const loadStripe = async () => {
-      try {
-        console.log('[DEBUG] Lade Stripe...');
-        const stripeInstance = await stripePromise;
-        console.log('[DEBUG] Stripe geladen:', stripeInstance ? 'erfolgreich' : 'fehlgeschlagen');
-        setStripe(stripeInstance);
-      } catch (error) {
-        console.error('Fehler beim Laden von Stripe:', error);
-      }
-    };
-    loadStripe();
-  }, []);
 
   // Debug: Log bei jedem Render
   console.log(
     '[DEBUG] Component Render - clientSecret:',
     clientSecret ? 'vorhanden' : 'null',
-    'stripe:',
-    stripe ? 'geladen' : 'null',
     'forceRerender:',
     forceRerender
   );
-
-  // Debug: Payment Element Readiness
-  useEffect(() => {
-    if (stripe && clientSecret) {
-      console.log(
-        '[DEBUG] ✅ Beide Bedingungen erfüllt - Stripe & ClientSecret vorhanden, Payment Element sollte angezeigt werden'
-      );
-      console.log('[DEBUG] Rendering Elements with:', {
-        stripe: !!stripe,
-        clientSecret: !!clientSecret,
-        stripeType: typeof stripe,
-        clientSecretType: typeof clientSecret,
-        clientSecretLength: clientSecret?.length,
-      });
-    } else {
-      console.log('[DEBUG] ❌ Payment Element nicht bereit:', {
-        stripe: stripe ? 'vorhanden' : 'fehlt',
-        clientSecret: clientSecret ? 'vorhanden' : 'fehlt',
-      });
-    }
-  }, [stripe, clientSecret]);
 
   // States für BestaetigungsContent
   const [jobPriceInCents, setJobPriceInCents] = useState<number | null>(null);
@@ -784,99 +742,44 @@ export default function BestaetigungsPage() {
                 Geben Sie Ihre Zahlungsinformationen ein, um die Buchung abzuschließen.
               </p>
 
-              {process.env.NODE_ENV === 'development' && (
-                <div className="text-xs text-white/60 mb-4 p-2 bg-black/30 rounded">
-                  Debug Info:
-                  <br />- clientSecret: {clientSecret ? 'vorhanden ✓' : 'null ✗'}
-                  <br />- stripe: {stripe ? 'geladen ✓' : 'null ✗'}
-                  <br />- tempJobDraftId: {tempJobDraftId || 'null'}
-                  <br />- jobPriceInCents: {jobPriceInCents || 'null'}
-                  <br />- anbieterStripeAccountId: {anbieterStripeAccountId || 'null'}
-                  <br />- isLoading: {isLoading ? 'true' : 'false'}
-                </div>
-              )}
-
-              {/* KRITISCHER DEBUG BLOCK */}
-              <div className="mb-4 p-4 border-4 border-red-500 bg-yellow-100">
-                <h3 className="font-bold text-red-700 text-lg">🚨 WARUM KEIN PAYMENTELEMENT?</h3>
-                <div className="mt-2 text-sm text-black">
-                  <div>🔸 clientSecret: {clientSecret ? '✅ VORHANDEN' : '❌ FEHLT'}</div>
-                  <div>🔸 isLoading: {isLoading ? '❌ TRUE (blockiert)' : '✅ FALSE'}</div>
-                  <div>
-                    🔸 Bedingung (!clientSecret || isLoading):{' '}
-                    {!clientSecret || isLoading
-                      ? '❌ TRUE = LOADING angezeigt'
-                      : '✅ FALSE = PaymentElement wird gerendert'}
+              {/* PREMIUM STRIPE PAYMENT FORM */}
+              <div className="bg-white rounded-xl shadow-xl p-8 border border-gray-100">
+                {clientSecret ? (
+                  <SimpleStripeForm
+                    clientSecret={clientSecret}
+                    amount={urlParams.price}
+                    anbieterDetails={{
+                      id: urlParams.anbieterId,
+                      companyName: 'Dienstleister',
+                      category: urlParams.unterkategorie,
+                    }}
+                    jobDetails={{
+                      category: urlParams.unterkategorie || '',
+                      description: urlParams.description || '',
+                      dateFrom: urlParams.dateFrom || '',
+                      dateTo: urlParams.dateTo || '',
+                      duration: urlParams.duration ? parseInt(urlParams.duration) : 0,
+                    }}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="relative">
+                      <div className="animate-pulse">
+                        <div className="bg-gray-200 h-4 w-48 mx-auto rounded mb-4"></div>
+                        <div className="bg-gray-200 h-12 w-full rounded mb-4"></div>
+                        <div className="bg-gray-200 h-12 w-full rounded"></div>
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="animate-spin text-[#14ad9f]" size={32} />
+                      </div>
+                    </div>
+                    <p className="text-gray-600 font-medium mt-4">
+                      Sichere Zahlung wird vorbereitet...
+                    </p>
+                    <p className="text-xs text-gray-400">Powered by Stripe</p>
                   </div>
-                  <div>🔸 stripe: {stripe ? '✅ GELADEN' : '❌ FEHLT'}</div>
-                  {clientSecret && (
-                    <div className="mt-2 text-xs text-gray-600">
-                      ClientSecret: {clientSecret.substring(0, 30)}...
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
-
-              {/* Loading State während PaymentIntent-Erstellung */}
-              {!clientSecret || isLoading ? (
-                <div className="bg-white rounded-lg p-8 text-center">
-                  <Loader2 className="animate-spin mx-auto mb-4 text-[#14ad9f]" size={32} />
-                  <p className="text-gray-600 mb-2">Bereite Zahlungsformular vor...</p>
-                  <p className="text-xs text-gray-400">Stripe PaymentIntent wird erstellt...</p>
-                </div>
-              ) : (
-                /* Stripe Elements Container */
-                <div>
-                  {stripe && clientSecret && (
-                    <div className="bg-white rounded-lg p-4">
-                      {process.env.NODE_ENV === 'development' && (
-                        <div className="text-xs text-gray-600 mb-2 p-2 bg-gray-100 rounded">
-                          🟢 Payment Element wird gerendert!
-                          <br />
-                          Stripe: {stripe ? 'OK' : 'Fehlt'}
-                          <br />
-                          ClientSecret: {clientSecret ? 'OK' : 'Fehlt'}
-                          <br />
-                          About to render Elements with stripe instance
-                        </div>
-                      )}
-                      <Elements
-                        key={clientSecret} // 🔑 WICHTIG: Neu rendern wenn clientSecret sich ändert
-                        stripe={stripe}
-                        options={{
-                          clientSecret: clientSecret,
-                          appearance: {
-                            theme: 'stripe',
-                            variables: {
-                              colorPrimary: '#14ad9f',
-                              colorBackground: '#ffffff',
-                              colorText: '#1f2937',
-                              colorDanger: '#dc2626',
-                              fontFamily: 'system-ui, sans-serif',
-                              spacingUnit: '4px',
-                              borderRadius: '8px',
-                            },
-                          },
-                        }}
-                      >
-                        <StripeCardCheckout
-                          onPaymentSuccess={handlePaymentSuccess}
-                          onPaymentError={handlePaymentError}
-                          taskId={tempJobDraftId || ''}
-                          taskAmount={jobPriceInCents || 0}
-                          taskerStripeAccountId={anbieterStripeAccountId || ''}
-                          clientSecret={clientSecret}
-                        />
-                      </Elements>
-                      {process.env.NODE_ENV === 'development' && (
-                        <div className="text-xs text-gray-600 mt-2 p-2 bg-gray-100 rounded">
-                          Elements component rendered successfully ✅
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>

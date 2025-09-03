@@ -8,6 +8,7 @@ import { DateTimeSelectionPopup } from '@/app/auftrag/get-started/[unterkategori
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { FIREBASE_FUNCTIONS_BASE_URL } from '@/lib/constants';
+import { calculateDaysBetween } from '@/utils/orderCalculations';
 
 import type {
   Company as AnbieterDetailsType,
@@ -140,8 +141,9 @@ export default function AnbieterDetailsFetcher({
         if (dateT && isValidDate(parseISO(dateT))) {
           const endDate = parseISO(dateT);
           if (endDate >= startDate) {
-            // Berechne nur Arbeitstage (Mo-Fr) für Services wie Mietkoch
-            numberOfDays = calculateWorkingDays(startDate, endDate);
+            // KORREKTE BERECHNUNG: Alle Tage zählen, nicht nur Werktage
+            // Für Mietkoch und andere Services alle 7 Tage der Woche
+            numberOfDays = calculateDaysBetween(dateF, dateT);
           } else {
             localDurationError = 'Das Enddatum darf nicht vor dem Startdatum liegen.';
           }
@@ -151,7 +153,7 @@ export default function AnbieterDetailsFetcher({
           if (contextDateTo && isValidDate(parseISO(contextDateTo))) {
             const endDate = parseISO(contextDateTo);
             if (endDate >= startDate) {
-              numberOfDays = calculateWorkingDays(startDate, endDate);
+              numberOfDays = calculateDaysBetween(dateF, contextDateTo);
             } else {
               localDurationError = 'Das Enddatum darf nicht vor dem Startdatum liegen.';
             }

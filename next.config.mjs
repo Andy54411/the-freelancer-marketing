@@ -7,69 +7,29 @@ const nextConfig = {
   poweredByHeader: false,
   generateEtags: true,
 
-  // Security Headers - Critical for production security
+  // VOLLSTÄNDIGE CSP-KONFIGURATION FÜR ALLE SERVICES + VIOLATIONS GEFIXT
   async headers() {
     return [
       {
         source: '/(.*)',
         headers: [
-          // Content Security Policy - XSS Protection
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://js.stripe.com https://maps.googleapis.com https://www.google-analytics.com https://googleads.g.doubleclick.net https://va.vercel-scripts.com https://unpkg.com",
-              "script-src-elem 'self' 'unsafe-inline' https://www.googletagmanager.com https://js.stripe.com https://maps.googleapis.com https://www.google-analytics.com https://googleads.g.doubleclick.net https://va.vercel-scripts.com https://unpkg.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://*.stripe.com https://*.stripe.network https://www.googletagmanager.com https://maps.googleapis.com https://*.googleapis.com https://www.google-analytics.com https://googleads.g.doubleclick.net https://va.vercel-scripts.com https://unpkg.com",
+              "script-src-elem 'self' 'unsafe-inline' https://js.stripe.com https://*.stripe.com https://*.stripe.network https://www.googletagmanager.com https://maps.googleapis.com https://*.googleapis.com https://www.google-analytics.com https://googleads.g.doubleclick.net https://va.vercel-scripts.com https://unpkg.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.stripe.com",
               "font-src 'self' data: https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: http:",
-              "connect-src 'self' blob: https://api.stripe.com https://maps.googleapis.com https://www.google-analytics.com https://region1.google-analytics.com https://financeapiwithocr-d4kdcd73ia-ew.a.run.app https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app wss://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app wss://s-gke-euw1-nssi2-4.europe-west1.firebasedatabase.app https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://www.googleapis.com https://firebase.googleapis.com https://firestore.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://tilvo-f142f.firebasestorage.app https://europe-west1-tilvo-f142f.cloudfunctions.net https://va.vercel-scripts.com https://unpkg.com",
-              "child-src 'self' blob:",
+              "connect-src 'self' https://api.stripe.com https://*.stripe.com https://*.stripe.network https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebase.googleapis.com https://europe-west1-tilvo-f142f.cloudfunctions.net https://maps.googleapis.com https://*.googleapis.com https://www.google-analytics.com https://region1.google-analytics.com https://va.vercel-scripts.com https://unpkg.com wss://s-gke-euw1-nssi2-4.europe-west1.firebasedatabase.app wss://*.firebasedatabase.app wss://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app https://*.firebasedatabase.app https://storage.googleapis.com https://tilvo-f142f.firebasestorage.app",
+              "frame-src 'self' https://js.stripe.com https://*.stripe.com https://hooks.stripe.com https://www.google.com https://*.google.com",
+              "child-src 'self' https://js.stripe.com https://*.stripe.com",
               "worker-src 'self' blob:",
-              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.google.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'"
             ].join('; ')
-          },
-          // Clickjacking Protection
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          },
-          // MIME-Sniffing Protection
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          // Referrer Policy
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
-          },
-          // Permissions Policy - Feature Control
-          {
-            key: 'Permissions-Policy',
-            value: [
-              'camera=(),',
-              'microphone=(),',
-              'geolocation=(self),',
-              'payment=(self "https://js.stripe.com"),',
-              'fullscreen=(self)'
-            ].join(' ')
-          },
-          // Cross-Origin Policies
-          {
-            key: 'Cross-Origin-Embedder-Policy',
-            value: 'credentialless'
-          },
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin-allow-popups'
-          },
-          {
-            key: 'Cross-Origin-Resource-Policy',
-            value: 'cross-origin'
           }
         ]
       }
