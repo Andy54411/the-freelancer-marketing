@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       title: projectData.title,
       description: projectData.description,
       category: projectData.category,
-      subcategory: projectData.category, // Fallback
+      subcategory: projectData.subcategory || projectData.category, // Korrekte Subkategorie
 
       // Benutzerinformationen
       userId: userId,

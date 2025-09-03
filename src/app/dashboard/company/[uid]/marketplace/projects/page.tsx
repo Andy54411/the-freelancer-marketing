@@ -134,36 +134,21 @@ export default function CompanyMarketplacePage() {
 
     const projectRequestsRef = collection(db, 'project_requests');
 
-    // Erstelle Query basierend auf verfügbaren Daten
-    let q;
-    if (companySubcategory) {
-      // Filtere nach Hauptkategorie UND Subkategorie
-      q = query(
-        projectRequestsRef,
-        where('status', '==', 'open'),
-        where('isActive', '==', true),
-        where('category', '==', companyMainCategory),
-        where('subcategory', '==', companySubcategory), // Zusätzlich nach Subkategorie filtern
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-      console.log(
-        '🔍 Filtering by main category AND subcategory:',
-        companyMainCategory,
-        companySubcategory
-      );
-    } else {
-      // Nur nach Hauptkategorie filtern (falls keine Subkategorie vorhanden)
-      q = query(
-        projectRequestsRef,
-        where('status', '==', 'open'),
-        where('isActive', '==', true),
-        where('category', '==', companyMainCategory),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
-      console.log('🔍 Filtering by main category only:', companyMainCategory);
-    }
+    // Query: Hole ALLE aktiven öffentlichen Projekte der Hauptkategorie
+    // und filtere clientseitig nach Subkategorie (wegen möglicher Dateninkonsistenzen)
+    const q = query(
+      projectRequestsRef,
+      where('status', 'in', ['open', 'active']), // Unterstütze beide Status-Typen
+      where('isPublic', '==', true), // Nur öffentliche Projekte
+      where('category', '==', companyMainCategory),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    console.log(
+      '🔍 Filtering by main category only for better compatibility:',
+      companyMainCategory
+    );
 
     const unsubscribe = onSnapshot(
       q,
@@ -192,7 +177,30 @@ export default function CompanyMarketplacePage() {
           };
         });
 
-        setProjects(availableProjects);
+        console.log('📊 Total projects found by main category:', availableProjects.length);
+
+        // Clientseitige Filterung nach Subkategorie für bessere Datenkompatibilität
+        let filteredProjects = availableProjects;
+        if (companySubcategory) {
+          filteredProjects = availableProjects.filter(project => {
+            // Akzeptiere sowohl exakte Subkategorie als auch Projekte ohne Subkategorie (Fallback)
+            const matchesSubcategory =
+              !project.subcategory || project.subcategory === companySubcategory;
+            console.log(
+              `🎯 Project "${project.title}": subcategory="${project.subcategory}", matches=${matchesSubcategory}`
+            );
+            return matchesSubcategory;
+          });
+          console.log(
+            '🎯 Projects after subcategory filter:',
+            filteredProjects.length,
+            'for subcategory:',
+            companySubcategory
+          );
+        }
+
+        console.log('✅ Final filtered projects:', filteredProjects.length);
+        setProjects(filteredProjects);
         setLoading(false);
       },
       error => {

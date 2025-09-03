@@ -171,10 +171,8 @@ const ProjectDetailPage: React.FC = () => {
               !proposal.paymentIntentId &&
               (proposal.providerId || proposal.companyUid || proposal.providerName)
           );
-
         } else {
           proposalsToProcess = [];
-
         }
 
         const projectData: ProjectRequest = {
@@ -182,10 +180,11 @@ const ProjectDetailPage: React.FC = () => {
           title: data.title || 'Unbenanntes Projekt',
           description: data.description || '',
           category: data.category || data.serviceCategory || '',
-          subcategory: data.subcategory || data.serviceSubcategory || '',
-          budgetAmount: data.budgetAmount || data.budget,
-          maxBudget: data.maxBudget,
-          budgetType: data.budgetType || 'negotiable',
+          subcategory: data.subcategory || data.serviceSubcategory || 'Mietkoch', // Fallback für KI-generierte Projekte
+          budgetAmount:
+            data.budgetRange?.min || data.estimatedBudget || data.budgetAmount || data.budget,
+          maxBudget: data.budgetRange?.max || data.maxBudget,
+          budgetType: data.budgetRange ? 'negotiable' : data.budgetType || 'negotiable',
           timeline: data.timeline || data.timeframe || '',
           startDate: data.startDate || undefined,
           endDate: data.endDate || undefined,
@@ -198,12 +197,13 @@ const ProjectDetailPage: React.FC = () => {
               return location.address;
             } else if (typeof location === 'string') {
               return location;
+            } else {
+              return 'Wird noch festgelegt';
             }
-            return 'Nicht angegeben';
           })(),
           isRemote: data.isRemote || false,
           isActive: data.isActive !== false, // Default true
-          urgency: data.urgency || 'medium',
+          urgency: data.priority || data.urgency || 'medium', // Backend nutzt 'priority', Frontend 'urgency'
           requiredSkills: data.requiredSkills || [],
           status: data.status || 'open',
           customerUid: data.customerUid || '',
@@ -238,7 +238,6 @@ const ProjectDetailPage: React.FC = () => {
                 proposal.providerId || proposal.companyId || proposal.companyUid || proposal.uid;
 
               if (!providerId) {
-
                 return {
                   id: proposal.id || `unknown_${Date.now()}`,
                   providerId: 'unknown',
@@ -332,7 +331,6 @@ const ProjectDetailPage: React.FC = () => {
               };
               return enhancedProposal;
             } catch (error) {
-
               // Fallback für defekte Proposals
               const fallbackProviderId =
                 proposal.providerId ||
@@ -373,7 +371,6 @@ const ProjectDetailPage: React.FC = () => {
         setProject(projectData);
         setLoading(false);
       } catch (error) {
-
         setError('Fehler beim Laden der Projektdetails');
         setLoading(false);
         toast.error('Fehler beim Laden der Projektdetails');
@@ -410,14 +407,11 @@ const ProjectDetailPage: React.FC = () => {
           });
         }
       },
-      error => {
-
-      }
+      error => {}
     );
 
     // Cleanup function
     return () => {
-
       unsubscribe();
     };
   }, [projectId]);
@@ -550,7 +544,9 @@ const ProjectDetailPage: React.FC = () => {
                 ? 'Hoch'
                 : project.urgency === 'medium'
                   ? 'Mittel'
-                  : 'Niedrig'}
+                  : project.urgency === 'low'
+                    ? 'Niedrig'
+                    : 'Mittel'}
             </Badge>
             <Badge variant="outline" className="text-white border-white/30 bg-white/10">
               {project.category}
@@ -983,24 +979,32 @@ const ProjectDetailPage: React.FC = () => {
                   <CardTitle>Projektinformationen</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Budget - nur anzeigen wenn tatsächlich ein Budget angegeben ist */}
+                  {/* Budget - neue Struktur mit budgetRange unterstützen */}
                   {(project.budgetAmount ||
                     project.maxBudget ||
                     project.budgetType === 'negotiable') && (
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-2">Budget</h4>
                       <div className="text-2xl font-bold text-[#14ad9f]">
-                        {project.budgetAmount
+                        {project.maxBudget && project.budgetAmount
                           ? `${project.budgetAmount.toLocaleString('de-DE', {
                               style: 'currency',
                               currency: 'EUR',
-                            })}${project.budgetType === 'hourly' ? '/h' : ''}`
-                          : project.maxBudget
-                            ? `Bis zu ${project.maxBudget.toLocaleString('de-DE', {
+                            })} - ${project.maxBudget.toLocaleString('de-DE', {
+                              style: 'currency',
+                              currency: 'EUR',
+                            })}`
+                          : project.budgetAmount
+                            ? `${project.budgetAmount.toLocaleString('de-DE', {
                                 style: 'currency',
                                 currency: 'EUR',
-                              })}`
-                            : 'Verhandelbar'}
+                              })}${project.budgetType === 'hourly' ? '/h' : ''}`
+                            : project.maxBudget
+                              ? `Bis zu ${project.maxBudget.toLocaleString('de-DE', {
+                                  style: 'currency',
+                                  currency: 'EUR',
+                                })}`
+                              : 'Verhandelbar'}
                       </div>
                       {(project.budgetAmount || project.maxBudget) && (
                         <p className="text-sm text-gray-600 mt-1">
@@ -1131,7 +1135,6 @@ const ProjectDetailPage: React.FC = () => {
                           </p>
                           <div className="flex flex-wrap gap-1">
                             {project.selectedProviders.map((provider, index) => {
-
                               // Wenn es ein String ist
                               if (typeof provider === 'string') {
                                 return (
