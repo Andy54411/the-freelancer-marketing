@@ -78,6 +78,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   const [imageLoadError, setImageLoadError] = useState(false); // NEU: Track ob Bild geladen werden konnte
   const [firestoreUserData, setFirestoreUserData] = useState<FirestoreUserData | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true); // Loading-State für Auth
 
   // Debug: Log state changes
   useEffect(() => {}, [profilePictureURLFromStorage, currentUser?.photoURL, currentUser?.uid]);
@@ -180,6 +181,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
+      setIsAuthLoading(false); // Auth-Loading beendet
     });
     return () => {
       unsubscribe();
@@ -484,104 +486,109 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
             {/* Icons und Benutzerprofil */}
             <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Benachrichtigungen - nur desktop */}
-              <div className="relative hidden sm:block">
-                {' '}
-                {/* Wrapper für die Glocke */}
-                <button className="text-gray-600 hover:text-[#14ad9f] p-1">
-                  <FiBell size={20} />
-                </button>
-                {unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#14ad9f] text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
-                    {unreadMessagesCount}
-                  </span>
-                )}
-              </div>
-
-              {/* NEU: Posteingang-Icon mit Hover-Dropdown - nur desktop */}
-              <div
-                className="relative hidden sm:block"
-                onMouseEnter={handleInboxEnter}
-                onMouseLeave={handleInboxLeave}
-              >
-                <Link
-                  href={
-                    currentUser
-                      ? company
-                        ? `/dashboard/company/${company.uid}/inbox`
-                        : `/dashboard/user/${currentUser.uid}/inbox`
-                      : '/login'
-                  }
-                  className="text-gray-600 hover:text-[#14ad9f] p-1 block"
-                >
-                  <FiMail size={20} />
-                </Link>
-                {isInboxDropdownOpen && currentUser && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
-                    <div className="p-3 border-b">
-                      <h4 className="font-semibold text-gray-800">Letzte Nachrichten</h4>
-                    </div>
-                    {recentChats.length > 0 ? (
-                      <ul>
-                        {recentChats.map(chat => (
-                          <li key={chat.id}>
-                            <Link
-                              href={chat.link}
-                              onClick={() => setIsInboxDropdownOpen(false)}
-                              className={`block p-3 hover:bg-gray-100 ${chat.isUnread ? 'bg-teal-50' : ''}`}
-                            >
-                              <div className="flex items-center gap-3">
-                                {chat.otherUserAvatarUrl ? (
-                                  <img
-                                    src={chat.otherUserAvatarUrl}
-                                    alt={chat.otherUserName}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                    <FiUser />
-                                  </div>
-                                )}
-                                <div className="flex-1 overflow-hidden">
-                                  <p className="font-semibold truncate text-sm">
-                                    {chat.otherUserName}
-                                  </p>
-                                  <p
-                                    className={`text-sm truncate ${chat.isUnread ? 'text-gray-900 font-medium' : 'text-gray-500'}`}
-                                  >
-                                    {chat.lastMessageText}
-                                  </p>
-                                </div>
-                              </div>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="p-4 text-sm text-gray-500 text-center">
-                        Keine neuen Nachrichten.
-                      </p>
+              {/* Nur Auth-spezifische Elemente anzeigen, wenn User definitiv eingeloggt ist */}
+              {!isAuthLoading && currentUser && (
+                <>
+                  {/* Benachrichtigungen - nur desktop */}
+                  <div className="relative hidden sm:block">
+                    {' '}
+                    {/* Wrapper für die Glocke */}
+                    <button className="text-gray-600 hover:text-[#14ad9f] p-1">
+                      <FiBell size={20} />
+                    </button>
+                    {unreadMessagesCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-[#14ad9f] text-white rounded-full px-1.5 py-0.5 text-xs font-medium z-10">
+                        {unreadMessagesCount}
+                      </span>
                     )}
-                    <div className="border-t p-2 text-center">
-                      <Link
-                        href={
-                          currentUser
-                            ? company
-                              ? `/dashboard/company/${company.uid}/inbox`
-                              : `/dashboard/user/${currentUser.uid}/inbox`
-                            : '/login'
-                        }
-                        onClick={() => setIsInboxDropdownOpen(false)}
-                        className="text-sm font-medium text-[#14ad9f] hover:underline"
-                      >
-                        Zum Posteingang
-                      </Link>
-                    </div>
                   </div>
-                )}
-              </div>
 
-              {/* Hilfe Button - nur desktop */}
+                  {/* NEU: Posteingang-Icon mit Hover-Dropdown - nur desktop */}
+                  <div
+                    className="relative hidden sm:block"
+                    onMouseEnter={handleInboxEnter}
+                    onMouseLeave={handleInboxLeave}
+                  >
+                    <Link
+                      href={
+                        currentUser
+                          ? company
+                            ? `/dashboard/company/${company.uid}/inbox`
+                            : `/dashboard/user/${currentUser.uid}/inbox`
+                          : '/login'
+                      }
+                      className="text-gray-600 hover:text-[#14ad9f] p-1 block"
+                    >
+                      <FiMail size={20} />
+                    </Link>
+                    {isInboxDropdownOpen && currentUser && (
+                      <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
+                        <div className="p-3 border-b">
+                          <h4 className="font-semibold text-gray-800">Letzte Nachrichten</h4>
+                        </div>
+                        {recentChats.length > 0 ? (
+                          <ul>
+                            {recentChats.map(chat => (
+                              <li key={chat.id}>
+                                <Link
+                                  href={chat.link}
+                                  onClick={() => setIsInboxDropdownOpen(false)}
+                                  className={`block p-3 hover:bg-gray-100 ${chat.isUnread ? 'bg-teal-50' : ''}`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    {chat.otherUserAvatarUrl ? (
+                                      <img
+                                        src={chat.otherUserAvatarUrl}
+                                        alt={chat.otherUserName}
+                                        className="w-10 h-10 rounded-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                        <FiUser />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 overflow-hidden">
+                                      <p className="font-semibold truncate text-sm">
+                                        {chat.otherUserName}
+                                      </p>
+                                      <p
+                                        className={`text-sm truncate ${chat.isUnread ? 'text-gray-900 font-medium' : 'text-gray-500'}`}
+                                      >
+                                        {chat.lastMessageText}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="p-4 text-sm text-gray-500 text-center">
+                            Keine neuen Nachrichten.
+                          </p>
+                        )}
+                        <div className="border-t p-2 text-center">
+                          <Link
+                            href={
+                              currentUser
+                                ? company
+                                  ? `/dashboard/company/${company.uid}/inbox`
+                                  : `/dashboard/user/${currentUser.uid}/inbox`
+                                : '/login'
+                            }
+                            onClick={() => setIsInboxDropdownOpen(false)}
+                            className="text-sm font-medium text-[#14ad9f] hover:underline"
+                          >
+                            Zum Posteingang
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Hilfe Button - immer anzeigen */}
               <button
                 onClick={handleHelpClick}
                 className="text-gray-600 hover:text-[#14ad9f] p-1 hidden sm:block"
@@ -590,7 +597,13 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                 <FiHelpCircle size={20} />
               </button>
 
-              {currentUser ? (
+              {/* Benutzer-Bereich mit Loading-State */}
+              {isAuthLoading ? (
+                // Loading Spinner während Auth-Check
+                <div className="flex items-center">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 animate-pulse"></div>
+                </div>
+              ) : currentUser ? (
                 <div className="relative" ref={profileDropdownRef}>
                   <button
                     onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
@@ -739,6 +752,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
                   )}
                 </div>
               ) : (
+                // Anmelden-Button für nicht-eingeloggte Benutzer
                 <Link
                   href="/login"
                   className="text-xs sm:text-sm font-medium text-[#14ad9f] hover:underline px-2 py-1"

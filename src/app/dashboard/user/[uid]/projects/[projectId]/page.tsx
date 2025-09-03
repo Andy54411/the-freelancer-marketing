@@ -130,6 +130,7 @@ const ProjectDetailPage: React.FC = () => {
   const [project, setProject] = useState<ProjectRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPublicProject, setIsPublicProject] = useState<boolean>(false); // NEU: Track ob öffentlich
 
   useEffect(() => {
     if (!uid || !user || !projectId) return;
@@ -146,6 +147,7 @@ const ProjectDetailPage: React.FC = () => {
         // Versuche zuerst project_requests Collection
         let projectDocRef = doc(db, 'project_requests', projectId);
         let projectDocSnap = await getDoc(projectDocRef);
+        const isFromProjectRequests = projectDocSnap.exists();
 
         // Falls nicht in project_requests gefunden, prüfe quotes Collection
         if (!projectDocSnap.exists()) {
@@ -158,6 +160,9 @@ const ProjectDetailPage: React.FC = () => {
           setLoading(false);
           return;
         }
+
+        // Setze ob es ein öffentliches Projekt ist (project_requests = öffentlich, quotes = privat)
+        setIsPublicProject(isFromProjectRequests);
 
         const data = projectDocSnap.data();
 
@@ -343,28 +348,8 @@ const ProjectDetailPage: React.FC = () => {
                 providerEmail: companyData.email || proposal.providerEmail || '',
                 providerPhone:
                   companyData.phone || companyData.phoneNumber || proposal.providerPhone || '',
-                providerAvatar: (() => {
-                  const avatar =
-                    companyData.profilePictureURL ||
-                    companyData.companyLogo ||
-                    companyData.logoUrl ||
-                    companyData.avatar ||
-                    companyData.profileImage ||
-                    companyData.photoURL ||
-                    proposal.providerAvatar ||
-                    '';
-                  console.log('🖼️ Avatar for', providerId, ':', {
-                    profilePictureURL: companyData.profilePictureURL,
-                    companyLogo: companyData.companyLogo,
-                    logoUrl: companyData.logoUrl,
-                    avatar: companyData.avatar,
-                    profileImage: companyData.profileImage,
-                    photoURL: companyData.photoURL,
-                    proposalAvatar: proposal.providerAvatar,
-                    finalAvatar: avatar,
-                  });
-                  return avatar;
-                })(),
+                providerAvatar:
+                  companyData.step3?.profilePictureURL || companyData.profileBannerImage || '',
                 providerRating:
                   companyData.averageRating || companyData.rating || proposal.providerRating || 0,
                 providerReviewCount:
@@ -947,7 +932,17 @@ const ProjectDetailPage: React.FC = () => {
                                 </Avatar>
                                 <div>
                                   <h4 className="font-semibold text-gray-900">
-                                    {proposal.providerName || 'Anbieter'}
+                                    <button
+                                      onClick={() =>
+                                        window.open(
+                                          `/profile/${proposal.companyUid || proposal.providerId}`,
+                                          '_blank'
+                                        )
+                                      }
+                                      className="text-[#14ad9f] hover:text-[#129488] hover:underline transition-colors"
+                                    >
+                                      {proposal.providerName || 'Anbieter'}
+                                    </button>
                                   </h4>
                                   <div className="flex items-center gap-2 text-sm text-gray-600">
                                     {proposal.providerRating !== undefined &&
@@ -1058,46 +1053,34 @@ const ProjectDetailPage: React.FC = () => {
                             </div>
 
                             <div className="flex gap-2 mt-4">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1"
-                                onClick={() =>
-                                  router.push(
-                                    `/dashboard/user/${uid}/quotes/received/${project.id}?proposalId=${proposal.id}`
-                                  )
-                                }
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                Angebot anschauen
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1"
+                                  onClick={() =>
+                                    router.push(
+                                      `/dashboard/user/${uid}/quotes/received/${project.id}?proposalId=${proposal.id}`
+                                    )
+                                  }
+                                >
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Angebot anschauen
+                                </Button>
 
-                              {proposal.status === 'pending' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                                    onClick={() => {
-                                      // TODO: Angebot annehmen
-                                      toast.success('Funktion wird noch implementiert');
-                                    }}
-                                  >
-                                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                                    Annehmen
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      // TODO: Angebot ablehnen
-                                      toast.success('Funktion wird noch implementiert');
-                                    }}
-                                  >
-                                    <XCircle className="h-4 w-4 mr-2" />
-                                    Ablehnen
-                                  </Button>
-                                </>
-                              )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    window.open(
+                                      `/profile/${proposal.companyUid || proposal.providerId}`,
+                                      '_blank'
+                                    )
+                                  }
+                                >
+                                  Profil anzeigen
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1295,18 +1278,23 @@ const ProjectDetailPage: React.FC = () => {
               ) : (
                 <Card className="bg-white/95 backdrop-blur-sm border-white/20">
                   <CardHeader>
-                    <CardTitle className="text-[#14ad9f]">Öffentliches Projekt</CardTitle>
+                    <CardTitle className="text-[#14ad9f]">
+                      {isPublicProject ? 'Öffentliches Projekt' : 'Private Anfrage'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-start gap-2">
                       <Eye className="h-5 w-5 text-blue-600 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          Für alle Anbieter sichtbar
+                          {isPublicProject
+                            ? 'Für alle Anbieter sichtbar'
+                            : 'Nur für ausgewählte Anbieter'}
                         </p>
                         <p className="text-xs text-gray-600 mt-1">
-                          Alle registrierten Anbieter können dieses Projekt sehen und Angebote
-                          abgeben.
+                          {isPublicProject
+                            ? 'Alle registrierten Anbieter können dieses Projekt sehen und Angebote abgeben.'
+                            : 'Diese Anfrage wurde nur an spezifische Anbieter gesendet.'}
                         </p>
                       </div>
                     </div>

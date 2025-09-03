@@ -72,21 +72,33 @@ export async function GET(
         };
 
         try {
-          // Try users collection for company data
-          const companyDoc = await db.collection('users').doc(proposal.companyUid).get();
-          if (companyDoc.exists) {
-            const companyData = companyDoc.data();
+          // Try companies collection first for comprehensive data
+          const companiesDoc = await db.collection('companies').doc(proposal.companyUid).get();
 
+          if (companiesDoc.exists) {
+            const companyData = companiesDoc.data();
             companyInfo = {
-              companyName:
-                companyData?.companyName ||
-                (companyData?.firstName && companyData?.lastName
-                  ? `${companyData.firstName} ${companyData.lastName}`
-                  : 'Unbekanntes Unternehmen'),
-              companyEmail: companyData?.email || null,
-              companyPhone: companyData?.phone || null,
-              companyLogo: companyData?.logo || companyData?.avatar || null,
+              companyName: companyData?.step1?.companyName || 'Unbekanntes Unternehmen',
+              companyEmail: companyData?.step1?.email || null,
+              companyPhone: companyData?.step1?.phone || null,
+              companyLogo: companyData?.step3?.profilePictureURL || null,
             };
+          } else {
+            // Fallback to users collection for legacy data
+            const userDoc = await db.collection('users').doc(proposal.companyUid).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              companyInfo = {
+                companyName:
+                  userData?.companyName ||
+                  (userData?.firstName && userData?.lastName
+                    ? `${userData.firstName} ${userData.lastName}`
+                    : 'Unbekanntes Unternehmen'),
+                companyEmail: userData?.email || null,
+                companyPhone: userData?.phone || null,
+                companyLogo: userData?.logo || userData?.avatar || null,
+              };
+            }
           }
         } catch (error) {
           // Company not found, use defaults
@@ -115,21 +127,33 @@ export async function GET(
           };
 
           try {
-            // Try users collection for company data
-            const companyDoc = await db.collection('users').doc(proposal.companyUid).get();
-            if (companyDoc.exists) {
-              const companyData = companyDoc.data();
+            // Try companies collection first for comprehensive data
+            const companiesDoc = await db.collection('companies').doc(proposal.companyUid).get();
 
+            if (companiesDoc.exists) {
+              const companyData = companiesDoc.data();
               companyInfo = {
-                companyName:
-                  companyData?.companyName ||
-                  (companyData?.firstName && companyData?.lastName
-                    ? `${companyData.firstName} ${companyData.lastName}`
-                    : 'Unbekanntes Unternehmen'),
-                companyEmail: companyData?.email || null,
-                companyPhone: companyData?.phone || null,
-                companyLogo: companyData?.logo || companyData?.avatar || null,
+                companyName: companyData?.step1?.companyName || 'Unbekanntes Unternehmen',
+                companyEmail: companyData?.step1?.email || null,
+                companyPhone: companyData?.step1?.phone || null,
+                companyLogo: companyData?.step3?.profilePictureURL || null,
               };
+            } else {
+              // Fallback to users collection for legacy data
+              const userDoc = await db.collection('users').doc(proposal.companyUid).get();
+              if (userDoc.exists) {
+                const userData = userDoc.data();
+                companyInfo = {
+                  companyName:
+                    userData?.companyName ||
+                    (userData?.firstName && userData?.lastName
+                      ? `${userData.firstName} ${userData.lastName}`
+                      : 'Unbekanntes Unternehmen'),
+                  companyEmail: userData?.email || null,
+                  companyPhone: userData?.phone || null,
+                  companyLogo: userData?.logo || userData?.avatar || null,
+                };
+              }
             }
           } catch (error) {
             // Company not found, use defaults
