@@ -79,6 +79,18 @@ export class QuoteNotificationService {
       const budgetText = `${quoteData.budget.min.toLocaleString('de-DE')} - ${quoteData.budget.max.toLocaleString('de-DE')} ${quoteData.budget.currency}`;
       const urgencyText = quoteData.urgency ? ` (${quoteData.urgency} Priorität)` : '';
 
+      // Intelligente Link-Generierung für hybride Accounts
+      const providerLink = await QuoteNotificationService.getSmartLink(
+        providerUid,
+        quoteId,
+        'incoming'
+      );
+      const customerLink = await QuoteNotificationService.getSmartLink(
+        customerUid,
+        quoteId,
+        'received'
+      );
+
       // 1. PROVIDER NOTIFICATION - Neue Angebotsanfrage erhalten
       const providerNotification: Omit<QuoteNotification, 'id'> = {
         userId: providerUid,
@@ -87,7 +99,7 @@ export class QuoteNotificationService {
         message: `${quoteData.customerName} hat eine Angebotsanfrage für "${quoteData.subcategory}" gesendet. Budget: ${budgetText}${urgencyText}`,
         quoteId,
         quoteTitle: `${quoteData.subcategory} - ${quoteData.customerName}`,
-        link: `/dashboard/company/${providerUid}/quotes/incoming/${quoteId}`,
+        link: providerLink,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
@@ -107,7 +119,7 @@ export class QuoteNotificationService {
         message: `Ihre Angebotsanfrage für "${quoteData.subcategory}" wurde an ${quoteData.providerName} gesendet. Sie erhalten eine Benachrichtigung, sobald ein Angebot eingeht.`,
         quoteId,
         quoteTitle: `${quoteData.subcategory} - ${quoteData.providerName}`,
-        link: `/dashboard/company/${customerUid}/quotes/received/${quoteId}`,
+        link: customerLink,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
@@ -126,6 +138,53 @@ export class QuoteNotificationService {
       ]);
     } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * Bestimmt intelligente Link-Pfade für hybride User/Company-Accounts
+   */
+  private static async getSmartLink(
+    userId: string,
+    quoteId: string,
+    linkType: 'received' | 'incoming'
+  ): Promise<string> {
+    try {
+      const { db } = await ensureFirebaseInitialized();
+      if (!db) {
+        // Fallback auf user dashboard
+        return `/dashboard/user/${userId}/quotes/${linkType}/${quoteId}`;
+      }
+
+      // Prüfe, ob User ein Company-Account hat
+      const companyDoc = await db.collection('companies').doc(userId).get();
+      const userDoc = await db.collection('users').doc(userId).get();
+
+      // Intelligente Entscheidung basierend auf Account-Typ und Kontext
+      if (companyDoc.exists && userDoc.exists) {
+        // Hybrid Account - entscheide basierend auf Kontext
+        const companyData = companyDoc.data();
+        const userData = userDoc.data();
+
+        // Wenn es eine aktive Company ist und der Link für "incoming" quotes ist
+        if (linkType === 'incoming' && companyData?.isActive) {
+          return `/dashboard/company/${userId}/quotes/incoming/${quoteId}`;
+        }
+
+        // Für "received" quotes - prüfe, ob es als Customer oder als Company empfangen wurde
+        // Default für received quotes: user dashboard (als Customer)
+        return `/dashboard/user/${userId}/quotes/received/${quoteId}`;
+      } else if (companyDoc.exists) {
+        // Nur Company Account
+        return `/dashboard/company/${userId}/quotes/${linkType}/${quoteId}`;
+      } else {
+        // Nur User Account
+        return `/dashboard/user/${userId}/quotes/${linkType}/${quoteId}`;
+      }
+    } catch (error) {
+      console.error('Error determining smart link:', error);
+      // Fallback auf user dashboard
+      return `/dashboard/user/${userId}/quotes/${linkType}/${quoteId}`;
     }
   }
 
@@ -155,6 +214,13 @@ export class QuoteNotificationService {
         : '';
       const durationText = quoteData.estimatedDuration ? ` (${quoteData.estimatedDuration})` : '';
 
+      // Intelligente Link-Generierung für hybride Accounts
+      const smartLink = await QuoteNotificationService.getSmartLink(
+        customerUid,
+        quoteId,
+        'received'
+      );
+
       const notification: Omit<QuoteNotification, 'id'> = {
         userId: customerUid,
         type: 'quote_response',
@@ -162,7 +228,7 @@ export class QuoteNotificationService {
         message: `${quoteData.providerName} hat Ihnen ein Angebot für "${quoteData.subcategory}" gesendet.${priceText}${durationText}`,
         quoteId,
         quoteTitle: `${quoteData.subcategory} - ${quoteData.providerName}`,
-        link: `/dashboard/company/${customerUid}/quotes/received/${quoteId}`,
+        link: smartLink,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
@@ -237,6 +303,14 @@ export class QuoteNotificationService {
           throw new Error(`Unbekannter Status: ${status}`);
       }
 
+      // Intelligente Link-Generierung basierend auf User-Rolle
+      const linkType = userRole === 'provider' ? 'incoming' : 'received';
+      const smartLink = await QuoteNotificationService.getSmartLink(
+        targetUserId,
+        quoteId,
+        linkType
+      );
+
       const notification: Omit<QuoteNotification, 'id'> = {
         userId: targetUserId,
         type: notificationType,
@@ -244,10 +318,7 @@ export class QuoteNotificationService {
         message,
         quoteId,
         quoteTitle: quoteData.subcategory,
-        link:
-          userRole === 'provider'
-            ? `/dashboard/company/${targetUserId}/quotes/incoming/${quoteId}`
-            : `/dashboard/company/${targetUserId}/quotes/received/${quoteId}`,
+        link: smartLink,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: quoteData,
@@ -272,6 +343,20 @@ export class QuoteNotificationService {
     }
   ): Promise<void> {
     try {
+      // Ensure Firebase is initialized
+      const { admin, db } = await ensureFirebaseInitialized();
+      if (!admin || !db) {
+        console.error('Firebase nicht verfügbar für Quote Notifications');
+        return;
+      }
+
+      // Intelligente Link-Generierung für hybride Accounts
+      const smartLink = await QuoteNotificationService.getSmartLink(
+        customerUid,
+        quoteId,
+        'received'
+      );
+
       const notification: Omit<QuoteNotification, 'id'> = {
         userId: customerUid,
         type: 'quote_payment_required',
@@ -279,7 +364,7 @@ export class QuoteNotificationService {
         message: `Um die Kontaktdaten für "${quoteData.subcategory}" mit ${quoteData.providerName} auszutauschen, ist eine Provision von ${quoteData.provisionAmount.toLocaleString('de-DE')} € erforderlich.`,
         quoteId,
         quoteTitle: `${quoteData.subcategory} - ${quoteData.providerName}`,
-        link: `/dashboard/company/${customerUid}/quotes/received/${quoteId}`,
+        link: smartLink,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
@@ -288,7 +373,6 @@ export class QuoteNotificationService {
           provisionAmount: quoteData.provisionAmount,
         },
       };
-
       await db.collection('notifications').add(notification);
     } catch (error) {
       throw error;
@@ -305,6 +389,25 @@ export class QuoteNotificationService {
     quoteTitle: string
   ): Promise<void> {
     try {
+      // Ensure Firebase is initialized
+      const { admin, db } = await ensureFirebaseInitialized();
+      if (!admin || !db) {
+        console.error('Firebase nicht verfügbar für Quote Notifications');
+        return;
+      }
+
+      // Intelligente Link-Generierung für hybride Accounts
+      const providerLink = await QuoteNotificationService.getSmartLink(
+        providerUid,
+        quoteId,
+        'incoming'
+      );
+      const customerLink = await QuoteNotificationService.getSmartLink(
+        customerUid,
+        quoteId,
+        'received'
+      );
+
       // 1. PROVIDER NOTIFICATION - Kontakte verfügbar
       const providerNotification: Omit<QuoteNotification, 'id'> = {
         userId: providerUid,
@@ -313,7 +416,7 @@ export class QuoteNotificationService {
         message: `Die Zahlung wurde abgeschlossen! Sie können nun die Kontaktdaten für "${quoteTitle}" einsehen.`,
         quoteId,
         quoteTitle: quoteTitle,
-        link: `/dashboard/company/${providerUid}/quotes/incoming/${quoteId}`,
+        link: providerLink,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
@@ -329,7 +432,7 @@ export class QuoteNotificationService {
         message: `Die Zahlung war erfolgreich! Sie können nun die Kontaktdaten für "${quoteTitle}" einsehen.`,
         quoteId,
         quoteTitle: quoteTitle,
-        link: `/dashboard/company/${customerUid}/quotes/received/${quoteId}`,
+        link: customerLink,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
