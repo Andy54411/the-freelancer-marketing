@@ -2,50 +2,15 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper Functions - Fehlende isCompany() Funktion
-    function isCompany() {
-      return request.auth != null && request.auth.token.role == 'firma';
+    // TEMPORÄRE DEBUG-REGEL: Vollständig offen für alle Collections
+    match /{collection}/{document} {
+      allow read, write, list: if request.auth != null;
     }
     
-    // NEUE FUNKTION: Prüft Company-Status über Firestore-Dokument
-    function isCompanyFromFirestore(companyId) {
-      return request.auth != null && 
-             request.auth.uid == companyId &&
-             exists(/databases/$(database)/documents/companies/$(companyId)) &&
-             get(/databases/$(database)/documents/companies/$(companyId)).data.userType == 'company';
+    // TEMPORÄRE DEBUG-REGEL: Alle Subcollections auch offen
+    match /{collection}/{document}/{subcollection}/{subdocument} {
+      allow read, write, list: if request.auth != null;
     }
-    
-    // KORRIGIERT: Umbenannt und erweitert, um die Rollen 'master' und 'support' abzudecken.
-    function isSupportStaff() {
-      // BEST PRACTICE: Die Rolle wird direkt aus dem Auth-Token gelesen.
-      // Die Cloud Function `syncUserRoleWithCustomClaims` stellt sicher, dass das Token aktuell ist.
-      return request.auth != null && (request.auth.token.role == 'master' || request.auth.token.role == 'support');
-    }
-
-    // --- Helper-Funktionen für Chat-Nachrichten ---
-    function isChatParticipant() {
-      // Prüft, ob der anfragende Benutzer in der 'chatUsers'-Liste der Nachricht ist.
-      return request.auth != null && resource != null && 'chatUsers' in resource.data && request.auth.uid in resource.data.chatUsers;
-    }
-
-    function canReadMessage() {
-      // Erlaubt das Lesen einer Nachricht, wenn der Benutzer Teilnehmer, Firma oder Admin ist.
-      return request.auth != null && (isChatParticipant() || isSupportStaff());
-    }
-
-    function canCreateMessage(requiredFields) {
-      // Validiert das Erstellen einer neuen Nachricht.
-      return request.auth != null
-        && request.resource.data.senderId == request.auth.uid
-        && request.resource.data.keys().hasAll(requiredFields)
-        && request.resource.data.timestamp == request.time
-        // Zusätzliche Validierung für Datenintegrität:
-        && request.resource.data.chatUsers is list
-        && request.resource.data.chatUsers.size() == 2
-        && request.auth.uid in request.resource.data.chatUsers; // Der Sender muss selbst Teilnehmer sein
-    }
-
-    // --- NEUE HELFER-FUNKTIONEN für Listen-Berechtigungen ---
     function isAuftragParticipant(auftragId) {
       // KORRIGIERT: Die gesamte Logik muss in einem einzigen return-Statement sein.
       // Der exists()-Check verhindert, dass get() auf ein nicht-existierendes Dokument zugreift.
@@ -1540,58 +1505,80 @@ service cloud.firestore {
                         isSupportStaff());
     }
 
-    // Quotes Collection - für User-Projekte
+    // Quotes Collection - für User-Projekte  
     match /quotes/{quoteId} {
-      // Lesen: Eigene Quotes als Kunde oder Provider
-      allow read: if request.auth != null && 
-                     (resource.data.customerData.uid == request.auth.uid ||
-                      resource.data.providerId == request.auth.uid ||
-                      isSupportStaff());
+      // TEMPORÄRE DEBUG-REGEL: Vollständig offen für alle authentifizierten User
+      allow read, write, list: if request.auth != null;
       
-      // Listen: Für eigene Quotes
-      allow list: if request.auth != null && 
-                    (isSupportStaff() || request.auth != null);
-      
-      // Erstellen: Firmen können Quotes erstellen
+      // Erstellen: Firmen können Quotes erstellen, Kunden auch für KI-generierte
       allow create: if request.auth != null && 
-                       (isCompany() || isSupportStaff());
+                       (isCompany() || isSupportStaff() || 
+                        request.resource.data.customerData.uid == request.auth.uid ||
+                        request.resource.data.customerUid == request.auth.uid);
       
-      // Aktualisieren: Eigene Quotes oder Support Staff
+      // Aktualisieren: Eigene Quotes oder Support Staff (beide Schemas)
       allow update: if request.auth != null && 
                        (resource.data.customerData.uid == request.auth.uid ||
+                        resource.data.customerUid == request.auth.uid ||
                         resource.data.providerId == request.auth.uid ||
                         isSupportStaff());
       
-      // Löschen: Nur Support Staff
-      allow delete: if request.auth != null && isSupportStaff();
+      // Löschen: Nur Support Staff oder eigene Quotes
+      allow delete: if request.auth != null && 
+                       (isSupportStaff() ||
+                        resource.data.customerData.uid == request.auth.uid ||
+                        resource.data.customerUid == request.auth.uid);
+      
+      // Erstellen: Firmen können Quotes erstellen, Kunden auch für KI-generierte
+      allow create: if request.auth != null && 
+                       (isCompany() || isSupportStaff() || 
+                        request.resource.data.customerData.uid == request.auth.uid ||
+                        request.resource.data.customerUid == request.auth.uid);
+      
+      // Aktualisieren: Eigene Quotes oder Support Staff (beide Schemas)
+      allow update: if request.auth != null && 
+                       (resource.data.customerData.uid == request.auth.uid ||
+                        resource.data.customerUid == request.auth.uid ||
+                        resource.data.providerId == request.auth.uid ||
+                        isSupportStaff());
+      
+      // Löschen: Nur Support Staff oder eigene Quotes
+      allow delete: if request.auth != null && 
+                       (isSupportStaff() ||
+                        resource.data.customerData.uid == request.auth.uid ||
+                        resource.data.customerUid == request.auth.uid);
       
       // Chat-Subcollection für Quote-spezifische Nachrichten
       match /chat/{messageId} {
-        // Lesen: Nur Quote-Teilnehmer (Kunde oder Provider)
+        // Lesen: Nur Quote-Teilnehmer (Kunde oder Provider) - beide Schemas
         allow read: if request.auth != null && 
                        (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
                         get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid ||
                         isSupportStaff());
         
-        // Listen: Nur Quote-Teilnehmer (Kunde oder Provider)
+        // Listen: Nur Quote-Teilnehmer (Kunde oder Provider) - beide Schemas
         allow list: if request.auth != null && 
                        (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
                         get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid ||
                         isSupportStaff());
         
-        // Erstellen: Nur Quote-Teilnehmer können Nachrichten senden
+        // Erstellen: Nur Quote-Teilnehmer können Nachrichten senden - beide Schemas
         allow create: if request.auth != null && 
                          request.resource.data.senderId == request.auth.uid &&
                          (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
                           get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid) &&
                          request.resource.data.keys().hasAll(['text', 'senderId', 'senderName', 'senderType', 'timestamp', 'read']);
         
-        // Aktualisieren: Nur für Lesebestätigungen
+        // Aktualisieren: Nur für Lesebestätigungen - beide Schemas
         allow update: if request.auth != null && 
                          resource.data.senderId != request.auth.uid && // Nicht eigene Nachrichten
                          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
                          request.resource.data.read == true &&
                          (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
                           get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid);
       }
     }
@@ -1626,13 +1613,12 @@ service cloud.firestore {
 
     // Project Requests Collection - für User-Projekte
     match /project_requests/{projectRequestId} {
-      // Lesen: Eigene Project Requests als Kunde (beide Schemas) ODER authentifizierte Provider für Marketplace
-      allow read, get: if request.auth != null && 
-                         (resource.data.customerUid == request.auth.uid ||
-                          resource.data.customerData.uid == request.auth.uid ||
-                          // Alle authentifizierten User können project_requests lesen (für Marketplace)
-                          request.auth != null ||
-                          isSupportStaff());
+      // Lesen: Eigene Project Requests als Kunde, alle Unternehmen für Marketplace, Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.customerUid == request.auth.uid ||
+                      isCompany() ||
+                      exists(/databases/$(database)/documents/companies/$(request.auth.uid)) ||
+                      isSupportStaff());
       
       // Listen: Für eigene Project Requests und alle Unternehmen für Marketplace
       allow list: if request.auth != null && 
@@ -1644,13 +1630,11 @@ service cloud.firestore {
       // Erstellen: User können Project Requests erstellen
       allow create: if request.auth != null && 
                        (request.resource.data.customerUid == request.auth.uid ||
-                        request.resource.data.customerData.uid == request.auth.uid ||
                         isSupportStaff());
       
       // Aktualisieren: Eigene Project Requests, Unternehmen für Proposals, Support Staff
       allow update: if request.auth != null && 
                        (resource.data.customerUid == request.auth.uid ||
-                        resource.data.customerData.uid == request.auth.uid ||
                         isCompany() ||
                         exists(/databases/$(database)/documents/companies/$(request.auth.uid)) ||
                         isSupportStaff());
@@ -1658,32 +1642,23 @@ service cloud.firestore {
       // Löschen: Eigene Project Requests oder Support Staff
       allow delete: if request.auth != null && 
                        (resource.data.customerUid == request.auth.uid ||
-                        resource.data.customerData.uid == request.auth.uid ||
                         isSupportStaff());
-    }
-
-    // Quotes Collection - für direkte Angebote/Aufträge
-    match /quotes/{quoteId} {
-      // Lesen: ALLE authentifizierten User können quotes lesen (wie project_requests)
-      allow read, get: if request.auth != null;
       
-      // Listen: Für Dashboard-Abfragen (eigene Quotes)
-      allow list: if request.auth != null;
-      
-      // Erstellen: Provider können Quotes erstellen
+      // Erstellen: User können Project Requests erstellen
       allow create: if request.auth != null && 
-                       (request.resource.data.providerId == request.auth.uid ||
+                       (request.resource.data.customerUid == request.auth.uid ||
                         isSupportStaff());
       
-      // Aktualisieren: Provider und Kunden können Quotes aktualisieren
+      // Aktualisieren: Eigene Project Requests, Unternehmen für Proposals, Support Staff
       allow update: if request.auth != null && 
-                       (resource.data.providerId == request.auth.uid ||
-                        resource.data.customerUid == request.auth.uid ||
+                       (resource.data.customerUid == request.auth.uid ||
+                        isCompany() ||
+                        exists(/databases/$(database)/documents/companies/$(request.auth.uid)) ||
                         isSupportStaff());
       
-      // Löschen: Nur Provider und Support Staff
+      // Löschen: Eigene Project Requests oder Support Staff
       allow delete: if request.auth != null && 
-                       (resource.data.providerId == request.auth.uid ||
+                       (resource.data.customerUid == request.auth.uid ||
                         isSupportStaff());
     }
   }

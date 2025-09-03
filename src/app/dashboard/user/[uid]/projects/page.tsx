@@ -313,53 +313,66 @@ const ProjectsPage: React.FC = () => {
       const unsubscribeQuotes2 = onSnapshot(
         quotesQuery2,
         snapshot => {
-          // Nur verarbeiten wenn erste Query keine Ergebnisse hatte
-          if (quotesLoaded === 0) {
-            const quoteProjects: Project[] = snapshot.docs.map(doc => {
-              const data = doc.data();
-
-              return {
-                id: doc.id,
-                title: data.title || data.projectTitle || 'Unbenanntes Projekt',
-                description: data.description || data.projectDescription || '',
-                status: 'active',
-                priority: 'medium',
-                category: data.category || data.projectCategory || '',
-                estimatedBudget: data.totalAmount || data.estimatedBudget || 0,
-                timeline: data.timeline || '',
-                createdAt: data.createdAt?.toDate
-                  ? data.createdAt.toDate()
-                  : new Date(data.createdAt || Date.now()),
-                updatedAt: data.updatedAt?.toDate
-                  ? data.updatedAt.toDate()
-                  : new Date(data.updatedAt || data.createdAt || Date.now()),
-                customerUid: data.customerUid || uid,
-                userUid: data.customerUid,
-                proposalsCount: 0,
-                viewCount: 0,
-                isPartOfBundle: false,
-                selectedProviders: data.selectedProviders || [],
-                hasSelectedProviders: Boolean(data.selectedProviders?.length),
-                isDirectAssignment: true,
-                isPublic: false,
-              };
+          console.log('💰 QUOTES (customerUid) loaded:', snapshot.docs.length, 'documents');
+          snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            console.log('📄 Quote document:', {
+              id: doc.id,
+              title: data.title,
+              customerUid: data.customerUid,
+              customerData: data.customerData,
+              requestAuthUid: uid,
             });
+          });
 
-            // Update für alte Schema nur wenn nötig
-            if (quoteProjects.length > 0) {
-              allProjects = allProjects.filter(p => !p.isDirectAssignment);
-              allProjects = [...allProjects, ...quoteProjects];
-            }
+          const quoteProjects: Project[] = snapshot.docs.map(doc => {
+            const data = doc.data();
+
+            return {
+              id: doc.id,
+              title: data.title || data.projectTitle || 'Unbenanntes Projekt',
+              description: data.description || data.projectDescription || '',
+              status: 'active',
+              priority: 'medium',
+              category: data.category || data.projectCategory || '',
+              estimatedBudget: data.totalAmount || data.estimatedBudget || 0,
+              timeline: data.timeline || '',
+              createdAt: data.createdAt?.toDate
+                ? data.createdAt.toDate()
+                : new Date(data.createdAt || Date.now()),
+              updatedAt: data.updatedAt?.toDate
+                ? data.updatedAt.toDate()
+                : new Date(data.updatedAt || data.createdAt || Date.now()),
+              customerUid: data.customerUid || uid,
+              userUid: data.customerUid,
+              proposalsCount: 0,
+              viewCount: 0,
+              isPartOfBundle: false,
+              selectedProviders: data.selectedProviders || [],
+              hasSelectedProviders: Boolean(data.selectedProviders?.length),
+              isDirectAssignment: true,
+              isPublic: false,
+            };
+          });
+
+          // Update für alte Schema - IMMER verarbeiten wenn Dokumente vorhanden sind
+          if (quoteProjects.length > 0) {
+            allProjects = allProjects.filter(p => !p.isDirectAssignment);
+            allProjects = [...allProjects, ...quoteProjects];
           }
+
           processQuotesData();
         },
         error => {
-          console.error('Quotes (old schema) loading error:', error);
+          console.error('💰 QUOTES (customerUid) error:', error);
+          console.log('🔍 Error details:', {
+            code: error.code,
+            message: error.message,
+            currentUid: uid,
+          });
           processQuotesData();
         }
-      );
-
-      // Cleanup subscriptions on unmount
+      ); // Cleanup subscriptions on unmount
       return () => {
         unsubscribeProjectRequests();
         unsubscribeQuotes1();

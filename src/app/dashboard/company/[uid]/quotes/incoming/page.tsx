@@ -109,13 +109,11 @@ export default function IncomingQuotesPage() {
 
         setQuotes(validQuotes);
       } else {
-
         const errorText = await response.text();
 
         setQuotes([]);
       }
     } catch (error) {
-
       setQuotes([]);
     } finally {
       setLoading(false);
@@ -183,7 +181,6 @@ export default function IncomingQuotesPage() {
         minute: '2-digit',
       }).format(dateObj);
     } catch (error) {
-
       return 'Unbekannt';
     }
   };
@@ -202,7 +199,12 @@ export default function IncomingQuotesPage() {
   };
 
   // Status Badge Component
-  const getStatusBadge = (status: string, hasResponse?: boolean, paymentStatus?: string, contactExchange?: any) => {
+  const getStatusBadge = (
+    status: string,
+    hasResponse?: boolean,
+    paymentStatus?: string,
+    contactExchange?: any
+  ) => {
     // Priority 1: Check if contacts have been exchanged (payment completed)
     if (status === 'contacts_exchanged' || contactExchange?.contactsExchanged) {
       return (
@@ -470,22 +472,22 @@ export default function IncomingQuotesPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">
                       Projekt
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                       Kunde
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                       Budget
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8 hidden md:table-cell">
                       Eingegangen
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                       Aktionen
                     </th>
                   </tr>
@@ -493,47 +495,60 @@ export default function IncomingQuotesPage() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredQuotes.map(quote => (
                     <tr key={quote.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{quote.title}</div>
-                          <div className="text-sm text-gray-500">
+                      <td className="px-3 py-4">
+                        <div className="max-w-xs">
+                          <div
+                            className="text-sm font-medium text-gray-900 truncate"
+                            title={quote.title}
+                          >
+                            {quote.title}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate">
                             {quote.serviceCategory} • {quote.serviceSubcategory}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-4">
                         <div className="flex items-center">
-                          <div className="flex-shrink-0 h-8 w-8">
+                          <div className="flex-shrink-0 h-6 w-6">
                             {quote.customer.avatar ? (
                               <img
-                                className="h-8 w-8 rounded-full"
+                                className="h-6 w-6 rounded-full"
                                 src={quote.customer.avatar}
                                 alt=""
                               />
                             ) : (
-                              <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                              <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center">
                                 {quote.customer.type === 'company' ? (
-                                  <FiBuilding className="h-4 w-4 text-gray-600" />
+                                  <FiBuilding className="h-3 w-3 text-gray-600" />
                                 ) : (
-                                  <FiUser className="h-4 w-4 text-gray-600" />
+                                  <FiUser className="h-3 w-3 text-gray-600" />
                                 )}
                               </div>
                             )}
                           </div>
-                          <div className="ml-3">
-                            <div className="text-sm font-medium text-gray-900">
+                          <div className="ml-2 min-w-0">
+                            <div
+                              className="text-sm font-medium text-gray-900 truncate max-w-24"
+                              title={quote.customer.name}
+                            >
                               {quote.customer.name}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-xs text-gray-500">
                               {quote.customer.type === 'company' ? 'Unternehmen' : 'Privatkunde'}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatBudget(quote.budgetRange || quote.budget)}
+                      <td className="px-3 py-4 text-sm text-gray-500">
+                        <div
+                          className="max-w-20 truncate"
+                          title={formatBudget(quote.budgetRange || quote.budget)}
+                        >
+                          {formatBudget(quote.budgetRange || quote.budget)}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-4">
                         {getStatusBadge(
                           getActualStatus(quote),
                           quote.hasResponse,
@@ -541,17 +556,17 @@ export default function IncomingQuotesPage() {
                           (quote as any).contactExchange
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-4 text-sm text-gray-500 hidden md:table-cell">
                         {formatDate(quote.createdAt)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-3 py-4 text-right text-sm font-medium">
                         <button
                           onClick={() =>
                             router.push(`/dashboard/company/${uid}/quotes/incoming/${quote.id}`)
                           }
-                          className="text-[#14ad9f] hover:text-[#129488] font-medium"
+                          className="text-[#14ad9f] hover:text-[#129488] font-medium text-xs"
                         >
-                          Details ansehen
+                          Details
                         </button>
                       </td>
                     </tr>

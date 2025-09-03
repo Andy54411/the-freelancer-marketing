@@ -1,9 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper Functions - Fehlende isCompany() Funktion
+
+    // 🔁 Rollen anhand des user_type im Firestore-Dokument des Benutzers prüfen
     function isCompany() {
+      // BEST PRACTICE: Die Rolle wird direkt aus dem Auth-Token gelesen (via Custom Claims).
+      // Dies ist performanter und vermeidet fehleranfällige Lesezugriffe innerhalb von Regeln.
       return request.auth != null && request.auth.token.role == 'firma';
     }
     
@@ -1626,13 +1628,12 @@ service cloud.firestore {
 
     // Project Requests Collection - für User-Projekte
     match /project_requests/{projectRequestId} {
-      // Lesen: Eigene Project Requests als Kunde (beide Schemas) ODER authentifizierte Provider für Marketplace
-      allow read, get: if request.auth != null && 
-                         (resource.data.customerUid == request.auth.uid ||
-                          resource.data.customerData.uid == request.auth.uid ||
-                          // Alle authentifizierten User können project_requests lesen (für Marketplace)
-                          request.auth != null ||
-                          isSupportStaff());
+      // Lesen: Eigene Project Requests als Kunde, alle Unternehmen für Marketplace, Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.customerUid == request.auth.uid ||
+                      isCompany() ||
+                      exists(/databases/$(database)/documents/companies/$(request.auth.uid)) ||
+                      isSupportStaff());
       
       // Listen: Für eigene Project Requests und alle Unternehmen für Marketplace
       allow list: if request.auth != null && 
@@ -1644,13 +1645,11 @@ service cloud.firestore {
       // Erstellen: User können Project Requests erstellen
       allow create: if request.auth != null && 
                        (request.resource.data.customerUid == request.auth.uid ||
-                        request.resource.data.customerData.uid == request.auth.uid ||
                         isSupportStaff());
       
       // Aktualisieren: Eigene Project Requests, Unternehmen für Proposals, Support Staff
       allow update: if request.auth != null && 
                        (resource.data.customerUid == request.auth.uid ||
-                        resource.data.customerData.uid == request.auth.uid ||
                         isCompany() ||
                         exists(/databases/$(database)/documents/companies/$(request.auth.uid)) ||
                         isSupportStaff());
@@ -1658,32 +1657,6 @@ service cloud.firestore {
       // Löschen: Eigene Project Requests oder Support Staff
       allow delete: if request.auth != null && 
                        (resource.data.customerUid == request.auth.uid ||
-                        resource.data.customerData.uid == request.auth.uid ||
-                        isSupportStaff());
-    }
-
-    // Quotes Collection - für direkte Angebote/Aufträge
-    match /quotes/{quoteId} {
-      // Lesen: ALLE authentifizierten User können quotes lesen (wie project_requests)
-      allow read, get: if request.auth != null;
-      
-      // Listen: Für Dashboard-Abfragen (eigene Quotes)
-      allow list: if request.auth != null;
-      
-      // Erstellen: Provider können Quotes erstellen
-      allow create: if request.auth != null && 
-                       (request.resource.data.providerId == request.auth.uid ||
-                        isSupportStaff());
-      
-      // Aktualisieren: Provider und Kunden können Quotes aktualisieren
-      allow update: if request.auth != null && 
-                       (resource.data.providerId == request.auth.uid ||
-                        resource.data.customerUid == request.auth.uid ||
-                        isSupportStaff());
-      
-      // Löschen: Nur Provider und Support Staff
-      allow delete: if request.auth != null && 
-                       (resource.data.providerId == request.auth.uid ||
                         isSupportStaff());
     }
   }

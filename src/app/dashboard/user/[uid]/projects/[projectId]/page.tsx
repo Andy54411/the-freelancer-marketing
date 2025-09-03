@@ -161,8 +161,6 @@ const ProjectDetailPage: React.FC = () => {
 
         const data = projectDocSnap.data();
 
-        // Debug: Logge die rohen Daten um zu verstehen was geladen wird
-
         // Prüfe ob der User der Eigentümer ist (berücksichtige beide Schemas)
         const customerUid = data.customerData?.uid || data.customerUid;
         if (customerUid !== uid) {
