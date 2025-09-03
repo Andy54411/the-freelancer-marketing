@@ -131,11 +131,14 @@ export async function POST(
     const finalCompanyStripeAccountId = companyData?.stripeAccountId;
 
     if (!finalCompanyStripeAccountId) {
+      console.error('❌ No Stripe Account ID for company:', providerCompanyUid);
       return NextResponse.json(
         { error: 'Stripe Account ID für Unternehmen nicht gefunden' },
         { status: 400 }
       );
     }
+
+    console.log('✅ Using Stripe Account ID:', finalCompanyStripeAccountId);
 
     // Final validation with database-fetched Stripe Account ID
     if (!proposalId || !amount || !finalCompanyStripeAccountId) {
@@ -169,23 +172,23 @@ export async function POST(
       console.log('✅ Using existing Stripe customer:', stripeCustomerId);
     }
 
-    // Create PaymentIntent with application fee (NO AUTOMATIC TRANSFERS)
+    // Create PaymentIntent with application fee and transfer data for Stripe Connect
     console.log(
       '🔄 Creating PaymentIntent with amount:',
       totalAmountCents,
       'fee:',
-      platformFeeCents
+      platformFeeCents,
+      'destination:',
+      finalCompanyStripeAccountId
     );
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmountCents,
       currency: currency.toLowerCase(),
       customer: stripeCustomerId,
       application_fee_amount: platformFeeCents,
-      // ❌ ENTFERNT: transfer_data für automatische Transfers
-      // transfer_data: {
-      //   destination: finalCompanyStripeAccountId,
-      // },
-      // ✅ GELD BLEIBT AUF PLATFORM für kontrollierte Auszahlungen
+      transfer_data: {
+        destination: finalCompanyStripeAccountId,
+      },
       metadata: {
         type: 'quote_payment',
         quote_id: quoteId,
@@ -230,9 +233,11 @@ export async function POST(
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       paymentDetails: {
-        amount: totalAmountCents,
-        platformFee: platformFeeCents,
-        companyReceives: companyReceivesCents,
+        amount: totalAmountCents / 100, // Konvertiere zu Euro für Frontend
+        totalAmount: totalAmountCents / 100, // Totalamount für Frontend-Kompatibilität
+        platformFee: platformFeeCents / 100, // Konvertiere zu Euro
+        companyReceives: companyReceivesCents / 100, // Konvertiere zu Euro
+        description: `Zahlung für: ${quoteTitle || 'Angebot'} - ${companyName || 'Unbekannter Anbieter'}`,
       },
     });
   } catch (error) {
@@ -263,10 +268,13 @@ export async function PATCH(
 ) {
   const { uid, quoteId } = await params;
 
+  console.log('🔧 PATCH Payment Route called:', { uid, quoteId });
+
   try {
     // Auth-Check
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ PATCH: No auth header');
       return NextResponse.json({ error: 'Authentifizierung erforderlich' }, { status: 401 });
     }
 
@@ -274,16 +282,23 @@ export async function PATCH(
     let decodedToken;
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
+      console.log('✅ PATCH: Auth token verified for:', decodedToken.uid);
     } catch (authError) {
+      console.error('❌ PATCH: Auth error:', authError);
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
     // Check if user is authorized
     if (decodedToken.uid !== uid) {
+      console.error('❌ PATCH: User not authorized:', {
+        tokenUid: decodedToken.uid,
+        requestUid: uid,
+      });
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
     const body = await request.json();
+    console.log('📝 PATCH: Request body:', body);
 
     const { paymentIntentId, proposalId } = body;
 
@@ -310,14 +325,25 @@ export async function PATCH(
       );
     }
 
-    // Get the project request
-    const projectRef = db.collection('project_requests').doc(quoteId);
-    const projectDoc = await projectRef.get();
+    // Get the quote - try both collections
+    console.log('🔍 PATCH: Looking for quote in collections...');
+    let projectRef = db.collection('quotes').doc(quoteId);
+    let projectDoc = await projectRef.get();
+    let collectionUsed = 'quotes';
 
     if (!projectDoc.exists) {
-      return NextResponse.json({ error: 'Projekt nicht gefunden' }, { status: 404 });
+      console.log('📝 PATCH: Quote not found in quotes collection, trying project_requests...');
+      projectRef = db.collection('project_requests').doc(quoteId);
+      projectDoc = await projectRef.get();
+      collectionUsed = 'project_requests';
     }
 
+    if (!projectDoc.exists) {
+      console.error('❌ PATCH: Quote not found in either collection:', quoteId);
+      return NextResponse.json({ error: 'Quote nicht gefunden' }, { status: 404 });
+    }
+
+    console.log('✅ PATCH: Quote found in collection:', collectionUsed);
     const projectData = projectDoc.data();
 
     // Check if user owns this project

@@ -19,9 +19,11 @@ function getStripeInstance() {
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { uid: string; quoteId: string } }
+  { params }: { params: Promise<{ uid: string; quoteId: string }> }
 ) {
   try {
+    const { uid: companyId, quoteId } = await params;
+
     // Dynamically import Firebase setup to avoid build-time initialization
     const { db } = await import('@/firebase/server');
 
@@ -37,7 +39,6 @@ export async function POST(
 
     const body = await request.json();
     const { action } = body;
-    const { uid: companyId, quoteId } = params;
 
     // Lade Quote-Details
     const quoteRef = db.collection('quotes').doc(quoteId);

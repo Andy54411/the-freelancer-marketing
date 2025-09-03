@@ -1,12 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  useStripe, 
-  useElements, 
-  PaymentElement,
-  AddressElement 
-} from '@stripe/react-stripe-js';
+import { useStripe, useElements, PaymentElement, AddressElement } from '@stripe/react-stripe-js';
 import { FiLoader } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -83,7 +78,7 @@ export default function CheckoutForm({
 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
         console.log('✅ Payment succeeded:', paymentIntent.id);
-        
+
         // Bestätige die Zahlung in der Backend-API
         try {
           if (!firebaseUser) {
@@ -91,7 +86,7 @@ export default function CheckoutForm({
           }
 
           const token = await firebaseUser.getIdToken();
-          
+
           const confirmResponse = await fetch(
             `/api/company/${quoteDetails.userUid}/quotes/received/${quoteDetails.quoteId}/payment`,
             {
@@ -118,7 +113,7 @@ export default function CheckoutForm({
           console.error('❌ Backend confirmation error:', backendError);
           // Fahre trotzdem fort, da die Zahlung erfolgreich war
         }
-        
+
         onSuccess(paymentIntent.id);
       }
     } catch (error: any) {
@@ -139,23 +134,27 @@ export default function CheckoutForm({
         <div className="space-y-1 text-sm text-gray-600">
           <div className="flex justify-between">
             <span>Angebotssumme:</span>
-            <span className="font-medium">{paymentDetails.totalAmount.toLocaleString('de-DE')} €</span>
+            <span className="font-medium">
+              {(paymentDetails?.totalAmount || 0).toLocaleString('de-DE')} €
+            </span>
           </div>
           <div className="border-t pt-1 mt-2">
             <div className="flex justify-between font-semibold">
               <span>Zu zahlen:</span>
-              <span className="text-[#14ad9f]">{paymentDetails.amount.toLocaleString('de-DE')} €</span>
+              <span className="text-[#14ad9f]">
+                {(paymentDetails?.amount || 0).toLocaleString('de-DE')} €
+              </span>
             </div>
           </div>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          {paymentDetails.description}
+          {paymentDetails?.description || 'Zahlung wird verarbeitet...'}
         </p>
       </div>
 
       {/* Payment Element */}
       <div className="space-y-4">
-        <PaymentElement 
+        <PaymentElement
           options={{
             layout: 'tabs',
           }}
