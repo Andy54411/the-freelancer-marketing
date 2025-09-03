@@ -73,10 +73,12 @@ export async function POST(
     }
 
     // Get the quote to verify access and get details
+    console.log('🔍 Getting quote details for:', quoteId);
     const projectRef = db.collection('quotes').doc(quoteId);
     const projectDoc = await projectRef.get();
 
     if (!projectDoc.exists) {
+      console.error('❌ Quote not found:', quoteId);
       return NextResponse.json({ error: 'Quote nicht gefunden' }, { status: 404 });
     }
 
@@ -84,36 +86,48 @@ export async function POST(
 
     // Check if user owns this quote
     if (projectData?.customerUid !== uid) {
+      console.error('❌ User does not own quote:', { customerUid: projectData?.customerUid, uid });
       return NextResponse.json({ error: 'Keine Berechtigung für diese Quote' }, { status: 403 });
     }
 
     // Find the proposal using subcollection
+    console.log('🔍 Getting proposal details for:', proposalId);
     const proposal = await ProposalSubcollectionService.getProposal(quoteId, proposalId);
 
     if (!proposal) {
+      console.error('❌ Proposal not found:', proposalId);
       return NextResponse.json({ error: 'Angebot nicht gefunden' }, { status: 404 });
     }
 
     // Check if proposal is still pending
     if (proposal.status !== 'pending') {
+      console.error('❌ Proposal not pending:', proposal.status);
       return NextResponse.json({ error: 'Angebot wurde bereits bearbeitet' }, { status: 400 });
     }
 
     // Get the provider's companyUid from the proposal
     const providerCompanyUid = proposal.companyUid;
+    console.log('🔍 Provider companyUid:', providerCompanyUid);
     if (!providerCompanyUid) {
+      console.error('❌ No companyUid in proposal');
       return NextResponse.json({ error: 'Anbieter-ID nicht im Angebot gefunden' }, { status: 400 });
     }
 
     // Get company's Stripe Account ID from companies collection using the companyUid
+    console.log('🔍 Getting company data for:', providerCompanyUid);
     const companyRef = db.collection('companies').doc(providerCompanyUid);
     const companyDoc = await companyRef.get();
 
     if (!companyDoc.exists) {
+      console.error('❌ Company not found:', providerCompanyUid);
       return NextResponse.json({ error: 'Unternehmenskonto nicht gefunden' }, { status: 404 });
     }
 
     const companyData = companyDoc.data();
+    console.log('✅ Company data found:', {
+      id: providerCompanyUid,
+      hasStripeAccount: !!companyData?.stripeAccountId,
+    });
     const finalCompanyStripeAccountId = companyData?.stripeAccountId;
 
     if (!finalCompanyStripeAccountId) {
@@ -138,8 +152,10 @@ export async function POST(
     const companyReceivesCents = totalAmountCents - platformFeeCents;
 
     // Get or create Stripe customer
+    console.log('🔍 Getting/creating Stripe customer for:', customerFirebaseId);
     let stripeCustomerId = customerStripeId;
     if (!stripeCustomerId) {
+      console.log('🔄 Creating new Stripe customer');
       const customer = await stripe.customers.create({
         email: decodedToken.email || '',
         name: decodedToken.name || '',
@@ -148,9 +164,18 @@ export async function POST(
         },
       });
       stripeCustomerId = customer.id;
+      console.log('✅ Created Stripe customer:', stripeCustomerId);
+    } else {
+      console.log('✅ Using existing Stripe customer:', stripeCustomerId);
     }
 
     // Create PaymentIntent with application fee (NO AUTOMATIC TRANSFERS)
+    console.log(
+      '🔄 Creating PaymentIntent with amount:',
+      totalAmountCents,
+      'fee:',
+      platformFeeCents
+    );
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmountCents,
       currency: currency.toLowerCase(),
@@ -211,7 +236,20 @@ export async function POST(
       },
     });
   } catch (error) {
-    return NextResponse.json({ error: 'Fehler beim Erstellen der Quote-Zahlung' }, { status: 500 });
+    console.error('❌ QUOTE PAYMENT ERROR:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      stack: error.stack,
+      uid,
+      quoteId,
+    });
+    return NextResponse.json(
+      {
+        error: 'Fehler beim Erstellen der Quote-Zahlung',
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
