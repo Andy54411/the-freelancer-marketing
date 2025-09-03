@@ -36,7 +36,7 @@ interface ProjectRequest {
   timeline: string;
   location: string;
   isRemote: boolean;
-  urgency: 'low' | 'medium' | 'high';
+  urgency: 'low' | 'medium' | 'high' | 'urgent' | 'normal';
   status: string;
   createdAt: { toDate?: () => Date; seconds?: number; nanoseconds?: number } | Date;
   customerUid: string;
@@ -174,7 +174,7 @@ export default function CompanyMarketplacePage() {
                     'Standort verfügbar'
                   : '',
             isRemote: data.isRemote || false,
-            urgency: data.urgency || 'medium',
+            urgency: data.urgency || data.priority || 'medium', // Behalte ursprünglichen Wert
             status: data.status || 'open',
             createdAt: data.createdAt,
             customerUid: data.customerUid || '',
@@ -222,19 +222,44 @@ export default function CompanyMarketplacePage() {
     const matchesSearch =
       project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.category.toLowerCase().includes(searchTerm.toLowerCase());
+      project.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.subcategory.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCategory = !selectedCategory || project.category === selectedCategory;
-    const matchesUrgency = !selectedUrgency || project.urgency === selectedUrgency;
 
-    return matchesSearch && matchesCategory && matchesUrgency;
+    // Debug: Zeige Urgency-Werte
+    console.log(
+      `🔍 Project "${project.title}": urgency="${project.urgency}", selectedUrgency="${selectedUrgency}"`
+    );
+
+    // Flexibles Urgency-Matching (mit Type-Casting für Legacy-Werte)
+    const matchesUrgency =
+      !selectedUrgency ||
+      (() => {
+        const projectUrgency = project.urgency as string;
+        if (selectedUrgency === 'high')
+          return projectUrgency === 'high' || projectUrgency === 'urgent';
+        if (selectedUrgency === 'medium')
+          return projectUrgency === 'medium' || projectUrgency === 'normal';
+        if (selectedUrgency === 'low') return projectUrgency === 'low';
+        return projectUrgency === selectedUrgency;
+      })();
+
+    const matches = matchesSearch && matchesCategory && matchesUrgency;
+    console.log(
+      `✅ Project "${project.title}" matches: ${matches} (search: ${matchesSearch}, category: ${matchesCategory}, urgency: ${matchesUrgency})`
+    );
+
+    return matches;
   });
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case 'high':
+      case 'urgent':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'medium':
+      case 'normal':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'low':
         return 'bg-green-100 text-green-800 border-green-200';
@@ -246,8 +271,10 @@ export default function CompanyMarketplacePage() {
   const getUrgencyText = (urgency: string) => {
     switch (urgency) {
       case 'high':
+      case 'urgent':
         return 'Dringend';
       case 'medium':
+      case 'normal':
         return 'Normal';
       case 'low':
         return 'Niedrig';
@@ -298,6 +325,15 @@ export default function CompanyMarketplacePage() {
   }
 
   const categories = [...new Set(projects.map(p => p.category).filter(Boolean))];
+
+  // Statistiken basierend auf gefilterten Projekten
+  const urgentProjects = filteredProjects.filter(p => p.urgency === 'high');
+  const todayProjects = filteredProjects.filter(p => {
+    const createdDate = getDateFromFirestore(p.createdAt);
+    const today = new Date();
+    return createdDate.toDateString() === today.toDateString();
+  });
+  const totalCategories = [...new Set(filteredProjects.map(p => p.category))].length;
 
   return (
     <div className="p-6 space-y-6">
@@ -398,9 +434,7 @@ export default function CompanyMarketplacePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Dringende Projekte</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {filteredProjects.filter(p => p.urgency === 'high').length}
-                </p>
+                <p className="text-2xl font-bold text-red-600">{urgentProjects.length}</p>
               </div>
               <AlertCircle className="h-8 w-8 text-red-400" />
             </div>
@@ -412,15 +446,7 @@ export default function CompanyMarketplacePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Neue (heute)</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {
-                    filteredProjects.filter(p => {
-                      const projectDate = getDateFromFirestore(p.createdAt);
-                      const today = new Date();
-                      return projectDate.toDateString() === today.toDateString();
-                    }).length
-                  }
-                </p>
+                <p className="text-2xl font-bold text-blue-600">{todayProjects.length}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-blue-400" />
             </div>
@@ -432,7 +458,7 @@ export default function CompanyMarketplacePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Kategorien</p>
-                <p className="text-2xl font-bold text-green-600">{categories.length}</p>
+                <p className="text-2xl font-bold text-green-600">{totalCategories}</p>
               </div>
               <Filter className="h-8 w-8 text-green-400" />
             </div>

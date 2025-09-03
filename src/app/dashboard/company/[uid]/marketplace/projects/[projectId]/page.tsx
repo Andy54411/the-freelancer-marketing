@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   ArrowLeft,
@@ -50,6 +50,7 @@ interface ProjectRequestDetail {
   maxProposals?: number;
   aiGenerated?: boolean;
   source?: string;
+  viewCount?: number;
 }
 
 interface CompanyProfile {
@@ -130,6 +131,12 @@ export default function ProjectDetailPage() {
           maxProposals: projectData.maxProposals,
           aiGenerated: projectData.aiGenerated,
           source: projectData.source,
+          viewCount: projectData.viewCount || 0,
+        });
+
+        // Erhöhe View-Count nur wenn Projekt erfolgreich geladen wurde
+        await updateDoc(doc(db, 'project_requests', projectId), {
+          viewCount: increment(1),
         });
       } catch (error) {
         console.error('Fehler beim Laden der Projektdetails:', error);
@@ -168,6 +175,36 @@ export default function ProjectDetailPage() {
     loadProjectDetails();
     loadCompanyProfile();
   }, [projectId, uid, router]);
+
+  // Separater useEffect für Realtime-Updates des viewCount
+  useEffect(() => {
+    if (!projectId) return;
+
+    const projectDocRef = doc(db, 'project_requests', projectId);
+    const unsubscribe = onSnapshot(
+      projectDocRef,
+      docSnapshot => {
+        if (docSnapshot.exists()) {
+          const updatedData = docSnapshot.data();
+
+          // Aktualisiere nur viewCount in Echtzeit
+          setProject(prevProject => {
+            if (!prevProject) return prevProject;
+
+            return {
+              ...prevProject,
+              viewCount: updatedData.viewCount || 0,
+            };
+          });
+        }
+      },
+      error => {
+        console.error('Fehler beim Realtime-Update:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [projectId]);
 
   const formatBudget = (
     budgetAmount?: number,
@@ -459,6 +496,11 @@ export default function ProjectDetailPage() {
                   <span className="font-medium">{project.projectType}</span>
                 </div>
               )}
+
+              <div className="flex justify-between">
+                <span className="text-gray-600">Aufrufe:</span>
+                <span className="font-medium">{project.viewCount || 0}</span>
+              </div>
 
               {project.maxProposals && (
                 <div className="flex justify-between">

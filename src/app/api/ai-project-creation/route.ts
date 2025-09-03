@@ -49,11 +49,17 @@ export async function POST(request: Request) {
       status: 'active', // Projekt ist sofort aktiv
 
       // Standort (falls verfügbar)
-      location: {
-        type: 'tbd', // To be determined
-        address: null,
-        coordinates: null,
-      },
+      location: projectData.location
+        ? {
+            type: 'user_provided',
+            address: projectData.location,
+            coordinates: null, // Koordinaten könnten später über Geocoding hinzugefügt werden
+          }
+        : {
+            type: 'tbd', // To be determined
+            address: null,
+            coordinates: null,
+          },
 
       // Angebote und Bewerbungen
       proposals: [],
@@ -137,7 +143,7 @@ export async function POST(request: Request) {
           category: '', // Leere category - das System wird sie aus subcategory ableiten
           subcategory: projectData.category, // KI-category ist eigentlich die subcategory
           customerName: 'KI-Generated Project',
-          location: projectData.location || '',
+          location: projectData.location || 'Standort noch zu klären',
           budget: projectData.estimatedBudget
             ? {
                 amount: projectData.estimatedBudget,
