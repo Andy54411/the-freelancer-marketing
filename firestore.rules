@@ -1594,6 +1594,38 @@ service cloud.firestore {
                          (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
                           get(/databases/$(database)/documents/quotes/$(quoteId)).data.providerId == request.auth.uid);
       }
+      
+      // Proposals-Subcollection für Angebote
+      match /proposals/{proposalId} {
+        // Lesen: Kunde kann alle Proposals für sein Projekt lesen, Provider kann nur eigene lesen
+        allow read: if request.auth != null && 
+                       (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.createdBy == request.auth.uid ||
+                        resource.data.companyUid == request.auth.uid ||
+                        resource.data.providerId == request.auth.uid ||
+                        isSupportStaff());
+        
+        // Listen: Kunde kann alle Proposals für sein Projekt auflisten, Provider nur eigene
+        allow list: if request.auth != null && 
+                       (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.createdBy == request.auth.uid ||
+                        isSupportStaff());
+        
+        // Erstellen: Nur Companies können Proposals erstellen
+        allow create: if request.auth != null && 
+                         request.resource.data.companyUid == request.auth.uid &&
+                         request.resource.data.keys().hasAll(['companyUid', 'message', 'totalAmount', 'currency', 'status', 'submittedAt']);
+        
+        // Aktualisieren: Nur Provider kann eigene Proposals aktualisieren, Kunde kann Status ändern
+        allow update: if request.auth != null && 
+                         (resource.data.companyUid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.createdBy == request.auth.uid ||
+                          isSupportStaff());
+      }
     }
 
     // Suppliers (Lieferanten/Ausgaben) Collection
@@ -1685,6 +1717,37 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
                        (resource.data.providerId == request.auth.uid ||
                         isSupportStaff());
+      
+      // Proposals-Subcollection für Angebote (auch hier)
+      match /proposals/{proposalId} {
+        // Lesen: Kunde und Provider können Proposals lesen
+        allow read: if request.auth != null && 
+                       (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.createdBy == request.auth.uid ||
+                        resource.data.companyUid == request.auth.uid ||
+                        resource.data.providerId == request.auth.uid ||
+                        isSupportStaff());
+        
+        // Listen: Kunde kann alle Proposals auflisten
+        allow list: if request.auth != null && 
+                       (get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
+                        get(/databases/$(database)/documents/quotes/$(quoteId)).data.createdBy == request.auth.uid ||
+                        isSupportStaff());
+        
+        // Erstellen: Companies können Proposals erstellen
+        allow create: if request.auth != null && 
+                         request.resource.data.companyUid == request.auth.uid;
+        
+        // Aktualisieren: Provider und Kunde können Proposals aktualisieren
+        allow update: if request.auth != null && 
+                         (resource.data.companyUid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerData.uid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.customerUid == request.auth.uid ||
+                          get(/databases/$(database)/documents/quotes/$(quoteId)).data.createdBy == request.auth.uid ||
+                          isSupportStaff());
+      }
     }
   }
 }

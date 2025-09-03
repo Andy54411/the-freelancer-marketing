@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { db } from '@/firebase/clients';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, getDocs } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -169,26 +169,48 @@ const ProjectDetailPage: React.FC = () => {
           return;
         }
 
-        // Verarbeite Proposals zuerst
+        // Verarbeite Proposals - lade aus Subcollection!
         let proposalsToProcess: any[] = [];
 
-        if (Array.isArray(data.proposals)) {
-          proposalsToProcess = data.proposals;
-        } else if (data.proposals && typeof data.proposals === 'object') {
-          // Falls proposals als Objekt gespeichert sind, konvertiere zu Array
-          proposalsToProcess = Object.values(data.proposals);
+        try {
+          // Lade Proposals aus der Subcollection
+          const proposalsCollectionRef = collection(db, 'quotes', projectId, 'proposals');
+          const proposalsSnapshot = await getDocs(proposalsCollectionRef);
 
-          // Filtere nur echte Proposals (nicht payment_pending Einträge)
-          proposalsToProcess = proposalsToProcess.filter(
-            proposal =>
-              proposal &&
-              typeof proposal === 'object' &&
-              proposal.status !== 'payment_pending' &&
-              !proposal.paymentIntentId &&
-              (proposal.providerId || proposal.companyUid || proposal.providerName)
+          console.log(
+            '🔍 Loading proposals from subcollection:',
+            proposalsSnapshot.size,
+            'documents found'
           );
-        } else {
-          proposalsToProcess = [];
+
+          proposalsToProcess = proposalsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          console.log('📋 Loaded proposals:', proposalsToProcess);
+        } catch (error) {
+          console.error('❌ Error loading proposals from subcollection:', error);
+
+          // Fallback: Versuche aus dem Hauptdokument zu lesen
+          if (Array.isArray(data.proposals)) {
+            proposalsToProcess = data.proposals;
+          } else if (data.proposals && typeof data.proposals === 'object') {
+            // Falls proposals als Objekt gespeichert sind, konvertiere zu Array
+            proposalsToProcess = Object.values(data.proposals);
+
+            // Filtere nur echte Proposals (nicht payment_pending Einträge)
+            proposalsToProcess = proposalsToProcess.filter(
+              proposal =>
+                proposal &&
+                typeof proposal === 'object' &&
+                proposal.status !== 'payment_pending' &&
+                !proposal.paymentIntentId &&
+                (proposal.providerId || proposal.companyUid || proposal.providerName)
+            );
+          } else {
+            proposalsToProcess = [];
+          }
         }
 
         const projectData: ProjectRequest = {
@@ -284,10 +306,29 @@ const ProjectDetailPage: React.FC = () => {
                 };
               }
 
-              // Lade Company-Daten aus der users collection (nach Migration)
-              const companyDocRef = doc(db, 'users', providerId);
-              const companyDoc = await getDoc(companyDocRef);
-              const companyData = companyDoc.exists() ? companyDoc.data() : {};
+              // Lade Company-Daten direkt aus der companies collection (wo die Daten tatsächlich sind!)
+              console.log('🔍 Loading company data for providerId:', providerId);
+
+              let companyData: any = {};
+
+              // DIREKT aus companies collection laden - da sind die Daten!
+              const companiesDocRef = doc(db, 'companies', providerId);
+              const companiesDoc = await getDoc(companiesDocRef);
+
+              if (companiesDoc.exists()) {
+                companyData = companiesDoc.data();
+                console.log('✅ Found company data in companies collection:', companyData);
+                console.log('🖼️ ProfilePictureURL:', companyData.profilePictureURL);
+              } else {
+                console.log('❌ No company data found in companies collection for:', providerId);
+                // Nur als Fallback users collection
+                const companyDocRef = doc(db, 'users', providerId);
+                const companyDoc = await getDoc(companyDocRef);
+                if (companyDoc.exists()) {
+                  companyData = companyDoc.data();
+                  console.log('✅ Fallback: Found data in users collection:', companyData);
+                }
+              }
 
               const enhancedProposal = {
                 id: proposal.id || `${providerId}_${Date.now()}`,
@@ -302,15 +343,28 @@ const ProjectDetailPage: React.FC = () => {
                 providerEmail: companyData.email || proposal.providerEmail || '',
                 providerPhone:
                   companyData.phone || companyData.phoneNumber || proposal.providerPhone || '',
-                providerAvatar:
-                  companyData.profilePictureURL ||
-                  companyData.companyLogo ||
-                  companyData.logoUrl ||
-                  companyData.avatar ||
-                  companyData.profileImage ||
-                  companyData.photoURL ||
-                  proposal.providerAvatar ||
-                  '',
+                providerAvatar: (() => {
+                  const avatar =
+                    companyData.profilePictureURL ||
+                    companyData.companyLogo ||
+                    companyData.logoUrl ||
+                    companyData.avatar ||
+                    companyData.profileImage ||
+                    companyData.photoURL ||
+                    proposal.providerAvatar ||
+                    '';
+                  console.log('🖼️ Avatar for', providerId, ':', {
+                    profilePictureURL: companyData.profilePictureURL,
+                    companyLogo: companyData.companyLogo,
+                    logoUrl: companyData.logoUrl,
+                    avatar: companyData.avatar,
+                    profileImage: companyData.profileImage,
+                    photoURL: companyData.photoURL,
+                    proposalAvatar: proposal.providerAvatar,
+                    finalAvatar: avatar,
+                  });
+                  return avatar;
+                })(),
                 providerRating:
                   companyData.averageRating || companyData.rating || proposal.providerRating || 0,
                 providerReviewCount:

@@ -23,7 +23,7 @@ interface QuoteResponseFormProps {
     title: string;
     description: string;
     budget?: { min: number; max: number; currency: string };
-    budgetRange?: string;
+    budgetRange?: string | { min: number; max: number; currency: string };
     timeline?: string;
     location?: string | { address?: string };
     serviceCategory?: string;
@@ -62,6 +62,10 @@ export default function QuoteResponseForm({
   companyId,
   quoteDetails,
 }: QuoteResponseFormProps) {
+  // Debug: Log quoteDetails beim Laden der Komponente
+  console.log('QuoteResponseForm loaded - quoteDetails:', quoteDetails);
+  console.log('QuoteResponseForm loaded - budget:', quoteDetails?.budget);
+  console.log('QuoteResponseForm loaded - budgetRange:', quoteDetails?.budgetRange);
   const [formData, setFormData] = useState<QuoteResponseData>({
     message: '',
     serviceItems: [
@@ -370,14 +374,48 @@ export default function QuoteResponseForm({
             {/* Details in Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
               {/* Budget */}
-              {(quoteDetails.budget || quoteDetails.budgetRange) && (
+              {(quoteDetails.budgetRange || quoteDetails.budget) && (
                 <div>
                   <span className="text-sm font-medium text-gray-600">Budget:</span>
                   <p className="text-gray-900">
-                    {quoteDetails.budgetRange ||
-                      (quoteDetails.budget && typeof quoteDetails.budget === 'object'
-                        ? `${quoteDetails.budget.min?.toLocaleString() || '0'} - ${quoteDetails.budget.max?.toLocaleString() || '0'} ${quoteDetails.budget.currency || 'EUR'}`
-                        : 'Nicht angegeben')}
+                    {(() => {
+                      // Debug für Budget-Rendering
+                      console.log(
+                        'QuoteResponseForm rendering budget - budgetRange:',
+                        quoteDetails.budgetRange
+                      );
+                      console.log(
+                        'QuoteResponseForm rendering budget - budget:',
+                        quoteDetails.budget
+                      );
+                      console.log(
+                        'QuoteResponseForm rendering budget - budget type:',
+                        typeof quoteDetails.budget
+                      );
+
+                      if (quoteDetails.budgetRange) {
+                        // Check if budgetRange is an object or string
+                        if (
+                          typeof quoteDetails.budgetRange === 'object' &&
+                          quoteDetails.budgetRange.min !== undefined &&
+                          quoteDetails.budgetRange.max !== undefined
+                        ) {
+                          return `${quoteDetails.budgetRange.min?.toLocaleString() || '0'} - ${quoteDetails.budgetRange.max?.toLocaleString() || '0'} ${quoteDetails.budgetRange.currency || 'EUR'}`;
+                        } else if (typeof quoteDetails.budgetRange === 'string') {
+                          return quoteDetails.budgetRange;
+                        }
+                      }
+
+                      if (quoteDetails.budget && typeof quoteDetails.budget === 'object') {
+                        const budget = quoteDetails.budget;
+                        const min = budget.min?.toLocaleString() || '0';
+                        const max = budget.max?.toLocaleString() || '0';
+                        const currency = budget.currency || 'EUR';
+                        return `${min} - ${max} ${currency}`;
+                      }
+
+                      return 'Nicht angegeben';
+                    })()}
                   </p>
                 </div>
               )}

@@ -1309,8 +1309,12 @@ export default function QuoteResponsePage({
                     serviceCategory: quote.serviceCategory,
                     serviceSubcategory: quote.serviceSubcategory,
                     requiredSkills: Array.isArray(quote.requiredSkills) ? quote.requiredSkills : [],
-                    serviceDetails: quote.serviceDetails,
+                    serviceDetails:
+                      quote.serviceDetails && typeof quote.serviceDetails === 'object'
+                        ? quote.serviceDetails
+                        : undefined,
                   }}
+                  onCancel={() => setShowResponseForm(false)}
                   onSubmit={async data => {
                     try {
                       let quoteData;
@@ -1397,7 +1401,6 @@ export default function QuoteResponsePage({
                       await submitResponse(quoteData);
                     } catch (error) {}
                   }}
-                  onCancel={() => setShowResponseForm(false)}
                   loading={submitting}
                 />
               </div>
