@@ -427,14 +427,12 @@ export default function QuotePaymentModal({
             </>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-600">
-                Debug: isCreatingPayment={isCreatingPayment ? 'true' : 'false'}, error=
-                {error || 'none'}, clientSecret={clientSecret ? 'exists' : 'null'}, paymentDetails=
-                {paymentDetails ? 'exists' : 'null'}
+              <p className="text-gray-600 mb-4">
+                Zahlung kann nicht initialisiert werden. Bitte versuchen Sie es erneut.
               </p>
               <button
                 onClick={createQuotePaymentIntent}
-                className="mt-4 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+                className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
               >
                 Zahlung erstellen
               </button>

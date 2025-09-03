@@ -78,42 +78,6 @@ export default function CheckoutForm({
 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
         console.log('✅ Payment succeeded:', paymentIntent.id);
-
-        // Bestätige die Zahlung in der Backend-API
-        try {
-          if (!firebaseUser) {
-            throw new Error('Firebase User nicht verfügbar');
-          }
-
-          const token = await firebaseUser.getIdToken();
-
-          const confirmResponse = await fetch(
-            `/api/company/${quoteDetails.userUid}/quotes/received/${quoteDetails.quoteId}/payment`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                action: 'confirm_payment',
-                paymentIntentId: paymentIntent.id,
-              }),
-            }
-          );
-
-          if (!confirmResponse.ok) {
-            console.error('❌ Failed to confirm payment in backend');
-            // Fahre trotzdem fort, da die Zahlung erfolgreich war
-          } else {
-            const confirmData = await confirmResponse.json();
-            console.log('✅ Payment confirmed in backend:', confirmData);
-          }
-        } catch (backendError) {
-          console.error('❌ Backend confirmation error:', backendError);
-          // Fahre trotzdem fort, da die Zahlung erfolgreich war
-        }
-
         onSuccess(paymentIntent.id);
       }
     } catch (error: any) {
