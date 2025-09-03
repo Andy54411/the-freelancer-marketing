@@ -5,7 +5,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -255,6 +261,9 @@ export default function RequestQuoteModal({
             <FileText className="w-6 h-6 text-[#14ad9f]" />
             Angebot anfordern
           </DialogTitle>
+          <DialogDescription>
+            Fordern Sie ein individuelles Angebot für Ihr Projekt an.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Provider Info Header */}
@@ -266,6 +275,7 @@ export default function RequestQuoteModal({
                   src={getProviderImage()}
                   alt={provider.companyName}
                   fill
+                  sizes="64px"
                   className="rounded-full object-cover"
                 />
               </div>
