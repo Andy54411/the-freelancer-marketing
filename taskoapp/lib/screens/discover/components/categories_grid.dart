@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../services/categories_service.dart';
+import '../../categories/subcategory_screen.dart';
 
 class CategoriesGrid extends StatelessWidget {
   final String selectedCategory;
   final Function(String) onCategorySelected;
-  final Function(String) onShowSubcategories;
 
   const CategoriesGrid({
     super.key,
     required this.selectedCategory,
     required this.onCategorySelected,
-    required this.onShowSubcategories,
   });
 
   @override
@@ -51,7 +50,15 @@ class CategoriesGrid extends StatelessWidget {
                       onCategorySelected('');
                     } else {
                       onCategorySelected(category);
-                      onShowSubcategories(category);
+                      // Navigate to subcategory screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SubcategoryScreen(
+                            category: category,
+                          ),
+                        ),
+                      );
                     }
                   },
                   child: Container(

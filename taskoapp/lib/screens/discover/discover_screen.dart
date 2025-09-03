@@ -3,7 +3,6 @@ import 'components/hero_section.dart';
 import 'components/categories_grid.dart';
 import 'components/featured_services.dart';
 import 'components/bottom_actions.dart';
-import 'components/subcategories_popup.dart';
 
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -41,7 +40,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     _selectedCategory = category;
                   });
                 },
-                onShowSubcategories: _showSubcategoriesPopup,
               ),
             ),
           ),
@@ -63,14 +61,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  void _showSubcategoriesPopup(String category) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => SubcategoriesPopup(category: category),
     );
   }
 }

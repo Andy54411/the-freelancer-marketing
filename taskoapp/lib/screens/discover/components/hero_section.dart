@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../services/categories_service.dart';
+import '../../services/service_discovery_screen.dart';
 
 class HeroSection extends StatelessWidget {
   final TextEditingController searchController;
@@ -7,6 +9,37 @@ class HeroSection extends StatelessWidget {
     super.key,
     required this.searchController,
   });
+
+  void _performSearch(BuildContext context, String query) {
+    if (query.trim().isEmpty) return;
+    
+    // Suche nach passenden Subkategorien
+    final matchingSubcategories = CategoriesService.searchSubcategories(query);
+    
+    if (matchingSubcategories.isNotEmpty) {
+      // Navigiere zur ersten passenden Subkategorie
+      final firstMatch = matchingSubcategories.first;
+      final category = CategoriesService.findCategoryBySubcategory(firstMatch);
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ServiceDiscoveryScreen(
+            subcategory: firstMatch,
+            category: category ?? 'Allgemein',
+          ),
+        ),
+      );
+    } else {
+      // Zeige eine Meldung, dass keine Services gefunden wurden
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Keine Services für "$query" gefunden'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,11 +137,16 @@ class HeroSection extends StatelessWidget {
                     ),
                     child: TextField(
                       controller: searchController,
-                      decoration: const InputDecoration(
+                      onSubmitted: (query) => _performSearch(context, query),
+                      decoration: InputDecoration(
                         hintText: 'Nach Services suchen...',
-                        prefixIcon: Icon(Icons.search, color: Color(0xFF14ad9f)),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFF14ad9f)),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.arrow_forward, color: Color(0xFF14ad9f)),
+                          onPressed: () => _performSearch(context, searchController.text),
+                        ),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                       ),
                     ),
                   ),
