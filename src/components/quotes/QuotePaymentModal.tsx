@@ -75,7 +75,6 @@ function CheckoutForm({
     event.preventDefault();
 
     if (!stripe || !elements) {
-
       return;
     }
 
@@ -84,12 +83,10 @@ function CheckoutForm({
     setMessage('');
 
     try {
-
       // Submit payment data to Stripe
       const { error: submitError } = await elements.submit();
 
       if (submitError) {
-
         setMessage(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         onError(submitError.message || 'Fehler bei der Validierung der Zahlungsdaten');
         return;
@@ -111,20 +108,16 @@ function CheckoutForm({
       });
 
       if (confirmError) {
-
         setMessage(confirmError.message || 'Quote-Zahlung fehlgeschlagen');
         onError(confirmError.message || 'Quote-Zahlung fehlgeschlagen');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-
         setMessage('Quote-Zahlung erfolgreich abgeschlossen!');
         onSuccess(paymentIntent.id);
       } else {
-
         setMessage(`Quote-Zahlung Status: ${paymentIntent?.status}`);
         onError(`Quote-Zahlung unvollständig. Status: ${paymentIntent?.status}`);
       }
     } catch (error: any) {
-
       setMessage('Unerwarteter Fehler bei der Quote-Zahlung');
       onError('Unerwarteter Fehler bei der Quote-Zahlung');
     } finally {
@@ -276,9 +269,9 @@ export default function QuotePaymentModal({
       customerFirebaseId,
       userType,
       proposalAmount,
-      firebaseUser: !!firebaseUser
+      firebaseUser: !!firebaseUser,
     });
-    
+
     setIsCreatingPayment(true);
     setError('');
 
@@ -295,7 +288,7 @@ export default function QuotePaymentModal({
       const apiPath = userType === 'user' ? 'user' : 'company';
       const url = `/api/${apiPath}/${customerFirebaseId}/quotes/received/${quoteId}/payment`;
       console.log('🌐 QUOTE PAYMENT: Calling API:', url);
-      
+
       const requestBody = {
         action: 'create_payment_intent',
         proposalId,
@@ -308,7 +301,7 @@ export default function QuotePaymentModal({
         customerStripeId,
       };
       console.log('📤 QUOTE PAYMENT: Request body:', requestBody);
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -333,7 +326,6 @@ export default function QuotePaymentModal({
         console.log('🎯 QUOTE PAYMENT: Success! Setting clientSecret and paymentDetails');
         setClientSecret(data.clientSecret);
         setPaymentDetails(data.paymentDetails);
-
       } else {
         console.error('❌ QUOTE PAYMENT: No success or clientSecret in response:', data);
         throw new Error(data.error || 'Fehler beim Erstellen der Quote-Zahlung');
@@ -348,7 +340,6 @@ export default function QuotePaymentModal({
   };
 
   const handleSuccess = (paymentIntentId: string) => {
-
     onSuccess(paymentIntentId);
   };
 
@@ -400,35 +391,55 @@ export default function QuotePaymentModal({
               </button>
             </div>
           ) : clientSecret && paymentDetails ? (
-            <Elements
-              stripe={stripePromise}
-              options={{
-                clientSecret,
-                appearance: {
-                  theme: 'stripe',
-                  variables: {
-                    colorPrimary: '#14ad9f',
+            <>
+              <div className="text-xs text-gray-500 mb-2">
+                Debug: clientSecret={clientSecret ? 'exists' : 'null'}, paymentDetails=
+                {paymentDetails ? 'exists' : 'null'}
+              </div>
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: 'stripe',
+                    variables: {
+                      colorPrimary: '#14ad9f',
+                    },
                   },
-                },
-                loader: 'auto',
-              }}
-            >
-              <CheckoutFormComponent
-                clientSecret={clientSecret}
-                quoteDetails={{
-                  quoteId,
-                  quoteTitle,
-                  proposalAmount,
-                  companyName,
-                  userUid: firebaseUser?.uid || '',
+                  loader: 'auto',
                 }}
-                paymentDetails={paymentDetails}
-                onSuccess={handleSuccess}
-                onError={onError}
-                onProcessing={setIsProcessing}
-              />
-            </Elements>
-          ) : null}
+              >
+                <CheckoutFormComponent
+                  clientSecret={clientSecret}
+                  quoteDetails={{
+                    quoteId,
+                    quoteTitle,
+                    proposalAmount,
+                    companyName,
+                    userUid: firebaseUser?.uid || '',
+                  }}
+                  paymentDetails={paymentDetails}
+                  onSuccess={handleSuccess}
+                  onError={onError}
+                  onProcessing={setIsProcessing}
+                />
+              </Elements>
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600">
+                Debug: isCreatingPayment={isCreatingPayment ? 'true' : 'false'}, error=
+                {error || 'none'}, clientSecret={clientSecret ? 'exists' : 'null'}, paymentDetails=
+                {paymentDetails ? 'exists' : 'null'}
+              </p>
+              <button
+                onClick={createQuotePaymentIntent}
+                className="mt-4 px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
+              >
+                Zahlung erstellen
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

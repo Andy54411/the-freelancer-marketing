@@ -317,13 +317,21 @@ export async function PATCH(
 
     // Verify payment success
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    console.log('🔍 PATCH: PaymentIntent status:', paymentIntent.status);
 
     if (paymentIntent.status !== 'succeeded') {
+      console.error('❌ PATCH: Payment not succeeded, status:', paymentIntent.status);
       return NextResponse.json(
         { error: 'Zahlung wurde nicht erfolgreich abgeschlossen' },
         { status: 400 }
       );
     }
+
+    console.log('✅ PATCH: Payment verification successful:', {
+      paymentIntentId,
+      amount: paymentIntent.amount,
+      status: paymentIntent.status,
+    });
 
     // Get the quote - try both collections
     console.log('🔍 PATCH: Looking for quote in collections...');
@@ -360,6 +368,25 @@ export async function PATCH(
     }
 
     const acceptedProposal = proposal;
+
+    // Additional validation: Check if payment amount matches proposal amount
+    const proposalAmount = Math.round(acceptedProposal.totalAmount * 100); // Convert to cents
+    if (paymentIntent.amount !== proposalAmount) {
+      console.error('❌ PATCH: Payment amount mismatch:', {
+        paymentIntentAmount: paymentIntent.amount,
+        proposalAmount: proposalAmount,
+        proposalTotalAmount: acceptedProposal.totalAmount,
+      });
+      return NextResponse.json(
+        { error: 'Zahlungsbetrag stimmt nicht mit Angebotsbetrag überein' },
+        { status: 400 }
+      );
+    }
+
+    console.log('✅ PATCH: Amount validation successful:', {
+      paymentIntentAmount: paymentIntent.amount,
+      proposalAmount: proposalAmount,
+    });
 
     // Ensure we have a valid amount - fallback to PaymentIntent amount if proposal amount is missing
     const finalAmount = acceptedProposal.totalAmount || paymentIntent.amount / 100;
