@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
+import '../../widgets/taskilo_place_autocomplete.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -27,7 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _agreesToNewsletter = false;
   bool _agreeToTerms = false;
-  UserType _selectedUserType = UserType.customer;
+  final UserType _selectedUserType = UserType.customer;
   String _selectedCountryCode = '+49';
   String _selectedCountry = 'DE';
   DateTime? _selectedDateOfBirth;
@@ -143,11 +144,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFE0F2F1), // Passend zum Gradient
       appBar: AppBar(
-        title: const Text('Registrieren'),
-        backgroundColor: Colors.transparent,
+        title: const Text(
+          'Registrieren',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        backgroundColor: const Color(0xFF14ad9f),
         elevation: 0,
-        foregroundColor: const Color(0xFF14ad9f),
+        foregroundColor: Colors.white,
         centerTitle: true,
       ),
       body: SafeArea(
@@ -164,73 +173,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
-            child: Card(
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Header
-                      Text(
-                        'Neues Konto erstellen',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFF14ad9f),
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 12),
+                  
+                  // Header with Logo
+                  Center(
+                    child: TweenAnimationBuilder<double>(
+                      key: ValueKey(DateTime.now().millisecondsSinceEpoch),
+                      tween: Tween<double>(begin: 0, end: 1),
+                      duration: const Duration(seconds: 2),
+                      builder: (context, value, child) {
+                        return Transform.rotate(
+                          angle: value * 2 * 3.14159 * 1, // Genau 1 Umdrehung
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.asset(
+                                'assets/images/taskilo_logo.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Fallback wenn Logo nicht gefunden wird
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF14ad9f),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: const Icon(
+                                      Icons.task_alt,
+                                      size: 50,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  Text(
+                    'Neues Konto erstellen',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF14ad9f),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
                         'Erstelle dein Taskilo-Konto',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey.shade600,
                         ),
                         textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      // User Type Selection
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Column(
-                          children: [
-                            RadioListTile<UserType>(
-                              title: const Text('Ich suche Services'),
-                              subtitle: const Text('Als Kunde Services buchen'),
-                              value: UserType.customer,
-                              groupValue: _selectedUserType,
-                              activeColor: const Color(0xFF14ad9f),
-                              onChanged: (UserType? value) {
-                                setState(() {
-                                  _selectedUserType = value!;
-                                });
-                              },
-                            ),
-                            const Divider(height: 1),
-                            RadioListTile<UserType>(
-                              title: const Text('Ich biete Services an'),
-                              subtitle: const Text('Als Anbieter Services verkaufen'),
-                              value: UserType.serviceProvider,
-                              groupValue: _selectedUserType,
-                              activeColor: const Color(0xFF14ad9f),
-                              onChanged: (UserType? value) {
-                                setState(() {
-                                  _selectedUserType = value!;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
                       ),
                       const SizedBox(height: 24),
                       
@@ -298,8 +312,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       // Phone Field mit Country Code
                       Row(
                         children: [
-                          SizedBox(
-                            width: 120,
+                          Expanded(
+                            flex: 2,
                             child: DropdownButtonFormField<String>(
                               value: _selectedCountryCode,
                               decoration: const InputDecoration(
@@ -310,10 +324,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 return DropdownMenuItem<String>(
                                   value: country['code'],
                                   child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(country['flag']!),
-                                      const SizedBox(width: 8),
-                                      Text(country['code']!),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          country['code']!,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 );
@@ -328,8 +348,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               },
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
                           Expanded(
+                            flex: 3,
                             child: TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
@@ -350,14 +371,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Address Fields
-                      TextFormField(
+                      // Address Fields mit Google Places
+                      TaskiloPlaceAutocomplete(
                         controller: _streetController,
-                        decoration: const InputDecoration(
-                          labelText: 'Straße und Hausnummer',
-                          prefixIcon: Icon(Icons.home, color: Color(0xFF14ad9f)),
-                          border: OutlineInputBorder(),
-                        ),
+                        labelText: 'Straße und Hausnummer',
+                        prefixIcon: Icons.home,
+                        onPlaceSelected: (addressData) {
+                          // Automatisches Ausfüllen der anderen Felder
+                          if (addressData['city']?.isNotEmpty == true) {
+                            _cityController.text = addressData['city']!;
+                          }
+                          if (addressData['postalCode']?.isNotEmpty == true) {
+                            _postalCodeController.text = addressData['postalCode']!;
+                          }
+                          if (addressData['country']?.isNotEmpty == true) {
+                            // Setze das Land basierend auf der Auswahl
+                            final countryIso = addressData['country']!;
+                            final countryData = _countryCodes.firstWhere(
+                              (country) => country['iso'] == countryIso,
+                              orElse: () => _countryCodes.first,
+                            );
+                            setState(() {
+                              _selectedCountry = countryIso;
+                              _selectedCountryCode = countryData['code']!;
+                            });
+                          }
+                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Adresse erforderlich';
@@ -591,8 +630,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 }

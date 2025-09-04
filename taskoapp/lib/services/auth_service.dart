@@ -227,6 +227,13 @@ class AuthService {
     await user.delete();
   }
 
+  // Get Current User Data from Firestore
+  Future<TaskiloUser?> getCurrentUserData() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return await _getUserFromFirestore(user.uid);
+  }
+
   // Private Helper Methods
   Future<TaskiloUser?> _getUserFromFirestore(String uid) async {
     final userDoc = await _firestore.collection('users').doc(uid).get();

@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/review_service.dart';
 import '../../services/portfolio_service.dart';
-import '../../services/chat_service.dart';
 import '../../components/portfolio_slide_panel.dart';
-import '../../components/login_required_modal.dart';
+import '../../components/auth_navigation.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> service;
@@ -1303,84 +1302,47 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
 
   void _contactProvider() async {
     debugPrint('🛒 "Jetzt buchen" Button geklickt!');
-    // Zeige Login Modal mit wiederverwendbarer Komponente
-    await LoginRequiredModal.show(
-      context,
-      title: 'Buchung erfordert Anmeldung',
-      description: 'Um eine Buchung vorzunehmen, müssen Sie sich anmelden oder registrieren.',
-      buttonText: 'Anmelden und buchen',
-    );
+    
+    // Prüfe Authentifizierungsstatus
+    final authService = AuthService();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser == null) {
+      // User ist nicht eingeloggt - zeige Login Modal mit automatischer Navigation
+      await AuthNavigation.showLoginAndNavigate(
+        context,
+        title: 'Buchung erfordert Anmeldung',
+        description: 'Um eine Buchung vorzunehmen, müssen Sie sich anmelden. Nach dem Login werden Sie automatisch zum passenden Bereich weitergeleitet.',
+      );
+      return;
+    }
+    
+    // User ist eingeloggt - navigiere basierend auf UserType
+    debugPrint('✅ User ist eingeloggt - starte Navigation basierend auf UserType');
+    await AuthNavigation.navigateAfterLogin(context);
   }
 
   /// Startet Chat mit Provider
   Future<void> _startChat() async {
-    try {
-      final providerId = widget.service['id'] ?? widget.service['providerId'] ?? '';
-      final providerName = widget.service['providerName'] ?? widget.service['companyName'] ?? 'Anbieter';
-      
-      if (providerId.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Provider ID nicht gefunden'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-
-      // Hole die aktuelle User ID vom AuthService
-      final authService = AuthService();
-      final currentUser = authService.currentUser;
-      
-      if (currentUser == null) {
-        // User ist nicht eingeloggt - zeige Login Modal
-        debugPrint('💬 Chat erfordert Anmeldung');
-        await LoginRequiredModal.show(
-          context,
-          title: 'Chat erfordert Anmeldung',
-          description: 'Um mit Anbietern zu chatten, müssen Sie sich anmelden oder registrieren.',
-          buttonText: 'Anmelden und chatten',
-        );
-        return;
-      }
-      
-      final chatId = await ChatService.startChatWithProvider(
-        providerId: providerId,
-        providerName: providerName,
-        customerId: currentUser.uid,
-        customerName: currentUser.displayName ?? '${currentUser.profile?.firstName ?? ''} ${currentUser.profile?.lastName ?? ''}'.trim(),
+    debugPrint('💬 "Chat" Button geklickt!');
+    
+    // Prüfe Authentifizierungsstatus
+    final authService = AuthService();
+    final currentUser = authService.currentUser;
+    
+    if (currentUser == null) {
+      // User ist nicht eingeloggt - zeige Login Modal mit automatischer Navigation
+      await AuthNavigation.showLoginAndNavigate(
+        context,
+        title: 'Chat erfordert Anmeldung',
+        description: 'Um mit Anbietern zu chatten, müssen Sie sich anmelden. Nach dem Login werden Sie automatisch zum passenden Bereich weitergeleitet.',
       );
-      
-      debugPrint('✅ Chat gestartet: $chatId');
-      
-      // Navigation zur Chat-Seite (wenn vorhanden)
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Chat mit $providerName gestartet'),
-            backgroundColor: const Color(0xFF14ad9f),
-            action: SnackBarAction(
-              label: 'Chat öffnen',
-              textColor: Colors.white,
-              onPressed: () {
-                debugPrint('Navigate to chat: $chatId');
-              },
-            ),
-          ),
-        );
-      }
-      
-    } catch (e) {
-      debugPrint('❌ Fehler beim Starten des Chats: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Chat konnte nicht gestartet werden'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      return;
     }
+    
+    // User ist eingeloggt - navigiere basierend auf UserType
+    debugPrint('✅ User ist eingeloggt - starte Navigation basierend auf UserType');
+    await AuthNavigation.navigateAfterLogin(context);
   }
 
   /// Zeigt alle Service-Packages in einem Modal
