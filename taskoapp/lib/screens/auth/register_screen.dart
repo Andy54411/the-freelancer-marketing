@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../../widgets/taskilo_place_autocomplete.dart';
@@ -56,6 +57,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _cityController.dispose();
     _postalCodeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _launchURL(String url) async {
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Link konnte nicht geöffnet werden'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _register() async {
@@ -125,10 +140,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage;
+        
+        // Spezifische Firebase-Fehlerbehandlung
+        if (e.toString().contains('email-already-in-use')) {
+          errorMessage = 'Diese E-Mail-Adresse wird bereits verwendet';
+        } else if (e.toString().contains('weak-password')) {
+          errorMessage = 'Das Passwort ist zu schwach';
+        } else if (e.toString().contains('invalid-email')) {
+          errorMessage = 'Ungültige E-Mail-Adresse';
+        } else if (e.toString().contains('network-request-failed')) {
+          errorMessage = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung';
+        } else if (e.toString().contains('too-many-requests')) {
+          errorMessage = 'Zu viele Versuche. Bitte warten Sie einen Moment';
+        } else if (e.toString().contains('operation-not-allowed')) {
+          errorMessage = 'E-Mail-Registrierung ist nicht aktiviert';
+        } else if (e.toString().contains('internal error')) {
+          errorMessage = 'Firebase-Konfigurationsfehler. Bitte versuchen Sie es später erneut';
+        } else {
+          errorMessage = 'Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -562,16 +599,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       
                       // Terms Checkbox
-                      CheckboxListTile(
-                        title: const Text('Nutzungsbedingungen akzeptieren'),
-                        subtitle: const Text('Ich stimme den AGB und Datenschutzbestimmungen zu'),
-                        value: _agreeToTerms,
-                        activeColor: const Color(0xFF14ad9f),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _agreeToTerms = value ?? false;
-                          });
-                        },
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _agreeToTerms,
+                            activeColor: const Color(0xFF14ad9f),
+                            onChanged: (bool? value) {
+                              setState(() {
+                                _agreeToTerms = value ?? false;
+                              });
+                            },
+                          ),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black87,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'Ich stimme den '),
+                                  WidgetSpan(
+                                    child: GestureDetector(
+                                      onTap: () => _launchURL('https://taskilo.de/agb'),
+                                      child: const Text(
+                                        'Nutzungsbedingungen',
+                                        style: TextStyle(
+                                          color: Color(0xFF14ad9f),
+                                          decoration: TextDecoration.underline,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' und '),
+                                  WidgetSpan(
+                                    child: GestureDetector(
+                                      onTap: () => _launchURL('https://taskilo.de/datenschutz'),
+                                      child: const Text(
+                                        'Datenschutzbestimmungen',
+                                        style: TextStyle(
+                                          color: Color(0xFF14ad9f),
+                                          decoration: TextDecoration.underline,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const TextSpan(text: ' zu'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
                       

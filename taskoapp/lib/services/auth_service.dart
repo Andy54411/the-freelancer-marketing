@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 
 class AuthService {
@@ -86,7 +87,7 @@ class AuthService {
     }
   }
 
-  // Erweiterte User Registrierung (Web-kompatibel)
+    // Erweiterte User Registrierung (Web-kompatibel)
   Future<TaskiloUser?> registerUser({
     required String email,
     required String password,
@@ -97,73 +98,20 @@ class AuthService {
     required String city,
     required String postalCode,
     required String country,
-    UserType userType = UserType.customer,
-    bool agreesToNewsletter = false,
-    DateTime? dateOfBirth,
+    required bool termsAccepted,
+    required bool privacyAccepted,
+    required bool newsletterSubscribed,
   }) async {
     try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      // Debug: Firebase Auth Status
+      debugPrint('🔍 Firebase Auth Status Check:');
+      debugPrint('   � Current User: ${FirebaseAuth.instance.currentUser}');
+      debugPrint('   🔧 App Name: ${FirebaseAuth.instance.app.name}');
+      debugPrint('   🆔 App Options: ${FirebaseAuth.instance.app.options.projectId}');
       
-      if (credential.user != null) {
-        final displayName = '$firstName $lastName';
-        await credential.user!.updateDisplayName(displayName);
-        
-        // Erstelle erweiterte User-Profile
-        final profile = UserProfile(
-          firstName: firstName,
-          lastName: lastName,
-          street: street,
-          city: city,
-          postalCode: postalCode,
-          country: country,
-          phoneNumber: phoneNumber,
-          agreesToNewsletter: agreesToNewsletter,
-          dateOfBirth: dateOfBirth,
-          isAvailable: userType == UserType.serviceProvider,
-        );
-
-        // Erstelle User mit erweiterten Daten (Web-kompatibel)
-        final userData = {
-          'uid': credential.user!.uid,
-          'user_type': userType == UserType.customer ? 'kunde' : 'anbieter',
-          'email': email,
-          'firstName': firstName,
-          'lastName': lastName,
-          'phoneNumber': phoneNumber,
-          'postalCode': postalCode,
-          'street': street,
-          'city': city,
-          'country': country,
-          'agreesToNewsletter': agreesToNewsletter,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        };
-
-        if (dateOfBirth != null) {
-          userData['dateOfBirth'] = Timestamp.fromDate(dateOfBirth);
-        }
-
-        await _firestore.collection('users').doc(credential.user!.uid).set(userData);
-        
-        // Sende Email-Verifikation
-        await credential.user!.sendEmailVerification();
-        
-        // Erstelle TaskiloUser-Objekt
-        final user = TaskiloUser.fromFirebaseUser(
-          credential.user!,
-          profile: profile,
-        ).copyWith(userType: userType);
-        
-        return user;
-      }
-      return null;
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    }
-  }
+      debugPrint('� Starte Benutzerregistrierung...');
+      debugPrint('📧 Email: $email');
+      debugPrint('� Name: $firstName $lastName');
 
   // Password Reset
   Future<void> sendPasswordResetEmail(String email) async {
@@ -249,7 +197,36 @@ class AuthService {
     });
   }
 
+  // Newsletter-Anmeldung in separater Collection
+  Future<void> _addToNewsletter(String email, String firstName, String lastName) async {
+    try {
+      await _firestore.collection('newsletter_subscribers').doc(email).set({
+        'email': email,
+        'firstName': firstName,
+        'lastName': lastName,
+        'subscribedAt': FieldValue.serverTimestamp(),
+        'source': 'app_registration',
+        'isActive': true,
+        'tags': ['app_user'],
+      });
+      
+      debugPrint('✅ Newsletter-Anmeldung erfolgreich für: $email');
+    } catch (e) {
+      debugPrint('❌ Newsletter-Anmeldung fehlgeschlagen: $e');
+      // Fehler nicht werfen, da Newsletter optional ist
+    }
+  }
+
   String _handleAuthException(FirebaseAuthException e) {
+    debugPrint('🔍 Detaillierte Firebase Auth Exception:');
+    debugPrint('  📋 Code: ${e.code}');
+    debugPrint('  💬 Message: ${e.message}');
+    debugPrint('  🔧 Plugin: ${e.plugin}');
+    debugPrint('  📧 Email: ${e.email}');
+    debugPrint('  🆔 Credential: ${e.credential}');
+    debugPrint('  📱 Phone Number: ${e.phoneNumber}');
+    debugPrint('  🔗 Tenant ID: ${e.tenantId}');
+    
     switch (e.code) {
       case 'user-not-found':
         return 'Kein Benutzer mit dieser E-Mail gefunden.';
@@ -267,6 +244,8 @@ class AuthService {
         return 'Zu viele Anfragen. Versuchen Sie es später erneut.';
       case 'operation-not-allowed':
         return 'Diese Operation ist nicht erlaubt.';
+      case 'internal-error':
+        return 'Firebase Interner Fehler - Konfigurationsproblem erkannt. Details: ${e.message}';
       default:
         return 'Ein unbekannter Fehler ist aufgetreten: ${e.message}';
     }

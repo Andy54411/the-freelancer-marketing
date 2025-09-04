@@ -20,10 +20,20 @@ void main() async {
   // Lade Environment Variables
   await dotenv.load(fileName: ".env");
   
-    // Initialisiere Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Initialisiere Firebase (nur wenn noch nicht initialisiert)
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      debugPrint('✅ Firebase initialized successfully');
+    } else {
+      debugPrint('✅ Firebase already initialized');
+    }
+  } catch (e) {
+    debugPrint('⚠️ Firebase initialization error: $e');
+    // Falls bereits initialisiert, weitermachen
+  }
 
   // Initialisiere Stripe Payment Service
   try {

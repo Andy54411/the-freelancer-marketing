@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>1022290879475-4k9lfpu0q44a0lafmus1ss5h25mul4um.apps.googleusercontent.com</string>
+	<string>1022290879475-4fo0nm6fu4tbpe2vt09niea0er39anja.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.1022290879475-4k9lfpu0q44a0lafmus1ss5h25mul4um</string>
+	<string>com.googleusercontent.apps.1022290879475-4fo0nm6fu4tbpe2vt09niea0er39anja</string>
 	<key>API_KEY</key>
 	<string>AIzaSyB_TN2_iDmgxjQLjkbtWFN-jhXdjRK_jIw</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.tilvo.app</string>
+	<string>com.tilvo.de</string>
 	<key>PROJECT_ID</key>
 	<string>tilvo-f142f</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,7 +29,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1022290879475:ios:b4b24626475b35f75ae886</string>
+	<string>1:1022290879475:ios:8fd00b16c4a209de5ae886</string>
 	<key>DATABASE_URL</key>
 	<string>https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app</string>
 </dict>

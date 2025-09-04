@@ -27,10 +27,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.macOS:
         return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -44,13 +41,14 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyD3-mx-FPoT-f2pXVP6HS_t1rE0w_eYNLY',
-    appId: '1:1022290879475:web:3a621239990633c35ae886',
+    apiKey: 'AIzaSyD_jf9CiuvGKMK7wUw9mu-NkUIJDzoMusw',
+    appId: '1:1022290879475:web:45b6e46859948ec15ae886',
     messagingSenderId: '1022290879475',
     projectId: 'tilvo-f142f',
     authDomain: 'tilvo-f142f.firebaseapp.com',
+    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tilvo-f142f.firebasestorage.app',
-    measurementId: 'G-XXXXXXXXXX',
+    measurementId: 'G-WWXT65CVC8',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -63,22 +61,36 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD3-mx-FPoT-f2pXVP6HS_t1rE0w_eYNLY',
-    appId: '1:1022290879475:ios:3a621239990633c35ae886',
+    apiKey: 'AIzaSyB_TN2_iDmgxjQLjkbtWFN-jhXdjRK_jIw',
+    appId: '1:1022290879475:ios:b4b24626475b35f75ae886',
     messagingSenderId: '1022290879475',
     projectId: 'tilvo-f142f',
+    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tilvo-f142f.firebasestorage.app',
-    iosClientId: '1022290879475-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
-    iosBundleId: 'com.tilvo.de',
+    iosClientId: '1022290879475-4k9lfpu0q44a0lafmus1ss5h25mul4um.apps.googleusercontent.com',
+    iosBundleId: 'com.tilvo.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyD3-mx-FPoT-f2pXVP6HS_t1rE0w_eYNLY',
-    appId: '1:1022290879475:ios:3a621239990633c35ae886',
+    apiKey: 'AIzaSyB_TN2_iDmgxjQLjkbtWFN-jhXdjRK_jIw',
+    appId: '1:1022290879475:ios:8fd00b16c4a209de5ae886',
     messagingSenderId: '1022290879475',
     projectId: 'tilvo-f142f',
+    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'tilvo-f142f.firebasestorage.app',
-    iosClientId: '1022290879475-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
+    iosClientId: '1022290879475-4fo0nm6fu4tbpe2vt09niea0er39anja.apps.googleusercontent.com',
     iosBundleId: 'com.tilvo.de',
   );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyD_jf9CiuvGKMK7wUw9mu-NkUIJDzoMusw',
+    appId: '1:1022290879475:web:80e8212dd746085a5ae886',
+    messagingSenderId: '1022290879475',
+    projectId: 'tilvo-f142f',
+    authDomain: 'tilvo-f142f.firebaseapp.com',
+    databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+    storageBucket: 'tilvo-f142f.firebasestorage.app',
+    measurementId: 'G-X3V12JVCLT',
+  );
+
 }
