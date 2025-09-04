@@ -131,7 +131,6 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
           setFormData(prev => ({ ...prev, ...stepData[3] }));
         }
       } catch (error) {
-
       } finally {
         setLoading(false);
       }
@@ -366,7 +365,6 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                           // Create temporary URL for preview
                           const url = URL.createObjectURL(file);
                           handleChange('companyLogo', url);
-
                         }
                       }}
                     />
@@ -386,12 +384,9 @@ const OnboardingStep3: React.FC<OnboardingStep3Props> = ({ companyUid }) => {
                   onChange={e => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onload = e => {
-                        const result = e.target?.result as string;
-                        handleChange('profileBannerImage', result);
-                      };
-                      reader.readAsDataURL(file);
+                      // Erstelle Preview-URL (Objekt-URL statt Base64)
+                      const previewUrl = URL.createObjectURL(file);
+                      handleChange('profileBannerImage', previewUrl);
                     }
                   }}
                   className="hidden"

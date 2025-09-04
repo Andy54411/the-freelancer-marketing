@@ -7,47 +7,6 @@ const nextConfig = {
   poweredByHeader: false,
   generateEtags: true,
 
-  // VOLLSTÄNDIGE CSP-KONFIGURATION FÜR ALLE SERVICES + VIOLATIONS GEFIXT
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              // Script Sources - Alle wichtigen Domains explizit erlaubt + Wildcard für Stripe
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com https://*.stripe.com https://m.stripe.network https://api.stripe.com https://hooks.stripe.com https://connect.stripe.com https://checkout.stripe.com https://js.stripe.network https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://maps.googleapis.com https://maps.google.com https://apis.google.com https://www.googleapis.com https://vercel.live https://vercel.com https://*.vercel.app https://va.vercel-scripts.com https://vitals.vercel-insights.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com https://ssl.gstatic.com https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://generativelanguage.googleapis.com data: blob:",
-              // Script Element Sources - Für iframe und externe Scripts + Wildcard für Stripe
-              "script-src-elem 'self' 'unsafe-inline' https://js.stripe.com https://*.stripe.com https://m.stripe.network https://api.stripe.com https://hooks.stripe.com https://connect.stripe.com https://checkout.stripe.com https://js.stripe.network https://www.googletagmanager.com https://www.google-analytics.com https://analytics.google.com https://maps.googleapis.com https://maps.google.com https://apis.google.com https://www.googleapis.com https://vercel.live https://vercel.com https://*.vercel.app https://va.vercel-scripts.com https://vitals.vercel-insights.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com https://ssl.gstatic.com https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://generativelanguage.googleapis.com data: blob:",
-              // Style Sources
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://api.mapbox.com https://js.stripe.com https://m.stripe.network data:",
-              // Font Sources
-              "font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com data:",
-              // Image Sources
-              "img-src 'self' data: blob: https: http:",
-              // Connect Sources - Für API Calls und WebSockets + Gemini AI
-              "connect-src 'self' https://api.stripe.com https://*.stripe.com https://m.stripe.network https://q.stripe.com https://checkout.stripe.com https://js.stripe.com https://hooks.stripe.com https://connect.stripe.com https://js.stripe.network https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://maps.googleapis.com https://maps.google.com https://places.googleapis.com https://geolocation.googleapis.com https://roads.googleapis.com https://www.googleapis.com https://apis.google.com https://vercel.live https://vercel.com https://*.vercel.app https://va.vercel-scripts.com https://vitals.vercel-insights.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://cloudfunctions.net https://us-central1-tilvo-f142f.cloudfunctions.net https://europe-west1-tilvo-f142f.cloudfunctions.net https://accounts.google.com https://ssl.gstatic.com https://www.gstatic.com https://generativelanguage.googleapis.com wss: ws: data: blob:",
-              // Frame Sources - Für Stripe iframes und andere embeds + Wildcard
-              "frame-src 'self' https://js.stripe.com https://*.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://connect.stripe.com https://www.google.com https://accounts.google.com https://docs.google.com https://drive.google.com https://calendar.google.com",
-              // Child Sources
-              "child-src 'self' https: data: blob:",
-              // Worker Sources
-              "worker-src 'self' blob: data:",
-              // Object Restrictions
-              "object-src 'none'",
-              // Base URI
-              "base-uri 'self'",
-              // Form Actions
-              "form-action 'self'"
-            ].join('; ')
-          }
-        ]
-      }
-    ]
-  },
-
   experimental: {
     optimizeCss: true,
     optimizePackageImports: [
@@ -87,6 +46,7 @@ const nextConfig = {
     minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -96,13 +56,19 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'storage.googleapis.com',
+        hostname: 'storage.googleapis.com', 
         port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'tilvo-f142f.firebasestorage.app',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.firebasestorage.app',
         port: '',
         pathname: '/**',
       },
@@ -145,8 +111,8 @@ const nextConfig = {
               "script-src-elem 'self' 'unsafe-inline' https://js.stripe.com https://checkout.stripe.com https://m.stripe.network https://q.stripe.com https://hooks.stripe.com https://connect.stripe.com https://js.stripe.network https://maps.googleapis.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://www.googletagmanager.com https://googletagmanager.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://vercel.live https://vercel.com https://*.vercel.app https://cdn.vercel-insights.com https://www.gstatic.com https://ssl.gstatic.com data: blob:;",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://maps.googleapis.com https://www.gstatic.com https://ssl.gstatic.com;",
               "font-src 'self' https://fonts.gstatic.com https://www.gstatic.com https://ssl.gstatic.com data:;",
-              "img-src 'self' data: blob: https: https://firebasestorage.googleapis.com https://storage.googleapis.com https://tilvo-f142f.firebasestorage.app https://maps.googleapis.com https://maps.gstatic.com https://www.google-analytics.com https://ssl.gstatic.com https://www.gstatic.com;",
-              "connect-src 'self' https://api.stripe.com https://*.stripe.com https://m.stripe.network https://q.stripe.com https://checkout.stripe.com https://js.stripe.com https://hooks.stripe.com https://connect.stripe.com https://js.stripe.network https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://maps.googleapis.com https://maps.google.com https://places.googleapis.com https://geolocation.googleapis.com https://roads.googleapis.com https://www.googleapis.com https://apis.google.com https://vercel.live https://vercel.com https://*.vercel.app https://va.vercel-scripts.com https://vitals.vercel-insights.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://cloudfunctions.net https://us-central1-tilvo-f142f.cloudfunctions.net https://europe-west1-tilvo-f142f.cloudfunctions.net https://accounts.google.com https://ssl.gstatic.com https://www.gstatic.com https://generativelanguage.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://tilvo-f142f.firebasestorage.app wss: ws: data: blob:;",
+              "img-src 'self' data: blob: https: https://firebasestorage.googleapis.com https://storage.googleapis.com https://tilvo-f142f.firebasestorage.app https://*.firebasestorage.app https://maps.googleapis.com https://maps.gstatic.com https://www.google-analytics.com https://ssl.gstatic.com https://www.gstatic.com;",
+              "connect-src 'self' https://api.stripe.com https://*.stripe.com https://m.stripe.network https://q.stripe.com https://checkout.stripe.com https://js.stripe.com https://hooks.stripe.com https://connect.stripe.com https://js.stripe.network https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://maps.googleapis.com https://maps.google.com https://places.googleapis.com https://geolocation.googleapis.com https://roads.googleapis.com https://www.googleapis.com https://apis.google.com https://vercel.live https://vercel.com https://*.vercel.app https://va.vercel-scripts.com https://vitals.vercel-insights.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://cloudfunctions.net https://us-central1-tilvo-f142f.cloudfunctions.net https://europe-west1-tilvo-f142f.cloudfunctions.net https://accounts.google.com https://ssl.gstatic.com https://www.gstatic.com https://generativelanguage.googleapis.com https://firebasestorage.googleapis.com https://storage.googleapis.com https://tilvo-f142f.firebasestorage.app https://*.firebasestorage.app wss: ws: data: blob:;",
               "frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://hooks.stripe.com https://connect.stripe.com https://vercel.live;",
               "worker-src 'self' blob:;",
               "object-src 'none';",

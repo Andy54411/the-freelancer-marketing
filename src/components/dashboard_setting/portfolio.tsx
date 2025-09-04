@@ -16,7 +16,8 @@ import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
 import Image from 'next/image';
 import PortfolioItemDetails from './PortfolioItemDetails';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase/clients';
+import { db, storage } from '../../firebase/clients';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { toast } from 'react-hot-toast';
 
 export interface PortfolioFormProps {
@@ -55,6 +56,20 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
       : [];
   });
   const [editingDetailsId, setEditingDetailsId] = useState<string | null>(null);
+
+  // Upload zu Firebase Storage
+  const uploadImageToStorage = async (
+    file: File,
+    folder: string,
+    userId: string
+  ): Promise<string> => {
+    const timestamp = Date.now();
+    // Verwende Portfolio-kompatiblen Pfad: portfolio/{userId}/main/{timestamp}_{fileName}
+    const imagePath = `${folder}/${userId}/main/${timestamp}_${file.name}`;
+    const imageRef = ref(storage, imagePath);
+    const snapshot = await uploadBytes(imageRef, file);
+    return await getDownloadURL(snapshot.ref);
+  };
   const [isAdding, setIsAdding] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [newItem, setNewItem] = useState<PortfolioItem>({
@@ -120,7 +135,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     }
   }, [portfolioItems]);
 
-  const handleImageUpload = (
+  const handleImageUpload = async (
     files: FileList | null,
     isNewItem: boolean = false,
     itemId?: string
@@ -131,16 +146,13 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     if (isNewItem && files.length > 0) {
       const file = files[0];
       if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const imageUrl = e.target?.result as string;
-          setNewItem(prev => ({
-            ...prev,
-            imageUrl,
-            imageFile: file,
-          }));
-        };
-        reader.readAsDataURL(file);
+        // Erstelle Preview-URL (Objekt-URL statt Base64)
+        const previewUrl = URL.createObjectURL(file);
+        setNewItem(prev => ({
+          ...prev,
+          imageUrl: previewUrl,
+          imageFile: file,
+        }));
       }
       return;
     }
@@ -148,33 +160,32 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     // For multiple uploads, create multiple portfolio items
     Array.from(files).forEach((file, index) => {
       if (file && file.type.startsWith('image/') && portfolioItems.length + index < 5) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const imageUrl = e.target?.result as string;
+        // Erstelle Preview-URL (Objekt-URL statt Base64)
+        const previewUrl = URL.createObjectURL(file);
 
-          if (itemId) {
-            // Update existing item
-            setPortfolioItems(prev =>
-              prev.map(item => (item.id === itemId ? { ...item, imageUrl, imageFile: file } : item))
-            );
-          } else {
-            // Create new item from multi-upload
-            const item: PortfolioItem = {
-              id: `${Date.now()}-${index}`,
-              imageUrl,
-              imageFile: file,
-              title: `Portfolio ${portfolioItems.length + index + 1}`,
-              description: '',
-              category: '',
-              featured: false,
-              order: portfolioItems.length + index,
-              createdAt: new Date().toISOString(),
-            };
+        if (itemId) {
+          // Update existing item
+          setPortfolioItems(prev =>
+            prev.map(item =>
+              item.id === itemId ? { ...item, imageUrl: previewUrl, imageFile: file } : item
+            )
+          );
+        } else {
+          // Create new item from multi-upload
+          const item: PortfolioItem = {
+            id: `${Date.now()}-${index}`,
+            imageUrl: previewUrl,
+            imageFile: file,
+            title: `Portfolio ${portfolioItems.length + index + 1}`,
+            description: '',
+            category: '',
+            featured: false,
+            order: portfolioItems.length + index,
+            createdAt: new Date().toISOString(),
+          };
 
-            setPortfolioItems(prev => [...prev, item]);
-          }
-        };
-        reader.readAsDataURL(file);
+          setPortfolioItems(prev => [...prev, item]);
+        }
       }
     });
   };
@@ -193,24 +204,21 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     for (let i = 0; i < filesToProcess; i++) {
       const file = files[i];
       if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const imageUrl = e.target?.result as string;
-          const item: PortfolioItem = {
-            id: `${Date.now()}-${i}`,
-            imageUrl,
-            imageFile: file,
-            title: `Portfolio ${portfolioItems.length + i + 1}`,
-            description: '',
-            category: '',
-            featured: false,
-            order: portfolioItems.length + i,
-            createdAt: new Date().toISOString(),
-          };
-
-          setPortfolioItems(prev => [...prev, item]);
+        // Erstelle Preview-URL (Objekt-URL statt Base64)
+        const previewUrl = URL.createObjectURL(file);
+        const item: PortfolioItem = {
+          id: `${Date.now()}-${i}`,
+          imageUrl: previewUrl,
+          imageFile: file,
+          title: `Portfolio ${portfolioItems.length + i + 1}`,
+          description: '',
+          category: '',
+          featured: false,
+          order: portfolioItems.length + i,
+          createdAt: new Date().toISOString(),
         };
-        reader.readAsDataURL(file);
+
+        setPortfolioItems(prev => [...prev, item]);
       }
     }
 
@@ -229,6 +237,46 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     }
 
     try {
+      // Erst alle Bilder zu Firebase Storage hochladen
+      const portfolioWithUploadedImages = await Promise.all(
+        updatedPortfolio.map(async item => {
+          const { imageFile, additionalImageFiles, ...itemWithoutFiles } = item;
+
+          // Hauptbild hochladen falls File-Objekt vorhanden
+          if (imageFile instanceof File) {
+            try {
+              const uploadedUrl = await uploadImageToStorage(imageFile, 'portfolio', userId);
+              itemWithoutFiles.imageUrl = uploadedUrl;
+            } catch (error) {
+              console.error('Fehler beim Upload des Hauptbildes:', error);
+              // Fallback: Object-URL entfernen, da sie nicht persistent ist
+              if (itemWithoutFiles.imageUrl?.startsWith('blob:')) {
+                // Setze leeren String anstatt undefined
+                itemWithoutFiles.imageUrl = '';
+              }
+            }
+          }
+
+          // Zusätzliche Bilder hochladen falls vorhanden
+          if (additionalImageFiles && additionalImageFiles.length > 0) {
+            try {
+              const uploadedImages = await Promise.all(
+                additionalImageFiles.map(file =>
+                  file instanceof File
+                    ? uploadImageToStorage(file, 'portfolio', userId)
+                    : Promise.resolve(file)
+                )
+              );
+              itemWithoutFiles.additionalImages = uploadedImages;
+            } catch (error) {
+              console.error('Fehler beim Upload der zusätzlichen Bilder:', error);
+            }
+          }
+
+          return itemWithoutFiles;
+        })
+      );
+
       // Hilfsfunktion um undefined-Werte rekursiv zu entfernen
       const removeUndefined = (obj: any): any => {
         if (Array.isArray(obj)) {
@@ -249,15 +297,9 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
         return obj;
       };
 
-      // Entferne alle File-Objekte und undefined-Werte vor dem Speichern
-      const cleanPortfolio = updatedPortfolio
-        .map(item => {
-          // Entferne File-Objekte
-          const { imageFile, additionalImageFiles, ...cleanItem } = item;
-
-          // Entferne alle undefined-Werte rekursiv
-          return removeUndefined(cleanItem);
-        })
+      // Entferne alle undefined-Werte rekursiv
+      const cleanPortfolio = portfolioWithUploadedImages
+        .map(item => removeUndefined(item))
         .filter(item => item && Object.keys(item).length > 0); // Entferne leere Objekte
 
       // Debug: Logge das bereinigte Portfolio

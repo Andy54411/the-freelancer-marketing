@@ -643,13 +643,9 @@ export function RichTextEditor({
   const handleCoverUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && onCoverChange) {
-      // In einer echten App würdest du das Bild zu Firebase Storage oder einem anderen Service hochladen
-      const reader = new FileReader();
-      reader.onload = e => {
-        const result = e.target?.result as string;
-        onCoverChange(result);
-      };
-      reader.readAsDataURL(file);
+      // Erstelle Preview-URL (Objekt-URL statt Base64)
+      const previewUrl = URL.createObjectURL(file);
+      onCoverChange(previewUrl);
     }
   };
 

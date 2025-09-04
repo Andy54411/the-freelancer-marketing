@@ -81,16 +81,14 @@ export default function PopupWithUpload({ missingFields, onClose }: PopupWithUpl
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Zeige die Vorschau des Bildes, bevor es hochgeladen wird
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (side === 'front') {
-        setIdentityFrontPreview(reader.result as string); // Setze die Vorschau für die Vorderseite
-      } else {
-        setIdentityBackPreview(reader.result as string); // Setze die Vorschau für die Rückseite
-      }
-    };
-    reader.readAsDataURL(file);
+    // Erstelle Preview-URL (Objekt-URL statt Base64)
+    const previewUrl = URL.createObjectURL(file);
+
+    if (side === 'front') {
+      setIdentityFrontPreview(previewUrl);
+    } else {
+      setIdentityBackPreview(previewUrl);
+    }
 
     // Starte den Upload-Prozess
     handleFileUpload(file, side);

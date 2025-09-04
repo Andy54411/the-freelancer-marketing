@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'components/provider_portfolio_tab.dart';
 
 class ProviderDetailsScreen extends StatefulWidget {
   final String providerId;
@@ -20,7 +21,7 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen>
   Map<String, dynamic>? _provider;
   bool _isLoading = true;
   String? _error;
-
+  
   @override
   void initState() {
     super.initState();
@@ -134,7 +135,7 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen>
             tabs: const [
               Tab(text: 'Übersicht'),
               Tab(text: 'Bewertungen'),
-              Tab(text: 'Galerie'),
+              Tab(text: 'Portfolio'),
             ],
           ),
         ),
@@ -146,7 +147,7 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen>
             children: [
               _buildOverviewTab(),
               _buildReviewsTab(),
-              _buildGalleryTab(),
+              ProviderPortfolioTab(providerId: widget.providerId),
             ],
           ),
         ),
@@ -462,41 +463,6 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen>
             SizedBox(height: 8),
             Text(
               'Bewertungssystem wird bald verfügbar sein',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGalleryTab() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.photo_library_outlined,
-              size: 64,
-              color: Colors.grey,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Galerie',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Portfolio und Bilder werden bald verfügbar sein',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey,
