@@ -335,22 +335,23 @@ export default function ProfilePage() {
             return [];
           })();
 
-          // Verarbeite Sprachen (repariere kaputte Datenstrukturen)
+          // Verarbeite Sprachen aus Datenbank (Array von Objekten)
           const languages = (() => {
-            // Filtere kaputte "[object Object]" Einträge aus
+            // Prüfe ob userData.languages das korrekte Format hat (Array von Objekten)
             if (userData.languages && Array.isArray(userData.languages)) {
               const validLanguages = userData.languages.filter(
                 (lang: any) =>
                   lang &&
-                  typeof lang === 'string' &&
-                  lang !== '[object Object]' &&
-                  lang.trim() !== ''
+                  typeof lang === 'object' &&
+                  lang.language &&
+                  typeof lang.language === 'string' &&
+                  lang.language.trim() !== ''
               );
 
               if (validLanguages.length > 0) {
-                return validLanguages.map((lang: string) => ({
-                  language: lang.trim(),
-                  proficiency: 'Fließend',
+                return validLanguages.map((lang: any) => ({
+                  language: lang.language.trim(),
+                  proficiency: lang.proficiency || 'Fließend',
                 }));
               }
             }
@@ -363,8 +364,8 @@ export default function ProfilePage() {
               }));
             }
 
-            // Demo-Fallback
-            return [{ language: 'Deutsch', proficiency: 'Muttersprache' }];
+            // Keine Sprachen gefunden - leeres Array zurückgeben
+            return [];
           })();
 
           // Extrahiere Portfolio und FAQs aus step3
