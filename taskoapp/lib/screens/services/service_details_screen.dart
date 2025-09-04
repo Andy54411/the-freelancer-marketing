@@ -3,7 +3,8 @@ import '../../services/auth_service.dart';
 import '../../services/review_service.dart';
 import '../../services/portfolio_service.dart';
 import '../../services/chat_service.dart';
-import '../provider/provider_details_screen.dart';
+import '../../components/portfolio_slide_panel.dart';
+import '../../components/login_required_modal.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> service;
@@ -26,7 +27,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   bool _showSlidePanel = false;
   Map<String, dynamic>? _selectedPortfolioItem;
   late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
   
   // Daten für die erweiterten Funktionen
   List<Map<String, dynamic>> _reviews = [];
@@ -44,7 +44,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this); // Erweitert auf 4 Tabs
+    _tabController = TabController(length: 3, vsync: this); // 3 Tabs: Overview, Reviews, FAQ
     _isFavorite = widget.service['isFavorite'] ?? false;
     
     // Slide Panel Animation Controller
@@ -52,13 +52,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(-1.0, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeInOut,
-    ));
     
     _loadProviderData();
   }
@@ -170,8 +163,11 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
+      body: Stack(
+        children: [
+          // Haupt-Content
+          CustomScrollView(
+            slivers: [
           // App Bar mit Service-Bild
           SliverAppBar(
             expandedHeight: 300,
@@ -358,7 +354,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                 isScrollable: true,
                 tabs: const [
                   Tab(text: 'Übersicht'),
-                  Tab(text: 'Portfolio'),
                   Tab(text: 'Bewertungen'),
                   Tab(text: 'FAQ'),
                 ],
@@ -372,13 +367,21 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               controller: _tabController,
               children: [
                 _buildOverviewTab(),
-                _buildPortfolioTab(),
                 _buildReviewsTab(),
                 _buildFAQTab(),
               ],
             ),
           ),
         ],
+        ),
+        
+        // Portfolio Slide Panel über alles
+        PortfolioSlidePanel(
+          portfolioItem: _selectedPortfolioItem,
+          isVisible: _showSlidePanel,
+          onClose: _hidePortfolioDetail,
+        ),
+      ],
       ),
       bottomNavigationBar: _buildBottomBar(),
     );
@@ -472,6 +475,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               ),
             const SizedBox(height: 24),
           ],
+          
+          // Portfolio Vorschau
+          _buildPortfolioPreview(),
+          const SizedBox(height: 24),
           
           // Sprachen
           if (_languages.isNotEmpty) ...[
@@ -640,90 +647,82 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     );
   }
 
-  /// Portfolio Tab
-  Widget _buildPortfolioTab() {
-    if (_isLoadingPortfolio) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14ad9f)),
-        ),
-      );
-    }
-
-    if (_portfolio.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  /// Portfolio Vorschau Widget für Overview Tab
+  Widget _buildPortfolioPreview() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Icon(
-              Icons.photo_library_outlined,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Noch kein Portfolio verfügbar',
+            const Text(
+              'Portfolio',
               style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
               ),
             ),
+            const Spacer(),
+            if (_portfolio.isNotEmpty)
+              Text(
+                '${_portfolio.length} Projekte',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
           ],
         ),
-      );
-    }
-
-    return Stack(
-      children: [
-        // Haupt-Portfolio Grid
-        GridView.builder(
-          padding: const EdgeInsets.all(20),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.8,
-          ),
-          itemCount: _portfolio.length,
-          itemBuilder: (context, index) {
-            final item = _portfolio[index];
-            return _buildPortfolioCard(item);
-          },
-        ),
-
-        // Dunkler Overlay zum Schließen (MUSS UNTER dem Panel sein)
-        if (_showSlidePanel)
-          GestureDetector(
-            onTap: _hidePortfolioDetail,
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Colors.black.withValues(alpha: 0.5),
+        const SizedBox(height: 16),
+        
+        if (_isLoadingPortfolio)
+          const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14ad9f)),
             ),
-          ),
-
-        // Slide-In Panel (MUSS ÜBER dem Overlay sein)
-        if (_showSlidePanel && _selectedPortfolioItem != null)
-          SlideTransition(
-            position: _slideAnimation,
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.85,
-              height: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 10,
-                    offset: Offset(2, 0),
+          )
+        else if (_portfolio.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.photo_library_outlined,
+                    size: 48,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Noch kein Portfolio verfügbar',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
-              child: _buildSlidePanel(),
+            ),
+          )
+        else
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _portfolio.length,
+              itemBuilder: (context, index) {
+                final item = _portfolio[index];
+                return Container(
+                  width: 160,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: _buildPortfolioCard(item),
+                );
+              },
             ),
           ),
       ],
@@ -802,9 +801,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                     if (item['category']?.isNotEmpty == true)
                       Text(
                         item['category'],
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: const Color(0xFF14ad9f),
+                          color: Color(0xFF14ad9f),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -1302,14 +1301,14 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     );
   }
 
-  void _contactProvider() {
-    // Hier kann das Booking Widget geöffnet werden
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Buchung wird geöffnet...'),
-        backgroundColor: Color(0xFF14ad9f),
-        duration: Duration(seconds: 2),
-      ),
+  void _contactProvider() async {
+    debugPrint('🛒 "Jetzt buchen" Button geklickt!');
+    // Zeige Login Modal mit wiederverwendbarer Komponente
+    await LoginRequiredModal.show(
+      context,
+      title: 'Buchung erfordert Anmeldung',
+      description: 'Um eine Buchung vorzunehmen, müssen Sie sich anmelden oder registrieren.',
+      buttonText: 'Anmelden und buchen',
     );
   }
 
@@ -1334,14 +1333,14 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
       final currentUser = authService.currentUser;
       
       if (currentUser == null) {
-        // User ist nicht eingeloggt - zur Login-Seite weiterleiten
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bitte melden Sie sich an, um den Chat zu nutzen'),
-            backgroundColor: Colors.orange,
-          ),
+        // User ist nicht eingeloggt - zeige Login Modal
+        debugPrint('💬 Chat erfordert Anmeldung');
+        await LoginRequiredModal.show(
+          context,
+          title: 'Chat erfordert Anmeldung',
+          description: 'Um mit Anbietern zu chatten, müssen Sie sich anmelden oder registrieren.',
+          buttonText: 'Anmelden und chatten',
         );
-        // Hier könnte zur Login-Seite navigiert werden
         return;
       }
       
@@ -1433,198 +1432,21 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     );
   }
 
-  /// Navigiert zu Provider Details mit Portfolio-Focus
+  /// Zeigt Portfolio-Details im lokalen Slide Panel
   void _showPortfolioDetail(Map<String, dynamic> item) {
-    debugPrint('🎯 SERVICE NAVIGATE TO PROVIDER - Öffne Portfolio Detail: ${item['title']}');
-    
-    // Navigiere zur Provider-Details-Seite mit Portfolio-Item
-    final providerId = widget.service['id'] ?? widget.service['providerId'] ?? '';
-    
-    if (providerId.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProviderDetailsScreen(
-            providerId: providerId,
-            selectedPortfolioItem: item,
-            showPortfolioPanel: true,
-          ),
-        ),
-      );
-    }
+    debugPrint('🎯 SERVICE SLIDE PANEL - Öffne Portfolio Detail: ${item['title']}');
+    setState(() {
+      _selectedPortfolioItem = item;
+      _showSlidePanel = true;
+    });
+    _slideController.forward();
   }
 
   void _hidePortfolioDetail() {
-    _slideController.reverse().then((_) {
-      setState(() {
-        _showSlidePanel = false;
-        _selectedPortfolioItem = null;
-      });
+    setState(() {
+      _showSlidePanel = false;
+      _selectedPortfolioItem = null;
     });
-  }
-
-  Widget _buildSlidePanel() {
-    if (_selectedPortfolioItem == null) return Container();
-    
-    final item = _selectedPortfolioItem!;
-    
-    return Column(
-      children: [
-        // Header mit Close Button
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: const BoxDecoration(
-            color: Color(0xFF14ad9f),
-            borderRadius: BorderRadius.only(
-              topRight: Radius.circular(16),
-            ),
-          ),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: _hidePortfolioDetail,
-                child: const Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Portfolio Details',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Content
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header mit Bild
-                if (item['imageUrl']?.isNotEmpty == true)
-                  Container(
-                    height: 250,
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        item['imageUrl'],
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.grey,
-                                    size: 48,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Bild konnte nicht geladen werden',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                
-                // Titel
-                Text(
-                  item['title'] ?? 'Portfolio Projekt',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Kategorie und Datum
-                Row(
-                  children: [
-                    if (item['category']?.isNotEmpty == true) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          item['category'],
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF14ad9f),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                    ],
-                    if (item['completedAt']?.isNotEmpty == true)
-                      Text(
-                        item['completedAt'],
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                
-                // Beschreibung
-                if (item['description']?.isNotEmpty == true) ...[
-                  const Text(
-                    'Projektbeschreibung',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    item['description'],
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade700,
-                      height: 1.5,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   /// Standard FAQs wenn keine Firebase-Daten vorhanden

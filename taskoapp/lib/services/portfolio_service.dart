@@ -249,8 +249,16 @@ class PortfolioService {
       
       if (companyDoc.exists) {
         final companyData = companyDoc.data()!;
+        
+        // Prüfe zuerst Top-Level faqs
+        final topLevelFaqs = companyData['faqs'] as List<dynamic>? ?? [];
+        
+        // Fallback: step3.faqs
         final step3Data = companyData['step3'] as Map<String, dynamic>? ?? {};
-        final faqsData = step3Data['faqs'] as List<dynamic>? ?? [];
+        final step3Faqs = step3Data['faqs'] as List<dynamic>? ?? [];
+        
+        // Verwende die verfügbaren FAQs (Priorität: Top-Level)
+        final faqsData = topLevelFaqs.isNotEmpty ? topLevelFaqs : step3Faqs;
         
         List<Map<String, dynamic>> faqs = [];
         

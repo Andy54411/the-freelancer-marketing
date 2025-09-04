@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../screens/provider/provider_details_screen.dart';
+import '../../../screens/services/service_details_screen.dart';
 
 class ProviderCard extends StatelessWidget {
   final Map<String, dynamic> provider;
@@ -172,9 +172,8 @@ class ProviderCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProviderDetailsScreen(
-                          providerId: provider['id'] ?? '',
-                          providerData: provider,
+                        builder: (context) => ServiceDetailsScreen(
+                          service: provider,
                         ),
                       ),
                     );
@@ -193,9 +192,8 @@ class ProviderCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProviderDetailsScreen(
-                          providerId: provider['id'] ?? '',
-                          providerData: provider,
+                        builder: (context) => ServiceDetailsScreen(
+                          service: provider,
                         ),
                       ),
                     );
