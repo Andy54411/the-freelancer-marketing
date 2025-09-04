@@ -191,7 +191,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
         {faqs.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <p>Noch keine FAQs erstellt.</p>
-            <p className="text-sm">Klicken Sie auf "FAQ hinzufügen", um zu beginnen.</p>
+            <p className="text-sm">Klicken Sie auf &quot;FAQ hinzufügen&quot;, um zu beginnen.</p>
           </div>
         ) : (
           faqs.map((faq) => (

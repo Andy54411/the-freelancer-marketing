@@ -6,8 +6,6 @@ import {
   Upload, 
   Image as ImageIcon, 
   Save, 
-  Eye, 
-  EyeOff, 
   Calendar,
   Tag,
   FileText,
@@ -476,7 +474,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
                   ⚠️ Wähle eine Subkategorie für spezifische Skills aus
                 </p>
                 <p className="text-xs text-yellow-600 mt-1">
-                  Oder alle Skills der Kategorie "{allCategories.find(c => c.id === selectedCategory)?.title}" werden angezeigt
+                  Oder alle Skills der Kategorie &quot;{allCategories.find(c => c.id === selectedCategory)?.title}&quot; werden angezeigt
                 </p>
               </div>
             )}
