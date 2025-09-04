@@ -121,6 +121,14 @@ service firebase.storage {
                        request.resource.contentType.matches('application/pdf')));
     }
 
+    // Portfolio-Bilder - Alle authentifizierten Benutzer können Portfolio-Bilder verwalten
+    // Pfad: portfolio/{portfolioItemId}/main/{fileName} und portfolio/{portfolioItemId}/additional/{fileName}
+    match /portfolio/{portfolioItemId}/{imageType}/{fileName} {
+      allow read: if true; // Portfolio-Bilder sind öffentlich lesbar
+      allow write: if request.auth != null && // Jeder authentifizierte Benutzer kann uploaden
+                      (isDelete() || (isUpload() && isValidImageType()));
+    }
+
     // Workspace Task Anhänge - Authentifizierte Benutzer können Dateien zu Tasks hinzufügen
     // Pfad: workspaces/{workspaceId}/tasks/{taskId}/attachments/{fileName}
     match /workspaces/{workspaceId}/tasks/{taskId}/attachments/{fileName} {

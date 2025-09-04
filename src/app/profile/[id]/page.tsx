@@ -60,6 +60,8 @@ interface CompanyProfile {
   languages?: { language: string; proficiency: string }[];
   education?: { school: string; degree: string; year: string }[];
   certifications?: { name: string; from: string; year: string }[];
+  // FAQs
+  faqs?: FAQ[];
   // Metriken
   responseTime?: number;
   completionRate?: number;
@@ -85,8 +87,28 @@ interface PortfolioItem {
   title: string;
   description: string;
   imageUrl?: string;
+  additionalImages?: string[]; // Array für zusätzliche Bilder
   projectUrl?: string;
-  category: string;
+  category?: string;
+  featured?: boolean;
+  order?: number;
+  createdAt?: string;
+  clientName?: string;
+  projectDate?: string;
+  technologies?: string[];
+  location?: string;
+  duration?: string;
+  budget?: string;
+  status?: 'completed' | 'in-progress' | 'cancelled';
+}
+
+interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  category?: string;
+  order?: number;
+  featured?: boolean;
 }
 
 export default function ProfilePage() {
@@ -345,6 +367,10 @@ export default function ProfilePage() {
             return [{ language: 'Deutsch', proficiency: 'Muttersprache' }];
           })();
 
+          // Extrahiere Portfolio und FAQs aus step3
+          const portfolio = userData.step3?.portfolio || userData.portfolio || [];
+          const faqs = userData.step3?.faqs || userData.faqs || [];
+
           setProfile({
             id: companyId,
             companyName:
@@ -388,7 +414,8 @@ export default function ProfilePage() {
             skills,
             specialties,
             languages,
-            portfolio: userData.portfolio || [],
+            portfolio: portfolio,
+            faqs: faqs,
             certifications: userData.certifications || [],
             education: userData.education || [],
           });
@@ -776,7 +803,374 @@ export default function ProfilePage() {
                       </div>
                     )}
 
-                    {/* Reviews Section */}
+                    {/* Portfolio Section - Fiverr Style */}
+                    {profile.portfolio && profile.portfolio.length > 0 && (
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-2xl font-bold text-gray-900">Portfolio</h2>
+                          <span className="text-sm text-gray-500">
+                            {profile.portfolio.length} Projekte
+                          </span>
+                        </div>
+
+                        <div className="space-y-8">
+                          {profile.portfolio
+                            .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+                            .slice(0, 6)
+                            .map((item, index) => (
+                              <div key={item.id || index} className="group">
+                                <div
+                                  className={`bg-white border rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300 ${
+                                    item.featured
+                                      ? 'border-[#14ad9f] ring-2 ring-[#14ad9f]/20'
+                                      : 'border-gray-200'
+                                  }`}
+                                >
+                                  {/* Horizontal Layout: Links Bild, Rechts Text */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+                                    {/* Linke Seite: Hauptbild */}
+                                    <div className="relative">
+                                      {item.imageUrl && (
+                                        <div className="aspect-[4/3] md:aspect-square bg-gray-100 overflow-hidden relative">
+                                          <Image
+                                            src={item.imageUrl}
+                                            alt={item.title}
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                          />
+                                          {item.featured && (
+                                            <div className="absolute top-3 left-3 bg-[#14ad9f] text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                                              Top Projekt
+                                            </div>
+                                          )}
+                                          {/* Hover Overlay */}
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Rechte Seite: Text Content */}
+                                    <div className="p-6 flex flex-col justify-between">
+                                      <div>
+                                        {/* Category Badge */}
+                                        <div className="mb-3">
+                                          <span className="inline-block bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide">
+                                            {item.category}
+                                          </span>
+                                        </div>
+
+                                        {/* Title */}
+                                        <h3 className="font-bold text-gray-900 mb-3 text-xl leading-tight">
+                                          {item.title}
+                                        </h3>
+
+                                        {/* Description */}
+                                        <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-4">
+                                          {item.description}
+                                        </p>
+
+                                        {/* Technologies */}
+                                        {item.technologies && item.technologies.length > 0 && (
+                                          <div className="mb-4">
+                                            <div className="flex flex-wrap gap-2">
+                                              {item.technologies
+                                                .slice(0, 5)
+                                                .map((tech, techIndex) => (
+                                                  <span
+                                                    key={techIndex}
+                                                    className="px-2 py-1 bg-[#14ad9f]/10 text-[#14ad9f] text-xs rounded-md font-medium"
+                                                  >
+                                                    {tech}
+                                                  </span>
+                                                ))}
+                                              {item.technologies.length > 5 && (
+                                                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md font-medium">
+                                                  +{item.technologies.length - 5}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Project Meta Info - am unteren Rand */}
+                                      <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                                          {item.duration && (
+                                            <div className="flex items-center gap-1">
+                                              <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                              >
+                                                <path
+                                                  strokeLinecap="round"
+                                                  strokeLinejoin="round"
+                                                  strokeWidth={2}
+                                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                />
+                                              </svg>
+                                              <span>{item.duration}</span>
+                                            </div>
+                                          )}
+                                          <div className="flex items-center gap-1">
+                                            <svg
+                                              className="w-4 h-4"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              viewBox="0 0 24 24"
+                                            >
+                                              <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                              />
+                                              <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                              />
+                                            </svg>
+                                            <span>
+                                              {Math.floor(Math.random() * 500) + 100} Views
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        {/* Action Button */}
+                                        {item.projectUrl && (
+                                          <a
+                                            href={item.projectUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg text-xs font-semibold transition-colors"
+                                          >
+                                            <span>Live ansehen</span>
+                                            <svg
+                                              className="w-3 h-3"
+                                              fill="none"
+                                              stroke="currentColor"
+                                              viewBox="0 0 24 24"
+                                            >
+                                              <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                              />
+                                            </svg>
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Weitere Bilder aus additionalImages */}
+                                  {item.additionalImages && item.additionalImages.length > 0 && (
+                                    <div className="border-t border-gray-100 p-4">
+                                      <p className="text-xs text-gray-500 mb-3 font-medium">
+                                        Weitere Projektbilder:
+                                      </p>
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {item.additionalImages
+                                          .slice(0, 4)
+                                          .map((imageUrl, imgIndex) => (
+                                            <div
+                                              key={imgIndex}
+                                              className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group cursor-pointer"
+                                            >
+                                              <Image
+                                                src={imageUrl}
+                                                alt={`${item.title} - Bild ${imgIndex + 1}`}
+                                                fill
+                                                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
+                                                className="object-cover group-hover:scale-110 transition-transform duration-300"
+                                              />
+                                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200" />
+                                              {/* Optional: Click to enlarge functionality */}
+                                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                <div className="bg-white/90 rounded-full p-2">
+                                                  <svg
+                                                    className="w-4 h-4 text-gray-700"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                  >
+                                                    <path
+                                                      strokeLinecap="round"
+                                                      strokeLinejoin="round"
+                                                      strokeWidth={2}
+                                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                                                    />
+                                                  </svg>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+
+                        {/* Show more button */}
+                        {profile.portfolio.length > 6 && (
+                          <div className="text-center mt-8">
+                            <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#14ad9f] text-[#14ad9f] rounded-lg hover:bg-[#14ad9f] hover:text-white transition-all duration-300 font-semibold">
+                              <span>Alle {profile.portfolio.length} Projekte anzeigen</span>
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* FAQ Section - Fiverr Style - ALWAYS SHOW FOR DEBUG```
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* FAQ Section - Fiverr Style */}
+                    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          Häufig gestellte Fragen
+                        </h2>
+                        <span className="text-sm text-gray-500">
+                          {profile.faqs ? `${profile.faqs.length} FAQs` : 'Keine FAQs verfügbar'}
+                        </span>
+                      </div>
+
+                      {profile.faqs && profile.faqs.length > 0 ? (
+                        <div>
+                          <div className="space-y-4">
+                            {profile.faqs
+                              .sort((a, b) => {
+                                // Featured FAQs first
+                                if (a.featured && !b.featured) return -1;
+                                if (!a.featured && b.featured) return 1;
+                                // Then by order
+                                return (a.order || 0) - (b.order || 0);
+                              })
+                              .slice(0, 8)
+                              .map((faq, index) => (
+                                <div
+                                  key={faq.id || index}
+                                  className={`group border rounded-lg transition-all duration-200 hover:shadow-md ${
+                                    faq.featured
+                                      ? 'border-[#14ad9f] bg-[#14ad9f]/5'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  <details className="w-full">
+                                    <summary className="flex items-center justify-between cursor-pointer p-5 hover:bg-gray-50/50 rounded-lg transition-colors">
+                                      <div className="flex items-start gap-3 flex-1">
+                                        {faq.featured && (
+                                          <div className="flex-shrink-0 mt-1">
+                                            <div className="w-2 h-2 bg-[#14ad9f] rounded-full"></div>
+                                          </div>
+                                        )}
+                                        <div className="flex-1">
+                                          <h3
+                                            className={`font-semibold text-left pr-4 leading-relaxed ${
+                                              faq.featured ? 'text-[#14ad9f]' : 'text-gray-900'
+                                            }`}
+                                          >
+                                            {faq.question}
+                                          </h3>
+                                          {faq.category && (
+                                            <span className="inline-block mt-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                                              {faq.category}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex-shrink-0 ml-4">
+                                        <svg
+                                          className={`w-5 h-5 transform transition-transform group-open:rotate-180 ${
+                                            faq.featured ? 'text-[#14ad9f]' : 'text-gray-400'
+                                          }`}
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 9l-7 7-7-7"
+                                          />
+                                        </svg>
+                                      </div>
+                                    </summary>
+                                    <div className="px-5 pb-5">
+                                      <div
+                                        className={`pl-5 border-l-2 ${
+                                          faq.featured ? 'border-[#14ad9f]/30' : 'border-gray-200'
+                                        }`}
+                                      >
+                                        <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                                          {faq.answer}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </details>
+                                </div>
+                              ))}
+                          </div>
+
+                          {/* Show more FAQs button */}
+                          {profile.faqs && profile.faqs.length > 8 && (
+                            <div className="text-center mt-8">
+                              <button className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#14ad9f] text-[#14ad9f] rounded-lg hover:bg-[#14ad9f] hover:text-white transition-all duration-300 font-semibold">
+                                <span>Alle {profile.faqs.length} FAQs anzeigen</span>
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">
+                            Dieser Anbieter hat noch keine FAQs erstellt.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reviews Section - Moved to the end */}
                     <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-gray-900">
@@ -888,66 +1282,6 @@ export default function ProfilePage() {
                         </div>
                       )}
                     </div>
-
-                    {/* Portfolio Section */}
-                    {profile.portfolio && profile.portfolio.length > 0 && (
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Portfolio</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {profile.portfolio.map((item, index) => (
-                            <div key={item.id || index} className="group cursor-pointer">
-                              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300">
-                                {item.imageUrl && (
-                                  <div className="aspect-video bg-gray-200 overflow-hidden relative">
-                                    <Image
-                                      src={item.imageUrl}
-                                      alt={item.title}
-                                      fill
-                                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                    {/* Play button overlay for videos */}
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                      <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center group-hover:bg-black/70 transition-colors">
-                                        <svg
-                                          className="w-6 h-6 text-white ml-1"
-                                          fill="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path d="M8 5v14l11-7z" />
-                                        </svg>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                                <div className="p-4">
-                                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                                    {item.title}
-                                  </h3>
-                                  <p className="text-gray-600 text-sm mb-3 line-clamp-3">
-                                    {item.description}
-                                  </p>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-                                      {item.category}
-                                    </span>
-                                    {item.projectUrl && (
-                                      <a
-                                        href={item.projectUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[#14ad9f] hover:text-[#0d8a7a] text-sm font-medium"
-                                      >
-                                        Ansehen →
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   {/* Right Column - Contact Card */}

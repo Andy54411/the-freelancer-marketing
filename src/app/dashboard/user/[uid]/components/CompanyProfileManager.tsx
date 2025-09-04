@@ -151,7 +151,6 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({ userData,
       toast.success('Company Profile erfolgreich aktualisiert!');
       onDataSaved();
     } catch (error) {
-
       toast.error('Fehler beim Speichern des Profils');
     } finally {
       setSaving(false);
@@ -569,7 +568,13 @@ const CompanyProfileManager: React.FC<CompanyProfileManagerProps> = ({ userData,
                   >
                     {item.imageUrl && (
                       <div className="relative h-32 bg-gray-200">
-                        <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover"
+                        />
                       </div>
                     )}
                     <div className="p-3">

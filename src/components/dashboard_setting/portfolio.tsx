@@ -1,7 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, Upload, Image as ImageIcon, Trash2, Save, Eye, EyeOff, Settings } from 'lucide-react';
+import {
+  Plus,
+  X,
+  Upload,
+  Image as ImageIcon,
+  Trash2,
+  Save,
+  Eye,
+  EyeOff,
+  Settings,
+} from 'lucide-react';
 import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
 import Image from 'next/image';
 import PortfolioItemDetails from './PortfolioItemDetails';
@@ -19,6 +29,8 @@ interface PortfolioItem {
   id: string;
   imageUrl: string;
   imageFile?: File;
+  additionalImages?: string[]; // Array für zusätzliche Bilder
+  additionalImageFiles?: File[]; // Array für zusätzliche Bild-Files
   title: string;
   description: string;
   category?: string;
@@ -38,8 +50,8 @@ interface PortfolioItem {
 const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, userId }) => {
   // Initialize portfolio from formData only once on mount
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(() => {
-    return formData.step3?.portfolio && Array.isArray(formData.step3.portfolio) 
-      ? formData.step3.portfolio 
+    return formData.step3?.portfolio && Array.isArray(formData.step3.portfolio)
+      ? formData.step3.portfolio
       : [];
   });
   const [editingDetailsId, setEditingDetailsId] = useState<string | null>(null);
@@ -51,7 +63,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     title: '',
     description: '',
     category: '',
-    featured: false
+    featured: false,
   });
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
@@ -68,11 +80,11 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     try {
       const docRef = doc(db, 'companies', userId);
       const docSnap = await getDoc(docRef);
-      
+
       if (docSnap.exists()) {
         const data = docSnap.data();
         const portfolioData = data?.step3?.portfolio;
-        
+
         if (portfolioData && Array.isArray(portfolioData)) {
           setPortfolioItems(portfolioData);
           // Auch die formData aktualisieren
@@ -86,12 +98,12 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
     // Portfolio-Daten beim ersten Laden abrufen
     loadPortfolioFromDatabase();
   }, [userId]);
-  
+
   useEffect(() => {
     // Mark that we should start updating form data after first render
     shouldUpdateFormData.current = true;
@@ -108,7 +120,11 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     }
   }, [portfolioItems]);
 
-  const handleImageUpload = (files: FileList | null, isNewItem: boolean = false, itemId?: string) => {
+  const handleImageUpload = (
+    files: FileList | null,
+    isNewItem: boolean = false,
+    itemId?: string
+  ) => {
     if (!files) return;
 
     // For new item, only take first file
@@ -116,12 +132,12 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
       const file = files[0];
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = e => {
           const imageUrl = e.target?.result as string;
-          setNewItem(prev => ({ 
-            ...prev, 
-            imageUrl, 
-            imageFile: file 
+          setNewItem(prev => ({
+            ...prev,
+            imageUrl,
+            imageFile: file,
           }));
         };
         reader.readAsDataURL(file);
@@ -133,17 +149,13 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     Array.from(files).forEach((file, index) => {
       if (file && file.type.startsWith('image/') && portfolioItems.length + index < 5) {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = e => {
           const imageUrl = e.target?.result as string;
-          
+
           if (itemId) {
             // Update existing item
-            setPortfolioItems(prev => 
-              prev.map(item => 
-                item.id === itemId 
-                  ? { ...item, imageUrl, imageFile: file }
-                  : item
-              )
+            setPortfolioItems(prev =>
+              prev.map(item => (item.id === itemId ? { ...item, imageUrl, imageFile: file } : item))
             );
           } else {
             // Create new item from multi-upload
@@ -156,9 +168,9 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
               category: '',
               featured: false,
               order: portfolioItems.length + index,
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
             };
-            
+
             setPortfolioItems(prev => [...prev, item]);
           }
         };
@@ -169,7 +181,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
 
   const handleMultipleImageUpload = (files: FileList | null) => {
     if (!files) return;
-    
+
     const remainingSlots = 5 - portfolioItems.length;
     if (remainingSlots <= 0) {
       alert('Sie haben bereits die maximale Anzahl von 5 Portfolio-Einträgen erreicht.');
@@ -177,12 +189,12 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     }
 
     const filesToProcess = Math.min(files.length, remainingSlots);
-    
+
     for (let i = 0; i < filesToProcess; i++) {
       const file = files[i];
       if (file && file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = e => {
           const imageUrl = e.target?.result as string;
           const item: PortfolioItem = {
             id: `${Date.now()}-${i}`,
@@ -193,9 +205,9 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
             category: '',
             featured: false,
             order: portfolioItems.length + i,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
           };
-          
+
           setPortfolioItems(prev => [...prev, item]);
         };
         reader.readAsDataURL(file);
@@ -203,7 +215,9 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     }
 
     if (files.length > remainingSlots) {
-      alert(`Nur ${remainingSlots} von ${files.length} Bildern wurden hochgeladen, da Sie maximal 5 Portfolio-Einträge haben können.`);
+      alert(
+        `Nur ${remainingSlots} von ${files.length} Bildern wurden hochgeladen, da Sie maximal 5 Portfolio-Einträge haben können.`
+      );
     }
   };
 
@@ -215,15 +229,43 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     }
 
     try {
-      // Entferne File-Objekte vor dem Speichern (Firestore unterstützt keine File-Objekte)
-      const cleanPortfolio = updatedPortfolio.map(item => {
-        const { imageFile, ...cleanItem } = item;
-        return cleanItem;
-      });
+      // Hilfsfunktion um undefined-Werte rekursiv zu entfernen
+      const removeUndefined = (obj: any): any => {
+        if (Array.isArray(obj)) {
+          return obj.map(removeUndefined).filter(item => item !== undefined);
+        }
+
+        if (obj !== null && typeof obj === 'object') {
+          const cleaned: any = {};
+          Object.keys(obj).forEach(key => {
+            const value = obj[key];
+            if (value !== undefined) {
+              cleaned[key] = removeUndefined(value);
+            }
+          });
+          return cleaned;
+        }
+
+        return obj;
+      };
+
+      // Entferne alle File-Objekte und undefined-Werte vor dem Speichern
+      const cleanPortfolio = updatedPortfolio
+        .map(item => {
+          // Entferne File-Objekte
+          const { imageFile, additionalImageFiles, ...cleanItem } = item;
+
+          // Entferne alle undefined-Werte rekursiv
+          return removeUndefined(cleanItem);
+        })
+        .filter(item => item && Object.keys(item).length > 0); // Entferne leere Objekte
+
+      // Debug: Logge das bereinigte Portfolio
+      console.log('Clean portfolio to save:', JSON.stringify(cleanPortfolio, null, 2));
 
       await updateDoc(doc(db, 'companies', userId), {
         'step3.portfolio': cleanPortfolio,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
       toast.success('Portfolio gespeichert!');
       return true;
@@ -245,23 +287,23 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
         ...newItem,
         id: Date.now().toString(),
         order: portfolioItems.length,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
-      
+
       const updatedPortfolio = [...portfolioItems, item];
-      
+
       // Direkt in Datenbank speichern
       const success = await savePortfolioToDatabase(updatedPortfolio);
-      
+
       if (success) {
         setPortfolioItems(updatedPortfolio);
-        setNewItem({ 
-          id: '', 
-          imageUrl: '', 
-          title: '', 
-          description: '', 
-          category: '', 
-          featured: false 
+        setNewItem({
+          id: '',
+          imageUrl: '',
+          title: '',
+          description: '',
+          category: '',
+          featured: false,
         });
         setIsAdding(false);
       }
@@ -271,18 +313,18 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
   const deletePortfolioItem = async (id: string) => {
     const updatedPortfolio = portfolioItems.filter(item => item.id !== id);
     const success = await savePortfolioToDatabase(updatedPortfolio);
-    
+
     if (success) {
       setPortfolioItems(updatedPortfolio);
     }
   };
 
   const toggleFeatured = async (id: string) => {
-    const updatedPortfolio = portfolioItems.map(item => 
+    const updatedPortfolio = portfolioItems.map(item =>
       item.id === id ? { ...item, featured: !item.featured } : item
     );
     const success = await savePortfolioToDatabase(updatedPortfolio);
-    
+
     if (success) {
       setPortfolioItems(updatedPortfolio);
     }
@@ -293,11 +335,11 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
   };
 
   const handleDetailsSave = async (updatedItem: PortfolioItem) => {
-    const updatedPortfolio = portfolioItems.map(item => 
+    const updatedPortfolio = portfolioItems.map(item =>
       item.id === updatedItem.id ? updatedItem : item
     );
     const success = await savePortfolioToDatabase(updatedPortfolio);
-    
+
     if (success) {
       setPortfolioItems(updatedPortfolio);
       setEditingDetailsId(null);
@@ -311,7 +353,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
   const handleDetailsDelete = async (id: string) => {
     const updatedPortfolio = portfolioItems.filter(item => item.id !== id);
     const success = await savePortfolioToDatabase(updatedPortfolio);
-    
+
     if (success) {
       setPortfolioItems(updatedPortfolio);
       setEditingDetailsId(null);
@@ -341,7 +383,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     // Update order numbers
     const reorderedItems = newItems.map((item, index) => ({
       ...item,
-      order: index
+      order: index,
     }));
 
     setPortfolioItems(reorderedItems);
@@ -352,9 +394,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Portfolio
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Portfolio</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Zeigen Sie Ihre besten Arbeiten (maximal 5 Einträge).
           </p>
@@ -384,7 +424,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={(e) => {
+                  onChange={e => {
                     const files = e.target.files;
                     if (files && files.length > 1) {
                       // Multiple files - create multiple items
@@ -399,18 +439,15 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
                 />
                 <div className="flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md hover:border-[#14ad9f] transition-colors">
                   <Upload className="w-5 h-5 mr-2 text-gray-400" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Bilder auswählen (einzeln oder mehrere)</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    Bilder auswählen (einzeln oder mehrere)
+                  </span>
                 </div>
               </label>
               {newItem.imageUrl && (
                 <div className="mt-3">
                   <div className="relative w-24 h-24 rounded-md overflow-hidden border border-gray-200">
-                    <Image
-                      src={newItem.imageUrl}
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                    />
+                    <Image src={newItem.imageUrl} alt="Preview" fill className="object-cover" />
                   </div>
                 </div>
               )}
@@ -424,7 +461,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
                 <input
                   type="text"
                   value={newItem.title}
-                  onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+                  onChange={e => setNewItem({ ...newItem, title: e.target.value })}
                   placeholder="z.B. Küchenrenovierung"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
                 />
@@ -436,7 +473,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
                 <input
                   type="text"
                   value={newItem.category}
-                  onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                  onChange={e => setNewItem({ ...newItem, category: e.target.value })}
                   placeholder="z.B. Handwerk, Design"
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
                 />
@@ -449,7 +486,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
               </label>
               <textarea
                 value={newItem.description}
-                onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
                 placeholder="Beschreiben Sie dieses Projekt..."
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
@@ -461,7 +498,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
                 <input
                   type="checkbox"
                   checked={newItem.featured}
-                  onChange={(e) => setNewItem({ ...newItem, featured: e.target.checked })}
+                  onChange={e => setNewItem({ ...newItem, featured: e.target.checked })}
                   className="mr-2 text-[#14ad9f] focus:ring-[#14ad9f]"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -481,7 +518,14 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
               <button
                 onClick={() => {
                   setIsAdding(false);
-                  setNewItem({ id: '', imageUrl: '', title: '', description: '', category: '', featured: false });
+                  setNewItem({
+                    id: '',
+                    imageUrl: '',
+                    title: '',
+                    description: '',
+                    category: '',
+                    featured: false,
+                  });
                 }}
                 className="px-3 py-2 text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
               >
@@ -506,14 +550,14 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {portfolioItems.map((item) => (
+            {portfolioItems.map(item => (
               <PortfolioItemCard
                 key={item.id}
                 item={item}
                 onDelete={deletePortfolioItem}
                 onToggleFeatured={toggleFeatured}
                 onOpenDetails={openDetailsEditor}
-                onImageUpload={(file) => {
+                onImageUpload={file => {
                   const fileList = new DataTransfer();
                   fileList.items.add(file);
                   handleImageUpload(fileList.files, false, item.id);
@@ -531,12 +575,12 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
       {portfolioItems.length > 0 && (
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
           <p className="text-xs text-blue-700 dark:text-blue-300">
-            Ihre Portfolio-Einträge werden auf Ihrem öffentlichen Profil angezeigt. 
-            Featured Einträge werden besonders hervorgehoben.
+            Ihre Portfolio-Einträge werden auf Ihrem öffentlichen Profil angezeigt. Featured
+            Einträge werden besonders hervorgehoben.
           </p>
           <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-            <strong>Tipp:</strong> Klicken Sie auf das <Settings className="w-3 h-3 inline mx-1" /> Symbol für erweiterte Bearbeitung 
-            (Technologien, Kunde, Budget, Projektdauer, etc.)
+            <strong>Tipp:</strong> Klicken Sie auf das <Settings className="w-3 h-3 inline mx-1" />{' '}
+            Symbol für erweiterte Bearbeitung (Technologien, Kunde, Budget, Projektdauer, etc.)
           </p>
         </div>
       )}
@@ -576,7 +620,7 @@ const PortfolioItemCard: React.FC<PortfolioItemCardProps> = ({
   onDragStart,
   onDragOver,
   onDrop,
-  isDragging
+  isDragging,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -585,23 +629,16 @@ const PortfolioItemCard: React.FC<PortfolioItemCardProps> = ({
       draggable
       onDragStart={() => onDragStart(item.id)}
       onDragOver={onDragOver}
-      onDrop={(e) => onDrop(e, item.id)}
+      onDrop={e => onDrop(e, item.id)}
       className={`border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden cursor-move ${
         isDragging ? 'opacity-50 scale-95' : ''
       }`}
     >
       <div className="relative aspect-video">
-        <Image
-          src={item.imageUrl}
-          alt={item.title}
-          fill
-          className="object-cover"
-        />
+        <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
         <div className="absolute top-2 right-2 flex gap-1">
           {item.featured && (
-            <span className="px-2 py-1 bg-[#14ad9f] text-white text-xs rounded-full">
-              Featured
-            </span>
+            <span className="px-2 py-1 bg-[#14ad9f] text-white text-xs rounded-full">Featured</span>
           )}
           {item.category && (
             <span className="px-2 py-1 bg-black/50 text-white text-xs rounded-full">
@@ -613,15 +650,13 @@ const PortfolioItemCard: React.FC<PortfolioItemCardProps> = ({
 
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-medium text-gray-900 dark:text-white text-sm">
-            {item.title}
-          </h3>
+          <h3 className="font-medium text-gray-900 dark:text-white text-sm">{item.title}</h3>
           <div className="flex items-center gap-1">
             <button
               onClick={() => onToggleFeatured(item.id)}
               className={`p-1 rounded text-xs transition-colors ${
-                item.featured 
-                  ? 'bg-[#14ad9f] text-white hover:bg-[#129488]' 
+                item.featured
+                  ? 'bg-[#14ad9f] text-white hover:bg-[#129488]'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
               title={item.featured ? 'Featured entfernen' : 'Als Featured markieren'}
