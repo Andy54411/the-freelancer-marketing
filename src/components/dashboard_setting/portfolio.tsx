@@ -591,7 +591,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
             <p className="text-sm">Noch keine Portfolio-Einträge erstellt.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {portfolioItems.map(item => (
               <PortfolioItemCard
                 key={item.id}
@@ -676,7 +676,7 @@ const PortfolioItemCard: React.FC<PortfolioItemCardProps> = ({
         isDragging ? 'opacity-50 scale-95' : ''
       }`}
     >
-      <div className="relative aspect-video">
+      <div className="relative aspect-[4/3]">
         <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
         <div className="absolute top-2 right-2 flex gap-1">
           {item.featured && (
@@ -690,9 +690,9 @@ const PortfolioItemCard: React.FC<PortfolioItemCardProps> = ({
         </div>
       </div>
 
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-medium text-gray-900 dark:text-white text-sm">{item.title}</h3>
+      <div className="p-2">
+        <div className="flex justify-between items-start mb-1">
+          <h3 className="font-medium text-gray-900 dark:text-white text-xs">{item.title}</h3>
           <div className="flex items-center gap-1">
             <button
               onClick={() => onToggleFeatured(item.id)}
@@ -722,7 +722,7 @@ const PortfolioItemCard: React.FC<PortfolioItemCardProps> = ({
           </div>
         </div>
         {item.description && (
-          <p className="text-gray-600 dark:text-gray-400 text-xs leading-relaxed line-clamp-2">
+          <p className="text-gray-600 dark:text-gray-400 text-xs leading-tight line-clamp-1 mt-1">
             {item.description}
           </p>
         )}

@@ -806,7 +806,7 @@ export default function ProfilePage() {
 
                     {/* Portfolio Section - Fiverr Style */}
                     {profile.portfolio && profile.portfolio.length > 0 && (
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-6">
                         <div className="flex items-center justify-between mb-6">
                           <h2 className="text-2xl font-bold text-gray-900">Portfolio</h2>
                           <span className="text-sm text-gray-500">
@@ -814,7 +814,7 @@ export default function ProfilePage() {
                           </span>
                         </div>
 
-                        <div className="space-y-8">
+                        <div className="space-y-6">
                           {profile.portfolio
                             .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
                             .slice(0, 6)
@@ -828,11 +828,11 @@ export default function ProfilePage() {
                                   }`}
                                 >
                                   {/* Horizontal Layout: Links Bild, Rechts Text */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                                    {/* Linke Seite: Hauptbild */}
-                                    <div className="relative">
+                                  <div className="grid grid-cols-1 md:grid-cols-5 gap-0">
+                                    {/* Linke Seite: Hauptbild - nimmt 2 Spalten */}
+                                    <div className="relative md:col-span-2">
                                       {item.imageUrl && (
-                                        <div className="aspect-[4/3] md:aspect-square bg-gray-100 overflow-hidden relative">
+                                        <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
                                           <Image
                                             src={item.imageUrl}
                                             alt={item.title}
@@ -845,29 +845,31 @@ export default function ProfilePage() {
                                               Top Projekt
                                             </div>
                                           )}
-                                          {/* Hover Overlay */}
-                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+                                          {/* Hover Overlay - nur über dem Bild */}
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 pointer-events-none" />
                                         </div>
                                       )}
                                     </div>
 
-                                    {/* Rechte Seite: Text Content */}
-                                    <div className="p-6 flex flex-col justify-between">
+                                    {/* Rechte Seite: Text Content - nimmt 3 Spalten */}
+                                    <div className="md:col-span-3 p-4 flex flex-col justify-between">
                                       <div>
                                         {/* Category Badge */}
-                                        <div className="mb-3">
-                                          <span className="inline-block bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide">
-                                            {item.category}
-                                          </span>
-                                        </div>
+                                        {item.category && (
+                                          <div className="mb-2">
+                                            <span className="inline-block bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium uppercase tracking-wide">
+                                              {item.category}
+                                            </span>
+                                          </div>
+                                        )}
 
                                         {/* Title */}
-                                        <h3 className="font-bold text-gray-900 mb-3 text-xl leading-tight">
+                                        <h3 className="font-bold text-gray-900 mb-2 text-lg leading-tight">
                                           {item.title}
                                         </h3>
 
                                         {/* Description */}
-                                        <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-4">
+                                        <p className="text-gray-600 text-sm mb-3 leading-relaxed line-clamp-3">
                                           {item.description}
                                         </p>
 
@@ -991,7 +993,7 @@ export default function ProfilePage() {
                                                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                                 className="object-cover group-hover:scale-110 transition-transform duration-300"
                                               />
-                                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200" />
+                                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 pointer-events-none" />
                                               {/* Optional: Click to enlarge functionality */}
                                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                                 <div className="bg-white/90 rounded-full p-2">

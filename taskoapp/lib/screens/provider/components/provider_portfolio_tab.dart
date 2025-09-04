@@ -3,25 +3,53 @@ import '../../../services/portfolio_service.dart';
 
 class ProviderPortfolioTab extends StatefulWidget {
   final String providerId;
+  final Function(Map<String, dynamic>)? onPortfolioItemTap;
 
   const ProviderPortfolioTab({
     super.key,
     required this.providerId,
+    this.onPortfolioItemTap,
   });
 
   @override
   State<ProviderPortfolioTab> createState() => _ProviderPortfolioTabState();
 }
 
-class _ProviderPortfolioTabState extends State<ProviderPortfolioTab> {
+class _ProviderPortfolioTabState extends State<ProviderPortfolioTab> with TickerProviderStateMixin {
   List<Map<String, dynamic>> _portfolio = [];
   bool _isLoading = true;
   String? _error;
+  bool _showSlidePanel = false;
+  Map<String, dynamic>? _selectedPortfolioItem;
+  AnimationController? _slideController;
+  Animation<Offset>? _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    
+    // Nur lokales Slide Panel initialisieren, wenn KEIN Callback vorhanden ist
+    if (widget.onPortfolioItemTap == null) {
+      _slideController = AnimationController(
+        duration: const Duration(milliseconds: 300),
+        vsync: this,
+      );
+      _slideAnimation = Tween<Offset>(
+        begin: const Offset(-1.0, 0.0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(
+        parent: _slideController!,
+        curve: Curves.easeInOut,
+      ));
+    }
+    
     _loadPortfolio();
+  }
+
+  @override
+  void dispose() {
+    _slideController?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPortfolio() async {
@@ -150,23 +178,64 @@ class _ProviderPortfolioTabState extends State<ProviderPortfolioTab> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadPortfolio,
-      color: const Color(0xFF14ad9f),
-      child: GridView.builder(
-        padding: const EdgeInsets.all(20),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.8,
+    return Stack(
+      children: [
+        // Haupt-Portfolio Grid
+        RefreshIndicator(
+          onRefresh: _loadPortfolio,
+          color: const Color(0xFF14ad9f),
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: _portfolio.length,
+            itemBuilder: (context, index) {
+              final item = _portfolio[index];
+              return _buildPortfolioCard(item);
+            },
+          ),
         ),
-        itemCount: _portfolio.length,
-        itemBuilder: (context, index) {
-          final item = _portfolio[index];
-          return _buildPortfolioCard(item);
-        },
-      ),
+
+        // Dunkler Overlay zum Schließen (MUSS UNTER dem Panel sein) - NUR wenn kein Callback vorhanden
+        if (_showSlidePanel && widget.onPortfolioItemTap == null)
+          GestureDetector(
+            onTap: _hidePortfolioDetail,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+
+        // Slide-In Panel (MUSS ÜBER dem Overlay sein) - NUR wenn kein Callback vorhanden
+        if (_showSlidePanel && _selectedPortfolioItem != null && widget.onPortfolioItemTap == null && _slideAnimation != null)
+          SlideTransition(
+            position: _slideAnimation!,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.85,
+              height: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(2, 0),
+                  ),
+                ],
+              ),
+              child: _buildSlidePanel(),
+            ),
+          ),
+      ],
     );
   }
 
@@ -371,273 +440,228 @@ class _ProviderPortfolioTabState extends State<ProviderPortfolioTab> {
   }
 
   void _showPortfolioDetail(Map<String, dynamic> item) {
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: false,
-        pageBuilder: (context, animation, secondaryAnimation) => 
-          PortfolioDetailSlidePanel(
-            item: item,
-            animation: animation,
-          ),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(-1.0, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOut;
-
-          var tween = Tween(begin: begin, end: end).chain(
-            CurveTween(curve: curve),
-          );
-
-          return SlideTransition(
-            position: animation.drive(tween),
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
-    );
+    debugPrint('🎯 PROVIDER PORTFOLIO TAB - Portfolio Item geklickt');
+    
+    // Wenn ein Callback verfügbar ist, nutze ihn (für parent screen slide panel)
+    if (widget.onPortfolioItemTap != null) {
+      debugPrint('📲 CALLBACK VERFÜGBAR - Weitergabe an parent screen');
+      widget.onPortfolioItemTap!(item);
+    } else {
+      // Fallback: Zeige lokales Slide Panel
+      debugPrint('📱 LOKALES SLIDE PANEL - Zeige in Tab');
+      setState(() {
+        _selectedPortfolioItem = item;
+        _showSlidePanel = true;
+      });
+      _slideController?.forward();
+    }
   }
-}
 
-class PortfolioDetailSlidePanel extends StatelessWidget {
-  final Map<String, dynamic> item;
-  final Animation<double> animation;
+  void _hidePortfolioDetail() {
+    _slideController?.reverse().then((_) {
+      setState(() {
+        _showSlidePanel = false;
+        _selectedPortfolioItem = null;
+      });
+    });
+  }
 
-  const PortfolioDetailSlidePanel({
-    super.key,
-    required this.item,
-    required this.animation,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black.withValues(alpha: 0.5),
-      body: Row(
-        children: [
-          // Panel von links
-          SizeTransition(
-            sizeFactor: animation,
-            axis: Axis.horizontal,
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.85,
-              height: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
+  Widget _buildSlidePanel() {
+    if (_selectedPortfolioItem == null) return Container();
+    
+    final item = _selectedPortfolioItem!;
+    
+    return Column(
+      children: [
+        // Header mit Close Button
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Color(0xFF14ad9f),
+            borderRadius: BorderRadius.only(
+              topRight: Radius.circular(16),
+            ),
+          ),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: _hidePortfolioDetail,
+                child: const Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.white,
+                  size: 24,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 10,
-                    offset: Offset(2, 0),
-                  ),
-                ],
               ),
-              child: Column(
-                children: [
-                  // Header mit Close Button
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Portfolio Details',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header mit Bild-Gallerie
+                if (item['imageUrl'] != null || (item['images'] as List?)?.isNotEmpty == true)
                   Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF14ad9f),
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(16),
-                      ),
+                    height: 250,
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: const Icon(
-                            Icons.arrow_back_ios,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'Portfolio Details',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: _buildDetailImage(),
                     ),
                   ),
-
-                  // Content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header mit Bild-Gallerie
-                          if (item['imageUrl'] != null || (item['images'] as List?)?.isNotEmpty == true)
-                            Container(
-                              height: 250,
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 20),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: _buildDetailImage(),
-                              ),
-                            ),
-                          
-                          // Titel
-                          Text(
-                            item['title'] ?? 'Portfolio Projekt',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
+                
+                // Titel
+                Text(
+                  item['title'] ?? 'Portfolio Projekt',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Kategorie und Datum
+                Row(
+                  children: [
+                    if (item['category'] != null && item['category'].toString().isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          item['category'].toString(),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF14ad9f),
+                            fontWeight: FontWeight.w500,
                           ),
-                          const SizedBox(height: 16),
-                          
-                          // Kategorie und Datum
-                          Row(
-                            children: [
-                              if (item['category'] != null && item['category'].toString().isNotEmpty) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Text(
-                                    item['category'].toString(),
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Color(0xFF14ad9f),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                              ],
-                              if (item['completedAt'] != null && item['completedAt'].toString().isNotEmpty)
-                                Text(
-                                  item['completedAt'].toString(),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          
-                          // Beschreibung
-                          if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
-                            const Text(
-                              'Projektbeschreibung',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              item['description'].toString(),
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey.shade700,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                          ],
-
-                          // Zusätzliche Bilder wenn vorhanden
-                          if (item['images'] is List && (item['images'] as List).length > 1) ...[
-                            const Text(
-                              'Weitere Bilder',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 12,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 1,
-                              ),
-                              itemCount: (item['images'] as List).length,
-                              itemBuilder: (context, index) {
-                                final imageUrl = (item['images'] as List)[index];
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.grey.shade300,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      imageUrl.toString(),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          color: Colors.grey.shade200,
-                                          child: const Center(
-                                            child: Icon(
-                                              Icons.image_not_supported,
-                                              color: Colors.grey,
-                                              size: 32,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
+                      const Spacer(),
+                    ],
+                    if (item['completedAt'] != null && item['completedAt'].toString().isNotEmpty)
+                      Text(
+                        item['completedAt'].toString(),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                // Beschreibung
+                if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
+                  const Text(
+                    'Projektbeschreibung',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item['description'].toString(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
+                // Zusätzliche Bilder wenn vorhanden
+                if (item['images'] is List && (item['images'] as List).length > 1) ...[
+                  const Text(
+                    'Weitere Bilder',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1,
+                    ),
+                    itemCount: (item['images'] as List).length,
+                    itemBuilder: (context, index) {
+                      final imageUrl = (item['images'] as List)[index];
+                      return Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            imageUrl.toString(),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey.shade200,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: Colors.grey,
+                                    size: 32,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
-              ),
+              ],
             ),
           ),
-          
-          // Rechter Bereich zum Schließen
-          Expanded(
-            child: GestureDetector(
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                color: Colors.transparent,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildDetailImage() {
+    if (_selectedPortfolioItem == null) return Container();
+    
+    final item = _selectedPortfolioItem!;
+    
     // Haupt-Bild aus imageUrl oder erstes Bild aus images Array
     String? imageUrl;
     

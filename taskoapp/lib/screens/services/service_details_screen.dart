@@ -3,6 +3,7 @@ import '../../services/auth_service.dart';
 import '../../services/review_service.dart';
 import '../../services/portfolio_service.dart';
 import '../../services/chat_service.dart';
+import '../provider/provider_details_screen.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> service;
@@ -20,6 +21,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   bool _isFavorite = false;
+  
+  // Slide Panel für Portfolio
+  bool _showSlidePanel = false;
+  Map<String, dynamic>? _selectedPortfolioItem;
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
   
   // Daten für die erweiterten Funktionen
   List<Map<String, dynamic>> _reviews = [];
@@ -39,6 +46,20 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     super.initState();
     _tabController = TabController(length: 4, vsync: this); // Erweitert auf 4 Tabs
     _isFavorite = widget.service['isFavorite'] ?? false;
+    
+    // Slide Panel Animation Controller
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(-1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeInOut,
+    ));
+    
     _loadProviderData();
   }
 
@@ -142,6 +163,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
@@ -651,19 +673,60 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.8,
-      ),
-      itemCount: _portfolio.length,
-      itemBuilder: (context, index) {
-        final item = _portfolio[index];
-        return _buildPortfolioCard(item);
-      },
+    return Stack(
+      children: [
+        // Haupt-Portfolio Grid
+        GridView.builder(
+          padding: const EdgeInsets.all(20),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.8,
+          ),
+          itemCount: _portfolio.length,
+          itemBuilder: (context, index) {
+            final item = _portfolio[index];
+            return _buildPortfolioCard(item);
+          },
+        ),
+
+        // Dunkler Overlay zum Schließen (MUSS UNTER dem Panel sein)
+        if (_showSlidePanel)
+          GestureDetector(
+            onTap: _hidePortfolioDetail,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+
+        // Slide-In Panel (MUSS ÜBER dem Overlay sein)
+        if (_showSlidePanel && _selectedPortfolioItem != null)
+          SlideTransition(
+            position: _slideAnimation,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.85,
+              height: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(2, 0),
+                  ),
+                ],
+              ),
+              child: _buildSlidePanel(),
+            ),
+          ),
+      ],
     );
   }
 
@@ -1370,51 +1433,90 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     );
   }
 
-  /// Zeigt Portfolio-Details in einem Modal
+  /// Navigiert zu Provider Details mit Portfolio-Focus
   void _showPortfolioDetail(Map<String, dynamic> item) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.8,
+    debugPrint('🎯 SERVICE NAVIGATE TO PROVIDER - Öffne Portfolio Detail: ${item['title']}');
+    
+    // Navigiere zur Provider-Details-Seite mit Portfolio-Item
+    final providerId = widget.service['id'] ?? widget.service['providerId'] ?? '';
+    
+    if (providerId.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ProviderDetailsScreen(
+            providerId: providerId,
+            selectedPortfolioItem: item,
+            showPortfolioPanel: true,
           ),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+        ),
+      );
+    }
+  }
+
+  void _hidePortfolioDetail() {
+    _slideController.reverse().then((_) {
+      setState(() {
+        _showSlidePanel = false;
+        _selectedPortfolioItem = null;
+      });
+    });
+  }
+
+  Widget _buildSlidePanel() {
+    if (_selectedPortfolioItem == null) return Container();
+    
+    final item = _selectedPortfolioItem!;
+    
+    return Column(
+      children: [
+        // Header mit Close Button
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Color(0xFF14ad9f),
+            borderRadius: BorderRadius.only(
+              topRight: Radius.circular(16),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              // Header mit Close Button
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item['title'] ?? 'Portfolio Item',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+              GestureDetector(
+                onTap: _hidePortfolioDetail,
+                child: const Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.white,
+                  size: 24,
                 ),
               ),
-              // Portfolio Bild
-              if (item['imageUrl']?.isNotEmpty == true)
-                Expanded(
-                  flex: 2,
-                  child: Container(
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Portfolio Details',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header mit Bild
+                if (item['imageUrl']?.isNotEmpty == true)
+                  Container(
+                    height: 250,
                     width: double.infinity,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    margin: const EdgeInsets.only(bottom: 20),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1423,70 +1525,105 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                       child: Image.network(
                         item['imageUrl'],
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.image_not_supported,
+                                    color: Colors.grey,
+                                    size: 48,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Bild konnte nicht geladen werden',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                ),
-              // Details
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (item['category']?.isNotEmpty == true)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            item['category'],
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF14ad9f),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 12),
-                      if (item['description']?.isNotEmpty == true)
-                        Text(
-                          item['description'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                            height: 1.4,
-                          ),
-                        ),
-                      const Spacer(),
-                      if (item['completedAt']?.isNotEmpty == true)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today,
-                              size: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Abgeschlossen: ${item['completedAt']}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
+                
+                // Titel
+                Text(
+                  item['title'] ?? 'Portfolio Projekt',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                
+                // Kategorie und Datum
+                Row(
+                  children: [
+                    if (item['category']?.isNotEmpty == true) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          item['category'],
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF14ad9f),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                    ],
+                    if (item['completedAt']?.isNotEmpty == true)
+                      Text(
+                        item['completedAt'],
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                // Beschreibung
+                if (item['description']?.isNotEmpty == true) ...[
+                  const Text(
+                    'Projektbeschreibung',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item['description'],
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade700,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -1604,27 +1741,28 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   }
 }
 
+// Delegate für sticky TabBar
 class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar tabBar;
+  final TabBar child;
 
-  _StickyTabBarDelegate(this.tabBar);
-
-  @override
-  double get minExtent => tabBar.preferredSize.height;
+  _StickyTabBarDelegate(this.child);
 
   @override
-  double get maxExtent => tabBar.preferredSize.height;
+  double get minExtent => child.preferredSize.height;
+
+  @override
+  double get maxExtent => child.preferredSize.height;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Colors.white,
-      child: tabBar,
+      child: child,
     );
   }
 
   @override
   bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
-    return tabBar != oldDelegate.tabBar;
+    return false;
   }
 }

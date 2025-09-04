@@ -4,11 +4,15 @@ import 'components/provider_portfolio_tab.dart';
 class ProviderDetailsScreen extends StatefulWidget {
   final String providerId;
   final Map<String, dynamic>? providerData;
+  final Map<String, dynamic>? selectedPortfolioItem;
+  final bool showPortfolioPanel;
 
   const ProviderDetailsScreen({
     super.key,
     required this.providerId,
     this.providerData,
+    this.selectedPortfolioItem,
+    this.showPortfolioPanel = false,
   });
 
   @override
@@ -16,22 +20,50 @@ class ProviderDetailsScreen extends StatefulWidget {
 }
 
 class _ProviderDetailsScreenState extends State<ProviderDetailsScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
   Map<String, dynamic>? _provider;
   bool _isLoading = true;
   String? _error;
   
+  // Slide Panel für Portfolio
+  bool _showSlidePanel = false;
+  Map<String, dynamic>? _selectedPortfolioItem;
+  late AnimationController _slideController;
+  late Animation<Offset> _slideAnimation;
+  
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    
+    // Slide Panel Animation Controller
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(-1.0, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeInOut,
+    ));
+    
     _loadProviderDetails();
+    
+    // Prüfe, ob ein Portfolio-Item direkt angezeigt werden soll
+    if (widget.showPortfolioPanel && widget.selectedPortfolioItem != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showPortfolioDetail(widget.selectedPortfolioItem!);
+      });
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
@@ -62,23 +94,64 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Anbieter Details'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF14ad9f)))
-          : _error != null
-              ? _buildErrorWidget()
-              : _provider != null
-                  ? _buildProviderDetails()
-                  : _buildErrorWidget(),
-      bottomNavigationBar: !_isLoading && _provider != null
-          ? _buildBottomActions()
-          : null,
+    return Stack(
+      children: [
+        // Haupt-Scaffold
+        Scaffold(
+          appBar: AppBar(
+            title: const Text('Anbieter Details'),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+          ),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF14ad9f)))
+              : _error != null
+                  ? _buildErrorWidget()
+                  : _provider != null
+                      ? _buildProviderDetails()
+                      : _buildErrorWidget(),
+          bottomNavigationBar: !_isLoading && _provider != null
+              ? _buildBottomActions()
+              : null,
+        ),
+
+        // Dunkler Overlay zum Schließen (MUSS UNTER dem Panel sein)
+        if (_showSlidePanel)
+          GestureDetector(
+            onTap: _hidePortfolioDetail,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.black.withValues(alpha: 0.5),
+            ),
+          ),
+
+        // Slide-In Panel (MUSS ÜBER dem Overlay sein)
+        if (_showSlidePanel && _selectedPortfolioItem != null)
+          SlideTransition(
+            position: _slideAnimation,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.85,
+              height: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(5, 0),
+                  ),
+                ],
+              ),
+              child: _buildSlidePanel(),
+            ),
+          ),
+      ],
     );
   }
 
@@ -147,7 +220,10 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen>
             children: [
               _buildOverviewTab(),
               _buildReviewsTab(),
-              ProviderPortfolioTab(providerId: widget.providerId),
+              ProviderPortfolioTab(
+                providerId: widget.providerId,
+                onPortfolioItemTap: _showPortfolioDetail,
+              ),
             ],
           ),
         ),
@@ -674,6 +750,214 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen>
           },
         );
       },
+    );
+  }
+
+  /// Zeigt Portfolio-Details im Slide Panel
+  void _showPortfolioDetail(Map<String, dynamic> item) {
+    debugPrint('🎯 PROVIDER SLIDE PANEL - Öffne Portfolio Detail: ${item['title']}');
+    setState(() {
+      _selectedPortfolioItem = item;
+      _showSlidePanel = true;
+    });
+    _slideController.forward();
+  }
+
+  void _hidePortfolioDetail() {
+    _slideController.reverse().then((_) {
+      setState(() {
+        _showSlidePanel = false;
+        _selectedPortfolioItem = null;
+      });
+    });
+  }
+
+  Widget _buildSlidePanel() {
+    if (_selectedPortfolioItem == null) return Container();
+    
+    final item = _selectedPortfolioItem!;
+    
+    return Column(
+      children: [
+        // Header mit Schließen-Button
+        Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF14ad9f),
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(16),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item['title'] ?? 'Portfolio Details',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _hidePortfolioDetail,
+                icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+        
+        // Scrollbarer Inhalt
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Hauptbild
+                if (item['imageUrl']?.isNotEmpty == true)
+                  Container(
+                    width: double.infinity,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey.shade200,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        item['imageUrl'],
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.image_not_supported,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                
+                const SizedBox(height: 20),
+                
+                // Titel und Beschreibung
+                Text(
+                  item['title'] ?? 'Portfolio Item',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                if (item['description']?.isNotEmpty == true)
+                  Text(
+                    item['description'],
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade700,
+                      height: 1.5,
+                    ),
+                  ),
+                
+                const SizedBox(height: 20),
+                
+                // Zusätzliche Bilder (falls vorhanden)
+                if (item['images']?.isNotEmpty == true) ...[
+                  const Text(
+                    'Weitere Bilder',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 120,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: item['images'].length,
+                      itemBuilder: (context, index) {
+                        final imageUrl = item['images'][index];
+                        return Container(
+                          width: 120,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.grey.shade200,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.image_not_supported,
+                                  color: Colors.grey.shade400,
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                
+                const SizedBox(height: 20),
+                
+                // Projekt-Details
+                if (item['completedAt'] != null) ...[
+                  _buildDetailRow('Abgeschlossen', item['completedAt']),
+                  const SizedBox(height: 8),
+                ],
+                if (item['category'] != null) ...[
+                  _buildDetailRow('Kategorie', item['category']),
+                  const SizedBox(height: 8),
+                ],
+                if (item['tags']?.isNotEmpty == true) ...[
+                  _buildDetailRow('Tags', item['tags'].join(', ')),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            '$label:',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
