@@ -371,292 +371,338 @@ class _ProviderPortfolioTabState extends State<ProviderPortfolioTab> {
   }
 
   void _showPortfolioDetail(Map<String, dynamic> item) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 600),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header mit Bild-Gallerie
-              if (item['imageUrl'] != null || (item['images'] as List?)?.isNotEmpty == true)
-                Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                    child: _buildDetailImage(item),
-                  ),
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, animation, secondaryAnimation) => 
+          PortfolioDetailSlidePanel(
+            item: item,
+            animation: animation,
+          ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(-1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOut;
+
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
+
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
+  }
+}
+
+class PortfolioDetailSlidePanel extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final Animation<double> animation;
+
+  const PortfolioDetailSlidePanel({
+    super.key,
+    required this.item,
+    required this.animation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black.withValues(alpha: 0.5),
+      body: Row(
+        children: [
+          // Panel von links
+          SizeTransition(
+            sizeFactor: animation,
+            axis: Axis.horizontal,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.85,
+              height: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
                 ),
-              
-              // Content
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Titel
-                      Text(
-                        item['title'] ?? 'Portfolio Projekt',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      // Kategorie und Datum
-                      Row(
-                        children: [
-                          if (item['category'] != null && item['category'].toString().isNotEmpty) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                item['category'].toString(),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF14ad9f),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                          ],
-                          if (item['completedAt'] != null && item['completedAt'].toString().isNotEmpty)
-                            Text(
-                              item['completedAt'].toString(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Beschreibung
-                      if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
-                        Text(
-                          'Beschreibung',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          item['description'].toString(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade700,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      
-                      // Zusätzliche Details
-                      if (item['clientName'] != null && item['clientName'].toString().isNotEmpty) ...[
-                        _buildDetailRow('Kunde', item['clientName'].toString()),
-                        const SizedBox(height: 8),
-                      ],
-                      
-                      if (item['projectDuration'] != null && item['projectDuration'].toString().isNotEmpty) ...[
-                        _buildDetailRow('Dauer', item['projectDuration'].toString()),
-                        const SizedBox(height: 8),
-                      ],
-                      
-                      // Tags
-                      if (item['tags'] != null && (item['tags'] as List).isNotEmpty) ...[
-                        const Text(
-                          'Tags',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: (item['tags'] as List).map<Widget>((tag) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                tag.toString(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(2, 0),
                   ),
-                ),
+                ],
               ),
-              
-              // Schließen Button
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF14ad9f),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+              child: Column(
+                children: [
+                  // Header mit Close Button
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF14ad9f),
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(16),
                       ),
                     ),
-                    child: const Text('Schließen'),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: const Icon(
+                            Icons.arrow_back_ios,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            'Portfolio Details',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+
+                  // Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header mit Bild-Gallerie
+                          if (item['imageUrl'] != null || (item['images'] as List?)?.isNotEmpty == true)
+                            Container(
+                              height: 250,
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 20),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: _buildDetailImage(),
+                              ),
+                            ),
+                          
+                          // Titel
+                          Text(
+                            item['title'] ?? 'Portfolio Projekt',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          // Kategorie und Datum
+                          Row(
+                            children: [
+                              if (item['category'] != null && item['category'].toString().isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    item['category'].toString(),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Color(0xFF14ad9f),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                              ],
+                              if (item['completedAt'] != null && item['completedAt'].toString().isNotEmpty)
+                                Text(
+                                  item['completedAt'].toString(),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          
+                          // Beschreibung
+                          if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
+                            const Text(
+                              'Projektbeschreibung',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item['description'].toString(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade700,
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // Zusätzliche Bilder wenn vorhanden
+                          if (item['images'] is List && (item['images'] as List).length > 1) ...[
+                            const Text(
+                              'Weitere Bilder',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 1,
+                              ),
+                              itemCount: (item['images'] as List).length,
+                              itemBuilder: (context, index) {
+                                final imageUrl = (item['images'] as List)[index];
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey.shade300,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      imageUrl.toString(),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: Colors.grey.shade200,
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.grey,
+                                              size: 32,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Rechter Bereich zum Schließen
+          Expanded(
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                color: Colors.transparent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailImage() {
+    // Haupt-Bild aus imageUrl oder erstes Bild aus images Array
+    String? imageUrl;
+    
+    if (item['imageUrl'] != null && item['imageUrl'].toString().isNotEmpty) {
+      imageUrl = item['imageUrl'].toString();
+    } else if (item['images'] is List && (item['images'] as List).isNotEmpty) {
+      imageUrl = (item['images'] as List).first.toString();
+    }
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return Container(
+        color: Colors.grey.shade200,
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_not_supported,
+                color: Colors.grey,
+                size: 48,
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Kein Bild verfügbar',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 14,
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDetailImage(Map<String, dynamic> item) {
-    final imageUrl = item['imageUrl']?.toString();
-    final images = item['images'] as List<dynamic>?;
-    
-    // Sammle alle verfügbaren URL-Bilder (keine Base64)
-    List<String> availableImages = [];
-    
-    // Füge imageUrl hinzu wenn es eine gültige URL ist
-    if (imageUrl != null && imageUrl.isNotEmpty && imageUrl != 'null' && imageUrl.startsWith('http')) {
-      availableImages.add(imageUrl);
-    }
-    
-    // Füge images Array hinzu wenn vorhanden (nur URLs)
-    if (images != null && images.isNotEmpty) {
-      for (final img in images) {
-        final imgStr = img?.toString();
-        if (imgStr != null && imgStr.isNotEmpty && imgStr != 'null' && imgStr.startsWith('http') && !availableImages.contains(imgStr)) {
-          availableImages.add(imgStr);
-        }
-      }
-    }
-    
-    if (availableImages.isEmpty) {
-      return _buildPlaceholderImage();
-    }
-    
-    final firstImage = availableImages.first;
-    
-    // Wenn nur ein Bild vorhanden ist
-    if (availableImages.length == 1) {
-      return Image.network(
-        firstImage,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) {
-          debugPrint('Fehler beim Laden des Detail-Bildes: $error');
-          return _buildPlaceholderImage();
-        },
       );
     }
-    
-    // Wenn mehrere Bilder vorhanden sind, zeige das erste mit Indikator
-    return Stack(
-      children: [
-        Image.network(
-          firstImage,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (context, error, stackTrace) {
-            debugPrint('Fehler beim Laden des Detail-Bildes: $error');
-            return _buildPlaceholderImage();
-          },
-        ),
-        
-        // Mehrere Bilder Indikator
-        Positioned(
-          top: 12,
-          right: 12,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+
+    return Image.network(
+      imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          color: Colors.grey.shade200,
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.photo_library,
-                  size: 14,
-                  color: Colors.white,
+                Icon(
+                  Icons.image_not_supported,
+                  color: Colors.grey,
+                  size: 48,
                 ),
-                const SizedBox(width: 4),
+                SizedBox(height: 8),
                 Text(
-                  '${availableImages.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                  'Bild konnte nicht geladen werden',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 60,
-          child: Text(
-            '$label:',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

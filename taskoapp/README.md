@@ -1,4 +1,4 @@
-# taskoapp
+# Taskilo
 
 A new Flutter project.
 

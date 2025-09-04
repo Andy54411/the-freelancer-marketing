@@ -1,6 +1,6 @@
 {
-    "name": "taskoapp",
-    "short_name": "taskoapp",
+    "name": "Taskilo",
+    "short_name": "Taskilo",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
