@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Taskilo Brand Colors
-  static const Color primaryColor = Color(0xFF2E7D32); // Grün
-  static const Color primaryLightColor = Color(0xFF4CAF50);
-  static const Color primaryDarkColor = Color(0xFF1B5E20);
-  static const Color accentColor = Color(0xFF00BCD4); // Cyan
+  static const Color primaryColor = Color(0xFF14ad9f); // Taskilo Türkis/Teal
+  static const Color primaryLightColor = Color(0xFF129a8f);
+  static const Color primaryDarkColor = Color(0xFF129488);
+  static const Color accentColor = Color(0xFF0f9d84); // Taskilo Akzent
   static const Color backgroundColor = Color(0xFFF5F5F5);
   static const Color surfaceColor = Colors.white;
   static const Color errorColor = Color(0xFFE53935);
   static const Color warningColor = Color(0xFFFF9800);
-  static const Color successColor = Color(0xFF4CAF50);
+  static const Color successColor = Color(0xFF14ad9f);
 
   // Text Colors
   static const Color textPrimary = Color(0xFF212121);

@@ -7,6 +7,8 @@ import GeneralForm from '@/components/dashboard_setting/allgemein';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';
 import LogoForm from '@/components/dashboard_setting/logo';
+import FAQsForm from '@/components/dashboard_setting/faqs';
+import PortfolioForm from '@/components/dashboard_setting/portfolio';
 import { PAGE_ERROR } from '@/lib/constants'; // Stellen Sie sicher, dass dies korrekt ist
 import { Loader2 as FiLoader, Save as FiSave, X as FiX } from 'lucide-react';
 import Link from 'next/link';
@@ -171,6 +173,25 @@ export interface UserDataForSettings {
     accountingSystem?: string;
     priceInput?: string;
     lastInvoiceNumber?: string; // Für Rechnungsnummern-Migration
+    faqs?: Array<{
+      id: string;
+      question: string;
+      answer: string;
+      category?: string;
+      order?: number;
+      featured?: boolean;
+    }>;
+    portfolio?: Array<{
+      id: string;
+      imageUrl: string;
+      imageFile?: File;
+      title: string;
+      description: string;
+      category?: string;
+      featured?: boolean;
+      order?: number;
+      createdAt?: string;
+    }>;
   };
   step4: {
     accountHolder: string;
@@ -203,7 +224,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   const [form, setForm] = useState<UserDataForSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'general' | 'accounting' | 'bank' | 'logo' | 'payouts' | 'storno'
+    'general' | 'accounting' | 'bank' | 'logo' | 'portfolio' | 'faqs' | 'payouts' | 'storno'
   >('general');
   const [showManagingDirectorPersonalModal, setShowManagingDirectorPersonalModal] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -559,7 +580,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
     }
   }, [userData]);
 
-  const handleChange = (path: string, value: string | number | boolean | File | null) => {
+  const handleChange = useCallback((path: string, value: string | number | boolean | File | null) => {
     setForm(prevForm => {
       if (!prevForm) return null;
       const updatedForm = JSON.parse(JSON.stringify(prevForm)) as UserDataForSettings;
@@ -584,7 +605,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       });
       return updatedForm;
     });
-  };
+  }, []);
 
   const mapIndustryToMcc = (industry: string | null | undefined): string | undefined => {
     if (!industry) return undefined;
@@ -874,7 +895,12 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       workingHours: (updatedForm as any).publicProfile?.workingHours || [],
       instantBooking: (updatedForm as any).publicProfile?.instantBooking ?? false,
       responseTimeGuarantee: (updatedForm as any).publicProfile?.responseTimeGuarantee || 24,
-      faqs: (updatedForm as any).publicProfile?.faqs || [],
+      faqs: updatedForm.step3?.faqs || [],
+      portfolio: updatedForm.step3?.portfolio ? 
+        updatedForm.step3.portfolio.map((item: any) => {
+          const { imageFile, ...cleanItem } = item;
+          return cleanItem;
+        }) : [],
       profileBannerImage: (updatedForm as any).publicProfile?.profileBannerImage || '',
       businessLicense: (updatedForm as any).publicProfile?.businessLicense || '',
       certifications: (updatedForm as any).publicProfile?.certifications || [],
@@ -932,15 +958,16 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       console.log('User update data:', cleanUserUpdateData);
       console.log('Company update data:', cleanCompanyUpdateData);
 
-      try {
-        await updateDoc(doc(db, 'users', updatedForm.uid), cleanUserUpdateData);
-        console.log('✅ User update successful');
-      } catch (userError) {
-        console.error('❌ User update failed:', userError);
-        throw new Error(
-          `User update failed: ${userError instanceof Error ? userError.message : 'Unknown error'}`
-        );
-      }
+      // DISABLED: users collection update (data moved to companies collection)
+      // try {
+      //   await updateDoc(doc(db, 'users', updatedForm.uid), cleanUserUpdateData);
+      //   console.log('✅ User update successful');
+      // } catch (userError) {
+      //   console.error('❌ User update failed:', userError);
+      //   throw new Error(
+      //     `User update failed: ${userError instanceof Error ? userError.message : 'Unknown error'}`
+      //   );
+      // }
 
       try {
         await updateDoc(doc(db, 'companies', updatedForm.uid), cleanCompanyUpdateData);
@@ -985,7 +1012,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   }, [form, userData, onDataSaved, handleChange]); // Abhängigkeiten für useCallback
 
   // Alle Hooks müssen vor bedingten Returns aufgerufen werden
-  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'payouts' | 'storno';
+  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'portfolio' | 'faqs' | 'payouts' | 'storno';
   interface TabDefinition {
     key: TabKey;
     label: string;
@@ -996,6 +1023,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
     { key: 'accounting', label: 'Buchhaltung & Steuer' },
     { key: 'bank', label: 'Bankverbindung' },
     { key: 'logo', label: 'Logo & Dokumente' },
+    { key: 'portfolio', label: 'Portfolio' },
+    { key: 'faqs', label: 'FAQs' },
     { key: 'payouts', label: 'Auszahlungen' },
     { key: 'storno', label: 'Storno-Einstellungen' },
   ];
@@ -1057,6 +1086,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           {activeTab === 'accounting' && 'Buchhaltung & Steuern'}
           {activeTab === 'bank' && 'Bankverbindung'}
           {activeTab === 'logo' && 'Logo & Dokumente'}
+          {activeTab === 'portfolio' && 'Portfolio'}
+          {activeTab === 'faqs' && 'Häufig gestellte Fragen'}
           {activeTab === 'payouts' && 'Auszahlungen & Rechnungen'}
           {activeTab === 'storno' && 'Storno-Einstellungen'}
         </h2>
@@ -1073,6 +1104,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         )}
         {form && activeTab === 'bank' && <BankForm formData={form} handleChange={handleChange} />}
         {form && activeTab === 'logo' && <LogoForm formData={form} handleChange={handleChange} />}
+        {form && activeTab === 'portfolio' && <PortfolioForm formData={form} handleChange={handleChange} userId={form.uid} />}
+        {form && activeTab === 'faqs' && <FAQsForm formData={form} handleChange={handleChange} />}
         {activeTab === 'payouts' && (
           <div className="space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">

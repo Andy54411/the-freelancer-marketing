@@ -1,0 +1,286 @@
+// Skills/Fähigkeiten nach Hauptkategorien und Subkategorien strukturiert
+export interface SkillsByCategory {
+  [categoryId: string]: {
+    [subcategory: string]: string[];
+  };
+}
+
+export const skillsByCategory: SkillsByCategory = {
+  handwerk: {
+    'Tischler': [
+      'Möbelbau', 'Möbelrestaurierung', 'Holzbearbeitung', 'Schränke', 'Türen', 
+      'Fenster', 'Holztreppen', 'Massivholz', 'Furnier', 'Lackierung'
+    ],
+    'Klempner': [
+      'Rohrreparatur', 'Wasserleitungen', 'Abflussreinigung', 'Badezimmer', 
+      'Küche', 'Sanitär-Notdienst', 'Dichtungen', 'Rohrleitungsinstallation'
+    ],
+    'Maler & Lackierer': [
+      'Innenanstrich', 'Fassadenanstrich', 'Tapezieren', 'Wandspachteln', 'Grundierung',
+      'Lackierarbeiten', 'Holzschutz', 'Fassadenrestaurierung', 'Kreative Wandgestaltung'
+    ],
+    'Elektriker': [
+      'Elektroinstallation', 'Elektroreparaturen', 'Lichtinstallation', 'Schalter & Steckdosen',
+      'Sicherungen', 'Smart Home', 'LED-Beleuchtung', 'Elektroprüfung', 'Elektro-Notdienst'
+    ],
+    'HeizungSanitär': [
+      'Heizungsinstallation', 'Wartung', 'Heizungsreparatur', 'Sanitärinstallation',
+      'Badezimmerrenovierung', 'Rohrleitungen', 'Pumpen', 'Thermostate'
+    ],
+    'Fliesenleger': [
+      'Bodenfliesen', 'Wandfliesen', 'Naturstein', 'Mosaik', 'Verfugen',
+      'Fliesenabdichtung', 'Badrenovierung', 'Design-Fliesen', 'Fliesenreparaturen'
+    ],
+    'Dachdecker': [
+      'Dacheindeckung', 'Dachsanierung', 'Dachrinnen', 'Dachdämmung', 'Dach-Abdichtung',
+      'Ziegel', 'Schiefer', 'Blech', 'Dachreparaturen', 'Sturmschäden'
+    ],
+    'Maurer': [
+      'Mauerwerksbau', 'Putzarbeiten', 'Betonarbeiten', 'Gebäudesanierung', 'Sanierung',
+      'Außenwände', 'Innenwände', 'Fundamentarbeiten', 'Maurerreparaturen'
+    ],
+    'Trockenbauer': [
+      'Gipskartonbau', 'Trennwände', 'Deckenabhängung', 'Innendämmung', 'Schallschutz',
+      'Brandschutz', 'Gipsplattenbau', 'Innenausbau', 'Dachausbau'
+    ],
+    'Metallbauer': [
+      'Geländer', 'Zäune', 'Tore', 'Metalltreppen', 'Balkone', 'Carports',
+      'Schweißarbeiten', 'Edelstahl', 'Verzinkung', 'Montage'
+    ]
+  },
+
+  haushalt: {
+    'Reinigungskraft': [
+      'Hausreinigung', 'Büroreinigung', 'Grundreinigung', 'Umzugsreinigung',
+      'Fensterreinigung', 'Treppenreinigung', 'Sanitärreinigung', 'Küchenhygiene'
+    ],
+    'Haushaltshilfe': [
+      'Haushaltsführung', 'Wäsche waschen', 'Bügeln', 'Einkaufen', 'Kinderbetreuung',
+      'Seniorenbetreuung', 'Kochen', 'Organistion', 'Pflanzenpflege'
+    ],
+    'Fensterputzer': [
+      'Fensterreinigung', 'Glasreinigung', 'Rahmenreinigung', 'Hochhausreinigung',
+      'Wintergarten', 'Schaufenster', 'Balkongeländer', 'Terrassendächer'
+    ]
+  },
+
+  transport: {
+    'Fahrer': [
+      'PKW-Fahrer', 'LKW-Fahrer', 'Kurierdienst', 'Chauffeur', 'Lieferservice',
+      'Umzugstransport', 'Möbeltransport', 'Expressdienst', 'Langstrecke'
+    ],
+    'Kurierdienst': [
+      'Eilsendungen', 'Paketzustellung', 'Dokumententransport', 'Same-Day-Delivery',
+      'Expressdienst', 'Sperrguttransport', 'Kühlkette', 'Medikamentenkurier'
+    ],
+    'Lagerlogistik': [
+      'Kommissionierung', 'Verpackung', 'Versand', 'Inventur', 'Lagerverwaltung',
+      'Qualitätskontrolle', 'Staplerfahren', 'Wareneingangskontrolle'
+    ]
+  },
+
+  it_digital: {
+    'Webentwicklung': [
+      'HTML/CSS', 'JavaScript', 'React', 'Vue.js', 'Angular', 'PHP', 'Python',
+      'Node.js', 'WordPress', 'Shopify', 'E-Commerce', 'CMS-Entwicklung'
+    ],
+    'App-Entwicklung': [
+      'iOS-Entwicklung', 'Android-Entwicklung', 'React Native', 'Flutter',
+      'Swift', 'Kotlin', 'Cross-Platform', 'App Store Optimization', 'UI/UX'
+    ],
+    'IT-Support': [
+      'Hardware-Support', 'Software-Installation', 'Netzwerk-Setup', 'Troubleshooting',
+      'Remote-Support', 'Systemwartung', 'Backup-Lösungen', 'Virenentfernung'
+    ],
+    'Webdesign': [
+      'UI-Design', 'UX-Design', 'Responsive Design', 'Wireframing', 'Prototyping',
+      'Adobe Creative Suite', 'Figma', 'Sketch', 'Branding', 'Logo-Design'
+    ],
+    'Cybersecurity': [
+      'Penetration Testing', 'Sicherheitsaudits', 'Firewall-Konfiguration',
+      'Verschlüsselung', 'GDPR-Compliance', 'Incident Response', 'Backup-Security'
+    ]
+  },
+
+  garten: {
+    'Gartenpflege': [
+      'Rasenmähen', 'Heckenschnitt', 'Unkrautentfernung', 'Bewässerung',
+      'Düngung', 'Bepflanzung', 'Herbstlaub', 'Wintervorbereitung'
+    ],
+    'Landschaftsgärtner': [
+      'Gartenplanung', 'Terrassenbau', 'Wegebau', 'Teichbau', 'Pflasterarbeiten',
+      'Zaunbau', 'Bepflanzung', 'Rollrasen', 'Bewässerungsanlagen'
+    ],
+    'Baumpflege': [
+      'Baumschnitt', 'Baumfällung', 'Kronenauslichtung', 'Obstbaumschnitt',
+      'Baumdiagnose', 'Baumpflanzung', 'Sturmschadenbeseitigung'
+    ]
+  },
+
+  wellness: {
+    'Massage': [
+      'Entspannungsmassage', 'Sportmassage', 'Reflexzonenmassage', 'Hot Stone',
+      'Aromatherapie', 'Triggerpunkt-Massage', 'Lymphdrainage', 'Wellness'
+    ],
+    'Physiotherapie': [
+      'Krankengymnastik', 'Manuelle Therapie', 'Elektrotherapie', 'Lymphdrainage',
+      'Sportphysiotherapie', 'Rückenschule', 'Präventionsberatung'
+    ],
+    'Kosmetik': [
+      'Gesichtsbehandlung', 'Anti-Aging', 'Aknebehandlung', 'Augenbrauen',
+      'Wimpernverlängerung', 'Make-up', 'Permanent Make-up', 'Hautanalyse'
+    ],
+    'FitnessTraining': [
+      'Personal Training', 'Gruppentraining', 'Ernährungsberatung', 'Krafttraining',
+      'Ausdauertraining', 'Yoga', 'Pilates', 'Functional Training'
+    ]
+  },
+
+  gastronomie: {
+    'Mietkoch': [
+      'Deutsche Küche', 'Italienische Küche', 'Französische Küche', 'Asiatische Küche',
+      'Mediterrane Küche', 'Vegetarische Küche', 'Vegane Küche', 'Desserts',
+      'Menüplanung', 'Food-Styling', 'Diätküche', 'Festtagsmenüs'
+    ],
+    'Mietkellner': [
+      'Tischservice', 'Getränkeservice', 'Event-Service', 'Hochzeitsservice',
+      'Barkeeper', 'Sommelier', 'Buffet-Service', 'Catering-Unterstützung'
+    ],
+    'Catering': [
+      'Event-Catering', 'Business-Catering', 'Hochzeits-Catering', 'Party-Service',
+      'Buffet-Catering', 'Finger-Food', 'Grillcatering', 'Dessert-Catering'
+    ]
+  },
+
+  marketing: {
+    'OnlineMarketing': [
+      'SEO', 'SEA', 'Google Ads', 'Facebook Ads', 'E-Mail Marketing',
+      'Content Marketing', 'Affiliate Marketing', 'Conversion-Optimierung'
+    ],
+    'Social Media Marketing': [
+      'Facebook Marketing', 'Instagram Marketing', 'LinkedIn Marketing', 'TikTok Marketing',
+      'Content Creation', 'Community Management', 'Influencer Marketing', 'Analytics'
+    ],
+    'ContentMarketing': [
+      'Blog-Artikel', 'Whitepaper', 'Videos', 'Infografiken', 'Podcasts',
+      'Newsletter', 'E-Books', 'Case Studies', 'Storytelling'
+    ]
+  },
+
+  finanzen: {
+    'Buchhaltung': [
+      'Finanzbuchhaltung', 'Lohnbuchhaltung', 'Jahresabschluss', 'Umsatzsteuer',
+      'DATEV', 'Lexware', 'sevDesk', 'Rechnungswesen', 'Steuerberatung'
+    ],
+    'Steuerberatung': [
+      'Steuererklärung', 'Steuerplanung', 'Unternehmenssteuer', 'Lohnsteuer',
+      'Umsatzsteuer', 'Gewerbesteuer', 'Steueroptimierung', 'Betriebsprüfung'
+    ],
+    'Rechtsberatung': [
+      'Vertragsrecht', 'Arbeitsrecht', 'Gesellschaftsrecht', 'Mietrecht',
+      'Familienrecht', 'Verkehrsrecht', 'Verbraucherschutz', 'Mediation'
+    ],
+    'Finanzberatung': [
+      'Geldanlage', 'Altersvorsorge', 'Finanzierung', 'Versicherungsberatung',
+      'Vermögensaufbau', 'Risikomanagement', 'Steueroptimierung', 'Baufinanzierung'
+    ]
+  },
+
+  bildung: {
+    'Nachhilfe': [
+      'Mathematik', 'Deutsch', 'Englisch', 'Physik', 'Chemie', 'Biologie',
+      'Geschichte', 'Latein', 'Französisch', 'Grundschule', 'Gymnasium', 'Abitur'
+    ],
+    'Sprachunterricht': [
+      'Englisch', 'Französisch', 'Spanisch', 'Italienisch', 'Deutsch als Fremdsprache',
+      'Business English', 'Konversation', 'Grammatik', 'Prüfungsvorbereitung'
+    ],
+    'Musikunterricht': [
+      'Klavier', 'Gitarre', 'Violine', 'Schlagzeug', 'Gesang', 'Saxophon',
+      'Musiktheorie', 'Komposition', 'Aufnahmetechnik', 'DJ-Kurse'
+    ]
+  },
+
+  tiere: {
+    'Tierbetreuung': [
+      'Hundebetreuung', 'Katzenbetreuung', 'Gassi gehen', 'Tierpension',
+      'Urlaubsbetreuung', 'Fütterung', 'Medikamentengabe', 'Spielzeit'
+    ],
+    'Hundetrainer': [
+      'Welpenerziehung', 'Grundgehorsam', 'Problemverhalten', 'Agility',
+      'Leinenführigkeit', 'Sozialisierung', 'Hundesport', 'Verhaltenstherapie'
+    ]
+  },
+
+  kreativ: {
+    'Fotograf': [
+      'Porträtfotografie', 'Hochzeitsfotografie', 'Eventfotografie', 'Produktfotografie',
+      'Architekturfotografie', 'Food-Fotografie', 'Bildbearbeitung', 'Studio-Fotografie'
+    ],
+    'Videograf': [
+      'Eventfilme', 'Hochzeitsfilme', 'Imagefilme', 'Produktvideos', 'Drohnenfotografie',
+      'Videobearbeitung', 'Animation', 'Live-Streaming', 'Dokumentationen'
+    ],
+    'Grafiker': [
+      'Logo-Design', 'Corporate Design', 'Print-Design', 'Webdesign', 'Illustration',
+      'Verpackungsdesign', 'Broschüren', 'Plakate', 'Adobe Creative Suite'
+    ],
+    'Texter': [
+      'Website-Texte', 'Blog-Artikel', 'Werbetexte', 'SEO-Texte', 'Newsletter',
+      'Pressemitteilungen', 'Social Media Texte', 'Produktbeschreibungen'
+    ]
+  },
+
+  event: {
+    'Eventplanung': [
+      'Hochzeitsplanung', 'Firmenevents', 'Geburtstagsfeiern', 'Messen', 'Kongresse',
+      'Location-Suche', 'Catering-Organisation', 'Dekoration', 'Logistik'
+    ],
+    'Sicherheitsdienst': [
+      'Veranstaltungsschutz', 'Objektschutz', 'Personenschutz', 'Empfangsdienst',
+      'Revierdienst', 'Brandwache', 'Verkehrsdienst', 'Notfallmanagement'
+    ],
+    'DJService': [
+      'Hochzeits-DJ', 'Party-DJ', 'Event-DJ', 'Club-DJ', 'Firmenevent-DJ',
+      'Tontechnik', 'Lichttechnik', 'Moderation', 'Musikauswahl'
+    ]
+  },
+
+  buero: {
+    'Telefonservice': [
+      'Telefonzentrale', 'Terminvereinbarung', 'Kundenbetreuung', 'Auftragsannahme',
+      'Beschwerdemanagement', 'Mehrsprachiger Service', 'Call Center', 'Support'
+    ],
+    'Inventur': [
+      'Bestandsaufnahme', 'Warenzählung', 'Datenerfassung', 'Lagerverwaltung',
+      'Stichprobenprüfung', 'Dokumentation', 'Software-Bedienung'
+    ],
+    'Recherche': [
+      'Marktforschung', 'Internetrecherche', 'Datensammlung', 'Konkurrenzanalyse',
+      'Trendanalyse', 'Quellenprüfung', 'Dokumentation', 'Berichterstellung'
+    ]
+  }
+};
+
+// Hilfsfunktionen
+export const getSkillsForSubcategory = (categoryId: string, subcategory: string): string[] => {
+  return skillsByCategory[categoryId]?.[subcategory] || [];
+};
+
+export const getAllSkillsForCategory = (categoryId: string): string[] => {
+  const categorySkills = skillsByCategory[categoryId];
+  if (!categorySkills) return [];
+  
+  const allSkills = Object.values(categorySkills).flat();
+  // Entferne Duplikate mit Set
+  return [...new Set(allSkills)];
+};
+
+export const getAllSkills = (): string[] => {
+  const allSkills = Object.values(skillsByCategory)
+    .flatMap(category => Object.values(category))
+    .flat();
+  
+  // Entferne Duplikate
+  return [...new Set(allSkills)];
+};

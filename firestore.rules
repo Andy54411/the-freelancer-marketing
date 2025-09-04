@@ -93,11 +93,9 @@ service cloud.firestore {
     match /companies/{companyId} {
       // Admins/Support können jedes Firmendokument lesen.
       // Andere können es lesen, wenn es öffentlich ist (z.B. für den Logo-Slider).
-      allow get: if isSupportStaff() || true; // Öffentlicher Lesezugriff für Service-Discovery
+      allow get: if true; // Vollständig öffentlicher Lesezugriff für Service-Discovery
       // KORREKTUR: Öffentlicher Lesezugriff für Hero-Section und Anbietersuche.
-      // Begrenzt auf 50 Dokumente für Performance und Sicherheit.
-      allow list: if isSupportStaff() || 
-                   (request.query.limit <= 50);
+      allow list: if true; // Temporär vollständig öffentlich für Debugging
 
       // TEMPORÄRE LÖSUNG: Ein Benutzer kann sein eigenes Firmendokument erstellen auch ohne Custom Claims
       // Das ist nötig, weil Custom Claims erst nach user_type Update gesetzt werden
@@ -477,7 +475,7 @@ service cloud.firestore {
     match /portfolio/{portfolioId} {
       // Öffentlicher Lesezugriff für Portfolio-Items (Service-Discovery)
       allow get: if true;
-      allow list: if request.query.limit <= 100;
+      allow list: if true; // Entferne das Limit temporär
       
       // Nur der Owner kann sein Portfolio erstellen/bearbeiten
       allow create, update: if request.auth != null && 
@@ -494,7 +492,7 @@ service cloud.firestore {
     match /skills/{skillId} {
       // Öffentlicher Lesezugriff für Skills
       allow get: if true;
-      allow list: if request.query.limit <= 100;
+      allow list: if true; // Entferne das Limit temporär
       
       // Nur der Owner kann seine Skills verwalten
       allow create, update: if request.auth != null && 
@@ -511,7 +509,7 @@ service cloud.firestore {
     match /servicePackages/{packageId} {
       // Öffentlicher Lesezugriff für Service-Packages
       allow get: if true;
-      allow list: if request.query.limit <= 100;
+      allow list: if true; // Entferne das Limit temporär
       
       // Nur der Owner kann seine Packages verwalten
       allow create, update: if request.auth != null && 
@@ -528,7 +526,7 @@ service cloud.firestore {
     match /faqs/{faqId} {
       // Öffentlicher Lesezugriff für FAQs
       allow get: if true;
-      allow list: if request.query.limit <= 100;
+      allow list: if true; // Entferne das Limit temporär
       
       // Nur der Owner kann seine FAQs verwalten
       allow create, update: if request.auth != null && 
@@ -545,7 +543,7 @@ service cloud.firestore {
     match /languages/{languageId} {
       // Öffentlicher Lesezugriff für Sprachen
       allow get: if true;
-      allow list: if request.query.limit <= 100;
+      allow list: if true; // Entferne das Limit temporär
       
       // Nur der Owner kann seine Sprachen verwalten
       allow create, update: if request.auth != null && 

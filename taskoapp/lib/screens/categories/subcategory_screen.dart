@@ -54,6 +54,10 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
+            backgroundColor: const Color(0xFF14ad9f),
+            foregroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shadowColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 widget.category,
@@ -69,7 +73,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                     end: Alignment.bottomRight,
                     colors: [
                       Color(0xFF14ad9f),
-                      Color(0xFF0f9d84),
+                      Color(0xFF129488),
                     ],
                   ),
                 ),
@@ -78,19 +82,19 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 60), // Space for back button
+                        const SizedBox(height: 20), // Reduced space for back button
                         Icon(
                           _getCategoryIcon(widget.category),
                           size: 48,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           '${_allSubcategories.length} Services verfügbar',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 16,
                           ),
                         ),
@@ -112,7 +116,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -121,11 +125,23 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                 child: TextField(
                   controller: _searchController,
                   onChanged: _filterSubcategories,
-                  decoration: const InputDecoration(
+                  cursorColor: const Color(0xFF14ad9f),
+                  decoration: InputDecoration(
                     hintText: 'Subkategorien durchsuchen...',
-                    prefixIcon: Icon(Icons.search, color: Color(0xFF14ad9f)),
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF14ad9f)),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.all(16),
+                    contentPadding: const EdgeInsets.all(16),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF14ad9f),
+                        width: 2,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
@@ -140,7 +156,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                 crossAxisCount: 2,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
-                childAspectRatio: 0.85,
+                childAspectRatio: 1.1,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -180,26 +196,25 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header mit Icon
             Container(
-              height: 80,
+              height: 50,
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF14ad9f).withOpacity(0.1),
-                    const Color(0xFF0f9d84).withOpacity(0.1),
+                    const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                    const Color(0xFF129488).withValues(alpha: 0.1),
                   ],
                 ),
                 borderRadius: const BorderRadius.vertical(
@@ -209,7 +224,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
               child: Center(
                 child: Icon(
                   _getSubcategoryIcon(subcategory),
-                  size: 32,
+                  size: 20,
                   color: const Color(0xFF14ad9f),
                 ),
               ),
@@ -218,39 +233,47 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
             // Content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(8.0),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      subcategory,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                    // Text Content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            subcategory,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _getSubcategoryDescription(subcategory),
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: Colors.grey[600],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _getSubcategoryDescription(subcategory),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const Spacer(),
                     
-                    // Call-to-Action
+                    // Call-to-Action Button
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      height: 20,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF14ad9f).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Center(
                         child: Text(
@@ -258,7 +281,7 @@ class _SubcategoryScreenState extends State<SubcategoryScreen> {
                           style: TextStyle(
                             color: Color(0xFF14ad9f),
                             fontWeight: FontWeight.w600,
-                            fontSize: 12,
+                            fontSize: 9,
                           ),
                         ),
                       ),

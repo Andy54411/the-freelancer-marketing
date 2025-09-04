@@ -24,7 +24,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   // Daten für die erweiterten Funktionen
   List<Map<String, dynamic>> _reviews = [];
   List<Map<String, dynamic>> _portfolio = [];
-  List<String> _skills = [];
+  List<Map<String, dynamic>> _skills = [];
   List<Map<String, dynamic>> _servicePackages = [];
   List<Map<String, dynamic>> _faqs = [];
   List<Map<String, dynamic>> _languages = [];
@@ -123,10 +123,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
       
       if (mounted) {
         setState(() {
-          _skills = results[0] as List<String>;
-          _servicePackages = results[1] as List<Map<String, dynamic>>;
-          _faqs = results[2] as List<Map<String, dynamic>>;
-          _languages = results[3] as List<Map<String, dynamic>>;
+          _skills = results[0];
+          _servicePackages = results[1];
+          _faqs = results[2];
+          _languages = results[3];
           _isLoadingExtras = false;
         });
       }
@@ -414,7 +414,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
                   border: Border.all(color: const Color(0xFF14ad9f).withValues(alpha: 0.3)),
                 ),
                 child: Text(
-                  skill,
+                  skill['name'] ?? skill['skill'] ?? 'Skill',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF14ad9f),

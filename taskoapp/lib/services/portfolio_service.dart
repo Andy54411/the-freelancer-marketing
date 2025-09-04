@@ -11,12 +11,12 @@ class PortfolioService {
     try {
       debugPrint('🎨 Lade Portfolio für Provider: $providerId');
       
-      // Zuerst prüfen, ob Portfolio in step3 verfügbar ist
-      final userDoc = await _firestore.collection('users').doc(providerId).get();
+      // Suche in companies Collection
+      final companyDoc = await _firestore.collection('companies').doc(providerId).get();
       
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        final step3Data = userData['step3'] as Map<String, dynamic>? ?? {};
+      if (companyDoc.exists) {
+        final companyData = companyDoc.data()!;
+        final step3Data = companyData['step3'] as Map<String, dynamic>? ?? {};
         final portfolioData = step3Data['portfolio'] as List<dynamic>? ?? [];
         
         if (portfolioData.isNotEmpty) {
@@ -43,7 +43,7 @@ class PortfolioService {
             portfolio.add(portfolioItem);
           }
           
-          debugPrint('✅ ${portfolio.length} Portfolio-Items aus step3 geladen');
+          debugPrint('✅ ${portfolio.length} Portfolio-Items aus companies geladen');
           return portfolio;
         }
       }
@@ -89,53 +89,98 @@ class PortfolioService {
   }
 
   /// Lädt Skills für einen Provider
-  static Future<List<String>> getProviderSkills(String providerId) async {
+  static Future<List<Map<String, dynamic>>> getProviderSkills(String providerId) async {
     try {
-      debugPrint('🔧 Lade Skills für Provider: $providerId');
+      debugPrint('⚡ Lade Skills für Provider: $providerId');
       
-      final userDoc = await _firestore.collection('users').doc(providerId).get();
+      // Suche in companies Collection
+      final companyDoc = await _firestore.collection('companies').doc(providerId).get();
+      debugPrint('🔍 Company Dokument existiert: ${companyDoc.exists}');
       
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
+      if (companyDoc.exists) {
+        final companyData = companyDoc.data()!;
+        debugPrint('🔍 Company Data Keys: ${companyData.keys.toList()}');
         
-        // Skills aus step3
-        final step3Data = userData['step3'] as Map<String, dynamic>? ?? {};
-        final step3Skills = step3Data['skills'] as List<dynamic>? ?? [];
+        // Skills sind direkt in der companies Collection unter 'skills'
+        final skillsData = companyData['skills'] as List<dynamic>? ?? [];
+        debugPrint('🔍 Skills Data Length: ${skillsData.length}');
+        debugPrint('🔍 Skills Data: $skillsData');
         
-        // Skills aus Root-Level
-        final rootSkills = userData['skills'] as List<dynamic>? ?? [];
-        
-        // Specialties
-        final specialties = step3Data['specialties'] as List<dynamic>? ?? [];
-        
-        // Alle Skills kombinieren und deduplizieren
-        Set<String> allSkills = {};
-        
-        for (final skill in step3Skills) {
-          if (skill != null && skill.toString().trim().isNotEmpty) {
-            allSkills.add(skill.toString().trim());
+        if (skillsData.isNotEmpty) {
+          List<Map<String, dynamic>> skills = [];
+          
+          for (int i = 0; i < skillsData.length; i++) {
+            final skill = skillsData[i];
+            
+            // Wenn es ein String ist, konvertiere es zu einem Map
+            final skillItem = skill is String ? {
+              'id': i.toString(),
+              'name': skill,
+              'skill': skill,
+              'level': 'Professional',
+              'description': '',
+              'experience': '',
+              'certifications': <dynamic>[],
+              'category': '',
+              'years': 0,
+              'verified': false,
+            } : {
+              'id': (skill as Map)['id']?.toString() ?? i.toString(),
+              'name': skill['name'] ?? skill['skill'] ?? 'Skill ${i + 1}',
+              'level': skill['level'] ?? 'Professional',
+              'description': skill['description'] ?? '',
+              'experience': skill['experience'] ?? '',
+              'certifications': skill['certifications'] as List<dynamic>? ?? <dynamic>[],
+              'category': skill['category'] ?? '',
+              'years': skill['years'] ?? 0,
+              'verified': skill['verified'] ?? false,
+              ...skill is Map<String, dynamic> ? skill : <String, dynamic>{},
+            };
+            
+            skills.add(skillItem);
           }
+          
+          debugPrint('✅ ${skills.length} Skills aus companies geladen');
+          return skills;
+        } else {
+          debugPrint('⚠️ Keine Skills in companies.skills gefunden');
         }
-        
-        for (final skill in rootSkills) {
-          if (skill != null && skill.toString().trim().isNotEmpty) {
-            allSkills.add(skill.toString().trim());
-          }
-        }
-        
-        for (final specialty in specialties) {
-          if (specialty != null && specialty.toString().trim().isNotEmpty) {
-            allSkills.add(specialty.toString().trim());
-          }
-        }
-        
-        final skillsList = allSkills.toList()..sort();
-        debugPrint('✅ ${skillsList.length} Skills geladen');
-        return skillsList;
+      } else {
+        debugPrint('⚠️ Company Dokument nicht gefunden für ID: $providerId');
       }
       
-      return [];
+      // Fallback zur alten skills Collection
+      final skillsSnapshot = await _firestore
+          .collection('skills')
+          .where('providerId', isEqualTo: providerId)
+          .get();
       
+      if (skillsSnapshot.docs.isNotEmpty) {
+        List<Map<String, dynamic>> skills = [];
+        
+        for (final doc in skillsSnapshot.docs) {
+          final data = doc.data();
+          final skillItem = {
+            'id': doc.id,
+            'name': data['name'] ?? data['skill'] ?? 'Skill',
+            'level': data['level'] ?? 'Beginner',
+            'description': data['description'] ?? '',
+            'experience': data['experience'] ?? '',
+            'certifications': data['certifications'] as List<dynamic>? ?? [],
+            'category': data['category'] ?? '',
+            'years': data['years'] ?? 0,
+            'verified': data['verified'] ?? false,
+            ...data,
+          };
+          skills.add(skillItem);
+        }
+        
+        debugPrint('✅ ${skills.length} Skills aus separater Collection geladen');
+        return skills;
+      }
+      
+      debugPrint('⚠️ Keine Skills für Provider $providerId gefunden');
+      return [];
     } catch (e) {
       debugPrint('❌ Fehler beim Laden der Skills: $e');
       return [];
@@ -143,44 +188,51 @@ class PortfolioService {
   }
 
   /// Lädt Service-Packages für einen Provider
+  /// Lädt Service-Packages für einen Provider
   static Future<List<Map<String, dynamic>>> getProviderServicePackages(String providerId) async {
     try {
       debugPrint('📦 Lade Service-Packages für Provider: $providerId');
       
-      final userDoc = await _firestore.collection('users').doc(providerId).get();
+      // Suche in companies Collection
+      final companyDoc = await _firestore.collection('companies').doc(providerId).get();
       
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        final step3Data = userData['step3'] as Map<String, dynamic>? ?? {};
+      if (companyDoc.exists) {
+        final companyData = companyDoc.data()!;
+        final step3Data = companyData['step3'] as Map<String, dynamic>? ?? {};
         final packagesData = step3Data['servicePackages'] as List<dynamic>? ?? [];
         
-        List<Map<String, dynamic>> packages = [];
-        
-        for (int i = 0; i < packagesData.length; i++) {
-          final package = packagesData[i] as Map<String, dynamic>;
+        if (packagesData.isNotEmpty) {
+          List<Map<String, dynamic>> packages = [];
           
-          final servicePackage = {
-            'id': package['id']?.toString() ?? i.toString(),
-            'title': package['title'] ?? 'Service Package ${i + 1}',
-            'description': package['description'] ?? '',
-            'price': (package['price'] as num?)?.toDouble() ?? 0.0,
-            'duration': package['duration'] ?? '',
-            'features': package['features'] as List<dynamic>? ?? [],
-            'popular': package['popular'] ?? false,
-            'deliveryTime': package['deliveryTime'] ?? package['duration'] ?? '',
-            'revisions': package['revisions'] ?? 'Unbegrenzt',
-            ...package,
-          };
+          for (int i = 0; i < packagesData.length; i++) {
+            final package = packagesData[i] as Map<String, dynamic>;
+            
+            final packageItem = {
+              'id': package['id']?.toString() ?? i.toString(),
+              'title': package['title'] ?? package['name'] ?? 'Service Package ${i + 1}',
+              'description': package['description'] ?? '',
+              'price': package['price'] ?? 0.0,
+              'currency': package['currency'] ?? 'EUR',
+              'duration': package['duration'] ?? '',
+              'features': package['features'] as List<dynamic>? ?? [],
+              'category': package['category'] ?? '',
+              'popular': package['popular'] ?? false,
+              'availability': package['availability'] ?? 'available',
+              'minPrice': package['minPrice'] ?? package['price'] ?? 0.0,
+              'maxPrice': package['maxPrice'] ?? package['price'] ?? 0.0,
+              ...package,
+            };
+            
+            packages.add(packageItem);
+          }
           
-          packages.add(servicePackage);
+          debugPrint('✅ ${packages.length} Service-Packages aus companies geladen');
+          return packages;
         }
-        
-        debugPrint('✅ ${packages.length} Service-Packages geladen');
-        return packages;
       }
       
+      debugPrint('⚠️ Keine Service-Packages für Provider $providerId gefunden');
       return [];
-      
     } catch (e) {
       debugPrint('❌ Fehler beim Laden der Service-Packages: $e');
       return [];
@@ -192,11 +244,12 @@ class PortfolioService {
     try {
       debugPrint('❓ Lade FAQs für Provider: $providerId');
       
-      final userDoc = await _firestore.collection('users').doc(providerId).get();
+      // Suche in companies Collection
+      final companyDoc = await _firestore.collection('companies').doc(providerId).get();
       
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        final step3Data = userData['step3'] as Map<String, dynamic>? ?? {};
+      if (companyDoc.exists) {
+        final companyData = companyDoc.data()!;
+        final step3Data = companyData['step3'] as Map<String, dynamic>? ?? {};
         final faqsData = step3Data['faqs'] as List<dynamic>? ?? [];
         
         List<Map<String, dynamic>> faqs = [];
@@ -219,7 +272,39 @@ class PortfolioService {
         // Nach order sortieren
         faqs.sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
         
-        debugPrint('✅ ${faqs.length} FAQs geladen');
+        debugPrint('✅ ${faqs.length} FAQs aus companies geladen');
+        return faqs;
+      }
+      
+      // Fallback: firma Collection
+      final firmaDoc = await _firestore.collection('firma').doc(providerId).get();
+      
+      if (firmaDoc.exists) {
+        final firmaData = firmaDoc.data()!;
+        final step3Data = firmaData['step3'] as Map<String, dynamic>? ?? {};
+        final faqsData = step3Data['faqs'] as List<dynamic>? ?? [];
+        
+        List<Map<String, dynamic>> faqs = [];
+        
+        for (int i = 0; i < faqsData.length; i++) {
+          final faq = faqsData[i] as Map<String, dynamic>;
+          
+          final faqItem = {
+            'id': faq['id']?.toString() ?? i.toString(),
+            'question': faq['question'] ?? 'Frage ${i + 1}',
+            'answer': faq['answer'] ?? '',
+            'category': faq['category'] ?? 'Allgemein',
+            'order': faq['order'] ?? i,
+            ...faq,
+          };
+          
+          faqs.add(faqItem);
+        }
+        
+        // Nach order sortieren
+        faqs.sort((a, b) => (a['order'] as int).compareTo(b['order'] as int));
+        
+        debugPrint('✅ ${faqs.length} FAQs aus firma geladen');
         return faqs;
       }
       
@@ -236,11 +321,12 @@ class PortfolioService {
     try {
       debugPrint('🌍 Lade Sprachen für Provider: $providerId');
       
-      final userDoc = await _firestore.collection('users').doc(providerId).get();
+      // Zuerst in companies Collection suchen
+      final companyDoc = await _firestore.collection('companies').doc(providerId).get();
       
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        final step3Data = userData['step3'] as Map<String, dynamic>? ?? {};
+      if (companyDoc.exists) {
+        final companyData = companyDoc.data()!;
+        final step3Data = companyData['step3'] as Map<String, dynamic>? ?? {};
         final languagesData = step3Data['languages'] as List<dynamic>? ?? [];
         
         List<Map<String, dynamic>> languages = [];
@@ -257,7 +343,33 @@ class PortfolioService {
           }
         }
         
-        debugPrint('✅ ${languages.length} Sprachen geladen');
+        debugPrint('✅ ${languages.length} Sprachen aus companies geladen');
+        return languages;
+      }
+      
+      // Fallback: firma Collection
+      final firmaDoc = await _firestore.collection('firma').doc(providerId).get();
+      
+      if (firmaDoc.exists) {
+        final firmaData = firmaDoc.data()!;
+        final step3Data = firmaData['step3'] as Map<String, dynamic>? ?? {};
+        final languagesData = step3Data['languages'] as List<dynamic>? ?? [];
+        
+        List<Map<String, dynamic>> languages = [];
+        
+        for (final lang in languagesData) {
+          if (lang is Map<String, dynamic>) {
+            final language = {
+              'language': lang['language'] ?? '',
+              'proficiency': lang['proficiency'] ?? 'Fließend',
+              'native': lang['native'] ?? false,
+              ...lang,
+            };
+            languages.add(language);
+          }
+        }
+        
+        debugPrint('✅ ${languages.length} Sprachen aus firma geladen');
         return languages;
       }
       
