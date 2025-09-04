@@ -371,8 +371,39 @@ class _LoginScreenState extends State<LoginScreen> {
                           // Google Button
                           Expanded(
                             child: OutlinedButton.icon(
-                              onPressed: () {
-                                // TODO: Google Sign In
+                              onPressed: () async {
+                                if (_isLoading) return;
+                                
+                                setState(() {
+                                  _isLoading = true;
+                                });
+                                
+                                final authService = context.read<AuthService>();
+                                final navigator = Navigator.of(context);
+                                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                
+                                try {
+                                  await authService.signInWithGoogle();
+                                  
+                                  if (mounted) {
+                                    navigator.pop(true);
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text('Google-Anmeldung fehlgeschlagen: ${e.toString()}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted) {
+                                    setState(() {
+                                      _isLoading = false;
+                                    });
+                                  }
+                                }
                               },
                               icon: const Icon(Icons.g_mobiledata, color: Color(0xFF14ad9f)),
                               label: const Text(
@@ -394,7 +425,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               onPressed: () {
-                                // TODO: Apple Sign In
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Apple Sign-In wird in einer späteren Version implementiert'),
+                                    backgroundColor: Color(0xFF14ad9f),
+                                  ),
+                                );
                               },
                               icon: const Icon(Icons.phone_iphone, color: Color(0xFF14ad9f)),
                               label: const Text(

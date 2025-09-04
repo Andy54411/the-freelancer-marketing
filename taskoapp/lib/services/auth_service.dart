@@ -1,11 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Stream für aktuellen User
   Stream<TaskiloUser?> get userStream {
@@ -101,17 +103,64 @@ class AuthService {
     required bool termsAccepted,
     required bool privacyAccepted,
     required bool newsletterSubscribed,
+    UserType userType = UserType.customer,
   }) async {
     try {
       // Debug: Firebase Auth Status
       debugPrint('🔍 Firebase Auth Status Check:');
-      debugPrint('   � Current User: ${FirebaseAuth.instance.currentUser}');
+      debugPrint('   Current User: ${FirebaseAuth.instance.currentUser}');
       debugPrint('   🔧 App Name: ${FirebaseAuth.instance.app.name}');
       debugPrint('   🆔 App Options: ${FirebaseAuth.instance.app.options.projectId}');
       
-      debugPrint('� Starte Benutzerregistrierung...');
+      debugPrint('Starte Benutzerregistrierung...');
       debugPrint('📧 Email: $email');
-      debugPrint('� Name: $firstName $lastName');
+      debugPrint('Name: $firstName $lastName');
+
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (credential.user != null) {
+        // Aktualisiere Display Name
+        await credential.user!.updateDisplayName('$firstName $lastName');
+
+        // Erstelle User-Profile
+        final profile = UserProfile(
+          firstName: firstName,
+          lastName: lastName,
+          phoneNumber: phoneNumber,
+          street: street,
+          city: city,
+          postalCode: postalCode,
+          country: country,
+        );
+
+        // Erstelle User-Dokument in Firestore
+        final user = TaskiloUser.fromFirebaseUser(credential.user!, profile: profile)
+            .copyWith(userType: userType);
+
+        await _firestore.collection('users').doc(credential.user!.uid).set(user.toFirestore());
+
+        // Newsletter-Anmeldung wenn gewünscht
+        if (newsletterSubscribed) {
+          await _addToNewsletter(email, firstName, lastName);
+        }
+
+        // Sende Email-Verifikation
+        await credential.user!.sendEmailVerification();
+
+        debugPrint('✅ Benutzerregistrierung erfolgreich abgeschlossen');
+        return user;
+      }
+      return null;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      debugPrint('❌ Unerwarteter Fehler bei Registrierung: $e');
+      throw 'Ein unerwarteter Fehler ist aufgetreten.';
+    }
+  }
 
   // Password Reset
   Future<void> sendPasswordResetEmail(String email) async {
@@ -119,6 +168,77 @@ class AuthService {
       await _auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
+    }
+  }
+
+  // Google Sign In
+  Future<TaskiloUser?> signInWithGoogle() async {
+    try {
+      debugPrint('🔍 Starte Google Sign-In...');
+      
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        debugPrint('❌ Google Sign-In abgebrochen');
+        return null; // User cancelled the sign-in
+      }
+      
+      debugPrint('✅ Google-Account ausgewählt: ${googleUser.email}');
+      
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      
+      debugPrint('🔑 Firebase-Credentials erstellt');
+      
+      // Once signed in, return the UserCredential
+      final userCredential = await _auth.signInWithCredential(credential);
+      
+      if (userCredential.user != null) {
+        debugPrint('✅ Firebase-Anmeldung erfolgreich');
+        
+        // Prüfe ob User bereits in Firestore existiert
+        final existingUser = await _getUserFromFirestore(userCredential.user!.uid);
+        
+        if (existingUser != null) {
+          debugPrint('📂 Bestehender User gefunden');
+          await _updateLastLoginTime(userCredential.user!.uid);
+          return existingUser;
+        } else {
+          debugPrint('👤 Neuer User - erstelle Firestore-Dokument');
+          
+          // Erstelle neuen User mit Google-Daten
+          final names = googleUser.displayName?.split(' ') ?? ['', ''];
+          final profile = UserProfile(
+            firstName: names.isNotEmpty ? names.first : '',
+            lastName: names.length > 1 ? names.skip(1).join(' ') : '',
+          );
+          
+          final newUser = TaskiloUser.fromFirebaseUser(
+            userCredential.user!,
+            profile: profile,
+          );
+          
+          await _firestore.collection('users').doc(userCredential.user!.uid).set(newUser.toFirestore());
+          
+          debugPrint('✅ Neuer User erfolgreich erstellt');
+          return newUser;
+        }
+      }
+      
+      return null;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('❌ Firebase Auth Fehler: ${e.code} - ${e.message}');
+      throw _handleAuthException(e);
+    } catch (e) {
+      debugPrint('❌ Google Sign-In Fehler: $e');
+      throw 'Ein Fehler ist bei der Google-Anmeldung aufgetreten: ${e.toString()}';
     }
   }
 

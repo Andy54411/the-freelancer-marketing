@@ -124,9 +124,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         city: _cityController.text.trim(),
         postalCode: _postalCodeController.text.trim(),
         country: _selectedCountry,
+        termsAccepted: _agreeToTerms,
+        privacyAccepted: _agreeToTerms, // Gleicher Wert wie Terms
+        newsletterSubscribed: _agreesToNewsletter,
         userType: _selectedUserType,
-        agreesToNewsletter: _agreesToNewsletter,
-        dateOfBirth: _selectedDateOfBirth,
       );
       
       if (mounted) {
