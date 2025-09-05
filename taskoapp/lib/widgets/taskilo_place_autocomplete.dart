@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class TaskiloPlaceAutocomplete extends StatefulWidget {
@@ -32,15 +31,21 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
 
-  // API Key für Flutter - nutze den Web-Key temporär ohne Restrictions
   String get _apiKey {
     final flutterKey = dotenv.env['GOOGLE_MAPS_FLUTTER_API_KEY'];
-    if (flutterKey != null && flutterKey.isNotEmpty) {
+    final webKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
+    
+    // Priorität: Flutter Key, dann Web Key, dann Fallback
+    if (flutterKey != null && flutterKey.isNotEmpty && flutterKey.length > 10) {
       return flutterKey;
     }
     
-    // Verwende den gleichen Key wie das Web-Projekt
-    return dotenv.env['GOOGLE_MAPS_API_KEY'] ?? "AIzaSyCsKo9MFlJDLErQjCgESVGnLjMhYD9UhvI";
+    if (webKey != null && webKey.isNotEmpty) {
+      return webKey;
+    }
+    
+    // Fallback - der bekannte Web Key
+    return "AIzaSyCsKo9MFlJDLErQjCgESVGnLjMhYD9UhvI";
   }
 
   @override
@@ -61,12 +66,10 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
   }
 
   void _onTextChanged() {
-    // Verhindere API-Calls wenn Focus verloren wurde
     if (!_focusNode.hasFocus) return;
     
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      // Nochmalige Prüfung des Focus nach Debounce
       if (!_focusNode.hasFocus) return;
       
       final query = widget.controller.text.trim();
@@ -80,12 +83,16 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
 
   void _onFocusChanged() {
     if (!_focusNode.hasFocus) {
-      // Sofort Overlay entfernen wenn Focus verloren
       _clearPredictions();
     }
   }
 
   Future<void> _searchPlaces(String query) async {
+    if (_apiKey.isEmpty) {
+      _showFallbackSuggestions(query);
+      return;
+    }
+
     try {
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/place/autocomplete/json'
@@ -96,20 +103,11 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         '&key=$_apiKey'
       );
 
-      debugPrint('🔍 Google Places Request: $query');
-      debugPrint('🔑 API Key (erste 10 Zeichen): ${_apiKey.substring(0, math.min(10, _apiKey.length))}...');
-      debugPrint('🌐 Request URL: ${url.toString().replaceAll(_apiKey, 'HIDDEN_API_KEY')}');
-
       final response = await http.get(url);
-      
-      debugPrint('📡 HTTP Status: ${response.statusCode}');
-      debugPrint('📦 Response Body: ${response.body}');
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final String status = data['status'] ?? 'UNKNOWN_ERROR';
-        
-        debugPrint('✅ Google Places API Status: $status');
         
         if (status == 'OK' && data['predictions'] != null) {
           final predictions = (data['predictions'] as List)
@@ -123,134 +121,53 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
           if (predictions.isNotEmpty) {
             _showOverlay();
           }
-          
-          debugPrint('📍 ${predictions.length} Predictions gefunden');
         } else {
-          // API Error - zeige Details und verwende Fallback
-          final String? errorMessage = data['error_message'];
-          debugPrint('⚠️ Google Places API Error:');
-          debugPrint('   Status: $status');
-          debugPrint('   Error Message: ${errorMessage ?? 'Keine Details verfügbar'}');
-          
-          if (status == 'REQUEST_DENIED') {
-            debugPrint('🚫 REQUEST_DENIED Debugging Hilfe:');
-            debugPrint('   1. Google Cloud Console öffnen: https://console.cloud.google.com/');
-            debugPrint('   2. Places API aktivieren: APIs & Services > Library > Places API');
-            debugPrint('   3. API Key Berechtigung prüfen: APIs & Services > Credentials');
-            debugPrint('   4. Billing Account aktivieren: Billing');
-            debugPrint('   5. API Key Restrictions korrekt konfigurieren');
-            debugPrint('   6. Quota & Limits überprüfen');
-          } else if (status == 'OVER_QUERY_LIMIT') {
-            debugPrint('💰 Query Limit erreicht - verwende Fallback');
-          } else if (status == 'ZERO_RESULTS') {
-            debugPrint('🔍 Keine Ergebnisse für "$query"');
-          }
-          
-          _showSimplePredictions(query);
+          // Google API Fehler - zeige Fallback
+          _showFallbackSuggestions(query);
         }
       } else {
-        debugPrint('❌ HTTP Error ${response.statusCode}: ${response.body}');
-        _showSimplePredictions(query);
+        // HTTP Fehler - zeige Fallback
+        _showFallbackSuggestions(query);
       }
-    } catch (e, stackTrace) {
-      debugPrint('💥 Exception in _searchPlaces: $e');
-      debugPrint('📚 StackTrace: $stackTrace');
-      _showSimplePredictions(query);
+    } catch (e) {
+      // Netzwerk Fehler - zeige Fallback
+      _showFallbackSuggestions(query);
     }
   }
 
-  void _showSimplePredictions(String query) {
-    // Erweiterte lokale Suggestions mit deutschen/österreichischen/schweizer Orten
+  void _showFallbackSuggestions(String query) {
     final suggestions = <PlacePrediction>[];
     
+    // Direkten Input als erste Option
+    suggestions.add(PlacePrediction(
+      description: query,
+      placeId: 'direct_input',
+    ));
+    
+    // Konkrete Beispiele mit vollständigen Adressen für Tests
     if (query.length >= 2) {
-      // Deutschsprachige Städte und häufige Adressen
-      final places = [
-        // Deutschland
-        {'street': 'Hauptstraße', 'city': 'Berlin', 'plz': '10115', 'country': 'DE'},
-        {'street': 'Marienplatz', 'city': 'München', 'plz': '80331', 'country': 'DE'},
-        {'street': 'Rathausmarkt', 'city': 'Hamburg', 'plz': '20095', 'country': 'DE'},
-        {'street': 'Domplatz', 'city': 'Köln', 'plz': '50667', 'country': 'DE'},
-        {'street': 'Römerberg', 'city': 'Frankfurt am Main', 'plz': '60311', 'country': 'DE'},
-        {'street': 'Schlossplatz', 'city': 'Stuttgart', 'plz': '70173', 'country': 'DE'},
-        {'street': 'Königsallee', 'city': 'Düsseldorf', 'plz': '40213', 'country': 'DE'},
-        {'street': 'Potsdamer Platz', 'city': 'Berlin', 'plz': '10785', 'country': 'DE'},
-        
-        // Österreich
-        {'street': 'Graben', 'city': 'Wien', 'plz': '1010', 'country': 'AT'},
-        {'street': 'Getreidegasse', 'city': 'Salzburg', 'plz': '5020', 'country': 'AT'},
-        {'street': 'Maria-Theresien-Straße', 'city': 'Innsbruck', 'plz': '6020', 'country': 'AT'},
-        
-        // Schweiz
-        {'street': 'Bahnhofstrasse', 'city': 'Zürich', 'plz': '8001', 'country': 'CH'},
-        {'street': 'Freie Strasse', 'city': 'Basel', 'plz': '4001', 'country': 'CH'},
-        {'street': 'Rue du Rhône', 'city': 'Genf', 'plz': '1204', 'country': 'CH'},
-      ];
-      
-      // Suche nach passenden Orten
-      for (final place in places) {
-        final street = place['street']!;
-        final city = place['city']!;
-        final plz = place['plz']!;
-        final country = place['country']!;
-        
-        if (street.toLowerCase().contains(query.toLowerCase()) ||
-            city.toLowerCase().contains(query.toLowerCase()) ||
-            query.toLowerCase().contains(street.toLowerCase()) ||
-            query.toLowerCase().contains(city.toLowerCase())) {
-          
-          final countryName = country == 'DE' ? 'Deutschland' : 
-                           country == 'AT' ? 'Österreich' : 'Schweiz';
-          
-          suggestions.add(PlacePrediction(
-            description: '$query, $plz $city, $countryName',
-            placeId: 'local_${street}_$city'.hashCode.toString(),
-          ));
-        }
-      }
-      
-      // Häufige deutsche Straßennamen
-      final commonStreets = [
-        'Hauptstraße', 'Bahnhofstraße', 'Kirchgasse', 'Schulstraße',
-        'Dorfstraße', 'Mühlenweg', 'Gartenstraße', 'Waldweg',
-        'Lindenstraße', 'Rosenstraße', 'Am Markt', 'Friedhofstraße'
-      ];
-      
-      for (final street in commonStreets) {
-        if (street.toLowerCase().contains(query.toLowerCase()) ||
-            query.toLowerCase().contains(street.toLowerCase())) {
-          suggestions.add(PlacePrediction(
-            description: '$query${query.contains(street) ? '' : ', $street'}',
-            placeId: 'street_${street.hashCode}',
-          ));
-        }
-      }
-      
-      // Direkten Input als erste Option hinzufügen
-      suggestions.insert(0, PlacePrediction(
-        description: query,
-        placeId: 'direct_input',
-      ));
-      
-      // Entferne Duplikate
-      final uniqueSuggestions = <PlacePrediction>[];
-      final seenDescriptions = <String>{};
-      
-      for (final suggestion in suggestions) {
-        if (!seenDescriptions.contains(suggestion.description)) {
-          uniqueSuggestions.add(suggestion);
-          seenDescriptions.add(suggestion.description);
-        }
-      }
-      
-      setState(() {
-        _predictions = uniqueSuggestions.take(8).toList(); // Maximal 8 Suggestions
-      });
-      
-      if (uniqueSuggestions.isNotEmpty) {
-        _showOverlay();
-        debugPrint('📍 ${uniqueSuggestions.length} lokale Suggestions für "$query"');
-      }
+      suggestions.addAll([
+        PlacePrediction(
+          description: 'Hauptstraße 123, 10115 Berlin',
+          placeId: 'test_berlin',
+        ),
+        PlacePrediction(
+          description: 'Marienplatz 1, 80331 München',
+          placeId: 'test_muenchen',
+        ),
+        PlacePrediction(
+          description: 'Königsallee 27, 40213 Düsseldorf',
+          placeId: 'test_duesseldorf',
+        ),
+      ]);
+    }
+    
+    setState(() {
+      _predictions = suggestions.take(4).toList();
+    });
+    
+    if (suggestions.isNotEmpty) {
+      _showOverlay();
     }
   }
 
@@ -268,7 +185,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
             elevation: 8,
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              constraints: const BoxConstraints(maxHeight: 250),
+              constraints: const BoxConstraints(maxHeight: 300),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
@@ -336,55 +253,38 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
   }
 
   void _selectPrediction(PlacePrediction prediction) {
-    // Sofort Overlay entfernen und Input-Events stoppen
     _clearPredictions();
     _focusNode.unfocus();
     
     widget.controller.text = prediction.description;
     
-    // Debug-Information für PlaceID
-    debugPrint('🎯 Adresse ausgewählt: ${prediction.description}');
-    debugPrint('🆔 PlaceID: ${prediction.placeId}');
-    debugPrint('🔍 PlaceID startet mit ChI: ${prediction.placeId.startsWith('ChI')}');
-    debugPrint('🔍 PlaceID Länge: ${prediction.placeId.length}');
-    debugPrint('🔑 Verfügbarer API Key: ${_apiKey.isNotEmpty ? 'JA' : 'NEIN'}');
-    
-    // Wenn es eine echte Google Place ID ist, nutze Place Details API
+    // Unterscheide zwischen echten Google Places und Fallback-Beispielen
     if (prediction.placeId.startsWith('ChI') || prediction.placeId.length > 20) {
-      debugPrint('✅ Nutze Place Details API für echte Google PlaceID');
+      // Echte Google Place ID - nutze Place Details API
       _getPlaceDetailsAndParse(prediction.placeId, prediction.description);
     } else {
-      debugPrint('⚠️ Nutze Fallback Parser für lokale PlaceID');
-      _parseAndSetAddress(prediction.description);
+      // Fallback oder Beispiel - nutze eigenen Parser
+      _parseBasicAddress(prediction.description);
     }
   }
 
   Future<void> _getPlaceDetailsAndParse(String placeId, String description) async {
-    try {
-      // Nutze den gleichen API Key wie für Autocomplete
-      final apiKey = _apiKey;
-      if (apiKey.isEmpty) {
-        debugPrint('❌ Google Places API Key nicht gefunden - nutze Fallback');
-        _parseAndSetAddress(description);
-        return;
-      }
+    if (_apiKey.isEmpty) {
+      _parseBasicAddress(description);
+      return;
+    }
 
+    try {
       final url = 'https://maps.googleapis.com/maps/api/place/details/json'
           '?place_id=$placeId'
-          '&fields=address_components'
+          '&fields=address_components,formatted_address'
           '&language=de'
-          '&key=$apiKey';
-
-      debugPrint('🔍 Place Details Request für: $placeId');
-      debugPrint('🔑 Place Details API Key (erste 10 Zeichen): ${apiKey.substring(0, math.min(10, apiKey.length))}...');
-      debugPrint('🌐 Details URL: ${url.replaceAll(apiKey, 'HIDDEN_API_KEY')}');
+          '&key=$_apiKey';
 
       final response = await http.get(Uri.parse(url));
-      debugPrint('📡 Place Details Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        debugPrint('📦 Place Details Response: ${json.encode(data)}');
 
         if (data['status'] == 'OK' && data['result'] != null) {
           final addressComponents = data['result']['address_components'] as List?;
@@ -401,17 +301,13 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
               final longName = component['long_name'] ?? '';
               final shortName = component['short_name'] ?? '';
               
-              debugPrint('🔍 Component: $longName ($shortName) - Types: $types');
-              
               if (types.contains('street_number')) {
                 streetNumber = longName;
               } else if (types.contains('route')) {
                 street = longName;
-              } else if (types.contains('locality') && types.contains('political')) {
-                // Priorität: locality vor administrative_area_level_3
+              } else if (types.contains('locality')) {
                 city = longName;
               } else if (types.contains('administrative_area_level_3') && city.isEmpty) {
-                // Nur als Fallback wenn noch keine locality gefunden
                 city = longName;
               } else if (types.contains('postal_code')) {
                 postalCode = longName;
@@ -424,35 +320,27 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
           // Straße mit Hausnummer zusammenfügen
           final fullStreet = streetNumber.isNotEmpty ? '$street $streetNumber' : street;
           
-          debugPrint('📍 Place Details extrahiert:');
-          debugPrint('🛣️ Straße: "$fullStreet"');
-          debugPrint('🏙️ Stadt: "$city"');
-          debugPrint('📮 PLZ: "$postalCode"');
-          debugPrint('🌍 Land: "$country"');
-          
           // Callback mit vollständigen Daten
-          widget.onPlaceSelected({
+          final result = {
             'street': fullStreet,
             'city': city,
             'postalCode': postalCode,
             'country': country,
-            'fullAddress': description,
-          });
+            'fullAddress': data['result']['formatted_address']?.toString() ?? description,
+          };
           
-          return; // Erfolgreich abgeschlossen
-        } else {
-          debugPrint('⚠️ Place Details API Error: ${data['status']} - ${data['error_message'] ?? 'Unbekannter Fehler'}');
+          print('📤 Google Places Result: $result');
+          widget.onPlaceSelected(result);
+          
+          return;
         }
-      } else {
-        debugPrint('❌ Place Details HTTP Error ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      debugPrint('❌ Place Details Fehler: $e');
+      // Fehler silent ignorieren
     }
     
     // Fallback bei Fehlern
-    debugPrint('⚠️ Place Details fehlgeschlagen - nutze Fallback Parser');
-    _parseAndSetAddress(description);
+    _parseBasicAddress(description);
   }
 
   void _clearPredictions() {
@@ -462,165 +350,81 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
     _removeOverlay();
   }
 
-  void _parseAndSetAddress(String description) {
-    try {
-      debugPrint('🏠 Parsing Google Places result: "$description"');
-      
-      // Initialisiere return values
-      String street = '';
-      String city = '';
-      String postalCode = '';
-      String country = 'DE'; // Default
-      
-      // Splits auf Komma für Google Places Format
-      final parts = description.split(', ');
-      
-      if (parts.isNotEmpty) {
-        // Erster Teil ist normalerweise die komplette Straße mit Hausnummer
-        street = parts[0].trim();
-        debugPrint('🛣️ Street extracted: "$street"');
-      }
-      
-      // Durchsuche alle Parts nach PLZ, Stadt und Land
-      for (int i = 1; i < parts.length; i++) {
-        final part = parts[i].trim();
-        debugPrint('🔍 Processing part $i: "$part"');
-        
-        // Deutsche PLZ Pattern (5 Ziffern) + Stadt
-        final plzCityMatch = RegExp(r'^(\d{5})\s+(.+)$').firstMatch(part);
-        if (plzCityMatch != null) {
-          postalCode = plzCityMatch.group(1)!;
-          city = plzCityMatch.group(2)!.trim();
-          debugPrint('📮 PLZ + Stadt gefunden: PLZ="$postalCode", Stadt="$city"');
-          continue;
-        }
-        
-        // Österreichische PLZ Pattern (4 Ziffern) + Stadt
-        final autPlzMatch = RegExp(r'^(\d{4})\s+(.+)$').firstMatch(part);
-        if (autPlzMatch != null) {
-          postalCode = autPlzMatch.group(1)!;
-          city = autPlzMatch.group(2)!.trim();
-          country = 'AT';
-          debugPrint('📮 Österreich PLZ + Stadt: PLZ="$postalCode", Stadt="$city"');
-          continue;
-        }
-        
-        // Schweizer PLZ Pattern (4 Ziffern) + Stadt
-        final chPlzMatch = RegExp(r'^(\d{4})\s+(.+)$').firstMatch(part);
-        if (chPlzMatch != null && !country.startsWith('AT')) {
-          postalCode = chPlzMatch.group(1)!;
-          city = chPlzMatch.group(2)!.trim();
-          country = 'CH';
-          debugPrint('📮 Schweiz PLZ + Stadt: PLZ="$postalCode", Stadt="$city"');
-          continue;
-        }
-        
-        // PLZ allein suchen (ohne Stadt)
-        final plzAloneMatch = RegExp(r'^(\d{4,5})$').firstMatch(part);
-        if (plzAloneMatch != null && postalCode.isEmpty) {
-          postalCode = plzAloneMatch.group(1)!;
-          debugPrint('📮 PLZ allein gefunden: "$postalCode"');
-          continue;
-        }
-        
-        // PLZ irgendwo im Teil finden
-        final plzAnywhereMatch = RegExp(r'(\d{4,5})').firstMatch(part);
-        if (plzAnywhereMatch != null && postalCode.isEmpty) {
-          postalCode = plzAnywhereMatch.group(1)!;
-          debugPrint('📮 PLZ irgendwo gefunden: "$postalCode" in "$part"');
-        }
-        
-        // Länder erkennen (explizit)
-        final lowerPart = part.toLowerCase();
-        if (lowerPart.contains('deutschland') || lowerPart.contains('germany')) {
-          country = 'DE';
-          debugPrint('🇩🇪 Deutschland erkannt');
-        } else if (lowerPart.contains('österreich') || lowerPart.contains('austria')) {
-          country = 'AT';
-          debugPrint('🇦🇹 Österreich erkannt');
-        } else if (lowerPart.contains('schweiz') || lowerPart.contains('switzerland')) {
-          country = 'CH';
-          debugPrint('🇨🇭 Schweiz erkannt');
-        } else if (lowerPart.contains('frankreich') || lowerPart.contains('france')) {
-          country = 'FR';
-          debugPrint('🇫🇷 Frankreich erkannt');
-        } else if (lowerPart.contains('italien') || lowerPart.contains('italy')) {
-          country = 'IT';
-          debugPrint('🇮🇹 Italien erkannt');
-        } else if (lowerPart.contains('spanien') || lowerPart.contains('spain')) {
-          country = 'ES';
-          debugPrint('🇪🇸 Spanien erkannt');
-        }
-        
-        // Falls noch keine Stadt aber kein PLZ Pattern, könnte es Stadt sein
-        if (city.isEmpty && !RegExp(r'\d{4,5}').hasMatch(part) && !lowerPart.contains('deutschland') && !lowerPart.contains('germany')) {
-          city = part;
-          debugPrint('🏙️ Stadt (Fallback): "$city"');
-        }
-      }
-      
-      // PLZ-basierte Länder-Erkennung als Fallback
-      if (postalCode.isNotEmpty) {
-        final plzNum = int.tryParse(postalCode);
-        if (plzNum != null) {
-          if (postalCode.length == 5 && plzNum >= 1000 && plzNum <= 99999) {
-            if (country == 'DE') {
-              // Deutsche PLZ bleiben DE
-              debugPrint('🇩🇪 Deutsche PLZ bestätigt: $postalCode');
-            }
-          } else if (postalCode.length == 4) {
-            if (plzNum >= 1000 && plzNum <= 9999) {
-              // 4-stellige PLZ könnte AT oder CH sein
-              if (country == 'DE') {
-                country = plzNum >= 6000 ? 'CH' : 'AT'; // Grosse Vereinfachung
-                debugPrint('🎯 PLZ-basierte Länder-Zuordnung: $postalCode -> $country');
-              }
-            }
-          }
-        }
-      }
-      
-      // Fallbacks für fehlende Daten
-      if (street.isEmpty && description.isNotEmpty) {
-        street = description.split(',')[0].trim();
-        debugPrint('🛣️ Street (Final Fallback): "$street"');
-      }
-      
-      if (city.isEmpty && parts.length > 1) {
-        // Verwende vorletzten Teil als Stadt falls verfügbar
-        final candidateCity = parts[parts.length - 2].trim();
-        if (!RegExp(r'^\d+').hasMatch(candidateCity)) {
-          city = candidateCity;
-          debugPrint('🏙️ Stadt (Part Fallback): "$city"');
-        }
-      }
-      
-      final result = {
-        'street': street,
-        'city': city,
-        'postalCode': postalCode,
-        'country': country, // ISO-Code
-        'fullAddress': description,
-      };
-      
-      debugPrint('✅ Final parsed result: $result');
-      
-      // Callback mit geparsten Daten aufrufen
-      widget.onPlaceSelected(result);
-      
-    } catch (e, stackTrace) {
-      debugPrint('❌ Fehler beim Parsen der Adresse: $e');
-      debugPrint('📚 StackTrace: $stackTrace');
-      
-      // Fallback: Verwende die komplette Beschreibung als Straße
-      widget.onPlaceSelected({
-        'street': description,
-        'city': '',
-        'postalCode': '',
-        'country': 'DE',
-        'fullAddress': description,
-      });
+  void _parseBasicAddress(String description) {
+    String street = '';
+    String city = '';
+    String postalCode = '';
+    String country = 'DE';
+    
+    // Debug-Ausgabe
+    print('🔍 Parsing Address: "$description"');
+    
+    // Teste verschiedene deutsche Adressformate
+    final text = description.trim();
+    
+    // Format: "Musterstraße 123, 12345 Berlin"
+    final format1 = RegExp(r'^(.+?),\s*(\d{4,5})\s+(.+)$').firstMatch(text);
+    if (format1 != null) {
+      street = format1.group(1)!.trim();
+      postalCode = format1.group(2)!;
+      city = format1.group(3)!.trim();
+      if (postalCode.length == 4) country = 'AT';
+      print('✅ Format 1 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
     }
+    // Format: "Musterstraße 123 12345 Berlin" (ohne Komma)
+    else {
+      final format2 = RegExp(r'^(.+?)\s+(\d{4,5})\s+(.+)$').firstMatch(text);
+      if (format2 != null) {
+        street = format2.group(1)!.trim();
+        postalCode = format2.group(2)!;
+        city = format2.group(3)!.trim();
+        if (postalCode.length == 4) country = 'AT';
+        print('✅ Format 2 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
+      }
+      // Format: "12345 Berlin, Musterstraße 123"
+      else {
+        final format3 = RegExp(r'^(\d{4,5})\s+(.+?),\s*(.+)$').firstMatch(text);
+        if (format3 != null) {
+          postalCode = format3.group(1)!;
+          city = format3.group(2)!.trim();
+          street = format3.group(3)!.trim();
+          if (postalCode.length == 4) country = 'AT';
+          print('✅ Format 3 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
+        }
+        // Nur Straße eingegeben
+        else {
+          street = text;
+          print('⚠️ Nur Straße erkannt: "$street"');
+        }
+      }
+    }
+    
+    // Fallback: Falls noch keine Stadt, versuche PLZ allein zu finden
+    if (city.isEmpty && postalCode.isEmpty) {
+      final plzOnly = RegExp(r'(\d{4,5})').firstMatch(text);
+      if (plzOnly != null) {
+        postalCode = plzOnly.group(1)!;
+        if (postalCode.length == 4) country = 'AT';
+        
+        // Entferne PLZ aus Text für Stadt
+        final remaining = text.replaceFirst(RegExp(r'\s*\d{4,5}\s*'), ' ').trim();
+        if (remaining.isNotEmpty && remaining != street) {
+          city = remaining;
+        }
+        print('🔍 PLZ-Fallback: PLZ="$postalCode", Remaining="$remaining"');
+      }
+    }
+    
+    final result = {
+      'street': street,
+      'city': city,
+      'postalCode': postalCode,
+      'country': country,
+      'fullAddress': description,
+    };
+    
+    print('📤 Sende Result: $result');
+    widget.onPlaceSelected(result);
   }
 
   @override

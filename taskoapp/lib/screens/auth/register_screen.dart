@@ -433,14 +433,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         labelText: 'Straße und Hausnummer',
                         prefixIcon: Icons.home,
                         onPlaceSelected: (addressData) {
+                          debugPrint('🏠 onPlaceSelected aufgerufen!');
+                          debugPrint('📦 AddressData erhalten: $addressData');
+                          
                           // Automatisches Ausfüllen der anderen Felder
                           if (addressData['city']?.isNotEmpty == true) {
-                            _cityController.text = addressData['city']!;
+                            debugPrint('🏙️ Setze Stadt: "${addressData['city']}"');
+                            setState(() {
+                              _cityController.text = addressData['city']!;
+                            });
+                            debugPrint('✅ Stadt gesetzt: "${_cityController.text}"');
+                          } else {
+                            debugPrint('⚠️ Keine Stadt in addressData gefunden');
                           }
+                          
                           if (addressData['postalCode']?.isNotEmpty == true) {
-                            _postalCodeController.text = addressData['postalCode']!;
+                            debugPrint('📮 Setze PLZ: "${addressData['postalCode']}"');
+                            setState(() {
+                              _postalCodeController.text = addressData['postalCode']!;
+                            });
+                            debugPrint('✅ PLZ gesetzt: "${_postalCodeController.text}"');
+                          } else {
+                            debugPrint('⚠️ Keine PLZ in addressData gefunden');
                           }
+                          
                           if (addressData['country']?.isNotEmpty == true) {
+                            debugPrint('🌍 Setze Land: "${addressData['country']}"');
                             // Setze das Land basierend auf der Auswahl
                             final countryIso = addressData['country']!;
                             final countryData = _countryCodes.firstWhere(
@@ -451,6 +469,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               _selectedCountry = countryIso;
                               _selectedCountryCode = countryData['code']!;
                             });
+                            debugPrint('✅ Land gesetzt: $_selectedCountry ($_selectedCountryCode)');
+                          } else {
+                            debugPrint('⚠️ Kein Land in addressData gefunden');
                           }
                         },
                         validator: (value) {

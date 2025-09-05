@@ -90,11 +90,37 @@ export const createB2CPayment = onCall(
       const platformFeeRate = 0.045; // 4.5%
       const platformFeeAmount = Math.round(amount * platformFeeRate);
 
-      // 3. Payment Intent erstellen
-      const paymentIntent = await stripe.paymentIntents.create({
+      // 3. Customer-Daten laden oder erstellen
+      let stripeCustomerId: string;
+      
+      try {
+        // Customer-Daten aus Firestore laden
+        const customerDoc = await db.collection('users').doc(customerId).get();
+        const customerData = customerDoc.data();
+        
+        // Neuen Stripe Customer erstellen (oder existierenden verwenden)
+        const customer = await stripe.customers.create({
+          email: customerData?.email || `${customerId}@taskilo.de`,
+          name: customerData?.name || customerData?.firstName || 'Taskilo Customer',
+          metadata: {
+            firebaseUid: customerId,
+            platform: 'mobile_app'
+          }
+        });
+        
+        stripeCustomerId = customer.id;
+        logger.info('[Mobile] Stripe customer created', { customerId, stripeCustomerId });
+        
+      } catch (customerError) {
+        // Fallback: Payment Intent ohne Customer erstellen
+        logger.warn('[Mobile] Customer creation failed, proceeding without customer', { error: customerError });
+        stripeCustomerId = '';
+      }
+
+      // 4. Payment Intent erstellen
+      const paymentIntentData: any = {
         amount: amount,
         currency: currency.toLowerCase(),
-        customer: customerId,
         application_fee_amount: platformFeeAmount,
         transfer_data: {
           destination: stripeAccountId,
@@ -109,7 +135,14 @@ export const createB2CPayment = onCall(
           ...metadata
         },
         description: `Taskilo Mobile: ${serviceTitle}`,
-      });
+      };
+
+      // Nur Customer ID hinzufügen wenn verfügbar
+      if (stripeCustomerId) {
+        paymentIntentData.customer = stripeCustomerId;
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
 
       // 4. Order in Firestore erstellen
       const orderId = `mobile_b2c_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -119,6 +152,7 @@ export const createB2CPayment = onCall(
         type: 'b2c_fixed_price',
         providerId,
         customerId,
+        stripeCustomerId: stripeCustomerId || null,
         serviceTitle,
         serviceDescription,
         amount,
