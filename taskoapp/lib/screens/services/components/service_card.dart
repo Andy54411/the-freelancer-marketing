@@ -168,21 +168,27 @@ class _ServiceCardState extends State<ServiceCard> {
                           radius: 8, // Noch kleinerer Radius
                           backgroundColor: const Color(0xFF14ad9f).withValues(alpha: 0.2),
                           backgroundImage: (widget.service['profilePictureURL'] != null && 
-                                          widget.service['profilePictureURL'].toString().isNotEmpty)
+                                          widget.service['profilePictureURL'].toString().isNotEmpty &&
+                                          widget.service['profilePictureURL'].toString().startsWith('http'))
                               ? NetworkImage(widget.service['profilePictureURL'])
                               : (widget.service['logoURL'] != null && 
-                                 widget.service['logoURL'].toString().isNotEmpty)
+                                 widget.service['logoURL'].toString().isNotEmpty &&
+                                 widget.service['logoURL'].toString().startsWith('http'))
                                   ? NetworkImage(widget.service['logoURL'])
                                   : (widget.service['image'] != null && 
-                                     widget.service['image'].toString().isNotEmpty)
+                                     widget.service['image'].toString().isNotEmpty &&
+                                     widget.service['image'].toString().startsWith('http'))
                                       ? NetworkImage(widget.service['image'])
                                       : null,
                           child: (widget.service['profilePictureURL'] == null || 
-                                  widget.service['profilePictureURL'].toString().isEmpty) &&
+                                  widget.service['profilePictureURL'].toString().isEmpty ||
+                                  !widget.service['profilePictureURL'].toString().startsWith('http')) &&
                                  (widget.service['logoURL'] == null || 
-                                  widget.service['logoURL'].toString().isEmpty) &&
+                                  widget.service['logoURL'].toString().isEmpty ||
+                                  !widget.service['logoURL'].toString().startsWith('http')) &&
                                  (widget.service['image'] == null || 
-                                  widget.service['image'].toString().isEmpty)
+                                  widget.service['image'].toString().isEmpty ||
+                                  !widget.service['image'].toString().startsWith('http'))
                               ? Text(
                                   _getProviderInitials(),
                                   style: const TextStyle(

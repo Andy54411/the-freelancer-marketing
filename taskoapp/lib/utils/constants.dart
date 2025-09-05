@@ -1,5 +1,5 @@
-/// Taskilo App Constants
-/// Zentrale Verwaltung aller App-weiten Konstanten
+// Taskilo App Constants
+// Zentrale Verwaltung aller App-weiten Konstanten
 
 class TaskiloConstants {
   // ===== PAYMENT CONSTANTS =====

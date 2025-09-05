@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../utils/constants.dart';
+import '../../services/payment_service.dart';
 
 class TaskPaymentScreen extends StatefulWidget {
   final Map<String, dynamic> taskData;
@@ -100,10 +101,10 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
               CircleAvatar(
                 radius: 20,
                 backgroundColor: const Color(0xFF14ad9f),
-                backgroundImage: widget.taskData['service']['photoURL'] != null
-                    ? NetworkImage(widget.taskData['service']['photoURL'])
+                backgroundImage: _hasValidImageUrl() 
+                    ? NetworkImage(_getImageUrl())
                     : null,
-                child: widget.taskData['service']['photoURL'] == null
+                child: !_hasValidImageUrl()
                     ? const Icon(Icons.person, color: Colors.white, size: 20)
                     : null,
               ),
@@ -386,21 +387,128 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
     }
   }
 
+  bool _hasValidImageUrl() {
+    final service = widget.taskData['service'] as Map<String, dynamic>? ?? {};
+    
+    // Debug: Zeige alle verfügbaren Felder
+    debugPrint('🔍 Service Daten: $service');
+    
+    // Prüfe verschiedene Bild-Felder
+    final fields = ['photoURL', 'profilePictureURL', 'logoURL', 'image', 'displayName'];
+    for (final field in fields) {
+      debugPrint('🔍 $field: ${service[field]}');
+    }
+    
+    return _getImageUrl().isNotEmpty;
+  }
+
+  String _getImageUrl() {
+    // Debug: Alle verfügbaren Daten ausgeben
+    debugPrint('=== TaskData Debug ===');
+    debugPrint('TaskData keys: ${widget.taskData.keys.toList()}');
+    debugPrint('TaskData: ${widget.taskData}');
+    
+    // Zuerst in der Company-Struktur suchen (hauptsächliche Quelle für profilePictureURL)
+    final company = widget.taskData['company'] as Map<String, dynamic>? ?? {};
+    debugPrint('Company data: $company');
+    
+    // ProfilePictureURL aus der companies collection (höchste Priorität)
+    final companyProfilePic = company['profilePictureURL']?.toString().trim() ?? '';
+    debugPrint('Company profilePictureURL: $companyProfilePic');
+    if (companyProfilePic.isNotEmpty && 
+        !companyProfilePic.startsWith('blob:') && 
+        (companyProfilePic.startsWith('http://') || companyProfilePic.startsWith('https://'))) {
+      return companyProfilePic;
+    }
+    
+    // Falls kein Company-Objekt, in Service-Daten suchen
+    final service = widget.taskData['service'] as Map<String, dynamic>? ?? {};
+    debugPrint('Service data: $service');
+    
+    // Priorität: profilePictureURL > photoURL > logoURL > image
+    final serviceProfilePic = service['profilePictureURL']?.toString().trim() ?? '';
+    debugPrint('Service profilePictureURL: $serviceProfilePic');
+    if (serviceProfilePic.isNotEmpty && 
+        !serviceProfilePic.startsWith('blob:') && 
+        (serviceProfilePic.startsWith('http://') || serviceProfilePic.startsWith('https://'))) {
+      return serviceProfilePic;
+    }
+    
+    final photoUrl = service['photoURL']?.toString().trim() ?? '';
+    debugPrint('Service photoURL: $photoUrl');
+    if (photoUrl.isNotEmpty && 
+        !photoUrl.startsWith('blob:') && 
+        (photoUrl.startsWith('http://') || photoUrl.startsWith('https://'))) {
+      return photoUrl;
+    }
+    
+    final logoUrl = service['logoURL']?.toString().trim() ?? '';
+    debugPrint('Service logoURL: $logoUrl');
+    if (logoUrl.isNotEmpty && 
+        !logoUrl.startsWith('blob:') && 
+        (logoUrl.startsWith('http://') || logoUrl.startsWith('https://'))) {
+      return logoUrl;
+    }
+    
+    final image = service['image']?.toString().trim() ?? '';
+    debugPrint('Service image: $image');
+    if (image.isNotEmpty && 
+        !image.startsWith('blob:') && 
+        (image.startsWith('http://') || image.startsWith('https://'))) {
+      return image;
+    }
+    
+    debugPrint('No valid image URL found');
+    return '';
+  }
+
   Future<void> _processPayment(double total) async {
     setState(() => _isProcessing = true);
     
     try {
-      // Hier würde die echte Stripe-Payment-Integration stattfinden
-      // Für jetzt simulieren wir eine erfolgreiche Zahlung
+      // Extrahiere Service-Daten
+      final service = widget.taskData['service'] as Map<String, dynamic>? ?? {};
+      final providerId = service['providerId'] ?? service['uid'] ?? '';
+      final serviceTitle = widget.taskData['title'] ?? service['displayName'] ?? 'Taskilo Service';
+      final serviceDescription = widget.taskData['description'] ?? service['category'] ?? 'Service Buchung';
       
-      await Future.delayed(const Duration(seconds: 2));
+      debugPrint('🔄 Processing real Stripe payment...');
+      debugPrint('Provider ID: $providerId');
+      debugPrint('Service: $serviceTitle');
+      debugPrint('Amount: €${total.toStringAsFixed(2)}');
       
-      // Erfolgreich bezahlt - zeige Erfolg und navigiere zum Dashboard
-      if (mounted) {
-        _showPaymentSuccess(total);
+      if (providerId.isEmpty) {
+        throw Exception('Provider ID nicht gefunden');
+      }
+      
+      // Echte Stripe-Payment über TaskiloPaymentService
+      final result = await TaskiloPaymentService.processB2CPayment(
+        providerId: providerId,
+        serviceTitle: serviceTitle,
+        serviceDescription: serviceDescription,
+        amount: total,
+        currency: 'EUR',
+        metadata: {
+          'taskTitle': serviceTitle,
+          'taskDescription': serviceDescription,
+          'budget': widget.taskData['budget']?.toString() ?? '0',
+          'trustFee': TaskiloConstants.trustAndSupportFeeEur.toString(),
+          'location': widget.taskData['location'] ?? '',
+          'datetime': widget.taskData['datetime'] ?? '',
+        },
+      );
+      
+      if (result.success) {
+        debugPrint('✅ Payment successful: ${result.paymentIntentId}');
+        if (mounted) {
+          _showPaymentSuccess(total, result.paymentIntentId!, result.orderId!);
+        }
+      } else {
+        throw Exception(result.error ?? 'Payment failed');
       }
       
     } catch (e) {
+      debugPrint('❌ Payment Error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -416,7 +524,7 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
     }
   }
 
-  void _showPaymentSuccess(double total) {
+  void _showPaymentSuccess(double total, String paymentIntentId, String orderId) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -454,6 +562,62 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
                 color: Colors.grey[600],
               ),
               textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Payment Details
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Betrag:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      Text(
+                        '€${total.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Auftrag-ID:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      Text(
+                        orderId.length > 12 ? '${orderId.substring(0, 12)}...' : orderId,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             
             const SizedBox(height: 24),

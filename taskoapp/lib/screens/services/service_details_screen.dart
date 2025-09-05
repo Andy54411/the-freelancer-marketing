@@ -1019,10 +1019,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
               CircleAvatar(
                 radius: 16,
                 backgroundColor: const Color(0xFF14ad9f).withValues(alpha: 0.2),
-                backgroundImage: review['customerAvatar']?.isNotEmpty == true
+                backgroundImage: (review['customerAvatar']?.isNotEmpty == true &&
+                    review['customerAvatar'].toString().startsWith('http'))
                     ? NetworkImage(review['customerAvatar'])
                     : null,
-                child: review['customerAvatar']?.isEmpty != false
+                child: (review['customerAvatar']?.isEmpty != false ||
+                    !review['customerAvatar'].toString().startsWith('http'))
                     ? Text(
                         (review['customerName'] ?? 'K')[0].toUpperCase(),
                         style: const TextStyle(

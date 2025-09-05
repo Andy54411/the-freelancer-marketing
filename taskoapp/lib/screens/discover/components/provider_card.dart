@@ -39,10 +39,14 @@ class ProviderCard extends StatelessWidget {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: const Color(0xFF14ad9f).withValues(alpha: 0.1),
-                  backgroundImage: provider['profilePictureURL'] != null
+                  backgroundImage: (provider['profilePictureURL'] != null &&
+                      provider['profilePictureURL'].toString().isNotEmpty &&
+                      provider['profilePictureURL'].toString().startsWith('http'))
                       ? NetworkImage(provider['profilePictureURL'])
                       : null,
-                  child: provider['profilePictureURL'] == null
+                  child: (provider['profilePictureURL'] == null ||
+                      provider['profilePictureURL'].toString().isEmpty ||
+                      !provider['profilePictureURL'].toString().startsWith('http'))
                       ? const Icon(
                           Icons.person,
                           color: Color(0xFF14ad9f),

@@ -28,6 +28,7 @@ import * as callableGeneral from './callable_general';
 import * as httpGeneral from './http_general';
 import * as httpWebhooks from './http_webhooks';
 import * as httpFileUploads from './http_file_uploads';
+import * as mobileAppPayments from './mobile_app_payments';
 import * as triggersFirestore from './triggers_firestore';
 import * as callableOrders from './callable_orders';
 import * as callableTimeTracking from './callable_timeTracking';
@@ -139,3 +140,8 @@ export const onQuoteStatusChanged = quoteNotifications.onQuoteStatusChanged;
 
 // Chat Notification Triggers
 export const onChatMessageCreated = chatNotifications.onChatMessageCreated;
+
+// Mobile App Payment Functions
+export const createB2CPayment = mobileAppPayments.createB2CPayment;
+export const createB2BPayment = mobileAppPayments.createB2BPayment;
+export const createHourlyPayment = mobileAppPayments.createHourlyPayment;

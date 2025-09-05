@@ -140,11 +140,15 @@ class _BookingWidgetState extends State<BookingWidget> {
             children: [
               CircleAvatar(
                 radius: 30,
-                backgroundImage: widget.provider.photoURL != null
+                backgroundImage: (widget.provider.photoURL != null &&
+                    widget.provider.photoURL!.isNotEmpty &&
+                    widget.provider.photoURL!.startsWith('http'))
                     ? NetworkImage(widget.provider.photoURL!)
                     : null,
                 backgroundColor: Colors.white.withValues(alpha: 0.2),
-                child: widget.provider.photoURL == null
+                child: (widget.provider.photoURL == null ||
+                    widget.provider.photoURL!.isEmpty ||
+                    !widget.provider.photoURL!.startsWith('http'))
                     ? Text(
                         widget.provider.displayName?.substring(0, 1).toUpperCase() ?? 'P',
                         style: const TextStyle(
