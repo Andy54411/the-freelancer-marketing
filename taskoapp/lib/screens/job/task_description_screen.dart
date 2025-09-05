@@ -1202,7 +1202,6 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
       
     } catch (e) {
       debugPrint('Error creating payment: $e');
-<<<<<<< HEAD
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1212,15 +1211,6 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
           ),
         );
       }
-=======
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Fehler beim Erstellen der Zahlung: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
-      );
->>>>>>> 705c992fa335d1117a1b8a0e3be4f51573bb9ffe
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
