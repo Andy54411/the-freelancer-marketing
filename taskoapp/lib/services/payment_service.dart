@@ -202,13 +202,14 @@ class TaskiloPaymentService {
   /// Initialisiert Stripe mit Taskilo-Konfiguration
   static Future<void> initializeStripe() async {
     try {
-      // Stripe Publishable Key (gleich wie im Web-Projekt)
-      const stripePublishableKey = 'pk_test_51QI0YGPO27K0zZNX2F8dMYa0Uu3YNLbv9n7jhEMwZxBVvpHzQN8aeY5tCfxhEK4ZIz7bQJ7E2Q9A5E7H7V9Yt2LW00BLqAGzNm';
+      // Stripe Publishable Key (korrekt von Web-Projekt)
+      const stripePublishableKey = 'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUGf6cmYphSWfdTpsbKAHLFs5C17xubatZkLdMYRgBPRlWUMXMQZPrJK00N3Rtf7Dk';
       
       Stripe.publishableKey = stripePublishableKey;
       await Stripe.instance.applySettings();
       
-      debugPrint('✅ Stripe initialized for Taskilo');
+      debugPrint('✅ Stripe initialized with correct key for Taskilo');
+      debugPrint('🔑 Using key: ${stripePublishableKey.substring(0, 15)}...');
     } catch (e) {
       debugPrint('❌ Stripe initialization failed: $e');
       rethrow; // Re-throw so main.dart can handle it

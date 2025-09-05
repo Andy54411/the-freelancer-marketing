@@ -762,6 +762,123 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Handle Mobile B2C payments
+        if (paymentType === 'mobile_b2c_payment') {
+          const customerId = paymentIntentSucceeded.metadata?.customerId;
+          const providerId = paymentIntentSucceeded.metadata?.providerId;
+          const serviceTitle = paymentIntentSucceeded.metadata?.serviceTitle;
+          const serviceDescription = paymentIntentSucceeded.metadata?.serviceDescription;
+
+          if (!customerId || !providerId || !serviceTitle) {
+            const errorKey = `missing_mobile_metadata_${paymentIntentSucceeded.id}`;
+            if (shouldLogError(errorKey)) {
+            }
+            return NextResponse.json({
+              received: true,
+              message:
+                'Wichtige Mobile B2C-Metadaten (customerId, providerId oder serviceTitle) fehlen.',
+            });
+          }
+
+          try {
+            // Generate unique order ID
+            const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const totalAmountCents = paymentIntentSucceeded.amount;
+            const platformFeeAmount = paymentIntentSucceeded.application_fee_amount || 0;
+
+            // Extract metadata for mobile order
+            const metadata = paymentIntentSucceeded.metadata;
+
+            // Create Mobile B2C order
+            const mobileOrderData = {
+              // IDs
+              id: orderId,
+              customerFirebaseUid: customerId,
+              selectedAnbieterId: providerId,
+
+              // Mobile B2C-spezifische Felder
+              customerType: 'privat',
+              paymentType: 'b2c_fixed_price',
+              platform: 'mobile_app',
+
+              // Service-Details
+              description: serviceDescription,
+              selectedCategory: metadata?.serviceCategory || 'Mobile App Service',
+              selectedSubcategory: serviceTitle,
+
+              // Payment & Pricing (in Cents)
+              jobCalculatedPriceInCents: totalAmountCents,
+              originalJobPriceInCents: totalAmountCents,
+              totalAmountPaidByBuyer: totalAmountCents,
+              sellerCommissionInCents: platformFeeAmount,
+              totalPlatformFeeInCents: platformFeeAmount,
+
+              // Termin-Felder aus Metadata
+              jobDateFrom: metadata?.selectedDate
+                ? new Date(metadata.selectedDate).toISOString().split('T')[0]
+                : null,
+              jobDateTo: metadata?.selectedDate
+                ? new Date(metadata.selectedDate).toISOString().split('T')[0]
+                : null,
+              jobDurationString:
+                metadata?.startTime && metadata?.endTime
+                  ? `${metadata.startTime} - ${metadata.endTime}`
+                  : 'Nach Absprache',
+              jobTimePreference:
+                metadata?.startTime && metadata?.endTime
+                  ? `${metadata.startTime} - ${metadata.endTime}`
+                  : 'Flexible Terminabsprache',
+
+              // Adress-Felder aus Metadata
+              jobStreet: metadata?.location ? metadata.location.split(',')[0]?.trim() : '',
+              jobCity: metadata?.location ? metadata.location.split(',').pop()?.trim() : '',
+              jobCountry: 'DE',
+
+              // Payment-Details
+              paymentIntentId: paymentIntentSucceeded.id,
+              stripeCustomerId:
+                typeof paymentIntentSucceeded.customer === 'string'
+                  ? paymentIntentSucceeded.customer
+                  : null,
+              paidAt: admin.firestore.FieldValue.serverTimestamp(),
+
+              // Status & Zeiten
+              status: 'PAYMENT_CONFIRMED',
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+
+              // Mobile-spezifische Felder (für Debugging)
+              metadata: {
+                originalMobileData: {
+                  titel: serviceTitle,
+                  beschreibung: serviceDescription,
+                  kundentyp: 'Privatkunde',
+                  totalAmount: totalAmountCents,
+                  platformFee: platformFeeAmount,
+                  currency: paymentIntentSucceeded.currency,
+                },
+              },
+            };
+
+            // Save Mobile B2C order
+            await db.collection('auftraege').doc(orderId).set(mobileOrderData);
+
+            return NextResponse.json({
+              received: true,
+              message: `Mobile B2C payment processed, order ${orderId} created`,
+            });
+          } catch (error) {
+            const errorKey = `mobile_b2c_processing_${paymentIntentSucceeded.id}`;
+            if (shouldLogError(errorKey)) {
+            }
+            return NextResponse.json({
+              received: true,
+              message: 'Mobile B2C payment processing failed.',
+            });
+          }
+        }
+
         // Handle regular order payments
         const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
         const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;

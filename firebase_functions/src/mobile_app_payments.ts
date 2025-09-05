@@ -47,19 +47,29 @@ interface CreateHourlyPaymentData {
 export const createB2CPayment = onCall(
   { 
     secrets: [STRIPE_SECRET_KEY],
-    enforceAppCheck: false 
+    enforceAppCheck: false,
+    concurrency: 1, // Nur eine Instanz gleichzeitig
+    timeoutSeconds: 120 // 2 Minuten Timeout
   },
   async (request: CallableRequest<CreateB2CPaymentData>) => {
+    const startTime = Date.now();
+    const requestId = Math.random().toString(36).substr(2, 9);
+    let idempotencyKey: string = '';
+    let lockDoc: any = null;
+    let db: any = null;
+    
     try {
       const { providerId, serviceTitle, serviceDescription, amount, currency, metadata } = request.data;
       const customerId = request.auth?.uid;
 
       logger.info('[Mobile] Creating B2C Payment', {
+        requestId,
         providerId,
         serviceTitle,
         amount,
         currency,
-        customerId
+        customerId,
+        timestamp: new Date().toISOString()
       });
 
       if (!customerId) {
@@ -70,7 +80,51 @@ export const createB2CPayment = onCall(
         throw new Error('Missing required payment data');
       }
 
-      const db = getFirestore();
+      db = getFirestore();
+
+      // DOPPELTE IDEMPOTENZ-PRÜFUNG: Lock-basiert für PaymentIntents
+      idempotencyKey = `${customerId}_${providerId}_${amount}_${Math.floor(startTime / 30000)}`; // 30-Sekunden Fenster
+      lockDoc = db.collection('payment_locks').doc(idempotencyKey);
+      
+      // 1. Lock-basierte Prüfung für PaymentIntent Duplikate
+      try {
+        await db.runTransaction(async (transaction: any) => {
+          const lockSnapshot = await transaction.get(lockDoc);
+          
+          if (lockSnapshot.exists) {
+            const lockData = lockSnapshot.data()!;
+            const timeDiff = Date.now() - lockData.createdAt.toMillis();
+            
+            if (timeDiff < 120000) { // 2 Minuten Lock
+              logger.warn('[Mobile] Payment locked - duplicate request detected', { 
+                requestId,
+                idempotencyKey,
+                existingLockTime: lockData.createdAt.toDate(),
+                timeDiff 
+              });
+              throw new Error('Payment already in progress - please wait');
+            }
+          }
+          
+          // Lock erstellen
+          transaction.set(lockDoc, {
+            createdAt: new Date(),
+            customerId,
+            providerId,
+            amount,
+            requestId
+          });
+        });
+        
+        logger.info('[Mobile] Payment lock acquired', { requestId, idempotencyKey });
+        
+      } catch (lockError: any) {
+        if (lockError?.message?.includes('Payment already in progress')) {
+          throw lockError;
+        }
+        logger.warn('[Mobile] Lock creation failed, continuing with payment creation', { requestId, error: lockError?.message || 'Unknown error' });
+      }
+
       const stripe = getStripeInstance(STRIPE_SECRET_KEY.value());
 
       // 1. Provider-Daten laden
@@ -144,49 +198,51 @@ export const createB2CPayment = onCall(
 
       const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
 
-      // 4. Order in Firestore erstellen
-      const orderId = `mobile_b2c_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      await db.collection('mobile_orders').doc(orderId).set({
-        orderId,
-        type: 'b2c_fixed_price',
-        providerId,
-        customerId,
-        stripeCustomerId: stripeCustomerId || null,
-        serviceTitle,
-        serviceDescription,
-        amount,
-        currency: currency.toLowerCase(),
-        platformFee: platformFeeAmount,
-        providerAmount: amount - platformFeeAmount,
+      logger.info('[Mobile] B2C Payment Intent created - Auftrag wird durch Webhook erstellt', {
+        requestId,
         paymentIntentId: paymentIntent.id,
-        status: 'payment_pending',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        metadata: metadata || {},
-        platform: 'mobile_app'
+        amount,
+        platformFee: platformFeeAmount,
+        processingTime: Date.now() - startTime,
+        note: 'Order will be created by Stripe webhook when payment succeeds'
       });
 
-      logger.info('[Mobile] B2C Payment Intent created', {
-        paymentIntentId: paymentIntent.id,
-        orderId,
-        amount,
-        platformFee: platformFeeAmount
-      });
+      // Lock cleanup bei erfolgreichem Abschluss
+      try {
+        await lockDoc.delete();
+        logger.info('[Mobile] Payment lock released successfully', { requestId, idempotencyKey });
+      } catch (cleanupError) {
+        logger.warn('[Mobile] Lock cleanup failed (non-critical)', { requestId, error: cleanupError });
+      }
 
       return {
         success: true,
         paymentIntentId: paymentIntent.id,
         clientSecret: paymentIntent.client_secret,
-        orderId,
         amount,
         platformFee: platformFeeAmount,
-        providerAmount: amount - platformFeeAmount
+        providerAmount: amount - platformFeeAmount,
+        note: 'Order will be created by Stripe webhook when payment succeeds'
       };
 
-    } catch (error) {
-      logger.error('[Mobile] B2C Payment creation failed', error);
-      throw new Error(`B2C Payment creation failed: ${error}`);
+    } catch (error: any) {
+      logger.error('[Mobile] B2C Payment creation failed', { 
+        requestId, 
+        error: error?.message || error,
+        processingTime: Date.now() - startTime 
+      });
+      
+      // Lock cleanup bei Fehler
+      try {
+        if (idempotencyKey) {
+          await db.collection('payment_locks').doc(idempotencyKey).delete();
+          logger.info('[Mobile] Payment lock released after error', { requestId, idempotencyKey });
+        }
+      } catch (cleanupError) {
+        logger.warn('[Mobile] Lock cleanup failed after error (non-critical)', { requestId, error: cleanupError });
+      }
+      
+      throw new Error(`B2C Payment creation failed: ${error?.message || error}`);
     }
   }
 );
