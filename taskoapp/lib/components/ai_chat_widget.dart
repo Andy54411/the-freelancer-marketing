@@ -923,35 +923,35 @@ class _AIChatWidgetState extends State<AIChatWidget> {
       if (endHour != null && endHour >= 0 && endHour <= 23) {
         endTime = '${endHour.toString().padLeft(2, '0')}:${endMinute.toString().padLeft(2, '0')}';
         debugPrint('🕐 End-Zeit extrahiert: $endTime');
+      }
+      
+      // Berechne Dauer für Preisschätzung (nur wenn beide Zeiten valid sind)
+      if (startTime != null && endTime != null && startHour != null && endHour != null) {
+        double hours = (endHour + endMinute / 60.0) - (startHour + startMinute / 60.0);
+        if (hours < 0) hours += 24; // Über Mitternacht
+        duration = hours;
+        debugPrint('⌛ Dauer berechnet: ${hours.toStringAsFixed(1)} Stunden');
         
-        // Berechne Dauer für Preisschätzung
-        if (startTime != null && endTime != null && startHour != null) {
-          double hours = (endHour + endMinute / 60.0) - (startHour + startMinute / 60.0);
-          if (hours < 0) hours += 24; // Über Mitternacht
-          duration = hours;
-          debugPrint('⌛ Dauer berechnet: ${hours.toStringAsFixed(1)} Stunden');
+        // Speichere für Preisberechnung
+        _collectedData['startTime'] = startTime;
+        _collectedData['endTime'] = endTime;
+        _collectedData['duration'] = duration;
+        
+        // Markiere Start- und Endzeit als erkannt
+        _requiredInfo['startTime'] = true;
+        _requiredInfo['endTime'] = true;
+        _requiredInfo['specificTime'] = true;
+        
+        debugPrint('✅ Start- und Endzeit als erkannt markiert');
           
-          // Speichere für Preisberechnung
-          _collectedData['startTime'] = startTime;
-          _collectedData['endTime'] = endTime;
-          _collectedData['duration'] = duration;
-          
-          // Markiere Start- und Endzeit als erkannt
-          _requiredInfo['startTime'] = true;
-          _requiredInfo['endTime'] = true;
-          _requiredInfo['specificTime'] = true;
-          
-          debugPrint('✅ Start- und Endzeit als erkannt markiert');
-          
-          // Preisschätzung wenn Stundensatz verfügbar
-          if (_providerHourlyRate != null) {
-            final estimatedPrice = _providerHourlyRate! * duration;
-            _collectedData['estimatedPrice'] = estimatedPrice;
-            debugPrint('💰 Geschätzter Preis: €${estimatedPrice.toStringAsFixed(2)} (${duration}h x €$_providerHourlyRate/h)');
-          }
-          
-          timeMatches.add('$startTime - $endTime Uhr');
+        // Preisschätzung wenn Stundensatz verfügbar
+        if (_providerHourlyRate != null) {
+          final estimatedPrice = _providerHourlyRate! * duration;
+          _collectedData['estimatedPrice'] = estimatedPrice;
+          debugPrint('💰 Geschätzter Preis: €${estimatedPrice.toStringAsFixed(2)} (${duration}h x €$_providerHourlyRate/h)');
         }
+        
+        timeMatches.add('$startTime - $endTime Uhr');
       }
     }
     

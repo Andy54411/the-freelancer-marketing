@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../../utils/constants.dart';
 
 class TaskPaymentScreen extends StatefulWidget {
   final Map<String, dynamic> taskData;
@@ -15,13 +16,12 @@ class TaskPaymentScreen extends StatefulWidget {
 
 class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
   bool _isProcessing = false;
-  String _selectedPaymentMethod = 'card';
   
   @override
   Widget build(BuildContext context) {
     final budget = widget.taskData['budget'] as double;
-    final serviceFee = budget * 0.05; // 5% Service-Gebühr
-    final total = budget + serviceFee;
+    final trustAndSupportFee = TaskiloConstants.trustAndSupportFeeEur; // Zentrale Konstante
+    final total = budget + trustAndSupportFee;
     
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -48,7 +48,7 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
             const SizedBox(height: 24),
             
             // Payment Summary
-            _buildPaymentSummary(budget, serviceFee, total),
+            _buildPaymentSummary(budget, trustAndSupportFee, total),
             
             const SizedBox(height: 24),
             
@@ -181,7 +181,7 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
     );
   }
 
-  Widget _buildPaymentSummary(double budget, double serviceFee, double total) {
+  Widget _buildPaymentSummary(double budget, double trustAndSupportFee, double total) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -211,7 +211,7 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
           const SizedBox(height: 16),
           
           _buildPriceRow('Auftragswert', budget, false),
-          _buildPriceRow('Service-Gebühr (5%)', serviceFee, false),
+          _buildPriceRow('Vertrauens- & Hilfsgebühr', trustAndSupportFee, false),
           
           const Divider(height: 24),
           
@@ -283,89 +283,62 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
             Icons.credit_card,
             'Visa, Mastercard, American Express',
           ),
-          
-          const SizedBox(height: 12),
-          
-          _buildPaymentMethodTile(
-            'paypal',
-            'PayPal',
-            Icons.payment,
-            'Bezahlen Sie sicher mit PayPal',
-          ),
-          
-          const SizedBox(height: 12),
-          
-          _buildPaymentMethodTile(
-            'sofort',
-            'Sofortüberweisung',
-            Icons.account_balance,
-            'Direkte Überweisung von Ihrem Bankkonto',
-          ),
         ],
       ),
     );
   }
 
   Widget _buildPaymentMethodTile(String value, String title, IconData icon, String subtitle) {
-    final isSelected = _selectedPaymentMethod == value;
-    
-    return GestureDetector(
-      onTap: () => setState(() => _selectedPaymentMethod = value),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF14ad9f).withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF14ad9f) : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
+    // Nur Kreditkarte verfügbar, daher immer als ausgewählt anzeigen
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: const Color(0xFF14ad9f),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: const Color(0xFF14ad9f),
+            size: 24,
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? const Color(0xFF14ad9f) : Colors.grey[600],
-              size: 24,
-            ),
-            
-            const SizedBox(width: 12),
-            
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? const Color(0xFF14ad9f) : Colors.black87,
-                    ),
+          
+          const SizedBox(width: 12),
+          
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF14ad9f),
                   ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                ),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            
-            Radio<String>(
-              value: value,
-              groupValue: _selectedPaymentMethod,
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() => _selectedPaymentMethod = newValue);
-                }
-              },
-              activeColor: const Color(0xFF14ad9f),
-            ),
-          ],
-        ),
+          ),
+          
+          const Icon(
+            Icons.check_circle,
+            color: Color(0xFF14ad9f),
+            size: 24,
+          ),
+        ],
       ),
     );
   }

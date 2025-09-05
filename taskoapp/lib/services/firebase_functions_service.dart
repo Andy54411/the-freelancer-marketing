@@ -10,6 +10,90 @@ class FirebaseFunctionsService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // ===== QUOTE MANAGEMENT FUNCTIONS =====
+
+  /// Erstellt Quote-Anfrage für spezifischen Provider
+  static Future<Map<String, dynamic>> createQuoteRequest({
+    required String providerId,
+    required String serviceTitle,
+    required String serviceDescription,
+    required String location,
+    required double estimatedBudget,
+    required String selectedDate,
+    String? startTime,
+    String? endTime,
+    required String urgency,
+    required List<String> tags,
+    Map<String, dynamic>? service,
+    Map<String, dynamic>? aiData,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw Exception('User not authenticated');
+
+      // Quote-Daten zusammenstellen nach dem Schema von quotes collection
+      final quoteData = {
+        'title': serviceTitle,
+        'description': serviceDescription,
+        'location': {
+          'address': location,
+          'type': 'user_provided',
+          'coordinates': null,
+        },
+        'estimatedBudget': estimatedBudget,
+        'budgetRange': {
+          'min': estimatedBudget * 0.8,
+          'max': estimatedBudget * 1.2,
+          'currency': 'EUR',
+        },
+        'selectedDate': selectedDate,
+        'startTime': startTime,
+        'endTime': endTime,
+        'urgency': urgency,
+        'tags': tags,
+        'service': service,
+        'providerId': providerId,
+        'customerId': user.uid,
+        'customerUid': user.uid,
+        'createdBy': user.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'status': 'pending',
+        'allowsProposals': true,
+        'isDirectQuest': true,
+        'isExclusive': true,
+        'isPublic': false,
+        'maxProposals': 1,
+        'proposalCount': 0,
+        'responseCount': 0,
+        'viewCount': 0,
+        'aiGenerated': aiData != null,
+        'source': aiData != null ? 'ai_assistant_direct' : 'manual_form',
+        'questType': 'direct_assignment',
+        'projectType': 'direct_quest',
+        'category': service?['category'] ?? 'Allgemein',
+        'subcategory': service?['name'] ?? 'Sonstiges',
+        if (aiData != null) 'originalPrompt': aiData['originalPrompt'],
+        if (aiData != null) 'generatedFrom': 'ai_assistant_targeted',
+      };
+
+      // Quote in Firestore speichern
+      final docRef = await _firestore.collection('quotes').add(quoteData);
+      
+      return {
+        'success': true,
+        'quoteId': docRef.id,
+        'message': 'Quote-Anfrage erfolgreich erstellt',
+      };
+    } catch (e) {
+      debugPrint('Error creating quote request: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
   // ===== STRIPE PAYMENT FUNCTIONS =====
 
   /// Erstellt B2C Festpreis-Payment für sofortige Services

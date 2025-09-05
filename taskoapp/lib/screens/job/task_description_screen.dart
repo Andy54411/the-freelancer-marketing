@@ -4,6 +4,7 @@ import 'task_payment_screen.dart';
 import '../../components/ai_chat_widget.dart';
 import '../../components/service_info_card.dart';
 import '../../components/task_form_components.dart';
+import '../../services/firebase_functions_service.dart';
 
 class TaskDescriptionScreen extends StatefulWidget {
   final Map<String, dynamic> selectedService;
@@ -40,6 +41,8 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
   
   // KI-Assistent State
   bool _showAIAssistant = false;
+  bool _isProcessing = false; // Für Quote-Anfrage und Payment
+  Map<String, dynamic>? _lastAIData; // Speichert letzte AI-Daten für Quote-Erstellung
   
   final List<String> _availableTags = [
     'Sofort',
@@ -821,7 +824,7 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _handleContinueAction,
+        onPressed: _isProcessing ? null : _handleContinueAction,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF14ad9f),
           foregroundColor: Colors.white,
@@ -831,13 +834,22 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
           ),
           elevation: 0,
         ),
-        child: Text(
-          buttonText,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: _isProcessing
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                buttonText,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
@@ -1033,27 +1045,175 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
     }
   }
 
-  void _handleQuoteRequest(Map<String, dynamic> taskData) {
-    // TODO: Angebot-Anfrage Logic implementieren
-    // Für jetzt zeigen wir eine Bestätigung
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Angebot-Anfrage wurde gesendet!'),
-        backgroundColor: Color(0xFF14ad9f),
-      ),
-    );
+  void _handleQuoteRequest(Map<String, dynamic> taskData) async {
+    setState(() => _isProcessing = true);
     
-    // Zurück zur vorherigen Seite
-    Navigator.of(context).pop();
+    try {
+      // Provider UID aus Service-Daten extrahieren
+      final service = widget.selectedService;
+      final providerId = service['providerId'] ?? service['uid'];
+      
+      if (providerId == null) {
+        throw Exception('Provider ID nicht gefunden');
+      }
+      
+      // Quote-Anfrage über Firebase Service erstellen
+      final result = await FirebaseFunctionsService.createQuoteRequest(
+        providerId: providerId,
+        serviceTitle: taskData['title'],
+        serviceDescription: taskData['description'],
+        location: taskData['location'],
+        estimatedBudget: taskData['budget'],
+        selectedDate: taskData['selectedDate'],
+        startTime: taskData['startTime'],
+        endTime: taskData['endTime'],
+        urgency: taskData['urgency'],
+        tags: List<String>.from(taskData['tags']),
+        service: taskData['service'],
+        aiData: _lastAIData, // Falls AI-generiert
+      );
+      
+      if (result['success']) {
+        // Erfolgreiche Quote-Erstellung
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Angebot-Anfrage wurde an ${service['companyName'] ?? 'den Anbieter'} gesendet!'),
+              backgroundColor: const Color(0xFF14ad9f),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          
+          // Zurück zur vorherigen Seite nach kurzer Verzögerung
+          await Future.delayed(const Duration(milliseconds: 1500));
+          if (mounted) Navigator.of(context).pop();
+        }      } else {
+        throw Exception(result['error'] ?? 'Unbekannter Fehler');
+      }
+      
+    } catch (e) {
+      debugPrint('Error creating quote request: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Senden der Angebot-Anfrage: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
-  void _continueToPayment(Map<String, dynamic> taskData) {
-    // Weiter zu Step 4 (Payment)
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => TaskPaymentScreen(taskData: taskData),
-      ),
-    );
+  void _continueToPayment(Map<String, dynamic> taskData) async {
+    setState(() => _isProcessing = true);
+    
+    try {
+      // Provider UID aus Service-Daten extrahieren
+      final service = widget.selectedService;
+      final providerId = service['providerId'] ?? service['uid'];
+      
+      if (providerId == null) {
+        throw Exception('Provider ID nicht gefunden');
+      }
+      
+      // Bestimme Payment-Type basierend auf bookingType
+      Map<String, dynamic> paymentResult;
+      
+      if (_bookingType == 'fixed') {
+        // B2C Festpreis-Payment für feste Buchung
+        paymentResult = await FirebaseFunctionsService.createB2CPayment(
+          providerId: providerId,
+          serviceTitle: taskData['title'],
+          serviceDescription: taskData['description'],
+          amount: taskData['budget'],
+          currency: 'EUR',
+          metadata: {
+            'location': taskData['location'],
+            'selectedDate': taskData['selectedDate'],
+            'startTime': taskData['startTime'] ?? '',
+            'endTime': taskData['endTime'] ?? '',
+            'urgency': taskData['urgency'],
+            'tags': taskData['tags'].join(','),
+            'serviceName': service['name'] ?? '',
+            'serviceCategory': service['category'] ?? '',
+            'bookingType': _bookingType,
+            'aiGenerated': _lastAIData != null ? 'true' : 'false',
+          },
+        );
+      } else {
+        // B2B Projekt-Payment für stundenbasierte Buchung
+        final milestones = [
+          {
+            'title': 'Service-Ausführung',
+            'description': taskData['description'],
+            'amount': (taskData['budget'] * 100).round(), // in Cents
+            'dueDate': taskData['selectedDate'],
+          }
+        ];
+        
+        paymentResult = await FirebaseFunctionsService.createB2BProjectPayment(
+          providerId: providerId,
+          projectTitle: taskData['title'],
+          projectDescription: taskData['description'],
+          totalAmount: taskData['budget'],
+          milestones: milestones,
+          currency: 'EUR',
+          metadata: {
+            'location': taskData['location'],
+            'selectedDate': taskData['selectedDate'],
+            'startTime': taskData['startTime'] ?? '',
+            'endTime': taskData['endTime'] ?? '',
+            'urgency': taskData['urgency'],
+            'tags': taskData['tags'].join(','),
+            'serviceName': service['name'] ?? '',
+            'serviceCategory': service['category'] ?? '',
+            'bookingType': _bookingType,
+            'estimatedHours': taskData['estimatedHours']?.toString() ?? '',
+            'aiGenerated': _lastAIData != null ? 'true' : 'false',
+          },
+        );
+      }
+      
+      if (paymentResult['success']) {
+        // Erweitere taskData mit Stripe Payment-Informationen
+        final enhancedTaskData = {
+          ...taskData,
+          'paymentIntentId': paymentResult['paymentIntentId'],
+          'clientSecret': paymentResult['clientSecret'],
+          'orderId': paymentResult['orderId'],
+          'providerId': providerId,
+          'service': service,
+        };
+        
+        // Weiter zu Stripe Payment Screen
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => TaskPaymentScreen(taskData: enhancedTaskData),
+            ),
+          );
+        }
+      } else {
+        throw Exception(paymentResult['error'] ?? 'Payment-Erstellung fehlgeschlagen');
+      }
+      
+    } catch (e) {
+      debugPrint('Error creating payment: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Erstellen der Zahlung: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
   // KI-Generierte Task-Daten verarbeiten
@@ -1061,6 +1221,9 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
     debugPrint('🤖 KI-Daten empfangen: $aiData');
     
     setState(() {
+      // Speichere AI-Daten für Quote-Erstellung
+      _lastAIData = aiData;
+      
       // Übertrage KI-generierte Daten in die Form-Felder
       _titleController.text = aiData['title'] ?? '';
       _descriptionController.text = aiData['description'] ?? '';
