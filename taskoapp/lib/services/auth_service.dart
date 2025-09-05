@@ -14,24 +14,16 @@ class AuthService {
     return _auth.authStateChanges().asyncMap((firebaseUser) async {
       if (firebaseUser == null) return null;
       
-      try {
-        // Lade User-Daten aus Firestore
-        final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
-        
-        if (userDoc.exists) {
-          return TaskiloUser.fromFirestore(userDoc);
-        } else {
-          // User existiert in Firebase Auth aber nicht in Firestore
-          // Das passiert wenn die Datenbank bereinigt wird aber Auth-Token noch aktiv ist
-          debugPrint('⚠️ User in Firebase Auth aber nicht in Firestore gefunden - Logout durchführen');
-          await signOut(); // User ausloggen
-          return null;
-        }
-      } catch (e) {
-        debugPrint('❌ Fehler beim Laden der User-Daten: $e');
-        // Bei Fehlern auch ausloggen
-        await signOut();
-        return null;
+      // Lade User-Daten aus Firestore
+      final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
+      
+      if (userDoc.exists) {
+        return TaskiloUser.fromFirestore(userDoc);
+      } else {
+        // Erstelle neuen User in Firestore wenn noch nicht vorhanden
+        final newUser = TaskiloUser.fromFirebaseUser(firebaseUser);
+        await _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toFirestore());
+        return newUser;
       }
     });
   }
@@ -40,9 +32,6 @@ class AuthService {
   TaskiloUser? get currentUser {
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) return null;
-    
-    // Hier können wir nur den Firebase User zurückgeben
-    // Für vollständige Daten sollte userStream verwendet werden
     return TaskiloUser.fromFirebaseUser(firebaseUser);
   }
 
@@ -55,18 +44,8 @@ class AuthService {
       );
       
       if (credential.user != null) {
-        // Prüfe ob User in Firestore existiert
-        final userDoc = await _firestore.collection('users').doc(credential.user!.uid).get();
-        
-        if (!userDoc.exists) {
-          // User existiert nicht in Firestore - logout und Fehler werfen
-          debugPrint('❌ User in Firebase Auth aber nicht in Firestore - Login abgebrochen');
-          await signOut();
-          throw 'User-Daten wurden nicht gefunden. Bitte registrieren Sie sich erneut.';
-        }
-        
         await _updateLastLoginTime(credential.user!.uid);
-        return TaskiloUser.fromFirestore(userDoc);
+        return await _getUserFromFirestore(credential.user!.uid);
       }
       return null;
     } on FirebaseAuthException catch (e) {
@@ -192,51 +171,49 @@ class AuthService {
     }
   }
 
-  // Google Sign In
+  // Google Sign In - VOLLSTÄNDIGE IMPLEMENTATION
   Future<TaskiloUser?> signInWithGoogle() async {
     try {
       debugPrint('🔍 Starte Google Sign-In...');
       
-      // Trigger the authentication flow
+      // 1. Google Sign-In starten
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       
       if (googleUser == null) {
-        debugPrint('❌ Google Sign-In abgebrochen');
-        return null; // User cancelled the sign-in
+        debugPrint('❌ Google Sign-In vom Benutzer abgebrochen');
+        return null; // User hat den Sign-In abgebrochen
       }
       
       debugPrint('✅ Google-Account ausgewählt: ${googleUser.email}');
       
-      // Obtain the auth details from the request
+      // 2. Google Authentication Details abrufen
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       
-      // Create a new credential
+      // 3. Firebase Credential erstellen
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
       
-      debugPrint('🔑 Firebase-Credentials erstellt');
+      debugPrint('🔑 Firebase-Credential erstellt');
       
-      // Once signed in, return the UserCredential
+      // 4. Bei Firebase anmelden
       final userCredential = await _auth.signInWithCredential(credential);
       
       if (userCredential.user != null) {
         debugPrint('✅ Firebase-Anmeldung erfolgreich');
         
-        // Prüfe ob User bereits in Firestore existiert
-        final userDoc = await _firestore.collection('users').doc(userCredential.user!.uid).get();
+        // 5. Prüfe ob User bereits in Firestore existiert
+        final existingUser = await _getUserFromFirestore(userCredential.user!.uid);
         
-        if (userDoc.exists) {
+        if (existingUser != null) {
           debugPrint('📂 Bestehender User gefunden');
           await _updateLastLoginTime(userCredential.user!.uid);
-          return TaskiloUser.fromFirestore(userDoc);
+          return existingUser;
         } else {
-          // Bei Google Sign-In können wir einen neuen User erstellen
-          // da Google mehr Vertrauen als Email/Password hat
           debugPrint('👤 Neuer User - erstelle Firestore-Dokument');
           
-          // Erstelle neuen User mit Google-Daten
+          // 6. Neuen User mit Google-Daten erstellen
           final names = googleUser.displayName?.split(' ') ?? ['', ''];
           final profile = UserProfile(
             firstName: names.isNotEmpty ? names.first : '',
@@ -261,7 +238,7 @@ class AuthService {
       throw _handleAuthException(e);
     } catch (e) {
       debugPrint('❌ Google Sign-In Fehler: $e');
-      throw 'Ein Fehler ist bei der Google-Anmeldung aufgetreten: ${e.toString()}';
+      throw 'Ein Fehler ist bei der Google-Anmeldung aufgetreten: $e';
     }
   }
 
@@ -322,21 +299,18 @@ class AuthService {
   Future<TaskiloUser?> getCurrentUserData() async {
     final user = _auth.currentUser;
     if (user == null) return null;
-    
-    // Prüfe ob User in Firestore existiert
-    final userDoc = await _firestore.collection('users').doc(user.uid).get();
-    
-    if (!userDoc.exists) {
-      // User existiert nicht in Firestore - logout
-      debugPrint('❌ User in Firebase Auth aber nicht in Firestore - Logout durchführen');
-      await signOut();
-      return null;
-    }
-    
-    return TaskiloUser.fromFirestore(userDoc);
+    return await _getUserFromFirestore(user.uid);
   }
 
   // Private Helper Methods
+  Future<TaskiloUser?> _getUserFromFirestore(String uid) async {
+    final userDoc = await _firestore.collection('users').doc(uid).get();
+    if (userDoc.exists) {
+      return TaskiloUser.fromFirestore(userDoc);
+    }
+    return null;
+  }
+
   Future<void> _updateLastLoginTime(String uid) async {
     await _firestore.collection('users').doc(uid).update({
       'lastLoginAt': Timestamp.now(),

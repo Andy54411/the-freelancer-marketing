@@ -1764,5 +1764,46 @@ service cloud.firestore {
       allow read, update, delete: if request.auth != null 
                                    && request.auth.token.email == email;
     }
+
+    // 🧠 AI LEARNING & TRAINING COLLECTIONS
+    
+    // AI Konversationen - Für kontinuierliches Lernen
+    match /ai_conversations/{conversationId} {
+      // Benutzer können ihre eigenen Konversationen erstellen
+      allow create: if request.auth != null 
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.keys().hasAll(['userId', 'serviceType', 'messages', 'extractedData', 'finalTask', 'wasSuccessful', 'timestamp']);
+      
+      // Support Staff kann alle Konversationen für Analyse lesen
+      allow read: if isSupportStaff();
+      
+      // Benutzer können ihre eigenen Konversationen lesen
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Erlaubt Systemzugriff für Testzwecke
+      allow list: if request.auth != null;
+    }
+    
+    // AI Lernmuster - Automatisch generierte Patterns
+    match /ai_learning_patterns/{patternId} {
+      // Authentifizierte Benutzer können Patterns erstellen und aktualisieren
+      allow create, update: if request.auth != null;
+      
+      // Support Staff kann alle Patterns lesen und verwalten
+      allow read, delete: if isSupportStaff();
+      
+      // Allgemeine Leseberechtigung für bessere AI-Performance
+      allow read, list: if request.auth != null;
+    }
+    
+    // AI Feedback - Für Performance-Verbesserung
+    match /ai_feedback/{feedbackId} {
+      // Benutzer können Feedback zu ihren Konversationen geben
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasAll(['conversationId', 'wasHelpful', 'rating', 'timestamp']);
+      
+      // Support Staff kann alle Feedbacks lesen
+      allow read: if isSupportStaff();
+    }
   }
 }

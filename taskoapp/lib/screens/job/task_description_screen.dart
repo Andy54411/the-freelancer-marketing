@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'task_payment_screen.dart';
 import '../../components/ai_chat_widget.dart';
 import '../../components/service_info_card.dart';
@@ -24,9 +25,16 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
   final _budgetController = TextEditingController();
   
   DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
   String _urgency = 'normal';
   List<String> _selectedTags = <String>[];
+  
+  // Neue Features für detaillierte Buchung
+  String _bookingType = 'fixed'; // 'fixed' oder 'quote'
+  double? _providerHourlyRate;
+  double? _estimatedHours;
+  double? _estimatedTotal;
   
   // KI-Assistent State
   bool _showAIAssistant = false;
@@ -41,6 +49,53 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
     'Regelmäßig',
     'Dringend',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProviderHourlyRate();
+  }
+
+  /// Lädt den Stundensatz des Anbieters aus der Datenbank
+  Future<void> _loadProviderHourlyRate() async {
+    try {
+      final providerId = widget.selectedService['id'] ?? widget.selectedService['providerId'];
+      if (providerId != null) {
+        debugPrint('💰 Lade Stundensatz für Provider: $providerId');
+        
+        // Versuche aus companies Collection zu laden
+        final doc = await FirebaseFirestore.instance
+            .collection('companies')
+            .doc(providerId)
+            .get();
+            
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          final hourlyRate = data['hourlyRate'];
+          
+          if (hourlyRate != null) {
+            setState(() {
+              _providerHourlyRate = double.tryParse(hourlyRate.toString());
+            });
+            debugPrint('✅ Stundensatz geladen: €$_providerHourlyRate/h');
+            _calculateEstimatedTotal();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Fehler beim Laden des Stundensatzes: $e');
+    }
+  }
+
+  /// Berechnet die geschätzten Gesamtkosten basierend auf Stunden
+  void _calculateEstimatedTotal() {
+    if (_providerHourlyRate != null && _estimatedHours != null) {
+      setState(() {
+        _estimatedTotal = _providerHourlyRate! * _estimatedHours!;
+      });
+      debugPrint('💰 Geschätzte Gesamtkosten: €$_estimatedTotal');
+    }
+  }
 
   @override
   void dispose() {
@@ -108,6 +163,9 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
                 const SizedBox(height: 20),
                 
                 _buildDateTimeSection(),
+                const SizedBox(height: 20),
+                
+                _buildBookingTypeSection(),
                 const SizedBox(height: 20),
                 
                 _buildBudgetField(),
@@ -201,12 +259,343 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
   }
 
   Widget _buildDateTimeSection() {
-    return TaskDateTimeSelector(
-      label: 'Wann soll der Auftrag durchgeführt werden?',
-      selectedDate: _selectedDate,
-      selectedTime: _selectedTime,
-      onDateTap: _selectDate,
-      onTimeTap: _selectTime,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Wann soll der Auftrag durchgeführt werden?',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // Datum auswählen
+        GestureDetector(
+          onTap: _selectDate,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, color: Color(0xFF14ad9f)),
+                const SizedBox(width: 8),
+                Text(
+                  _selectedDate != null
+                      ? '${_selectedDate!.day}.${_selectedDate!.month}.${_selectedDate!.year}'
+                      : 'Datum wählen',
+                  style: TextStyle(
+                    color: _selectedDate != null ? Colors.black87 : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Zeit-Eingabe: Von-Bis
+        Row(
+          children: [
+            // Startzeit
+            Expanded(
+              child: GestureDetector(
+                onTap: _selectStartTime,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.schedule, color: Color(0xFF14ad9f)),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Von',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          Text(
+                            _startTime != null
+                                ? '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}'
+                                : 'Startzeit',
+                            style: TextStyle(
+                              color: _startTime != null ? Colors.black87 : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(width: 12),
+            
+            // Endzeit
+            Expanded(
+              child: GestureDetector(
+                onTap: _selectEndTime,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.schedule_send, color: Color(0xFF14ad9f)),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bis',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          Text(
+                            _endTime != null
+                                ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
+                                : 'Endzeit',
+                            style: TextStyle(
+                              color: _endTime != null ? Colors.black87 : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        // Geschätzte Arbeitszeit anzeigen
+        if (_estimatedHours != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.access_time, color: Color(0xFF14ad9f), size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'Geschätzte Arbeitszeit: ${_estimatedHours!.toStringAsFixed(1)} Stunden',
+                  style: const TextStyle(
+                    color: Color(0xFF14ad9f),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBookingTypeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Buchungstyp',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        Row(
+          children: [
+            // Feste Buchung
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _bookingType = 'fixed'),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _bookingType == 'fixed' 
+                        ? const Color(0xFF14ad9f).withValues(alpha: 0.1)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _bookingType == 'fixed' 
+                          ? const Color(0xFF14ad9f) 
+                          : Colors.grey[300]!,
+                      width: _bookingType == 'fixed' ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.schedule_rounded,
+                        color: _bookingType == 'fixed' 
+                            ? const Color(0xFF14ad9f) 
+                            : Colors.grey[600],
+                        size: 24,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Feste Buchung',
+                        style: TextStyle(
+                          color: _bookingType == 'fixed' 
+                              ? const Color(0xFF14ad9f) 
+                              : Colors.grey[700],
+                          fontWeight: _bookingType == 'fixed' 
+                              ? FontWeight.w600 
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Direkt buchen',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(width: 12),
+            
+            // Angebot anfragen
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _bookingType = 'quote'),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _bookingType == 'quote' 
+                        ? const Color(0xFF14ad9f).withValues(alpha: 0.1)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _bookingType == 'quote' 
+                          ? const Color(0xFF14ad9f) 
+                          : Colors.grey[300]!,
+                      width: _bookingType == 'quote' ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.request_quote_rounded,
+                        color: _bookingType == 'quote' 
+                            ? const Color(0xFF14ad9f) 
+                            : Colors.grey[600],
+                        size: 24,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Angebot anfragen',
+                        style: TextStyle(
+                          color: _bookingType == 'quote' 
+                              ? const Color(0xFF14ad9f) 
+                              : Colors.grey[700],
+                          fontWeight: _bookingType == 'quote' 
+                              ? FontWeight.w600 
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Preis verhandeln',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        // Geschätzte Kosten anzeigen (nur bei fester Buchung)
+        if (_bookingType == 'fixed' && _estimatedTotal != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF14ad9f).withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.euro, color: Color(0xFF14ad9f), size: 20),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Geschätzte Gesamtkosten',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    Text(
+                      '€${_estimatedTotal!.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF14ad9f),
+                      ),
+                    ),
+                    if (_providerHourlyRate != null)
+                      Text(
+                        '${_providerHourlyRate!.toStringAsFixed(2)}€/Std × ${_estimatedHours?.toStringAsFixed(1) ?? '0'} Std',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -303,10 +692,10 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
     }
   }
 
-  Future<void> _selectTime() async {
-    final time = await showTimePicker(
+  Future<void> _selectStartTime() async {
+    final TimeOfDay? time = await showTimePicker(
       context: context,
-      initialTime: _selectedTime ?? TimeOfDay.now(),
+      initialTime: _startTime ?? TimeOfDay.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -318,11 +707,60 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
         );
       },
     );
-    
+
     if (time != null) {
-      setState(() => _selectedTime = time);
+      setState(() {
+        _startTime = time;
+        _calculateEstimatedHours();
+      });
     }
   }
+
+  Future<void> _selectEndTime() async {
+    final TimeOfDay? time = await showTimePicker(
+      context: context,
+      initialTime: _endTime ?? TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF14ad9f),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (time != null) {
+      setState(() {
+        _endTime = time;
+        _calculateEstimatedHours();
+      });
+    }
+  }
+
+  void _calculateEstimatedHours() {
+    if (_startTime != null && _endTime != null) {
+      // Convert TimeOfDay to minutes
+      final startMinutes = _startTime!.hour * 60 + _startTime!.minute;
+      final endMinutes = _endTime!.hour * 60 + _endTime!.minute;
+      
+      // Calculate difference (handle overnight bookings)
+      double diffMinutes = (endMinutes - startMinutes).toDouble();
+      if (diffMinutes < 0) {
+        diffMinutes += 24 * 60; // Add 24 hours for overnight
+      }
+      
+      _estimatedHours = diffMinutes / 60;
+      
+      // Calculate estimated total if hourly rate is available
+      if (_providerHourlyRate != null && _estimatedHours != null) {
+        _estimatedTotal = _estimatedHours! * _providerHourlyRate!;
+      }
+    }
+  }
+
 
   void _continueToPayment() {
     if (!_formKey.currentState!.validate()) {
@@ -346,7 +784,11 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
       'location': _locationController.text.trim(),
       'budget': double.parse(_budgetController.text),
       'selectedDate': _selectedDate!.toIso8601String(),
-      'selectedTime': _selectedTime?.toString(),
+      'startTime': _startTime?.toString(),
+      'endTime': _endTime?.toString(),
+      'estimatedHours': _estimatedHours,
+      'estimatedTotal': _estimatedTotal,
+      'bookingType': _bookingType,
       'urgency': _urgency,
       'tags': _selectedTags,
       'service': widget.selectedService,
@@ -378,6 +820,9 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
       
       _selectedTags = List<String>.from(aiData['tags'] ?? []);
       
+      // NEUE: Verarbeite Start- und Endzeit aus AI-Daten
+      _processTimeFromAIData(aiData);
+      
       // Versuche Datum automatisch zu setzen
       _setDateFromAIData(aiData);
       
@@ -389,6 +834,8 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
       debugPrint('   Dringlichkeit: $_urgency');
       debugPrint('   Tags: $_selectedTags');
       debugPrint('   Datum: $_selectedDate');
+      debugPrint('   Start-Zeit: $_startTime');
+      debugPrint('   End-Zeit: $_endTime');
       
       // Wechsle zurück zum manuellen Modus, damit User die Daten überprüfen kann
       _showAIAssistant = false;
@@ -421,26 +868,114 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
     }
   }
 
+  /// Verarbeitet Start- und Endzeit aus AI-Daten
+  void _processTimeFromAIData(Map<String, dynamic> aiData) {
+    debugPrint('⏰ Verarbeite Zeit-Daten aus AI...');
+    
+    // Direkte Zeit-Daten aus AI-Response
+    final startTimeStr = aiData['startTime']?.toString();
+    final endTimeStr = aiData['endTime']?.toString();
+    
+    debugPrint('📝 AI Start-Zeit: $startTimeStr');
+    debugPrint('📝 AI End-Zeit: $endTimeStr');
+    
+    // Parse Start-Zeit
+    if (startTimeStr != null) {
+      final startTime = _parseTimeString(startTimeStr);
+      if (startTime != null) {
+        _startTime = startTime;
+        debugPrint('✅ Start-Zeit gesetzt: ${startTime.format(context)}');
+      }
+    }
+    
+    // Parse End-Zeit
+    if (endTimeStr != null) {
+      final endTime = _parseTimeString(endTimeStr);
+      if (endTime != null) {
+        _endTime = endTime;
+        debugPrint('✅ End-Zeit gesetzt: ${endTime.format(context)}');
+      }
+    }
+    
+    // Falls Start-/End-Zeit nicht direkt verfügbar, versuche aus rawData zu extrahieren
+    if (_startTime == null || _endTime == null) {
+      final rawData = aiData['rawData'] as Map<String, dynamic>?;
+      if (rawData != null) {
+        final rawStartTime = rawData['startTime']?.toString();
+        final rawEndTime = rawData['endTime']?.toString();
+        
+        if (rawStartTime != null && _startTime == null) {
+          _startTime = _parseTimeString(rawStartTime);
+          debugPrint('🔄 Start-Zeit aus rawData: ${_startTime?.format(context)}');
+        }
+        
+        if (rawEndTime != null && _endTime == null) {
+          _endTime = _parseTimeString(rawEndTime);
+          debugPrint('🔄 End-Zeit aus rawData: ${_endTime?.format(context)}');
+        }
+      }
+    }
+    
+    // Berechne geschätzte Kosten neu
+    _calculateEstimatedTotal();
+  }
+
+  /// Hilfsmethode zum Parsen von Zeit-Strings (HH:MM Format)
+  TimeOfDay? _parseTimeString(String timeStr) {
+    final timePattern = RegExp(r'^(\d{1,2}):(\d{2})$');
+    final match = timePattern.firstMatch(timeStr.trim());
+    
+    if (match != null) {
+      final hour = int.tryParse(match.group(1)!) ?? 0;
+      final minute = int.tryParse(match.group(2)!) ?? 0;
+      
+      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+        return TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+    
+    debugPrint('⚠️ Konnte Zeit nicht parsen: "$timeStr"');
+    return null;
+  }
+
   void _setDateFromAIData(Map<String, dynamic> aiData) {
     final rawData = aiData['rawData'] as Map<String, dynamic>?;
     final timing = rawData?['timing']?.toString().toLowerCase() ?? '';
     
+    // Extrahiere Uhrzeit aus dem Timing-String
+    TimeOfDay? extractedTime;
+    final timePattern = RegExp(r'(\d{1,2}):(\d{2})(?:\s*uhr)?', caseSensitive: false);
+    final timeMatch = timePattern.firstMatch(timing);
+    if (timeMatch != null) {
+      final hour = int.tryParse(timeMatch.group(1)!) ?? 12;
+      final minute = int.tryParse(timeMatch.group(2)!) ?? 0;
+      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+        extractedTime = TimeOfDay(hour: hour, minute: minute);
+        debugPrint('⏰ Uhrzeit aus AI-Daten extrahiert: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
+      }
+    }
+    
     if (timing.contains('morgen')) {
       _selectedDate = DateTime.now().add(const Duration(days: 1));
-      _selectedTime = const TimeOfDay(hour: 12, minute: 0); // Standard-Zeit 12:00
-      debugPrint('📅 Datum automatisch gesetzt: morgen ($_selectedDate)');
+      _startTime = extractedTime ?? const TimeOfDay(hour: 12, minute: 0);
+      debugPrint('📅 Datum automatisch gesetzt: morgen ($_selectedDate) um ${_startTime?.format(context) ?? '12:00'}');
     } else if (timing.contains('heute')) {
       _selectedDate = DateTime.now();
-      _selectedTime = TimeOfDay.now();
-      debugPrint('📅 Datum automatisch gesetzt: heute ($_selectedDate)');
+      _startTime = extractedTime ?? TimeOfDay.now();
+      debugPrint('📅 Datum automatisch gesetzt: heute ($_selectedDate) um ${_startTime?.format(context) ?? 'jetzt'}');
     } else if (timing.contains('wochenende')) {
       // Finde das nächste Wochenende
       final now = DateTime.now();
       int daysUntilSaturday = DateTime.saturday - now.weekday;
       if (daysUntilSaturday <= 0) daysUntilSaturday += 7;
       _selectedDate = now.add(Duration(days: daysUntilSaturday));
-      _selectedTime = const TimeOfDay(hour: 10, minute: 0);
-      debugPrint('📅 Datum automatisch gesetzt: Wochenende ($_selectedDate)');
+      _startTime = extractedTime ?? const TimeOfDay(hour: 10, minute: 0);
+      debugPrint('📅 Datum automatisch gesetzt: Wochenende ($_selectedDate) um ${_startTime?.format(context) ?? '10:00'}');
+    } else if (extractedTime != null) {
+      // Nur Uhrzeit angegeben, setze Datum auf heute
+      _selectedDate = DateTime.now();
+      _startTime = extractedTime;
+      debugPrint('📅 Nur Uhrzeit erkannt: heute ($_selectedDate) um ${_startTime?.format(context)}');
     }
   }
 }
