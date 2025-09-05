@@ -25,6 +25,7 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
   final _budgetController = TextEditingController();
   
   DateTime? _selectedDate;
+  DateTime? _selectedEndDate; // Neu: End-Datum für mehrtägige Services
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   String _urgency = 'normal';
@@ -32,6 +33,7 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
   
   // Neue Features für detaillierte Buchung
   String _bookingType = 'fixed'; // 'fixed' oder 'quote'
+  bool _isMultiDay = false; // Neu: Mehrtägiger Service
   double? _providerHourlyRate;
   double? _estimatedHours;
   double? _estimatedTotal;
@@ -272,149 +274,315 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
         ),
         const SizedBox(height: 12),
         
-        // Datum auswählen
-        GestureDetector(
-          onTap: _selectDate,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.calendar_today, color: Color(0xFF14ad9f)),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedDate != null
-                      ? '${_selectedDate!.day}.${_selectedDate!.month}.${_selectedDate!.year}'
-                      : 'Datum wählen',
+        // Toggle für mehrtägige Services
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.event_repeat,
+                color: const Color(0xFF14ad9f),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Mehrtägiger Service',
                   style: TextStyle(
-                    color: _selectedDate != null ? Colors.black87 : Colors.grey[600],
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[700],
                   ),
                 ),
-              ],
-            ),
+              ),
+              Switch(
+                value: _isMultiDay,
+                onChanged: (value) {
+                  setState(() {
+                    _isMultiDay = value;
+                    if (!value) {
+                      _selectedEndDate = null; // Reset End-Datum wenn Single-Day
+                    }
+                  });
+                },
+                activeColor: const Color(0xFF14ad9f),
+              ),
+            ],
           ),
         ),
         
         const SizedBox(height: 12),
         
-        // Zeit-Eingabe: Von-Bis
-        Row(
-          children: [
-            // Startzeit
-            Expanded(
-              child: GestureDetector(
-                onTap: _selectStartTime,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
+        // Datum-Auswahl: Single oder Range
+        if (!_isMultiDay) ...[
+          // Single Day - Original Datum-Picker
+          GestureDetector(
+            onTap: _selectDate,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, color: Color(0xFF14ad9f)),
+                  const SizedBox(width: 8),
+                  Text(
+                    _selectedDate != null
+                        ? '${_selectedDate!.day}.${_selectedDate!.month}.${_selectedDate!.year}'
+                        : 'Datum wählen',
+                    style: TextStyle(
+                      color: _selectedDate != null ? Colors.black87 : Colors.grey[600],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.schedule, color: Color(0xFF14ad9f)),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Von',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                ],
+              ),
+            ),
+          ),
+        ] else ...[
+          // Multi-Day - Von-Bis Datum-Range
+          Row(
+            children: [
+              // Start-Datum
+              Expanded(
+                child: GestureDetector(
+                  onTap: _selectStartDate,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Color(0xFF14ad9f)),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Von Datum',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
-                          ),
-                          Text(
-                            _startTime != null
-                                ? '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}'
-                                : 'Startzeit',
-                            style: TextStyle(
-                              color: _startTime != null ? Colors.black87 : Colors.grey[600],
+                            Text(
+                              _selectedDate != null
+                                  ? '${_selectedDate!.day}.${_selectedDate!.month}.${_selectedDate!.year}'
+                                  : 'Start-Datum',
+                              style: TextStyle(
+                                color: _selectedDate != null ? Colors.black87 : Colors.grey[600],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            
-            const SizedBox(width: 12),
-            
-            // Endzeit
-            Expanded(
-              child: GestureDetector(
-                onTap: _selectEndTime,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.schedule_send, color: Color(0xFF14ad9f)),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Bis',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+              
+              const SizedBox(width: 12),
+              
+              // End-Datum
+              Expanded(
+                child: GestureDetector(
+                  onTap: _selectEndDate,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.event, color: Color(0xFF14ad9f)),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bis Datum',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
                             ),
-                          ),
-                          Text(
-                            _endTime != null
-                                ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
-                                : 'Endzeit',
-                            style: TextStyle(
-                              color: _endTime != null ? Colors.black87 : Colors.grey[600],
+                            Text(
+                              _selectedEndDate != null
+                                  ? '${_selectedEndDate!.day}.${_selectedEndDate!.month}.${_selectedEndDate!.year}'
+                                  : 'End-Datum',
+                              style: TextStyle(
+                                color: _selectedEndDate != null ? Colors.black87 : Colors.grey[600],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+              ),
+            ],
+          ),
+          
+          // Anzahl Tage anzeigen wenn beide Daten gesetzt
+          if (_selectedDate != null && _selectedEndDate != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.event_available, color: Color(0xFF14ad9f), size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Dauer: ${_selectedEndDate!.difference(_selectedDate!).inDays + 1} Tage',
+                    style: const TextStyle(
+                      color: Color(0xFF14ad9f),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ),
+        ],
         
-        // Geschätzte Arbeitszeit anzeigen
-        if (_estimatedHours != null) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.access_time, color: Color(0xFF14ad9f), size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  'Geschätzte Arbeitszeit: ${_estimatedHours!.toStringAsFixed(1)} Stunden',
-                  style: const TextStyle(
-                    color: Color(0xFF14ad9f),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+        const SizedBox(height: 12),
+        
+        // Zeit-Eingabe: Von-Bis (nur wenn mindestens Start-Datum gesetzt ist)
+        if (_selectedDate != null) ...[
+          Row(
+            children: [
+              // Startzeit
+              Expanded(
+                child: GestureDetector(
+                  onTap: _selectStartTime,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.schedule, color: Color(0xFF14ad9f)),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Von',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              _startTime != null
+                                  ? '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}'
+                                  : 'Startzeit',
+                              style: TextStyle(
+                                color: _startTime != null ? Colors.black87 : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Endzeit
+              Expanded(
+                child: GestureDetector(
+                  onTap: _selectEndTime,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.schedule_send, color: Color(0xFF14ad9f)),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bis',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Text(
+                              _endTime != null
+                                  ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
+                                  : 'Endzeit',
+                              style: TextStyle(
+                                color: _endTime != null ? Colors.black87 : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
+          
+          // Geschätzte Arbeitszeit anzeigen
+          if (_estimatedHours != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time, color: Color(0xFF14ad9f), size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isMultiDay && _selectedEndDate != null
+                        ? 'Geschätzte Arbeitszeit: ${_estimatedHours!.toStringAsFixed(1)} Std/Tag × ${_selectedEndDate!.difference(_selectedDate!).inDays + 1} Tage = ${(_estimatedHours! * (_selectedEndDate!.difference(_selectedDate!).inDays + 1)).toStringAsFixed(1)} Std gesamt'
+                        : 'Geschätzte Arbeitszeit: ${_estimatedHours!.toStringAsFixed(1)} Stunden',
+                    style: const TextStyle(
+                      color: Color(0xFF14ad9f),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ],
     );
@@ -645,10 +813,15 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
   }
 
   Widget _buildContinueButton() {
+    // Button-Text je nach Buchungstyp
+    final buttonText = _bookingType == 'quote' 
+        ? 'Angebot anfragen'
+        : 'Weiter zur Bezahlung';
+    
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _continueToPayment,
+        onPressed: _handleContinueAction,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF14ad9f),
           foregroundColor: Colors.white,
@@ -658,9 +831,9 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
           ),
           elevation: 0,
         ),
-        child: const Text(
-          'Weiter zur Bezahlung',
-          style: TextStyle(
+        child: Text(
+          buttonText,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -740,6 +913,62 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
     }
   }
 
+  Future<void> _selectStartDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF14ad9f),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (date != null) {
+      setState(() {
+        _selectedDate = date;
+        
+        // Wenn End-Datum vor Start-Datum liegt, setze es zurück
+        if (_selectedEndDate != null && _selectedEndDate!.isBefore(date)) {
+          _selectedEndDate = null;
+        }
+      });
+    }
+  }
+
+  Future<void> _selectEndDate() async {
+    // Mindest-Datum ist das Start-Datum oder heute
+    final firstDate = _selectedDate ?? DateTime.now();
+    
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _selectedEndDate ?? firstDate,
+      firstDate: firstDate,
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF14ad9f),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (date != null) {
+      setState(() => _selectedEndDate = date);
+    }
+  }
+
   void _calculateEstimatedHours() {
     if (_startTime != null && _endTime != null) {
       // Convert TimeOfDay to minutes
@@ -762,7 +991,7 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
   }
 
 
-  void _continueToPayment() {
+  void _handleContinueAction() {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -795,6 +1024,30 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
       'createdAt': DateTime.now().toIso8601String(),
     };
 
+    if (_bookingType == 'quote') {
+      // Bei Angebot: Direkt Angebot erstellen/senden
+      _handleQuoteRequest(taskData);
+    } else {
+      // Bei fester Buchung: Weiter zur Bezahlung
+      _continueToPayment(taskData);
+    }
+  }
+
+  void _handleQuoteRequest(Map<String, dynamic> taskData) {
+    // TODO: Angebot-Anfrage Logic implementieren
+    // Für jetzt zeigen wir eine Bestätigung
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Angebot-Anfrage wurde gesendet!'),
+        backgroundColor: Color(0xFF14ad9f),
+      ),
+    );
+    
+    // Zurück zur vorherigen Seite
+    Navigator.of(context).pop();
+  }
+
+  void _continueToPayment(Map<String, dynamic> taskData) {
     // Weiter zu Step 4 (Payment)
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -817,6 +1070,12 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
       // Normalisiere Urgency für App-kompatible Werte
       final aiUrgency = aiData['urgency']?.toString() ?? 'normal';
       _urgency = _normalizeUrgencyForApp(aiUrgency);
+      
+      // NEUE: Buchungstyp aus AI-Daten extrahieren
+      final rawData = aiData['rawData'] as Map<String, dynamic>?;
+      final aiBookingType = rawData?['bookingType']?.toString() ?? 'quote';
+      _bookingType = aiBookingType == 'quote' ? 'quote' : 'fixed';
+      debugPrint('📋 Buchungstyp aus AI: $aiBookingType -> $_bookingType');
       
       _selectedTags = List<String>.from(aiData['tags'] ?? []);
       
@@ -941,27 +1200,86 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
   void _setDateFromAIData(Map<String, dynamic> aiData) {
     final rawData = aiData['rawData'] as Map<String, dynamic>?;
     final timing = rawData?['timing']?.toString().toLowerCase() ?? '';
+    final description = aiData['description']?.toString().toLowerCase() ?? '';
     
-    // Extrahiere Uhrzeit aus dem Timing-String
-    TimeOfDay? extractedTime;
-    final timePattern = RegExp(r'(\d{1,2}):(\d{2})(?:\s*uhr)?', caseSensitive: false);
-    final timeMatch = timePattern.firstMatch(timing);
-    if (timeMatch != null) {
-      final hour = int.tryParse(timeMatch.group(1)!) ?? 12;
-      final minute = int.tryParse(timeMatch.group(2)!) ?? 0;
-      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-        extractedTime = TimeOfDay(hour: hour, minute: minute);
+    debugPrint('⏰ Verarbeite Zeit-Daten aus AI...');
+    debugPrint('📝 Timing: $timing');
+    debugPrint('📝 Description: $description');
+    
+    // Kombiniere timing und description für bessere Zeit-Extraktion
+    final fullText = '$timing $description';
+    
+    // Erweiterte Zeit-Extraktion: Suche nach "von X bis Y" Mustern
+    TimeOfDay? startTime;
+    TimeOfDay? endTime;
+    
+    // Pattern 1: "von HH:MM bis HH:MM" oder "von HH:MM uhr bis HH:MM uhr"
+    final rangePattern = RegExp(r'von\s+(\d{1,2}):(\d{2})(?:\s*uhr)?\s+bis\s+(\d{1,2}):(\d{2})(?:\s*uhr)?', caseSensitive: false);
+    final rangeMatch = rangePattern.firstMatch(fullText);
+    
+    if (rangeMatch != null) {
+      final startHour = int.tryParse(rangeMatch.group(1)!) ?? 0;
+      final startMinute = int.tryParse(rangeMatch.group(2)!) ?? 0;
+      final endHour = int.tryParse(rangeMatch.group(3)!) ?? 0;
+      final endMinute = int.tryParse(rangeMatch.group(4)!) ?? 0;
+      
+      if (startHour >= 0 && startHour <= 23 && startMinute >= 0 && startMinute <= 59) {
+        startTime = TimeOfDay(hour: startHour, minute: startMinute);
+        debugPrint('📝 AI Start-Zeit: ${startHour.toString().padLeft(2, '0')}:${startMinute.toString().padLeft(2, '0')}');
+      }
+      
+      if (endHour >= 0 && endHour <= 23 && endMinute >= 0 && endMinute <= 59) {
+        endTime = TimeOfDay(hour: endHour, minute: endMinute);
+        debugPrint('📝 AI End-Zeit: ${endHour.toString().padLeft(2, '0')}:${endMinute.toString().padLeft(2, '0')}');
+      }
+    } else {
+      // Pattern 2: Einzelne Zeiten finden wenn kein "von-bis" Muster
+      final timePattern = RegExp(r'(\d{1,2}):(\d{2})(?:\s*uhr)?', caseSensitive: false);
+      final timeMatches = timePattern.allMatches(fullText).toList();
+      
+      debugPrint('📝 Gefundene Zeiten: ${timeMatches.length}');
+      
+      if (timeMatches.length >= 2) {
+        // Erste Zeit als Start, letzte als Ende
+        final firstMatch = timeMatches.first;
+        final lastMatch = timeMatches.last;
+        
+        final hour1 = int.tryParse(firstMatch.group(1)!) ?? 0;
+        final minute1 = int.tryParse(firstMatch.group(2)!) ?? 0;
+        final hour2 = int.tryParse(lastMatch.group(1)!) ?? 0;
+        final minute2 = int.tryParse(lastMatch.group(2)!) ?? 0;
+        
+        // Bestimme welche Zeit Start und welche Ende ist (frühere Zeit = Start)
+        if (hour1 < hour2 || (hour1 == hour2 && minute1 < minute2)) {
+          startTime = TimeOfDay(hour: hour1, minute: minute1);
+          endTime = TimeOfDay(hour: hour2, minute: minute2);
+        } else {
+          startTime = TimeOfDay(hour: hour2, minute: minute2);
+          endTime = TimeOfDay(hour: hour1, minute: minute1);
+        }
+        
+        debugPrint('📝 AI Start-Zeit: ${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}');
+        debugPrint('📝 AI End-Zeit: ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}');
+      } else if (timeMatches.isNotEmpty) {
+        // Nur eine Zeit gefunden
+        final match = timeMatches.first;
+        final hour = int.tryParse(match.group(1)!) ?? 12;
+        final minute = int.tryParse(match.group(2)!) ?? 0;
+        startTime = TimeOfDay(hour: hour, minute: minute);
         debugPrint('⏰ Uhrzeit aus AI-Daten extrahiert: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
       }
     }
     
+    // Setze Datum basierend auf Keywords
     if (timing.contains('morgen')) {
       _selectedDate = DateTime.now().add(const Duration(days: 1));
-      _startTime = extractedTime ?? const TimeOfDay(hour: 12, minute: 0);
+      _startTime = startTime ?? const TimeOfDay(hour: 12, minute: 0);
+      _endTime = endTime;
       debugPrint('📅 Datum automatisch gesetzt: morgen ($_selectedDate) um ${_startTime?.format(context) ?? '12:00'}');
     } else if (timing.contains('heute')) {
       _selectedDate = DateTime.now();
-      _startTime = extractedTime ?? TimeOfDay.now();
+      _startTime = startTime ?? TimeOfDay.now();
+      _endTime = endTime;
       debugPrint('📅 Datum automatisch gesetzt: heute ($_selectedDate) um ${_startTime?.format(context) ?? 'jetzt'}');
     } else if (timing.contains('wochenende')) {
       // Finde das nächste Wochenende
@@ -969,13 +1287,21 @@ class _TaskDescriptionScreenState extends State<TaskDescriptionScreen> {
       int daysUntilSaturday = DateTime.saturday - now.weekday;
       if (daysUntilSaturday <= 0) daysUntilSaturday += 7;
       _selectedDate = now.add(Duration(days: daysUntilSaturday));
-      _startTime = extractedTime ?? const TimeOfDay(hour: 10, minute: 0);
+      _startTime = startTime ?? const TimeOfDay(hour: 10, minute: 0);
+      _endTime = endTime;
       debugPrint('📅 Datum automatisch gesetzt: Wochenende ($_selectedDate) um ${_startTime?.format(context) ?? '10:00'}');
-    } else if (extractedTime != null) {
+    } else if (startTime != null) {
       // Nur Uhrzeit angegeben, setze Datum auf heute
       _selectedDate = DateTime.now();
-      _startTime = extractedTime;
+      _startTime = startTime;
+      _endTime = endTime;
       debugPrint('📅 Nur Uhrzeit erkannt: heute ($_selectedDate) um ${_startTime?.format(context)}');
+    }
+    
+    // Berechne geschätzte Stunden wenn beide Zeiten vorhanden
+    if (_startTime != null && _endTime != null) {
+      _calculateEstimatedHours();
+      debugPrint('📊 Geschätzte Arbeitszeit berechnet: ${_estimatedHours?.toStringAsFixed(1)} Stunden');
     }
   }
 }

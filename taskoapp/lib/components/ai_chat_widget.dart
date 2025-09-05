@@ -474,36 +474,40 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     
     // Zeit-Erkennung (erweitert für Datum vs. Uhrzeit)
     final timeKeywords = ['morgen', 'heute', 'übermorgen', 'nächste woche', 'am wochenende', 'montag', 'dienstag', 'mittwoch', 'donnerstag', 'freitag', 'samstag', 'sonntag'];
+    bool hasTimeKeyword = false;
     for (final keyword in timeKeywords) {
       if (lowerText.contains(keyword)) {
-        _collectedData['timing'] = _extractTimingFromText(text);
-        _requiredInfo['timing'] = true;
-        debugPrint('⏰ Datum/Tag erkannt: ${_collectedData['timing']}');
+        hasTimeKeyword = true;
         break;
       }
     }
     
-    // Spezifische Uhrzeit-Erkennung
-    final timePattern = RegExp(r'(\d{1,2}):(\d{2})(?:\s*uhr)?', caseSensitive: false);
-    final timeMatch = timePattern.firstMatch(text);
-    if (timeMatch != null) {
-      final hour = int.tryParse(timeMatch.group(1)!) ?? 0;
-      final minute = int.tryParse(timeMatch.group(2)!) ?? 0;
-      
-      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-        final formattedTime = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} Uhr';
-        
-        // Füge Uhrzeit zu bestehender Timing-Info hinzu oder erstelle neue
-        if (_collectedData['timing'] != null && _collectedData['timing'].toString().isNotEmpty) {
-          _collectedData['timing'] = '${_collectedData['timing']} um $formattedTime';
-        } else {
-          _collectedData['timing'] = formattedTime;
-        }
-        
+    // IMMER die erweiterte Zeit-Extraktion aufrufen wenn Zeit-bezogene Inhalte vorhanden sind
+    final timePattern = RegExp(r'(\d{1,2})[:\.]?(\d{0,2})\s*(?:uhr|bis|von)?', caseSensitive: false);
+    if (hasTimeKeyword || timePattern.hasMatch(text)) {
+      final extractedTiming = _extractTimingFromText(text);
+      if (extractedTiming.isNotEmpty) {
+        _collectedData['timing'] = extractedTiming;
         _requiredInfo['timing'] = true;
-        _requiredInfo['specificTime'] = true; // Markiere spezifische Uhrzeit als vorhanden
-        debugPrint('🕐 Spezifische Uhrzeit erkannt: $formattedTime');
-        debugPrint('⏰ Kombinierte Timing-Info: ${_collectedData['timing']}');
+        debugPrint('⏰ Erweiterte Zeit-Extraktion: $extractedTiming');
+      }
+    }
+    
+    // Fallback: Spezifische Uhrzeit-Erkennung (nur wenn noch keine Zeit erkannt)
+    if (!_requiredInfo['timing']!) {
+      final simpleTimePattern = RegExp(r'(\d{1,2}):(\d{2})(?:\s*uhr)?', caseSensitive: false);
+      final timeMatch = simpleTimePattern.firstMatch(text);
+      if (timeMatch != null) {
+        final hour = int.tryParse(timeMatch.group(1)!) ?? 0;
+        final minute = int.tryParse(timeMatch.group(2)!) ?? 0;
+        
+        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+          final formattedTime = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} Uhr';
+          _collectedData['timing'] = formattedTime;
+          _requiredInfo['timing'] = true;
+          _requiredInfo['specificTime'] = true;
+          debugPrint('🕐 Fallback Uhrzeit erkannt: $formattedTime');
+        }
       }
     }
     
@@ -871,32 +875,57 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     debugPrint('🕐 === ERWEITERTE ZEIT-EXTRAKTION ===');
     debugPrint('📝 Input: "$text"');
     
-    // VON-BIS ZEITEN EXTRAKTION (Neue Hauptfunktion)
-    final vonBisPattern = RegExp(
-      r'(?:von\s+)?(\d{1,2})[:\.]?(\d{0,2})\s*(?:bis\s+(\d{1,2})[:\.]?(\d{0,2}))?(?:\s*uhr)?',
-      caseSensitive: false
-    );
-    
-    final vonBisMatches = vonBisPattern.allMatches(text);
+    // VON-BIS ZEITEN EXTRAKTION (Spezifische Patterns)
     String? startTime, endTime;
     double? duration;
     
-    for (final match in vonBisMatches) {
-      final startHour = int.tryParse(match.group(1) ?? '');
-      final startMinute = int.tryParse(match.group(2) ?? '0') ?? 0;
-      final endHour = int.tryParse(match.group(3) ?? '');
-      final endMinute = int.tryParse(match.group(4) ?? '0') ?? 0;
+    // Pattern 1: "von X:XX bis Y:YY" oder "von X:XX uhr bis Y:YY uhr"
+    final vonBisPattern1 = RegExp(
+      r'von\s+(\d{1,2}):(\d{2})(?:\s*uhr)?\s+bis\s+(\d{1,2}):(\d{2})(?:\s*uhr)?',
+      caseSensitive: false
+    );
+    
+    // Pattern 2: "X:XX Uhr bis Y:YY Uhr"
+    final vonBisPattern2 = RegExp(
+      r'(\d{1,2}):(\d{2})\s*uhr\s+bis\s+(\d{1,2}):(\d{2})\s*uhr',
+      caseSensitive: false
+    );
+    
+    // Pattern 3: "von X:XX - Y:YY" oder "X:XX - Y:YY"
+    final vonBisPattern3 = RegExp(
+      r'(?:von\s+)?(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})(?:\s*uhr)?',
+      caseSensitive: false
+    );
+    
+    // Probiere alle Patterns
+    final patterns = [vonBisPattern1, vonBisPattern2, vonBisPattern3];
+    RegExpMatch? vonBisMatch;
+    
+    for (final pattern in patterns) {
+      vonBisMatch = pattern.firstMatch(text);
+      if (vonBisMatch != null) {
+        debugPrint('🎯 Von-Bis Pattern gefunden mit: ${pattern.pattern}');
+        break;
+      }
+    }
+    
+    if (vonBisMatch != null) {
+      final startHour = int.tryParse(vonBisMatch.group(1) ?? '');
+      final startMinute = int.tryParse(vonBisMatch.group(2) ?? '0') ?? 0;
+      final endHour = int.tryParse(vonBisMatch.group(3) ?? '');
+      final endMinute = int.tryParse(vonBisMatch.group(4) ?? '0') ?? 0;
       
       if (startHour != null && startHour >= 0 && startHour <= 23) {
         startTime = '${startHour.toString().padLeft(2, '0')}:${startMinute.toString().padLeft(2, '0')}';
         debugPrint('🕐 Start-Zeit extrahiert: $startTime');
+      }
+      
+      if (endHour != null && endHour >= 0 && endHour <= 23) {
+        endTime = '${endHour.toString().padLeft(2, '0')}:${endMinute.toString().padLeft(2, '0')}';
+        debugPrint('🕐 End-Zeit extrahiert: $endTime');
         
-        // Wenn End-Zeit vorhanden
-        if (endHour != null && endHour >= 0 && endHour <= 23) {
-          endTime = '${endHour.toString().padLeft(2, '0')}:${endMinute.toString().padLeft(2, '0')}';
-          debugPrint('🕐 End-Zeit extrahiert: $endTime');
-          
-          // Berechne Dauer für Preisschätzung
+        // Berechne Dauer für Preisschätzung
+        if (startTime != null && endTime != null && startHour != null) {
           double hours = (endHour + endMinute / 60.0) - (startHour + startMinute / 60.0);
           if (hours < 0) hours += 24; // Über Mitternacht
           duration = hours;
@@ -922,9 +951,68 @@ class _AIChatWidgetState extends State<AIChatWidget> {
           }
           
           timeMatches.add('$startTime - $endTime Uhr');
-        } else {
-          timeMatches.add('$startTime Uhr');
         }
+      }
+    }
+    
+    // Falls kein Von-Bis gefunden: Suche nach einzelnen Zeiten
+    if (startTime == null) {
+      final timePattern = RegExp(r'(\d{1,2}):(\d{2})(?:\s*uhr)?', caseSensitive: false);
+      final timeMatchesList = timePattern.allMatches(text).toList();
+      
+      if (timeMatchesList.length >= 2) {
+        // Mehrere Zeiten gefunden - nimm erste als Start, letzte als Ende
+        final firstMatch = timeMatchesList.first;
+        final lastMatch = timeMatchesList.last;
+        
+        final hour1 = int.tryParse(firstMatch.group(1)!) ?? 0;
+        final minute1 = int.tryParse(firstMatch.group(2)!) ?? 0;
+        final hour2 = int.tryParse(lastMatch.group(1)!) ?? 0;
+        final minute2 = int.tryParse(lastMatch.group(2)!) ?? 0;
+        
+        // Bestimme welche Zeit früher ist
+        if (hour1 < hour2 || (hour1 == hour2 && minute1 < minute2)) {
+          startTime = '${hour1.toString().padLeft(2, '0')}:${minute1.toString().padLeft(2, '0')}';
+          endTime = '${hour2.toString().padLeft(2, '0')}:${minute2.toString().padLeft(2, '0')}';
+        } else {
+          startTime = '${hour2.toString().padLeft(2, '0')}:${minute2.toString().padLeft(2, '0')}';
+          endTime = '${hour1.toString().padLeft(2, '0')}:${minute1.toString().padLeft(2, '0')}';
+        }
+        
+        debugPrint('🕐 Mehrere Zeiten erkannt - Start: $startTime, Ende: $endTime');
+        
+        // Berechne Dauer und speichere
+        final startHour = int.parse(startTime.split(':')[0]);
+        final startMinute = int.parse(startTime.split(':')[1]);
+        final endHour = int.parse(endTime.split(':')[0]);
+        final endMinute = int.parse(endTime.split(':')[1]);
+        
+        double hours = (endHour + endMinute / 60.0) - (startHour + startMinute / 60.0);
+        if (hours < 0) hours += 24;
+        duration = hours;
+        
+        _collectedData['startTime'] = startTime;
+        _collectedData['endTime'] = endTime;
+        _collectedData['duration'] = duration;
+        _requiredInfo['startTime'] = true;
+        _requiredInfo['endTime'] = true;
+        _requiredInfo['specificTime'] = true;
+        
+        if (_providerHourlyRate != null) {
+          final estimatedPrice = _providerHourlyRate! * duration;
+          _collectedData['estimatedPrice'] = estimatedPrice;
+          debugPrint('💰 Geschätzter Preis: €${estimatedPrice.toStringAsFixed(2)}');
+        }
+        
+        timeMatches.add('$startTime - $endTime Uhr');
+      } else if (timeMatchesList.isNotEmpty) {
+        // Nur eine Zeit gefunden
+        final match = timeMatchesList.first;
+        final hour = int.tryParse(match.group(1)!) ?? 0;
+        final minute = int.tryParse(match.group(2)!) ?? 0;
+        final formattedTime = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} Uhr';
+        timeMatches.add(formattedTime);
+        debugPrint('🕐 Einzelne Uhrzeit erkannt: $formattedTime');
       }
     }
 
@@ -1077,9 +1165,15 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     }
     
     // NEUE Frage nach Von-Bis Zeiten für Stundenbasis-Services
-    if (_requiredInfo['timing']! && !_collectedData.containsKey('startTime') && !_askedTopics.contains('timeRange')) {
+    // Nur fragen wenn timing erkannt wurde ABER keine konkreten Start/End-Zeiten vorhanden
+    if (_requiredInfo['timing']! && 
+        !_collectedData.containsKey('startTime') && 
+        !_collectedData.containsKey('endTime') &&
+        !_requiredInfo['startTime']! && 
+        !_requiredInfo['endTime']! &&
+        !_askedTopics.contains('timeRange')) {
       _askedTopics.add('timeRange');
-      debugPrint('❓ Frage nach Von-Bis Zeiten');
+      debugPrint('❓ Frage nach Von-Bis Zeiten (keine konkreten Zeiten erkannt)');
       if (_providerHourlyRate != null) {
         return 'Von wann bis wann soll der Service dauern? Zum Beispiel "von 14:00 bis 18:00 Uhr"? (Stundensatz: €$_providerHourlyRate/h) ⏰';
       } else {
@@ -1248,6 +1342,11 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     widget.onTaskGenerated(taskData);
     debugPrint('✅ Task-Generierung abgeschlossen');
 
+    // Setze Status auf completed und zeige Bewertungs-Widget
+    setState(() {
+      _currentStep = 'completed';
+    });
+
     // 🧠 SPEICHERE KONVERSATION FÜR AI-LERNEN
     _saveConversationForLearning(taskData);
   }
@@ -1336,7 +1435,9 @@ class _AIChatWidgetState extends State<AIChatWidget> {
     final location = _enhanceLocation(currentLocation);
     debugPrint('📍 Enhanced Location: "$location"');
     
-    final rawBudget = _collectedData['budget'] ?? '100';
+    // Budget: Verwende estimatedPrice wenn verfügbar, sonst budget, sonst Fallback
+    final rawBudget = _collectedData['budget'] ?? 
+                      (_collectedData['estimatedPrice']?.toString() ?? '100');
     debugPrint('💰 Raw Budget Input: "$rawBudget"');
     final budget = _extractBudget(rawBudget);
     debugPrint('💰 Extracted Budget: €$budget');
@@ -1447,9 +1548,14 @@ class _AIChatWidgetState extends State<AIChatWidget> {
                   child: ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length + (_isGenerating ? 1 : 0),
+                    itemCount: _messages.length + (_isGenerating ? 1 : 0) + (_currentStep == 'completed' ? 1 : 0),
                     itemBuilder: (context, index) {
                       debugPrint('📱 Rendering message $index/${_messages.length} (isGenerating: $_isGenerating)');
+                      
+                      // Bewertungs-Widget am Ende anzeigen (nur wenn noch kein Feedback abgegeben)
+                      if (index == _messages.length + (_isGenerating ? 1 : 0) && _currentStep == 'completed') {
+                        return _buildFeedbackWidget();
+                      }
                       
                       if (index == _messages.length && _isGenerating) {
                         debugPrint('⏳ Showing typing indicator');
@@ -1458,13 +1564,11 @@ class _AIChatWidgetState extends State<AIChatWidget> {
                       
                       final message = _messages[index];
                       debugPrint('💬 Message $index: "${message.text.substring(0, message.text.length > 50 ? 50 : message.text.length)}..." (isUser: ${message.isUser})');
-                      
+
                       return _buildMessageBubble(message);
                     },
                   ),
-                ),
-                
-                // Input-Bereich
+                ),                // Input-Bereich
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -1858,6 +1962,173 @@ class _AIChatWidgetState extends State<AIChatWidget> {
       return double.tryParse(match.group(0)!) ?? 100.0;
     }
     return 100.0;
+  }
+
+  /// Bewertungs-Widget für AI-Feedback am Ende der Konversation
+  Widget _buildFeedbackWidget() {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF14ad9f).withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(
+                Icons.feedback_outlined,
+                color: const Color(0xFF14ad9f),
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Wie hilfreich war der KI-Assistent?',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Beschreibung
+          Text(
+            'Ihr Feedback hilft uns, den KI-Assistenten zu verbessern',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Stern-Bewertung
+          Row(
+            children: [
+              const Text(
+                'Bewertung: ',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              ...List.generate(5, (index) {
+                return GestureDetector(
+                  onTap: () => _submitFeedback(index + 1),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Icon(
+                      Icons.star_border,
+                      color: const Color(0xFF14ad9f),
+                      size: 28,
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Schnell-Bewertungen
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildQuickFeedbackChip(
+                label: '👍 Sehr hilfreich',
+                rating: 5,
+                comment: 'Die KI hat alle Informationen gut erfasst und einen vollständigen Auftrag erstellt.',
+              ),
+              _buildQuickFeedbackChip(
+                label: '👌 Gut',
+                rating: 4,
+                comment: 'Die KI war hilfreich, aber einige Details mussten nachbearbeitet werden.',
+              ),
+              _buildQuickFeedbackChip(
+                label: '👎 Verbesserungsbedarf',
+                rating: 2,
+                comment: 'Die KI hat wichtige Informationen übersehen oder falsch interpretiert.',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Schnell-Bewertungs-Chip
+  Widget _buildQuickFeedbackChip({
+    required String label,
+    required int rating,
+    required String comment,
+  }) {
+    return GestureDetector(
+      onTap: () => _submitFeedback(rating, comment: comment),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF14ad9f).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFF14ad9f).withValues(alpha: 0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF14ad9f),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Submittet das Feedback und zeigt eine Bestätigung
+  void _submitFeedback(int rating, {String? comment}) {
+    // Feedback an AI Learning Service senden
+    provideFeedbackToAI(
+      wasHelpful: rating >= 3,
+      rating: rating,
+      userComment: comment,
+    );
+
+    // Bestätigungsnachricht anzeigen
+    setState(() {
+      _messages.add(ChatMessage(
+        text: 'Vielen Dank für Ihr Feedback! ($rating/5 Sterne)\n\nIhr Feedback hilft uns, den KI-Assistenten kontinuierlich zu verbessern.',
+        isUser: false,
+        timestamp: DateTime.now(),
+      ));
+      
+      // Verstecke das Feedback-Widget
+      _currentStep = 'feedback_submitted';
+    });
+
+    // Auto-Scroll zum Ende
+    _scrollToBottom();
+
+    debugPrint('✅ Benutzer-Feedback eingereicht: $rating/5 Sterne');
+    if (comment != null) {
+      debugPrint('💬 Kommentar: $comment');
+    }
   }
 }
 
