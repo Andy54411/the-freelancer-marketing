@@ -1747,5 +1747,22 @@ service cloud.firestore {
                           isSupportStaff());
       }
     }
+    
+    // Newsletter Subscribers Collection - Für App-Registrierung
+    match /newsletter_subscribers/{email} {
+      // Erlaubt das Erstellen von Newsletter-Anmeldungen bei der Registrierung
+      allow create: if request.auth != null 
+                    && request.resource.data.email == email
+                    && request.resource.data.keys().hasAll(['email', 'firstName', 'lastName', 'subscribedAt', 'source', 'isActive'])
+                    && request.resource.data.source == 'app_registration'
+                    && request.resource.data.isActive == true;
+      
+      // Support Staff kann alles lesen und verwalten
+      allow read, update, delete: if isSupportStaff();
+      
+      // Benutzer können ihre eigenen Newsletter-Einstellungen verwalten
+      allow read, update, delete: if request.auth != null 
+                                   && request.auth.token.email == email;
+    }
   }
 }

@@ -94,12 +94,14 @@ class AuthLoginModal extends StatefulWidget {
   final String title;
   final String description;
   final VoidCallback? onLoginSuccess;
+  final Map<String, dynamic>? selectedService; // Service-Daten für Registrierung
 
   const AuthLoginModal({
     super.key,
     required this.title,
     required this.description,
     this.onLoginSuccess,
+    this.selectedService,
   });
 
   @override
@@ -357,12 +359,13 @@ class _AuthLoginModalState extends State<AuthLoginModal> {
       if (!context.mounted) return false;
       
       debugPrint('🔐 Login gestartet für UserType: ${userType.name}');
+      debugPrint('🔍 Selected Service für Login: ${widget.selectedService?['displayName'] ?? 'null'}');
       
-      // Direkte Navigation zum LoginScreen
+      // Direkte Navigation zum LoginScreen mit Service-Daten
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
+          builder: (context) => LoginScreen(selectedService: widget.selectedService),
           settings: RouteSettings(arguments: {'userType': userType}),
         ),
       );

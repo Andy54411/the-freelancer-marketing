@@ -4,9 +4,12 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../models/user_model.dart';
 import '../../widgets/taskilo_place_autocomplete.dart';
+import '../job/task_description_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final Map<String, dynamic>? selectedService; // Optional: Service-Daten für Task-Erstellung
+  
+  const RegisterScreen({super.key, this.selectedService});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -133,11 +136,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registrierung erfolgreich! Bitte bestätigen Sie Ihre E-Mail.'),
+            content: Text('Registrierung erfolgreich! Jetzt können Sie Ihren ersten Auftrag erstellen.'),
             backgroundColor: Color(0xFF14ad9f),
           ),
         );
-        Navigator.of(context).pop();
+        
+        // Nach Registrierung zu Task Description (Step 3) weiterleiten
+        // Verwende echte Service-Daten falls vorhanden, sonst Demo-Daten
+        final serviceData = widget.selectedService ?? {
+          'displayName': 'Demo Service',
+          'category': 'Allgemein',
+          'photoURL': null,
+          'rating': 4.5,
+          'reviewCount': 10,
+        };
+        
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => TaskDescriptionScreen(selectedService: serviceData),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

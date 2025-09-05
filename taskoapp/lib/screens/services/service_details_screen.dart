@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/review_service.dart';
 import '../../services/portfolio_service.dart';
 import '../../components/portfolio_slide_panel.dart';
 import '../../components/auth_navigation.dart';
+import '../job/task_description_screen.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> service;
@@ -1303,35 +1305,126 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
   void _contactProvider() async {
     debugPrint('🛒 "Jetzt buchen" Button geklickt!');
     
-    // Prüfe Authentifizierungsstatus
-    final authService = AuthService();
-    final currentUser = authService.currentUser;
+    // Prüfe Authentifizierungsstatus über Firebase Auth direkt
+    final firebaseUser = FirebaseAuth.instance.currentUser;
     
-    if (currentUser == null) {
-      // User ist nicht eingeloggt - zeige Login Modal mit automatischer Navigation
-      await AuthNavigation.showLoginAndNavigate(
-        context,
-        title: 'Buchung erfordert Anmeldung',
-        description: 'Um eine Buchung vorzunehmen, müssen Sie sich anmelden. Nach dem Login werden Sie automatisch zum passenden Bereich weitergeleitet.',
-      );
+    debugPrint('🔍 Firebase Auth User: ${firebaseUser?.uid ?? "null"}');
+    debugPrint('🔍 Firebase Auth Email: ${firebaseUser?.email ?? "null"}');
+    debugPrint('🔍 Firebase Auth Display Name: ${firebaseUser?.displayName ?? "null"}');
+    
+    if (firebaseUser == null) {
+      debugPrint('❌ User ist nicht eingeloggt (Firebase Auth null) - zeige Login Modal');
+      // User ist nicht eingeloggt - zeige Login Modal, aber mit Service-Daten für später
+      await _showLoginAndProceedWithService();
       return;
     }
     
-    // User ist eingeloggt - navigiere basierend auf UserType
-    debugPrint('✅ User ist eingeloggt - starte Navigation basierend auf UserType');
-    await AuthNavigation.navigateAfterLogin(context);
+    // Zusätzlich prüfen, ob User in Firestore existiert
+    debugPrint('🔍 Prüfe ob User in Firestore existiert: ${firebaseUser.uid}');
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get();
+      
+      debugPrint('🔍 Firestore User Doc exists: ${userDoc.exists}');
+      if (userDoc.exists) {
+        debugPrint('🔍 Firestore User Data: ${userDoc.data()}');
+      }
+      
+      if (!userDoc.exists) {
+        debugPrint('❌ User in Firebase Auth (${firebaseUser.uid}) aber nicht in Firestore - logout und zeige Login Modal');
+        // User existiert nur in Firebase Auth, nicht in Firestore - behandle als nicht eingeloggt
+        await FirebaseAuth.instance.signOut(); // Logout durchführen
+        if (!mounted) return;
+        await _showLoginAndProceedWithService();
+        return;
+      }
+    } catch (e) {
+      debugPrint('❌ Fehler beim Prüfen der User-Daten: $e - zeige Login Modal');
+      if (!mounted) return;
+      await _showLoginAndProceedWithService();
+      return;
+    }
+    
+    // User ist eingeloggt UND existiert in Firestore - direkt zu Task Description mit echten Service-Daten
+    debugPrint('✅ User ist eingeloggt UND in Firestore vorhanden - navigiere zu Task Description mit Service: ${widget.service['displayName']}');
+    _navigateToTaskDescription();
+  }
+
+  /// Zeigt Login Modal und navigiert dann zur Task-Erstellung mit Service-Daten
+  Future<void> _showLoginAndProceedWithService() async {
+    debugPrint('🔍 Service-Daten für Login Modal: ${widget.service['displayName']}');
+    
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AuthLoginModal(
+        title: 'Buchung erfordert Anmeldung',
+        description: 'Um eine Buchung vorzunehmen, müssen Sie sich anmelden oder registrieren.',
+        selectedService: widget.service, // Service-Daten übergeben!
+        onLoginSuccess: () {
+          Navigator.of(context).pop(true);
+        },
+      ),
+    );
+    
+    // Nach erfolgreichem Login zur Task Description mit Service-Daten
+    if (result == true) {
+      _navigateToTaskDescription();
+    }
+  }
+
+  /// Navigiert zur Task Description mit den echten Service-Daten
+  void _navigateToTaskDescription() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TaskDescriptionScreen(selectedService: widget.service),
+      ),
+    );
   }
 
   /// Startet Chat mit Provider
   Future<void> _startChat() async {
     debugPrint('💬 "Chat" Button geklickt!');
     
-    // Prüfe Authentifizierungsstatus
-    final authService = AuthService();
-    final currentUser = authService.currentUser;
+    // Prüfe Authentifizierungsstatus über Firebase Auth direkt
+    final firebaseUser = FirebaseAuth.instance.currentUser;
     
-    if (currentUser == null) {
+    if (firebaseUser == null) {
+      debugPrint('❌ User ist nicht eingeloggt - zeige Login Modal');
       // User ist nicht eingeloggt - zeige Login Modal mit automatischer Navigation
+      await AuthNavigation.showLoginAndNavigate(
+        context,
+        title: 'Chat erfordert Anmeldung',
+        description: 'Um mit Anbietern zu chatten, müssen Sie sich anmelden. Nach dem Login werden Sie automatisch zum passenden Bereich weitergeleitet.',
+      );
+      return;
+    }
+    
+    // Zusätzlich prüfen, ob User in Firestore existiert
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get();
+      
+      if (!userDoc.exists) {
+        debugPrint('❌ User in Firebase Auth aber nicht in Firestore - zeige Login Modal');
+        // User existiert nur in Firebase Auth, nicht in Firestore - behandle als nicht eingeloggt
+        await FirebaseAuth.instance.signOut(); // Logout durchführen
+        if (!mounted) return;
+        await AuthNavigation.showLoginAndNavigate(
+          context,
+          title: 'Chat erfordert Anmeldung',
+          description: 'Um mit Anbietern zu chatten, müssen Sie sich anmelden. Nach dem Login werden Sie automatisch zum passenden Bereich weitergeleitet.',
+        );
+        return;
+      }
+    } catch (e) {
+      debugPrint('❌ Fehler beim Prüfen der User-Daten: $e - zeige Login Modal');
+      if (!mounted) return;
       await AuthNavigation.showLoginAndNavigate(
         context,
         title: 'Chat erfordert Anmeldung',
@@ -1342,6 +1435,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen>
     
     // User ist eingeloggt - navigiere basierend auf UserType
     debugPrint('✅ User ist eingeloggt - starte Navigation basierend auf UserType');
+    if (!mounted) return;
     await AuthNavigation.navigateAfterLogin(context);
   }
 
