@@ -41,7 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       
       if (mounted) {
-        Navigator.of(context).pop(true); // Rückgabe von true für erfolgreichen Login
+        // Navigation zum Dashboard nach erfolgreichem Login
+        Navigator.of(context).pushReplacementNamed('/dashboard');
       }
     } catch (e) {
       if (mounted) {
@@ -388,7 +389,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   await authService.signInWithGoogle();
                                   
                                   if (mounted) {
-                                    navigator.pop(true);
+                                    // Navigation zum Dashboard nach erfolgreichem Google Login
+                                    navigator.pushReplacementNamed('/dashboard');
                                   }
                                 } catch (e) {
                                   if (mounted) {

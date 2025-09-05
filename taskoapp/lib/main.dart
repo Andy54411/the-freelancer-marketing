@@ -11,7 +11,6 @@ import 'models/user_model.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
-import 'screens/discover/discover_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -69,9 +68,8 @@ class TaskiloApp extends StatelessWidget {
         title: 'Taskilo - Service Marktplatz',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
-        home: const DiscoverScreen(),  // Fiverr-Style Landing Page
+        home: const AuthWrapper(),  // Auth-basierte Navigation
         routes: {
-          '/discover': (context) => const DiscoverScreen(),
           '/login': (context) => const LoginScreen(),
           '/home': (context) => const HomeScreen(),
           '/dashboard': (context) => const DashboardScreen(),
@@ -88,12 +86,12 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<TaskiloUser?>();
     
-    // Wenn User eingeloggt ist, zeige HomeScreen
-    // Sonst zeige DiscoverScreen (nicht LoginScreen)
+    // Wenn User eingeloggt ist, zeige Dashboard
+    // Sonst zeige HomeScreen
     if (user != null) {
-      return const HomeScreen();
+      return const DashboardScreen();
     } else {
-      return const DiscoverScreen();
+      return const HomeScreen();
     }
   }
 }

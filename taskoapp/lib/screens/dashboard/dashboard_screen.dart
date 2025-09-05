@@ -117,116 +117,12 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            if (user?.userType == UserType.serviceProvider) ...[
-              // Service Provider Dashboard
-              Text(
-                'Anbieter Statistiken',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              
-              // Stats Grid
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-                  _buildStatCard(
-                    context,
-                    'Bewertung',
-                    user?.profile?.rating?.toStringAsFixed(1) ?? '0.0',
-                    Icons.star,
-                    AppTheme.warningColor,
-                  ),
-                  _buildStatCard(
-                    context,
-                    'Aufträge',
-                    (user?.profile?.completedJobs ?? 0).toString(),
-                    Icons.check_circle,
-                    AppTheme.successColor,
-                  ),
-                  _buildStatCard(
-                    context,
-                    'Services',
-                    '${user?.profile?.skills?.length ?? 0}',
-                    Icons.work,
-                    AppTheme.primaryColor,
-                  ),
-                  _buildStatCard(
-                    context,
-                    'Status',
-                    user?.profile?.isAvailable == true ? 'Aktiv' : 'Inaktiv',
-                    Icons.circle,
-                    user?.profile?.isAvailable == true
-                        ? AppTheme.successColor
-                        : AppTheme.errorColor,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              
-              // Quick Actions
-              Text(
-                'Schnellaktionen',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.edit),
-                      title: const Text('Profil bearbeiten'),
-                      subtitle: const Text('Services und Informationen aktualisieren'),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        // Navigate to edit profile
-                      },
-                    ),
-                    const Divider(),
-                    ListTile(
-                      leading: Icon(
-                        user?.profile?.isAvailable == true
-                            ? Icons.pause_circle
-                            : Icons.play_circle,
-                      ),
-                      title: Text(
-                        user?.profile?.isAvailable == true
-                            ? 'Verfügbarkeit pausieren'
-                            : 'Verfügbarkeit aktivieren',
-                      ),
-                      subtitle: Text(
-                        user?.profile?.isAvailable == true
-                            ? 'Keine neuen Anfragen erhalten'
-                            : 'Neue Anfragen erhalten',
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        // Toggle availability
-                      },
-                    ),
-                    const Divider(),
-                    ListTile(
-                      leading: const Icon(Icons.analytics),
-                      title: const Text('Detaillierte Statistiken'),
-                      subtitle: const Text('Vollständige Leistungsübersicht'),
-                      trailing: const Icon(Icons.arrow_forward_ios),
-                      onTap: () {
-                        // Navigate to analytics
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              // Customer Dashboard
-              Text(
-                'Meine Aktivitäten',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
+            // Customer Dashboard
+            Text(
+              'Meine Aktivitäten',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
               
               Card(
                 child: Padding(
@@ -262,46 +158,6 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    BuildContext context,
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 32,
-              color: color,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
           ],
         ),
       ),

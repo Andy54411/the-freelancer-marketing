@@ -7,7 +7,10 @@ import '../models/user_model.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    // Korrekte OAuth Client ID aus google-services.json verwenden
+    clientId: '1022290879475-ca1lvf8o1sau2f1gakf4qro1ondrfpti.apps.googleusercontent.com',
+  );
 
   // Stream für aktuellen User
   Stream<TaskiloUser?> get userStream {
@@ -176,6 +179,9 @@ class AuthService {
     try {
       debugPrint('🔍 Starte Google Sign-In...');
       
+      // 0. Erst ausloggen falls bereits eingeloggt
+      await _googleSignIn.signOut();
+      
       // 1. Google Sign-In starten
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       
@@ -188,6 +194,14 @@ class AuthService {
       
       // 2. Google Authentication Details abrufen
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      debugPrint('🔑 Access Token: ${googleAuth.accessToken != null ? "✅" : "❌"}');
+      debugPrint('🔑 ID Token: ${googleAuth.idToken != null ? "✅" : "❌"}');
+      
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        debugPrint('❌ Google Auth Tokens sind null');
+        throw 'Google-Authentifizierung fehlgeschlagen: Tokens nicht erhalten';
+      }
       
       // 3. Firebase Credential erstellen
       final credential = GoogleAuthProvider.credential(
@@ -235,10 +249,34 @@ class AuthService {
       return null;
     } on FirebaseAuthException catch (e) {
       debugPrint('❌ Firebase Auth Fehler: ${e.code} - ${e.message}');
+      
+      // Spezielle Behandlung für Google Sign-In Credential-Fehler
+      if (e.code == 'invalid-credential') {
+        // Google Sign-In zurücksetzen und erneut versuchen
+        await _googleSignIn.signOut();
+        throw 'Google-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.';
+      }
+      
       throw _handleAuthException(e);
-    } catch (e) {
-      debugPrint('❌ Google Sign-In Fehler: $e');
+    } on Exception catch (e) {
+      debugPrint('❌ Google Sign-In Exception: $e');
+      
+      // Google Sign-In zurücksetzen bei Fehlern
+      await _googleSignIn.signOut();
+      
+      if (e.toString().contains('network_error')) {
+        throw 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
+      } else if (e.toString().contains('sign_in_cancelled')) {
+        throw 'Google Sign-In wurde abgebrochen.';
+      } else if (e.toString().contains('sign_in_failed')) {
+        throw 'Google Sign-In fehlgeschlagen. Bitte versuchen Sie es erneut.';
+      }
+      
       throw 'Ein Fehler ist bei der Google-Anmeldung aufgetreten: $e';
+    } catch (e) {
+      debugPrint('❌ Unbekannter Google Sign-In Fehler: $e');
+      await _googleSignIn.signOut();
+      throw 'Ein unbekannter Fehler ist bei der Google-Anmeldung aufgetreten: $e';
     }
   }
 
@@ -364,6 +402,12 @@ class AuthService {
         return 'Zu viele Anfragen. Versuchen Sie es später erneut.';
       case 'operation-not-allowed':
         return 'Diese Operation ist nicht erlaubt.';
+      case 'invalid-credential':
+        return 'Die Anmeldedaten sind ungültig oder abgelaufen. Bitte versuchen Sie es erneut.';
+      case 'account-exists-with-different-credential':
+        return 'Ein Konto mit dieser E-Mail existiert bereits mit anderen Anmeldedaten.';
+      case 'credential-already-in-use':
+        return 'Diese Anmeldedaten werden bereits von einem anderen Konto verwendet.';
       case 'internal-error':
         return 'Firebase Interner Fehler - Konfigurationsproblem erkannt. Details: ${e.message}';
       default:
