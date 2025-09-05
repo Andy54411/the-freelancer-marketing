@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../dashboard/dashboard_user/home_screen.dart';
 import '../../utils/constants.dart';
 import '../../services/payment_service.dart';
 
@@ -631,7 +631,7 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
                   // Zum Dashboard navigieren (Step 5)
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
-                      builder: (context) => const DashboardScreen(),
+                      builder: (context) => const HomeScreen(),
                     ),
                     (route) => false, // Alle vorherigen Routen entfernen
                   );

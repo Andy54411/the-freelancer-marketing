@@ -9,8 +9,8 @@ import 'services/payment_service.dart';
 import 'services/firebase_functions_service.dart';
 import 'models/user_model.dart';
 import 'screens/auth/login_screen.dart';
-import 'screens/home/home_screen.dart';
-import 'screens/dashboard/dashboard_screen.dart';
+import 'screens/startseite/start_screen.dart';
+import 'screens/dashboard/dashboard_user/home_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -71,8 +71,9 @@ class TaskiloApp extends StatelessWidget {
         home: const AuthWrapper(),  // Auth-basierte Navigation
         routes: {
           '/login': (context) => const LoginScreen(),
-          '/home': (context) => const HomeScreen(),
-          '/dashboard': (context) => const DashboardScreen(),
+          '/home': (context) => const DiscoverScreen(),
+          '/discover': (context) => const DiscoverScreen(),
+          '/dashboard': (context) => const HomeScreen(),
         },
       ),
     );
@@ -86,12 +87,16 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<TaskiloUser?>();
     
+    debugPrint('AUTH_WRAPPER: User = ${user != null ? "EINGELOGGT (${user.email})" : "AUSGELOGGT"}');
+    
     // Wenn User eingeloggt ist, zeige Dashboard
-    // Sonst zeige HomeScreen
+    // Sonst zeige DiscoverScreen (Startseite)
     if (user != null) {
-      return const DashboardScreen();
-    } else {
+      debugPrint('AUTH_WRAPPER: Zeige HomeScreen (Dashboard)');
       return const HomeScreen();
+    } else {
+      debugPrint('AUTH_WRAPPER: Zeige DiscoverScreen');
+      return const DiscoverScreen();
     }
   }
 }

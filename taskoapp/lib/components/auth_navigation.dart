@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import '../screens/dashboard/dashboard_screen.dart';
+import '../screens/dashboard/dashboard_user/home_screen.dart';
 import '../screens/auth/login_screen.dart';
 
 class AuthNavigation {
@@ -28,7 +28,7 @@ class AuthNavigation {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const DashboardScreen(),
+              builder: (context) => const HomeScreen(),
             ),
           );
           debugPrint('✅ User navigiert zu User Dashboard');
@@ -39,7 +39,7 @@ class AuthNavigation {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const DashboardScreen(),
+              builder: (context) => const HomeScreen(),
             ),
           );
           debugPrint('✅ Company navigiert zu Company Dashboard');
@@ -50,7 +50,7 @@ class AuthNavigation {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const DashboardScreen(),
+              builder: (context) => const HomeScreen(),
             ),
           );
           debugPrint('✅ Admin navigiert zu Admin Dashboard');
@@ -64,7 +64,7 @@ class AuthNavigation {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const DashboardScreen(),
+          builder: (context) => const HomeScreen(),
         ),
       );
     }

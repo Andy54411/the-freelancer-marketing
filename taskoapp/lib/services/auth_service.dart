@@ -15,14 +15,21 @@ class AuthService {
   // Stream für aktuellen User
   Stream<TaskiloUser?> get userStream {
     return _auth.authStateChanges().asyncMap((firebaseUser) async {
-      if (firebaseUser == null) return null;
+      debugPrint('AUTH_SERVICE: authStateChanged - firebaseUser = ${firebaseUser != null ? "VORHANDEN (${firebaseUser.email})" : "NULL"}');
+      
+      if (firebaseUser == null) {
+        debugPrint('AUTH_SERVICE: Kein User - return null');
+        return null;
+      }
       
       // Lade User-Daten aus Firestore
       final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
       
       if (userDoc.exists) {
+        debugPrint('AUTH_SERVICE: User-Dokument gefunden - TaskiloUser erstellt');
         return TaskiloUser.fromFirestore(userDoc);
       } else {
+        debugPrint('AUTH_SERVICE: User-Dokument nicht gefunden - erstelle neues');
         // Erstelle neuen User in Firestore wenn noch nicht vorhanden
         final newUser = TaskiloUser.fromFirebaseUser(firebaseUser);
         await _firestore.collection('users').doc(firebaseUser.uid).set(newUser.toFirestore());
@@ -318,7 +325,14 @@ class AuthService {
 
   // Sign Out
   Future<void> signOut() async {
-    await _auth.signOut();
+    debugPrint('AUTH_SERVICE: signOut() aufgerufen');
+    try {
+      await _auth.signOut();
+      debugPrint('AUTH_SERVICE: Firebase Auth signOut erfolgreich');
+    } catch (e) {
+      debugPrint('AUTH_SERVICE: signOut Fehler: $e');
+      rethrow;
+    }
   }
 
   // Delete Account

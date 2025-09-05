@@ -329,7 +329,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
             'fullAddress': data['result']['formatted_address']?.toString() ?? description,
           };
           
-          print('📤 Google Places Result: $result');
+          debugPrint('Google Places Result: $result');
           widget.onPlaceSelected(result);
           
           return;
@@ -357,7 +357,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
     String country = 'DE';
     
     // Debug-Ausgabe
-    print('🔍 Parsing Address: "$description"');
+    debugPrint('Parsing Address: "$description"');
     
     // Teste verschiedene deutsche Adressformate
     final text = description.trim();
@@ -369,7 +369,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
       postalCode = format1.group(2)!;
       city = format1.group(3)!.trim();
       if (postalCode.length == 4) country = 'AT';
-      print('✅ Format 1 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
+      debugPrint('Format 1 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
     }
     // Format: "Musterstraße 123 12345 Berlin" (ohne Komma)
     else {
@@ -379,7 +379,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         postalCode = format2.group(2)!;
         city = format2.group(3)!.trim();
         if (postalCode.length == 4) country = 'AT';
-        print('✅ Format 2 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
+        debugPrint('Format 2 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
       }
       // Format: "12345 Berlin, Musterstraße 123"
       else {
@@ -389,12 +389,12 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
           city = format3.group(2)!.trim();
           street = format3.group(3)!.trim();
           if (postalCode.length == 4) country = 'AT';
-          print('✅ Format 3 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
+          debugPrint('Format 3 erkannt: Straße="$street", PLZ="$postalCode", Stadt="$city"');
         }
         // Nur Straße eingegeben
         else {
           street = text;
-          print('⚠️ Nur Straße erkannt: "$street"');
+          debugPrint('Nur Straße erkannt: "$street"');
         }
       }
     }
@@ -411,7 +411,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
         if (remaining.isNotEmpty && remaining != street) {
           city = remaining;
         }
-        print('🔍 PLZ-Fallback: PLZ="$postalCode", Remaining="$remaining"');
+        debugPrint('PLZ-Fallback: PLZ="$postalCode", Remaining="$remaining"');
       }
     }
     
@@ -423,7 +423,7 @@ class _TaskiloPlaceAutocompleteState extends State<TaskiloPlaceAutocomplete> {
       'fullAddress': description,
     };
     
-    print('📤 Sende Result: $result');
+    debugPrint('Sende Result: $result');
     widget.onPlaceSelected(result);
   }
 
