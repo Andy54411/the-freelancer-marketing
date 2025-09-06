@@ -167,6 +167,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
+                decoration: TextDecoration.none,
               ),
             ),
           ),
@@ -186,7 +187,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
       height: 250,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -206,10 +207,10 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                   images[index],
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     child: Icon(
                       Icons.image,
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       size: 64,
                     ),
                   ),
@@ -235,7 +236,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                         shape: BoxShape.circle,
                         color: _currentImageIndex == index
                             ? Colors.white
-                            : Colors.white.withOpacity(0.5),
+                            : Colors.white.withValues(alpha: 0.5),
                       ),
                     );
                   }).toList(),
@@ -254,7 +255,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -285,7 +286,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -319,6 +320,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
         color: Colors.white,
         fontSize: 24,
         fontWeight: FontWeight.bold,
+        decoration: TextDecoration.none,
       ),
     );
   }
@@ -327,10 +329,10 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -339,10 +341,11 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
           Text(
             'Beschreibung',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
+              decoration: TextDecoration.none,
             ),
           ),
           const SizedBox(height: 8),
@@ -352,6 +355,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
               color: Colors.white,
               fontSize: 14,
               height: 1.5,
+              decoration: TextDecoration.none,
             ),
           ),
         ],
@@ -384,10 +388,10 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
         ),
       ),
       child: Column(
@@ -396,10 +400,11 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
           Text(
             'Details',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
+              decoration: TextDecoration.none,
             ),
           ),
           const SizedBox(height: 12),
@@ -413,9 +418,10 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                   child: Text(
                     entry.key,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                 ),
@@ -425,6 +431,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
+                      decoration: TextDecoration.none,
                     ),
                   ),
                 ),
