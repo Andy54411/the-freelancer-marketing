@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/user_model.dart';
-import '../../../services/categories_service.dart';
 import '../../../utils/colors.dart';
 import '../dashboard_layout.dart';
 
@@ -318,24 +317,33 @@ class _SearchScreenState extends State<SearchScreen> {
             description.contains(queryLower) ||
             queryLower.isEmpty) {
           
-          // Debug: Profilbild-URL prüfen
-          final profileImageUrl = data['profilePictureURL'] ?? 
-                                 data['profilePictureFirebaseUrl'] ?? 
-                                 data['profileBannerImage'] ?? 
-                                 '';
+          // Versuche verschiedene Bildfelder (auch verschachtelte)
+          final imageUrl = data['profilePictureURL'] ?? 
+                          data['profilePictureFirebaseUrl'] ?? 
+                          data['step3']?['profilePictureURL'] ??
+                          data['step3']?['profileBannerImage'] ??
+                          data['profileBannerImage'] ?? 
+                          data['imageUrl'];
           
-          debugPrint('🖼️ Provider ${data['companyName']}: imageUrl = $profileImageUrl');
-          
-          results.add(SearchResult(
-            title: data['companyName'] ?? 'Unbekannter Anbieter',
-            category: data['selectedSubcategory'] ?? data['selectedCategory'] ?? 'Service',
-            rating: 4.5, // Default bis echte Bewertungen verfügbar
-            price: 'ab ${data['hourlyRate'] ?? 45}€/h',
-            distance: '${(2 + (results.length * 0.5)).toStringAsFixed(1)} km',
-            imageUrl: profileImageUrl,
-            providerId: doc.id,
-            providerData: data,
-          ));
+          debugPrint('🖼️ Provider ${data['companyName']}: imageUrl = $imageUrl');
+          debugPrint('🔍 Alle verfügbaren Bildfelder für ${data['companyName']}:');
+          debugPrint('   - profilePictureURL: ${data['profilePictureURL']}');
+          debugPrint('   - profilePictureFirebaseUrl: ${data['profilePictureFirebaseUrl']}');
+          debugPrint('   - step3.profilePictureURL: ${data['step3']?['profilePictureURL']}');
+          debugPrint('   - step3.profileBannerImage: ${data['step3']?['profileBannerImage']}');
+          debugPrint('   - profileBannerImage: ${data['profileBannerImage']}');
+          debugPrint('   - imageUrl: ${data['imageUrl']}');
+        
+        results.add(SearchResult(
+          title: data['companyName'] ?? 'Unbekannter Anbieter',
+          category: data['selectedSubcategory'] ?? data['selectedCategory'] ?? 'Service',
+          rating: 4.5, // Default bis echte Bewertungen verfügbar
+          price: 'ab ${data['hourlyRate'] ?? 45}€/h',
+          distance: '${(2 + (results.length * 0.5)).toStringAsFixed(1)} km',
+          imageUrl: imageUrl,
+          providerId: doc.id,
+          providerData: data,
+        ));
         }
       }
 
