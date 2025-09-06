@@ -9,21 +9,30 @@ class PortfolioService {
   /// Lädt Portfolio-Items für einen Provider
   static Future<List<Map<String, dynamic>>> getProviderPortfolio(String providerId) async {
     try {
-      debugPrint('🎨 Lade Portfolio für Provider: $providerId');
+      debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Starting load for Provider: $providerId');
       
       // Suche in companies Collection
       final companyDoc = await _firestore.collection('companies').doc(providerId).get();
+      debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Company doc exists: ${companyDoc.exists}');
       
       if (companyDoc.exists) {
         final companyData = companyDoc.data()!;
+        debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Company data keys: ${companyData.keys.toList()}');
+        
         final step3Data = companyData['step3'] as Map<String, dynamic>? ?? {};
+        debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Step3 data: $step3Data');
+        debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Step3 keys: ${step3Data.keys.toList()}');
+        
         final portfolioData = step3Data['portfolio'] as List<dynamic>? ?? [];
+        debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Portfolio data: $portfolioData');
+        debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Portfolio length: ${portfolioData.length}');
         
         if (portfolioData.isNotEmpty) {
           List<Map<String, dynamic>> portfolio = [];
           
           for (int i = 0; i < portfolioData.length; i++) {
             final item = portfolioData[i] as Map<String, dynamic>;
+            debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Processing item $i: $item');
             
             final portfolioItem = {
               'id': item['id']?.toString() ?? i.toString(),
@@ -40,15 +49,22 @@ class PortfolioService {
               ...item,
             };
             
+            debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Created portfolio item: $portfolioItem');
             portfolio.add(portfolioItem);
           }
           
-          debugPrint('✅ ${portfolio.length} Portfolio-Items aus companies geladen');
+          debugPrint('✅ PORTFOLIO SERVICE DEBUG - ${portfolio.length} Portfolio-Items aus companies geladen');
+          debugPrint('✅ PORTFOLIO SERVICE DEBUG - Final portfolio: $portfolio');
           return portfolio;
+        } else {
+          debugPrint('❌ PORTFOLIO SERVICE DEBUG - Portfolio data is empty');
         }
+      } else {
+        debugPrint('❌ PORTFOLIO SERVICE DEBUG - Company document does not exist');
       }
       
       // Fallback: Portfolio aus separater Collection
+      debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Trying fallback: separate portfolio collection');
       final portfolioQuery = await _firestore
           .collection('portfolio')
           .where('providerId', isEqualTo: providerId)
@@ -56,10 +72,12 @@ class PortfolioService {
           .limit(20)
           .get();
 
+      debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Fallback query returned ${portfolioQuery.docs.length} documents');
       List<Map<String, dynamic>> portfolio = [];
       
       for (final doc in portfolioQuery.docs) {
         final data = doc.data();
+        debugPrint('🎨 PORTFOLIO SERVICE DEBUG - Fallback doc ${doc.id}: $data');
         
         final portfolioItem = {
           'id': doc.id,
@@ -79,7 +97,8 @@ class PortfolioService {
         portfolio.add(portfolioItem);
       }
       
-      debugPrint('✅ ${portfolio.length} Portfolio-Items aus separater Collection geladen');
+      debugPrint('✅ PORTFOLIO SERVICE DEBUG - ${portfolio.length} Portfolio-Items aus separater Collection geladen');
+      debugPrint('✅ PORTFOLIO SERVICE DEBUG - Final fallback portfolio: $portfolio');
       return portfolio;
       
     } catch (e) {

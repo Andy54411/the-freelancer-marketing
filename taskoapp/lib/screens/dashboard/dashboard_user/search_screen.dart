@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/user_model.dart';
 import '../../../utils/colors.dart';
 import '../dashboard_layout.dart';
+import 'provider_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -17,7 +18,6 @@ class _SearchScreenState extends State<SearchScreen> {
   String _searchTerm = '';
   bool _isSearching = false;
   List<SearchResult> _searchResults = [];
-  String? _selectedCategory; // Für die Sidebar
 
   final List<String> _recentSearches = [
     'Handwerker',
@@ -418,9 +418,6 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildCategoryCard(CategoryItem category) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedCategory = category.name;
-        });
         _showSubcategorySidebar(category.name);
       },
       child: Container(
@@ -738,6 +735,17 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildResultCard(SearchResult result) {
     return DashboardCard(
       margin: const EdgeInsets.only(bottom: 12),
+      onTap: () {
+        // Navigation zur Provider-Detail-Seite
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProviderDetailScreen(
+              providerData: result.providerData ?? {},
+            ),
+          ),
+        );
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
