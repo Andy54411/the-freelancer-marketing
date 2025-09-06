@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../utils/colors.dart';
 import 'components/dashboard_footer.dart';
+import 'dashboard_user/my_orders_screen.dart';
+import 'dashboard_user/search_screen.dart';
 
 class DashboardLayout extends StatefulWidget {
   final String title;
@@ -52,13 +54,19 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       case 0: // Home Icon
         Navigator.of(context).pushNamedAndRemoveUntil('/dashboard', (route) => false);
         break;
-      case 1: // Work Icon - Services
-        // Navigation zu Services Screen
-        print('Services Tab geklickt');
+      case 1: // Work Icon - Meine Aufträge
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const MyOrdersScreen(),
+          ),
+        );
         break;
       case 2: // Search Icon
-        // Navigation zu Search Screen oder Search-Dialog öffnen
-        print('Search Tab geklickt');
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const SearchScreen(),
+          ),
+        );
         break;
       case 3: // Mail Icon - Posteingang
         // Navigation zu Messages/Posteingang Screen
