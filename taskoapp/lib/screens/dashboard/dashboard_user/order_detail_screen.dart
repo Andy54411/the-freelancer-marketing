@@ -194,7 +194,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: TaskiloColors.getStatusColor(_order!.status).withOpacity(0.1),
+                          color: TaskiloColors.getStatusColor(_order!.status).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(

@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return DashboardLayout(
       title: 'Willkommen, ${user.displayName ?? 'Benutzer'}!',
       useGradientBackground: true,
-      showFooter: true,
+      showFooter: false, // PageView braucht keine ScrollView
       actions: [
         IconButton(
           icon: const Icon(Icons.logout, color: Colors.white),

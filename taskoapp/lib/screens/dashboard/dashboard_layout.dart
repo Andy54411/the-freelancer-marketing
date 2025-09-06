@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../utils/colors.dart';
-import 'components/dashboard_footer.dart';
 import 'dashboard_user/my_orders_screen.dart';
 import 'dashboard_user/search_screen.dart';
 
@@ -69,12 +68,16 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         );
         break;
       case 3: // Mail Icon - Posteingang
-        // Navigation zu Messages/Posteingang Screen
-        print('Posteingang Tab geklickt');
+        // TODO: Navigation zu Messages/Posteingang Screen implementieren
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Posteingang wird bald verfügbar sein')),
+        );
         break;
       case 4: // Person Icon - Profil
-        // Navigation zu Profile Screen
-        print('Profil Tab geklickt');
+        // TODO: Navigation zu Profile Screen implementieren
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil wird bald verfügbar sein')),
+        );
         break;
     }
   }
@@ -107,15 +110,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
               Expanded(
                 child: widget.showFooter
                   ? SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.6,
-                            child: widget.body,
-                          ),
-                          const DashboardFooter(),
-                        ],
-                      ),
+                      child: widget.body,
                     )
                   : widget.body,
               ),
@@ -170,7 +165,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -207,7 +202,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -295,17 +290,17 @@ class DashboardCard extends StatelessWidget {
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isGlassEffect 
-            ? Colors.white.withOpacity(0.15)
+            ? Colors.white.withValues(alpha: 0.15)
             : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: isGlassEffect 
-            ? Border.all(color: Colors.white.withOpacity(0.2), width: 1)
+            ? Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1)
             : null,
         boxShadow: [
           BoxShadow(
             color: isGlassEffect 
-                ? Colors.black.withOpacity(0.1)
-                : Colors.black.withOpacity(0.06),
+                ? Colors.black.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.06),
             blurRadius: isGlassEffect ? 20 : 12,
             offset: const Offset(0, 8),
           ),
