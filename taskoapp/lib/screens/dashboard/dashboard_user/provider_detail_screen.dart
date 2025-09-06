@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../dashboard_layout.dart';
-import '../../../utils/colors.dart';
 import '../../../services/portfolio_service.dart';
-import '../../../components/portfolio_slide_panel.dart';
+import 'components/provider_portfolio_panel.dart';
 
 class ProviderDetailScreen extends StatefulWidget {
   final Map<String, dynamic> providerData;
@@ -37,7 +36,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadFullProviderData();
-    final userId = widget.providerData['id'] ?? widget.providerData['userId'];
+    final userId = widget.providerData['id'] ?? widget.providerData['userId'] ?? widget.providerData['uid'];
     debugPrint('🔍 INIT DEBUG - Provider Data: ${widget.providerData}');
     debugPrint('🔍 INIT DEBUG - Extracted userId: $userId');
     if (userId != null) {
@@ -56,7 +55,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen>
 
   Future<void> _loadFullProviderData() async {
     try {
-      final userId = widget.providerData['id'] ?? widget.providerData['userId'];
+      final userId = widget.providerData['id'] ?? widget.providerData['userId'] ?? widget.providerData['uid'];
       debugPrint('🔍 FULL DATA DEBUG - Loading full data for userId: $userId');
       if (userId != null) {
         final doc = await FirebaseFirestore.instance
@@ -466,7 +465,7 @@ class _ProviderDetailScreenState extends State<ProviderDetailScreen>
         ),
         
         // Portfolio Slide Panel über alles
-        PortfolioSlidePanel(
+        ProviderPortfolioPanel(
           portfolioItem: _selectedPortfolioItem,
           isVisible: _showPortfolioPanel,
           onClose: _hidePortfolioDetail,
