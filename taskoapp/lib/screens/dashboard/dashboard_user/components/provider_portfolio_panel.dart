@@ -21,7 +21,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   int _currentImageIndex = 0;
-  PageController _pageController = PageController();
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -45,7 +45,9 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
     if (widget.isVisible && !oldWidget.isVisible) {
       _slideController.forward();
       _currentImageIndex = 0;
-      _pageController = PageController();
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
     } else if (!widget.isVisible && oldWidget.isVisible) {
       _slideController.reverse();
     }
@@ -94,14 +96,14 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
       child: SlideTransition(
         position: _slideAnimation,
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF14ad9f),
-                const Color(0xFF0d9488),
-                const Color(0xFF2563eb),
+                Color(0xFF14ad9f),
+                Color(0xFF0d9488),
+                Color(0xFF2563eb),
               ],
             ),
           ),
@@ -184,7 +186,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
       height: 250,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withOpacity(0.1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -204,10 +206,10 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                   images[index],
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withOpacity(0.1),
                     child: Icon(
                       Icons.image,
-                      color: Colors.white.withValues(alpha: 0.6),
+                      color: Colors.white.withOpacity(0.6),
                       size: 64,
                     ),
                   ),
@@ -233,7 +235,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                         shape: BoxShape.circle,
                         color: _currentImageIndex == index
                             ? Colors.white
-                            : Colors.white.withValues(alpha: 0.5),
+                            : Colors.white.withOpacity(0.5),
                       ),
                     );
                   }).toList(),
@@ -252,7 +254,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Colors.black.withOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -283,7 +285,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
+                        color: Colors.black.withOpacity(0.3),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -325,10 +327,10 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: Colors.white.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -337,7 +339,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
           Text(
             'Beschreibung',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white.withOpacity(0.8),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
@@ -382,10 +384,10 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
+        color: Colors.white.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: Colors.white.withOpacity(0.2),
         ),
       ),
       child: Column(
@@ -394,7 +396,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
           Text(
             'Details',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white.withOpacity(0.8),
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
@@ -411,7 +413,7 @@ class _ProviderPortfolioPanelState extends State<ProviderPortfolioPanel>
                   child: Text(
                     entry.key,
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
+                      color: Colors.white.withOpacity(0.7),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
