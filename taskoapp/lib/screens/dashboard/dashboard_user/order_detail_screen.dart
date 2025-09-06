@@ -60,6 +60,64 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return '${date.day}.${date.month}.${date.year}';
   }
 
+  Color _getStatusBackgroundColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'PAYMENT_PENDING':
+        return Colors.amber.shade100;
+      case 'ACTIVE':
+      case 'AKTIV':
+      case 'IN_PROGRESS':
+        return Colors.blue.shade100;
+      case 'COMPLETED':
+      case 'ABGESCHLOSSEN':
+        return Colors.green.shade100;
+      case 'CANCELLED':
+      case 'STORNIERT':
+        return Colors.red.shade100;
+      default:
+        return Colors.grey.shade100;
+    }
+  }
+
+  Color _getStatusTextColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'PAYMENT_PENDING':
+        return Colors.amber.shade700;
+      case 'ACTIVE':
+      case 'AKTIV':
+      case 'IN_PROGRESS':
+        return Colors.blue.shade700;
+      case 'COMPLETED':
+      case 'ABGESCHLOSSEN':
+        return Colors.green.shade700;
+      case 'CANCELLED':
+      case 'STORNIERT':
+        return Colors.red.shade700;
+      default:
+        return Colors.grey.shade700;
+    }
+  }
+
+  String _getStatusDisplayText(String status) {
+    switch (status.toUpperCase()) {
+      case 'PAYMENT_PENDING':
+        return 'PAYMENT_PENDING';
+      case 'ACTIVE':
+      case 'AKTIV':
+        return 'AKTIV';
+      case 'IN_PROGRESS':
+        return 'IN BEARBEITUNG';
+      case 'COMPLETED':
+      case 'ABGESCHLOSSEN':
+        return 'ABGESCHLOSSEN';
+      case 'CANCELLED':
+      case 'STORNIERT':
+        return 'STORNIERT';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TaskiloUser?>(
@@ -171,56 +229,90 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         children: [
           // Order Header Card
           Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
+            elevation: 8,
+            shadowColor: Colors.black.withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    Colors.grey.shade50,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Service Title und Status
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          _order!.selectedSubcategory,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: TaskiloColors.primary,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _order!.selectedSubcategory,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: TaskiloColors.primary,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '2',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: TaskiloColors.primary,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: TaskiloColors.getStatusColor(_order!.status).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
+                          color: _getStatusBackgroundColor(_order!.status),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          TaskiloColors.getStatusDisplayText(_order!.status),
+                          _getStatusDisplayText(_order!.status),
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: TaskiloColors.getStatusColor(_order!.status),
+                            color: _getStatusTextColor(_order!.status),
+                            decoration: TextDecoration.none,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
                   
-                  // Price
+                  const SizedBox(height: 24),
+                  
+                  // Preis prominent anzeigen
                   Row(
                     children: [
-                      const Icon(Icons.euro, color: TaskiloColors.primary, size: 20),
+                      Icon(Icons.euro_rounded, 
+                           color: Colors.green.shade600, 
+                           size: 28),
                       const SizedBox(width: 8),
                       Text(
                         _formatPrice(_order!.totalAmountPaidByBuyerInCents, _order!.currency),
-                        style: const TextStyle(
-                          fontSize: 20,
+                        style: TextStyle(
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: Colors.green.shade700,
+                          decoration: TextDecoration.none,
                         ),
                       ),
                     ],
@@ -234,25 +326,46 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
           // Order Details Card
           Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
+            elevation: 6,
+            shadowColor: Colors.black.withValues(alpha: 0.1),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Auftragsdetails',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: TaskiloColors.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: TaskiloColors.primary,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Auftragsdetails',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: TaskiloColors.textPrimary,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   
                   _buildDetailRow('Auftrag-ID', _order!.id),
-                  _buildDetailRow('Anbieter', _order!.providerName),
+                  if (_order!.providerName.isNotEmpty)
+                    _buildDetailRow('Anbieter', _order!.providerName),
                   if (_order!.projectName != null && _order!.projectName!.isNotEmpty)
                     _buildDetailRow('Projekt', _order!.projectName!),
                   _buildDetailRow('Bestellt am', _formatDate(_order!.paidAt)),
@@ -262,43 +375,99 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           // Action Buttons
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Chat öffnen
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Chat-Funktion wird implementiert')),
-                    );
-                  },
-                  icon: const Icon(Icons.chat),
-                  label: const Text('Chat öffnen'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: TaskiloColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [TaskiloColors.primary, Color(0xFF0d9488)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: TaskiloColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // Chat öffnen - Navigation zur Chat-Seite
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Chat wird geöffnet...')),
+                      );
+                    },
+                    icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                    label: const Text(
+                      'Chat öffnen',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Support kontaktieren
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Support wird kontaktiert')),
-                    );
-                  },
-                  icon: const Icon(Icons.help),
-                  label: const Text('Support'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: TaskiloColors.primary,
-                    side: const BorderSide(color: TaskiloColors.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: TaskiloColors.primary,
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.2),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      // Support kontaktieren
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Support wird kontaktiert...'),
+                          backgroundColor: TaskiloColors.primary,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.help_outline, size: 20),
+                    label: const Text(
+                      'Support',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: TaskiloColors.primary,
+                      backgroundColor: Colors.white,
+                      side: BorderSide.none,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -310,22 +479,33 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 100,
             child: Text(
               '$label:',
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w500,
                 color: TaskiloColors.textSecondary,
+                decoration: TextDecoration.none,
               ),
             ),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               value,
@@ -333,6 +513,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: TaskiloColors.textPrimary,
+                decoration: TextDecoration.none,
               ),
             ),
           ),
