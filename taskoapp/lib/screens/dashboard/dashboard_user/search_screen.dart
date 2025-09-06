@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/user_model.dart';
+import '../../../services/categories_service.dart';
 import '../../../utils/colors.dart';
 import '../dashboard_layout.dart';
 
@@ -252,7 +254,7 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  void _performSearch(String query) {
+  void _performSearch(String query) async {
     if (query.trim().isEmpty) {
       setState(() {
         _searchResults = [];
@@ -266,45 +268,84 @@ class _SearchScreenState extends State<SearchScreen> {
       _searchTerm = query;
     });
 
-    // Simuliere Search-Delay
-    Future.delayed(const Duration(milliseconds: 800), () {
+    try {
+      // Echte Firebase-Suche nach Providern
+      final results = await _searchProviders(query);
+      
       if (mounted) {
         setState(() {
-          _searchResults = _mockSearchResults(query);
+          _searchResults = results;
           _isSearching = false;
         });
       }
-    });
+    } catch (e) {
+      debugPrint('Fehler bei der Suche: $e');
+      if (mounted) {
+        setState(() {
+          _searchResults = [];
+          _isSearching = false;
+        });
+      }
+    }
   }
 
-  List<SearchResult> _mockSearchResults(String query) {
-    // Mock-Daten für Demonstration
-    return [
-      SearchResult(
-        title: 'Professionelle Haushaltsreinigung',
-        category: 'Reinigung',
-        rating: 4.8,
-        price: 'ab 25€/h',
-        distance: '2.1 km',
-        imageUrl: null,
-      ),
-      SearchResult(
-        title: 'Zuverlässiger Elektriker Service',
-        category: 'Handwerk',
-        rating: 4.9,
-        price: 'ab 65€/h',
-        distance: '3.5 km',
-        imageUrl: null,
-      ),
-      SearchResult(
-        title: 'Garten- und Landschaftsbau',
-        category: 'Garten',
-        rating: 4.7,
-        price: 'ab 45€/h',
-        distance: '1.8 km',
-        imageUrl: null,
-      ),
-    ];
+  Future<List<SearchResult>> _searchProviders(String query) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final queryLower = query.toLowerCase();
+      
+      // Suche NUR in companies Collection 
+      final companiesQuery = await firestore
+          .collection('companies')
+          .limit(50)
+          .get();
+
+      final List<SearchResult> results = [];
+
+      for (final doc in companiesQuery.docs) {
+        final data = doc.data();
+        
+        // Filtere nach Suchbegriff in verschiedenen Feldern
+        final companyName = (data['companyName'] ?? '').toLowerCase();
+        final selectedCategory = (data['selectedCategory'] ?? '').toLowerCase();
+        final selectedSubcategory = (data['selectedSubcategory'] ?? '').toLowerCase();
+        final description = (data['description'] ?? '').toLowerCase();
+        
+        // Suche in mehreren Feldern
+        if (companyName.contains(queryLower) || 
+            selectedCategory.contains(queryLower) ||
+            selectedSubcategory.contains(queryLower) ||
+            description.contains(queryLower) ||
+            queryLower.isEmpty) {
+          
+          // Debug: Profilbild-URL prüfen
+          final profileImageUrl = data['profilePictureURL'] ?? 
+                                 data['profilePictureFirebaseUrl'] ?? 
+                                 data['profileBannerImage'] ?? 
+                                 '';
+          
+          debugPrint('🖼️ Provider ${data['companyName']}: imageUrl = $profileImageUrl');
+          
+          results.add(SearchResult(
+            title: data['companyName'] ?? 'Unbekannter Anbieter',
+            category: data['selectedSubcategory'] ?? data['selectedCategory'] ?? 'Service',
+            rating: 4.5, // Default bis echte Bewertungen verfügbar
+            price: 'ab ${data['hourlyRate'] ?? 45}€/h',
+            distance: '${(2 + (results.length * 0.5)).toStringAsFixed(1)} km',
+            imageUrl: profileImageUrl,
+            providerId: doc.id,
+            providerData: data,
+          ));
+        }
+      }
+
+      debugPrint('🔍 Gefunden: ${results.length} Provider für "$query" in companies collection');
+      return results;
+      
+    } catch (e) {
+      debugPrint('❌ Fehler bei Firebase-Suche: $e');
+      return [];
+    }
   }
 
   @override
@@ -694,6 +735,29 @@ class _SearchScreenState extends State<SearchScreen> {
         children: [
           Row(
             children: [
+              // Profilbild
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withValues(alpha: 0.2),
+                ),
+                child: _hasValidImageUrl(result.imageUrl)
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          result.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint('❌ Bild-Ladefehler für ${result.title}: $error');
+                            return _buildDefaultProfileImage();
+                          },
+                        ),
+                      )
+                    : _buildDefaultProfileImage(),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -714,6 +778,30 @@ class _SearchScreenState extends State<SearchScreen> {
                         color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    // Skills anzeigen
+                    if (result.providerData?['skills'] != null)
+                      Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: (result.providerData!['skills'] as List)
+                            .take(3)
+                            .map((skill) => Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    skill.toString(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                      ),
                   ],
                 ),
               ),
@@ -757,11 +845,80 @@ class _SearchScreenState extends State<SearchScreen> {
                   color: Colors.white.withValues(alpha: 0.7),
                 ),
               ),
+              const Spacer(),
+              // Sprachen anzeigen
+              if (result.providerData?['languages'] != null)
+                Row(
+                  children: [
+                    Icon(Icons.language, size: 14, color: Colors.white.withValues(alpha: 0.7)),
+                    const SizedBox(width: 4),
+                    Text(
+                      (result.providerData!['languages'] as List)
+                          .take(2)
+                          .map((lang) => lang['language'] ?? lang.toString())
+                          .join(', '),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
+          // Beschreibung (erste Zeile)
+          if (result.providerData?['description'] != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              result.providerData!['description'],
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.8),
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  Widget _buildDefaultProfileImage() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF14ad9f).withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        Icons.business,
+        color: Colors.white.withValues(alpha: 0.8),
+        size: 24,
+      ),
+    );
+  }
+
+  bool _hasValidImageUrl(String? imageUrl) {
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return false;
+    }
+    
+    // Blob-URLs sind ungültig für Flutter
+    if (imageUrl.startsWith('blob:')) {
+      debugPrint('🚫 Blob-URL erkannt und ignoriert: $imageUrl');
+      return false;
+    }
+    
+    // Nur echte HTTP/HTTPS URLs akzeptieren
+    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+      debugPrint('🚫 Ungültige URL erkannt: $imageUrl');
+      return false;
+    }
+    
+    return true;
   }
 }
 
@@ -772,6 +929,8 @@ class SearchResult {
   final String price;
   final String distance;
   final String? imageUrl;
+  final String? providerId;
+  final Map<String, dynamic>? providerData;
 
   SearchResult({
     required this.title,
@@ -780,6 +939,8 @@ class SearchResult {
     required this.price,
     required this.distance,
     this.imageUrl,
+    this.providerId,
+    this.providerData,
   });
 }
 
