@@ -63,10 +63,13 @@ service cloud.firestore {
       // KORRIGIERT: Die gesamte Logik muss in einem einzigen return-Statement sein.
       // Der exists()-Check verhindert, dass get() auf ein nicht-existierendes Dokument zugreift.
       // Der 'in'-Check verhindert den Zugriff auf ein nicht-existierendes Feld.
+      // ERWEITERT: Support für beide customerFirebaseUid und kundeId (legacy compatibility)
       return exists(/databases/$(database)/documents/auftraege/$(auftragId)) &&
              (
                ('kundeId' in get(/databases/$(database)/documents/auftraege/$(auftragId)).data &&
                 get(/databases/$(database)/documents/auftraege/$(auftragId)).data.kundeId == request.auth.uid) ||
+               ('customerFirebaseUid' in get(/databases/$(database)/documents/auftraege/$(auftragId)).data &&
+                get(/databases/$(database)/documents/auftraege/$(auftragId)).data.customerFirebaseUid == request.auth.uid) ||
                ('selectedAnbieterId' in get(/databases/$(database)/documents/auftraege/$(auftragId)).data &&
                 get(/databases/$(database)/documents/auftraege/$(auftragId)).data.selectedAnbieterId == request.auth.uid)
              );
