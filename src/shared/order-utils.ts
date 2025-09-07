@@ -23,6 +23,23 @@ export interface OrderData {
   paidAt?: string;
   clearingPeriodEndsAt?: string;
   paymentIntentId?: string;
+  timeTracking?: {
+    originalPlannedHours?: number;
+    timeEntries?: Array<{
+      id: string;
+      userId: string;
+      userName: string;
+      startTime: string;
+      endTime: string;
+      duration: number;
+      description: string;
+      category: 'original' | 'additional';
+      status: 'pending' | 'approved' | 'rejected';
+      submittedAt: string;
+      reviewedAt?: string;
+      reviewedBy?: string;
+    }>;
+  };
   [key: string]: any;
 }
 

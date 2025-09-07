@@ -61,6 +61,23 @@ interface OrderData {
   jobDateFrom?: string;
   jobDateTo?: string;
   jobTimePreference?: string;
+  timeTracking?: {
+    originalPlannedHours?: number;
+    timeEntries?: Array<{
+      id: string;
+      userId: string;
+      userName: string;
+      startTime: string;
+      endTime: string;
+      duration: number;
+      description: string;
+      category: 'original' | 'additional';
+      status: 'pending' | 'approved' | 'rejected';
+      submittedAt: string;
+      reviewedAt?: string;
+      reviewedBy?: string;
+    }>;
+  };
 }
 
 export default function CompanyOrderDetailPage() {
@@ -674,6 +691,7 @@ export default function CompanyOrderDetailPage() {
                 orderId={orderId}
                 className=""
                 onPaymentRequest={!isViewerProvider ? handleOpenPayment : undefined}
+                isCustomerView={!isViewerProvider}
               />
 
               {/* Time Tracking für aktive Aufträge */}
@@ -686,7 +704,21 @@ export default function CompanyOrderDetailPage() {
                     orderId={orderId}
                     customerName={order.customerName}
                     originalPlannedHours={(() => {
-                      // FESTANGEBOT: Verwende die gleiche Logik wie die Dauer-Anzeige
+                      // BESSERE LOGIK: Verwende timeTracking.originalPlannedHours aus Firebase, falls verfügbar
+
+                      // 1. Prüfe, ob bereits in Firebase timeTracking gespeichert
+                      if (
+                        order.timeTracking?.originalPlannedHours &&
+                        order.timeTracking.originalPlannedHours > 0
+                      ) {
+                        console.log(
+                          '🎯 Verwende Firebase timeTracking.originalPlannedHours:',
+                          order.timeTracking.originalPlannedHours
+                        );
+                        return order.timeTracking.originalPlannedHours;
+                      }
+
+                      // 2. FESTANGEBOT: Verwende die gleiche Logik wie die Dauer-Anzeige
                       if (
                         order.jobDateFrom &&
                         order.jobDateTo &&
@@ -699,18 +731,42 @@ export default function CompanyOrderDetailPage() {
                             (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
                           ) + 1;
                         const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
-                        return totalDays * hoursPerDay;
+                        const calculatedHours = totalDays * hoursPerDay;
+                        console.log(
+                          '📅 Mehrtägiger Auftrag:',
+                          totalDays,
+                          'Tage x',
+                          hoursPerDay,
+                          'h =',
+                          calculatedHours,
+                          'h'
+                        );
+                        return calculatedHours;
                       } else {
-                        // FESTANGEBOT: Verwende jobDurationString, nicht jobTotalCalculatedHours
-                        if (order.jobDurationString && order.jobDurationString !== '0') {
-                          return parseFloat(String(order.jobDurationString));
+                        // 3. Versuche jobDurationString zu parsen (nur wenn es eine gültige Zahl ist)
+                        const durationNumber = parseFloat(String(order.jobDurationString || '0'));
+                        if (!isNaN(durationNumber) && durationNumber > 0) {
+                          console.log('⏰ Verwende jobDurationString:', durationNumber, 'h');
+                          return durationNumber;
                         }
-                        return 8; // Festangebot Standard
+
+                        // 4. Fallback: 8h für Festangebote (Standard)
+                        console.log('🔄 Fallback: 8h Festangebot Standard');
+                        return 8;
                       }
                     })()}
                     hourlyRate={(() => {
-                      // FESTANGEBOT: Berechne echten Stundensatz aus Preis und geplanten Stunden
+                      // BESSERE LOGIK: Verwende die gleiche originalPlannedHours Berechnung für Konsistenz
                       const plannedHours = (() => {
+                        // 1. Prüfe, ob bereits in Firebase timeTracking gespeichert
+                        if (
+                          order.timeTracking?.originalPlannedHours &&
+                          order.timeTracking.originalPlannedHours > 0
+                        ) {
+                          return order.timeTracking.originalPlannedHours;
+                        }
+
+                        // 2. FESTANGEBOT: Verwende die gleiche Logik wie die Dauer-Anzeige
                         if (
                           order.jobDateFrom &&
                           order.jobDateTo &&
@@ -725,20 +781,35 @@ export default function CompanyOrderDetailPage() {
                           const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
                           return totalDays * hoursPerDay;
                         } else {
-                          // FESTANGEBOT: Verwende jobDurationString, nicht jobTotalCalculatedHours
-                          if (order.jobDurationString && order.jobDurationString !== '0') {
-                            return parseFloat(String(order.jobDurationString));
+                          // 3. Versuche jobDurationString zu parsen (nur wenn es eine gültige Zahl ist)
+                          const durationNumber = parseFloat(String(order.jobDurationString || '0'));
+                          if (!isNaN(durationNumber) && durationNumber > 0) {
+                            return durationNumber;
                           }
-                          return 8; // Festangebot Standard
+
+                          // 4. Fallback: 8h für Festangebote (Standard)
+                          return 8;
                         }
                       })();
 
                       // Echter Stundensatz: Gesamtpreis ÷ geplante Stunden
-                      return plannedHours > 0 ? order.priceInCents / 100 / plannedHours : 50;
+                      const calculatedRate =
+                        plannedHours > 0 ? order.priceInCents / 100 / plannedHours : 50;
+                      console.log(
+                        '💰 Stundensatz berechnet:',
+                        order.priceInCents / 100,
+                        '€ ÷',
+                        plannedHours,
+                        'h =',
+                        calculatedRate.toFixed(2),
+                        '€/h'
+                      );
+                      return calculatedRate;
                     })()}
                     onTimeSubmitted={() => {
                       // Optional: Reload order data or show success message
                     }}
+                    isCustomerView={!isViewerProvider} // Kunde wenn nicht Provider
                   />
                 </div>
               )}

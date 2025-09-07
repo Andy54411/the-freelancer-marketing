@@ -540,8 +540,27 @@ export default function OrderDetailPage() {
                       <span
                         className={`font-semibold ${order.status === 'bezahlt' || order.status === 'zahlung_erhalten_clearing' ? 'text-green-600' : 'text-yellow-600'}`}
                       >
-                        {order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
-                          order.status?.replace(/_/g, ' ').slice(1)}
+                        {(() => {
+                          const status = order.status?.toLowerCase();
+                          switch (status) {
+                            case 'aktiv':
+                              return '🔄 AKTIV';
+                            case 'offen':
+                              return '📝 OFFEN';
+                            case 'bezahlt':
+                            case 'zahlung_erhalten_clearing':
+                              return '✅ BEZAHLT';
+                            case 'abgebrochen':
+                              return '❌ ABGEBROCHEN';
+                            case 'abgeschlossen':
+                              return '🎯 ABGESCHLOSSEN';
+                            default:
+                              return (
+                                order.status?.replace(/_/g, ' ').charAt(0).toUpperCase() +
+                                order.status?.replace(/_/g, ' ').slice(1)
+                              );
+                          }
+                        })()}
                       </span>
                     </p>
                     <p>
@@ -595,10 +614,44 @@ export default function OrderDetailPage() {
                       <strong>Gesamtpreis:</strong> {(order.priceInCents / 100).toFixed(2)} EUR
                     </p>
                     <p>
-                      <strong>Datum:</strong> {order.jobDateFrom || 'N/A'}{' '}
-                      {order.jobDateTo && order.jobDateTo !== order.jobDateFrom
-                        ? `- ${order.jobDateTo}`
-                        : ''}
+                      <strong>Erstellt am:</strong>{' '}
+                      {(() => {
+                        if (!order.orderDate) return 'Unbekannt';
+
+                        let date: Date;
+                        if (typeof order.orderDate === 'string') {
+                          date = new Date(order.orderDate);
+                        } else if (order.orderDate._seconds) {
+                          // Firestore Timestamp
+                          date = new Date(order.orderDate._seconds * 1000);
+                        } else {
+                          return 'Unbekannt';
+                        }
+
+                        return date.toLocaleDateString('de-DE', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+                      })()}
+                    </p>
+                    <p>
+                      <strong>Ausführungsdatum:</strong>{' '}
+                      {(() => {
+                        if (order.jobDateFrom && order.jobDateTo) {
+                          return order.jobDateFrom !== order.jobDateTo
+                            ? `${order.jobDateFrom} - ${order.jobDateTo}`
+                            : order.jobDateFrom;
+                        } else if (order.jobDateFrom) {
+                          return order.jobDateFrom;
+                        } else if (order.jobTimePreference === 'Flexible Terminabsprache') {
+                          return 'Nach Absprache (flexibel)';
+                        } else {
+                          return 'Nach Absprache';
+                        }
+                      })()}
                     </p>
                     <p>
                       <strong>Uhrzeit:</strong> {order.jobTimePreference || 'Nicht angegeben'}
@@ -689,6 +742,7 @@ export default function OrderDetailPage() {
                     orderId={orderId}
                     className=""
                     onPaymentRequest={handleOpenPayment}
+                    isCustomerView={true} // EXPLIZIT ALS KUNDE MARKIEREN
                   />
                 )}
 

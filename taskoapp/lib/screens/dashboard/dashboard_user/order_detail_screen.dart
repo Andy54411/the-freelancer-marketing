@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import '../../../models/user_model.dart';
 import '../../../models/order.dart';
 import '../../../services/order_service.dart';
@@ -147,14 +148,129 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  void _openPayment() {
-    // TODO: Implementiere Payment-Modal
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Payment-System wird bald verfügbar sein...'),
-        backgroundColor: TaskiloColors.primary,
+  /// Lädt TimeTracking-Daten aus der Datenbank
+  Future<Map<String, dynamic>> _loadTimeTrackingData() async {
+    try {
+      final orderDoc = await firestore.FirebaseFirestore.instance
+          .collection('auftraege')
+          .doc(widget.orderId)
+          .get();
+
+      if (!orderDoc.exists) {
+        return {};
+      }
+
+      final orderData = orderDoc.data()!;
+      final timeTracking = orderData['timeTracking'];
+      
+      if (timeTracking == null) {
+        return {};
+      }
+
+      final timeEntries = timeTracking['timeEntries'] as List<dynamic>? ?? [];
+      
+      // Berechne verschiedene Kategorien
+      double originalHours = 0.0;
+      double additionalHours = 0.0;
+      double additionalHoursPaid = 0.0;
+      double additionalPricePaid = 0.0;
+      double pendingHours = 0.0;
+      double pendingPrice = 0.0;
+      
+      for (final entry in timeEntries) {
+        final hours = (entry['hours'] ?? 0).toDouble();
+        final category = entry['category'] ?? 'original';
+        final status = entry['status'] ?? 'logged';
+        final billableAmount = (entry['billableAmount'] ?? 0).toDouble();
+        
+        if (category == 'original') {
+          originalHours += hours;
+        } else if (category == 'additional') {
+          additionalHours += hours;
+          
+          if (status == 'paid') {
+            additionalHoursPaid += hours;
+            additionalPricePaid += billableAmount / 100; // Convert from cents
+          } else if (status == 'logged' || status == 'submitted') {
+            pendingHours += hours;
+            pendingPrice += billableAmount / 100; // Convert from cents
+          }
+        }
+      }
+
+      return {
+        'originalHours': originalHours,
+        'additionalHours': additionalHours,
+        'additionalHoursPaid': additionalHoursPaid,
+        'additionalPricePaid': additionalPricePaid,
+        'pendingHours': pendingHours,
+        'pendingPrice': pendingPrice,
+        'totalLoggedHours': timeTracking['totalLoggedHours'] ?? 0.0,
+        'originalPlannedHours': timeTracking['originalPlannedHours'] ?? 8.0,
+      };
+    } catch (error) {
+      debugPrint('Fehler beim Laden der TimeTracking-Daten: $error');
+      return {};
+    }
+  }
+
+  /// Behandelt die Freigabe zusätzlicher Stunden (nur für Kunden)
+  Future<void> _handleApproveAdditionalHours(Map<String, dynamic> timeData) async {
+    final pendingHours = timeData['pendingHours']?.toDouble() ?? 0.0;
+    final pendingPrice = timeData['pendingPrice']?.toDouble() ?? 0.0;
+    
+    if (pendingHours <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Keine Stunden zur Freigabe vorhanden'),
+          backgroundColor: TaskiloColors.primary,
+        ),
+      );
+      return;
+    }
+
+    // Zeige Bestätigungsdialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Zusätzliche Stunden freigeben'),
+        content: Text(
+          'Möchten Sie ${pendingHours.toStringAsFixed(1)}h zusätzliche Arbeitszeit für ${pendingPrice.toStringAsFixed(2)}€ freigeben?'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: TaskiloColors.primary,
+            ),
+            child: const Text('Freigeben'),
+          ),
+        ],
       ),
     );
+
+    if (confirmed == true) {
+      try {
+        // TODO: Implementiere Freigabe-Logik über TimeTracker API
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Stunden-Freigabe wird bald verfügbar sein...'),
+            backgroundColor: TaskiloColors.primary,
+          ),
+        );
+      } catch (error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler bei der Freigabe: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   String _formatPrice(int amountInCents, String? currency) {
@@ -510,19 +626,30 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),          const SizedBox(height: 20),
 
           // Stundenabrechnung & Zahlungsübersicht (wie in der Web-Version)
-          HoursBillingOverview(
-            orderId: widget.orderId,
-            originalHours: 0.0, // TODO: Aus Order-Daten oder separater TimeTracking API laden
-            originalPrice: _order!.totalAmountInEuro,
-            additionalHoursPaid: 0.0, // TODO: Aus TimeTracking API laden
-            additionalPricePaid: 0.0,
-            pendingHours: 0.0,
-            pendingPrice: 0.0,
-            loggedHours: 0.0, // TODO: Aus TimeTracking API laden
-            plannedHours: 0.0, // TODO: Aus Order-Daten oder TimeTracking API laden
-            additionalHours: 0.0, // TODO: Berechnen aus logged vs planned
-            totalCost: _order!.totalAmountInEuro,
-            onPaymentRequest: () => _openPayment(),
+          FutureBuilder<Map<String, dynamic>>(
+            future: _loadTimeTrackingData(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              
+              final timeData = snapshot.data ?? {};
+              
+              return HoursBillingOverview(
+                orderId: widget.orderId,
+                originalHours: timeData['originalHours']?.toDouble() ?? 0.0,
+                originalPrice: _order!.totalAmountInEuro,
+                additionalHoursPaid: timeData['additionalHoursPaid']?.toDouble() ?? 0.0,
+                additionalPricePaid: timeData['additionalPricePaid']?.toDouble() ?? 0.0,
+                pendingHours: timeData['pendingHours']?.toDouble() ?? 0.0,
+                pendingPrice: timeData['pendingPrice']?.toDouble() ?? 0.0,
+                loggedHours: timeData['totalLoggedHours']?.toDouble() ?? 0.0,
+                plannedHours: timeData['originalPlannedHours']?.toDouble() ?? 8.0,
+                additionalHours: timeData['additionalHours']?.toDouble() ?? 0.0,
+                totalCost: _order!.totalAmountInEuro + (timeData['pendingPrice']?.toDouble() ?? 0.0),
+                onPaymentRequest: () => _handleApproveAdditionalHours(timeData),
+              );
+            },
           ),
 
           const SizedBox(height: 20),

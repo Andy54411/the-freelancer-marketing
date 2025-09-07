@@ -34,35 +34,109 @@ interface HoursBillingOverviewProps {
   orderId: string;
   className?: string;
   onPaymentRequest?: () => void; // NEU: Callback für Bezahlung
+  isCustomerView?: boolean; // NEU: Unterscheidung zwischen Kunden- und Anbieter-Ansicht
 }
 
 export default function HoursBillingOverview({
   orderId,
   className = '',
   onPaymentRequest,
+  isCustomerView = false, // NEU: Default ist Anbieter-Ansicht
 }: HoursBillingOverviewProps) {
   const { firebaseUser: currentUser } = useAuth();
   const [data, setData] = useState<HoursOverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'customer' | 'provider' | null>(null);
+  const [orderData, setOrderData] = useState<any>(null);
   const [expandedSection, setExpandedSection] = useState<
     'paid' | 'pending' | 'logged' | 'original' | null
   >(null);
   const [approving, setApproving] = useState(false);
+
+  // 🆕 KUNDE/ANBIETER-ERKENNUNG
+  const determineUserRole = useCallback(
+    async (userId: string, orderId: string) => {
+      try {
+        const response = await fetch('/api/getSingleOrder', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${await currentUser?.getIdToken()}`,
+          },
+          body: JSON.stringify({ orderId }),
+        });
+
+        if (!response.ok) {
+          console.log('❌ Auftrag nicht gefunden für Rolle-Bestimmung');
+          return null;
+        }
+
+        const result = await response.json();
+        if (!result.success || !result.order) {
+          console.log('❌ Auftragsdaten nicht verfügbar für Rolle-Bestimmung');
+          return null;
+        }
+
+        const orderData = result.order;
+        setOrderData(orderData);
+
+        console.log('👤 Bestimme Benutzerrolle für HoursBillingOverview:', {
+          currentUserId: userId,
+          isCustomerView, // NEU: Prop-basierte Rollenerkennung
+          customerFirebaseUid: orderData.customerFirebaseUid,
+          selectedAnbieterId: orderData.selectedAnbieterId,
+        });
+
+        // 🆕 VORRANG: Verwende isCustomerView Prop wenn verfügbar
+        if (isCustomerView !== undefined) {
+          const roleFromProp = isCustomerView ? 'customer' : 'provider';
+          console.log('🎯 Verwende Prop-basierte Rolle:', roleFromProp);
+          setUserRole(roleFromProp);
+          return roleFromProp;
+        }
+
+        // Fallback: Firebase-basierte Rollenerkennung
+        if (userId === orderData.customerFirebaseUid) {
+          console.log('🛒 Benutzer ist KUNDE - zeige Freigabe-Buttons');
+          setUserRole('customer');
+          return 'customer';
+        } else if (userId === orderData.selectedAnbieterId) {
+          console.log('🏢 Benutzer ist ANBIETER - verstecke Freigabe-Buttons');
+          setUserRole('provider');
+          return 'provider';
+        } else {
+          console.log('❓ Benutzer-Rolle unbekannt');
+          setUserRole(null);
+          return null;
+        }
+      } catch (error) {
+        console.error('❌ Fehler bei Rolle-Bestimmung:', error);
+        setUserRole(null);
+        return null;
+      }
+    },
+    [currentUser]
+  );
 
   const fetchHoursData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
+      // 🆕 ERST Benutzerrolle bestimmen
+      if (currentUser?.uid) {
+        await determineUserRole(currentUser.uid, orderId);
+      }
+
       // Use existing getSingleOrder API instead of direct Firebase access
       const response = await fetch('/api/getSingleOrder', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await currentUser?.getIdToken()}`
+          Authorization: `Bearer ${await currentUser?.getIdToken()}`,
         },
-        body: JSON.stringify({ orderId })
+        body: JSON.stringify({ orderId }),
       });
 
       if (!response.ok) {
@@ -90,12 +164,11 @@ export default function HoursBillingOverview({
 
       setData(hoursData);
     } catch (err) {
-
       setError(err instanceof Error ? err.message : 'Fehler beim Laden der Stundendaten');
     } finally {
       setLoading(false);
     }
-  }, [orderId, currentUser]);
+  }, [orderId, currentUser, determineUserRole]);
 
   // Funktion zur Freigabe von geloggten zusätzlichen Stunden
   const handleApproveLoggedHours = async () => {
@@ -113,7 +186,6 @@ export default function HoursBillingOverview({
         setError(result.message);
       }
     } catch (error) {
-
       setError('Fehler bei der Freigabe der Stunden');
     } finally {
       setApproving(false);
@@ -260,7 +332,6 @@ export default function HoursBillingOverview({
 
       return date.toLocaleDateString('de-DE');
     } catch (error) {
-
       return 'Unbekanntes Datum';
     }
   };
@@ -355,14 +426,11 @@ export default function HoursBillingOverview({
             </p>
           </div>
           <div>
-            <p className="text-sm opacity-90">Gesamtkosten</p>
+            <p className="text-sm opacity-90">
+              {userRole === 'customer' ? 'Gesamtkosten' : 'Gesamteinnahmen'}
+            </p>
             <p className="text-2xl font-bold">
-              {formatCurrency(
-                data.originalJobPrice +
-                paidAdditionalAmount +
-                pendingAdditionalAmount +
-                finalLoggedAdditionalAmount
-              )}
+              {formatCurrency(data.originalJobPrice + pendingAdditionalAmount)}
             </p>
           </div>
         </div>
@@ -668,14 +736,9 @@ export default function HoursBillingOverview({
                 </span>
               </p>
               <p>
-                <strong>Gesamtkosten:</strong>{' '}
-                <span className="text-red-600 font-bold">
-                  {formatCurrency(
-                    data.originalJobPrice +
-                    paidAdditionalAmount +
-                    pendingAdditionalAmount +
-                    finalLoggedAdditionalAmount
-                  )}
+                <strong>{userRole === 'customer' ? 'Gesamtkosten:' : 'Gesamteinnahmen:'}</strong>{' '}
+                <span className="text-green-600 font-bold">
+                  {formatCurrency(data.originalJobPrice + pendingAdditionalAmount)}
                 </span>
               </p>
             </div>
@@ -683,8 +746,8 @@ export default function HoursBillingOverview({
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {/* Freigabe-Button für geloggte Stunden */}
-            {finalLoggedAdditionalHours > 0 && (
+            {/* Freigabe-Button für geloggte Stunden - NUR FÜR KUNDEN */}
+            {userRole === 'customer' && finalLoggedAdditionalHours > 0 && (
               <button
                 onClick={handleApproveLoggedHours}
                 disabled={approving}
@@ -714,8 +777,8 @@ export default function HoursBillingOverview({
               </button>
             )}
 
-            {/* Bezahl-Button für genehmigte Stunden */}
-            {onPaymentRequest && pendingAdditionalHours > 0 && (
+            {/* Bezahl-Button für genehmigte Stunden - NUR FÜR KUNDEN */}
+            {userRole === 'customer' && onPaymentRequest && pendingAdditionalHours > 0 && (
               <button
                 onClick={onPaymentRequest}
                 className="bg-[#14ad9f] hover:bg-[#129488] text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -731,6 +794,24 @@ export default function HoursBillingOverview({
                 </div>
               </button>
             )}
+
+            {/* ANBIETER-ANSICHT: Nur Informationen, keine Aktions-Buttons */}
+            {userRole === 'provider' &&
+              (finalLoggedAdditionalHours > 0 || pendingAdditionalHours > 0) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-blue-700">
+                    <FiInfo size={20} />
+                    <div>
+                      <div className="font-semibold">Wartet auf Kundenfreigabe</div>
+                      <div className="text-sm text-blue-600">
+                        {finalLoggedAdditionalHours > 0 &&
+                          `${finalLoggedAdditionalHours}h zur Freigabe • `}
+                        {pendingAdditionalHours > 0 && `${pendingAdditionalHours}h zur Bezahlung`}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
       )}

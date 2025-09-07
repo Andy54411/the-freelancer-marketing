@@ -3,7 +3,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit3, FiTrash2, FiClock, FiCalendar, FiUser } from 'react-icons/fi';
+import {
+  FiPlus,
+  FiEdit3,
+  FiTrash2,
+  FiClock,
+  FiCalendar,
+  FiUser,
+  FiRefreshCw,
+} from 'react-icons/fi';
 import { db } from '@/firebase/clients';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth } from '@/firebase/clients';
@@ -31,6 +39,7 @@ interface TimeTrackingManagerProps {
   originalPlannedHours: number;
   hourlyRate: number;
   onTimeSubmitted?: () => void;
+  isCustomerView?: boolean; // NEU: Unterscheidung zwischen Kunden- und Anbieter-Ansicht
 }
 
 export default function TimeTrackingManager({
@@ -39,6 +48,7 @@ export default function TimeTrackingManager({
   originalPlannedHours,
   hourlyRate,
   onTimeSubmitted,
+  isCustomerView = false, // NEU: Default ist Anbieter-Ansicht
 }: TimeTrackingManagerProps) {
   const [user, setUser] = useState<User | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -47,6 +57,9 @@ export default function TimeTrackingManager({
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [showAllEntries, setShowAllEntries] = useState(false);
   const [providerName, setProviderName] = useState<string>('Lädt...');
+  const [userRole, setUserRole] = useState<'customer' | 'provider' | null>(null);
+  const [orderData, setOrderData] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
   const { showSuccess, showError, showWarning } = useAlertHelpers();
 
   // Form state
@@ -67,6 +80,7 @@ export default function TimeTrackingManager({
     const unsubscribe = onAuthStateChanged(auth, currentUser => {
       setUser(currentUser);
       if (currentUser) {
+        determineUserRole(currentUser.uid, orderId);
         loadProviderData(currentUser.uid);
         loadTimeTracking();
       }
@@ -180,6 +194,43 @@ export default function TimeTrackingManager({
     }
   };
 
+  const determineUserRole = async (userId: string, orderId: string) => {
+    try {
+      const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
+      if (!orderDoc.exists()) {
+        console.log('❌ Auftrag nicht gefunden für Rolle-Bestimmung');
+        return null;
+      }
+
+      const orderData = orderDoc.data();
+      setOrderData(orderData);
+
+      console.log('👤 Bestimme Benutzerrolle:', {
+        currentUserId: userId,
+        customerFirebaseUid: orderData.customerFirebaseUid,
+        selectedAnbieterId: orderData.selectedAnbieterId,
+      });
+
+      if (userId === orderData.customerFirebaseUid) {
+        console.log('🛒 Benutzer ist KUNDE');
+        setUserRole('customer');
+        return 'customer';
+      } else if (userId === orderData.selectedAnbieterId) {
+        console.log('🏢 Benutzer ist ANBIETER');
+        setUserRole('provider');
+        return 'provider';
+      } else {
+        console.log('❓ Benutzer-Rolle unbekannt');
+        setUserRole(null);
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Fehler bei Rolle-Bestimmung:', error);
+      setUserRole(null);
+      return null;
+    }
+  };
+
   const loadTimeTracking = async () => {
     try {
       setLoading(true);
@@ -259,6 +310,78 @@ export default function TimeTrackingManager({
     }
   };
 
+  const fixExistingTimeEntries = async () => {
+    try {
+      console.log('🔧 Korrigiere bestehende Zeiteinträge-Kategorien...');
+
+      const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
+      if (!orderDoc.exists()) return;
+
+      const orderData = orderDoc.data();
+      const timeEntries = orderData.timeTracking?.timeEntries || [];
+      const originalPlannedHours = orderData.timeTracking?.originalPlannedHours || 8;
+
+      console.log(
+        `📊 Korrektur für ${timeEntries.length} Einträge. Geplant: ${originalPlannedHours}h`
+      );
+
+      let cumulativeHours = 0;
+      let hasChanges = false;
+
+      // Sortiere Einträge nach Erstellungsdatum
+      const sortedEntries = [...timeEntries].sort(
+        (a, b) =>
+          new Date(a.createdAt?.toDate() || a.createdAt).getTime() -
+          new Date(b.createdAt?.toDate() || b.createdAt).getTime()
+      );
+
+      sortedEntries.forEach((entry, index) => {
+        const previousCategory = entry.category;
+        const entryHours = entry.hours || 0;
+
+        // KORREKTE KATEGORISIERUNG: Alles über geplante Stunden ist "additional"
+        if (cumulativeHours + entryHours <= originalPlannedHours) {
+          entry.category = 'original';
+        } else if (cumulativeHours < originalPlannedHours) {
+          // Dieser Eintrag überschreitet die geplanten Stunden → additional
+          entry.category = 'additional';
+        } else {
+          // Alle weiteren Stunden sind additional
+          entry.category = 'additional';
+        }
+
+        if (previousCategory !== entry.category) {
+          hasChanges = true;
+          console.log(
+            `🔄 Eintrag ${index}: "${entry.description}" ${previousCategory} → ${entry.category} (${entryHours}h, kumulativ: ${cumulativeHours + entryHours}h)`
+          );
+        }
+
+        cumulativeHours += entryHours;
+      });
+
+      if (hasChanges) {
+        // Aktualisiere in Firebase
+        await updateDoc(doc(db, 'auftraege', orderId), {
+          'timeTracking.timeEntries': sortedEntries,
+          'timeTracking.lastUpdated': new Date(),
+        });
+
+        console.log('✅ Zeiteinträge-Kategorien korrigiert und gespeichert');
+        showSuccess('Kategorien korrigiert', `${timeEntries.length} Einträge aktualisiert`);
+
+        // Lade TimeTracking neu
+        await loadTimeTracking();
+      } else {
+        console.log('✅ Alle Kategorien bereits korrekt');
+        showSuccess('Kategorien überprüft', 'Alle Einträge sind bereits korrekt kategorisiert');
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Korrigieren der Zeiteinträge:', error);
+      showError('Fehler beim Korrigieren', 'Kategorien konnten nicht aktualisiert werden');
+    }
+  };
+
   const handleTimeCalculation = () => {
     if (formData.startTime && formData.endTime) {
       const start = new Date(`2000-01-01T${formData.startTime}:00`);
@@ -298,28 +421,43 @@ export default function TimeTrackingManager({
       let originalHours = 0;
       let additionalHours = 0;
 
-      if (!isB2BOrder) {
-        // 🛍️ B2C FESTPREIS: Alle Stunden sind "original" (bereits bezahlt)
+      // 🆕 EINHEITLICHE LOGIC FÜR B2C UND B2B
+      // WICHTIG: Sowohl B2C als auch B2B verwenden die GLEICHE Original/Additional-Logik!
+      // B2C: Grundauftrag (8h) bereits bezahlt → zusätzliche Stunden brauchen Freigabe
+      // B2B: Geplante Stunden (8h) vereinbart → zusätzliche Stunden brauchen Freigabe
+
+      console.log(
+        `📊 Kategorisierung: ${isB2BOrder ? 'B2B' : 'B2C'} - Geplant: ${originalPlannedHours}h, Bereits erfasst: ${originalPlannedHours - remainingOriginalHours}h, Übrig: ${remainingOriginalHours}h`
+      );
+
+      if (remainingOriginalHours >= formData.hours) {
+        // Alle Stunden sind noch als "original" verfügbar
         category = 'original';
         originalHours = formData.hours;
-        console.log('🛍️ B2C erkannt: Alle Stunden als "original" kategorisiert');
+        console.log(
+          `✅ ${formData.hours}h als "original" kategorisiert (${remainingOriginalHours}h übrig)`
+        );
+      } else if (remainingOriginalHours > 0) {
+        // Split zwischen original und additional
+        originalHours = remainingOriginalHours;
+        additionalHours = formData.hours - remainingOriginalHours;
+        category = 'additional'; // Hauptkategorie ist additional, da mehr zusätzlich
+        console.log(
+          `🔄 Split: ${originalHours}h original + ${additionalHours}h additional → Kategorie: additional`
+        );
       } else {
-        // 🏢 B2B FLEXIBLE ABRECHNUNG: Original vs Additional Logic
-        if (remainingOriginalHours >= formData.hours) {
-          // Alle Stunden sind noch als "original" verfügbar
-          category = 'original';
-          originalHours = formData.hours;
-        } else if (remainingOriginalHours > 0) {
-          // Split zwischen original und additional
-          originalHours = remainingOriginalHours;
-          additionalHours = formData.hours - remainingOriginalHours;
-        } else {
-          // Alle Stunden sind additional
-          category = 'additional';
-          additionalHours = formData.hours;
-        }
-        console.log('🏢 B2B erkannt: Flexible Stundenabrechnung angewendet');
+        // Alle Stunden sind additional
+        category = 'additional';
+        additionalHours = formData.hours;
+        console.log(
+          `⚡ ${formData.hours}h als "additional" kategorisiert (alle geplanten Stunden bereits überschritten)`
+        );
       }
+
+      const orderType = isB2BOrder ? 'B2B' : 'B2C';
+      console.log(
+        `📊 ${orderType} Auftrag: ${originalHours}h original + ${additionalHours}h additional`
+      );
 
       // Erstelle Zeiteintrag-Objekt
       const timeEntry = {
@@ -518,17 +656,16 @@ export default function TimeTrackingManager({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header Card - Ähnlich wie "user angebot" Design */}
+      {/* Kompakter Header ohne große Überschrift */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="bg-gradient-to-r from-[#14ad9f]/10 to-teal-50 px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-[#14ad9f] rounded-xl shadow-lg">
-                <FiClock className="text-white" size={24} />
+              <div className="p-2 bg-[#14ad9f] rounded-lg shadow-lg">
+                <FiClock className="text-white" size={20} />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Zeiterfassung</h2>
-                <div className="flex items-center gap-4 mt-1">
+                <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 text-gray-600">
                     <FiUser size={16} />
                     <span className="font-medium">{providerName}</span>
@@ -553,16 +690,21 @@ export default function TimeTrackingManager({
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                setShowAddForm(true);
-                setEditingEntry(null);
-              }}
-              className="flex items-center gap-2 px-5 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors shadow-md hover:shadow-lg font-medium"
-            >
-              <FiPlus size={18} />
-              Zeit hinzufügen
-            </button>
+            <div className="flex items-center gap-3">
+              {/* NUR ANBIETER KÖNNEN ZEIT HINZUFÜGEN */}
+              {userRole === 'provider' && (
+                <button
+                  onClick={() => {
+                    setShowAddForm(true);
+                    setEditingEntry(null);
+                  }}
+                  className="flex items-center gap-2 px-5 py-3 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors shadow-md hover:shadow-lg font-medium"
+                >
+                  <FiPlus size={18} />
+                  Zeit hinzufügen
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
