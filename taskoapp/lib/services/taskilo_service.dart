@@ -26,7 +26,7 @@ class TaskiloService {
   Stream<List<TaskiloUser>> getServiceProviders() {
     return _firestore
         .collection('users')
-        .where('userType', isEqualTo: 'serviceProvider')
+        .where('user_type', isEqualTo: 'firma')
         .where('profile.isAvailable', isEqualTo: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -38,7 +38,7 @@ class TaskiloService {
   Stream<List<TaskiloUser>> getServiceProvidersByCategory(String category) {
     return _firestore
         .collection('users')
-        .where('userType', isEqualTo: 'serviceProvider')
+        .where('user_type', isEqualTo: 'firma')
         .where('profile.skills', arrayContains: category)
         .where('profile.isAvailable', isEqualTo: true)
         .snapshots()
@@ -51,7 +51,7 @@ class TaskiloService {
   Future<List<TaskiloUser>> searchServiceProviders(String query) async {
     final snapshot = await _firestore
         .collection('users')
-        .where('userType', isEqualTo: 'serviceProvider')
+        .where('user_type', isEqualTo: 'firma')
         .where('profile.isAvailable', isEqualTo: true)
         .get();
 
@@ -73,7 +73,7 @@ class TaskiloService {
   // Update user to service provider
   Future<void> becomeServiceProvider(String userId, UserProfile profile) async {
     await _firestore.collection('users').doc(userId).update({
-      'userType': 'serviceProvider',
+      'user_type': 'firma',
       'profile': profile.copyWith(
         isAvailable: true,
         completedJobs: 0,

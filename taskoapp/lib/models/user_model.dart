@@ -43,16 +43,33 @@ class TaskiloUser {
 
   factory TaskiloUser.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    
+    // Konvertiere Datenbank-Werte zu UserType Enum
+    UserType userTypeValue;
+    final dbUserType = data['user_type'] ?? data['userType']; // Unterstütze beide Felder für Migration
+    switch (dbUserType) {
+      case 'kunde':
+      case 'customer': // Fallback für alte Daten
+        userTypeValue = UserType.customer;
+        break;
+      case 'firma':
+      case 'serviceProvider': // Fallback für alte Daten
+        userTypeValue = UserType.serviceProvider;
+        break;
+      case 'admin':
+        userTypeValue = UserType.admin;
+        break;
+      default:
+        userTypeValue = UserType.customer; // Default fallback
+    }
+    
     return TaskiloUser(
       uid: doc.id,
       email: data['email'] ?? '',
       displayName: data['displayName'],
       photoURL: data['photoURL'],
       phone: data['phone'],
-      userType: UserType.values.firstWhere(
-        (type) => type.name == data['userType'],
-        orElse: () => UserType.customer,
-      ),
+      userType: userTypeValue,
       isVerified: data['isVerified'] ?? false,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastLoginAt: (data['lastLoginAt'] as Timestamp?)?.toDate(),
@@ -63,12 +80,26 @@ class TaskiloUser {
   }
 
   Map<String, dynamic> toFirestore() {
+    // Konvertiere UserType zu konsistenten Datenbank-Werten
+    String userTypeValue;
+    switch (userType) {
+      case UserType.customer:
+        userTypeValue = 'kunde';
+        break;
+      case UserType.serviceProvider:
+        userTypeValue = 'firma';
+        break;
+      case UserType.admin:
+        userTypeValue = 'admin';
+        break;
+    }
+    
     return {
       'email': email,
       'displayName': displayName,
       'photoURL': photoURL,
       'phone': phone,
-      'userType': userType.name,
+      'user_type': userTypeValue,  // Verwende user_type statt userType
       'isVerified': isVerified,
       'createdAt': Timestamp.fromDate(createdAt),
       'lastLoginAt': lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
