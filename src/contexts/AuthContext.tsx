@@ -131,6 +131,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const finalRole = roleFromClaim || roleFromDb;
 
             // Debug: Rollen loggen
+            console.log('🔍 LOGIN REDIRECT CHECK:', {
+              uid: fbUser.uid,
+              email: fbUser.email,
+              user_type: finalRole,
+              pathname,
+              isRedirecting,
+            });
 
             setUser({
               uid: fbUser.uid,
@@ -140,6 +147,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               lastName: profileData.lastName,
               profilePictureURL: profileData.profilePictureURL || undefined,
             });
+
+            // KRITISCH: AUTO-REDIRECT nach LOGIN basierend auf user_type
+            if (!isRedirecting) {
+              let needsRedirect = false;
+              let targetPath = '';
+
+              // 1. Nach Login-Redirect
+              if (pathname?.includes('/login')) {
+                needsRedirect = true;
+              }
+              // 2. Firma User auf User Dashboard - SOFORT UMLEITEN!
+              else if (finalRole === 'firma' && pathname?.includes('/dashboard/user/')) {
+                needsRedirect = true;
+                console.log('🚨 FIRMA auf USER DASHBOARD erkannt! Sofortige Umleitung...');
+              }
+              // 3. Kunde User auf Company Dashboard - SOFORT UMLEITEN!
+              else if (finalRole === 'kunde' && pathname?.includes('/dashboard/company/')) {
+                needsRedirect = true;
+                console.log('🚨 KUNDE auf COMPANY DASHBOARD erkannt! Sofortige Umleitung...');
+              }
+
+              if (needsRedirect) {
+                setIsRedirecting(true);
+
+                targetPath =
+                  finalRole === 'firma'
+                    ? `/dashboard/company/${fbUser.uid}`
+                    : finalRole === 'kunde'
+                      ? `/dashboard/user/${fbUser.uid}`
+                      : finalRole === 'master' || finalRole === 'support'
+                        ? '/dashboard/admin'
+                        : `/dashboard/user/${fbUser.uid}`; // Fallback
+
+                console.log(`🚀 AUTO-REDIRECT: ${finalRole} von ${pathname} → ${targetPath}`);
+                window.location.assign(targetPath);
+                return;
+              }
+            }
 
             // Set middleware cookies for onboarding check
             if (finalRole === 'firma') {
@@ -191,7 +236,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [pathname, isRedirecting]); // KRITISCH: pathname als Dependency hinzufügen!
 
   // Effekt für die Weiterleitung nach erfolgreichem Login
   useEffect(() => {

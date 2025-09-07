@@ -61,7 +61,7 @@ export default function SmoothRedirectOverlay() {
 
         // Fallback-Namen basierend auf Rolle
         if (!name) {
-          switch (user.role) {
+          switch (user.user_type) {
             case 'master':
             case 'support':
               name = 'Admin';
@@ -78,7 +78,7 @@ export default function SmoothRedirectOverlay() {
       } catch (error) {
         console.error('Error loading user name:', error);
         // Fallback bei Fehlern
-        setUserName(user.role === 'firma' ? 'Unternehmen' : 'liebe/r Nutzer/in');
+        setUserName(user.user_type === 'firma' ? 'Unternehmen' : 'liebe/r Nutzer/in');
       }
     };
 
@@ -95,7 +95,7 @@ export default function SmoothRedirectOverlay() {
       let message = '';
 
       // Master/Support
-      if (user.role === 'master' || user.role === 'support') {
+      if (user.user_type === 'master' || user.user_type === 'support') {
         if (pathname === '/' || pathname === '/login' || pathname === '/register') {
           needsRedirect = true;
           targetPath = '/dashboard/admin';
@@ -103,7 +103,7 @@ export default function SmoothRedirectOverlay() {
         }
       }
       // Firma
-      else if (user.role === 'firma') {
+      else if (user.user_type === 'firma') {
         if (pathname === '/' || pathname === '/login' || pathname === '/register') {
           needsRedirect = true;
           targetPath = `/dashboard/company/${user.uid}`;
@@ -146,7 +146,7 @@ export default function SmoothRedirectOverlay() {
   const getRoleIcon = () => {
     if (!user) return <Loader2 className="animate-spin text-5xl text-[#14ad9f]" />;
 
-    switch (user.role) {
+    switch (user.user_type) {
       case 'master':
       case 'support':
         return <Shield className="text-5xl text-[#14ad9f] animate-pulse" />;

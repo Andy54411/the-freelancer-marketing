@@ -88,7 +88,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const [notifications, setNotifications] = useState<NotificationPreview[]>([]); // NEU
   const [workspaces, setWorkspaces] = useState<any[]>([]); // For Quick Note functionality
   const [searchTerm, setSearchTerm] = useState('');
-  const [isRedirecting, setIsRedirecting] = useState(false); // NEW: Verhindert Redirect-Loops
+  // ENTFERNT: isRedirecting State - Redirect wird jetzt zentral im AuthContext behandelt
   const profileDropdownRef = useRef<HTMLDivElement>(null);
   const searchDropdownContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -203,72 +203,27 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     return () => unsubscribe();
   }, [currentUid, router, loadProfilePictureFromStorage]);
 
+  // DEAKTIVIERT: Redirect-Logik wird jetzt im AuthContext gehandhabt
   // Smart Redirect basierend auf user_type - KORRIGIERTE LOGIK mit Loop-Schutz
   useEffect(() => {
-    // Verhindere Redirect wenn bereits umgeleitet wird
-    if (isRedirecting) {
-      console.log('� REDIRECT: Bereits am Umleiten, überspringe...');
-      return;
-    }
+    // REDIRECT-LOGIK DEAKTIVIERT: Wird jetzt zentral im AuthContext behandelt
+    // Dies verhindert Endlos-Loops zwischen AuthContext und UserHeader
 
-    console.log('�🔍 Redirect Check:', {
-      currentUser: currentUser?.uid,
-      currentUid: currentUid,
-      authUser: authUser,
-      user_type: authUser?.user_type, // Verwende AuthContext statt firestoreUserData
-      currentPath: window.location.pathname,
-      isRedirecting,
-    });
-
+    // Nur Debug-Logs beibehalten für Monitoring
     if (currentUser?.uid && authUser && currentUser.uid === currentUid) {
+      const user_type = authUser.user_type;
       const currentPath = window.location.pathname;
-      const user_type = authUser.user_type; // Verwende AuthContext
 
-      console.log(`🎯 REDIRECT CHECK: user_type="${user_type}", path="${currentPath}"`);
-
-      // Wenn Firma-User auf /dashboard/user/ ist → SOFORTIGER redirect zu /dashboard/company/
-      if (user_type === 'firma' && currentPath.startsWith('/dashboard/user/')) {
-        console.log(
-          `🔄 FIRMA USER auf USER DASHBOARD ERKANNT! SOFORTIGE Umleitung zu Company Dashboard...`
-        );
-        setIsRedirecting(true);
-        // Verwende window.location.href für sofortigen, zuverlässigen Redirect
-        window.location.href = `/dashboard/company/${currentUser.uid}`;
-        return;
-      }
-
-      // Wenn Normal-User auf /dashboard/company/ ist → SOFORTIGER redirect zu /dashboard/user/
-      if (user_type !== 'firma' && currentPath.startsWith('/dashboard/company/')) {
-        console.log(
-          `🔄 USER auf COMPANY DASHBOARD ERKANNT! SOFORTIGE Umleitung zu User Dashboard...`
-        );
-        setIsRedirecting(true);
-        // Verwende window.location.href für sofortigen, zuverlässigen Redirect
-        window.location.href = `/dashboard/user/${currentUser.uid}`;
-        return;
-      }
-
-      console.log(
-        `✅ REDIRECT: Keine Umleitung nötig für user_type="${user_type}" auf path="${currentPath}"`
-      );
-    } else {
-      console.log(
-        `⏳ REDIRECT: Warte auf Daten... currentUser=${!!currentUser?.uid}, authUser=${!!authUser}, uid match=${currentUser?.uid === currentUid}`
-      );
+      console.log('� UserHeader Monitor (NO REDIRECT):', {
+        currentUser: currentUser?.uid,
+        currentUid,
+        authUser: !!authUser,
+        user_type,
+        currentPath,
+        message: 'Redirect wird zentral im AuthContext behandelt',
+      });
     }
-  }, [currentUser?.uid, currentUid, authUser, isRedirecting]);
-
-  // Reset isRedirecting nach kurzer Zeit falls Redirect fehlschlägt
-  useEffect(() => {
-    if (isRedirecting) {
-      const timeout = setTimeout(() => {
-        console.log('⏰ REDIRECT TIMEOUT: Setze isRedirecting zurück nach 2 Sekunden');
-        setIsRedirecting(false);
-      }, 2000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [isRedirecting]);
+  }, [currentUser?.uid, currentUid, authUser]);
 
   // Effekt zum Abonnieren von Nachrichten, basierend auf dem aktuellen Benutzer und seinem Typ
   useEffect(() => {

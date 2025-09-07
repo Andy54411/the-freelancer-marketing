@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 /// Service für Chat-System
 /// Synchronisiert mit der Web-Version DirectChatModal
@@ -101,27 +102,45 @@ class ChatService {
         .collection('messages')
         .orderBy('timestamp', descending: false)
         .snapshots()
+        .handleError((error) {
+      debugPrint('❌ FEHLER beim Laden der Chat-Nachrichten: $error');
+      debugPrint('❌ Error Type: ${error.runtimeType}');
+      debugPrint('❌ ChatId: $chatId');
+      debugPrint('❌ Query: directChats/$chatId/messages orderBy timestamp');
+      throw error;
+    })
         .map((snapshot) {
-      List<Map<String, dynamic>> messages = [];
-      
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
+      try {
+        debugPrint('✅ Nachrichten-Snapshot erhalten: ${snapshot.docs.length} Nachrichten');
+        List<Map<String, dynamic>> messages = [];
         
-        final message = {
-          'id': doc.id,
-          'senderId': data['senderId'] ?? '',
-          'senderName': data['senderName'] ?? '',
-          'senderType': data['senderType'] ?? '',
-          'text': data['text'] ?? '',
-          'timestamp': data['timestamp']?.toDate() ?? DateTime.now(),
-          'read': data['read'] ?? false,
-          ...data,
-        };
+        for (final doc in snapshot.docs) {
+          try {
+            final data = doc.data();
+            
+            final message = {
+              'id': doc.id,
+              'senderId': data['senderId'] ?? '',
+              'senderName': data['senderName'] ?? '',
+              'senderType': data['senderType'] ?? '',
+              'text': data['text'] ?? '',
+              'timestamp': data['timestamp']?.toDate() ?? DateTime.now(),
+              'read': data['read'] ?? false,
+              ...data,
+            };
+            
+            messages.add(message);
+          } catch (e) {
+            debugPrint('❌ Fehler beim Verarbeiten von Nachrichten-Dokument ${doc.id}: $e');
+          }
+        }
         
-        messages.add(message);
+        debugPrint('✅ Nachrichten erfolgreich geladen: ${messages.length} Nachrichten');
+        return messages;
+      } catch (e) {
+        debugPrint('❌ Fehler beim Verarbeiten der Nachrichten-Snapshots: $e');
+        return <Map<String, dynamic>>[];
       }
-      
-      return messages;
     });
   }
 
@@ -134,29 +153,52 @@ class ChatService {
         .where('participants', arrayContains: userId)
         .orderBy('lastUpdated', descending: true)
         .snapshots()
+        .handleError((error) {
+      debugPrint('❌ FEHLER beim Laden der Chat-Liste: $error');
+      debugPrint('❌ Error Type: ${error.runtimeType}');
+      debugPrint('❌ Error Details: ${error.toString()}');
+      debugPrint('❌ Query: directChats where participants array-contains $userId orderBy lastUpdated desc');
+      throw error;
+    })
         .map((snapshot) {
-      List<Map<String, dynamic>> chats = [];
-      
-      for (final doc in snapshot.docs) {
-        final data = doc.data();
+      try {
+        debugPrint('✅ Chat-Snapshot erhalten: ${snapshot.docs.length} Chats');
+        List<Map<String, dynamic>> chats = [];
         
-        final chat = {
-          'id': doc.id,
-          'participants': data['participants'] as List<dynamic>? ?? [],
-          'customerInfo': data['customerInfo'] as Map<String, dynamic>? ?? {},
-          'providerInfo': data['providerInfo'] as Map<String, dynamic>? ?? {},
-          'lastMessage': data['lastMessage'] ?? '',
-          'lastMessageSenderId': data['lastMessageSenderId'] ?? '',
-          'lastMessageSenderName': data['lastMessageSenderName'] ?? '',
-          'lastUpdated': data['lastUpdated']?.toDate() ?? DateTime.now(),
-          'isActive': data['isActive'] ?? true,
-          ...data,
-        };
+        for (final doc in snapshot.docs) {
+          try {
+            final data = doc.data();
+            debugPrint('📄 Chat-Dokument: ${doc.id}');
+            if (kDebugMode) {
+              debugPrint('📄 Chat-Dokument: ${doc.id}');
+              debugPrint('📄 Participants: ${data['participants']}');
+              debugPrint('📄 LastUpdated: ${data['lastUpdated']}');
+            }
+            final chat = {
+              'id': doc.id,
+              'participants': data['participants'] as List<dynamic>? ?? [],
+              'customerInfo': data['customerInfo'] as Map<String, dynamic>? ?? {},
+              'providerInfo': data['providerInfo'] as Map<String, dynamic>? ?? {},
+              'lastMessage': data['lastMessage'] ?? '',
+              'lastMessageSenderId': data['lastMessageSenderId'] ?? '',
+              'lastMessageSenderName': data['lastMessageSenderName'] ?? '',
+              'lastUpdated': data['lastUpdated']?.toDate() ?? DateTime.now(),
+              'isActive': data['isActive'] ?? true,
+              ...data,
+            };
+            
+            chats.add(chat);
+          } catch (e) {
+            debugPrint('❌ Fehler beim Verarbeiten von Chat-Dokument ${doc.id}: $e');
+          }
+        }
         
-        chats.add(chat);
+        debugPrint('✅ Chat-Liste erfolgreich geladen: ${chats.length} Chats');
+        return chats;
+      } catch (e) {
+        debugPrint('❌ Fehler beim Verarbeiten der Chat-Snapshots: $e');
+        return <Map<String, dynamic>>[];
       }
-      
-      return chats;
     });
   }
 
