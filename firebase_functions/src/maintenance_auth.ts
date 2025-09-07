@@ -14,7 +14,8 @@ import { getAuthInstance, getDb } from "./helpers";
 export const updateAllUserCustomClaims = onCall({
     maxInstances: 1,
     timeoutSeconds: 540, // 9 Minuten
-    memory: "1GiB"
+    memory: "512MiB",
+    cpu: 1
 }, async (request) => {
     // Security Check: Nur Master-User können diese Function aufrufen
     if (!request.auth?.token?.role || request.auth.token.role !== 'master') {

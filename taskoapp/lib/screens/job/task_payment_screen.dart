@@ -501,7 +501,7 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
       if (result.success) {
         debugPrint('✅ Payment successful: ${result.paymentIntentId}');
         if (mounted) {
-          _showPaymentSuccess(total, result.paymentIntentId!, result.orderId!);
+          _showPaymentSuccess(total, result.paymentIntentId!, result.orderId);
         }
       } else {
         throw Exception(result.error ?? 'Payment failed');
@@ -524,7 +524,7 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
     }
   }
 
-  void _showPaymentSuccess(double total, String paymentIntentId, String orderId) {
+  void _showPaymentSuccess(double total, String paymentIntentId, String? orderId) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -607,7 +607,9 @@ class _TaskPaymentScreenState extends State<TaskPaymentScreen> {
                         ),
                       ),
                       Text(
-                        orderId.length > 12 ? '${orderId.substring(0, 12)}...' : orderId,
+                        orderId != null 
+                          ? (orderId.length > 12 ? '${orderId.substring(0, 12)}...' : orderId)
+                          : 'Wird erstellt...',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
