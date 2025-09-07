@@ -116,7 +116,7 @@ export function useCompanyDashboard() {
     };
 
     fetchCompanyData();
-  }, [user, authLoading, uid]); // Der Effekt hängt jetzt vom zentralen Auth-Status ab.
+  }, [authLoading, uid, user?.uid]); // FIXED: Nur user.uid statt ganzes user Objekt
 
   return {
     isChecking,
