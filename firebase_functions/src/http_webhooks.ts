@@ -340,6 +340,92 @@ export const stripeWebhookHandler = onRequest(
                         return;
                     }
 
+                    // Check if this is a mobile app payment
+                    const mobilePaymentType = paymentIntentSucceeded.metadata?.type;
+                    if (mobilePaymentType === 'mobile_b2c_payment') {
+                        logger.info(`[stripeWebhookHandler] Processing mobile app payment: ${paymentIntentSucceeded.id}`);
+                        
+                        const customerId = paymentIntentSucceeded.metadata?.customerId;
+                        const providerId = paymentIntentSucceeded.metadata?.providerId;
+                        const serviceTitle = paymentIntentSucceeded.metadata?.serviceTitle;
+                        const serviceDescription = paymentIntentSucceeded.metadata?.serviceDescription;
+                        
+                        if (!customerId || !providerId) {
+                            logger.error(`[stripeWebhookHandler] Missing mobile app payment metadata: customerId=${customerId}, providerId=${providerId}`);
+                            response.status(200).json({ received: true, message: 'Missing mobile app metadata' });
+                            return;
+                        }
+                        
+                        try {
+                            // Create order from mobile payment data
+                            const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                            
+                            // Get metadata from payment intent (sent by mobile app)
+                            const metadata = paymentIntentSucceeded.metadata || {};
+                            
+                            const orderData = {
+                                id: orderId,
+                                customerFirebaseUid: customerId,
+                                selectedAnbieterId: providerId,
+                                taskTitle: metadata.taskTitle || serviceTitle,
+                                taskDescription: metadata.taskDescription || serviceDescription,
+                                description: metadata.taskDescription || serviceDescription,
+                                selectedCategory: metadata.taskTitle || serviceTitle,
+                                selectedSubcategory: metadata.taskDescription || serviceDescription,
+                                status: 'zahlung_erhalten_clearing',
+                                paymentIntentId: paymentIntentSucceeded.id,
+                                paymentType: 'b2c_fixed_price',
+                                platform: 'mobile_app',
+                                totalAmountPaidByBuyer: paymentIntentSucceeded.amount,
+                                jobCalculatedPriceInCents: paymentIntentSucceeded.amount,
+                                originalJobPriceInCents: paymentIntentSucceeded.amount,
+                                sellerCommissionInCents: paymentIntentSucceeded.application_fee_amount || 0,
+                                totalPlatformFeeInCents: paymentIntentSucceeded.application_fee_amount || 0,
+                                stripeCustomerId: paymentIntentSucceeded.customer || '',
+                                customerType: 'privat',
+                                jobCity: metadata.location,
+                                jobStreet: metadata.location,
+                                jobCountry: paymentIntentSucceeded.currency === 'eur' ? 'DE' : 'US',
+                                jobTimePreference: metadata.datetime,
+                                jobDurationString: metadata.datetime,
+                                jobDateFrom: null,
+                                jobDateTo: null,
+                                createdAt: FieldValue.serverTimestamp(),
+                                paidAt: FieldValue.serverTimestamp(),
+                                lastUpdatedAt: FieldValue.serverTimestamp(),
+                                updatedAt: FieldValue.serverTimestamp(),
+                                metadata: {
+                                    budget: metadata.budget,
+                                    datetime: metadata.datetime,
+                                    location: metadata.location,
+                                },
+                                originalMobileData: {
+                                    titel: metadata.taskTitle || serviceTitle,
+                                    beschreibung: metadata.taskDescription || serviceDescription,
+                                    kundentyp: 'Privatkunde',
+                                    currency: paymentIntentSucceeded.currency,
+                                    budget: metadata.budget,
+                                    totalAmount: paymentIntentSucceeded.amount,
+                                    platformFee: paymentIntentSucceeded.application_fee_amount || 0,
+                                    trustFee: metadata.trustFee
+                                }
+                            };
+                            
+                            // Save order to Firestore
+                            await db.collection('auftraege').doc(orderId).set(orderData);
+                            
+                            logger.info(`[stripeWebhookHandler] Mobile app order created successfully: ${orderId}`);
+                            
+                            response.status(200).json({ received: true, message: 'Mobile app payment processed', orderId });
+                            return;
+                            
+                        } catch (error: any) {
+                            logger.error(`[stripeWebhookHandler] Error creating mobile app order:`, error);
+                            response.status(200).json({ received: true, message: 'Error processing mobile app payment' });
+                            return;
+                        }
+                    }
+
                     // Handle regular job payments
                     const tempJobDraftId = paymentIntentSucceeded.metadata?.tempJobDraftId;
                     const firebaseUserId = paymentIntentSucceeded.metadata?.firebaseUserId;
