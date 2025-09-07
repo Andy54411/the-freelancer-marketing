@@ -365,6 +365,20 @@
             ]
         },
         {
+            "collectionGroup": "directChats",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "participants",
+                    "arrayConfig": "CONTAINS"
+                },
+                {
+                    "fieldPath": "lastUpdated",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
             "collectionGroup": "chat",
             "queryScope": "COLLECTION",
             "fields": [
