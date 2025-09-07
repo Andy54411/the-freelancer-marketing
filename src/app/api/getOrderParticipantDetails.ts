@@ -1,13 +1,19 @@
 // src/api/getOrderParticipantDetails.ts
 
 export const getOrderParticipantDetails = async (orderId: string, idToken: string) => {
-  // Use local API route in development, Cloud Function in production
-  const isLocalDevelopment = process.env.NODE_ENV === 'development' ||
-                           typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  // KORRIGIERT: Verwende immer absolute URLs
+  const apiUrl = '/api/getOrderParticipantDetails'; // Absolute path from domain root
 
-  const apiUrl = isLocalDevelopment
-    ? '/api/getOrderParticipantDetails'
-    : `${process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL}/getOrderParticipantDetails`;
+  console.log('🔍 getOrderParticipantDetails API Call:', {
+    orderId,
+    apiUrl,
+    orderIdType: typeof orderId,
+  });
+
+  // CRITICAL: Validate orderId before making API call
+  if (!orderId || orderId === 'undefined' || orderId === 'null') {
+    throw new Error(`Invalid orderId: ${orderId}`);
+  }
 
   const response = await fetch(apiUrl, {
     method: 'POST',
