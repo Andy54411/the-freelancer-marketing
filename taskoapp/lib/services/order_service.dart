@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/order.dart' as model;
 
@@ -254,6 +257,179 @@ class OrderService {
         return 'Abgeschlossen';
       default:
         return status;
+    }
+  }
+
+  /// Akzeptiert einen bezahlten Auftrag (Provider)
+  /// Ändert Status von 'zahlung_erhalten_clearing' zu 'AKTIV'
+  static Future<void> acceptOrder(String orderId) async {
+    try {
+      debugPrint('✅ OrderService: Akzeptiere Auftrag: $orderId');
+
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('Benutzer ist nicht angemeldet');
+      }
+
+      // Verwende die Firebase Cloud Function
+      final result = await FirebaseFunctions.instanceFor(region: 'europe-west1')
+          .httpsCallable('acceptOrder')
+          .call({
+        'orderId': orderId,
+      });
+
+      if (result.data['success'] == true) {
+        debugPrint('✅ OrderService: Auftrag erfolgreich akzeptiert');
+      } else {
+        throw Exception(result.data['message'] ?? 'Unbekannter Fehler beim Akzeptieren');
+      }
+
+    } catch (e) {
+      debugPrint('❌ OrderService Fehler beim Akzeptieren: $e');
+      throw Exception('Auftrag konnte nicht akzeptiert werden: $e');
+    }
+  }
+
+  /// Markiert einen Auftrag als vom Provider abgeschlossen
+  /// Ändert Status von 'AKTIV' zu 'PROVIDER_COMPLETED'
+  static Future<void> completeOrderAsProvider(String orderId, {String? completionNote}) async {
+    try {
+      debugPrint('🎯 OrderService: Markiere Auftrag als vom Provider abgeschlossen: $orderId');
+
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('Benutzer ist nicht angemeldet');
+      }
+
+      // Verwende die HTTP Cloud Function für Provider-Completion
+      final result = await FirebaseFunctions.instanceFor(region: 'europe-west1')
+          .httpsCallable('completeOrderHTTP')
+          .call({
+        'orderId': orderId,
+        'completionNote': completionNote ?? 'Auftrag wurde vom Anbieter als abgeschlossen markiert.',
+      });
+
+      if (result.data['success'] == true) {
+        debugPrint('✅ OrderService: Auftrag als Provider-abgeschlossen markiert');
+      } else {
+        throw Exception(result.data['message'] ?? 'Fehler beim Markieren als abgeschlossen');
+      }
+
+    } catch (e) {
+      debugPrint('❌ OrderService Fehler beim Provider-Completion: $e');
+      throw Exception('Auftrag konnte nicht als abgeschlossen markiert werden: $e');
+    }
+  }
+
+  /// Bestätigt den Abschluss eines Auftrags als Kunde
+  /// Ändert Status von 'PROVIDER_COMPLETED' zu 'ABGESCHLOSSEN' und löst Auszahlung aus
+  static Future<void> completeOrderAsCustomer(
+    String orderId, 
+    String userId, {
+    int? rating,
+    String? review,
+    String? completionNotes,
+  }) async {
+    try {
+      debugPrint('🎯 OrderService: Bestätige Auftrag-Abschluss als Kunde: $orderId');
+
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('Benutzer ist nicht angemeldet');
+      }
+
+      if (currentUser.uid != userId) {
+        throw Exception('Zugriff verweigert: Sie können nur Ihre eigenen Aufträge abschließen');
+      }
+
+      // Verwende die Web API für Customer-Completion
+      final response = await _makeHttpRequest(
+        'POST',
+        '/api/user/$userId/orders/$orderId/complete',
+        body: {
+          if (rating != null) 'rating': rating,
+          if (review != null) 'review': review,
+          if (completionNotes != null) 'completionNotes': completionNotes,
+        },
+      );
+
+      if (response['success'] == true) {
+        debugPrint('✅ OrderService: Auftrag erfolgreich abgeschlossen und Auszahlung veranlasst');
+      } else {
+        throw Exception(response['error'] ?? 'Fehler beim Abschließen des Auftrags');
+      }
+
+    } catch (e) {
+      debugPrint('❌ OrderService Fehler beim Customer-Completion: $e');
+      throw Exception('Auftrag konnte nicht abgeschlossen werden: $e');
+    }
+  }
+
+  /// HTTP Request Helper für API-Calls
+  static Future<Map<String, dynamic>> _makeHttpRequest(
+    String method, 
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Benutzer ist nicht angemeldet');
+      }
+
+      final token = await user.getIdToken();
+      
+      debugPrint('🌐 HTTP $method Request zu: $endpoint');
+      debugPrint('📝 Body: $body');
+
+      final baseUrl = kDebugMode 
+          ? 'http://localhost:3000' 
+          : 'https://taskilo.de';
+      
+      final uri = Uri.parse('$baseUrl$endpoint');
+      
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      http.Response response;
+      
+      switch (method.toUpperCase()) {
+        case 'POST':
+          response = await http.post(
+            uri,
+            headers: headers,
+            body: body != null ? json.encode(body) : null,
+          );
+          break;
+        case 'PATCH':
+          response = await http.patch(
+            uri,
+            headers: headers,
+            body: body != null ? json.encode(body) : null,
+          );
+          break;
+        case 'GET':
+          response = await http.get(uri, headers: headers);
+          break;
+        default:
+          throw Exception('Unsupported HTTP method: $method');
+      }
+
+      final responseData = json.decode(response.body) as Map<String, dynamic>;
+      
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        debugPrint('✅ HTTP Request erfolgreich: ${response.statusCode}');
+        return responseData;
+      } else {
+        debugPrint('❌ HTTP Request fehlerhafte Antwort: ${response.statusCode}');
+        throw Exception(responseData['error'] ?? 'HTTP ${response.statusCode} Fehler');
+      }
+
+    } catch (e) {
+      debugPrint('❌ HTTP Request Fehler: $e');
+      throw Exception('API-Request fehlgeschlagen: $e');
     }
   }
 }

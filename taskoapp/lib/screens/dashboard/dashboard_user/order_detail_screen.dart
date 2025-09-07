@@ -4,6 +4,10 @@ import '../../../models/user_model.dart';
 import '../../../models/order.dart';
 import '../../../services/order_service.dart';
 import '../../../utils/colors.dart';
+import '../../../widgets/hours_billing_overview.dart';
+import '../../chat/order_chat_screen.dart';
+import '../../support/support_screen.dart';
+import '../dashboard_layout.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final String orderId;
@@ -23,6 +27,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Order? _order;
   bool _isLoading = true;
   String? _error;
+  String? _successMessage;
 
   @override
   void initState() {
@@ -37,6 +42,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     });
 
     try {
+      // Verwende die bestehende getOrder Methode aus OrderService
       final order = await OrderService.getOrder(widget.orderId);
       setState(() {
         _order = order;
@@ -44,10 +50,139 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = 'Fehler beim Laden des Auftrags: ${e.toString()}';
         _isLoading = false;
       });
     }
+  }
+
+  // Neue Methoden für erweiterte Funktionalität (ähnlich der Web-Version)
+  Future<void> _acceptOrder() async {
+    try {
+      setState(() => _isLoading = true);
+      
+      // Verwende die neue OrderService acceptOrder Methode
+      await OrderService.acceptOrder(widget.orderId);
+      
+      setState(() {
+        _successMessage = 'Auftrag erfolgreich angenommen!';
+        _isLoading = false;
+      });
+      
+      // Reload order data
+      await _loadOrder();
+      
+      // Clear success message after 5 seconds
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) {
+          setState(() => _successMessage = null);
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Fehler beim Annehmen des Auftrags: ${e.toString()}';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _completeOrder() async {
+    // Zeige Confirmation Dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Auftrag abschließen'),
+        content: const Text(
+          'Möchten Sie den Auftrag als erledigt markieren? '
+          'Nach der Bestätigung wird das Geld an den Anbieter ausgezahlt.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: TaskiloColors.primary,
+            ),
+            child: const Text('Bestätigen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        setState(() => _isLoading = true);
+        
+        // Verwende die neue OrderService completeOrderAsCustomer Methode
+        await OrderService.completeOrderAsCustomer(
+          widget.orderId,
+          widget.userId ?? '',
+          rating: 5, // Default rating
+          review: 'Auftrag erfolgreich abgeschlossen',
+          completionNotes: 'Kunde bestätigt Abschluss',
+        );
+        
+        setState(() {
+          _successMessage = 'Auftrag erfolgreich abgeschlossen! Das Geld wurde an den Anbieter ausgezahlt.';
+          _isLoading = false;
+        });
+        
+        // Reload order data
+        await _loadOrder();
+        
+        // Clear success message after 5 seconds
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted) {
+            setState(() => _successMessage = null);
+          }
+        });
+      } catch (e) {
+        setState(() {
+          _error = 'Fehler beim Abschließen des Auftrags: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _openChat() {
+    if (_order == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderChatScreen(
+          orderId: widget.orderId,
+          providerId: _order!.selectedAnbieterId,
+          providerName: _order!.providerName,
+          customerId: _order!.customerFirebaseUid,
+          customerName: 'Kunde',
+        ),
+      ),
+    );
+  }
+
+  void _contactSupport() {
+    // Navigiere zum Support Screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SupportScreen(),
+      ),
+    );
+  }
+
+  void _openPayment() {
+    // TODO: Implementiere Payment-Modal
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Payment-System wird bald verfügbar sein...'),
+        backgroundColor: TaskiloColors.primary,
+      ),
+    );
   }
 
   String _formatPrice(int amountInCents, String? currency) {
@@ -63,17 +198,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Color _getStatusBackgroundColor(String status) {
     switch (status.toUpperCase()) {
       case 'PAYMENT_PENDING':
+      case 'ZAHLUNG_ERHALTEN_CLEARING':
         return Colors.amber.shade100;
       case 'ACTIVE':
       case 'AKTIV':
       case 'IN_PROGRESS':
+      case 'ACCEPTED':
         return Colors.blue.shade100;
       case 'COMPLETED':
       case 'ABGESCHLOSSEN':
+      case 'PROVIDER_COMPLETED':
         return Colors.green.shade100;
       case 'CANCELLED':
       case 'STORNIERT':
+      case 'ABGELEHNT_VOM_ANBIETER':
         return Colors.red.shade100;
+      case 'BEZAHLT':
+        return Colors.green.shade200;
+      case 'FEHLENDE_DETAILS':
+        return Colors.orange.shade100;
       default:
         return Colors.grey.shade100;
     }
@@ -82,17 +225,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Color _getStatusTextColor(String status) {
     switch (status.toUpperCase()) {
       case 'PAYMENT_PENDING':
+      case 'ZAHLUNG_ERHALTEN_CLEARING':
         return Colors.amber.shade700;
       case 'ACTIVE':
       case 'AKTIV':
       case 'IN_PROGRESS':
+      case 'ACCEPTED':
         return Colors.blue.shade700;
       case 'COMPLETED':
       case 'ABGESCHLOSSEN':
+      case 'PROVIDER_COMPLETED':
         return Colors.green.shade700;
       case 'CANCELLED':
       case 'STORNIERT':
+      case 'ABGELEHNT_VOM_ANBIETER':
         return Colors.red.shade700;
+      case 'BEZAHLT':
+        return Colors.green.shade800;
+      case 'FEHLENDE_DETAILS':
+        return Colors.orange.shade700;
       default:
         return Colors.grey.shade700;
     }
@@ -101,18 +252,30 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   String _getStatusDisplayText(String status) {
     switch (status.toUpperCase()) {
       case 'PAYMENT_PENDING':
-        return 'PAYMENT_PENDING';
+        return 'ZAHLUNG AUSSTEHEND';
+      case 'ZAHLUNG_ERHALTEN_CLEARING':
+        return 'ZAHLUNG EMPFANGEN';
       case 'ACTIVE':
       case 'AKTIV':
         return 'AKTIV';
+      case 'ACCEPTED':
+        return 'ANGENOMMEN';
       case 'IN_PROGRESS':
         return 'IN BEARBEITUNG';
       case 'COMPLETED':
       case 'ABGESCHLOSSEN':
         return 'ABGESCHLOSSEN';
+      case 'PROVIDER_COMPLETED':
+        return 'VOM ANBIETER ABGESCHLOSSEN';
       case 'CANCELLED':
       case 'STORNIERT':
         return 'STORNIERT';
+      case 'ABGELEHNT_VOM_ANBIETER':
+        return 'ABGELEHNT';
+      case 'BEZAHLT':
+        return 'BEZAHLT';
+      case 'FEHLENDE_DETAILS':
+        return 'DETAILS FEHLEN';
       default:
         return status.toUpperCase();
     }
@@ -122,60 +285,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     return Consumer<TaskiloUser?>(
       builder: (context, user, child) {
-        return Scaffold(
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: TaskiloColors.primaryGradient,
-              ),
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Auftrag Details',
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Content
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                      ),
-                      child: _buildContent(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        return DashboardLayout(
+          title: 'Auftrag Details',
+          useGradientBackground: true,
+          showBackButton: true,
+          onBackPressed: () => Navigator.pop(context),
+          showBottomNavigation: false,
+          body: _buildContent(),
         );
       },
     );
@@ -227,157 +343,372 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Order Header Card
-          Card(
-            elevation: 8,
-            shadowColor: Colors.black.withValues(alpha: 0.1),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white,
-                    Colors.grey.shade50,
-                  ],
+          // Order Header Card - Glasmorphismus Style
+          DashboardCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Service Title oben
+                Text(
+                  _order!.selectedSubcategory,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    decoration: TextDecoration.none,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black26,
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Service Title und Status
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                
+                const SizedBox(height: 16),
+                
+                // Auftrag Badge
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    'Auftrag #${_order!.id.split('_').last}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withValues(alpha: 0.95),
+                      decoration: TextDecoration.none,
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Status Badge
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _getStatusBackgroundColor(_order!.status),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _getStatusTextColor(_order!.status).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    _getStatusDisplayText(_order!.status),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _getStatusTextColor(_order!.status),
+                      decoration: TextDecoration.none,
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Preis prominent anzeigen - Glass Style
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
                     children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade600,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.euro_rounded, 
+                          color: Colors.white, 
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _order!.selectedSubcategory,
-                              style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: TaskiloColors.primary,
+                              'Gesamtpreis',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.8),
                                 decoration: TextDecoration.none,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
-                              '2',
+                              _formatPrice(_order!.totalAmountPaidByBuyerInCents, _order!.currency),
                               style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w600,
-                                color: TaskiloColors.primary,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                                 decoration: TextDecoration.none,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black26,
+                                    offset: Offset(0, 1),
+                                    blurRadius: 2,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: _getStatusBackgroundColor(_order!.status),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          _getStatusDisplayText(_order!.status),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: _getStatusTextColor(_order!.status),
-                            decoration: TextDecoration.none,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Preis prominent anzeigen
-                  Row(
-                    children: [
-                      Icon(Icons.euro_rounded, 
-                           color: Colors.green.shade600, 
-                           size: 28),
-                      const SizedBox(width: 8),
-                      Text(
-                        _formatPrice(_order!.totalAmountPaidByBuyerInCents, _order!.currency),
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                          decoration: TextDecoration.none,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 
           const SizedBox(height: 20),
 
           // Order Details Card
-          Card(
-            elevation: 6,
-            shadowColor: Colors.black.withValues(alpha: 0.1),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Container(
+          DashboardCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Auftragsdetails',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        decoration: TextDecoration.none,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black26,
+                            offset: Offset(0, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                  
+                
+                _buildDetailRow('Auftrag-ID', _order!.id),
+                if (_order!.providerName.isNotEmpty)
+                  _buildDetailRow('Anbieter', _order!.providerName),
+                if (_order!.selectedSubcategory.isNotEmpty)
+                  _buildDetailRow('Service', _order!.selectedSubcategory),
+                if (_order!.projectName != null && _order!.projectName!.isNotEmpty)
+                  _buildDetailRow('Projekt', _order!.projectName!),
+                _buildDetailRow('Bestellt am', _formatDate(_order!.paidAt)),
+                _buildDetailRow('Erstellt am', _formatDate(_order!.createdAt)),
+              ],
+            ),
+          ),          const SizedBox(height: 20),
+
+          // Stundenabrechnung & Zahlungsübersicht (wie in der Web-Version)
+          HoursBillingOverview(
+            orderId: widget.orderId,
+            originalHours: 0.0, // TODO: Aus Order-Daten oder separater TimeTracking API laden
+            originalPrice: _order!.totalAmountInEuro,
+            additionalHoursPaid: 0.0, // TODO: Aus TimeTracking API laden
+            additionalPricePaid: 0.0,
+            pendingHours: 0.0,
+            pendingPrice: 0.0,
+            loggedHours: 0.0, // TODO: Aus TimeTracking API laden
+            plannedHours: 0.0, // TODO: Aus Order-Daten oder TimeTracking API laden
+            additionalHours: 0.0, // TODO: Berechnen aus logged vs planned
+            totalCost: _order!.totalAmountInEuro,
+            onPaymentRequest: () => _openPayment(),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Success Message (wie in der Web-Version)
+          if (_successMessage != null) ...[
+            DashboardCard(
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green.shade400),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _successMessage!,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.none,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black26,
+                            offset: Offset(0, 1),
+                            blurRadius: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Status-spezifische Action Buttons (wie in der Web-Version)
+          if (_order!.status.toUpperCase() == 'ZAHLUNG_ERHALTEN_CLEARING') ...[
+            Container(
+              width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: Colors.grey.shade200,
-                  width: 1,
+                gradient: const LinearGradient(
+                  colors: [Colors.green, Color(0xFF4CAF50)],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.green.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () => _acceptOrder(),
+                icon: const Icon(Icons.check_circle, size: 20),
+                label: const Text(
+                  'Auftrag annehmen',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
-              padding: const EdgeInsets.all(24),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          if (_order!.status.toUpperCase() == 'PROVIDER_COMPLETED') ...[
+            DashboardCard(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: TaskiloColors.primary,
-                        size: 24,
-                      ),
+                      Icon(Icons.check_circle, color: Colors.green.shade400),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Auftragsdetails',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: TaskiloColors.textPrimary,
-                          decoration: TextDecoration.none,
+                      const Expanded(
+                        child: Text(
+                          'Auftrag wurde vom Anbieter abgeschlossen',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            decoration: TextDecoration.none,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black26,
+                                offset: Offset(0, 1),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  
-                  _buildDetailRow('Auftrag-ID', _order!.id),
-                  if (_order!.providerName.isNotEmpty)
-                    _buildDetailRow('Anbieter', _order!.providerName),
-                  if (_order!.projectName != null && _order!.projectName!.isNotEmpty)
-                    _buildDetailRow('Projekt', _order!.projectName!),
-                  _buildDetailRow('Bestellt am', _formatDate(_order!.paidAt)),
-                  _buildDetailRow('Erstellt am', _formatDate(_order!.createdAt)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Der Anbieter hat den Auftrag als erledigt markiert. Bitte prüfen Sie die Arbeit und bestätigen Sie den Abschluss.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [TaskiloColors.primary, Color(0xFF0d9488)],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: TaskiloColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () => _completeOrder(),
+                icon: const Icon(Icons.rate_review, size: 20),
+                label: const Text(
+                  'Auftrag bestätigen & bewerten',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
 
-          const SizedBox(height: 24),
-
-          // Action Buttons
+          // Standard Action Buttons
           Row(
             children: [
               Expanded(
@@ -396,12 +727,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ],
                   ),
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Chat öffnen - Navigation zur Chat-Seite
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Chat wird geöffnet...')),
-                      );
-                    },
+                    onPressed: () => _openChat(),
                     icon: const Icon(Icons.chat_bubble_outline, size: 20),
                     label: const Text(
                       'Chat öffnen',
@@ -441,15 +767,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ],
                   ),
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      // Support kontaktieren
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Support wird kontaktiert...'),
-                          backgroundColor: TaskiloColors.primary,
-                        ),
-                      );
-                    },
+                    onPressed: () => _contactSupport(),
                     icon: const Icon(Icons.help_outline, size: 20),
                     label: const Text(
                       'Support',
@@ -483,10 +801,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.shade200,
+          color: Colors.white.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -497,10 +815,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             width: 100,
             child: Text(
               '$label:',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: TaskiloColors.textSecondary,
+                color: Colors.white.withValues(alpha: 0.8),
                 decoration: TextDecoration.none,
               ),
             ),
@@ -512,7 +830,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: TaskiloColors.textPrimary,
+                color: Colors.white,
                 decoration: TextDecoration.none,
               ),
             ),

@@ -4,6 +4,7 @@ import '../../../models/user_model.dart';
 import '../../../services/auth_service.dart';
 import '../dashboard_layout.dart';
 import 'my_orders_screen.dart';
+import '../../support/support_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -151,6 +152,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const MyOrdersScreen(),
+                    ),
+                  );
+                },
+              ),
+              _buildQuickActionCard(
+                'Support',
+                Icons.help_center,
+                () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SupportScreen(),
                     ),
                   );
                 },

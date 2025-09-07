@@ -3,6 +3,8 @@ import 'dart:ui';
 import '../../utils/colors.dart';
 import 'dashboard_user/my_orders_screen.dart';
 import 'dashboard_user/search_screen.dart';
+import '../messages/messages_screen.dart';
+import '../profile/profile_screen.dart';
 
 class DashboardLayout extends StatefulWidget {
   final String title;
@@ -68,15 +70,17 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         );
         break;
       case 3: // Mail Icon - Posteingang
-        // TODO: Navigation zu Messages/Posteingang Screen implementieren
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Posteingang wird bald verfügbar sein')),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const MessagesScreen(),
+          ),
         );
         break;
       case 4: // Person Icon - Profil
-        // TODO: Navigation zu Profile Screen implementieren
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil wird bald verfügbar sein')),
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const ProfileScreen(),
+          ),
         );
         break;
     }
