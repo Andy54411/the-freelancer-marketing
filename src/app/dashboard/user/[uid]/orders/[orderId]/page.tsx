@@ -75,14 +75,41 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
 
-  // Sicherere Parameter-Extraktion für Next.js 15
-  const orderId = React.useMemo(() => {
-    if (!params) return '';
-    const id = params.orderId;
-    if (typeof id === 'string') return id;
-    if (Array.isArray(id)) return id[0] || '';
-    return '';
-  }, [params]);
+  // KORRIGIERT: Direktere Parameter-Extraktion für Next.js 15
+  const [orderId, setOrderId] = useState<string>('');
+
+  useEffect(() => {
+    // Direkter Zugriff auf params.orderId mit Fallback-Strategie
+    let extractedId = '';
+
+    if (params?.orderId) {
+      if (typeof params.orderId === 'string') {
+        extractedId = params.orderId;
+      } else if (Array.isArray(params.orderId)) {
+        extractedId = params.orderId[0] || '';
+      }
+    }
+
+    // Fallback: Extrahiere aus der aktuellen URL
+    if (!extractedId && typeof window !== 'undefined') {
+      const pathSegments = window.location.pathname.split('/');
+      const orderIndex = pathSegments.findIndex(segment => segment === 'orders');
+      if (orderIndex >= 0 && pathSegments[orderIndex + 1]) {
+        extractedId = pathSegments[orderIndex + 1];
+      }
+    }
+
+    console.log('🔍 OrderID Extraktion:', {
+      params,
+      extractedId,
+      pathname: typeof window !== 'undefined' ? window.location.pathname : 'server',
+      segments: typeof window !== 'undefined' ? window.location.pathname.split('/') : [],
+    });
+
+    if (extractedId && extractedId !== orderId) {
+      setOrderId(extractedId);
+    }
+  }, [params, orderId]);
 
   const { user: currentUser, loading: authLoading, firebaseUser } = useAuth(); // KORREKTUR: useAuth Hook korrekt verwenden mit firebaseUser
 
@@ -146,13 +173,25 @@ export default function OrderDetailPage() {
 
     // Wenn die orderId fehlt, ist das ein Fehler.
     if (!orderId) {
-      console.error('❌ OrderId fehlt:', { params, orderId, paramsType: typeof params });
+      console.error('❌ OrderId fehlt:', {
+        params,
+        orderId,
+        paramsType: typeof params,
+        paramsContent: JSON.stringify(params),
+        windowLocation: window.location.href,
+        pathSegments: window.location.pathname.split('/'),
+      });
       setError('Auftrags-ID in der URL fehlt.');
       setLoadingOrder(false);
       return;
     }
 
-    console.log('✅ OrderId gelesen:', { orderId, params });
+    console.log('✅ OrderId gelesen:', {
+      orderId,
+      params,
+      url: window.location.href,
+      pathname: window.location.pathname,
+    });
 
     // Zuerst laden wir die Daten über die API (mit ordentlicher Autorisierung)
     // Dann starten wir den Realtime-Listener für Updates

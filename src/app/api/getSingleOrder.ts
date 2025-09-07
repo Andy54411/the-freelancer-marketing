@@ -1,13 +1,10 @@
 // src/api/getSingleOrder.ts
 
 export const getSingleOrder = async (orderId: string, idToken: string) => {
-  // Use local API route in development, Cloud Function in production
-  const isLocalDevelopment = process.env.NODE_ENV === 'development' ||
-                           typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  // KORRIGIERT: Verwende immer absolute URLs
+  const apiUrl = '/api/getSingleOrder'; // Absolute path from domain root
 
-  const apiUrl = isLocalDevelopment
-    ? '/api/getSingleOrder'
-    : `${process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_BASE_URL}/getSingleOrder`;
+  console.log('🔍 getSingleOrder API Call:', { orderId, apiUrl });
 
   const response = await fetch(apiUrl, {
     method: 'POST',
@@ -20,6 +17,7 @@ export const getSingleOrder = async (orderId: string, idToken: string) => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error('❌ getSingleOrder API Error:', { status: response.status, errorData });
     throw new Error(errorData.error || `Request failed: ${response.status}`);
   }
 
