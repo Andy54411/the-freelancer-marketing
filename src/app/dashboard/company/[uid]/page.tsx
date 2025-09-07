@@ -130,7 +130,13 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
     useCompanyDashboard();
 
   // NEU: Onboarding-Status prüfen für bestehende Firmen
-  const onboardingStatus = useCompanyOnboardingCheck(uid ?? null);
+  // TEMPORÄR DEAKTIVIERT: const onboardingStatus = useCompanyOnboardingCheck(uid ?? null);
+  const onboardingStatus = {
+    needsOnboarding: false,
+    isLoading: false,
+    currentStep: 1,
+    completionPercentage: 100,
+  };
 
   // NEU: Direkter Zugriff auf Auth-Context für Debugging
   const { user: authUser, firebaseUser } = useAuth();
@@ -238,7 +244,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
                 completionPercentage={onboardingStatus.completionPercentage}
                 currentStep={onboardingStatus.currentStep}
                 isLoading={onboardingStatus.isLoading}
-                error={onboardingStatus.error}
               />
             )}
 
