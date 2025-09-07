@@ -5,6 +5,7 @@ import '../../../models/order.dart';
 import '../../../services/order_service.dart';
 import '../../../utils/colors.dart';
 import '../../../widgets/hours_billing_overview.dart';
+import '../../../widgets/time_tracking_widget.dart';
 import '../../chat/order_chat_screen.dart';
 import '../../support/support_screen.dart';
 import '../dashboard_layout.dart';
@@ -525,6 +526,41 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
 
           const SizedBox(height: 20),
+
+          // TimeTracking Widget - nur für Provider sichtbar (wie in der Web-Version)
+          Consumer<TaskiloUser?>(
+            builder: (context, currentUser, child) {
+              // Provider-Check: Zeige TimeTracking nur wenn der aktuelle User der Provider des Auftrags ist
+              final isProvider = currentUser != null && 
+                               _order != null && 
+                               currentUser.uid == _order!.selectedAnbieterId;
+              
+              if (isProvider) {
+                return Column(
+                  children: [
+                    TimeTrackingWidget(
+                      orderId: widget.orderId,
+                      customerName: 'Kunde', // Default customer name
+                      originalPlannedHours: 8.0, // Default 8 hours planned
+                      hourlyRate: 50.0, // Default hourly rate
+                      onTimeSubmitted: () {
+                        // Callback für erfolgreiche Zeiterfassung
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Zeit erfolgreich erfasst!'),
+                            backgroundColor: TaskiloColors.primary,
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                );
+              }
+              // Für Kunden (Customer) wird TimeTracking nicht angezeigt
+              return const SizedBox.shrink();
+            },
+          ),
 
           // Success Message (wie in der Web-Version)
           if (_successMessage != null) ...[

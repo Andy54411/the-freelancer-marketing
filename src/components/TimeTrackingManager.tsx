@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit3, FiTrash2, FiClock, FiCalendar, FiUser } from 'react-icons/fi';
 import { db } from '@/firebase/clients';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth } from '@/firebase/clients';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { useAlertHelpers } from '@/components/ui/AlertProvider';
@@ -46,6 +46,7 @@ export default function TimeTrackingManager({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [showAllEntries, setShowAllEntries] = useState(false);
+  const [providerName, setProviderName] = useState<string>('Lädt...');
   const { showSuccess, showError, showWarning } = useAlertHelpers();
 
   // Form state
@@ -66,6 +67,7 @@ export default function TimeTrackingManager({
     const unsubscribe = onAuthStateChanged(auth, currentUser => {
       setUser(currentUser);
       if (currentUser) {
+        loadProviderData(currentUser.uid);
         loadTimeTracking();
       }
     });
@@ -73,21 +75,132 @@ export default function TimeTrackingManager({
     return () => unsubscribe();
   }, [orderId]);
 
+  const loadProviderData = async (userId: string) => {
+    try {
+      // Versuche zuerst companies collection
+      const companyDoc = await getDoc(doc(db, 'companies', userId));
+      if (companyDoc.exists()) {
+        const companyData = companyDoc.data();
+        setProviderName(companyData.companyName || companyData.name || 'Unbekannter Anbieter');
+        return;
+      }
+
+      // Fallback: users collection
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const name = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+        setProviderName(name || 'Unbekannter Benutzer');
+        return;
+      }
+
+      setProviderName('Unbekannter Nutzer');
+    } catch (error) {
+      console.error('Fehler beim Laden der Provider-Daten:', error);
+      setProviderName('Fehler beim Laden');
+    }
+  };
+
+  // 🆕 B2B/B2C ORDER DETECTION FUNCTION
+  const checkIfB2BOrder = async (orderId: string): Promise<boolean> => {
+    try {
+      const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
+      if (!orderDoc.exists()) {
+        console.log('❌ Auftrag nicht gefunden für B2B/B2C-Check');
+        return false; // Fallback zu B2C
+      }
+
+      const orderData = orderDoc.data();
+      console.log('📊 Analysiere Auftrag für B2B/B2C:', orderData);
+
+      // 1. EXPLICIT PAYMENT TYPE CHECK
+      const paymentType = orderData.paymentType || '';
+      if (paymentType === 'b2c_fixed_price') {
+        console.log('🛍️ B2C erkannt durch paymentType: b2c_fixed_price');
+        return false;
+      }
+      if (paymentType === 'b2b_hourly' || paymentType === 'b2b_project') {
+        console.log('🏢 B2B erkannt durch paymentType:', paymentType);
+        return true;
+      }
+
+      // 2. CUSTOMER TYPE CHECK
+      const customerType = orderData.customerType || '';
+      if (customerType === 'privat' || customerType === 'private') {
+        console.log('🛍️ B2C erkannt durch customerType: privat');
+        return false;
+      }
+      if (customerType === 'business' || customerType === 'unternehmen') {
+        console.log('🏢 B2B erkannt durch customerType: business');
+        return true;
+      }
+
+      // 3. COMPANY NAME CHECK
+      if (orderData.customerCompanyName && orderData.customerCompanyName.trim() !== '') {
+        console.log('🏢 B2B erkannt durch customerCompanyName');
+        return true;
+      }
+
+      // 4. ORDER VALUE THRESHOLD (> 500€)
+      const totalAmount = orderData.totalAmountPaidByBuyerInCents || 0;
+      if (totalAmount > 50000) {
+        // > 500€
+        console.log('🏢 B2B erkannt durch hohen Bestellwert:', totalAmount / 100, '€');
+        return true;
+      }
+
+      // 5. SERVICE CATEGORY CHECK
+      const category = orderData.selectedSubcategory || '';
+      const b2bCategories = [
+        'Consulting',
+        'Software Development',
+        'Marketing Services',
+        'Business Strategy',
+        'Project Management',
+        'IT Services',
+        'Accounting Services',
+      ];
+
+      if (b2bCategories.some(b2bCat => category.toLowerCase().includes(b2bCat.toLowerCase()))) {
+        console.log('🏢 B2B erkannt durch Service-Kategorie:', category);
+        return true;
+      }
+
+      // 6. EXPLICIT B2B MARKERS
+      if (orderData.businessType === 'B2B' || orderData.isBusinessOrder === true) {
+        console.log('🏢 B2B erkannt durch businessType/isBusinessOrder');
+        return true;
+      }
+
+      console.log('🛍️ B2C als Fallback - keine B2B-Indikatoren gefunden');
+      return false; // Default: B2C
+    } catch (error) {
+      console.error('❌ Fehler bei B2B/B2C-Check:', error);
+      return false; // Fallback zu B2C bei Fehlern
+    }
+  };
+
   const loadTimeTracking = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Lade Zeiterfassung für Auftrag:', orderId);
 
       // Lade Auftragsdaten direkt aus Firebase
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
       if (orderDoc.exists()) {
         const orderData = orderDoc.data();
+        console.log('📋 Auftragsdaten geladen:', orderData);
         const entries: TimeEntry[] = [];
 
         // Lade TimeTracking-Einträge aus dem Auftrag
         if (orderData.timeTracking?.timeEntries) {
+          console.log(
+            '⏰ TimeTracking-Einträge gefunden:',
+            orderData.timeTracking.timeEntries.length
+          );
 
           orderData.timeTracking.timeEntries.forEach((entry: any, index: number) => {
-            // Debug: Log the raw status from database
+            console.log(`📝 Verarbeite Eintrag ${index}:`, entry);
 
             // Erweiterte Status-Mapping-Logik
             let mappedStatus: 'logged' | 'submitted' | 'approved' | 'rejected' | 'paid' = 'logged';
@@ -113,7 +226,7 @@ export default function TimeTrackingManager({
               mappedStatus = 'logged';
             }
 
-            // Debug: Log the mapped status
+            console.log(`✅ Status gemappt: ${entry.status} → ${mappedStatus}`);
 
             entries.push({
               id: entry.id || `entry-${index}`,
@@ -131,15 +244,16 @@ export default function TimeTrackingManager({
             });
           });
         } else {
-
+          console.log('⚠️ Keine TimeTracking-Einträge im Auftrag gefunden');
         }
 
+        console.log(`✅ ${entries.length} Zeiteinträge geladen:`, entries);
         setTimeEntries(entries);
       } else {
-
+        console.error('❌ Auftrag nicht gefunden:', orderId);
       }
     } catch (error) {
-
+      console.error('❌ Fehler beim Laden der Zeiterfassung:', error);
     } finally {
       setLoading(false);
     }
@@ -170,7 +284,10 @@ export default function TimeTrackingManager({
       // Dynamischer Import des TimeTracker
       const { TimeTracker } = await import('@/lib/timeTracker');
 
-      // Berechne Kategorie basierend auf bereits erfassten Stunden
+      // 🆕 B2B/B2C DETECTION: Prüfe Order-Typ vor Kategorie-Bestimmung
+      const isB2BOrder = await checkIfB2BOrder(orderId);
+
+      // Berechne Kategorie basierend auf B2B/B2C und bereits erfassten Stunden
       const currentOriginalHours = timeEntries
         .filter(entry => entry.category === 'original')
         .reduce((sum, entry) => sum + entry.hours, 0);
@@ -181,18 +298,27 @@ export default function TimeTrackingManager({
       let originalHours = 0;
       let additionalHours = 0;
 
-      if (remainingOriginalHours >= formData.hours) {
-        // Alle Stunden sind noch als "original" verfügbar
+      if (!isB2BOrder) {
+        // 🛍️ B2C FESTPREIS: Alle Stunden sind "original" (bereits bezahlt)
         category = 'original';
         originalHours = formData.hours;
-      } else if (remainingOriginalHours > 0) {
-        // Split zwischen original und additional
-        originalHours = remainingOriginalHours;
-        additionalHours = formData.hours - remainingOriginalHours;
+        console.log('🛍️ B2C erkannt: Alle Stunden als "original" kategorisiert');
       } else {
-        // Alle Stunden sind additional
-        category = 'additional';
-        additionalHours = formData.hours;
+        // 🏢 B2B FLEXIBLE ABRECHNUNG: Original vs Additional Logic
+        if (remainingOriginalHours >= formData.hours) {
+          // Alle Stunden sind noch als "original" verfügbar
+          category = 'original';
+          originalHours = formData.hours;
+        } else if (remainingOriginalHours > 0) {
+          // Split zwischen original und additional
+          originalHours = remainingOriginalHours;
+          additionalHours = formData.hours - remainingOriginalHours;
+        } else {
+          // Alle Stunden sind additional
+          category = 'additional';
+          additionalHours = formData.hours;
+        }
+        console.log('🏢 B2B erkannt: Flexible Stundenabrechnung angewendet');
       }
 
       // Erstelle Zeiteintrag-Objekt
@@ -278,7 +404,6 @@ export default function TimeTrackingManager({
         }
       }, 500);
     } catch (error) {
-
       showError(
         'Fehler beim Speichern',
         error instanceof Error ? error.message : 'Unbekannter Fehler'
@@ -303,18 +428,53 @@ export default function TimeTrackingManager({
     setShowAddForm(true);
   };
 
-  const handleDeleteEntry = async (entryId: string) => {
-    if (!confirm('Zeiteintragung wirklich löschen?')) return;
+  const handleDeleteTimeEntry = async (entryId: string) => {
+    if (!orderId) return;
 
     try {
-      showWarning(
-        'Zeiteintragung würde gelöscht werden',
-        'Diese Funktion ist noch nicht implementiert'
-      );
-      await loadTimeTracking();
-    } catch (error) {
+      const orderDoc = doc(db, 'auftraege', orderId);
+      const orderSnap = await getDoc(orderDoc);
 
-      showError('Fehler beim Löschen der Zeiteintragung');
+      if (!orderSnap.exists()) {
+        console.error('Auftrag nicht gefunden');
+        return;
+      }
+
+      const orderData = orderSnap.data();
+      const currentTimeEntries = orderData.timeTracking?.timeEntries || [];
+
+      // Entferne den Eintrag
+      const updatedTimeEntries = currentTimeEntries.filter((entry: any) => entry.id !== entryId);
+
+      // Berechne neue Summen
+      const newTotalLoggedHours = updatedTimeEntries.reduce(
+        (sum: number, entry: any) => sum + (entry.hours || 0),
+        0
+      );
+      const newTotalBilledHours = updatedTimeEntries
+        .filter((entry: any) => ['approved', 'paid'].includes(entry.status))
+        .reduce((sum: number, entry: any) => sum + (entry.hours || 0), 0);
+      const newTotalApprovedHours = updatedTimeEntries
+        .filter((entry: any) => entry.status === 'approved')
+        .reduce((sum: number, entry: any) => sum + (entry.hours || 0), 0);
+
+      // Update Firestore mit neuen Summen
+      await updateDoc(orderDoc, {
+        'timeTracking.timeEntries': updatedTimeEntries,
+        'timeTracking.totalLoggedHours': newTotalLoggedHours,
+        'timeTracking.totalBilledHours': newTotalBilledHours,
+        'timeTracking.totalApprovedHours': newTotalApprovedHours,
+        'timeTracking.lastUpdated': serverTimestamp(),
+      });
+
+      console.log('✅ Zeiteintrag erfolgreich gelöscht und Summen aktualisiert');
+
+      // Reload data
+      if (loadTimeTracking) {
+        loadTimeTracking();
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen des Zeiteintrags:', error);
     }
   };
 
@@ -335,13 +495,11 @@ export default function TimeTrackingManager({
 
       // Berechne Revenue für alle Einträge mit billableAmount, unabhängig vom Status
       if (entry.billableAmount && entry.billableAmount > 0) {
-
         return sum + entry.billableAmount / 100; // Convert from cents to euros
       }
 
       // Fallback: Für approved/paid ohne billableAmount verwende Stunden * Rate
       if ((entry.status === 'approved' || entry.status === 'paid') && entry.hours > 0) {
-
         return sum + entry.hours * hourlyRate;
       }
 
@@ -373,16 +531,23 @@ export default function TimeTrackingManager({
                 <div className="flex items-center gap-4 mt-1">
                   <div className="flex items-center gap-2 text-gray-600">
                     <FiUser size={16} />
-                    <span className="font-medium">{customerName}</span>
+                    <span className="font-medium">{providerName}</span>
                   </div>
                   <div className="text-gray-400">•</div>
                   <div className="text-gray-600">
-                    <span className="font-medium text-blue-600">{originalPlannedHours}h</span>{' '}
+                    <span className="font-medium text-blue-600">
+                      {!originalPlannedHours || isNaN(originalPlannedHours)
+                        ? '0'
+                        : originalPlannedHours.toFixed(1)}
+                      h
+                    </span>{' '}
                     geplant
                   </div>
                   <div className="text-gray-400">•</div>
                   <div className="text-gray-600">
-                    <span className="font-medium text-green-600">{hourlyRate}€/h</span>
+                    <span className="font-medium text-green-600">
+                      {!hourlyRate || isNaN(hourlyRate) ? '50' : hourlyRate.toFixed(0)}€/h
+                    </span>
                   </div>
                 </div>
               </div>
@@ -545,7 +710,7 @@ export default function TimeTrackingManager({
                           <FiEdit3 size={16} />
                         </button>
                         <button
-                          onClick={() => entry.id && handleDeleteEntry(entry.id)}
+                          onClick={() => entry.id && handleDeleteTimeEntry(entry.id)}
                           className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                           title="Löschen"
                         >
