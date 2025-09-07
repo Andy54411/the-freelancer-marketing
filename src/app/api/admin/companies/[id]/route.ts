@@ -211,7 +211,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       lastVerificationUpdate: data?.onboardingCompletedAt?.toDate?.()?.toISOString(),
 
       // Zusätzliche Metadaten
-      userType: data?.userType,
+      user_type: data?.user_type,
       createdByCallable: data?.createdByCallable,
       industryMcc: data?.step2?.industryMcc,
 

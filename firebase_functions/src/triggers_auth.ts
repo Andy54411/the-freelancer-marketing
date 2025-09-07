@@ -21,6 +21,32 @@ export const syncUserRoleWithCustomClaims = onDocumentWritten("users/{userId}", 
     // Extrahiere den alten user_type, um unnötige Schreibvorgänge zu vermeiden.
     const oldUserType = beforeData?.user_type;
 
+    return await syncCustomClaims(userId, newUserType, oldUserType);
+});
+
+/**
+ * Synchronisiert die Benutzerrolle aus der 'companies'-Collection
+ * mit den Custom Claims im Firebase Auth Token ('role').
+ *
+ * Dieser Trigger wird bei jeder Erstellung oder Aktualisierung eines Dokuments
+ * in der 'companies'-Collection ausgeführt.
+ */
+export const syncCompanyRoleWithCustomClaims = onDocumentWritten("companies/{userId}", async (event) => {
+    const userId = event.params.userId;
+    const afterData = event.data?.after.data();
+    const beforeData = event.data?.before.data();
+
+    // Für Companies ist der user_type immer 'firma'
+    const newUserType = afterData?.user_type || 'firma';
+    const oldUserType = beforeData?.user_type;
+
+    return await syncCustomClaims(userId, newUserType, oldUserType);
+});
+
+/**
+ * Hilfsfunktion zum Synchronisieren der Custom Claims
+ */
+async function syncCustomClaims(userId: string, newUserType: string, oldUserType?: string) {
     // Wenn sich der user_type nicht geändert hat, brechen wir ab, um Kosten zu sparen.
     if (newUserType === oldUserType) {
         loggerV2.info(`[syncUserRole] Rolle für ${userId} ist unverändert ('${newUserType}'). Kein Update der Claims erforderlich.`);
@@ -42,4 +68,4 @@ export const syncUserRoleWithCustomClaims = onDocumentWritten("users/{userId}", 
         );
         return null;
     }
-});
+}

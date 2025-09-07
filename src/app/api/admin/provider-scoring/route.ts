@@ -153,7 +153,7 @@ async function getAllProviderScores(limit: number, minScore: number, includeBloc
 
     const query = adminDb
       .collection('users')
-      .where('userType', '==', 'company') // Nur Anbieter-Accounts
+      .where('user_type', '==', 'firma') // Nur Anbieter-Accounts
       .limit(limit);
 
     const querySnapshot = await query.get();

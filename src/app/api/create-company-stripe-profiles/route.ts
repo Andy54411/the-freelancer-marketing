@@ -7,7 +7,6 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-
     return null;
   }
 
@@ -20,7 +19,7 @@ interface CreateProfilesRequest {
   companyName: string;
   email: string;
   uid: string;
-  userType?: 'user' | 'company';
+  user_type?: 'kunde' | 'firma';
 }
 
 interface CreateProfilesResponse {
@@ -32,10 +31,8 @@ interface CreateProfilesResponse {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse<CreateProfilesResponse>> {
-
   const stripe = getStripeInstance();
   if (!stripe) {
-
     return NextResponse.json(
       {
         success: false,
@@ -47,7 +44,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
   }
 
   if (!db) {
-
     return NextResponse.json(
       {
         success: false,
@@ -60,11 +56,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
 
   try {
     const body: CreateProfilesRequest = await request.json();
-    const { companyName, email, uid, userType = 'company' } = body;
+    const { companyName, email, uid, user_type = 'firma' } = body;
 
     // Validierung
     if (!companyName || typeof companyName !== 'string') {
-
       return NextResponse.json(
         { success: false, error: 'Ungültiger Firmenname.', message: 'Validierungsfehler' },
         { status: 400 }
@@ -72,7 +67,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
     }
 
     if (!email || typeof email !== 'string') {
-
       return NextResponse.json(
         { success: false, error: 'Ungültige E-Mail-Adresse.', message: 'Validierungsfehler' },
         { status: 400 }
@@ -80,7 +74,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
     }
 
     if (!uid || typeof uid !== 'string') {
-
       return NextResponse.json(
         { success: false, error: 'Ungültige Benutzer-ID.', message: 'Validierungsfehler' },
         { status: 400 }
@@ -97,16 +90,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
         name: companyName,
         metadata: {
           firebaseUserId: uid,
-          customerType: userType,
+          customerType: user_type,
           createdFor: 'B2C_payments',
           createdAt: new Date().toISOString(),
         },
       });
 
       results.stripeCustomerId = customer.id;
-
     } catch (customerError) {
-
       throw customerError;
     }
 
@@ -129,7 +120,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
         },
         metadata: {
           firebaseUserId: uid,
-          accountType: userType,
+          accountType: user_type,
           createdFor: 'B2B_payments',
           createdAt: new Date().toISOString(),
         },
@@ -139,11 +130,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
       });
 
       results.stripeAccountId = account.id;
-
     } catch (accountError) {
-
       // Customer wurde bereits erstellt, also nur warnen aber nicht komplett fehlschlagen
-
     }
 
     // 3. FIRESTORE AKTUALISIEREN
@@ -164,9 +152,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
 
       // Update users collection
       await db.collection('users').doc(uid).update(updateData);
-
     } catch (firestoreError) {
-
       // Stripe-Profile wurden erstellt, also weiter fortfahren
     }
 
@@ -186,7 +172,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
       message,
     });
   } catch (error) {
-
     let errorMessage = 'Interner Serverfehler beim Erstellen der Stripe-Profile.';
 
     if (error instanceof Stripe.errors.StripeError) {

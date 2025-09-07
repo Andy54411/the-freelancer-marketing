@@ -23,7 +23,7 @@ import {
 } from 'firebase/firestore';
 import { categories, Category } from '@/lib/categoriesData'; // Categories for search
 import { WorkspaceService } from '@/services/WorkspaceService'; // For Quick Note functionality
-import { Logo } from '@/components/logo'; // Logo component
+import { Logo } from '@/components/logo';
 import AppHeaderNavigation from './AppHeaderNavigation'; // Category navigation below header
 import { QuickNoteDialog } from '@/components/workspace/QuickNoteDialog'; // Quick Note Dialog
 import {
@@ -73,13 +73,12 @@ interface UserHeaderProps {
 }
 
 const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
-  const { unreadMessagesCount, recentChats } = useAuth(); // KORREKTUR: Daten aus dem Context beziehen
+  const { user: authUser, loading: authLoading, unreadMessagesCount, recentChats } = useAuth(); // KORREKTUR: Alle Daten aus dem Context beziehen
 
   const router = useRouter();
   const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(
     null
   );
-  const [firestoreUserData, setFirestoreUserData] = useState<FirestoreUserData | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -185,144 +184,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     }
   }, []);
 
-  const loadFirestoreUserData = useCallback(
-    async (uid: string) => {
-      if (!uid) {
-        setFirestoreUserData(null);
-        return;
-      }
-
-      console.log(`🔍 Loading Firestore data for uid: ${uid}`);
-
-      try {
-        let userData: any = null;
-        let profileUrl: string | null = null;
-
-        // 1. IMMER zuerst users collection prüfen
-        try {
-          const userDocRef = doc(db, 'users', uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            userData = userDocSnap.data() as FirestoreUserData;
-            console.log(`✅ Users collection data loaded:`, userData);
-          } else {
-            console.log(`⚠️ No data found in users collection for uid: ${uid}`);
-          }
-        } catch (error) {
-          console.error(`❌ Error loading from users collection:`, error);
-        }
-
-        // 2. Check companies collection for company data
-        if (userData) {
-          try {
-            const companyDocRef = doc(db, 'companies', uid);
-            const companyDocSnap = await getDoc(companyDocRef);
-            if (companyDocSnap.exists()) {
-              const companyData = companyDocSnap.data();
-              console.log(`✅ Companies collection data loaded:`, companyData);
-
-              // Kombiniere userData mit wichtigen Company-Feldern für Auth
-              userData = {
-                ...userData,
-                companyName: companyData.companyName,
-                profileComplete: companyData.profileComplete,
-                onboardingCompleted: companyData.onboardingCompleted,
-              };
-
-              // Prüfe alle möglichen Profilbild-Felder in Company-Daten
-              profileUrl =
-                companyData.profilePictureURL ||
-                companyData.profilePictureFirebaseUrl ||
-                companyData['step3.profilePictureURL'] ||
-                companyData.step3?.profilePictureURL ||
-                null;
-
-              console.log(`🖼️ Company profileUrl found:`, profileUrl);
-            } else {
-              console.log(`⚠️ No data found in companies collection for user: ${uid}`);
-            }
-          } catch (error) {
-            console.error(`❌ Error loading from companies collection:`, error);
-          }
-        }
-
-        if (userData && !profileUrl) {
-          // Für Privatnutzer: Lade Profilbild aus users collection
-          profileUrl = userData.profilePictureURL || userData.profilePictureFirebaseUrl || null;
-        }
-
-        // 3. Fallback: Wenn KEINE Daten in users gefunden, versuche companies collection direkt
-        if (!userData) {
-          try {
-            console.log(`🔄 Fallback: Checking companies collection directly for uid: ${uid}`);
-            const companyDocRef = doc(db, 'companies', uid);
-            const companyDocSnap = await getDoc(companyDocRef);
-            if (companyDocSnap.exists()) {
-              const companyData = companyDocSnap.data();
-              console.log(`✅ Found company data as fallback:`, companyData);
-
-              // Erstelle minimalen userData aus company data
-              userData = {
-                uid: uid,
-                user_type: 'firma',
-                email: companyData.email || companyData['step1.email'] || '',
-                firstName: companyData.firstName || companyData['step1.firstName'] || '',
-                lastName: companyData.lastName || companyData['step1.lastName'] || '',
-                companyName: companyData.companyName,
-                profileComplete: companyData.profileComplete,
-                onboardingCompleted: companyData.onboardingCompleted,
-              };
-
-              // Prüfe alle möglichen Profilbild-Felder in Company-Daten (Fallback)
-              profileUrl =
-                companyData.profilePictureURL ||
-                companyData.profilePictureFirebaseUrl ||
-                companyData['step3.profilePictureURL'] ||
-                companyData.step3?.profilePictureURL ||
-                null;
-
-              console.log(`🖼️ Company fallback profileUrl found:`, profileUrl);
-            }
-          } catch (error) {
-            console.error(`❌ Error in fallback companies check:`, error);
-          }
-        }
-
-        // 4. Setze final userData
-        if (userData) {
-          console.log(`✅ Final userData set:`, userData);
-          setFirestoreUserData(userData);
-        } else {
-          console.log(`❌ No userData found in any collection for uid: ${uid}`);
-          setFirestoreUserData(null);
-        }
-
-        // 5. Setze Profilbild oder fallback auf Storage
-        if (profileUrl) {
-          setProfilePictureURLFromStorage(profileUrl);
-        } else {
-          loadProfilePictureFromStorage(uid);
-        }
-      } catch (error) {
-        console.error(`❌ Critical error in loadFirestoreUserData:`, error);
-        setFirestoreUserData(null);
-        loadProfilePictureFromStorage(uid);
-      }
-    },
-    [loadProfilePictureFromStorage]
-  );
-
   useEffect(() => {
-    // Effekt zur Überwachung des Authentifizierungsstatus und zum Laden der initialen Daten
+    // Effekt zur Überwachung des Authentifizierungsstatus
     const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
-      // Explizite Typisierung für 'user'
       setCurrentUser(user);
       if (user?.uid) {
-        // Lade zuerst die Firestore-Daten, dann prüfe Redirect
-        loadFirestoreUserData(user.uid);
+        loadProfilePictureFromStorage(user.uid);
       } else {
         setProfilePictureURLFromStorage(null);
-        setFirestoreUserData(null);
         // If no user, and not on login page, redirect to login
         if (!window.location.pathname.startsWith('/login')) {
           router.replace(
@@ -332,7 +201,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentUid, router, loadFirestoreUserData]);
+  }, [currentUid, router, loadProfilePictureFromStorage]);
 
   // Smart Redirect basierend auf user_type - KORRIGIERTE LOGIK mit Loop-Schutz
   useEffect(() => {
@@ -345,15 +214,15 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     console.log('�🔍 Redirect Check:', {
       currentUser: currentUser?.uid,
       currentUid: currentUid,
-      firestoreUserData: firestoreUserData,
-      userType: firestoreUserData?.user_type,
+      authUser: authUser,
+      userType: authUser?.user_type, // Verwende AuthContext statt firestoreUserData
       currentPath: window.location.pathname,
       isRedirecting,
     });
 
-    if (currentUser?.uid && firestoreUserData && currentUser.uid === currentUid) {
+    if (currentUser?.uid && authUser && currentUser.uid === currentUid) {
       const currentPath = window.location.pathname;
-      const userType = firestoreUserData.user_type;
+      const userType = authUser.user_type; // Verwende AuthContext
 
       console.log(`🎯 REDIRECT CHECK: userType="${userType}", path="${currentPath}"`);
 
@@ -384,10 +253,10 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       );
     } else {
       console.log(
-        `⏳ REDIRECT: Warte auf Daten... currentUser=${!!currentUser?.uid}, firestoreUserData=${!!firestoreUserData}, uid match=${currentUser?.uid === currentUid}`
+        `⏳ REDIRECT: Warte auf Daten... currentUser=${!!currentUser?.uid}, authUser=${!!authUser}, uid match=${currentUser?.uid === currentUid}`
       );
     }
-  }, [currentUser?.uid, currentUid, firestoreUserData, isRedirecting]);
+  }, [currentUser?.uid, currentUid, authUser, isRedirecting]);
 
   // Reset isRedirecting nach kurzer Zeit falls Redirect fehlschlägt
   useEffect(() => {
@@ -418,7 +287,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   // Load workspaces for Quick Note functionality
   useEffect(() => {
-    if (currentUser?.uid && firestoreUserData?.companyName) {
+    if (currentUser?.uid && authUser?.companyName) {
       const loadWorkspaces = async () => {
         try {
           const workspaceData = await WorkspaceService.getWorkspaces(currentUser.uid);
@@ -431,7 +300,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     } else {
       setWorkspaces([]);
     }
-  }, [currentUser?.uid, firestoreUserData?.user_type]);
+  }, [currentUser?.uid, authUser?.user_type]);
 
   useEffect(() => {
     const handleProfileUpdate = (event: Event) => {
@@ -443,12 +312,11 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
       if (currentUser?.uid) {
         loadProfilePictureFromStorage(currentUser.uid);
-        loadFirestoreUserData(currentUser.uid);
       }
     };
     window.addEventListener('profileUpdated', handleProfileUpdate);
     return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
-  }, [currentUser?.uid, loadProfilePictureFromStorage, loadFirestoreUserData]);
+  }, [currentUser?.uid, loadProfilePictureFromStorage]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -568,7 +436,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     try {
       await signOut(auth);
       setIsProfileDropdownOpen(false);
-      setFirestoreUserData(null);
       router.push('/');
     } catch (error) {}
   }, [router]);
@@ -646,7 +513,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
             {/* Icons und Benutzerprofil */}
             <div className="flex items-center space-x-4">
               {/* Quick Note Dialog - nur für Company-Benutzer */}
-              {currentUser?.uid && firestoreUserData?.companyName && workspaces.length > 0 && (
+              {currentUser?.uid && authUser?.companyName && workspaces.length > 0 && (
                 <QuickNoteDialog
                   workspaces={workspaces}
                   companyId={currentUser.uid}
@@ -881,20 +748,20 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                     <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-30 ring-1 ring-black ring-opacity-5">
                       <div className="px-4 py-3 text-left">
                         <p className="text-sm font-semibold">
-                          {firestoreUserData?.firstName && firestoreUserData?.lastName
-                            ? `${firestoreUserData.firstName} ${firestoreUserData.lastName}`
+                          {authUser?.firstName && authUser?.lastName
+                            ? `${authUser.firstName} ${authUser.lastName}`
                             : currentUser.displayName || currentUser.email}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {firestoreUserData?.user_type
-                            ? firestoreUserData.user_type.charAt(0).toUpperCase() +
-                              firestoreUserData.user_type.slice(1)
+                          {authUser?.user_type
+                            ? authUser.user_type.charAt(0).toUpperCase() +
+                              authUser.user_type.slice(1)
                             : 'Benutzer'}
                         </p>
                       </div>
                       <hr />
                       {/* --- DYNAMISCHE LINKS BASIEREND AUF COMPANY STATUS --- */}
-                      {firestoreUserData?.companyName ? (
+                      {authUser?.companyName ? (
                         // Links für Companies
                         <>
                           <Link
@@ -1029,11 +896,3 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   );
 };
 export default memo(UserHeader); // Export as memoized
-interface FirestoreUserData {
-  firstName?: string;
-  lastName?: string;
-  user_type?: 'kunde' | 'firma' | 'admin';
-  profilePictureURL?: string; // Firebase Storage URL
-  profilePictureFirebaseUrl?: string; // Alternative field name
-  companyName?: string; // Company name for business accounts
-}

@@ -68,7 +68,7 @@ export default function SettingsPage() {
               setUserData({
                 uid: user.uid,
                 email: user.email || '',
-                user_type: 'company',
+                user_type: 'firma',
                 firstName: '',
                 lastName: '',
               });
@@ -160,7 +160,7 @@ export default function SettingsPage() {
     finalData = {
       uid: user.uid,
       email: user.email || '',
-      user_type: 'company', // Standard für Company-Dashboard
+      user_type: 'firma', // Standard für Company-Dashboard
       firstName: '',
       lastName: '',
       phoneNumber: '',

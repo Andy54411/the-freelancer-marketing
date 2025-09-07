@@ -2,9 +2,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper Functions - Fehlende isCompany() Funktion
+    // Helper Functions - Verbesserte Funktionen mit fallback auf Firestore
     function isCompany() {
-      return request.auth != null && request.auth.token.role == 'firma';
+      return request.auth != null && 
+             (request.auth.token.role == 'firma' || 
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type == 'firma') ||
+              (exists(/databases/$(database)/documents/companies/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/companies/$(request.auth.uid)).data.user_type == 'firma'));
     }
     
     // NEUE FUNKTION: Prüft Company-Status über Firestore-Dokument
@@ -12,14 +17,22 @@ service cloud.firestore {
       return request.auth != null && 
              request.auth.uid == companyId &&
              exists(/databases/$(database)/documents/companies/$(companyId)) &&
-             get(/databases/$(database)/documents/companies/$(companyId)).data.userType == 'company';
+             get(/databases/$(database)/documents/companies/$(companyId)).data.user_type == 'firma';
     }
     
     // KORRIGIERT: Umbenannt und erweitert, um die Rollen 'master' und 'support' abzudecken.
     function isSupportStaff() {
-      // BEST PRACTICE: Die Rolle wird direkt aus dem Auth-Token gelesen.
-      // Die Cloud Function `syncUserRoleWithCustomClaims` stellt sicher, dass das Token aktuell ist.
-      return request.auth != null && (request.auth.token.role == 'master' || request.auth.token.role == 'support');
+      return isUserType(['master', 'support']);
+    }
+
+    // Allgemeine Funktion zur Überprüfung von User Types
+    function isUserType(allowedTypes) {
+      return request.auth != null && 
+             (request.auth.token.role in allowedTypes ||
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.user_type in allowedTypes) ||
+              (exists(/databases/$(database)/documents/companies/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/companies/$(request.auth.uid)).data.user_type in allowedTypes));
     }
 
     // --- Helper-Funktionen für Chat-Nachrichten ---

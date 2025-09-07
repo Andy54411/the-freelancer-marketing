@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
         firstName: userData?.firstName || userData?.companyName || 'Unknown',
         lastName: userData?.lastName || '',
         email: userData?.email || 'Unknown',
-        role: userData?.role || userData?.userType || 'Unknown',
+        role: userData?.role || userData?.user_type || 'Unknown',
         company: userData?.company || null,
         exists: true,
         source,

@@ -131,7 +131,7 @@ export default function OrderDetailPage() {
 
     console.log('✅ CurrentUser geladen:', {
       uid: currentUser.uid,
-      role: currentUser.role,
+      user_type: currentUser.user_type,
       email: currentUser.email,
     });
 
@@ -214,7 +214,7 @@ export default function OrderDetailPage() {
       // Hier könnte später ein Cleanup für Realtime-Listener stehen
       console.log('🧹 Order Detail Component cleanup');
     };
-  }, [authLoading, currentUser, orderId, router, firebaseUser]);
+  }, [authLoading, currentUser?.uid, orderId, router]); // firebaseUser entfernt, da es sich häufig ändert
 
   // Payment Modal State Monitor
   useEffect(() => {}, [showInlinePayment, paymentClientSecret, paymentAmount, paymentHours]);

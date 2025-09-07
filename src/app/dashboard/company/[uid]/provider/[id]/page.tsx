@@ -208,12 +208,10 @@ export default function CompanyProviderDetailPage() {
             stripeAccountId: data.stripeAccountId, // Top-level field from database
           });
         } else {
-
           router.push(`/dashboard/company/${companyUid}`);
         }
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -228,9 +226,7 @@ export default function CompanyProviderDetailPage() {
         const data = firmaDoc.data();
         setCompanyName(data.companyName || 'Unbekanntes Unternehmen');
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const loadUserProfile = async () => {
@@ -242,9 +238,7 @@ export default function CompanyProviderDetailPage() {
         const data = userDoc.data();
         setUserProfile(data as UserProfileData);
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const openChatWithProvider = () => {
@@ -267,7 +261,6 @@ export default function CompanyProviderDetailPage() {
     setDatePickerOpen(false);
 
     if (!selection || !time || !durationString || !provider || !firebaseUser || !userProfile) {
-
       alert('Unvollständige Buchungsdaten. Bitte versuchen Sie es erneut.');
       return;
     }
@@ -289,9 +282,7 @@ export default function CompanyProviderDetailPage() {
 
     // Automatische Erstellung von BEIDEN Stripe-Profilen wenn sie fehlen
     if (!userProfile.stripeCustomerId || !userProfile.stripeAccountId) {
-
       try {
-
         const createProfilesResponse = await fetch('/api/create-company-stripe-profiles', {
           method: 'POST',
           headers: {
@@ -301,7 +292,7 @@ export default function CompanyProviderDetailPage() {
             companyName: userProfile.companyName || userProfile.displayName || 'Unternehmen',
             email: userProfile.email,
             uid: userProfile.uid,
-            userType: 'company',
+            user_type: 'firma',
           }),
         });
 
@@ -320,7 +311,6 @@ export default function CompanyProviderDetailPage() {
           userProfile.stripeAccountId = profileData.stripeAccountId;
         }
       } catch (profileError) {
-
         const setupPayment = confirm(
           'Ihre Zahlungsprofile konnten nicht automatisch erstellt werden. Möchten Sie jetzt zu den Einstellungen gehen, um die Zahlungsmethoden manuell einzurichten?'
         );
@@ -389,7 +379,6 @@ export default function CompanyProviderDetailPage() {
       if (calculatedNumberOfDays > 1) {
         // Multi-Tag Auftrag: hoursInput sind Stunden pro Tag
         totalHours = hoursInput * calculatedNumberOfDays;
-
       }
 
       const servicePrice = totalHours * hourlyRateNum;
@@ -477,7 +466,6 @@ export default function CompanyProviderDetailPage() {
 
       const data = await response.json();
       if (!response.ok || data.error) {
-
         throw new Error(
           data.error?.message || 'Fehler bei der Kommunikation mit dem Zahlungsserver.'
         );
@@ -491,7 +479,6 @@ export default function CompanyProviderDetailPage() {
       // Weiterleitung zur Zahlungsseite oder zurück zum Dashboard
       router.push(`/dashboard/company/${companyUid}`);
     } catch (error) {
-
       alert(
         `Fehler beim Buchen des Termins: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );

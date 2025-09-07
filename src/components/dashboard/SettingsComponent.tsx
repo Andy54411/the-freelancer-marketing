@@ -242,7 +242,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         setForm({
           uid: userData.uid || '',
           email: userData.email || '',
-          user_type: userData.user_type || 'company',
+          user_type: userData.user_type || 'firma',
           step1: {
             firstName: userData.firstName || '',
             lastName: userData.lastName || '',
@@ -580,32 +580,35 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
     }
   }, [userData]);
 
-  const handleChange = useCallback((path: string, value: string | number | boolean | File | null) => {
-    setForm(prevForm => {
-      if (!prevForm) return null;
-      const updatedForm = JSON.parse(JSON.stringify(prevForm)) as UserDataForSettings;
-      let currentPathObject: Record<string, unknown> = updatedForm as unknown as Record<
-        string,
-        unknown
-      >;
-      const keys = path.split('.');
-      keys.forEach((key, index) => {
-        if (index === keys.length - 1) {
-          currentPathObject[key] = value;
-        } else {
-          if (
-            !Object.prototype.hasOwnProperty.call(currentPathObject, key) ||
-            typeof currentPathObject[key] !== 'object' ||
-            currentPathObject[key] === null
-          ) {
-            currentPathObject[key] = {};
+  const handleChange = useCallback(
+    (path: string, value: string | number | boolean | File | null) => {
+      setForm(prevForm => {
+        if (!prevForm) return null;
+        const updatedForm = JSON.parse(JSON.stringify(prevForm)) as UserDataForSettings;
+        let currentPathObject: Record<string, unknown> = updatedForm as unknown as Record<
+          string,
+          unknown
+        >;
+        const keys = path.split('.');
+        keys.forEach((key, index) => {
+          if (index === keys.length - 1) {
+            currentPathObject[key] = value;
+          } else {
+            if (
+              !Object.prototype.hasOwnProperty.call(currentPathObject, key) ||
+              typeof currentPathObject[key] !== 'object' ||
+              currentPathObject[key] === null
+            ) {
+              currentPathObject[key] = {};
+            }
+            currentPathObject = currentPathObject[key] as Record<string, unknown>;
           }
-          currentPathObject = currentPathObject[key] as Record<string, unknown>;
-        }
+        });
+        return updatedForm;
       });
-      return updatedForm;
-    });
-  }, []);
+    },
+    []
+  );
 
   const mapIndustryToMcc = (industry: string | null | undefined): string | undefined => {
     if (!industry) return undefined;
@@ -896,11 +899,12 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       instantBooking: (updatedForm as any).publicProfile?.instantBooking ?? false,
       responseTimeGuarantee: (updatedForm as any).publicProfile?.responseTimeGuarantee || 24,
       faqs: updatedForm.step3?.faqs || [],
-      portfolio: updatedForm.step3?.portfolio ? 
-        updatedForm.step3.portfolio.map((item: any) => {
-          const { imageFile, ...cleanItem } = item;
-          return cleanItem;
-        }) : [],
+      portfolio: updatedForm.step3?.portfolio
+        ? updatedForm.step3.portfolio.map((item: any) => {
+            const { imageFile, ...cleanItem } = item;
+            return cleanItem;
+          })
+        : [],
       profileBannerImage: (updatedForm as any).publicProfile?.profileBannerImage || '',
       businessLicense: (updatedForm as any).publicProfile?.businessLicense || '',
       certifications: (updatedForm as any).publicProfile?.certifications || [],
@@ -1012,7 +1016,15 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   }, [form, userData, onDataSaved, handleChange]); // Abhängigkeiten für useCallback
 
   // Alle Hooks müssen vor bedingten Returns aufgerufen werden
-  type TabKey = 'general' | 'accounting' | 'bank' | 'logo' | 'portfolio' | 'faqs' | 'payouts' | 'storno';
+  type TabKey =
+    | 'general'
+    | 'accounting'
+    | 'bank'
+    | 'logo'
+    | 'portfolio'
+    | 'faqs'
+    | 'payouts'
+    | 'storno';
   interface TabDefinition {
     key: TabKey;
     label: string;
@@ -1104,7 +1116,9 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         )}
         {form && activeTab === 'bank' && <BankForm formData={form} handleChange={handleChange} />}
         {form && activeTab === 'logo' && <LogoForm formData={form} handleChange={handleChange} />}
-        {form && activeTab === 'portfolio' && <PortfolioForm formData={form} handleChange={handleChange} userId={form.uid} />}
+        {form && activeTab === 'portfolio' && (
+          <PortfolioForm formData={form} handleChange={handleChange} userId={form.uid} />
+        )}
         {form && activeTab === 'faqs' && <FAQsForm formData={form} handleChange={handleChange} />}
         {activeTab === 'payouts' && (
           <div className="space-y-6">

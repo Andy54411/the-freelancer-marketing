@@ -15,10 +15,11 @@ import { userPresence } from '@/lib/userPresence'; // NEU: User Presence importi
 export interface UserProfile {
   uid: string;
   email: string | null;
-  role: 'master' | 'support' | 'firma' | 'kunde'; // Korrekte Rollen-Hierarchie: master ist höchste Berechtigung
+  user_type: 'master' | 'support' | 'firma' | 'kunde'; // Verwende user_type statt role für Konsistenz
   firstName?: string;
   lastName?: string;
   profilePictureURL?: string; // NEU: Avatar-URL für alle Benutzerprofile
+  companyName?: string; // NEU: Firmenname für Unternehmenskonten
   // Fügen Sie hier weitere globale Profilfelder hinzu
 }
 
@@ -125,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     : idTokenResult.claims.role === 'kunde'
                       ? 'kunde'
                       : null;
-            const roleFromDb = (profileData.user_type as UserProfile['role']) || 'kunde';
+            const roleFromDb = (profileData.user_type as UserProfile['user_type']) || 'kunde';
 
             const finalRole = roleFromClaim || roleFromDb;
 
@@ -134,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
-              role: finalRole,
+              user_type: finalRole,
               firstName: profileData.firstName,
               lastName: profileData.lastName,
               profilePictureURL: profileData.profilePictureURL || undefined,
@@ -168,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser({
               uid: fbUser.uid,
               email: fbUser.email,
-              role: roleFromClaim,
+              user_type: roleFromClaim,
             });
 
             // NEU: Initialisiere User Presence auch für Fallback-Fall
@@ -250,7 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const otherUserId = data.users.find((id: string) => id !== user.uid);
           const userDetails = otherUserId ? data.userDetails?.[otherUserId] : null;
           const inboxLink =
-            user.role === 'firma'
+            user.user_type === 'firma'
               ? `/dashboard/company/${user.uid}/inbox`
               : `/dashboard/user/${user.uid}/inbox`;
 
@@ -292,7 +293,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       firebaseUser,
       loading,
       logout, // NEU: Logout-Funktion im Context bereitstellen
-      userRole: user?.role || null,
+      userRole: user?.user_type || null,
       unreadMessagesCount,
       recentChats,
     }),

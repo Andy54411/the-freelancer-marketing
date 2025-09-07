@@ -936,8 +936,8 @@ export default function Step5CompanyPage() {
           description: cleanedCompanyData.description || '',
           skills: cleanedCompanyData.skills || [],
           serviceAreas: cleanedCompanyData.serviceAreas || [],
-          // 🔧 FIX: userType hinzufügen für Kunde vs. Firma Unterscheidung
-          userType: 'company', // Immer 'company' da dies die Firmen-Registrierung ist
+          // 🔧 FIX: user_type hinzufügen für Kunde vs. Firma Unterscheidung
+          user_type: 'firma', // Korrigiert: user_type statt userType
           accountType: 'business', // Alternative Bezeichnung
           // 🔧 DEBUG: hourlyRate in extendedData prüfen
           hourlyRate: (() => {

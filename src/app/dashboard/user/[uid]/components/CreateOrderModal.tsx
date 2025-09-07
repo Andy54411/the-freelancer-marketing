@@ -184,11 +184,8 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
             setSelectedSubcategory(providerData.selectedSubcategory);
           }
         } else {
-
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     };
 
     loadPreselectedProvider();
@@ -235,13 +232,11 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     time,
     durationString
   ) => {
-
     setError(null);
     setLoading(true);
     setIsDatePickerOpen(false);
 
     try {
-
       if (!selection || !time || !durationString || !selectedProvider || !selectedSubcategory) {
         throw new Error('Fehler: Unvollständige Angaben. Bitte versuchen Sie es erneut.');
       }
@@ -254,7 +249,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       // Automatische Erstellung von BEIDEN Stripe-Profilen wenn sie fehlen
       if (!userProfile.stripeCustomerId || !userProfile.stripeAccountId) {
-
         try {
           const createProfilesResponse = await fetch('/api/create-company-stripe-profiles', {
             method: 'POST',
@@ -265,7 +259,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
               companyName: userProfile.companyName || userProfile.displayName || 'Unternehmen',
               email: userProfile.email,
               uid: userProfile.uid,
-              userType: 'company',
+              user_type: 'firma',
             }),
           });
 
@@ -284,7 +278,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
             userProfile.stripeAccountId = profileData.stripeAccountId;
           }
         } catch (profileError) {
-
           throw new Error(
             "Ihre Zahlungsprofile konnten nicht automatisch erstellt werden. Bitte fügen Sie unter 'Einstellungen' eine Zahlungsmethode hinzu, bevor Sie buchen."
           );
@@ -330,7 +323,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       // NEU: Client-seitige Validierung des Endpreises (Basispreis für den Draft)
       if (totalPriceInCents <= 0) {
-
         throw new Error(
           'Der berechnete Auftragswert muss positiv sein. Bitte überprüfen Sie Dauer und Stundensatz des Anbieters.'
         );
@@ -338,7 +330,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       // Zusätzliche Prüfung für den reinen Dienstleistungspreis, der als Basispreis für den Draft dient
       if (servicePriceInCents <= 0) {
-
         throw new Error(
           'Der reine Dienstleistungspreis muss positiv sein. Überprüfen Sie Stundensatz und Dauer.'
         );
@@ -415,7 +406,7 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       setTempJobDraftId(newTempJobDraftId); // Speichere im State
       setFinalOrderData(orderDetailsForBackend); // FinalOrderData hier aktualisieren
 
-       // Hinzugefügt
+      // Hinzugefügt
 
       const tempDraftToSave = {
         ...orderDetailsForBackend,
@@ -447,7 +438,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
       const data = await response.json();
       if (!response.ok || data.error) {
-
         throw new Error(
           data.error?.message || 'Fehler bei der Kommunikation mit dem Zahlungsserver.'
         );
@@ -457,7 +447,6 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
       setFinalTotalPriceInCents(totalPriceInCents);
       setCurrentStep('payment');
     } catch (err: unknown) {
-
       let errorMessage = 'Ein unbekannter Fehler ist aufgetreten.';
       if (err instanceof Error) {
         errorMessage = err.message;

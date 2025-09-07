@@ -38,6 +38,7 @@ import * as triggersChat from './triggers_chat';
 import * as httpMigrations from './http_migrations';
 import * as invites from './invites';
 import * as triggersAuth from './triggers_auth';
+import * as maintenanceAuth from './maintenance_auth';
 import * as onCallFunctions from './on_call_functions';
 import * as chatbot from './chatbot';
 import * as enhancedChatbotAPI from "./enhanced-chatbot-api";
@@ -140,6 +141,9 @@ export const onQuoteStatusChanged = quoteNotifications.onQuoteStatusChanged;
 
 // Chat Notification Triggers
 export const onChatMessageCreated = chatNotifications.onChatMessageCreated;
+
+// Maintenance Functions (Temporary)
+export const updateAllUserCustomClaims = maintenanceAuth.updateAllUserCustomClaims;
 
 // Mobile App Payment Functions
 export const createB2CPayment = mobileAppPayments.createB2CPayment;
