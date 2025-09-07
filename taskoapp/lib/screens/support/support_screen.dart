@@ -111,23 +111,27 @@ class _SupportScreenState extends State<SupportScreen> {
         _isSubmitting = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ticket erfolgreich erstellt!'),
-          backgroundColor: TaskiloColors.primary,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ticket erfolgreich erstellt!'),
+            backgroundColor: TaskiloColors.primary,
+          ),
+        );
+      }
 
       // Tickets neu laden
       _loadTickets();
     } catch (e) {
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Fehler beim Erstellen des Tickets: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Erstellen des Tickets: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

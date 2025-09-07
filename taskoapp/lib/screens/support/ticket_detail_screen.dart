@@ -89,22 +89,26 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
 
       _replyController.clear();
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Antwort erfolgreich gesendet!'),
-          backgroundColor: TaskiloColors.primary,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Antwort erfolgreich gesendet!'),
+            backgroundColor: TaskiloColors.primary,
+          ),
+        );
+      }
 
       // Reload ticket details
       _loadTicketDetails();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Fehler beim Senden: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Senden: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       setState(() => _isSending = false);
     }
