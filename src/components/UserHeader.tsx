@@ -222,12 +222,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
     if (currentUser?.uid && authUser && currentUser.uid === currentUid) {
       const currentPath = window.location.pathname;
-      const userType = authUser.user_type; // Verwende AuthContext
+      const user_type = authUser.user_type; // Verwende AuthContext
 
-      console.log(`🎯 REDIRECT CHECK: userType="${userType}", path="${currentPath}"`);
+      console.log(`🎯 REDIRECT CHECK: user_type="${user_type}", path="${currentPath}"`);
 
       // Wenn Firma-User auf /dashboard/user/ ist → SOFORTIGER redirect zu /dashboard/company/
-      if (userType === 'firma' && currentPath.startsWith('/dashboard/user/')) {
+      if (user_type === 'firma' && currentPath.startsWith('/dashboard/user/')) {
         console.log(
           `🔄 FIRMA USER auf USER DASHBOARD ERKANNT! SOFORTIGE Umleitung zu Company Dashboard...`
         );
@@ -238,7 +238,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
 
       // Wenn Normal-User auf /dashboard/company/ ist → SOFORTIGER redirect zu /dashboard/user/
-      if (userType !== 'firma' && currentPath.startsWith('/dashboard/company/')) {
+      if (user_type !== 'firma' && currentPath.startsWith('/dashboard/company/')) {
         console.log(
           `🔄 USER auf COMPANY DASHBOARD ERKANNT! SOFORTIGE Umleitung zu User Dashboard...`
         );
@@ -249,7 +249,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
 
       console.log(
-        `✅ REDIRECT: Keine Umleitung nötig für userType="${userType}" auf path="${currentPath}"`
+        `✅ REDIRECT: Keine Umleitung nötig für user_type="${user_type}" auf path="${currentPath}"`
       );
     } else {
       console.log(
