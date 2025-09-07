@@ -215,7 +215,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       currentUser: currentUser?.uid,
       currentUid: currentUid,
       authUser: authUser,
-      userType: authUser?.user_type, // Verwende AuthContext statt firestoreUserData
+      user_type: authUser?.user_type, // Verwende AuthContext statt firestoreUserData
       currentPath: window.location.pathname,
       isRedirecting,
     });

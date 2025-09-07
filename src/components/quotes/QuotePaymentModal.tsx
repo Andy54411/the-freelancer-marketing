@@ -246,7 +246,7 @@ export default function QuotePaymentModal({
   companyName,
   customerFirebaseId,
   customerStripeId,
-  userType = 'company', // Default to company/B2B
+  user_type = 'firma', // Default to company/B2B
 }: QuotePaymentModalProps) {
   const { firebaseUser } = useAuth();
   const [clientSecret, setClientSecret] = useState<string>('');
@@ -285,7 +285,7 @@ export default function QuotePaymentModal({
       console.log('🔑 QUOTE PAYMENT: Token obtained, length:', token.length);
 
       // Dynamically choose API route based on user type (B2B vs B2C)
-      const apiPath = userType === 'user' ? 'user' : 'company';
+      const apiPath = user_type === 'kunde' ? 'user' : 'company';
       const url = `/api/${apiPath}/${customerFirebaseId}/quotes/received/${quoteId}/payment`;
       console.log('🌐 QUOTE PAYMENT: Calling API:', url);
 

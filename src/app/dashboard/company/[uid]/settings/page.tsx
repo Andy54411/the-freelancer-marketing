@@ -94,7 +94,7 @@ export default function SettingsPage() {
         userData: userData,
         companyData: companyData,
         combinedData: combinedForDebug,
-        userType: userData?.user_type,
+        user_type: userData?.user_type,
         languages: {
           inUserData: userData?.languages || userData?.['step2.languages'],
           inCompanyData: companyData?.languages || companyData?.['step2.languages'],

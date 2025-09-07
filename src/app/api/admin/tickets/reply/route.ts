@@ -35,7 +35,7 @@ async function verifyAuth(request: NextRequest) {
         if (decoded.role === 'admin') {
           return {
             success: true,
-            userType: 'admin',
+            user_type: 'admin',
             userId: decoded.email,
             userName: decoded.name || 'Admin',
           };
@@ -54,7 +54,7 @@ async function verifyAuth(request: NextRequest) {
       const decoded = payload as any;
       return {
         success: true,
-        userType: decoded.role || 'user',
+        user_type: decoded.role || 'user',
         userId: decoded.email || decoded.userId,
         userName: decoded.name || decoded.firstName || 'User',
       };
@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Bestimme Autor-Typ basierend auf Authentifizierung
-    const authorType = authResult.userType === 'admin' ? 'admin' : 'customer';
-    const isInternalReply = isInternal && authResult.userType === 'admin'; // Nur Admins können interne Antworten schreiben
+    const authorType = authResult.user_type === 'admin' ? 'admin' : 'customer';
+    const isInternalReply = isInternal && authResult.user_type === 'admin'; // Nur Admins können interne Antworten schreiben
 
     // Antwort hinzufügen
     const updatedTicket = await AWSTicketStorage.addComment(ticketId, {
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Automatische Ticket-Status-Aktualisierung bei Admin-Antworten
-    if (authResult.userType === 'admin' && updatedTicket.status === 'open') {
+    if (authResult.user_type === 'admin' && updatedTicket.status === 'open') {
       await AWSTicketStorage.updateTicket(ticketId, {
         status: 'in-progress',
         assignedTo: authResult.userId,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
           updatedAt: new Date(updatedTicket.updatedAt),
         } as any; // Type assertion da verschiedene TicketComment-Typen existieren
 
-        if (authResult.userType === 'admin') {
+        if (authResult.user_type === 'admin') {
           // Admin antwortet -> Benachrichtige Customer
           await EnhancedTicketService.sendTicketNotification(
             ticketForEmail,
@@ -156,12 +156,11 @@ export async function POST(request: NextRequest) {
           );
         }
       } catch (emailError) {
-
         // Fehler bei E-Mail nicht weiterleiten, da die Antwort erfolgreich gespeichert wurde
       }
 
       // Firebase Bell-Notification erstellen (nur für Admin -> Customer)
-      if (authResult.userType === 'admin' && updatedTicket.customerEmail) {
+      if (authResult.user_type === 'admin' && updatedTicket.customerEmail) {
         try {
           // Extrahiere UID aus customerEmail (falls verfügbar)
           const uidToEmailMap: Record<string, string> = {
@@ -188,12 +187,9 @@ export async function POST(request: NextRequest) {
             };
 
             await db.collection('notifications').add(notification);
-
           } else {
-
           }
         } catch (notificationError) {
-
           // Nicht weiterleiten, da dies optional ist
         }
       }
@@ -210,7 +206,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Senden der Antwort',
@@ -245,13 +240,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Prüfe Berechtigung: Admin sieht alles, User nur eigene Tickets
-    if (authResult.userType !== 'admin' && ticket.customerEmail !== authResult.userId) {
+    if (authResult.user_type !== 'admin' && ticket.customerEmail !== authResult.userId) {
       return NextResponse.json({ error: 'Keine Berechtigung für dieses Ticket' }, { status: 403 });
     }
 
     // Filter interne Kommentare für normale User
     const visibleComments =
-      authResult.userType === 'admin'
+      authResult.user_type === 'admin'
         ? ticket.comments || []
         : (ticket.comments || []).filter(comment => !comment.isInternal);
 
@@ -275,7 +270,6 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Antworten',

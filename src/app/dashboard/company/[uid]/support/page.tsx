@@ -108,11 +108,8 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
       if (email) {
         setUserEmail(email);
       } else {
-
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   // Tickets laden
@@ -128,10 +125,8 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
         const data = await response.json();
         setTickets(data.tickets || []);
       } else {
-
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -181,7 +176,6 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
         toast.error('Fehler beim Erstellen des Tickets');
       }
     } catch (error) {
-
       toast.error('Fehler beim Erstellen des Tickets');
     } finally {
       setSubmitting(false);
@@ -217,7 +211,7 @@ export default function CompanySupportPage({ params }: { params: Promise<{ uid: 
         <TicketDetailView
           ticketId={selectedTicket.id}
           onBack={handleBackToList}
-          userType="customer"
+          user_type="kunde"
         />
       ) : (
         <>

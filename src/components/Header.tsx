@@ -95,8 +95,8 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
   const router = useRouter();
 
   const subscribeToRecentChats = useCallback(
-    (uid: string | undefined, userType: FirestoreUserData['user_type']) => {
-      if (!uid || !userType) {
+    (uid: string | undefined, user_type: FirestoreUserData['user_type']) => {
+      if (!uid || !user_type) {
         setUnreadMessagesCount(0);
         setRecentChats([]);
         return () => {}; // Leere Cleanup-Funktion zurückgeben
@@ -148,7 +148,7 @@ const Header: React.FC<HeaderProps> = ({ company, onSettingsClick, onDashboardCl
 
               // Bestimme den korrekten Link zum Posteingang basierend auf dem Benutzertyp
               const inboxLink =
-                userType === 'firma'
+                user_type === 'firma'
                   ? `/dashboard/company/${uid}/inbox`
                   : `/dashboard/user/${uid}/inbox`;
 

@@ -48,9 +48,7 @@ export class TimeTracker {
         timeTracking: orderTimeTracking,
         approvalRequests: [],
       });
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -99,7 +97,6 @@ export class TimeTracker {
           const companyData = companyDoc.data();
           if (companyData.hourlyRate && companyData.hourlyRate > 0) {
             hourlyRateInEuros = companyData.hourlyRate;
-
           }
         }
 
@@ -112,7 +109,6 @@ export class TimeTracker {
             const userData = userDoc.data();
             if (userData.hourlyRate && userData.hourlyRate > 0) {
               hourlyRateInEuros = userData.hourlyRate;
-
             }
           }
         }
@@ -120,12 +116,11 @@ export class TimeTracker {
 
       // 3. LETZTER FALLBACK: Manueller Input per Popup
       if (hourlyRateInEuros === null) {
-
         const userInput = prompt(
           `⚠️ STUNDENSATZ ERFORDERLICH\n\n` +
-          `Für diesen Anbieter wurde kein Stundensatz gefunden.\n` +
-          `Bitte geben Sie den Stundensatz ein (in €/h):\n\n` +
-          `Beispiel: 41 (für 41€/h)`,
+            `Für diesen Anbieter wurde kein Stundensatz gefunden.\n` +
+            `Bitte geben Sie den Stundensatz ein (in €/h):\n\n` +
+            `Beispiel: 41 (für 41€/h)`,
           '41'
         );
 
@@ -140,10 +135,7 @@ export class TimeTracker {
                 hourlyRateUpdatedAt: serverTimestamp(),
                 hourlyRateUpdatedBy: 'manual_input',
               });
-
-            } catch (error) {
-
-            }
+            } catch (error) {}
           }
         } else {
           throw new Error(
@@ -154,7 +146,6 @@ export class TimeTracker {
 
       // Auto-initialisiere TimeTracking falls nicht vorhanden
       if (!orderData.timeTracking) {
-
         // Verwende korrekte Werte aus Live-Daten
         const totalPrice =
           orderData.jobCalculatedPriceInCents || orderData.originalJobPriceInCents || 98400;
@@ -174,9 +165,7 @@ export class TimeTracker {
             Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
           const hoursPerDay = parseFloat(String(orderData.jobDurationString || 8)); // Stunden pro Tag aus jobDurationString
           originalPlannedHours = totalDays * hoursPerDay;
-
         } else {
-
         }
 
         // hourlyRateInEuros ist bereits oben geholt worden
@@ -242,7 +231,6 @@ export class TimeTracker {
 
       return entryId;
     } catch (error) {
-
       throw error;
     }
   }
@@ -291,9 +279,7 @@ export class TimeTracker {
         'timeTracking.totalLoggedHours': totalLoggedHours,
         'timeTracking.lastUpdated': serverTimestamp(),
       });
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -327,7 +313,6 @@ export class TimeTracker {
 
       return sortedEntries;
     } catch (error) {
-
       throw error;
     }
   }
@@ -407,7 +392,6 @@ export class TimeTracker {
 
       return approvalRequestId;
     } catch (error) {
-
       throw error;
     }
   }
@@ -473,9 +457,7 @@ export class TimeTracker {
         status: 'ABGESCHLOSSEN',
         completedAt: serverTimestamp(),
       });
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -583,9 +565,7 @@ export class TimeTracker {
       }
 
       await updateDoc(orderRef, updateData);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -723,7 +703,6 @@ export class TimeTracker {
         escrowStatus: 'authorized', // Legacy compatibility
       };
     } catch (error) {
-
       throw error;
     }
   }
@@ -775,9 +754,7 @@ export class TimeTracker {
       if (updatedCompletion.bothPartiesComplete && !updatedCompletion.escrowReleaseInitiated) {
         await this.releasePlatformFunds(orderId);
       }
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -829,9 +806,7 @@ export class TimeTracker {
       if (updatedCompletion.bothPartiesComplete && !updatedCompletion.escrowReleaseInitiated) {
         await this.releasePlatformFunds(orderId);
       }
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -862,7 +837,6 @@ export class TimeTracker {
         .filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
 
       if (platformHoldPaymentIntents.length === 0) {
-
         return;
       }
 
@@ -884,9 +858,7 @@ export class TimeTracker {
       }
 
       const releaseData = await response.json();
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -960,7 +932,6 @@ export class TimeTracker {
 
         // Falls Fallback verfügbar, verwende ihn
         if (fallbackStripeAccountId) {
-
           // Fortsetzung mit der gefundenen ID - Migration wird Server-seitig in der API behandelt
           const providerStripeAccountIdFallback = fallbackStripeAccountId;
 
@@ -986,12 +957,11 @@ export class TimeTracker {
               errorData.error?.includes('Stripe Connect') ||
               errorData.error?.includes('account')
             ) {
-
               throw new Error(
                 `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
-                `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
-                `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
-                `Technische Details: ${errorData.error}`
+                  `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
+                  `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
+                  `Technische Details: ${errorData.error}`
               );
             }
 
@@ -1051,13 +1021,13 @@ export class TimeTracker {
 
         throw new Error(
           `❌ STRIPE CONNECT SETUP ERFORDERLICH\n\n` +
-          `Problem: Kein Stripe Connect Account für Provider gefunden.\n` +
-          `Provider ID: ${orderData.selectedAnbieterId}\n\n` +
-          `Lösungsschritte:\n` +
-          `1. Provider muss Stripe Connect Onboarding abschließen\n` +
-          `2. In companies/${orderData.selectedAnbieterId} sollte 'stripeConnectAccountId' vorhanden sein\n` +
-          `3. Account muss Status 'active' haben\n\n` +
-          `Für Details siehe Browser Console.`
+            `Problem: Kein Stripe Connect Account für Provider gefunden.\n` +
+            `Provider ID: ${orderData.selectedAnbieterId}\n\n` +
+            `Lösungsschritte:\n` +
+            `1. Provider muss Stripe Connect Onboarding abschließen\n` +
+            `2. In companies/${orderData.selectedAnbieterId} sollte 'stripeConnectAccountId' vorhanden sein\n` +
+            `3. Account muss Status 'active' haben\n\n` +
+            `Für Details siehe Browser Console.`
         );
       }
 
@@ -1087,12 +1057,11 @@ export class TimeTracker {
 
         // Spezielle Behandlung für Stripe Connect Probleme
         if (errorData.error?.includes('Stripe Connect') || errorData.error?.includes('account')) {
-
           throw new Error(
             `❌ PAYMENT SETUP ERFORDERLICH\n\n` +
-            `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
-            `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
-            `Technische Details: ${errorData.error}`
+              `Der Dienstleister muss seine Stripe Connect Einrichtung abschließen.\n` +
+              `Bitte kontaktieren Sie den Support für weitere Hilfe.\n\n` +
+              `Technische Details: ${errorData.error}`
           );
         }
 
@@ -1149,7 +1118,6 @@ export class TimeTracker {
         clientSecret: paymentData.clientSecret,
       };
     } catch (error) {
-
       throw error;
     }
   }
@@ -1217,7 +1185,6 @@ export class TimeTracker {
 
       return stats;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1278,7 +1245,6 @@ export class TimeTracker {
 
       return requests;
     } catch (error) {
-
       throw error;
     }
   }
@@ -1416,7 +1382,6 @@ export class TimeTracker {
         },
       };
     } catch (error) {
-
       throw error;
     }
   }
@@ -1435,7 +1400,6 @@ export class TimeTracker {
       }
       return null;
     } catch (error) {
-
       throw error;
     }
   } /**
@@ -1533,7 +1497,6 @@ export class TimeTracker {
           const travelCostAmount = updatedEntry.travelCost || 0;
           updatedEntry.billableAmount = hoursAmount + travelCostAmount;
         } else {
-
         }
       }
 
@@ -1548,9 +1511,7 @@ export class TimeTracker {
         'timeTracking.totalLoggedHours': totalLoggedHours,
         'timeTracking.lastUpdated': serverTimestamp(),
       });
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -1622,7 +1583,6 @@ export class TimeTracker {
         migratedAccountId: stripeAccountId,
       };
     } catch (error) {
-
       return {
         success: false,
         message: `Fehler bei der Migration: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
@@ -1661,7 +1621,7 @@ export class TimeTracker {
         users: {
           exists: usersDoc.exists(),
           stripeAccountId: usersData?.stripeAccountId,
-          userType: usersData?.user_type,
+          user_type: usersData?.user_type,
           stripeAccountDetailsSubmitted: usersData?.stripeAccountDetailsSubmitted,
           stripeAccountPayoutsEnabled: usersData?.stripeAccountPayoutsEnabled,
         },
@@ -1723,7 +1683,6 @@ export class TimeTracker {
         debugInfo,
       };
     } catch (error) {
-
       throw error;
     }
   }
@@ -1828,7 +1787,6 @@ export class TimeTracker {
         totalAmount,
       };
     } catch (error) {
-
       return {
         success: false,
         message: `Fehler beim Einreichen zur Freigabe: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
@@ -1909,7 +1867,6 @@ export class TimeTracker {
         totalAmount,
       };
     } catch (error) {
-
       return {
         success: false,
         message: `Fehler bei der Freigabe: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
