@@ -843,7 +843,7 @@ export async function POST(req: NextRequest) {
               paidAt: admin.firestore.FieldValue.serverTimestamp(),
 
               // Status & Zeiten
-              status: 'PAYMENT_CONFIRMED',
+              status: 'zahlung_erhalten_clearing',
               createdAt: admin.firestore.FieldValue.serverTimestamp(),
               updatedAt: admin.firestore.FieldValue.serverTimestamp(),
               lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
