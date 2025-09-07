@@ -123,10 +123,17 @@ export default function OrderDetailPage() {
 
     // Wenn nach dem Laden kein Benutzer da ist, zum Login weiterleiten.
     if (!currentUser) {
+      console.log('❌ Kein currentUser gefunden, weiterleitung zum Login');
       const currentPath = window.location.pathname + window.location.search;
       router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
       return;
     }
+
+    console.log('✅ CurrentUser geladen:', {
+      uid: currentUser.uid,
+      role: currentUser.role,
+      email: currentUser.email,
+    });
 
     // Wenn die orderId fehlt, ist das ein Fehler.
     if (!orderId) {
@@ -135,118 +142,78 @@ export default function OrderDetailPage() {
       return;
     }
 
-    // REALTIME: Setup Firestore onSnapshot listener
-    let unsubscribe: (() => void) | null = null;
+    // Zuerst laden wir die Daten über die API (mit ordentlicher Autorisierung)
+    // Dann starten wir den Realtime-Listener für Updates
+    const initializeOrder = async () => {
+      try {
+        setLoadingOrder(true);
+        setError(null);
 
-    try {
-      // Defensive Firebase prüfung
-      if (!db) {
-        throw new Error('Firestore database not available');
+        // Get ID token for authentication
+        const idToken = await firebaseUser?.getIdToken();
+        if (!idToken) {
+          throw new Error('No authentication token available');
+        }
+
+        console.log('🔍 Lade Order über API:', orderId);
+
+        // Load initial order data via API (with proper authorization)
+        const orderData = await getSingleOrder(orderId, idToken);
+
+        console.log('✅ Order über API geladen:', orderData);
+
+        // Get participant details
+        const { provider: providerDetails, customer: customerDetails } =
+          await getOrderParticipantDetails(orderId, idToken);
+
+        const mappedOrderData: OrderData = {
+          id: orderData.id,
+          serviceTitle: orderData.selectedSubcategory || 'Unbekannter Service',
+          providerId: orderData.selectedAnbieterId || '',
+          providerName: orderData.providerName || providerDetails?.name || 'Unbekannter Anbieter',
+          providerAvatarUrl: providerDetails?.avatarUrl || null,
+          customerId: orderData.kundeId || orderData.customerFirebaseUid || '',
+          customerName: orderData.customerName || customerDetails?.name || 'Unbekannter Kunde',
+          customerAvatarUrl: customerDetails?.avatarUrl || null,
+          orderDate: orderData.paidAt || orderData.createdAt,
+          priceInCents: orderData.totalAmountPaidByBuyer || 0,
+          status: orderData.status || 'Unbekannt',
+          selectedCategory: orderData.selectedCategory,
+          selectedSubcategory: orderData.selectedSubcategory,
+          jobTotalCalculatedHours: orderData.jobTotalCalculatedHours,
+          jobDurationString: orderData.jobDurationString,
+          beschreibung: orderData.description || orderData.beschreibung,
+          jobDateFrom: orderData.jobDateFrom,
+          jobDateTo: orderData.jobDateTo,
+          jobTimePreference: orderData.jobTimePreference,
+          totalAmountPaidByBuyer: orderData.totalAmountPaidByBuyer,
+          companyNetAmount: orderData.companyNetAmount,
+          platformFeeAmount: orderData.platformFeeAmount,
+          companyStripeAccountId: orderData.companyStripeAccountId,
+        };
+
+        setOrder(mappedOrderData);
+        setLoadingOrder(false);
+      } catch (err: any) {
+        console.error('❌ Fehler beim Laden der Order:', err);
+        if (err.message?.includes('Access denied') || err.message?.includes('403')) {
+          setError('Keine Berechtigung für diesen Auftrag.');
+        } else if (err.message?.includes('not found') || err.message?.includes('404')) {
+          setError('Auftrag nicht gefunden.');
+        } else {
+          setError('Fehler beim Laden des Auftrags: ' + err.message);
+        }
+        setLoadingOrder(false);
       }
+    };
 
-      const orderDocRef = doc(db, 'auftraege', orderId);
+    initializeOrder();
 
-      unsubscribe = onSnapshot(
-        orderDocRef,
-        async docSnapshot => {
-          try {
-            setLoadingOrder(true);
-            setError(null);
-
-            if (!docSnapshot.exists()) {
-              setError('Auftrag nicht gefunden.');
-              setLoadingOrder(false);
-              return;
-            }
-
-            const data = docSnapshot.data();
-
-            // Check authorization
-            if (currentUser.uid !== data.kundeId && currentUser.uid !== data.selectedAnbieterId) {
-              setError('Keine Berechtigung für diesen Auftrag.');
-              setLoadingOrder(false);
-              return;
-            }
-
-            // Get participant details (still using API for now, but could be made realtime too)
-            const idToken = await firebaseUser?.getIdToken();
-            if (!idToken) {
-              throw new Error('No authentication token available');
-            }
-
-            const { provider: providerDetails, customer: customerDetails } =
-              await getOrderParticipantDetails(orderId, idToken);
-
-            const orderData: OrderData = {
-              id: orderId, // Use the orderId from params, not from data
-              serviceTitle: data.selectedSubcategory || 'Dienstleistung',
-              providerId: data.selectedAnbieterId,
-              providerName: providerDetails.name,
-              providerAvatarUrl: providerDetails.avatarUrl,
-              customerId: data.kundeId,
-              customerName: customerDetails.name,
-              customerAvatarUrl: customerDetails.avatarUrl,
-              orderDate: data.paidAt || data.createdAt,
-              priceInCents: data.totalAmountPaidByBuyer || data.jobCalculatedPriceInCents || 0,
-              status: data.status || 'unbekannt', // This is the DIRECT Firestore data!
-              selectedCategory: data.selectedCategory,
-              selectedSubcategory: data.selectedSubcategory,
-              jobTotalCalculatedHours: data.jobTotalCalculatedHours,
-              jobDurationString: data.jobDurationString, // Add this field
-              beschreibung: data.description,
-              jobDateFrom: data.jobDateFrom,
-              jobDateTo: data.jobDateTo,
-              jobTimePreference: data.jobTimePreference,
-              totalAmountPaidByBuyer: data.totalAmountPaidByBuyer,
-              companyNetAmount: data.companyNetAmount,
-              platformFeeAmount: data.platformFeeAmount,
-              companyStripeAccountId: data.companyStripeAccountId,
-            };
-
-            setOrder(orderData);
-          } catch (err: any) {
-            setError(`Fehler beim Laden des Auftrags: ${err.message || 'Unbekannter Fehler'}`);
-          } finally {
-            setLoadingOrder(false);
-          }
-        },
-        error => {
-          setError(`Verbindungsfehler: ${error.message}`);
-          setLoadingOrder(false);
-        }
-      );
-
-      // Cleanup function
-      return () => {
-        if (unsubscribe) {
-          unsubscribe();
-        }
-      };
-    } catch (initError: any) {
-      console.error('Firebase initialization error:', initError);
-      setError(
-        `Firebase-Verbindung konnte nicht hergestellt werden. Bitte laden Sie die Seite neu.`
-      );
-      setLoadingOrder(false);
-
-      // Fallback: Versuche einmalige Datenladung ohne Realtime
-      const loadOrderOnce = async () => {
-        try {
-          const idToken = await firebaseUser?.getIdToken();
-          if (idToken) {
-            const orderData = await getSingleOrder(orderId, idToken);
-            if (orderData) {
-              // Verarbeite orderData ähnlich wie im onSnapshot-Handler
-              // (vereinfachte Version ohne Realtime-Updates)
-            }
-          }
-        } catch (fallbackError) {
-          console.error('Fallback order loading failed:', fallbackError);
-        }
-      };
-
-      loadOrderOnce();
-    }
+    // Cleanup function für den useEffect
+    return () => {
+      // Hier könnte später ein Cleanup für Realtime-Listener stehen
+      console.log('🧹 Order Detail Component cleanup');
+    };
   }, [authLoading, currentUser, orderId, router, firebaseUser]);
 
   // Payment Modal State Monitor
