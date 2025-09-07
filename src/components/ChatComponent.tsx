@@ -266,6 +266,52 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       setChatError('Telefonnummer wurde blockiert');
       return; // Senden blockieren
     }
+
+    // NEUE ADRESS-VALIDIERUNG
+    const addressPatterns = [
+      /\b\d{5}\s+[a-zA-ZäöüÄÖÜß]+\b/gi, // PLZ + Ort (z.B. "12345 Berlin")
+      /\b[a-zA-ZäöüÄÖÜß]+straße\s+\d+/gi, // Straßenname + Nummer
+      /\b[a-zA-ZäöüÄÖÜß]+str\.\s+\d+/gi, // Abgekürzte Straße
+      /\b[a-zA-ZäöüÄÖÜß]+weg\s+\d+/gi, // Weg + Nummer
+      /\b[a-zA-ZäöüÄÖÜß]+platz\s+\d+/gi, // Platz + Nummer
+      /\b[a-zA-ZäöüÄÖÜß]+allee\s+\d+/gi, // Allee + Nummer
+      /\b[a-zA-ZäöüÄÖÜß]+gasse\s+\d+/gi, // Gasse + Nummer
+      /\bsiedlung\s+[a-zA-ZäöüÄÖÜß\s]+\d+/gi, // Siedlung + Name + Nummer
+      /\b[a-zA-ZäöüÄÖÜß\s]+\d+\s+\d{5}\s+[a-zA-ZäöüÄÖÜß]+/gi, // Vollständige Adresse
+    ];
+
+    for (const pattern of addressPatterns) {
+      if (pattern.test(messageToSend)) {
+        setChatError('Adresse wurde blockiert');
+        return; // Senden blockieren
+      }
+    }
+
+    // URL-Validierung
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    if (urlRegex.test(messageToSend)) {
+      setChatError('Links wurden blockiert');
+      return; // Senden blockieren
+    }
+
+    // Weitere verbotene Inhalte
+    const forbiddenPatterns = [
+      /\b\d{4,}\s*\d{4,}\b/g, // Kartennummern-ähnliche Muster
+      /\biban\b/gi,
+      /\bpaypal\b/gi,
+      /\bvenmo\b/gi,
+      /\bwhatsapp\b/gi,
+      /\btelegram\b/gi,
+      /\bskype\b/gi,
+      /\bdiscord\b/gi,
+    ];
+
+    for (const pattern of forbiddenPatterns) {
+      if (pattern.test(messageToSend)) {
+        setChatError('Nachricht enthält verbotene Inhalte');
+        return; // Senden blockieren
+      }
+    }
     // --- ENDE VALIDIERUNG ---
 
     setIsSendingMessage(true); // Sende-Vorgang starten
@@ -280,13 +326,19 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
       senderName = loggedInUserProfile.companyName || loggedInUserProfile.firstName || 'Anbieter';
     }
 
+    // Ensure current user is in chatUsers array
+    const chatUsers = [participants.customerId, participants.providerId];
+    if (!chatUsers.includes(currentUser.uid)) {
+      chatUsers.push(currentUser.uid);
+    }
+
     const messagePayload = {
       senderId: currentUser.uid,
       senderName: senderName,
       senderType: senderType,
       text: messageToSend,
       timestamp: serverTimestamp(),
-      chatUsers: [participants.customerId, participants.providerId], // Hinzufügen, um die Sicherheitsregel zu erfüllen
+      chatUsers: chatUsers, // Hinzufügen, um die Sicherheitsregel zu erfüllen
     };
 
     const lastMessagePayload = {
@@ -317,7 +369,10 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
       setNewMessageText(''); // Eingabefeld nach erfolgreichem Senden leeren
     } catch (error) {
-      setChatError('Fehler beim Senden der Nachricht');
+      console.error('Chat send error:', error);
+      setChatError(
+        `Fehler beim Senden der Nachricht: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     } finally {
       setIsSendingMessage(false); // Sende-Vorgang beenden
     }

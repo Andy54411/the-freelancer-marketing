@@ -73,18 +73,21 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
     if (message.trim().isEmpty || _chatId == null) return;
 
     try {
-      // Sender-Typ bestimmen
-      String senderType = 'customer';
+      // Sender-Typ bestimmen (deutsche Bezeichnungen für Auftragschats)
+      String senderType = 'kunde';
       if (currentUser.userType == UserType.serviceProvider) {
-        senderType = 'provider';
+        senderType = 'anbieter';
       }
 
-      await ChatService.sendMessage(
-        chatId: _chatId!,
+      // Verwende die neue sendOrderChatMessage Funktion
+      await ChatService.sendOrderChatMessage(
+        orderId: widget.orderId,
         senderId: currentUser.uid,
         senderName: currentUser.displayName ?? 'Unbekannt',
         senderType: senderType,
         message: message.trim(),
+        customerId: widget.customerId ?? '',
+        providerId: widget.providerId ?? '',
       );
 
       _messageController.clear();
@@ -219,7 +222,7 @@ class _OrderChatScreenState extends State<OrderChatScreen> {
         Expanded(
           child: _chatId != null
               ? StreamBuilder<List<Map<String, dynamic>>>(
-                  stream: ChatService.getChatMessages(_chatId!),
+                  stream: ChatService.getOrderChatMessages(widget.orderId),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(

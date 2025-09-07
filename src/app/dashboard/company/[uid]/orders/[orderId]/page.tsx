@@ -160,7 +160,7 @@ export default function CompanyOrderDetailPage() {
             providerId: orderDataFromDb.selectedAnbieterId,
             providerName: providerDetails.name,
             providerAvatarUrl: providerDetails.avatarUrl,
-            customerId: orderDataFromDb.kundeId,
+            customerId: orderDataFromDb.customerFirebaseUid || orderDataFromDb.kundeId,
             customerName: customerDetails.name,
             customerAvatarUrl: customerDetails.avatarUrl,
             orderDate: (() => {
