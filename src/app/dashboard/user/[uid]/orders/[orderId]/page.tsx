@@ -74,7 +74,16 @@ interface OrderData {
 export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const orderId = typeof params?.orderId === 'string' ? params.orderId : '';
+
+  // Sicherere Parameter-Extraktion für Next.js 15
+  const orderId = React.useMemo(() => {
+    if (!params) return '';
+    const id = params.orderId;
+    if (typeof id === 'string') return id;
+    if (Array.isArray(id)) return id[0] || '';
+    return '';
+  }, [params]);
+
   const { user: currentUser, loading: authLoading, firebaseUser } = useAuth(); // KORREKTUR: useAuth Hook korrekt verwenden mit firebaseUser
 
   const [order, setOrder] = useState<OrderData | null>(null);
@@ -137,10 +146,13 @@ export default function OrderDetailPage() {
 
     // Wenn die orderId fehlt, ist das ein Fehler.
     if (!orderId) {
+      console.error('❌ OrderId fehlt:', { params, orderId, paramsType: typeof params });
       setError('Auftrags-ID in der URL fehlt.');
       setLoadingOrder(false);
       return;
     }
+
+    console.log('✅ OrderId gelesen:', { orderId, params });
 
     // Zuerst laden wir die Daten über die API (mit ordentlicher Autorisierung)
     // Dann starten wir den Realtime-Listener für Updates
