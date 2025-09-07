@@ -57,35 +57,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   // Neue Methoden für erweiterte Funktionalität (ähnlich der Web-Version)
-  Future<void> _acceptOrder() async {
-    try {
-      setState(() => _isLoading = true);
-      
-      // Verwende die neue OrderService acceptOrder Methode
-      await OrderService.acceptOrder(widget.orderId);
-      
-      setState(() {
-        _successMessage = 'Auftrag erfolgreich angenommen!';
-        _isLoading = false;
-      });
-      
-      // Reload order data
-      await _loadOrder();
-      
-      // Clear success message after 5 seconds
-      Future.delayed(const Duration(seconds: 5), () {
-        if (mounted) {
-          setState(() => _successMessage = null);
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Fehler beim Annehmen des Auftrags: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
-  }
-
   Future<void> _completeOrder() async {
     // Zeige Confirmation Dialog
     final confirmed = await showDialog<bool>(
@@ -585,28 +556,73 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             const SizedBox(height: 16),
           ],
 
-          // Status-spezifische Action Buttons (wie in der Web-Version)
+          // Status-spezifische Information für Kunden
           if (_order!.status.toUpperCase() == 'ZAHLUNG_ERHALTEN_CLEARING') ...[
+            DashboardCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.hourglass_empty, color: Colors.orange.shade400),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Warten auf Anbieter-Bestätigung',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            decoration: TextDecoration.none,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black26,
+                                offset: Offset(0, 1),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Ihre Zahlung wurde erfolgreich bearbeitet. Der Anbieter wurde benachrichtigt und wird den Auftrag bald bestätigen.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Chat Button für aktive Aufträge
+          if (_order!.status.toUpperCase() == 'AKTIV') ...[
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Colors.green, Color(0xFF4CAF50)],
+                  colors: [TaskiloColors.primary, Color(0xFF0d9488)],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.green.withValues(alpha: 0.3),
+                    color: TaskiloColors.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: ElevatedButton.icon(
-                onPressed: () => _acceptOrder(),
-                icon: const Icon(Icons.check_circle, size: 20),
+                onPressed: () => _openChat(),
+                icon: const Icon(Icons.chat_bubble_outline, size: 20),
                 label: const Text(
-                  'Auftrag annehmen',
+                  'Chat mit Anbieter öffnen',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -668,128 +684,132 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [TaskiloColors.primary, Color(0xFF0d9488)],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: TaskiloColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+            // Action Buttons für PROVIDER_COMPLETED
+            Row(
+              children: [
+                // Chat Button
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6366f1), Color(0xFF4f46e5)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366f1).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openChat(),
+                      icon: const Icon(Icons.chat_bubble_outline, size: 20),
+                      label: const Text(
+                        'Chat',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () => _completeOrder(),
-                icon: const Icon(Icons.rate_review, size: 20),
-                label: const Text(
-                  'Auftrag bestätigen & bewerten',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    decoration: TextDecoration.none,
+                ),
+                const SizedBox(width: 12),
+                // Bestätigen Button
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [TaskiloColors.primary, Color(0xFF0d9488)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: TaskiloColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _completeOrder(),
+                      icon: const Icon(Icons.rate_review, size: 20),
+                      label: const Text(
+                        'Auftrag bestätigen & bewerten',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
+              ],
             ),
             const SizedBox(height: 16),
           ],
 
-          // Standard Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [TaskiloColors.primary, Color(0xFF0d9488)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: TaskiloColors.primary.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openChat(),
-                    icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                    label: const Text(
-                      'Chat öffnen',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      shadowColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
+          // Standard Action Buttons - nur Support
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: TaskiloColors.primary,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: OutlinedButton.icon(
+              onPressed: () => _contactSupport(),
+              icon: const Icon(Icons.help_outline, size: 20),
+              label: const Text(
+                'Support',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.none,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: TaskiloColors.primary,
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withValues(alpha: 0.2),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: OutlinedButton.icon(
-                    onPressed: () => _contactSupport(),
-                    icon: const Icon(Icons.help_outline, size: 20),
-                    label: const Text(
-                      'Support',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: TaskiloColors.primary,
-                      backgroundColor: Colors.white,
-                      side: BorderSide.none,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                  ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: TaskiloColors.primary,
+                backgroundColor: Colors.white,
+                side: BorderSide.none,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),

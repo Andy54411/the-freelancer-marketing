@@ -168,7 +168,8 @@ export const acceptOrder = onCall(
                 transaction.set(chatDocRef, {
                     isLocked: false, // Chat explizit freischalten
                     lastUpdated: FieldValue.serverTimestamp(),
-                    users: [customerId, providerId].filter(Boolean) // Stellt sicher, dass die UIDs für Regeln/Abfragen vorhanden sind
+                    participants: [customerId, providerId].filter(Boolean), // FIX: participants statt users für Firestore Rules
+                    users: [customerId, providerId].filter(Boolean) // Behalte users für Backward-Kompatibilität
                 }, { merge: true });
             });
 

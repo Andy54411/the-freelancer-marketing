@@ -290,6 +290,35 @@ class OrderService {
     }
   }
 
+  static Future<void> rejectOrder(String orderId, {String? reason}) async {
+    try {
+      debugPrint('❌ OrderService: Lehne Auftrag ab: $orderId');
+
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('Benutzer ist nicht angemeldet');
+      }
+
+      // Verwende die Firebase Cloud Function
+      final result = await FirebaseFunctions.instanceFor(region: 'europe-west1')
+          .httpsCallable('rejectOrder')
+          .call({
+        'orderId': orderId,
+        'reason': reason ?? 'Kein Grund angegeben',
+      });
+
+      if (result.data['success'] == true) {
+        debugPrint('❌ OrderService: Auftrag erfolgreich abgelehnt');
+      } else {
+        throw Exception(result.data['message'] ?? 'Unbekannter Fehler beim Ablehnen');
+      }
+
+    } catch (e) {
+      debugPrint('❌ OrderService Fehler beim Ablehnen: $e');
+      throw Exception('Auftrag konnte nicht abgelehnt werden: $e');
+    }
+  }
+
   /// Markiert einen Auftrag als vom Provider abgeschlossen
   /// Ändert Status von 'AKTIV' zu 'PROVIDER_COMPLETED'
   static Future<void> completeOrderAsProvider(String orderId, {String? completionNote}) async {
