@@ -363,6 +363,42 @@
                     "order": "DESCENDING"
                 }
             ]
+        },
+        {
+            "collectionGroup": "chat",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "chat",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "isOn",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "timestamp",
+                    "order": "DESCENDING"
+                }
+            ]
+        },
+        {
+            "collectionGroup": "nachrichten",
+            "queryScope": "COLLECTION",
+            "fields": [
+                {
+                    "fieldPath": "chat",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "isOn",
+                    "order": "ASCENDING"
+                },
+                {
+                    "fieldPath": "timestamp",
+                    "order": "DESCENDING"
+                }
+            ]
         }
     ],
     "fieldOverrides": []
