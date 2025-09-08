@@ -63,32 +63,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   // Neue Methoden für erweiterte Funktionalität (ähnlich der Web-Version)
   Future<void> _completeOrder() async {
-    // Zeige Confirmation Dialog
-    final confirmed = await showDialog<bool>(
+    // Zeige Bewertungs-Dialog
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Auftrag abschließen'),
-        content: const Text(
-          'Möchten Sie den Auftrag als erledigt markieren? '
-          'Nach der Bestätigung wird das Geld an den Anbieter ausgezahlt.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: TaskiloColors.primary,
-            ),
-            child: const Text('Bestätigen'),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (context) => _buildRatingDialog(),
     );
 
-    if (confirmed == true) {
+    if (result != null) {
       try {
         setState(() => _isLoading = true);
         
@@ -96,13 +78,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         await OrderService.completeOrderAsCustomer(
           widget.orderId,
           widget.userId ?? '',
-          rating: 5, // Default rating
-          review: 'Auftrag erfolgreich abgeschlossen',
-          completionNotes: 'Kunde bestätigt Abschluss',
+          rating: result['rating'],
+          review: result['review'],
+          completionNotes: 'Kunde bestätigt Abschluss mit Bewertung',
         );
         
         setState(() {
-          _successMessage = 'Auftrag erfolgreich abgeschlossen! Das Geld wurde an den Anbieter ausgezahlt.';
+          _successMessage = 'Auftrag erfolgreich abgeschlossen und bewertet! Das Geld wurde an den Anbieter ausgezahlt.';
           _isLoading = false;
         });
         
@@ -122,6 +104,161 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         });
       }
     }
+  }
+
+  Widget _buildRatingDialog() {
+    int rating = 5;
+    TextEditingController reviewController = TextEditingController();
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.star, color: Colors.amber),
+              const SizedBox(width: 8),
+              const Text('Auftrag bewerten'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Wie zufrieden waren Sie mit der Leistung?',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 16),
+                
+                // Star Rating
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (index) {
+                    return GestureDetector(
+                      onTap: () => setState(() => rating = index + 1),
+                      child: Icon(
+                        Icons.star,
+                        size: 40,
+                        color: index < rating ? Colors.amber : Colors.grey.shade300,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                
+                Text(
+                  _getRatingText(rating),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: _getRatingColor(rating),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Review Text Field
+                const Text(
+                  'Bewertung (optional):',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reviewController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Teilen Sie Ihre Erfahrungen...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: TaskiloColors.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, 
+                               color: Colors.green.shade700, 
+                               size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Was passiert nach der Bewertung?',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green.shade800,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '• Das Geld wird sofort an den Anbieter ausgezahlt\n'
+                        '• Ihre Bewertung wird veröffentlicht\n'
+                        '• Der Auftrag wird als abgeschlossen markiert',
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context, {
+                  'rating': rating,
+                  'review': reviewController.text.trim(),
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: TaskiloColors.primary,
+              ),
+              child: const Text('Bewerten & Abschließen'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getRatingText(int rating) {
+    switch (rating) {
+      case 1: return 'Sehr unzufrieden';
+      case 2: return 'Unzufrieden';
+      case 3: return 'Okay';
+      case 4: return 'Zufrieden';
+      case 5: return 'Sehr zufrieden';
+      default: return '';
+    }
+  }
+
+  Color _getRatingColor(int rating) {
+    if (rating <= 2) return Colors.red.shade600;
+    if (rating == 3) return Colors.orange.shade600;
+    return Colors.green.shade600;
   }
 
   void _openChat() {
@@ -1650,16 +1787,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           if (_order!.status.toUpperCase() == 'PROVIDER_COMPLETED') ...[
             DashboardCard(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.check_circle, color: Colors.green.shade400),
+                      Icon(
+                        Icons.task_alt,
+                        color: Colors.green.shade600,
+                        size: 24,
+                      ),
                       const SizedBox(width: 8),
                       const Expanded(
                         child: Text(
                           'Auftrag wurde vom Anbieter abgeschlossen',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             decoration: TextDecoration.none,
@@ -1675,13 +1817,45 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Text(
                     'Der Anbieter hat den Auftrag als erledigt markiert. Bitte prüfen Sie die Arbeit und bestätigen Sie den Abschluss.',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.white.withValues(alpha: 0.9),
                       decoration: TextDecoration.none,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Auftrag bestätigen & bewerten',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade800,
+                            decoration: TextDecoration.none,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Nach der Bestätigung wird das Geld an den Anbieter ausgezahlt und Sie können eine Bewertung abgeben.',
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontSize: 12,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
