@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import '../../../models/user_model.dart';
 import '../../../models/order.dart';
 import '../../../services/order_service.dart';
+import '../../../services/timetracker_service.dart';
+import '../../../services/stripe_payment_service.dart';
 import '../../../utils/colors.dart';
 import '../../../widgets/hours_billing_overview.dart';
 import '../../../widgets/time_tracking_widget.dart';
@@ -207,6 +209,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         'pendingPrice': pendingPrice,
         'totalLoggedHours': timeTracking['totalLoggedHours'] ?? 0.0,
         'originalPlannedHours': timeTracking['originalPlannedHours'] ?? 8.0,
+        'timeEntries': timeEntries, // NEU: Füge die TimeEntries hinzu
       };
     } catch (error) {
       debugPrint('Fehler beim Laden der TimeTracking-Daten: $error');
@@ -254,23 +257,518 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
 
     if (confirmed == true) {
-      try {
-        // TODO: Implementiere Freigabe-Logik über TimeTracker API
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Stunden-Freigabe wird bald verfügbar sein...'),
-            backgroundColor: TaskiloColors.primary,
+      // Zeige Loading Indicator
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              SizedBox(width: 16),
+              Text('Stunden werden freigegeben...'),
+            ],
           ),
+          backgroundColor: TaskiloColors.primary,
+          duration: Duration(seconds: 30),
+        ),
+      );
+
+      try {
+        // Verwende TimeTracker API für die Freigabe
+        // Sammle alle "logged" TimeEntry IDs aus den Firestore Daten
+        final timeEntryIds = <String>[];
+        
+        // Lade aktuelle TimeTracking Daten
+        final timeTrackingData = await _loadTimeTrackingData();
+        final timeEntries = timeTrackingData['timeEntries'] as List<dynamic>?;
+        
+        if (timeEntries != null) {
+          for (final entry in timeEntries) {
+            if (entry['status'] == 'logged') {
+              timeEntryIds.add(entry['id'] as String);
+            }
+          }
+        }
+
+        if (timeEntryIds.isEmpty) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Keine Stunden zur Freigabe gefunden'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+
+        // API Call für Freigabe
+        final result = await TimeTrackerService.approveHours(
+          orderId: _order!.id,
+          timeEntryIds: timeEntryIds,
         );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        if (result['success']) {
+          final data = result['data'];
+          final totalHours = data['totalHours'] ?? 0;
+          final paymentRequired = data['paymentRequired'] ?? false;
+          final totalAmount = data['totalAmount'] ?? 0;
+
+          if (paymentRequired && totalAmount > 0) {
+            // Zusätzliche Zahlung erforderlich
+            _showPaymentDialog(totalAmount, totalHours);
+          } else {
+            // Erfolgreich ohne zusätzliche Zahlung
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✅ ${totalHours}h erfolgreich freigegeben!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+          
+          // Daten neu laden
+          _loadOrderData();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Fehler bei der Freigabe: ${result['error']}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        
+        // Daten neu laden
+        _loadOrderData();
       } catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler bei der Freigabe: $error'),
+            content: Text('❌ Unerwarteter Fehler: $error'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
+  }
+
+  /// Zeigt Payment Dialog für zusätzliche Stunden
+  Future<void> _showPaymentDialog(int totalAmountInCents, int totalHours) async {
+    final amountInEuro = totalAmountInCents / 100.0;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('💳 Zusätzliche Zahlung erforderlich'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Für die ${totalHours}h zusätzliche Arbeitszeit ist eine Zahlung erforderlich:'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: TaskiloColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: TaskiloColors.primary),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${totalHours}h zusätzlich:',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    '€${amountInEuro.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: TaskiloColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Nach der Zahlung werden die Stunden automatisch freigegeben und das Geld an den Anbieter ausgezahlt.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Später bezahlen'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _processPayment(totalAmountInCents, totalHours);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: TaskiloColors.primary,
+            ),
+            child: const Text('Jetzt bezahlen'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Startet den Payment-Prozess für zusätzliche Stunden
+  Future<void> _processPayment(int totalAmountInCents, int totalHours) async {
+    if (!mounted) return;
+    
+    // Zeige Loading Dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(TaskiloColors.primary),
+            ),
+            const SizedBox(height: 16),
+            const Text('Payment wird vorbereitet...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Sammle die TimeEntry IDs für die Zahlung
+      final timeTrackingData = await _loadTimeTrackingData();
+      final timeEntries = timeTrackingData['timeEntries'] as List<dynamic>?;
+      final timeEntryIds = <String>[];
+      
+      if (timeEntries != null) {
+        for (final entry in timeEntries) {
+          if (entry['status'] == 'logged' && entry['category'] == 'additional') {
+            timeEntryIds.add(entry['id'] as String);
+          }
+        }
+      }
+
+      if (timeEntryIds.isEmpty) {
+        if (!mounted) return;
+        Navigator.pop(context); // Schließe Loading Dialog
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Keine zusätzlichen Stunden zum Bezahlen gefunden'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Hole User ID für Payment
+      if (!mounted) return;
+      final currentUser = Provider.of<TaskiloUser?>(context, listen: false);
+      if (currentUser == null || _order == null) {
+        if (!mounted) return;
+        Navigator.pop(context);
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Benutzerinformationen nicht verfügbar'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      debugPrint('🔄 Creating Payment Intent for ${timeEntryIds.length} time entries...');
+      debugPrint('💰 Amount: $totalAmountInCents¢ for ${totalHours}h');
+
+      // Erstelle Payment Intent über die API
+      final paymentResult = await StripePaymentService.createAdditionalHoursPaymentIntent(
+        orderId: _order!.id,
+        timeEntryIds: timeEntryIds,
+        totalAmountInCents: totalAmountInCents,
+        totalHours: totalHours,
+        customerId: currentUser.uid,
+        providerId: _order!.selectedAnbieterId,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // Schließe Loading Dialog
+
+      if (paymentResult['success']) {
+        final paymentData = paymentResult['data'];
+        
+        debugPrint('✅ Payment Intent created: ${paymentData['paymentIntentId']}');
+        
+        // Zeige Payment Success Dialog
+        _showPaymentSuccessDialog(
+          paymentData: paymentData,
+          timeEntryIds: timeEntryIds,
+          totalHours: totalHours,
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Payment-Erstellung fehlgeschlagen: ${paymentResult['error']}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      Navigator.pop(context); // Schließe Loading Dialog
+      
+      debugPrint('❌ Payment Process Exception: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Unerwarteter Fehler: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Zeigt Success Dialog nach erfolgreicher Payment Intent Erstellung
+  void _showPaymentSuccessDialog({
+    required Map<String, dynamic> paymentData,
+    required List<String> timeEntryIds,
+    required int totalHours,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.payment, color: Colors.green.shade600),
+            const SizedBox(width: 8),
+            const Text('💳 Payment bereit'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Das Payment wurde erfolgreich vorbereitet!'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✅ ${totalHours}h zusätzliche Stunden'),
+                  Text('✅ €${(paymentData['totalAmount'] / 100).toStringAsFixed(2)} Zahlbetrag'),
+                  Text('✅ Payment ID: ${paymentData['paymentIntentId'].substring(0, 15)}...'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Das Payment wird jetzt automatisch verarbeitet. Die Stunden werden freigegeben und das Geld an den Anbieter ausgezahlt.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _confirmPayment(paymentData, timeEntryIds);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: TaskiloColors.primary,
+            ),
+            child: const Text('Payment bestätigen'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Bestätigt das Payment und löst die Stripe Connect Auszahlung aus
+  Future<void> _confirmPayment(
+    Map<String, dynamic> paymentData,
+    List<String> timeEntryIds,
+  ) async {
+    // Zeige Loading
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            SizedBox(width: 16),
+            Text('💳 Payment wird verarbeitet...'),
+          ],
+        ),
+        backgroundColor: TaskiloColors.primary,
+        duration: Duration(seconds: 30),
+      ),
+    );
+
+    try {
+      debugPrint('🔄 Confirming payment: ${paymentData['paymentIntentId']}');
+      
+      // Bestätige Payment über die API
+      final confirmResult = await StripePaymentService.confirmAdditionalHoursPayment(
+        paymentIntentId: paymentData['paymentIntentId'],
+        orderId: paymentData['orderId'],
+        timeEntryIds: timeEntryIds,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      if (confirmResult['success']) {
+        final data = confirmResult['data'];
+        
+        debugPrint('✅ Payment confirmed successfully');
+        debugPrint('💰 Provider receives: ${data['providerNetAmount']}¢');
+        debugPrint('🏦 Transfer ID: ${data['stripeTransferId']}');
+        
+        // Protokolliere die Transaktion für Auditing
+        await StripePaymentService.logPaymentTransaction(paymentData: {
+          'paymentIntentId': data['paymentIntentId'],
+          'orderId': data['orderId'],
+          'timeEntryIds': timeEntryIds,
+          'transferAmount': data['transferAmount'],
+          'platformFee': data['platformFee'],
+          'providerNetAmount': data['providerNetAmount'],
+          'stripeTransferId': data['stripeTransferId'],
+          'approvedHours': data['approvedHours'],
+          'paymentStatus': 'confirmed',
+          'customerId': paymentData['customerId'],
+          'providerId': paymentData['providerId'],
+        });
+        
+        // Zeige Success Message
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${data['message']}'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        
+        // Lade Order-Daten neu
+        await _loadOrderData();
+        
+        // Zeige finalen Success Dialog
+        _showFinalSuccessDialog(data);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Payment-Bestätigung fehlgeschlagen: ${confirmResult['error']}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      debugPrint('❌ Payment Confirmation Exception: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Unerwarteter Fehler: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Zeigt finalen Success Dialog nach erfolgreicher Zahlung und Auszahlung
+  void _showFinalSuccessDialog(Map<String, dynamic> paymentData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade600),
+            const SizedBox(width: 8),
+            const Text('🎉 Erfolgreich!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Zahlung und Auszahlung erfolgreich abgeschlossen!'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✅ ${paymentData['approvedHours']}h wurden freigegeben'),
+                  Text('✅ €${(paymentData['providerNetAmount'] / 100).toStringAsFixed(2)} an Anbieter ausgezahlt'),
+                  Text('✅ Transfer ID: ${paymentData['stripeTransferId'].substring(0, 15)}...'),
+                  Text('✅ Platform Fee: €${(paymentData['platformFee'] / 100).toStringAsFixed(2)}'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Die zusätzlichen Stunden wurden erfolgreich freigegeben und das Geld wurde direkt an das Verbundkonto des Anbieters ausgezahlt.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: TaskiloColors.primary,
+            ),
+            child: const Text('Verstanden'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Lädt die Auftragsdaten neu
+  Future<void> _loadOrderData() async {
+    await _loadOrder();
+    // Trigger rebuild für TimeTracking Widget
+    setState(() {});
   }
 
   String _formatPrice(int amountInCents, String? currency) {
