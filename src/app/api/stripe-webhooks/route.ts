@@ -81,11 +81,11 @@ export async function POST(req: NextRequest) {
         // DUAL SUPPORT: Check both 'type' (for additional_hours) and 'paymentType' (for B2B)
         const paymentType = chargeSucceeded.metadata?.type || chargeSucceeded.metadata?.paymentType;
 
-        // Handle additional hours payments
-        // Handle additional hours payments (both platform_hold and direct_transfer)
+        // Handle additional hours payments (all variants)
         if (
           paymentType === 'additional_hours_platform_hold' ||
-          paymentType === 'additional_hours_direct_transfer'
+          paymentType === 'additional_hours_direct_transfer' ||
+          paymentType === 'mobile_hourly_payment' // ADDED: Support for mobile app
         ) {
           const orderId = chargeSucceeded.metadata?.orderId;
           const entryIds = chargeSucceeded.metadata?.entryIds;
@@ -189,10 +189,11 @@ export async function POST(req: NextRequest) {
         const paymentType =
           paymentIntentSucceeded.metadata?.type || paymentIntentSucceeded.metadata?.paymentType;
 
-        // Handle additional hours payments (both platform_hold and direct_transfer)
+        // Handle additional hours payments (all variants)
         if (
           paymentType === 'additional_hours_platform_hold' ||
-          paymentType === 'additional_hours_direct_transfer'
+          paymentType === 'additional_hours_direct_transfer' ||
+          paymentType === 'mobile_hourly_payment' // ADDED: Support for mobile app
         ) {
           const orderId = paymentIntentSucceeded.metadata?.orderId;
           const entryIds = paymentIntentSucceeded.metadata?.entryIds;

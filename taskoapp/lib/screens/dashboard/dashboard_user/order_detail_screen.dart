@@ -499,21 +499,116 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     debugPrint('💰 TotalAmount: $totalAmount');
     
     if (paymentIntentId != null && clientSecret != null) {
-      debugPrint('✅ PAYMENT DATA OK - SHOWING SNACKBAR');
-      // Zeige Payment Success und bestätige automatisch
+      debugPrint('✅ PAYMENT DATA OK - STARTING STRIPE PAYMENT SHEET');
+      
+      try {
+        // Initialisiere Stripe Payment Sheet
+        await Stripe.instance.initPaymentSheet(
+          paymentSheetParameters: SetupPaymentSheetParameters(
+            paymentIntentClientSecret: clientSecret,
+            merchantDisplayName: 'Taskilo',
+            style: ThemeMode.system,
+          ),
+        );
+        
+        debugPrint('💳 SHOWING STRIPE PAYMENT SHEET...');
+        
+        // Zeige Stripe Payment Sheet
+        await Stripe.instance.presentPaymentSheet();
+        
+        debugPrint('✅ PAYMENT SHEET COMPLETED - CALLING WEBHOOK');
+        
+        // Payment erfolgreich - Webhook aufrufen für Status-Update
+        await _confirmPaymentWithWebhook(paymentIntentId, data, timeEntryIds);
+        
+      } catch (error) {
+        debugPrint('❌ STRIPE PAYMENT ERROR: $error');
+        if (error is StripeException) {
+          if (error.error.code == FailureCode.Canceled) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('💳 Zahlung abgebrochen'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('❌ Payment-Fehler: ${error.error.localizedMessage}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Unbekannter Payment-Fehler: $error'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else {
+      debugPrint('❌ PAYMENT DATA MISSING!');
+    }
+  }
+
+  /// Bestätigt Payment über Webhook
+  Future<void> _confirmPaymentWithWebhook(String paymentIntentId, Map<String, dynamic> data, List<String> timeEntryIds) async {
+    debugPrint('🔗 PAYMENT CONFIRMED - WAITING FOR STRIPE WEBHOOK...');
+    
+    try {
+      // Zeige Loading - Stripe webhook wird automatisch aufgerufen
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              SizedBox(width: 16),
+              Text('💳 Payment wird verarbeitet...'),
+            ],
+          ),
+          backgroundColor: TaskiloColors.primary,
+          duration: Duration(seconds: 5),
+        ),
+      );
+
+      // Warte kurz und lade dann die Daten neu
+      // Der Stripe Webhook unter /api/stripe-webhooks wird automatisch aufgerufen
+      await Future.delayed(const Duration(seconds: 3));
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      // Lade Daten neu, um die Stripe Webhook-Updates zu sehen
+      await _loadOrderData();
+      
+      // Zeige Erfolgs-Nachricht
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('💳 ${totalHours}h für ${(totalAmount/100).toStringAsFixed(2)}€ - Payment wird verarbeitet...'),
-          backgroundColor: TaskiloColors.primary,
-          duration: Duration(seconds: 3),
+          content: Text('✅ ${data['additionalHours']}h erfolgreich bezahlt! Status wird automatisch aktualisiert.'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 5),
         ),
       );
       
-      debugPrint('🚀 CONFIRMING PAYMENT...');
-      // Simuliere erfolgreiche Zahlung und bestätige
-      await _confirmPaymentDirectly(data, timeEntryIds);
-    } else {
-      debugPrint('❌ PAYMENT DATA MISSING!');
+    } catch (error) {
+      debugPrint('❌ WEBHOOK ERROR: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Fehler: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
