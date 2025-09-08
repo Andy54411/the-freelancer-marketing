@@ -155,12 +155,63 @@ export async function POST(request: NextRequest) {
             );
           }
         } else {
-          return NextResponse.json(
-            {
-              error: 'Provider-Benutzer nicht gefunden.',
-            },
-            { status: 404 }
-          );
+          console.log('❌ User nicht gefunden, versuche companies collection...');
+
+          // Versuche auch die companies collection zu prüfen
+          try {
+            const companyDoc = await db
+              .collection('companies')
+              .doc(orderData.selectedAnbieterId)
+              .get();
+
+            console.log('🔍 Company Document Check:', {
+              exists: companyDoc.exists,
+              docId: orderData.selectedAnbieterId,
+            });
+
+            if (companyDoc.exists) {
+              const companyData = companyDoc.data();
+              const companyStripeAccountId =
+                companyData?.stripeConnectAccountId || companyData?.stripeAccountId;
+
+              console.log('🔍 Company Data:', {
+                hasCompanyData: !!companyData,
+                stripeConnectAccountId: companyData?.stripeConnectAccountId,
+                stripeAccountId: companyData?.stripeAccountId,
+                finalAccountId: companyStripeAccountId,
+                companyDataKeys: companyData ? Object.keys(companyData) : [],
+              });
+
+              if (companyStripeAccountId && companyStripeAccountId.startsWith('acct_')) {
+                console.log('✅ Company Stripe Account gefunden:', companyStripeAccountId);
+                providerStripeAccountId = companyStripeAccountId;
+              } else {
+                return NextResponse.json(
+                  {
+                    error:
+                      'Provider hat keine gültige Stripe Account ID (weder in users noch in companies collection).',
+                  },
+                  { status: 400 }
+                );
+              }
+            } else {
+              return NextResponse.json(
+                {
+                  error:
+                    'Provider-Benutzer nicht gefunden (weder in users noch in companies collection).',
+                },
+                { status: 404 }
+              );
+            }
+          } catch (companyError) {
+            console.error('❌ Company Check Error:', companyError);
+            return NextResponse.json(
+              {
+                error: 'Fehler beim Prüfen der Provider-Company-Konfiguration.',
+              },
+              { status: 500 }
+            );
+          }
         }
       } catch (fallbackError) {
         return NextResponse.json(
