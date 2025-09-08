@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:flutter_stripe/flutter_stripe.dart';
 import '../../../models/user_model.dart';
 import '../../../models/order.dart';
 import '../../../services/order_service.dart';
@@ -519,12 +520,34 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   /// Bestätigt Payment direkt ohne Dialog
   Future<void> _confirmPaymentDirectly(Map<String, dynamic> paymentData, List<String> timeEntryIds) async {
     try {
-      // Hier würde normalerweise Stripe Payment confirmation stattfinden
-      // Für Demo: Direkt zur Bestätigung
+      final paymentIntentClientSecret = paymentData['clientSecret'];
       
+      if (paymentIntentClientSecret == null) {
+        throw Exception('Client Secret fehlt');
+      }
+
+      debugPrint('💳 Initialisiere Stripe Payment Sheet...');
+      
+      // Initialisiere Payment Sheet
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: paymentIntentClientSecret,
+          style: ThemeMode.system,
+          merchantDisplayName: 'Taskilo',
+        ),
+      );
+
+      debugPrint('📱 Zeige Payment Sheet...');
+      
+      // Zeige Payment Sheet
+      await Stripe.instance.presentPaymentSheet();
+      
+      debugPrint('✅ Payment Sheet erfolgreich abgeschlossen');
+      
+      // Payment erfolgreich
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Payment erfolgreich! ${paymentData['additionalHours']}h freigegeben'),
+          content: Text('✅ Zahlung erfolgreich! ${paymentData['additionalHours']}h freigegeben'),
           backgroundColor: Colors.green,
           duration: Duration(seconds: 5),
         ),
@@ -533,7 +556,28 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       // Lade Daten neu
       await _loadOrderData();
       
+    } on StripeException catch (e) {
+      debugPrint('❌ Stripe Error: ${e.error.localizedMessage}');
+      
+      if (e.error.code == FailureCode.Canceled) {
+        // User hat Payment abgebrochen
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Zahlung abgebrochen'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        // Anderer Stripe Fehler
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Zahlungsfehler: ${e.error.localizedMessage}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (error) {
+      debugPrint('❌ Payment Error: $error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Payment-Fehler: $error'),
