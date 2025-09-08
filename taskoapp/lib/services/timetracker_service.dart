@@ -20,31 +20,50 @@ class TimeTrackerService {
     required List<String> timeEntryIds,
   }) async {
     try {
+      print('🔄 TimeTrackerService.approveHours startet...');
+      print('📋 OrderId: $orderId');
+      print('📋 TimeEntryIds: $timeEntryIds');
+      
       // 1. Firebase Auth Token holen
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
+        print('❌ Benutzer ist nicht angemeldet');
         throw Exception('Benutzer ist nicht angemeldet');
       }
 
+      print('✅ Firebase User gefunden: ${user.uid}');
       final idToken = await user.getIdToken();
+      print('✅ Firebase Auth Token erhalten');
 
       // 2. API Request an die existierende Web-API
+      print('🌐 API Request wird gesendet an: ${ApiConfig.billAdditionalHoursEndpoint}');
+      
+      final requestData = {
+        'orderId': orderId,
+        'approvedEntryIds': timeEntryIds, // Die Web-API erwartet "approvedEntryIds"
+        // customerStripeId und providerStripeAccountId werden automatisch aus der Order geladen
+      };
+      
+      print('📤 Request Body: ${jsonEncode(requestData)}');
+      
       final response = await http.post(
         Uri.parse(ApiConfig.billAdditionalHoursEndpoint),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
-        body: jsonEncode({
-          'orderId': orderId,
-          'approvedEntryIds': timeEntryIds, // Die Web-API erwartet "approvedEntryIds"
-          // customerStripeId und providerStripeAccountId werden automatisch aus der Order geladen
-        }),
+        body: jsonEncode(requestData),
       );
+
+      print('📥 API Response Status: ${response.statusCode}');
+      print('📥 API Response Body: ${response.body}');
 
       // 3. Response verarbeiten
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
+        print('✅ API Call erfolgreich');
+        print('💰 Total Amount Transferred: ${responseData['totalAmountTransferred']}');
+        print('🔗 Transfer ID: ${responseData['transferId']}');
         
         return {
           'success': true,
@@ -58,6 +77,9 @@ class TimeTrackerService {
         };
       } else {
         final responseData = jsonDecode(response.body);
+        print('❌ API Call fehlgeschlagen');
+        print('❌ Error: ${responseData['error']}');
+        
         return {
           'success': false,
           'error': responseData['error'] ?? 'Unbekannter Fehler',
@@ -65,6 +87,7 @@ class TimeTrackerService {
         };
       }
     } catch (e) {
+      print('❌ Exception in TimeTrackerService.approveHours: $e');
       return {
         'success': false,
         'error': 'Netzwerkfehler: $e',

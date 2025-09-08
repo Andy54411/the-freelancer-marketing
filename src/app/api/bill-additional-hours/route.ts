@@ -71,8 +71,22 @@ export async function POST(request: NextRequest) {
     // Lade customerStripeId aus Order-Daten oder verwende provided Value als Fallback
     const customerStripeId = orderData.stripeCustomerId || providedCustomerStripeId;
 
+    console.log('🔍 Order Data Debug:', {
+      orderId,
+      customerFirebaseUid: orderData.customerFirebaseUid,
+      selectedAnbieterId: orderData.selectedAnbieterId,
+      stripeCustomerId: orderData.stripeCustomerId,
+      hasTimeTracking: !!orderData.timeTracking,
+      timeTrackingKeys: orderData.timeTracking ? Object.keys(orderData.timeTracking) : [],
+    });
+
     // Validiere customerStripeId NACH dem Loading aus Order-Daten
     if (!customerStripeId || !customerStripeId.startsWith('cus_')) {
+      console.error('❌ CustomerStripeId Validation Failed:', {
+        fromOrder: orderData.stripeCustomerId,
+        fromRequest: providedCustomerStripeId,
+        finalValue: customerStripeId,
+      });
       return NextResponse.json(
         {
           error: 'Ungültige Kunde Stripe ID. Weder in Order-Daten noch als Parameter verfügbar.',
@@ -86,16 +100,38 @@ export async function POST(request: NextRequest) {
     // Provider Stripe Account ID validieren und ggf. Fallback verwenden
     let providerStripeAccountId = initialProviderStripeAccountId;
 
+    console.log('🔍 Provider Stripe Account Check:', {
+      providedAccountId: initialProviderStripeAccountId,
+      selectedAnbieterId: orderData.selectedAnbieterId,
+    });
+
     if (!providerStripeAccountId || !providerStripeAccountId.startsWith('acct_')) {
+      console.log(
+        '⚠️ Kein gültiger Provider Stripe Account, versuche Fallback aus users collection...'
+      );
+
       // Versuche Fallback aus users collection zu holen
       try {
         const userDoc = await db.collection('users').doc(orderData.selectedAnbieterId).get();
+
+        console.log('🔍 User Document Check:', {
+          exists: userDoc.exists,
+          docId: orderData.selectedAnbieterId,
+        });
 
         if (userDoc.exists) {
           const userData = userDoc.data();
           const fallbackStripeAccountId = userData?.stripeAccountId;
 
+          console.log('🔍 User Data:', {
+            hasUserData: !!userData,
+            stripeAccountId: fallbackStripeAccountId,
+            userDataKeys: userData ? Object.keys(userData) : [],
+          });
+
           if (fallbackStripeAccountId && fallbackStripeAccountId.startsWith('acct_')) {
+            console.log('✅ Fallback Stripe Account gefunden:', fallbackStripeAccountId);
+
             // Migriere die ID zur users collection (Server-Side)
             try {
               await db.collection('users').doc(orderData.selectedAnbieterId).update({
@@ -103,7 +139,9 @@ export async function POST(request: NextRequest) {
                 migratedFromUsers: true,
                 migratedAt: new Date(),
               });
-            } catch (migrationError) {}
+            } catch (migrationError) {
+              console.error('⚠️ Migration Error:', migrationError);
+            }
 
             // Verwende Fallback für diese Anfrage
             providerStripeAccountId = fallbackStripeAccountId;
