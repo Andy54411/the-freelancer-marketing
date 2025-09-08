@@ -55,10 +55,10 @@ class PaymentFinalSuccessDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('✅ ${paymentData['approvedHours']}h wurden freigegeben'),
-                Text('✅ €${(paymentData['providerNetAmount'] / 100).toStringAsFixed(2)} an Anbieter ausgezahlt'),
-                Text('✅ Transfer ID: ${paymentData['stripeTransferId'].substring(0, 15)}...'),
-                Text('✅ Platform Fee: €${(paymentData['platformFee'] / 100).toStringAsFixed(2)}'),
+                Text('✅ Payment Intent erfolgreich erstellt'),
+                Text('✅ Betrag: €${((paymentData['amount'] ?? 0) / 100).toStringAsFixed(2)}'),
+                Text('✅ PaymentIntent ID: ${paymentData['paymentIntentId'] ?? 'N/A'}'),
+                Text('✅ Status: Bereit zur Zahlung'),
               ],
             ),
           ),

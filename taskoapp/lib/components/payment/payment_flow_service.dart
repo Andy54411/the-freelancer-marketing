@@ -198,11 +198,11 @@ class PaymentFlowService {
         debugPrint('✅ Payment confirmed successfully');
         
         // SCHRITT 6: Zeige Final Success Dialog
-        await PaymentFinalSuccessDialog.show(
-          context,
+      await PaymentFinalSuccessDialog.show(
+        context,
           paymentData: data,
-          onClose: onSuccess,
-        );
+        onClose: onSuccess,
+      );
       } else {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

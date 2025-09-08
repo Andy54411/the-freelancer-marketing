@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const {
       orderId,
       approvedEntryIds,
-      customerStripeId: providedCustomerStripeId,
+      customerStripeId,
       providerStripeAccountId: initialProviderStripeAccountId,
     } = body;
 
@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hole Auftragsdaten aus Firebase ZUERST um Stripe IDs zu laden
+    if (!customerStripeId || !customerStripeId.startsWith('cus_')) {
+      return NextResponse.json({ error: 'Ungültige Kunde Stripe ID.' }, { status: 400 });
+    }
+
+    // Hole Auftragsdaten aus Firebase
     const orderDoc = await db.collection('auftraege').doc(orderId).get();
 
     if (!orderDoc.exists) {
@@ -68,70 +72,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Lade customerStripeId aus Order-Daten oder verwende provided Value als Fallback
-    const customerStripeId = orderData.stripeCustomerId || providedCustomerStripeId;
-
-    console.log('🔍 Order Data Debug:', {
-      orderId,
-      customerFirebaseUid: orderData.customerFirebaseUid,
-      selectedAnbieterId: orderData.selectedAnbieterId,
-      stripeCustomerId: orderData.stripeCustomerId,
-      hasTimeTracking: !!orderData.timeTracking,
-      timeTrackingKeys: orderData.timeTracking ? Object.keys(orderData.timeTracking) : [],
-    });
-
-    // Validiere customerStripeId NACH dem Loading aus Order-Daten
-    if (!customerStripeId || !customerStripeId.startsWith('cus_')) {
-      console.error('❌ CustomerStripeId Validation Failed:', {
-        fromOrder: orderData.stripeCustomerId,
-        fromRequest: providedCustomerStripeId,
-        finalValue: customerStripeId,
-      });
-      return NextResponse.json(
-        {
-          error: 'Ungültige Kunde Stripe ID. Weder in Order-Daten noch als Parameter verfügbar.',
-        },
-        { status: 400 }
-      );
-    }
-
-    console.log('✅ Customer Stripe ID gefunden:', customerStripeId);
-
     // Provider Stripe Account ID validieren und ggf. Fallback verwenden
     let providerStripeAccountId = initialProviderStripeAccountId;
 
-    console.log('🔍 Provider Stripe Account Check:', {
-      providedAccountId: initialProviderStripeAccountId,
-      selectedAnbieterId: orderData.selectedAnbieterId,
-    });
-
     if (!providerStripeAccountId || !providerStripeAccountId.startsWith('acct_')) {
-      console.log(
-        '⚠️ Kein gültiger Provider Stripe Account, versuche Fallback aus users collection...'
-      );
-
       // Versuche Fallback aus users collection zu holen
       try {
         const userDoc = await db.collection('users').doc(orderData.selectedAnbieterId).get();
-
-        console.log('🔍 User Document Check:', {
-          exists: userDoc.exists,
-          docId: orderData.selectedAnbieterId,
-        });
 
         if (userDoc.exists) {
           const userData = userDoc.data();
           const fallbackStripeAccountId = userData?.stripeAccountId;
 
-          console.log('🔍 User Data:', {
-            hasUserData: !!userData,
-            stripeAccountId: fallbackStripeAccountId,
-            userDataKeys: userData ? Object.keys(userData) : [],
-          });
-
           if (fallbackStripeAccountId && fallbackStripeAccountId.startsWith('acct_')) {
-            console.log('✅ Fallback Stripe Account gefunden:', fallbackStripeAccountId);
-
             // Migriere die ID zur users collection (Server-Side)
             try {
               await db.collection('users').doc(orderData.selectedAnbieterId).update({
@@ -139,9 +92,7 @@ export async function POST(request: NextRequest) {
                 migratedFromUsers: true,
                 migratedAt: new Date(),
               });
-            } catch (migrationError) {
-              console.error('⚠️ Migration Error:', migrationError);
-            }
+            } catch (migrationError) {}
 
             // Verwende Fallback für diese Anfrage
             providerStripeAccountId = fallbackStripeAccountId;
@@ -155,63 +106,12 @@ export async function POST(request: NextRequest) {
             );
           }
         } else {
-          console.log('❌ User nicht gefunden, versuche companies collection...');
-
-          // Versuche auch die companies collection zu prüfen
-          try {
-            const companyDoc = await db
-              .collection('companies')
-              .doc(orderData.selectedAnbieterId)
-              .get();
-
-            console.log('🔍 Company Document Check:', {
-              exists: companyDoc.exists,
-              docId: orderData.selectedAnbieterId,
-            });
-
-            if (companyDoc.exists) {
-              const companyData = companyDoc.data();
-              const companyStripeAccountId =
-                companyData?.stripeConnectAccountId || companyData?.stripeAccountId;
-
-              console.log('🔍 Company Data:', {
-                hasCompanyData: !!companyData,
-                stripeConnectAccountId: companyData?.stripeConnectAccountId,
-                stripeAccountId: companyData?.stripeAccountId,
-                finalAccountId: companyStripeAccountId,
-                companyDataKeys: companyData ? Object.keys(companyData) : [],
-              });
-
-              if (companyStripeAccountId && companyStripeAccountId.startsWith('acct_')) {
-                console.log('✅ Company Stripe Account gefunden:', companyStripeAccountId);
-                providerStripeAccountId = companyStripeAccountId;
-              } else {
-                return NextResponse.json(
-                  {
-                    error:
-                      'Provider hat keine gültige Stripe Account ID (weder in users noch in companies collection).',
-                  },
-                  { status: 400 }
-                );
-              }
-            } else {
-              return NextResponse.json(
-                {
-                  error:
-                    'Provider-Benutzer nicht gefunden (weder in users noch in companies collection).',
-                },
-                { status: 404 }
-              );
-            }
-          } catch (companyError) {
-            console.error('❌ Company Check Error:', companyError);
-            return NextResponse.json(
-              {
-                error: 'Fehler beim Prüfen der Provider-Company-Konfiguration.',
-              },
-              { status: 500 }
-            );
-          }
+          return NextResponse.json(
+            {
+              error: 'Provider-Benutzer nicht gefunden.',
+            },
+            { status: 404 }
+          );
         }
       } catch (fallbackError) {
         return NextResponse.json(
