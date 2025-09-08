@@ -70,19 +70,47 @@ class TimeTrackerService {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         debugPrint('✅ API Call erfolgreich');
-        debugPrint('💰 Total Amount Transferred: ${responseData['totalAmountTransferred']}');
-        debugPrint('🔗 Transfer ID: ${responseData['transferId']}');
         
-        return {
-          'success': true,
-          'data': {
-            'totalHours': timeEntryIds.length, // Approximation - könnte aus Response berechnet werden
-            'paymentRequired': true, // Immer true bei zusätzlichen Stunden
-            'totalAmount': responseData['totalAmountTransferred'] ?? 0,
-            'transferId': responseData['transferId'],
-            'message': 'Stunden wurden erfolgreich freigegeben und bezahlt',
-          }
-        };
+        // Prüfe Response-Typ: PaymentIntent oder direkter Transfer
+        if (responseData.containsKey('paymentIntentId')) {
+          // Fall 1: PaymentIntent wurde erstellt, Payment muss noch bestätigt werden
+          debugPrint('� PaymentIntent erstellt: ${responseData['paymentIntentId']}');
+          debugPrint('💰 Customer bezahlt: ${responseData['customerPays']}¢');
+          debugPrint('🏦 Provider erhält: ${responseData['companyReceives']}¢');
+          debugPrint('� Platform Fee: ${responseData['platformFee']}¢');
+          
+          return {
+            'success': true,
+            'requiresPayment': true, // WICHTIG: Payment muss noch durchgeführt werden
+            'data': {
+              'paymentIntentId': responseData['paymentIntentId'],
+              'clientSecret': responseData['clientSecret'],
+              'customerPays': responseData['customerPays'],
+              'companyReceives': responseData['companyReceives'],
+              'platformFee': responseData['platformFee'],
+              'additionalHours': responseData['additionalHours'],
+              'transferType': responseData['transferType'],
+              'totalHours': timeEntryIds.length,
+              'message': responseData['message'] ?? 'PaymentIntent erstellt, Payment erforderlich',
+            }
+          };
+        } else {
+          // Fall 2: Direkter Transfer (wenn bereits bezahlt)
+          debugPrint('💰 Total Amount Transferred: ${responseData['totalAmountTransferred']}');
+          debugPrint('🔗 Transfer ID: ${responseData['transferId']}');
+          
+          return {
+            'success': true,
+            'requiresPayment': false, // Payment bereits abgeschlossen
+            'data': {
+              'totalHours': timeEntryIds.length,
+              'paymentRequired': false,
+              'totalAmount': responseData['totalAmountTransferred'] ?? 0,
+              'transferId': responseData['transferId'],
+              'message': 'Stunden wurden erfolgreich freigegeben und bezahlt',
+            }
+          };
+        }
       } else {
         final responseData = jsonDecode(response.body);
         debugPrint('❌ API Call fehlgeschlagen');
