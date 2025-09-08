@@ -103,9 +103,9 @@ class TimeTrackerService {
             'success': true,
             'requiresPayment': false, // Payment bereits abgeschlossen
             'data': {
-              'totalHours': timeEntryIds.length,
+              'totalHours': responseData['additionalHours'] ?? timeEntryIds.length,
               'paymentRequired': false,
-              'totalAmount': responseData['totalAmountTransferred'] ?? 0,
+              'totalAmount': responseData['customerPays'] ?? 0,
               'transferId': responseData['transferId'],
               'message': 'Stunden wurden erfolgreich freigegeben und bezahlt',
             }

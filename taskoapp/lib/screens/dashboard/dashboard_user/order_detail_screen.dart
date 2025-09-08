@@ -179,26 +179,46 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       double pendingHours = 0.0;
       double pendingPrice = 0.0;
       
+      debugPrint('🔍 Analyzing ${timeEntries.length} time entries...');
+      
       for (final entry in timeEntries) {
         final hours = (entry['hours'] ?? 0).toDouble();
         final category = entry['category'] ?? 'original';
         final status = entry['status'] ?? 'logged';
         final billableAmount = (entry['billableAmount'] ?? 0).toDouble();
+        final entryId = entry['id'] ?? 'unknown';
+        
+        debugPrint('  Entry $entryId:');
+        debugPrint('    - Hours: $hours');
+        debugPrint('    - Category: $category');
+        debugPrint('    - Status: $status');
+        debugPrint('    - BillableAmount: $billableAmount');
         
         if (category == 'original') {
           originalHours += hours;
+          debugPrint('    → Added to originalHours (total: $originalHours)');
         } else if (category == 'additional') {
           additionalHours += hours;
+          debugPrint('    → Added to additionalHours (total: $additionalHours)');
           
           if (status == 'paid' || status == 'transferred') {
             additionalHoursPaid += hours;
             additionalPricePaid += billableAmount / 100; // Convert from cents
+            debugPrint('    → Added to PAID hours (total: $additionalHoursPaid)');
           } else if (status == 'logged' || status == 'submitted' || status == 'customer_approved') {
             pendingHours += hours;
             pendingPrice += billableAmount / 100; // Convert from cents
+            debugPrint('    → Added to PENDING hours (total: $pendingHours, price: $pendingPrice)');
           }
         }
       }
+
+      debugPrint('📊 FINAL TIME TRACKING RESULTS:');
+      debugPrint('  🕒 Original Hours: $originalHours');
+      debugPrint('  ➕ Additional Hours: $additionalHours'); 
+      debugPrint('  💰 Additional Hours Paid: $additionalHoursPaid');
+      debugPrint('  ⏳ PENDING Hours: $pendingHours');
+      debugPrint('  💸 PENDING Price: €$pendingPrice');
 
       return {
         'originalHours': originalHours,
