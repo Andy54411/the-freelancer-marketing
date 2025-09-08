@@ -300,13 +300,100 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         if (timeEntryIds.isEmpty) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Keine Stunden zur Freigabe gefunden'),
-              backgroundColor: Colors.orange,
+          
+          // Für Development/Testing: Erstelle Test-TimeEntries
+          final shouldCreateTestData = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Keine Stunden gefunden'),
+              content: const Text(
+                'Es wurden keine Stunden zur Freigabe gefunden. '
+                'Möchten Sie Test-Daten erstellen, um die Funktion zu testen?'
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Abbrechen'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: TaskiloColors.primary,
+                  ),
+                  child: const Text('Test-Daten erstellen'),
+                ),
+              ],
             ),
           );
-          return;
+
+          if (shouldCreateTestData == true) {
+            try {
+              // Zeige Loading
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Text('Test-Daten werden erstellt...'),
+                    ],
+                  ),
+                  backgroundColor: TaskiloColors.primary,
+                  duration: Duration(seconds: 10),
+                ),
+              );
+
+              // Erstelle Test-TimeEntries
+              final testTimeEntryIds = await TimeTrackerService.createTestTimeEntries(
+                orderId: _order!.id,
+                count: 2, // Erstelle 2 Test-Entries
+              );
+
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              
+              // Verwende die Test-IDs für die Freigabe
+              timeEntryIds.addAll(testTimeEntryIds);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✅ ${testTimeEntryIds.length} Test-TimeEntries erstellt!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              
+              // Warte kurz und lade Daten neu
+              await Future.delayed(const Duration(seconds: 1));
+              await _loadOrderData();
+              
+            } catch (e) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('❌ Fehler beim Erstellen der Test-Daten: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Keine Stunden zur Freigabe vorhanden'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+            return;
+          }
         }
 
         // API Call für Freigabe

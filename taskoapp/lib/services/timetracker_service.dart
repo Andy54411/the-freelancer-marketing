@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/api_config.dart';
 
 /// Service für TimeTracker-Funktionen
@@ -20,23 +22,23 @@ class TimeTrackerService {
     required List<String> timeEntryIds,
   }) async {
     try {
-      print('🔄 TimeTrackerService.approveHours startet...');
-      print('📋 OrderId: $orderId');
-      print('📋 TimeEntryIds: $timeEntryIds');
+      debugPrint('🔄 TimeTrackerService.approveHours startet...');
+      debugPrint('📋 OrderId: $orderId');
+      debugPrint('📋 TimeEntryIds: $timeEntryIds');
       
       // 1. Firebase Auth Token holen
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        print('❌ Benutzer ist nicht angemeldet');
+        debugPrint('❌ Benutzer ist nicht angemeldet');
         throw Exception('Benutzer ist nicht angemeldet');
       }
 
-      print('✅ Firebase User gefunden: ${user.uid}');
+      debugPrint('✅ Firebase User gefunden: ${user.uid}');
       final idToken = await user.getIdToken();
-      print('✅ Firebase Auth Token erhalten');
+      debugPrint('✅ Firebase Auth Token erhalten');
 
       // 2. API Request an die existierende Web-API
-      print('🌐 API Request wird gesendet an: ${ApiConfig.billAdditionalHoursEndpoint}');
+      debugPrint('🌐 API Request wird gesendet an: ${ApiConfig.billAdditionalHoursEndpoint}');
       
       final requestData = {
         'orderId': orderId,
@@ -44,7 +46,7 @@ class TimeTrackerService {
         // customerStripeId und providerStripeAccountId werden automatisch aus der Order geladen
       };
       
-      print('📤 Request Body: ${jsonEncode(requestData)}');
+      debugPrint('📤 Request Body: ${jsonEncode(requestData)}');
       
       final response = await http.post(
         Uri.parse(ApiConfig.billAdditionalHoursEndpoint),
@@ -55,15 +57,15 @@ class TimeTrackerService {
         body: jsonEncode(requestData),
       );
 
-      print('📥 API Response Status: ${response.statusCode}');
-      print('📥 API Response Body: ${response.body}');
+      debugPrint('📥 API Response Status: ${response.statusCode}');
+      debugPrint('📥 API Response Body: ${response.body}');
 
       // 3. Response verarbeiten
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        print('✅ API Call erfolgreich');
-        print('💰 Total Amount Transferred: ${responseData['totalAmountTransferred']}');
-        print('🔗 Transfer ID: ${responseData['transferId']}');
+        debugPrint('✅ API Call erfolgreich');
+        debugPrint('💰 Total Amount Transferred: ${responseData['totalAmountTransferred']}');
+        debugPrint('🔗 Transfer ID: ${responseData['transferId']}');
         
         return {
           'success': true,
@@ -77,8 +79,8 @@ class TimeTrackerService {
         };
       } else {
         final responseData = jsonDecode(response.body);
-        print('❌ API Call fehlgeschlagen');
-        print('❌ Error: ${responseData['error']}');
+        debugPrint('❌ API Call fehlgeschlagen');
+        debugPrint('❌ Error: ${responseData['error']}');
         
         return {
           'success': false,
@@ -87,7 +89,7 @@ class TimeTrackerService {
         };
       }
     } catch (e) {
-      print('❌ Exception in TimeTrackerService.approveHours: $e');
+      debugPrint('❌ Exception in TimeTrackerService.approveHours: $e');
       return {
         'success': false,
         'error': 'Netzwerkfehler: $e',
@@ -98,4 +100,75 @@ class TimeTrackerService {
   /// HINWEIS: Weitere TimeTracker-Funktionen wie getTimeTrackingData()
   /// werden direkt über Firestore geladen, da sie keine speziellen API-Calls benötigen.
   /// Siehe _loadTimeTrackingData() in order_detail_screen.dart
+  
+  /// Hilfsfunktion: Erstelle Test-TimeEntries für Development/Testing
+  /// 
+  /// Diese Funktion erstellt echte TimeEntry-Daten in Firestore zum Testen der API
+  static Future<List<String>> createTestTimeEntries({
+    required String orderId,
+    int count = 2,
+  }) async {
+    try {
+      debugPrint('🔧 Erstelle Test-TimeEntries für Order: $orderId');
+      
+      // Import für Firestore
+      final firestore = FirebaseFirestore.instance;
+      final orderRef = firestore.collection('auftraege').doc(orderId);
+      
+      // Hole aktuelle Order-Daten
+      final orderDoc = await orderRef.get();
+      if (!orderDoc.exists) {
+        throw Exception('Order nicht gefunden');
+      }
+      
+      final orderData = orderDoc.data()!;
+      final timeTracking = orderData['timeTracking'] as Map<String, dynamic>? ?? {};
+      final existingEntries = (timeTracking['timeEntries'] as List<dynamic>?) ?? [];
+      
+      final newEntries = <Map<String, dynamic>>[];
+      final newEntryIds = <String>[];
+      
+      for (int i = 0; i < count; i++) {
+        final entryId = 'test_entry_${DateTime.now().millisecondsSinceEpoch}_$i';
+        final hours = 2.0 + i; // 2h, 3h, etc.
+        final hourlyRate = 50.0; // 50€/h
+        final billableAmount = (hours * hourlyRate * 100).toInt(); // In Cents
+        
+        final entry = {
+          'id': entryId,
+          'startTime': DateTime.now().subtract(Duration(hours: 24 - i)).toIso8601String(),
+          'endTime': DateTime.now().subtract(Duration(hours: 22 - i)).toIso8601String(),
+          'hours': hours,
+          'description': 'Test zusätzliche Arbeitszeit $i',
+          'category': 'additional', // WICHTIG: Muss 'additional' sein
+          'status': 'logged', // WICHTIG: API erwartet 'logged' Status für Approval
+          'hourlyRate': hourlyRate,
+          'billableAmount': billableAmount,
+          'submittedAt': DateTime.now().toIso8601String(),
+          'createdAt': DateTime.now().toIso8601String(),
+        };
+        
+        newEntries.add(entry);
+        newEntryIds.add(entryId);
+      }
+      
+      // Füge neue Entries zu den existierenden hinzu
+      final allEntries = [...existingEntries, ...newEntries];
+      
+      // Update Firestore
+      await orderRef.update({
+        'timeTracking.timeEntries': allEntries,
+        'timeTracking.lastUpdated': DateTime.now().toIso8601String(),
+      });
+      
+      debugPrint('✅ ${newEntries.length} Test-TimeEntries erstellt');
+      debugPrint('📋 Entry IDs: $newEntryIds');
+      
+      return newEntryIds;
+      
+    } catch (e) {
+      debugPrint('❌ Fehler beim Erstellen von Test-TimeEntries: $e');
+      throw Exception('Test-TimeEntries konnten nicht erstellt werden: $e');
+    }
+  }
 }
