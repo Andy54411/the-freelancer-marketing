@@ -428,14 +428,27 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
         if (result['success']) {
           final data = result['data'];
+          debugPrint('🔍 APPROVAL RESULT DEBUG:');
+          debugPrint('📊 Full data: $data');
+          
           final totalHours = data['additionalHours'] ?? data['totalHours'] ?? timeEntryIds.length * 8;
           final paymentRequired = data['paymentRequired'] ?? false;
           final totalAmount = data['customerPays'] ?? data['totalAmount'] ?? 0;
+          
+          debugPrint('💰 totalAmount: $totalAmount');
+          debugPrint('⏰ totalHours: $totalHours');
+          debugPrint('💳 paymentRequired: $paymentRequired');
 
-          if (paymentRequired && totalAmount > 0) {
+          // PAYMENT ist IMMER erforderlich wenn PaymentIntent vorhanden ist!
+          final hasPaymentIntent = data['paymentIntentId'] != null;
+          debugPrint('🔑 hasPaymentIntent: $hasPaymentIntent');
+
+          if (hasPaymentIntent && totalAmount > 0) {
+            debugPrint('🚀 STARTING PAYMENT PROCESS...');
             // Zusätzliche Zahlung erforderlich - SOFORT Payment starten
             _processPaymentFromApproval(data, timeEntryIds, totalHours);
           } else {
+            debugPrint('✅ NO PAYMENT REQUIRED - SHOWING SUCCESS');
             // Erfolgreich ohne zusätzliche Zahlung
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -473,11 +486,19 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
   /// Startet Payment direkt nach Approval
   Future<void> _processPaymentFromApproval(Map<String, dynamic> data, List<String> timeEntryIds, int totalHours) async {
+    debugPrint('🔥 _processPaymentFromApproval CALLED!');
+    debugPrint('📊 Payment data: $data');
+    
     final paymentIntentId = data['paymentIntentId'];
     final clientSecret = data['clientSecret'];
     final totalAmount = data['customerPays'] ?? 0;
     
+    debugPrint('💳 PaymentIntentId: $paymentIntentId');
+    debugPrint('🔐 ClientSecret: $clientSecret');
+    debugPrint('💰 TotalAmount: $totalAmount');
+    
     if (paymentIntentId != null && clientSecret != null) {
+      debugPrint('✅ PAYMENT DATA OK - SHOWING SNACKBAR');
       // Zeige Payment Success und bestätige automatisch
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -487,8 +508,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ),
       );
       
+      debugPrint('🚀 CONFIRMING PAYMENT...');
       // Simuliere erfolgreiche Zahlung und bestätige
       await _confirmPaymentDirectly(data, timeEntryIds);
+    } else {
+      debugPrint('❌ PAYMENT DATA MISSING!');
     }
   }
 
