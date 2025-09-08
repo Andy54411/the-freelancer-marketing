@@ -8,7 +8,6 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-
     return null;
   }
 
@@ -18,7 +17,6 @@ function getStripeInstance() {
 }
 
 export async function POST(request: NextRequest) {
-
   const stripe = getStripeInstance();
   if (!stripe) {
     return NextResponse.json(
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
     const {
       orderId,
       approvedEntryIds,
-      customerStripeId,
+      customerStripeId: providedCustomerStripeId,
       providerStripeAccountId: initialProviderStripeAccountId,
     } = body;
 
@@ -50,11 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!customerStripeId || !customerStripeId.startsWith('cus_')) {
-      return NextResponse.json({ error: 'Ungültige Kunde Stripe ID.' }, { status: 400 });
-    }
-
-    // Hole Auftragsdaten aus Firebase
+    // Hole Auftragsdaten aus Firebase ZUERST um Stripe IDs zu laden
     const orderDoc = await db.collection('auftraege').doc(orderId).get();
 
     if (!orderDoc.exists) {
@@ -74,11 +68,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Lade customerStripeId aus Order-Daten oder verwende provided Value als Fallback
+    const customerStripeId = orderData.stripeCustomerId || providedCustomerStripeId;
+
+    // Validiere customerStripeId NACH dem Loading aus Order-Daten
+    if (!customerStripeId || !customerStripeId.startsWith('cus_')) {
+      return NextResponse.json(
+        {
+          error: 'Ungültige Kunde Stripe ID. Weder in Order-Daten noch als Parameter verfügbar.',
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log('✅ Customer Stripe ID gefunden:', customerStripeId);
+
     // Provider Stripe Account ID validieren und ggf. Fallback verwenden
     let providerStripeAccountId = initialProviderStripeAccountId;
 
     if (!providerStripeAccountId || !providerStripeAccountId.startsWith('acct_')) {
-
       // Versuche Fallback aus users collection zu holen
       try {
         const userDoc = await db.collection('users').doc(orderData.selectedAnbieterId).get();
@@ -88,7 +96,6 @@ export async function POST(request: NextRequest) {
           const fallbackStripeAccountId = userData?.stripeAccountId;
 
           if (fallbackStripeAccountId && fallbackStripeAccountId.startsWith('acct_')) {
-
             // Migriere die ID zur users collection (Server-Side)
             try {
               await db.collection('users').doc(orderData.selectedAnbieterId).update({
@@ -96,10 +103,7 @@ export async function POST(request: NextRequest) {
                 migratedFromUsers: true,
                 migratedAt: new Date(),
               });
-
-            } catch (migrationError) {
-
-            }
+            } catch (migrationError) {}
 
             // Verwende Fallback für diese Anfrage
             providerStripeAccountId = fallbackStripeAccountId;
@@ -121,7 +125,6 @@ export async function POST(request: NextRequest) {
           );
         }
       } catch (fallbackError) {
-
         return NextResponse.json(
           {
             error: 'Fehler beim Prüfen der Provider Stripe-Konfiguration.',
@@ -227,15 +230,12 @@ export async function POST(request: NextRequest) {
     let stripeErrorType: string | null = null;
 
     if (error instanceof Stripe.errors.StripeError) {
-
       errorMessage = `Stripe Fehler: ${error.message}`;
       stripeErrorCode = error.code || null;
       stripeErrorType = error.type;
     } else if (error instanceof Error) {
-
       errorMessage = error.message;
     } else {
-
     }
 
     return NextResponse.json(

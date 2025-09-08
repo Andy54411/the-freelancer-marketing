@@ -2,14 +2,16 @@
 class ApiConfig {
   /// Basis-URL für alle API-Calls
   /// 
-  /// In Produktion: Firebase Functions URL
-  /// Für Development: Lokaler Server oder Firebase Emulator
-  static const String baseUrl = 'https://europe-west1-tilvo-f142f.cloudfunctions.net';
+  /// Verwendet die existierende Next.js Web-API von taskilo.de
+  static const String baseUrl = 'https://taskilo.de/api';
   
-  /// Firebase Functions Endpoints
-  static const String timeTrackerEndpoint = '$baseUrl/timeTracker';
-  static const String paymentEndpoint = '$baseUrl/payment';
-  static const String orderManagementEndpoint = '$baseUrl/orderManagement';
+  /// Existierende Next.js API Endpoints
+  static const String billAdditionalHoursEndpoint = '$baseUrl/bill-additional-hours';
+  static const String approveHoursEndpoint = '$baseUrl/timetracker/approve-hours';
+  
+  /// DEPRECATED: Alte Firebase Functions Endpoints (nicht mehr verwendet)
+  // static const String timeTrackerEndpoint = 'https://europe-west1-tilvo-f142f.cloudfunctions.net/timeTracker';
+  // static const String paymentEndpoint = 'https://europe-west1-tilvo-f142f.cloudfunctions.net/payment';
   
   /// Stripe Konfiguration
   static const String stripePublishableKey = 'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUGf6cmYphSWfdTpsbKAHLFs5C17xubatZkLdMYRgBPRlWUMXMQZPrJK00N3Rtf7Dk';
