@@ -26,7 +26,12 @@ class TimeTrackerService {
       debugPrint('📋 OrderId: $orderId');
       debugPrint('📋 TimeEntryIds: $timeEntryIds');
       
-      // 1. Firebase Auth Token holen
+      // SCHRITT 1: Erst die TimeEntries in Firestore freigeben (Status ändern)
+      debugPrint('🔄 Schritt 1: TimeEntries in Firestore freigeben...');
+      await _approveTimeEntriesInFirestore(orderId, timeEntryIds);
+      debugPrint('✅ TimeEntries in Firestore freigegeben');
+
+      // SCHRITT 2: Firebase Auth Token holen
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         debugPrint('❌ Benutzer ist nicht angemeldet');
@@ -37,7 +42,8 @@ class TimeTrackerService {
       final idToken = await user.getIdToken();
       debugPrint('✅ Firebase Auth Token erhalten');
 
-      // 2. API Request an die existierende Web-API
+      // SCHRITT 3: API Request an die existierende Web-API
+      debugPrint('🔄 Schritt 3: API Request für Payment...');
       debugPrint('🌐 API Request wird gesendet an: ${ApiConfig.billAdditionalHoursEndpoint}');
       
       final requestData = {
@@ -60,7 +66,7 @@ class TimeTrackerService {
       debugPrint('📥 API Response Status: ${response.statusCode}');
       debugPrint('📥 API Response Body: ${response.body}');
 
-      // 3. Response verarbeiten
+      // SCHRITT 4: Response verarbeiten
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         debugPrint('✅ API Call erfolgreich');
@@ -94,6 +100,62 @@ class TimeTrackerService {
         'success': false,
         'error': 'Netzwerkfehler: $e',
       };
+    }
+  }
+
+  /// Private Hilfsfunktion: Genehmigt TimeEntries in Firestore
+  /// 
+  /// Ändert den Status von 'logged' zu 'customer_approved'
+  static Future<void> _approveTimeEntriesInFirestore(
+    String orderId,
+    List<String> timeEntryIds,
+  ) async {
+    try {
+      debugPrint('🔄 Genehmige TimeEntries in Firestore...');
+      debugPrint('📋 TimeEntryIds: $timeEntryIds');
+      
+      final firestore = FirebaseFirestore.instance;
+      final orderRef = firestore.collection('auftraege').doc(orderId);
+      
+      // Hole aktuelle Order-Daten
+      final orderDoc = await orderRef.get();
+      if (!orderDoc.exists) {
+        throw Exception('Order nicht gefunden');
+      }
+      
+      final orderData = orderDoc.data()!;
+      final timeTracking = orderData['timeTracking'] as Map<String, dynamic>? ?? {};
+      final timeEntries = (timeTracking['timeEntries'] as List<dynamic>?) ?? [];
+      
+      // Suche und update die spezifischen TimeEntries
+      bool hasChanges = false;
+      for (final entry in timeEntries) {
+        if (entry is Map<String, dynamic> && 
+            timeEntryIds.contains(entry['id']) && 
+            entry['status'] == 'logged') {
+          
+          debugPrint('🔄 Genehmige TimeEntry: ${entry['id']} (${entry['hours']}h)');
+          entry['status'] = 'customer_approved'; // WICHTIG: Ändere Status für API
+          entry['approvedAt'] = DateTime.now().toIso8601String();
+          entry['approvedBy'] = 'customer'; // Zur Dokumentation
+          hasChanges = true;
+        }
+      }
+      
+      if (hasChanges) {
+        // Update Firestore
+        await orderRef.update({
+          'timeTracking.timeEntries': timeEntries,
+          'timeTracking.lastUpdated': DateTime.now().toIso8601String(),
+        });
+        debugPrint('✅ TimeEntries Status in Firestore aktualisiert');
+      } else {
+        debugPrint('⚠️ Keine TimeEntries zum Genehmigen gefunden');
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Fehler beim Genehmigen der TimeEntries: $e');
+      throw Exception('TimeEntries konnten nicht freigegeben werden: $e');
     }
   }
 
