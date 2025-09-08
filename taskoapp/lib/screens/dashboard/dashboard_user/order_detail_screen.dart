@@ -1097,6 +1097,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return '${amountInEuro.toStringAsFixed(2)} ${currency ?? 'EUR'}';
   }
 
+  Map<String, dynamic>? _cachedTimeData;
+
+  int _calculateTotalCostInCents() {
+    if (_order == null) return _order!.totalAmountPaidByBuyerInCents;
+    
+    // Verwende gecachte TimeData oder nur den ursprünglichen Preis
+    if (_cachedTimeData != null) {
+      final additionalPaidInCents = ((_cachedTimeData!['additionalPricePaid']?.toDouble() ?? 0.0) * 100).round();
+      final pendingPriceInCents = ((_cachedTimeData!['pendingPrice']?.toDouble() ?? 0.0) * 100).round();
+      return (_order!.totalAmountPaidByBuyerInCents + additionalPaidInCents + pendingPriceInCents).round();
+    }
+    
+    return _order!.totalAmountPaidByBuyerInCents;
+  }
+
   String _formatDate(DateTime? date) {
     if (date == null) return 'N/A';
     return '${date.day}.${date.month}.${date.year}';
@@ -1370,7 +1385,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _formatPrice(_order!.totalAmountPaidByBuyerInCents, _order!.currency),
+                              _formatPrice(_calculateTotalCostInCents(), _order!.currency),
                               style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -1454,6 +1469,11 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               
               final timeData = snapshot.data ?? {};
               
+              // Cache die TimeData für Gesamtpreis-Berechnung nur wenn sie sich geändert hat
+              if (_cachedTimeData == null || _cachedTimeData != timeData) {
+                _cachedTimeData = timeData;
+              }
+              
               return HoursBillingOverview(
                 orderId: widget.orderId,
                 originalHours: timeData['originalHours']?.toDouble() ?? 0.0,
@@ -1465,7 +1485,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 loggedHours: timeData['totalLoggedHours']?.toDouble() ?? 0.0,
                 plannedHours: timeData['originalPlannedHours']?.toDouble() ?? 8.0,
                 additionalHours: timeData['additionalHours']?.toDouble() ?? 0.0,
-                totalCost: _order!.totalAmountInEuro + (timeData['pendingPrice']?.toDouble() ?? 0.0),
+                totalCost: _order!.totalAmountInEuro + 
+                          (timeData['additionalPricePaid']?.toDouble() ?? 0.0) + 
+                          (timeData['pendingPrice']?.toDouble() ?? 0.0),
                 onPaymentRequest: () => _handleApproveAdditionalHours(timeData),
               );
             },
