@@ -7,7 +7,6 @@ import '../../services/stripe_payment_service.dart';
 import 'payment_dialog.dart';
 import 'payment_loading_dialog.dart';
 import 'payment_success_dialog.dart';
-import 'payment_final_success_dialog.dart';
 
 /// Service für komplette Payment-Abwicklung mit UI
 /// 
@@ -136,13 +135,6 @@ class PaymentFlowService {
           paymentData: paymentData,
           timeEntryIds: timeEntryIds,
           totalHours: totalHours,
-          onConfirmPayment: () => _confirmPayment(
-            context,
-            paymentData: paymentData,
-            timeEntryIds: timeEntryIds,
-            orderId: order.id,
-            onSuccess: onSuccess,
-          ),
         );
       } else {
         if (!context.mounted) return;
@@ -161,65 +153,6 @@ class PaymentFlowService {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Fehler beim Payment: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  /// Private Methode: Bestätigt das Payment
-  static Future<void> _confirmPayment(
-    BuildContext context, {
-    required Map<String, dynamic> paymentData,
-    required List<String> timeEntryIds,
-    required String orderId,
-    VoidCallback? onSuccess,
-  }) async {
-    if (!context.mounted) return;
-    
-    // Zeige Confirmation Loading
-    await PaymentLoadingDialog.show(context, message: 'Payment wird bestätigt...');
-
-    try {
-      debugPrint('🔄 Confirming Payment Intent: ${paymentData['paymentIntentId']}');
-      
-      // Bestätige Payment über StripePaymentService
-      final confirmResult = await StripePaymentService.confirmAdditionalHoursPayment(
-        paymentIntentId: paymentData['paymentIntentId'],
-        orderId: orderId,
-        timeEntryIds: timeEntryIds,
-      );
-
-      if (!context.mounted) return;
-      PaymentLoadingDialog.hide(context);
-
-      if (confirmResult['success']) {
-        final data = confirmResult['data'];
-        debugPrint('✅ Payment confirmed successfully');
-        
-        // SCHRITT 6: Zeige Final Success Dialog
-      await PaymentFinalSuccessDialog.show(
-        context,
-          paymentData: data,
-        onClose: onSuccess,
-      );
-      } else {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Payment-Bestätigung fehlgeschlagen: ${confirmResult['error']}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-      PaymentLoadingDialog.hide(context);
-      
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Fehler bei Payment-Bestätigung: $e'),
           backgroundColor: Colors.red,
         ),
       );

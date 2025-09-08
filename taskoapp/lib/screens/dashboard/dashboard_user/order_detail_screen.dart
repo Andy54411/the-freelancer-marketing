@@ -190,10 +190,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         } else if (category == 'additional') {
           additionalHours += hours;
           
-          if (status == 'paid') {
+          if (status == 'paid' || status == 'transferred') {
             additionalHoursPaid += hours;
             additionalPricePaid += billableAmount / 100; // Convert from cents
-          } else if (status == 'logged' || status == 'submitted') {
+          } else if (status == 'logged' || status == 'submitted' || status == 'customer_approved') {
             pendingHours += hours;
             pendingPrice += billableAmount / 100; // Convert from cents
           }
@@ -291,7 +291,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         
         if (timeEntries != null) {
           for (final entry in timeEntries) {
-            if (entry['status'] == 'logged') {
+            // Erweitere Suche um customer_approved additional entries
+            if (entry['status'] == 'logged' || 
+                (entry['status'] == 'customer_approved' && entry['category'] == 'additional')) {
               timeEntryIds.add(entry['id'] as String);
             }
           }
@@ -546,7 +548,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       
       if (timeEntries != null) {
         for (final entry in timeEntries) {
-          if (entry['status'] == 'logged' && entry['category'] == 'additional') {
+          // Erweitere Suche für Payment um customer_approved additional entries
+          if ((entry['status'] == 'logged' && entry['category'] == 'additional') ||
+              (entry['status'] == 'customer_approved' && entry['category'] == 'additional')) {
             timeEntryIds.add(entry['id'] as String);
           }
         }
