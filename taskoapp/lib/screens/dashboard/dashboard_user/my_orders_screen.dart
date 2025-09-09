@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import '../../../models/user_model.dart';
-import '../../../models/order.dart';
+import '../../../models/order.dart' as taskilo_order;
 import '../../../services/order_service.dart';
 import '../../../utils/colors.dart';
 import '../dashboard_layout.dart';
@@ -17,7 +18,7 @@ class MyOrdersScreen extends StatefulWidget {
 class _MyOrdersScreenState extends State<MyOrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  List<Order> _orders = [];
+  List<taskilo_order.Order> _orders = [];
   bool _isLoading = true;
   String? _error;
   String _searchTerm = '';
@@ -66,8 +67,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
     }
   }
 
-  List<Order> get _filteredOrders {
-    List<Order> filtered = _orders;
+  List<taskilo_order.Order> get _filteredOrders {
+    List<taskilo_order.Order> filtered = _orders;
 
     // Nach Tab filtern
     final activeTab = _tabs[_tabController.index];
@@ -242,7 +243,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
     );
   }
 
-  Widget _buildOrderCard(Order order) {
+  Widget _buildOrderCard(taskilo_order.Order order) {
     final user = context.read<TaskiloUser?>();
     
     return DashboardCard(
@@ -329,13 +330,19 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _formatPrice(order.totalAmountPaidByBuyerInCents, order.currency),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+              FutureBuilder<int>(
+                future: _calculateTotalOrderAmountWithTimeTracking(order),
+                builder: (context, snapshot) {
+                  final totalAmount = snapshot.data ?? order.totalAmountPaidByBuyerInCents;
+                  return Text(
+                    _formatPrice(totalAmount, order.currency),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  );
+                },
               ),
               Row(
                 children: [
@@ -352,5 +359,44 @@ class _MyOrdersScreenState extends State<MyOrdersScreen>
         ],
       ),
     );
+  }
+
+  /// Berechnet den Gesamtbetrag inklusive TimeTracking-Zusatzkosten
+  Future<int> _calculateTotalOrderAmountWithTimeTracking(taskilo_order.Order order) async {
+    try {
+      // Basis-Betrag
+      int totalAmount = order.totalAmountPaidByBuyerInCents;
+      
+      // Lade TimeTracking-Daten für diesen Auftrag
+      final orderDoc = await firestore.FirebaseFirestore.instance
+          .collection('auftraege')
+          .doc(order.id)
+          .get();
+      
+      if (!orderDoc.exists) return totalAmount;
+      
+      final orderData = orderDoc.data()!;
+      final timeTracking = orderData['timeTracking'];
+      
+      if (timeTracking == null) return totalAmount;
+      
+      final timeEntries = timeTracking['timeEntries'] as List<dynamic>? ?? [];
+      
+      // Addiere alle bezahlten TimeTracking-Beträge
+      for (final entry in timeEntries) {
+        final status = entry['status'] ?? 'logged';
+        final billableAmount = (entry['billableAmount'] ?? 0).toDouble();
+        
+        // Nur bezahlte/übertragene Stunden zählen
+        if ((status == 'paid' || status == 'transferred') && billableAmount > 0) {
+          totalAmount = totalAmount + billableAmount.round() as int;
+        }
+      }
+      
+      return totalAmount;
+    } catch (e) {
+      debugPrint('❌ Error calculating total amount for order ${order.id}: $e');
+      return order.totalAmountPaidByBuyerInCents;
+    }
   }
 }

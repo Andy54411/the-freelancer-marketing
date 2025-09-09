@@ -4,7 +4,7 @@ import '../../../models/user_model.dart';
 import '../../../services/auth_service.dart';
 import '../dashboard_layout.dart';
 import 'my_orders_screen.dart';
-import '../../support/support_screen.dart';
+import 'search_screen.dart' show SearchScreen;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -142,7 +142,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 'Neuer Auftrag',
                 Icons.add_circle,
                 () {
-                  Navigator.of(context).pushNamed('/home');
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SearchScreen(),
+                    ),
+                  );
                 },
               ),
               _buildQuickActionCard(
@@ -152,17 +156,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const MyOrdersScreen(),
-                    ),
-                  );
-                },
-              ),
-              _buildQuickActionCard(
-                'Support',
-                Icons.help_center,
-                () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const SupportScreen(),
                     ),
                   );
                 },

@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import '../../utils/colors.dart';
 import '../dashboard/dashboard_layout.dart';
+import '../support/support_screen.dart';
+import 'edit_profile_screen.dart';
 
 /// Profile Screen
 /// Zeigt Benutzerinformationen und Einstellungen
@@ -68,14 +70,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 CircleAvatar(
                   radius: 40,
                   backgroundColor: TaskiloColors.primary,
-                  child: Text(
-                    _getInitial(user),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  backgroundImage: user.photoURL != null 
+                      ? NetworkImage(user.photoURL!) 
+                      : null,
+                  child: user.photoURL == null 
+                      ? Text(
+                          _getInitial(user),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 
@@ -105,6 +112,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Edit Profile Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _navigateToEditProfile(user),
+                    icon: const Icon(Icons.edit, size: 20),
+                    label: const Text(
+                      'Profil bearbeiten',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: TaskiloColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
                     ),
                   ),
                 ),
@@ -144,7 +178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildActionRow(
                 'Hilfe & Support',
                 Icons.help_outline,
-                () => _showNotImplemented(),
+                () => _navigateToSupport(),
               ),
               _buildActionRow(
                 'Über die App',
@@ -400,5 +434,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _navigateToEditProfile(TaskiloUser user) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(user: user),
+      ),
+    );
+    
+    // Wenn der Benutzer vom Edit Screen zurückkommt, aktualisiere das UI
+    if (result != null && mounted) {
+      setState(() {
+        // Trigger rebuild to show updated profile data
+      });
+    }
+  }
+
+  void _navigateToSupport() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SupportScreen(),
+      ),
+    );
   }
 }
