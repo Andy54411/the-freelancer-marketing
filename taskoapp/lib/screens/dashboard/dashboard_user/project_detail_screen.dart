@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/project.dart';
 import '../../../services/project_service.dart';
+import '../../../services/review_service.dart';
 import '../dashboard_layout.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class ProjectDetailScreen extends StatefulWidget {
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   final ProjectService _projectService = ProjectService();
   Map<String, dynamic>? _providerInfo;
+  Map<String, dynamic>? _reviewStats;
   bool _loadingProvider = false;
 
   @override
@@ -39,11 +41,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       if (providerId != null) {
         setState(() => _loadingProvider = true);
         try {
+          // Provider-Informationen laden
           final info = await _projectService.getProviderById(providerId);
           print('Provider info loaded: $info'); // Debug
+          
+          // Review-Statistiken laden
+          final reviewStats = await ReviewService.getReviewStats(providerId);
+          print('Review stats loaded: $reviewStats'); // Debug
+          
           if (mounted) {
             setState(() {
               _providerInfo = info;
+              _reviewStats = reviewStats;
               _loadingProvider = false;
             });
           }
@@ -372,10 +381,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 CircleAvatar(
                                   radius: 25,
                                   backgroundColor: const Color(0xFF14AD9F),
-                                  backgroundImage: _providerInfo!['profileImage'] != null
-                                      ? NetworkImage(_providerInfo!['profileImage'])
-                                      : null,
-                                  child: _providerInfo!['profileImage'] == null
+                                  backgroundImage: (_providerInfo!['profilePictureURL'] != null && 
+                                                   _providerInfo!['profilePictureURL'].toString().isNotEmpty)
+                                      ? NetworkImage(_providerInfo!['profilePictureURL'])
+                                      : (_providerInfo!['profilePictureFirebaseUrl'] != null && 
+                                         _providerInfo!['profilePictureFirebaseUrl'].toString().isNotEmpty)
+                                          ? NetworkImage(_providerInfo!['profilePictureFirebaseUrl'])
+                                          : null,
+                                  child: (_providerInfo!['profilePictureURL'] == null || 
+                                         _providerInfo!['profilePictureURL'].toString().isEmpty) &&
+                                        (_providerInfo!['profilePictureFirebaseUrl'] == null || 
+                                         _providerInfo!['profilePictureFirebaseUrl'].toString().isEmpty)
                                       ? const Icon(Icons.person, color: Colors.white)
                                       : null,
                                 ),
@@ -388,7 +404,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              _providerInfo!['name'] ?? 'Unbekannter Anbieter',
+                                              _providerInfo!['companyName'] ?? _providerInfo!['name'] ?? 'Unbekannter Anbieter',
                                               style: const TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold,
@@ -404,50 +420,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                             ),
                                         ],
                                       ),
-                                      if (_providerInfo!['company'] != null)
+                                      if (_providerInfo!['companyName'] != null)
                                         Text(
-                                          _providerInfo!['company'],
+                                          _providerInfo!['companyName'],
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: Colors.white.withOpacity(0.8),
                                           ),
                                         ),
-                                      if (_providerInfo!['rating'] != null) ...[
-                                        Row(
-                                          children: [
-                                            ...List.generate(5, (index) {
-                                              final rating = _providerInfo!['rating']?.toDouble() ?? 0.0;
-                                              if (index < rating.floor()) {
-                                                return const Icon(
-                                                  Icons.star,
-                                                  color: Colors.amber,
-                                                  size: 16,
-                                                );
-                                              } else if (index < rating) {
-                                                return const Icon(
-                                                  Icons.star_half,
-                                                  color: Colors.amber,
-                                                  size: 16,
-                                                );
-                                              } else {
-                                                return const Icon(
-                                                  Icons.star_border,
-                                                  color: Colors.white54,
-                                                  size: 16,
-                                                );
-                                              }
-                                            }),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              '(${_providerInfo!['rating']?.toStringAsFixed(1) ?? '0.0'})',
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
                                     ],
                                   ),
                                 ),
@@ -458,24 +438,32 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             const SizedBox(height: 8),
                             
                             // Provider Details
-                            if (_providerInfo!['city'] != null || _providerInfo!['postalCode'] != null)
+                            if (_providerInfo!['companyCity'] != null || _providerInfo!['companyPostalCode'] != null)
                               _buildInfoRow(
                                 'Standort', 
-                                '${_providerInfo!['city'] ?? ''} ${_providerInfo!['postalCode'] ?? ''}'.trim(),
+                                '${_providerInfo!['companyCity'] ?? ''} ${_providerInfo!['companyPostalCode'] ?? ''}'.trim(),
                                 icon: Icons.location_on,
                               ),
                             
-                            if (_providerInfo!['reviewCount'] != null && _providerInfo!['reviewCount'] > 0)
+                            // Rating und Reviews (echte Daten aus Firebase)
+                            if (_reviewStats != null && _reviewStats!['totalReviews'] > 0)
                               _buildInfoRow(
                                 'Bewertungen', 
-                                '${_providerInfo!['reviewCount']} Bewertungen',
-                                icon: Icons.reviews,
+                                '${_reviewStats!['averageRating']} ⭐ (${_reviewStats!['totalReviews']} Bewertungen)',
+                                icon: Icons.star,
+                              )
+                            else
+                              _buildInfoRow(
+                                'Bewertungen', 
+                                'Noch keine Bewertungen',
+                                icon: Icons.star_border,
                               ),
                             
-                            if (_providerInfo!['completedJobs'] != null)
+                            // Abgeschlossene Aufträge (wird später mit echten Daten ergänzt)
+                            if (_providerInfo!['completedOrders'] != null)
                               _buildInfoRow(
                                 'Abgeschlossene Aufträge', 
-                                _providerInfo!['completedJobs'].toString(),
+                                '${_providerInfo!['completedOrders']} Aufträge',
                                 icon: Icons.work_outline,
                               ),
                             
