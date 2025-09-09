@@ -103,6 +103,11 @@ const CompanyOrdersOverviewPage = () => {
               totalAmountPaidByBuyer: o.totalAmountPaidByBuyer,
             }))
           );
+
+          // Debug: Log each order individually
+          visibleIncomingOrders.forEach(order => {
+            console.log(`Order ${order.id}: ${order.totalAmountPaidByBuyer} cents`);
+          });
           setOrders(visibleIncomingOrders);
         } else {
           setOrders([]);

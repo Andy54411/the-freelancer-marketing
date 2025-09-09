@@ -248,22 +248,14 @@ export const getProviderOrders = onRequest(
                     }
                 }
 
-                // 2. Additional paid hours from TimeTracking
-                if (timeTracking?.timeEntries) {
-                    console.log(`[DEBUG] Order ${data.id} TimeTracking entries:`, JSON.stringify(timeTracking.timeEntries, null, 2));
+                // 2. Add ALL billable amounts from timeTracking regardless of status
+                if (timeTracking?.timeEntries && Array.isArray(timeTracking.timeEntries)) {
                     timeTracking.timeEntries.forEach((entry: any) => {
-                        console.log(`[DEBUG] Processing entry with billableAmount: ${entry.billableAmount}, status: ${entry.status}, paymentStatus: ${entry.paymentStatus}`);
-                        // Add ALL billable amounts (since we're already filtering for paid/completed orders)
-                        if (entry.billableAmount && entry.billableAmount > 0) {
-                            console.log(`[DEBUG] Adding ${entry.billableAmount} to totalRevenue`);
+                        if (entry.billableAmount && typeof entry.billableAmount === 'number' && entry.billableAmount > 0) {
                             totalRevenue += entry.billableAmount;
                         }
                     });
-                } else {
-                    console.log(`[DEBUG] Order ${data.id} has no timeTracking entries`);
                 }
-
-                console.log(`[DEBUG] Order ${data.id} final totalRevenue: ${totalRevenue} (base: ${data.totalAmountPaidByBuyer})`);
 
                 return {
                     id: data.id,
@@ -272,7 +264,7 @@ export const getProviderOrders = onRequest(
                     customerAvatarUrl: customerDetails.avatarUrl,
                     status: data.status,
                     orderDate: data.paidAt || data.createdAt,
-                    totalAmountPaidByBuyer: totalRevenue, // Now includes base amount + paid timeTracking
+                    totalAmountPaidByBuyer: totalRevenue, // Now includes base amount + ALL billable timeTracking
                     uid: data.selectedAnbieterId,
                     orderedBy: data.customerFirebaseUid,
                     projectId: data.projectId,
