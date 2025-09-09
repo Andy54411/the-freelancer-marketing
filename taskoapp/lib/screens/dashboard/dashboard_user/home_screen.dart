@@ -7,6 +7,7 @@ import '../../../services/order_service.dart';
 import '../dashboard_layout.dart';
 import 'my_orders_screen.dart';
 import 'search_screen.dart' show SearchScreen;
+import 'calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -73,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHomePage(TaskiloUser? user) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -133,19 +134,55 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              _buildQuickActionCard(
-                'Nachrichten',
-                Icons.message,
-                () {
-                  // Navigation zu Nachrichten
-                },
-              ),
-              _buildQuickActionCard(
-                'Einstellungen',
-                Icons.settings,
-                () {
-                  // Navigation zu Einstellungen
-                },
+              // Terminkalender nimmt die gesamte untere Reihe ein
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CalendarScreen(),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.calendar_month,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Terminkalender',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Alle Termine verwalten',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -421,27 +458,41 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                order.getFormattedPrice(),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              Expanded(
+                flex: 2,
+                child: Text(
+                  order.getFormattedPrice(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: statusColor, width: 1),
-                ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    statusText,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
@@ -456,6 +507,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (user == null) {
       return Center(
         child: DashboardCard(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -482,11 +535,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return FutureBuilder<List<taskilo_order.Order>>(
+      key: ValueKey('orders_future_${user.uid}'),
       future: OrderService.getUserOrders(user.uid),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(
             child: DashboardCard(
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -499,7 +555,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Center(
+                  const Center(
                     child: CircularProgressIndicator(
                       color: Colors.white,
                     ),
@@ -513,6 +569,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (snapshot.hasError) {
           return Center(
             child: DashboardCard(
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -526,33 +584,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Fehler beim Laden: ${snapshot.error}',
+                    'Fehler beim Laden der Aufträge: ${snapshot.error}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 16,
                       color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          // Triggert ein Rebuild
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF14ad9f),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Erneut versuchen',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
                     ),
                   ),
                 ],
@@ -561,51 +596,55 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
-        // Filtere abgelehnte Aufträge heraus
-        final allOrders = (snapshot.data ?? []).where((order) {
-          return order.status != 'abgelehnt_vom_anbieter';
-        }).toList();
-
+        final allOrders = snapshot.data ?? [];
+        final hasOrders = allOrders.isNotEmpty;
         final totalOrders = allOrders.length;
-        final activeOrders = allOrders.where((order) {
-          return order.status.toLowerCase() == 'aktiv' || 
-                 order.status.toLowerCase() == 'in bearbeitung';
-        }).length;
         
-        final completedOrders = allOrders.where((order) {
-          return order.status.toLowerCase() == 'abgeschlossen' || 
-                 order.status.toLowerCase() == 'zahlung_erhalten_clearing';
-        }).length;
+        // Zähle die verschiedenen Status
+        int activeOrders = 0;
+        int completedOrders = 0;
+        
+        for (final order in allOrders) {
+          final status = order.status.toLowerCase();
+          
+          if (status == 'aktiv' || status == 'in bearbeitung') {
+            activeOrders++;
+          } else if (status == 'abgeschlossen' || status == 'zahlung_erhalten_clearing') {
+            completedOrders++;
+          }
+        }
 
-        final hasOrders = totalOrders > 0;
-        final latestOrder = hasOrders ? allOrders.first : null;
+        taskilo_order.Order? latestOrder;
+        if (hasOrders) {
+          // Sortiere nach Erstellungsdatum (neueste zuerst)
+          allOrders.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+          latestOrder = allOrders.first;
+        }
 
-        return Center(
-          child: DashboardCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Meine Aufträge',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    if (hasOrders)
+        return DashboardCard(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                       Expanded(
-                        flex: 1,
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            Text(
+                              'Meine Aufträge',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
                             Text(
                               '$totalOrders Auftrag${totalOrders != 1 ? 'e' : ''}',
                               style: TextStyle(
@@ -614,52 +653,69 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Wrap(
-                              spacing: 4,
-                              runSpacing: 4,
-                              alignment: WrapAlignment.end,
-                              children: [
-                                if (activeOrders > 0)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: Colors.orange, width: 1),
-                                    ),
-                                    child: Text(
-                                      '$activeOrders Aktiv',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.orange,
+                            if (activeOrders > 0 || completedOrders > 0)
+                              Wrap(
+                                spacing: 4,
+                                runSpacing: 4,
+                                alignment: WrapAlignment.start,
+                                children: [
+                                  if (activeOrders > 0)
+                                    Container(
+                                      key: const ValueKey('active_badge'),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withValues(alpha: 0.9),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.1),
+                                            blurRadius: 2,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        '$activeOrders Aktiv',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                if (completedOrders > 0)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.withValues(alpha: 0.2),
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(color: Colors.green, width: 1),
-                                    ),
-                                    child: Text(
-                                      '$completedOrders Abgeschlossen',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.green,
+                                  if (completedOrders > 0)
+                                    Container(
+                                      key: const ValueKey('completed_badge'),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withValues(alpha: 0.9),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.1),
+                                            blurRadius: 2,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        '$completedOrders Abgeschlossen',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                              ],
-                            ),
+                                ],
+                              ),
                           ],
                         ),
                       ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
+              ),
                 const SizedBox(height: 16),
                 if (hasOrders && latestOrder != null) ...[
                   // Neuester Auftrag
@@ -686,7 +742,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           child: const Text(
-                            'Neuen Auftrag erstellen',
+                            'Neuer Auftrag',
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -732,6 +788,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontSize: 16,
                           color: Colors.white.withValues(alpha: 0.9),
                         ),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 20),
                       SizedBox(
@@ -747,13 +804,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xFF14ad9f),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: const Text(
-                            'Ersten Auftrag erstellen',
+                            'Auftrag erstellen',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
@@ -766,7 +823,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ],
             ),
-          ),
         );
       },
     );
