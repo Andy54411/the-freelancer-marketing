@@ -103,7 +103,6 @@ export default function QuoteDetailPage() {
         setError(result.error || 'Angebotsanfrage nicht gefunden');
       }
     } catch (err) {
-
       setError('Fehler beim Laden der Angebotsanfrage');
     } finally {
       setLoading(false);
@@ -136,7 +135,6 @@ export default function QuoteDetailPage() {
         setError(result.error || 'Fehler beim Bearbeiten der Angebotsanfrage');
       }
     } catch (err) {
-
       setError('Fehler beim Bearbeiten der Angebotsanfrage');
     } finally {
       setResponding(false);
@@ -171,7 +169,6 @@ export default function QuoteDetailPage() {
         setError(result.error || 'Fehler beim Senden des Angebots');
       }
     } catch (err) {
-
       setError('Fehler beim Senden des Angebots');
     } finally {
       setResponding(false);
@@ -560,6 +557,7 @@ export default function QuoteDetailPage() {
                 </div>
               ) : (
                 <QuoteFormToggle
+                  companyId={uid}
                   onSubmit={handleQuoteSubmit}
                   onCancel={() => setShowResponseForm(false)}
                   loading={responding}
