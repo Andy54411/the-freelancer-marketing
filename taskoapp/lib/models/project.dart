@@ -117,6 +117,17 @@ class Quote {
   final String? timeline;
   final bool? aiGenerated;
   final String? originalPrompt;
+  final List<String>? recommendedProviders;
+  final String? selectedProvider;
+  final String? providerName;
+  final String? providerCompanyName;
+  final String? assignedTo;
+  final String? providerId;
+  final String? priority;
+  final String? urgency;
+  final bool? isDirectQuest;
+  final Map<String, dynamic>? location;
+  final List<String>? requiredServices;
 
   Quote({
     required this.id,
@@ -131,6 +142,17 @@ class Quote {
     this.timeline,
     this.aiGenerated,
     this.originalPrompt,
+    this.recommendedProviders,
+    this.selectedProvider,
+    this.providerName,
+    this.providerCompanyName,
+    this.assignedTo,
+    this.providerId,
+    this.priority,
+    this.urgency,
+    this.isDirectQuest,
+    this.location,
+    this.requiredServices,
   });
 
   factory Quote.fromFirestore(DocumentSnapshot doc) {
@@ -148,6 +170,21 @@ class Quote {
       timeline: data['timeline'],
       aiGenerated: data['aiGenerated'],
       originalPrompt: data['originalPrompt'],
+      recommendedProviders: data['recommendedProviders'] != null 
+          ? List<String>.from(data['recommendedProviders']) 
+          : null,
+      selectedProvider: data['selectedProvider'],
+      providerName: data['providerName'],
+      providerCompanyName: data['providerCompanyName'],
+      assignedTo: data['assignedTo'],
+      providerId: data['providerId'],
+      priority: data['priority'],
+      urgency: data['urgency'],
+      isDirectQuest: data['isDirectQuest'],
+      location: data['location'],
+      requiredServices: data['requiredServices'] != null 
+          ? List<String>.from(data['requiredServices']) 
+          : null,
     );
   }
 }

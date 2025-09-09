@@ -5,6 +5,7 @@ import '../../../models/user_model.dart';
 import '../../../services/project_service.dart';
 import '../dashboard_layout.dart';
 import 'project_assistant_screen.dart';
+import 'project_detail_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({Key? key}) : super(key: key);
@@ -237,148 +238,157 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   Widget _buildProjectCard(Project project) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: const Border(
-            left: BorderSide(color: Colors.white, width: 4),
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ProjectDetailScreen(project: project),
           ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white70),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            project.category ?? 'Projekt',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: const Border(
+              left: BorderSide(color: Colors.white, width: 4),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white70),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              project.category ?? 'Projekt',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          project.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                          const SizedBox(height: 8),
+                          Text(
+                            project.title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          project.description,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildStatusBadge(project.status),
-                          const SizedBox(width: 8),
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, size: 20, color: Colors.white),
-                            color: Colors.white,
-                            onSelected: (value) {
-                              if (value == 'delete') {
-                                _showDeleteConfirmation(project.id, project.title);
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.red, size: 16),
-                                    SizedBox(width: 8),
-                                    Text('Löschen', style: TextStyle(color: Colors.red)),
-                                  ],
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 4),
+                          Text(
+                            project.description,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        project.createdAt.toLocal().toString().split(' ')[0],
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.white60,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 16, color: Colors.white70),
-                      const SizedBox(width: 4),
-                      Text(
-                        project.createdAt.toLocal().toString().split(' ')[0],
-                        style: const TextStyle(fontSize: 14, color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                  if (project.estimatedBudget != null && project.estimatedBudget! > 0) ...[
-                    const SizedBox(width: 16),
-                    Row(
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        const Text(
-                          'Budget: ',
-                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildStatusBadge(project.status),
+                            const SizedBox(width: 8),
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert, size: 20, color: Colors.white),
+                              color: Colors.white,
+                              onSelected: (value) {
+                                if (value == 'delete') {
+                                  _showDeleteConfirmation(project.id, project.title);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete, color: Colors.red, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Löschen', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 4),
                         Text(
-                          '${project.estimatedBudget!.toStringAsFixed(0)}€',
-                          style: const TextStyle(fontSize: 14, color: Colors.white70),
+                          project.createdAt.toLocal().toString().split(' ')[0],
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white60,
+                          ),
                         ),
                       ],
                     ),
                   ],
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => _showDeleteConfirmation(project.id, project.title),
-                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    padding: const EdgeInsets.all(4),
-                  ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 16, color: Colors.white70),
+                        const SizedBox(width: 4),
+                        Text(
+                          project.createdAt.toLocal().toString().split(' ')[0],
+                          style: const TextStyle(fontSize: 14, color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                    if (project.estimatedBudget != null && project.estimatedBudget! > 0) ...[
+                      const SizedBox(width: 16),
+                      Row(
+                        children: [
+                          const Text(
+                            'Budget: ',
+                            style: TextStyle(fontSize: 14, color: Colors.white70),
+                          ),
+                          Text(
+                            '${project.estimatedBudget!.toStringAsFixed(0)}€',
+                            style: const TextStyle(fontSize: 14, color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ],
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => _showDeleteConfirmation(project.id, project.title),
+                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      padding: const EdgeInsets.all(4),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -606,7 +616,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             }).toList();
           }
           
-          final stats = _projectService.getProjectStatistics(allProjects);
+          final stats = _projectService.getCombinedStatistics(allProjects, allQuotes);
           final groups = _projectService.groupProjectsByTheme(filteredProjects);
           final ungroupedProjects = filteredProjects
               .where((project) => !groups.any((group) => 
@@ -734,6 +744,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         ),
       ),
       child: ListTile(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ProjectDetailScreen(quote: quote),
+            ),
+          );
+        },
         leading: Container(
           width: 48,
           height: 48,
@@ -863,20 +880,24 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   Future<void> _confirmDeleteQuote(String quoteId) async {
     try {
-      // Implement quote deletion - you might need to add this to ProjectService
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Auftrag erfolgreich gelöscht'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      await _projectService.deleteQuote(quoteId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Auftrag erfolgreich gelöscht'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Fehler beim Löschen: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Löschen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

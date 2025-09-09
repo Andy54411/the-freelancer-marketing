@@ -112,7 +112,10 @@ class ProjectService {
 
       final docRef = await _firestore
           .collection('project_requests')
-          .add(project.toFirestore());
+          .add({
+            ...project.toFirestore(),
+            'customerUid': userId, // Explizit customerUid setzen für Query
+          });
 
       debugPrint('Project created with ID: ${docRef.id}');
       return docRef.id;
@@ -153,6 +156,69 @@ class ProjectService {
     }
   }
 
+  // Delete quote
+  Future<void> deleteQuote(String quoteId) async {
+    try {
+      await _firestore
+          .collection('quotes')
+          .doc(quoteId)
+          .delete();
+      debugPrint('Quote deleted: $quoteId');
+    } catch (e) {
+      debugPrint('Error deleting quote: $e');
+      rethrow;
+    }
+  }
+
+  // Get provider information by ID
+  Future<Map<String, dynamic>?> getProviderById(String providerId) async {
+    try {
+      // First try to get from companies collection
+      final companyDoc = await _firestore
+          .collection('companies')
+          .doc(providerId)
+          .get();
+      
+      if (companyDoc.exists) {
+        final data = companyDoc.data() as Map<String, dynamic>;
+        return {
+          'name': data['companyName'] ?? data['name'] ?? 'Unbekanntes Unternehmen',
+          'company': data['companyName'],
+          'email': data['email'],
+          'phone': data['phone'],
+          'profileImage': data['profileImage'],
+          'rating': data['rating'],
+          'isVerified': data['isVerified'] ?? false,
+          'type': 'company',
+        };
+      }
+
+      // If not found in companies, try users collection
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(providerId)
+          .get();
+      
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        return {
+          'name': data['displayName'] ?? data['name'] ?? '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim(),
+          'company': data['companyName'] ?? data['company'],
+          'email': data['email'],
+          'phone': data['phone'],
+          'profileImage': data['profileImage'],
+          'rating': data['rating'],
+          'isVerified': data['isVerified'] ?? false,
+          'type': 'user',
+        };
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting provider: $e');
+      return null;
+    }
+  }
+
   // Get project by ID
   Future<Project?> getProjectById(String projectId) async {
     try {
@@ -183,6 +249,31 @@ class ProjectService {
 
     for (final project in projects) {
       stats[project.status] = (stats[project.status] ?? 0) + 1;
+    }
+
+    return stats;
+  }
+
+  // Get combined statistics for projects and quotes
+  Map<String, int> getCombinedStatistics(List<Project> projects, List<Quote> quotes) {
+    final stats = {
+      'total': projects.length + quotes.length,
+      'planning': 0,
+      'active': 0,
+      'completed': 0,
+      'paused': 0,
+      'pending': 0,
+      'cancelled': 0,
+    };
+
+    // Count projects
+    for (final project in projects) {
+      stats[project.status] = (stats[project.status] ?? 0) + 1;
+    }
+
+    // Count quotes
+    for (final quote in quotes) {
+      stats[quote.status] = (stats[quote.status] ?? 0) + 1;
     }
 
     return stats;
