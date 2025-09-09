@@ -487,8 +487,8 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Colors.grey.shade300)),
+            color: Colors.transparent,
+            border: Border(top: BorderSide(color: Colors.white.withOpacity(0.2))),
           ),
           child: SafeArea(
             child: Row(
@@ -500,7 +500,19 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                       hintText: 'Ihre Nachricht...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
                       ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.9),
+                      hintStyle: TextStyle(color: Colors.black.withOpacity(0.6)),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -534,7 +546,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
         // Header
         Container(
           padding: const EdgeInsets.all(16),
-          color: Colors.white,
+          color: Colors.transparent,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -542,13 +554,14 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                 'Passende Anbieter gefunden',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Wählen Sie optional Anbieter aus oder fahren Sie direkt fort.',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
+                style: const TextStyle(
+                  color: Colors.white,
                   fontSize: 14,
                 ),
               ),
@@ -899,7 +912,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                         Icon(
                           Icons.search_off,
                           size: 64,
-                          color: Colors.grey,
+                          color: Colors.white,
                         ),
                         SizedBox(height: 16),
                         Text(
@@ -907,7 +920,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
-                            color: Colors.grey,
+                            color: Colors.white,
                           ),
                         ),
                         SizedBox(height: 8),
@@ -915,7 +928,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                           'Ihr Projekt wird trotzdem öffentlich ausgeschrieben.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Colors.grey,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -928,8 +941,8 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Colors.grey.shade300)),
+            color: Colors.transparent,
+            border: Border(top: BorderSide(color: Colors.white.withOpacity(0.2))),
           ),
           child: SafeArea(
             child: Row(
@@ -942,11 +955,12 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Color(0xFF14AD9F)),
+                      side: const BorderSide(color: Colors.white),
+                      backgroundColor: Colors.white.withOpacity(0.1),
                     ),
                     child: const Text(
-                      'Ohne Auswahl fortfahren',
-                      style: TextStyle(color: Color(0xFF14AD9F)),
+                      'Ohne Auswahl',
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
@@ -955,12 +969,14 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                   child: ElevatedButton(
                     onPressed: _createProject,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF14AD9F),
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF14AD9F),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                     child: Text(
-                      'Mit ${_selectedProviders.length} Anbieter${_selectedProviders.length != 1 ? 'n' : ''} fortfahren',
+                      _selectedProviders.isEmpty 
+                        ? 'Projekt erstellen'
+                        : '${_selectedProviders.length} ausgewählt',
                     ),
                   ),
                 ),
@@ -980,7 +996,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14AD9F)),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               strokeWidth: 3,
             ),
             SizedBox(height: 24),
@@ -989,14 +1005,15 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
             SizedBox(height: 12),
             Text(
-              'Die KI erstellt basierend auf Ihren Antworten eine detaillierte Projektausschreibung',
+              'Die KI erstellt Ihre detaillierte Projektausschreibung',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.grey,
+                color: Colors.white,
                 fontSize: 16,
               ),
             ),
