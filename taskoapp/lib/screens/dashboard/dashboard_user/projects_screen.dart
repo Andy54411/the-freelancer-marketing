@@ -4,10 +4,10 @@ import '../../../models/project.dart';
 import '../../../models/user_model.dart';
 import '../../../services/project_service.dart';
 import '../dashboard_layout.dart';
-import '../../../components/project_assistant_dialog.dart';
+import 'project_assistant_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
-  const ProjectsScreen({Key? key}) : super(key: key);
+  const ProjectsScreen({super.key});
 
   @override
   State<ProjectsScreen> createState() => _ProjectsScreenState();
@@ -20,10 +20,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   String? _selectedStatus;
 
   void _showProjectAssistant() {
-    showDialog(
-      context: context,
-      builder: (context) => ProjectAssistantDialog(
-        userId: context.read<TaskiloUser?>()?.uid ?? '',
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ProjectAssistantScreen(
+          userId: context.read<TaskiloUser?>()?.uid ?? '',
+        ),
       ),
     );
   }
@@ -139,9 +140,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,14 +151,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: color.withOpacity(0.8), size: 18),
+              Icon(icon, color: color.withValues(alpha: 0.8), size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
                   style: TextStyle(
                     fontSize: 14,
-                    color: color.withOpacity(0.9),
+                    color: color.withValues(alpha: 0.9),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -199,7 +200,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.1),
+          fillColor: Colors.white.withValues(alpha: 0.1),
         ),
         dropdownColor: const Color(0xFF14AD9F),
         style: const TextStyle(color: Colors.white),
@@ -239,9 +240,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Container(
         decoration: BoxDecoration(
@@ -439,9 +440,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -488,27 +489,27 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.folder_open, color: Colors.white.withOpacity(0.8)),
+                      Icon(Icons.folder_open, color: Colors.white.withValues(alpha: 0.8)),
                       const SizedBox(width: 8),
                       Text(
                         'Weitere Projekte',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -615,14 +616,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         Icon(
                           Icons.folder_open,
                           size: 64,
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Keine Projekte gefunden',
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -631,7 +632,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           'Erstellen Sie Ihr erstes Projekt mit dem KI-Assistenten',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                           ),
                           textAlign: TextAlign.center,
                         ),
