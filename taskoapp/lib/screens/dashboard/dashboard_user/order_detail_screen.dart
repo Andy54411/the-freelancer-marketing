@@ -1867,15 +1867,16 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               children: [
                 // Chat Button
                 Expanded(
+                  flex: 2,
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF6366f1), Color(0xFF4f46e5)],
+                        colors: [Color(0xFF14ad9f), Color(0xFF129488)],
                       ),
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF6366f1).withValues(alpha: 0.3),
+                          color: const Color(0xFF14ad9f).withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -1907,7 +1908,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                 const SizedBox(width: 12),
                 // Bestätigen Button
                 Expanded(
-                  flex: 2,
+                  flex: 3,
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -1926,9 +1927,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                       onPressed: () => _completeOrder(),
                       icon: const Icon(Icons.rate_review, size: 20),
                       label: const Text(
-                        'Auftrag bestätigen & bewerten',
+                        'Bestätigen',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           decoration: TextDecoration.none,
                         ),

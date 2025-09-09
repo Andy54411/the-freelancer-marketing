@@ -430,7 +430,9 @@ export default function HoursBillingOverview({
               {userRole === 'customer' ? 'Gesamtkosten' : 'Gesamteinnahmen'}
             </p>
             <p className="text-2xl font-bold">
-              {formatCurrency(data.originalJobPrice + pendingAdditionalAmount)}
+              {formatCurrency(
+                data.originalJobPrice + paidAdditionalAmount + pendingAdditionalAmount
+              )}
             </p>
           </div>
         </div>
@@ -738,7 +740,9 @@ export default function HoursBillingOverview({
               <p>
                 <strong>{userRole === 'customer' ? 'Gesamtkosten:' : 'Gesamteinnahmen:'}</strong>{' '}
                 <span className="text-green-600 font-bold">
-                  {formatCurrency(data.originalJobPrice + pendingAdditionalAmount)}
+                  {formatCurrency(
+                    data.originalJobPrice + paidAdditionalAmount + pendingAdditionalAmount
+                  )}
                 </span>
               </p>
             </div>

@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import '../models/order.dart' as model;
 
 class OrderService {
@@ -371,94 +371,58 @@ class OrderService {
         throw Exception('Zugriff verweigert: Sie können nur Ihre eigenen Aufträge abschließen');
       }
 
-      // Verwende die Web API für Customer-Completion
-      final response = await _makeHttpRequest(
-        'POST',
-        '/api/user/$userId/orders/$orderId/complete',
-        body: {
-          if (rating != null) 'rating': rating,
-          if (review != null) 'review': review,
-          if (completionNotes != null) 'completionNotes': completionNotes,
+      // Validate required fields für die Backend-API
+      if (rating == null || rating < 1 || rating > 5) {
+        throw Exception('Rating zwischen 1-5 ist erforderlich');
+      }
+      
+      debugPrint('🔍 Review validation: review="$review", length=${review?.length}, trimmed length=${review?.trim().length}');
+      
+      if (review == null || review.trim().length < 5) {
+        throw Exception('Review-Text mit mindestens 5 Zeichen ist erforderlich (aktuell: "${review?.trim()}" mit ${review?.trim().length} Zeichen)');
+      }
+
+      // Get auth token für HTTP Request
+      final idToken = await currentUser.getIdToken();
+      
+      // HTTP Request an Firebase Function - DIREKT ohne _makeHttpRequest
+      const String functionUrl = 'https://europe-west1-tilvo-f142f.cloudfunctions.net/confirmOrderCompletionHTTP';
+      
+      debugPrint('🌐 HTTP POST Request direkt zu: $functionUrl');
+      debugPrint('📝 Body: {orderId: $orderId, rating: $rating, reviewText: ${review.trim()}}');
+      
+      final response = await http.post(
+        Uri.parse(functionUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
         },
+        body: jsonEncode({
+          'orderId': orderId,
+          'rating': rating,
+          'reviewText': review.trim(),
+          'confirmationNote': completionNotes ?? 'Kunde bestätigt Abschluss mit Bewertung',
+        }),
       );
 
-      if (response['success'] == true) {
+      if (response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception('HTTP ${response.statusCode}: ${errorData['error'] ?? 'Unbekannter Fehler'}');
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      
+      if (data['success'] == true) {
         debugPrint('✅ OrderService: Auftrag erfolgreich abgeschlossen und Auszahlung veranlasst');
+        debugPrint('📊 Order Status: ${data['status']}');
+        debugPrint('⭐ Rating: ${data['rating']}');
       } else {
-        throw Exception(response['error'] ?? 'Fehler beim Abschließen des Auftrags');
+        throw Exception(data['error'] ?? 'Fehler beim Abschließen des Auftrags');
       }
 
     } catch (e) {
       debugPrint('❌ OrderService Fehler beim Customer-Completion: $e');
       throw Exception('Auftrag konnte nicht abgeschlossen werden: $e');
-    }
-  }
-
-  /// HTTP Request Helper für API-Calls
-  static Future<Map<String, dynamic>> _makeHttpRequest(
-    String method, 
-    String endpoint, {
-    Map<String, dynamic>? body,
-  }) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        throw Exception('Benutzer ist nicht angemeldet');
-      }
-
-      final token = await user.getIdToken();
-      
-      debugPrint('🌐 HTTP $method Request zu: $endpoint');
-      debugPrint('📝 Body: $body');
-
-      final baseUrl = kDebugMode 
-          ? 'http://localhost:3000' 
-          : 'https://taskilo.de';
-      
-      final uri = Uri.parse('$baseUrl$endpoint');
-      
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
-
-      http.Response response;
-      
-      switch (method.toUpperCase()) {
-        case 'POST':
-          response = await http.post(
-            uri,
-            headers: headers,
-            body: body != null ? json.encode(body) : null,
-          );
-          break;
-        case 'PATCH':
-          response = await http.patch(
-            uri,
-            headers: headers,
-            body: body != null ? json.encode(body) : null,
-          );
-          break;
-        case 'GET':
-          response = await http.get(uri, headers: headers);
-          break;
-        default:
-          throw Exception('Unsupported HTTP method: $method');
-      }
-
-      final responseData = json.decode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('✅ HTTP Request erfolgreich: ${response.statusCode}');
-        return responseData;
-      } else {
-        debugPrint('❌ HTTP Request fehlerhafte Antwort: ${response.statusCode}');
-        throw Exception(responseData['error'] ?? 'HTTP ${response.statusCode} Fehler');
-      }
-
-    } catch (e) {
-      debugPrint('❌ HTTP Request Fehler: $e');
-      throw Exception('API-Request fehlgeschlagen: $e');
     }
   }
 }
