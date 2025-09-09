@@ -4,7 +4,7 @@ import '../../../models/project.dart';
 import '../../../models/user_model.dart';
 import '../../../services/project_service.dart';
 import '../dashboard_layout.dart';
-import '../../../components/project_assistant_dialog.dart';
+import 'project_assistant_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({Key? key}) : super(key: key);
@@ -20,10 +20,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   String? _selectedStatus;
 
   void _showProjectAssistant() {
-    showDialog(
-      context: context,
-      builder: (context) => ProjectAssistantDialog(
-        userId: context.read<TaskiloUser?>()?.uid ?? '',
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ProjectAssistantScreen(
+          userId: context.read<TaskiloUser?>()?.uid ?? '',
+        ),
       ),
     );
   }

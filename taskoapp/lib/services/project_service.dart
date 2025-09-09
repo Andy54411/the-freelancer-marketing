@@ -70,10 +70,6 @@ class ProjectService {
         theme: theme,
         userId: userId,
         metadata: metadata,
-        // Hinzufügen der neuen erforderlichen Felder mit Standardwerten
-        budgetRange: BudgetRange(min: 0, max: 0),
-        requiredServices: [],
-        location: Location(type: 'tbd'),
       );
 
       final docRef = await _firestore

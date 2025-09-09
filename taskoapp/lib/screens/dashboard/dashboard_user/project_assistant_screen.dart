@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../dashboard_layout.dart';
 
 class ProjectAssistantScreen extends StatefulWidget {
   final String userId;
@@ -443,30 +444,10 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF14AD9F),
-        title: const Row(
-          children: [
-            Icon(Icons.psychology, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              'KI-Projekt Assistent',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-        ),
-        elevation: 0,
-      ),
+    return DashboardLayout(
+      title: 'KI-Projekt Assistent',
+      useGradientBackground: true,
+      showBackButton: true,
       body: _buildStepContent(),
     );
   }
