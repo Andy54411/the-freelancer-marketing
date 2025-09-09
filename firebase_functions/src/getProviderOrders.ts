@@ -250,21 +250,20 @@ export const getProviderOrders = onRequest(
 
                 // 2. Additional paid hours from TimeTracking
                 if (timeTracking?.timeEntries) {
+                    console.log(`[DEBUG] Order ${data.id} TimeTracking entries:`, JSON.stringify(timeTracking.timeEntries, null, 2));
                     timeTracking.timeEntries.forEach((entry: any) => {
-                        // Only count really paid and transferred amounts
-                        if (
-                            entry.billableAmount &&
-                            entry.billableAmount > 0 &&
-                            (entry.status === 'transferred' ||
-                             entry.status === 'paid' ||
-                             entry.platformHoldStatus === 'transferred' ||
-                             entry.billingStatus === 'transferred' ||
-                             entry.paymentStatus === 'paid')
-                        ) {
+                        console.log(`[DEBUG] Processing entry with billableAmount: ${entry.billableAmount}, status: ${entry.status}, paymentStatus: ${entry.paymentStatus}`);
+                        // Add ALL billable amounts (since we're already filtering for paid/completed orders)
+                        if (entry.billableAmount && entry.billableAmount > 0) {
+                            console.log(`[DEBUG] Adding ${entry.billableAmount} to totalRevenue`);
                             totalRevenue += entry.billableAmount;
                         }
                     });
+                } else {
+                    console.log(`[DEBUG] Order ${data.id} has no timeTracking entries`);
                 }
+
+                console.log(`[DEBUG] Order ${data.id} final totalRevenue: ${totalRevenue} (base: ${data.totalAmountPaidByBuyer})`);
 
                 return {
                     id: data.id,

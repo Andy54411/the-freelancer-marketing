@@ -95,6 +95,14 @@ const CompanyOrdersOverviewPage = () => {
           const visibleIncomingOrders = incomingResult.orders.filter(
             (order: any) => order.status !== 'abgelehnt_vom_anbieter'
           );
+          // Debug: Log order data to see actual totalAmountPaidByBuyer values
+          console.log(
+            'Orders with totalAmountPaidByBuyer:',
+            visibleIncomingOrders.map(o => ({
+              id: o.id,
+              totalAmountPaidByBuyer: o.totalAmountPaidByBuyer,
+            }))
+          );
           setOrders(visibleIncomingOrders);
         } else {
           setOrders([]);
