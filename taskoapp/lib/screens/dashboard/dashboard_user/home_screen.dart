@@ -8,6 +8,7 @@ import '../dashboard_layout.dart';
 import 'my_orders_screen.dart';
 import 'search_screen.dart' show SearchScreen;
 import 'calendar_screen.dart';
+import 'projects_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -110,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisCount: 2,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
-            childAspectRatio: 1.5,
+            childAspectRatio: 1.2,
             children: [
               _buildQuickActionCard(
                 'Neuer Auftrag',
@@ -134,7 +135,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              // Terminkalender nimmt die gesamte untere Reihe ein
+              _buildQuickActionCard(
+                'Projekte',
+                Icons.psychology,
+                () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ProjectsScreen(),
+                    ),
+                  );
+                },
+              ),
+              // Terminkalender
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
@@ -158,25 +170,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Icon(
                         Icons.calendar_month,
-                        size: 40,
+                        size: 32,
                         color: Colors.white,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         'Terminkalender',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         'Alle Termine verwalten',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 10,
                           color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
