@@ -9,7 +9,7 @@ class ProjectService {
   Stream<List<Project>> getProjectsForUser(String userId) {
     return _firestore
         .collection('project_requests')
-        .where('userId', isEqualTo: userId)
+        .where('customerUid', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) => 
@@ -25,6 +25,44 @@ class ProjectService {
         .snapshots()
         .map((snapshot) => 
             snapshot.docs.map((doc) => Quote.fromFirestore(doc)).toList());
+  }
+
+  // Get combined projects and quotes for a user
+  Stream<List<dynamic>> getAllProjectsAndQuotesForUser(String userId) {
+    // Combine both streams
+    return _firestore
+        .collection('project_requests')
+        .where('customerUid', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .asyncMap((projectSnapshot) async {
+      
+      // Get projects from project_requests collection
+      final projects = projectSnapshot.docs
+          .map((doc) => Project.fromFirestore(doc))
+          .toList();
+
+      // Get quotes from quotes collection  
+      final quotesSnapshot = await _firestore
+          .collection('quotes')
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final quotes = quotesSnapshot.docs
+          .map((doc) => Quote.fromFirestore(doc))
+          .toList();
+
+      // Combine both lists and sort by creation date
+      final combined = <dynamic>[...projects, ...quotes];
+      combined.sort((a, b) {
+        final aDate = a is Project ? a.createdAt : (a as Quote).createdAt;
+        final bDate = b is Project ? b.createdAt : (b as Quote).createdAt;
+        return bDate.compareTo(aDate); // descending order
+      });
+
+      return combined;
+    });
   }
 
   // Group projects by theme

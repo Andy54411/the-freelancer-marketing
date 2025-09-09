@@ -109,20 +109,28 @@ class Quote {
   final String title;
   final String description;
   final String status;
-  final double? amount;
+  final double? estimatedBudget;
   final DateTime createdAt;
   final String userId;
-  final String? projectId;
+  final String? category;
+  final String? subcategory;
+  final String? timeline;
+  final bool? aiGenerated;
+  final String? originalPrompt;
 
   Quote({
     required this.id,
     required this.title,
     required this.description,
     required this.status,
-    this.amount,
+    this.estimatedBudget,
     required this.createdAt,
     required this.userId,
-    this.projectId,
+    this.category,
+    this.subcategory,
+    this.timeline,
+    this.aiGenerated,
+    this.originalPrompt,
   });
 
   factory Quote.fromFirestore(DocumentSnapshot doc) {
@@ -131,11 +139,15 @@ class Quote {
       id: doc.id,
       title: data['title'] ?? '',
       description: data['description'] ?? '',
-      status: data['status'] ?? 'pending',
-      amount: data['amount']?.toDouble(),
+      status: data['status'] ?? 'active',
+      estimatedBudget: data['estimatedBudget']?.toDouble(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       userId: data['userId'] ?? '',
-      projectId: data['projectId'],
+      category: data['category'],
+      subcategory: data['subcategory'],
+      timeline: data['timeline'],
+      aiGenerated: data['aiGenerated'],
+      originalPrompt: data['originalPrompt'],
     );
   }
 }

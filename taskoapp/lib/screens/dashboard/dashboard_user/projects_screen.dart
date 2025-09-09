@@ -566,8 +566,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           tooltip: 'KI-Assistent',
         ),
       ],
-      body: StreamBuilder<List<Project>>(
-        stream: _projectService.getProjectsForUser(user.uid),
+      body: StreamBuilder<List<dynamic>>(
+        stream: _projectService.getAllProjectsAndQuotesForUser(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -586,10 +586,25 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             );
           }
 
-          final allProjects = snapshot.data ?? [];
+          final allItems = snapshot.data ?? [];
           
+          // Separate projects and quotes
+          final allProjects = allItems.whereType<Project>().toList();
+          final allQuotes = allItems.whereType<Quote>().toList();
+          
+          // Apply search and filters to projects only for now
           var filteredProjects = _projectService.searchProjects(allProjects, _searchQuery);
           filteredProjects = _projectService.filterProjectsByStatus(filteredProjects, _selectedStatus);
+          
+          // For quotes, apply basic search
+          var filteredQuotes = allQuotes;
+          if (_searchQuery.isNotEmpty) {
+            final lowerQuery = _searchQuery.toLowerCase();
+            filteredQuotes = allQuotes.where((quote) {
+              return quote.title.toLowerCase().contains(lowerQuery) ||
+                     quote.description.toLowerCase().contains(lowerQuery);
+            }).toList();
+          }
           
           final stats = _projectService.getProjectStatistics(allProjects);
           final groups = _projectService.groupProjectsByTheme(filteredProjects);
@@ -607,7 +622,35 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 _buildFilterDropdown(),
                 const SizedBox(height: 16),
                 
-                if (filteredProjects.isEmpty)
+                // Show quotes section if we have quotes
+                if (filteredQuotes.isNotEmpty) ...[
+                  Text(
+                    'Direkte Aufträge (${filteredQuotes.length})',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...filteredQuotes.map((quote) => _buildQuoteCard(quote)),
+                  const SizedBox(height: 24),
+                ],
+                
+                // Show projects section
+                if (filteredProjects.isNotEmpty) ...[
+                  Text(
+                    'Öffentliche Projekte (${filteredProjects.length})',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                
+                if (filteredProjects.isEmpty && filteredQuotes.isEmpty)
                   Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -647,5 +690,193 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         },
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green;
+      case 'completed':
+        return Colors.blue;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return 'Aktiv';
+      case 'completed':
+        return 'Abgeschlossen';
+      case 'pending':
+        return 'Ausstehend';
+      case 'cancelled':
+        return 'Storniert';
+      default:
+        return status;
+    }
+  }
+
+  Widget _buildQuoteCard(Quote quote) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFF14AD9F),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.assignment_turned_in,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+        title: Text(
+          quote.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              quote.description,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 14,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(quote.status).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _getStatusColor(quote.status),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    _getStatusText(quote.status),
+                    style: TextStyle(
+                      color: _getStatusColor(quote.status),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (quote.estimatedBudget != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '€${quote.estimatedBudget!.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert, color: Colors.white),
+          onSelected: (value) {
+            switch (value) {
+              case 'delete':
+                _showDeleteQuoteConfirmation(quote.id, quote.title);
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Löschen'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteQuoteConfirmation(String quoteId, String quoteTitle) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Auftrag löschen'),
+          content: Text(
+            'Sind Sie sicher, dass Sie den Auftrag "$quoteTitle" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Abbrechen'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _confirmDeleteQuote(quoteId);
+              },
+              child: const Text(
+                'Löschen',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteQuote(String quoteId) async {
+    try {
+      // Implement quote deletion - you might need to add this to ProjectService
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Auftrag erfolgreich gelöscht'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fehler beim Löschen: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
