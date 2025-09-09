@@ -1,63 +1,12 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 import { getDb, getUserDisplayName, getAuthInstance } from "./helpers";
-import { Timestamp, FirestoreDataConverter, DocumentData, QueryDocumentSnapshot } from "firebase-admin/firestore";
+import { Timestamp } from "firebase-admin/firestore";
 import { UNKNOWN_CUSTOMER_NAME } from "./constants";
 
 const FIRESTORE_COLLECTIONS = {
     ORDERS: 'auftraege',
     USERS: 'users',
-};
-
-// Interface für die Auftragsdaten, wie sie in Firestore gespeichert sind
-interface AuftraegeDocumentData {
-    customerFirebaseUid: string;
-    selectedAnbieterId: string;
-    selectedSubcategory: string;
-    paidAt?: Timestamp;
-    createdAt: Timestamp;
-    jobCalculatedPriceInCents: number;
-    totalAmountPaidByBuyer?: number; // Echter bezahlter Betrag in Cents
-    status: 'AKTIV' | 'ABGESCHLOSSEN' | 'STORNIERT' | 'FEHLENDE DETAILS' | 'IN BEARBEITUNG' | 'zahlung_erhalten_clearing' | 'abgelehnt_vom_anbieter' | 'COMPLETED' | 'BEZAHLT';
-    description?: string;
-    jobPostalCode?: string;
-    jobTotalCalculatedHours?: number;
-    projectId?: string; // Renamed from projectName for consistency
-    currency?: string;
-    jobDateFrom?: string;
-    jobDateTo?: string;
-    serviceImageUrl?: string;
-}
-
-// Firestore Data Converter for type-safe data access
-const auftraegeConverter: FirestoreDataConverter<AuftraegeDocumentData> = {
-    toFirestore(order: AuftraegeDocumentData): DocumentData {
-        // This would be used if you were writing data.
-        // For this read-only function, it's less critical but good practice.
-        return order;
-    },
-    fromFirestore(snapshot: QueryDocumentSnapshot): AuftraegeDocumentData {
-        // This ensures that any data read from Firestore is correctly typed.
-        // It provides a single point of control for data validation, transformation, and setting default values.
-        const data = snapshot.data() || {};
-
-        // Add validation and default values to prevent runtime errors from malformed data.
-        if (!data.createdAt) {
-            // This case should be rare because of the orderBy('createdAt') clause in the query,
-            // but it's a good safeguard to prevent crashes.
-            logger.warn(`[getProviderOrders] Order document ${snapshot.id} is missing the 'createdAt' field.`);
-        }
-
-        return {
-            ...data, // Spread optional fields first
-            customerFirebaseUid: data.customerFirebaseUid || '',
-            selectedAnbieterId: data.selectedAnbieterId || '',
-            selectedSubcategory: data.selectedSubcategory || 'Dienstleistung',
-            createdAt: data.createdAt || Timestamp.now(), // Fallback to satisfy the type, though the query requires it
-            jobCalculatedPriceInCents: data.jobCalculatedPriceInCents || 0,
-            status: data.status || 'FEHLENDE DETAILS',
-        };
-    }
 };
 
 // This interface defines the structure of a single order returned to the client data table.
@@ -168,10 +117,9 @@ export const getProviderOrders = onRequest(
 
             const db = getDb();
 
-            // 4. Fetch Data
-            const ordersCollection = db
-                .collection(FIRESTORE_COLLECTIONS.ORDERS)
-                .withConverter(auftraegeConverter);
+            // 4. Fetch Data - WITHOUT CONVERTER to get RAW data
+            const ordersCollection = db.collection(FIRESTORE_COLLECTIONS.ORDERS);
+            // NO CONVERTER - get RAW data directly
 
             const ordersSnapshot = await ordersCollection
                 .where('selectedAnbieterId', '==', providerId)
@@ -184,11 +132,21 @@ export const getProviderOrders = onRequest(
                 return;
             }
 
+            // CRITICAL DEBUG: Log every single document RAW
+            logger.error(`[getProviderOrders] Found ${ordersSnapshot.docs.length} documents. Logging RAW data:`);
+            ordersSnapshot.docs.forEach(doc => {
+                const rawData = doc.data();
+                logger.error(`[getProviderOrders] Document ${doc.id} RAW:`, JSON.stringify(rawData, null, 2));
+            });
+
             // 5. Process Data & Batch Fetch Customer Details + TimeTracking Data
-            const ordersFromDb = ordersSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
+            const ordersFromDb = ordersSnapshot.docs.map(doc => {
+                const rawData = doc.data();
+                return {
+                    id: doc.id,
+                    ...rawData, // Use ALL raw data directly
+                } as any; // Force any type to access all fields
+            });
 
             const customerIds = [...new Set(ordersFromDb.map(order => order.customerFirebaseUid).filter(Boolean))];
 
@@ -206,56 +164,46 @@ export const getProviderOrders = onRequest(
                 }
             }
 
-            // Fetch TimeTracking data for all orders
-            const timeTrackingMap = new Map<string, any>();
-            if (ordersFromDb.length > 0) {
-                try {
-                    const timeTrackingQueries = ordersFromDb.map(order => 
-                        db.collection('auftraege').doc(order.id).get()
-                    );
-                    const timeTrackingDocs = await Promise.all(timeTrackingQueries);
-                    
-                    timeTrackingDocs.forEach((doc, index) => {
-                        if (doc.exists) {
-                            const data = doc.data();
-                            if (data?.timeTracking) {
-                                timeTrackingMap.set(ordersFromDb[index].id, data.timeTracking);
-                            }
-                        }
-                    });
-                } catch (error) {
-                    logger.warn(`[getProviderOrders] Failed to fetch timeTracking data:`, error);
-                }
-            }
-
             // 6. Map to final OrderData structure with calculated total revenue
             const orders: ProviderOrderData[] = ordersFromDb.map(data => {
                 const customerDetails = customersMap.get(data.customerFirebaseUid) || { name: UNKNOWN_CUSTOMER_NAME, avatarUrl: undefined };
-                const timeTracking = timeTrackingMap.get(data.id);
-
-                // Calculate total revenue including timeTracking entries
+                
+                // SMART CALCULATION: Base amount + ALL billable timeTracking amounts
                 let totalRevenue = 0;
 
-                // 1. Base order amount - only if payment was received
-                if (data.totalAmountPaidByBuyer && data.totalAmountPaidByBuyer > 0) {
-                    if (
-                        data.status === 'zahlung_erhalten_clearing' ||
-                        data.status === 'ABGESCHLOSSEN' ||
-                        data.status === 'COMPLETED' ||
-                        data.status === 'BEZAHLT'
-                    ) {
-                        totalRevenue += data.totalAmountPaidByBuyer;
-                    }
+                // 1. Add base order amount
+                if (data.totalAmountPaidByBuyer && typeof data.totalAmountPaidByBuyer === 'number' && data.totalAmountPaidByBuyer > 0) {
+                    totalRevenue += data.totalAmountPaidByBuyer;
+                    logger.error(`[getProviderOrders] Order ${data.id}: Added base amount ${data.totalAmountPaidByBuyer} cents`);
                 }
 
-                // 2. Add ALL billable amounts from timeTracking regardless of status
-                if (timeTracking?.timeEntries && Array.isArray(timeTracking.timeEntries)) {
-                    timeTracking.timeEntries.forEach((entry: any) => {
+                // 2. Add ALL billable amounts from timeTracking.timeEntries
+                if (data.timeTracking && data.timeTracking.timeEntries && Array.isArray(data.timeTracking.timeEntries)) {
+                    logger.error(`[getProviderOrders] Order ${data.id}: Found ${data.timeTracking.timeEntries.length} timeTracking entries`);
+                    data.timeTracking.timeEntries.forEach((entry: any, index: number) => {
                         if (entry.billableAmount && typeof entry.billableAmount === 'number' && entry.billableAmount > 0) {
-                            totalRevenue += entry.billableAmount;
+                            // Only add if payment was successful (transferred status)
+                            if (entry.billingStatus === 'transferred' || entry.status === 'transferred') {
+                                totalRevenue += entry.billableAmount;
+                                logger.error(`[getProviderOrders] Order ${data.id}: Added timeEntry ${index} billableAmount ${entry.billableAmount} cents`);
+                            } else {
+                                logger.error(`[getProviderOrders] Order ${data.id}: Skipped timeEntry ${index} with status ${entry.billingStatus || entry.status}`);
+                            }
+                        } else {
+                            logger.error(`[getProviderOrders] Order ${data.id}: timeEntry ${index} has no billableAmount`);
                         }
                     });
+                } else {
+                    logger.error(`[getProviderOrders] Order ${data.id}: No timeTracking.timeEntries found`);
                 }
+
+                // FORCE DEBUG LOG for every order
+                logger.error(`[getProviderOrders] Order ${data.id} FINAL CALCULATION:`, {
+                    baseAmount: data.totalAmountPaidByBuyer,
+                    timeTrackingEntries: data.timeTracking?.timeEntries?.length || 0,
+                    finalRevenue: totalRevenue,
+                    status: data.status
+                });
 
                 return {
                     id: data.id,
@@ -264,7 +212,7 @@ export const getProviderOrders = onRequest(
                     customerAvatarUrl: customerDetails.avatarUrl,
                     status: data.status,
                     orderDate: data.paidAt || data.createdAt,
-                    totalAmountPaidByBuyer: totalRevenue, // Now includes base amount + ALL billable timeTracking
+                    totalAmountPaidByBuyer: totalRevenue,
                     uid: data.selectedAnbieterId,
                     orderedBy: data.customerFirebaseUid,
                     projectId: data.projectId,

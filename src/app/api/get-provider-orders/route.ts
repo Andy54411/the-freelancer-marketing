@@ -50,10 +50,63 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ orders: [] }, { headers });
       }
 
-      // Process orders and fetch customer details
+      // Process orders and fetch customer details with CORRECT revenue calculation
       const orders = await Promise.all(
         ordersSnapshot.docs.map(async doc => {
           const orderData = doc.data();
+
+          // CRITICAL: Calculate TOTAL revenue including timeTracking
+          let totalRevenue = 0;
+
+          // 1. Add base order amount
+          if (
+            orderData.totalAmountPaidByBuyer &&
+            typeof orderData.totalAmountPaidByBuyer === 'number' &&
+            orderData.totalAmountPaidByBuyer > 0
+          ) {
+            totalRevenue += orderData.totalAmountPaidByBuyer;
+            console.log(
+              `[API] Order ${doc.id}: Added base amount ${orderData.totalAmountPaidByBuyer} cents`
+            );
+          }
+
+          // 2. Add ALL billable amounts from timeTracking.timeEntries
+          if (
+            orderData.timeTracking &&
+            orderData.timeTracking.timeEntries &&
+            Array.isArray(orderData.timeTracking.timeEntries)
+          ) {
+            console.log(
+              `[API] Order ${doc.id}: Found ${orderData.timeTracking.timeEntries.length} timeTracking entries`
+            );
+            orderData.timeTracking.timeEntries.forEach((entry: any, index: number) => {
+              if (
+                entry.billableAmount &&
+                typeof entry.billableAmount === 'number' &&
+                entry.billableAmount > 0
+              ) {
+                // Only add if payment was successful (transferred status)
+                if (entry.billingStatus === 'transferred' || entry.status === 'transferred') {
+                  totalRevenue += entry.billableAmount;
+                  console.log(
+                    `[API] Order ${doc.id}: Added timeEntry ${index} billableAmount ${entry.billableAmount} cents`
+                  );
+                } else {
+                  console.log(
+                    `[API] Order ${doc.id}: Skipped timeEntry ${index} with status ${entry.billingStatus || entry.status}`
+                  );
+                }
+              } else {
+                console.log(`[API] Order ${doc.id}: timeEntry ${index} has no billableAmount`);
+              }
+            });
+          } else {
+            console.log(`[API] Order ${doc.id}: No timeTracking.timeEntries found`);
+          }
+
+          console.log(
+            `[API] Order ${doc.id} FINAL CALCULATION: base=${orderData.totalAmountPaidByBuyer}, final=${totalRevenue}`
+          );
 
           // Fetch customer details - check multiple possible fields
           let customerName = 'Unbekannter Kunde';
@@ -95,6 +148,8 @@ export async function GET(request: NextRequest) {
           return {
             id: doc.id,
             ...orderData,
+            // OVERRIDE totalAmountPaidByBuyer with correct calculated value
+            totalAmountPaidByBuyer: totalRevenue,
             customerName,
             customerAvatarUrl,
             // Ensure orderDate is properly mapped
