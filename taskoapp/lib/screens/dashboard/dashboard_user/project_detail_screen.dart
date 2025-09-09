@@ -10,11 +10,10 @@ class ProjectDetailScreen extends StatefulWidget {
   final Quote? quote;
 
   const ProjectDetailScreen({
-    Key? key,
+    super.key,
     this.project,
     this.quote,
-  }) : assert(project != null || quote != null),
-        super(key: key);
+  });
 
   @override
   State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
@@ -35,20 +34,20 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Future<void> _loadProviderInfo() async {
     if (!isProject && widget.quote != null) {
       final providerId = widget.quote!.assignedTo ?? widget.quote!.providerId;
-      print('Loading provider info for ID: $providerId'); // Debug
-      print('AssignedTo: ${widget.quote!.assignedTo}'); // Debug  
-      print('ProviderId: ${widget.quote!.providerId}'); // Debug
+      debugPrint('Loading provider info for ID: $providerId'); // Debug
+      debugPrint('AssignedTo: ${widget.quote!.assignedTo}'); // Debug  
+      debugPrint('ProviderId: ${widget.quote!.providerId}'); // Debug
       
       if (providerId != null) {
         setState(() => _loadingProvider = true);
         try {
           // Provider-Informationen laden
           final info = await _projectService.getProviderById(providerId);
-          print('Provider info loaded: $info'); // Debug
+          debugPrint('Provider info loaded: $info'); // Debug
           
           // Review-Statistiken laden
           final reviewStats = await ReviewService.getReviewStats(providerId);
-          print('Review stats loaded: $reviewStats'); // Debug
+          debugPrint('Review stats loaded: $reviewStats'); // Debug
           
           if (mounted) {
             setState(() {
@@ -58,13 +57,13 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             });
           }
         } catch (e) {
-          print('Error loading provider: $e'); // Debug
+          debugPrint('Error loading provider: $e'); // Debug
           if (mounted) {
             setState(() => _loadingProvider = false);
           }
         }
       } else {
-        print('No provider ID found'); // Debug
+        debugPrint('No provider ID found'); // Debug
       }
     }
   }
@@ -120,9 +119,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -159,7 +158,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             '$label: ',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -223,7 +222,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF14AD9F).withOpacity(0.1),
+                  color: const Color(0xFF14AD9F).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFF14AD9F)),
                 ),
@@ -346,9 +345,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
               ),
               child: Container(
                 decoration: BoxDecoration(
@@ -402,7 +401,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                         description,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           height: 1.5,
                         ),
                       ),
@@ -493,7 +492,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 'Benötigte Services:',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -580,7 +579,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                           _providerInfo!['companyName'],
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: Colors.white.withOpacity(0.8),
+                                            color: Colors.white.withValues(alpha: 0.8),
                                           ),
                                         ),
                                     ],

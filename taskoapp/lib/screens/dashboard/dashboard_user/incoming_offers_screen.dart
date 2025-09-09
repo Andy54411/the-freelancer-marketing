@@ -212,19 +212,23 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
       // Reload offers after action
       _loadOffers();
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(action == 'accept' ? 'Angebot angenommen!' : 'Angebot abgelehnt!'),
-          backgroundColor: action == 'accept' ? Colors.green : Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(action == 'accept' ? 'Angebot angenommen!' : 'Angebot abgelehnt!'),
+            backgroundColor: action == 'accept' ? Colors.green : Colors.red,
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Fehler: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -340,49 +344,64 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
         children: [
           // Filter Row
           Container(
+            margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(16),
-            child: Row(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Filter: ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _FilterChip(
-                          label: 'Alle',
-                          value: 'all',
-                          selected: _selectedFilter == 'all',
-                          count: _offers.length,
-                          onSelected: (value) => setState(() => _selectedFilter = value),
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: 'Wartend',
-                          value: 'pending',
-                          selected: _selectedFilter == 'pending',
-                          count: _offers.where((o) => o.status == 'pending').length,
-                          onSelected: (value) => setState(() => _selectedFilter = value),
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: 'Angenommen',
-                          value: 'accepted',
-                          selected: _selectedFilter == 'accepted',
-                          count: _offers.where((o) => o.status == 'accepted').length,
-                          onSelected: (value) => setState(() => _selectedFilter = value),
-                        ),
-                        const SizedBox(width: 8),
-                        _FilterChip(
-                          label: 'Abgelehnt',
-                          value: 'declined',
-                          selected: _selectedFilter == 'declined',
-                          count: _offers.where((o) => o.status == 'declined').length,
-                          onSelected: (value) => setState(() => _selectedFilter = value),
-                        ),
-                      ],
-                    ),
+                const Text(
+                  'Filter:',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _FilterChip(
+                        label: 'Alle',
+                        value: 'all',
+                        selected: _selectedFilter == 'all',
+                        count: _offers.length,
+                        onSelected: (value) => setState(() => _selectedFilter = value),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'Wartend',
+                        value: 'pending',
+                        selected: _selectedFilter == 'pending',
+                        count: _offers.where((o) => o.status == 'pending').length,
+                        onSelected: (value) => setState(() => _selectedFilter = value),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'Angenommen',
+                        value: 'accepted',
+                        selected: _selectedFilter == 'accepted',
+                        count: _offers.where((o) => o.status == 'accepted').length,
+                        onSelected: (value) => setState(() => _selectedFilter = value),
+                      ),
+                      const SizedBox(width: 8),
+                      _FilterChip(
+                        label: 'Abgelehnt',
+                        value: 'declined',
+                        selected: _selectedFilter == 'declined',
+                        count: _offers.where((o) => o.status == 'declined').length,
+                        onSelected: (value) => setState(() => _selectedFilter = value),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -405,7 +424,7 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
                             Icon(
                               Icons.inbox_outlined,
                               size: 64,
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -413,7 +432,7 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
                                   ? 'Noch keine Angebote eingegangen'
                                   : 'Keine Angebote in dieser Kategorie',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
+                                color: Colors.white.withValues(alpha: 0.7),
                                 fontSize: 16,
                               ),
                             ),
@@ -421,7 +440,7 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
                             Text(
                               'Angebote werden hier angezeigt, sobald Anbieter auf Ihre Projekte antworten.',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 14,
                               ),
                               textAlign: TextAlign.center,
@@ -467,28 +486,39 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(
+    return GestureDetector(
+      onTap: () => onSelected(value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected 
+              ? Colors.white 
+              : Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected 
+                ? const Color(0xFF14AD9F)
+                : Colors.white.withValues(alpha: 0.6),
+            width: selected ? 2 : 1,
+          ),
+          boxShadow: selected ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ] : [],
+        ),
+        child: Text(
           '$label ($count)',
           style: TextStyle(
-            color: selected ? Colors.white : Colors.white.withOpacity(0.8),
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            color: selected 
+                ? const Color(0xFF14AD9F)
+                : Colors.white,
+            fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
         ),
-        selected: selected,
-        onSelected: (_) => onSelected(value),
-        backgroundColor: Colors.white.withOpacity(0.2),
-        selectedColor: Colors.white.withOpacity(0.3),
-        checkmarkColor: Colors.white,
-        side: BorderSide(
-          color: selected ? Colors.white : Colors.white.withOpacity(0.5),
-          width: 1.5,
-        ),
-        elevation: selected ? 4 : 2,
-        shadowColor: Colors.black.withOpacity(0.3),
       ),
     );
   }
@@ -515,8 +545,8 @@ class _OfferCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Colors.white.withOpacity(0.95),
-              Colors.white.withOpacity(0.85),
+              Colors.white.withValues(alpha: 0.95),
+              Colors.white.withValues(alpha: 0.85),
             ],
           ),
         ),
@@ -688,21 +718,58 @@ class _OfferCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (offer.status == 'pending') ...[
-                    TextButton(
-                      onPressed: () => onAction(offer, 'decline'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.red,
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.shade300),
                       ),
-                      child: const Text('Ablehnen'),
+                      child: TextButton(
+                        onPressed: () => onAction(offer, 'decline'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red.shade600,
+                          backgroundColor: Colors.red.shade50,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Ablehnen',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () => onAction(offer, 'accept'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF14AD9F),
-                        foregroundColor: Colors.white,
+                    const SizedBox(width: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF14AD9F).withValues(alpha: 0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: const Text('Annehmen'),
+                      child: ElevatedButton(
+                        onPressed: () => onAction(offer, 'accept'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF14AD9F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: const Text(
+                          'Annehmen',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
                     ),
                   ] else if (offer.status == 'accepted') ...[
                     TextButton.icon(
@@ -759,25 +826,25 @@ class _StatusBadge extends StatelessWidget {
 
     switch (status) {
       case 'pending':
-        backgroundColor = Colors.orange.withOpacity(0.1);
+        backgroundColor = Colors.orange.withValues(alpha: 0.1);
         textColor = Colors.orange;
         label = 'Wartend';
         icon = Icons.hourglass_empty;
         break;
       case 'accepted':
-        backgroundColor = Colors.green.withOpacity(0.1);
+        backgroundColor = Colors.green.withValues(alpha: 0.1);
         textColor = Colors.green;
         label = 'Angenommen';
         icon = Icons.check_circle;
         break;
       case 'declined':
-        backgroundColor = Colors.red.withOpacity(0.1);
+        backgroundColor = Colors.red.withValues(alpha: 0.1);
         textColor = Colors.red;
         label = 'Abgelehnt';
         icon = Icons.cancel;
         break;
       default:
-        backgroundColor = Colors.grey.withOpacity(0.1);
+        backgroundColor = Colors.grey.withValues(alpha: 0.1);
         textColor = Colors.grey;
         label = status;
         icon = Icons.help;

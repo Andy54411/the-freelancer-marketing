@@ -83,7 +83,7 @@ class Provider {
 
   factory Provider.fromJson(Map<String, dynamic> json) {
     // Debug: Print the received JSON data
-    print('📊 Provider JSON data: $json');
+    debugPrint('📊 Provider JSON data: $json');
     
     // Try multiple possible locations for profile picture
     String? profilePicture;
@@ -102,7 +102,7 @@ class Provider {
       profilePicture = null;
     }
     
-    print('🖼️ Profile picture URL found: $profilePicture');
+    debugPrint('🖼️ Profile picture URL found: $profilePicture');
     
     return Provider(
       id: json['id'] ?? json['uid'] ?? '',
@@ -237,7 +237,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
         }
       }
     } catch (error) {
-      print('Error generating questions: $error');
+      debugPrint('Error generating questions: $error');
       _addMessage(
         'Es gab einen Fehler beim Analysieren Ihres Projekts. '
         'Bitte versuchen Sie es später noch einmal.',
@@ -311,7 +311,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
         }
       }
     } catch (error) {
-      print('Error finding providers: $error');
+      debugPrint('Error finding providers: $error');
       _addMessage(
         'Es gab einen Fehler beim Suchen nach Dienstleistern, '
         'aber wir können trotzdem Ihr Projekt erstellen.',
@@ -396,7 +396,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
         }
       }
     } catch (error) {
-      print('Error creating project: $error');
+      debugPrint('Error creating project: $error');
       _addMessage(
         'Es gab einen Fehler beim Erstellen Ihres Projekts. '
         'Bitte versuchen Sie es noch einmal.',
@@ -488,7 +488,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.transparent,
-            border: Border(top: BorderSide(color: Colors.white.withOpacity(0.2))),
+            border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
           ),
           child: SafeArea(
             child: Row(
@@ -500,19 +500,19 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                       hintText: 'Ihre Nachricht...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: const BorderSide(color: Colors.white, width: 2),
                       ),
                       filled: true,
-                      fillColor: Colors.white.withOpacity(0.9),
-                      hintStyle: TextStyle(color: Colors.black.withOpacity(0.6)),
+                      fillColor: Colors.white.withValues(alpha: 0.9),
+                      hintStyle: TextStyle(color: Colors.black.withValues(alpha: 0.6)),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -942,7 +942,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.transparent,
-            border: Border(top: BorderSide(color: Colors.white.withOpacity(0.2))),
+            border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.2))),
           ),
           child: SafeArea(
             child: Row(
@@ -956,7 +956,7 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       side: const BorderSide(color: Colors.white),
-                      backgroundColor: Colors.white.withOpacity(0.1),
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
                     ),
                     child: const Text(
                       'Ohne Auswahl',
