@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../dashboard_layout.dart';
-import '../../../models/project.dart';
 
 class IncomingOffersScreen extends StatefulWidget {
   const IncomingOffersScreen({super.key});
@@ -40,101 +39,153 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
     }
   }
 
-  Future<List<OfferItem>> _getIncomingOffers(String userId) async {
+  Future<List<OfferItem>> _getIncomingOffers(String currentUserId) async {
     final List<OfferItem> allOffers = [];
 
-    // Get all projects where user is the customer
-    final projectsSnapshot = await FirebaseFirestore.instance
-        .collection('project_requests')
-        .where('customerUid', isEqualTo: userId)
-        .get();
+    debugPrint('🔍 Loading offers for current user: $currentUserId');
 
-    // Get all quotes where user is the customer  
-    final quotesSnapshot = await FirebaseFirestore.instance
-        .collection('quotes')
-        .where('userId', isEqualTo: userId)
-        .get();
+    try {
+      // STEP 1: Get ALL quotes from the system without filtering by user ID first
+      debugPrint('🔍 STEP 1: Getting ALL quotes from the system...');
+      final allQuotesSnapshot = await FirebaseFirestore.instance
+          .collection('quotes')
+          .get();
 
-    // Process project proposals
-    for (final projectDoc in projectsSnapshot.docs) {
-      final projectData = projectDoc.data();
-      final projectTitle = projectData['title'] ?? 'Unbenanntes Projekt';
-      final projectCategory = projectData['subcategory'] ?? projectData['category'] ?? 'Allgemein';
+      debugPrint('📋 Found ${allQuotesSnapshot.docs.length} total quotes in system');
 
-      // Check for proposals array in project document
-      final proposals = projectData['proposals'] as List<dynamic>? ?? [];
-      
-      for (final proposal in proposals) {
-        if (proposal is Map<String, dynamic>) {
-          allOffers.add(OfferItem(
-            id: proposal['id'] ?? proposal['companyUid'] ?? proposal['providerId'] ?? '',
-            projectId: projectDoc.id,
-            projectTitle: projectTitle,
-            projectCategory: projectCategory,
-            providerName: proposal['companyName'] ?? proposal['providerName'] ?? 'Unbekannter Anbieter',
-            providerEmail: proposal['providerEmail'] ?? '',
-            providerPhone: proposal['providerPhone'] ?? '',
-            providerAvatar: proposal['providerAvatar'] ?? '',
-            providerRating: (proposal['providerRating'] ?? 0.0).toDouble(),
-            message: proposal['message'] ?? '',
-            proposedPrice: (proposal['proposedPrice'] ?? proposal['totalAmount'] ?? 0.0).toDouble(),
-            proposedTimeline: proposal['proposedTimeline'] ?? proposal['timeline'] ?? 'Nicht angegeben',
-            availability: proposal['availability'] ?? 'Sofort verfügbar',
-            submittedAt: _parseTimestamp(proposal['submittedAt'] ?? proposal['createdAt']),
-            status: proposal['status'] ?? 'pending',
-            companyUid: proposal['companyUid'] ?? proposal['providerId'] ?? '',
-            sourceType: 'project_request',
-          ));
+      // STEP 2: For each quote, check if current user has access via any user field
+      final relevantQuoteDocs = <String, DocumentSnapshot<Map<String, dynamic>>>{};
+      final userFields = ['userId', 'customerUid', 'customerId', 'createdBy'];
+
+      for (final quoteDoc in allQuotesSnapshot.docs) {
+        final quoteData = quoteDoc.data();
+        bool isRelevant = false;
+        
+        // Check if current user matches any user field in this quote
+        for (final field in userFields) {
+          final fieldValue = quoteData[field];
+          if (fieldValue == currentUserId) {
+            debugPrint('✅ Quote ${quoteDoc.id} is relevant: $field = $currentUserId');
+            isRelevant = true;
+            break;
+          }
+        }
+        
+        if (isRelevant) {
+          relevantQuoteDocs[quoteDoc.id] = quoteDoc;
         }
       }
-    }
 
-    // Process quote proposals from subcollections
-    for (final quoteDoc in quotesSnapshot.docs) {
-      final quoteData = quoteDoc.data();
-      final quoteTitle = quoteData['title'] ?? 'Direkter Auftrag';
-      final quoteCategory = quoteData['subcategory'] ?? quoteData['category'] ?? 'Allgemein';
+      debugPrint('📋 Found ${relevantQuoteDocs.length} quotes relevant to current user');
 
-      try {
-        // Load proposals from subcollection
-        final proposalsSnapshot = await FirebaseFirestore.instance
-            .collection('quotes')
-            .doc(quoteDoc.id)
-            .collection('proposals')
-            .get();
+      // STEP 3: Get project_requests where current user is the customer
+      final projectsSnapshot = await FirebaseFirestore.instance
+          .collection('project_requests')
+          .where('customerUid', isEqualTo: currentUserId)
+          .get();
 
-        for (final proposalDoc in proposalsSnapshot.docs) {
-          final proposal = proposalDoc.data();
-          
-          allOffers.add(OfferItem(
-            id: proposalDoc.id,
-            projectId: quoteDoc.id,
-            projectTitle: quoteTitle,
-            projectCategory: quoteCategory,
-            providerName: proposal['companyName'] ?? proposal['providerName'] ?? 'Unbekannter Anbieter',
-            providerEmail: proposal['providerEmail'] ?? '',
-            providerPhone: proposal['providerPhone'] ?? '',
-            providerAvatar: proposal['providerAvatar'] ?? '',
-            providerRating: (proposal['providerRating'] ?? 0.0).toDouble(),
-            message: proposal['message'] ?? '',
-            proposedPrice: (proposal['proposedPrice'] ?? proposal['totalAmount'] ?? 0.0).toDouble(),
-            proposedTimeline: proposal['proposedTimeline'] ?? proposal['timeline'] ?? 'Nicht angegeben',
-            availability: proposal['availability'] ?? 'Sofort verfügbar',
-            submittedAt: _parseTimestamp(proposal['createdAt']),
-            status: proposal['status'] ?? 'pending',
-            companyUid: proposal['companyUid'] ?? proposal['providerId'] ?? '',
-            sourceType: 'quote',
-          ));
+      debugPrint('📋 Found ${projectsSnapshot.docs.length} project_requests for current user');
+
+      debugPrint('📋 Total unique quotes belonging to user: ${relevantQuoteDocs.length}');
+
+      // STEP 4: Process project proposals
+      for (final projectDoc in projectsSnapshot.docs) {
+        final projectData = projectDoc.data();
+        final projectTitle = projectData['title'] ?? 'Unbenanntes Projekt';
+        final projectCategory = projectData['subcategory'] ?? projectData['category'] ?? 'Allgemein';
+
+        // Check for proposals array in project document
+        final proposals = projectData['proposals'] as List<dynamic>? ?? [];
+        
+        for (final proposal in proposals) {
+          if (proposal is Map<String, dynamic>) {
+            allOffers.add(OfferItem(
+              id: proposal['id'] ?? proposal['companyUid'] ?? proposal['providerId'] ?? '',
+              projectId: projectDoc.id,
+              projectTitle: projectTitle,
+              projectCategory: projectCategory,
+              providerName: proposal['companyName'] ?? proposal['providerName'] ?? 'Unbekannter Anbieter',
+              providerEmail: proposal['providerEmail'] ?? '',
+              providerPhone: proposal['providerPhone'] ?? '',
+              providerAvatar: proposal['providerAvatar'] ?? '',
+              providerRating: (proposal['providerRating'] ?? 0.0).toDouble(),
+              message: proposal['message'] ?? '',
+              proposedPrice: (proposal['proposedPrice'] ?? proposal['totalAmount'] ?? 0.0).toDouble(),
+              proposedTimeline: proposal['proposedTimeline'] ?? proposal['timeline'] ?? 'Nicht angegeben',
+              availability: proposal['availability'] ?? 'Sofort verfügbar',
+              submittedAt: _parseTimestamp(proposal['submittedAt'] ?? proposal['createdAt']),
+              status: proposal['status'] ?? 'pending',
+              companyUid: proposal['companyUid'] ?? proposal['providerId'] ?? '',
+              sourceType: 'project_request',
+            ));
+          }
         }
-      } catch (e) {
-        debugPrint('Error loading proposals for quote ${quoteDoc.id}: $e');
       }
+
+      // STEP 5: Process quote proposals from subcollections
+      for (final quoteDoc in relevantQuoteDocs.values) {
+        final quoteData = quoteDoc.data() ?? {};
+        
+        final quoteTitle = quoteData['title'] ?? 'Direkter Auftrag';
+        final quoteCategory = quoteData['subcategory'] ?? quoteData['category'] ?? 'Allgemein';
+
+        debugPrint('🔍 Processing quote: ${quoteDoc.id}');
+
+        try {
+          // Load ALL proposals from subcollection (no filtering)
+          final proposalsSnapshot = await FirebaseFirestore.instance
+              .collection('quotes')
+              .doc(quoteDoc.id)
+              .collection('proposals')
+              .get();
+
+          debugPrint('📋 Found ${proposalsSnapshot.docs.length} proposals for quote ${quoteDoc.id}');
+
+          for (final proposalDoc in proposalsSnapshot.docs) {
+            final proposal = proposalDoc.data();
+            
+            debugPrint('🎯 Processing proposal: ${proposalDoc.id}');
+            debugPrint('📊 Proposal status: ${proposal['status']}');
+            debugPrint('📊 Proposal data: ${proposal.toString()}');
+            
+            allOffers.add(OfferItem(
+              id: proposalDoc.id,
+              projectId: quoteDoc.id,
+              projectTitle: quoteTitle,
+              projectCategory: quoteCategory,
+              providerName: proposal['companyName'] ?? proposal['providerName'] ?? 'Unbekannter Anbieter',
+              providerEmail: proposal['providerEmail'] ?? '',
+              providerPhone: proposal['providerPhone'] ?? '',
+              providerAvatar: proposal['providerAvatar'] ?? '',
+              providerRating: (proposal['providerRating'] ?? 0.0).toDouble(),
+              message: proposal['message'] ?? '',
+              proposedPrice: (proposal['proposedPrice'] ?? proposal['totalAmount'] ?? 0.0).toDouble(),
+              proposedTimeline: proposal['proposedTimeline'] ?? proposal['timeline'] ?? 'Nicht angegeben',
+              availability: proposal['availability'] ?? 'Sofort verfügbar',
+              submittedAt: _parseTimestamp(proposal['createdAt']),
+              status: proposal['status'] ?? 'pending',
+              companyUid: proposal['companyUid'] ?? proposal['providerId'] ?? '',
+              sourceType: 'quote',
+            ));
+          }
+        } catch (e) {
+          debugPrint('Error loading proposals for quote ${quoteDoc.id}: $e');
+        }
+      }
+
+      // Sort by submission date (newest first)
+      allOffers.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+
+      debugPrint('✅ Total offers found: ${allOffers.length}');
+      for (final offer in allOffers) {
+        debugPrint('📋 Offer: ${offer.providerName} - ${offer.status} - ${offer.proposedPrice}€');
+      }
+
+      return allOffers;
+    } catch (e) {
+      debugPrint('❌ Error in _getIncomingOffers: $e');
+      return [];
     }
-
-    // Sort by submission date (newest first)
-    allOffers.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
-
-    return allOffers;
   }
 
   DateTime _parseTimestamp(dynamic timestamp) {
@@ -416,32 +467,28 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onSelected(value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected 
-              ? Colors.white 
-              : Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected 
-                ? Colors.white 
-                : Colors.white.withOpacity(0.5),
-            width: 1.5,
-          ),
-        ),
-        child: Text(
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(
           '$label ($count)',
           style: TextStyle(
-            color: selected 
-                ? const Color(0xFF14AD9F) 
-                : Colors.white,
-            fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+            color: selected ? Colors.white : Colors.white.withOpacity(0.8),
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
             fontSize: 14,
           ),
         ),
+        selected: selected,
+        onSelected: (_) => onSelected(value),
+        backgroundColor: Colors.white.withOpacity(0.2),
+        selectedColor: Colors.white.withOpacity(0.3),
+        checkmarkColor: Colors.white,
+        side: BorderSide(
+          color: selected ? Colors.white : Colors.white.withOpacity(0.5),
+          width: 1.5,
+        ),
+        elevation: selected ? 4 : 2,
+        shadowColor: Colors.black.withOpacity(0.3),
       ),
     );
   }

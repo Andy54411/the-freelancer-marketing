@@ -11,8 +11,7 @@ class EditProjectScreen extends StatefulWidget {
     Key? key,
     this.project,
     this.quote,
-  }) : assert(project != null || quote != null),
-        super(key: key);
+  }) : assert(project != null || quote != null);
 
   @override
   State<EditProjectScreen> createState() => _EditProjectScreenState();
