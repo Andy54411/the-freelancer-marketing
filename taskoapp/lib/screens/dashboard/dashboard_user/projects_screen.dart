@@ -6,6 +6,7 @@ import '../../../services/project_service.dart';
 import '../dashboard_layout.dart';
 import 'project_assistant_screen.dart';
 import 'project_detail_screen.dart';
+import 'incoming_offers_screen.dart';
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({Key? key}) : super(key: key);
@@ -570,6 +571,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       searchHint: 'Projekte durchsuchen...',
       onSearchChanged: (value) => setState(() => _searchQuery = value),
       actions: [
+        IconButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const IncomingOffersScreen(),
+              ),
+            );
+          },
+          icon: const Icon(Icons.local_offer, color: Colors.white),
+          tooltip: 'Eingehende Angebote',
+        ),
         IconButton(
           onPressed: _showProjectAssistant,
           icon: const Icon(Icons.psychology, color: Colors.white),

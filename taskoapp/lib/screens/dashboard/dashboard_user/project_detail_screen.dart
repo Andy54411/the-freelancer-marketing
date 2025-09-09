@@ -3,6 +3,7 @@ import '../../../models/project.dart';
 import '../../../services/project_service.dart';
 import '../../../services/review_service.dart';
 import '../dashboard_layout.dart';
+import 'edit_project_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final Project? project;
@@ -172,6 +173,160 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _editItem() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => EditProjectScreen(
+          project: widget.project,
+          quote: widget.quote,
+        ),
+      ),
+    );
+
+    // If edit was successful, we might want to refresh the data
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${isProject ? 'Projekt' : 'Auftrag'} wurde aktualisiert'),
+          backgroundColor: const Color(0xFF14AD9F),
+        ),
+      );
+      // Optionally reload provider info if it was a quote
+      if (!isProject) {
+        _loadProviderInfo();
+      }
+    }
+  }
+
+  Future<void> _shareAsPublicProject() async {
+    if (widget.quote == null) return;
+
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Auftrag öffentlich teilen'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Möchten Sie diesen direkten Auftrag als öffentliche Anfrage teilen?',
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF14AD9F).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF14AD9F)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Das bedeutet:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Builder(
+                      builder: (context) {
+                        final subcategory = widget.quote!.subcategory;
+                        final category = widget.quote!.category;
+                        debugPrint('Subcategory: $subcategory, Category: $category');
+                        
+                        // Try to get the real subcategory from provider data if available
+                        String? targetCategory = subcategory;
+                        
+                        // If subcategory is same as category, try to get it from provider info
+                        if (subcategory == category && _providerInfo != null) {
+                          targetCategory = _providerInfo!['selectedSubcategory'] ?? subcategory;
+                          debugPrint('Using provider selectedSubcategory: $targetCategory');
+                        }
+                        
+                        // Fallback to subcategory or category
+                        targetCategory = targetCategory?.isNotEmpty == true ? targetCategory : category;
+                        
+                        return Text('• Alle Anbieter der Subkategorie "$targetCategory" können Angebote abgeben');
+                      },
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('• Ihr Auftrag wird in der öffentlichen Projektliste angezeigt'),
+                    const SizedBox(height: 4),
+                    const Text('• Sie können aus mehreren Angeboten wählen'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF14AD9F),
+              ),
+              child: const Text('Öffentlich teilen'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm != true) return;
+
+    try {
+      setState(() => _loadingProvider = true);
+      
+      final projectId = await _projectService.shareQuoteAsPublicProject(
+        quote: widget.quote!,
+        userId: widget.quote!.userId,
+      );
+
+      debugPrint('Created public project with ID: $projectId'); // Use the projectId
+
+      if (mounted) {
+        setState(() => _loadingProvider = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Auftrag wurde erfolgreich als öffentliche Anfrage geteilt!'),
+            backgroundColor: Color(0xFF14AD9F),
+          ),
+        );
+        
+        // Optionally navigate to the new project
+        Navigator.of(context).pop(); // Go back to projects list
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingProvider = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Teilen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareProject() async {
+    // For projects, implement a simple share functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Projekt-Sharing wird implementiert'),
+        backgroundColor: Color(0xFF14AD9F),
       ),
     );
   }
@@ -381,17 +536,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                                 CircleAvatar(
                                   radius: 25,
                                   backgroundColor: const Color(0xFF14AD9F),
-                                  backgroundImage: (_providerInfo!['profilePictureURL'] != null && 
-                                                   _providerInfo!['profilePictureURL'].toString().isNotEmpty)
-                                      ? NetworkImage(_providerInfo!['profilePictureURL'])
-                                      : (_providerInfo!['profilePictureFirebaseUrl'] != null && 
-                                         _providerInfo!['profilePictureFirebaseUrl'].toString().isNotEmpty)
-                                          ? NetworkImage(_providerInfo!['profilePictureFirebaseUrl'])
+                                  backgroundImage: (_providerInfo!['profilePictureFirebaseUrl'] != null && 
+                                                   _providerInfo!['profilePictureFirebaseUrl'].toString().isNotEmpty)
+                                      ? NetworkImage(_providerInfo!['profilePictureFirebaseUrl'])
+                                      : (_providerInfo!['profilePictureURL'] != null && 
+                                         _providerInfo!['profilePictureURL'].toString().isNotEmpty)
+                                          ? NetworkImage(_providerInfo!['profilePictureURL'])
                                           : null,
-                                  child: (_providerInfo!['profilePictureURL'] == null || 
-                                         _providerInfo!['profilePictureURL'].toString().isEmpty) &&
-                                        (_providerInfo!['profilePictureFirebaseUrl'] == null || 
-                                         _providerInfo!['profilePictureFirebaseUrl'].toString().isEmpty)
+                                  child: (_providerInfo!['profilePictureFirebaseUrl'] == null || 
+                                         _providerInfo!['profilePictureFirebaseUrl'].toString().isEmpty) &&
+                                        (_providerInfo!['profilePictureURL'] == null || 
+                                         _providerInfo!['profilePictureURL'].toString().isEmpty)
                                       ? const Icon(Icons.person, color: Colors.white)
                                       : null,
                                 ),
@@ -504,15 +659,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: Implement edit functionality
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Bearbeiten-Funktion wird implementiert'),
-                          backgroundColor: Color(0xFF14AD9F),
-                        ),
-                      );
-                    },
+                    onPressed: () => _editItem(),
                     icon: const Icon(Icons.edit, color: Colors.white),
                     label: const Text('Bearbeiten'),
                     style: ElevatedButton.styleFrom(
@@ -526,29 +673,40 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Implement share functionality
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Teilen-Funktion wird implementiert'),
-                          backgroundColor: Color(0xFF14AD9F),
+                // Show share button only for quotes (direct assignments)
+                if (!isProject) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _shareAsPublicProject(),
+                      icon: const Icon(Icons.share, color: Colors.white),
+                      label: const Text('Öffentlich teilen'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.share, color: Colors.white),
-                    label: const Text('Teilen'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ),
-                ),
+                ] else ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _shareProject(),
+                      icon: const Icon(Icons.share, color: Colors.white),
+                      label: const Text('Teilen'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        side: const BorderSide(color: Colors.white),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ],

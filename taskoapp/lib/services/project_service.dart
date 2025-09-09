@@ -173,6 +173,8 @@ class ProjectService {
   // Get provider information by ID
   Future<Map<String, dynamic>?> getProviderById(String providerId) async {
     try {
+      debugPrint('Getting provider by ID: $providerId');
+      
       // First try to get from companies collection
       final companyDoc = await _firestore
           .collection('companies')
@@ -181,15 +183,28 @@ class ProjectService {
       
       if (companyDoc.exists) {
         final data = companyDoc.data() as Map<String, dynamic>;
+        debugPrint('Company data found: $data');
+        
         return {
           'name': data['companyName'] ?? data['name'] ?? 'Unbekanntes Unternehmen',
-          'company': data['companyName'],
+          'companyName': data['companyName'],
           'email': data['email'],
-          'phone': data['phone'],
+          'phone': data['phone'] ?? data['phoneNumber'],
           'profileImage': data['profileImage'],
+          'profilePictureURL': data['profilePictureURL'],
+          'profilePictureFirebaseUrl': data['profilePictureFirebaseUrl'],
+          'companyCity': data['companyCity'],
+          'companyPostalCode': data['companyPostalCode'],
+          'location': data['location'],
           'rating': data['rating'],
           'isVerified': data['isVerified'] ?? false,
+          'adminApproved': data['adminApproved'] ?? false,
+          'description': data['description'],
+          'selectedCategory': data['selectedCategory'],
+          'selectedSubcategory': data['selectedSubcategory'],
+          'completedOrders': data['completedOrders'],
           'type': 'company',
+          ...data, // Include all other fields
         };
       }
 
@@ -201,17 +216,29 @@ class ProjectService {
       
       if (userDoc.exists) {
         final data = userDoc.data() as Map<String, dynamic>;
+        debugPrint('User data found: $data');
+        
         return {
           'name': data['displayName'] ?? data['name'] ?? '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim(),
-          'company': data['companyName'] ?? data['company'],
+          'companyName': data['companyName'] ?? data['company'],
           'email': data['email'],
-          'phone': data['phone'],
+          'phone': data['phone'] ?? data['phoneNumber'],
           'profileImage': data['profileImage'],
+          'profilePictureURL': data['profilePictureURL'],
+          'profilePictureFirebaseUrl': data['profilePictureFirebaseUrl'],
+          'companyCity': data['city'] ?? data['companyCity'],
+          'companyPostalCode': data['postalCode'] ?? data['companyPostalCode'],
+          'location': data['location'],
           'rating': data['rating'],
           'isVerified': data['isVerified'] ?? false,
+          'description': data['description'],
+          'completedOrders': data['completedOrders'],
           'type': 'user',
+          ...data, // Include all other fields
         };
       }
+      
+      debugPrint('Provider not found with ID: $providerId');
       return null;
     } catch (e) {
       debugPrint('Error getting provider: $e');
@@ -295,5 +322,90 @@ class ProjectService {
   List<Project> filterProjectsByStatus(List<Project> projects, String? status) {
     if (status == null || status.isEmpty) return projects;
     return projects.where((project) => project.status == status).toList();
+  }
+
+  // Convert Quote to public Project Request
+  Future<String> shareQuoteAsPublicProject({
+    required Quote quote,
+    required String userId,
+  }) async {
+    try {
+      debugPrint('Converting quote ${quote.id} to public project request');
+      
+      // Create a new project request from quote data
+      final projectData = {
+        'title': quote.title,
+        'description': quote.description,
+        'category': quote.category,
+        'subcategory': quote.subcategory,
+        'estimatedBudget': quote.estimatedBudget,
+        'timeline': quote.timeline,
+        'createdAt': Timestamp.fromDate(DateTime.now()),
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+        'customerUid': userId,
+        'userId': userId,
+        'status': 'active', // Public projects start as active
+        'isPublic': true,
+        'allowsProposals': true,
+        'maxProposals': 10, // Default max proposals
+        'proposalCount': 0,
+        'source': 'shared_from_quote',
+        'originalQuoteId': quote.id,
+        'priority': quote.priority ?? 'medium',
+        'projectType': 'public_request',
+        // Include location if available
+        if (quote.location != null) 'location': quote.location,
+        // Include required services if available
+        if (quote.requiredServices != null) 'requiredServices': quote.requiredServices,
+        // Include original AI prompt if available
+        if (quote.originalPrompt != null) 'originalPrompt': quote.originalPrompt,
+        if (quote.aiGenerated == true) 'aiGenerated': true,
+      };
+
+      final docRef = await _firestore
+          .collection('project_requests')
+          .add(projectData);
+
+      debugPrint('Public project request created with ID: ${docRef.id}');
+      return docRef.id;
+    } catch (e) {
+      debugPrint('Error sharing quote as public project: $e');
+      rethrow;
+    }
+  }
+
+  // Update Quote
+  Future<void> updateQuote(String quoteId, Map<String, dynamic> updates) async {
+    try {
+      await _firestore
+          .collection('quotes')
+          .doc(quoteId)
+          .update({
+            ...updates,
+            'updatedAt': Timestamp.fromDate(DateTime.now()),
+          });
+      debugPrint('Quote updated: $quoteId');
+    } catch (e) {
+      debugPrint('Error updating quote: $e');
+      rethrow;
+    }
+  }
+
+  // Get Quote by ID
+  Future<Quote?> getQuoteById(String quoteId) async {
+    try {
+      final doc = await _firestore
+          .collection('quotes')
+          .doc(quoteId)
+          .get();
+      
+      if (doc.exists) {
+        return Quote.fromFirestore(doc);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error getting quote: $e');
+      return null;
+    }
   }
 }
