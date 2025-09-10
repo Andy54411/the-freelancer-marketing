@@ -293,12 +293,6 @@ const navigationItems: NavigationItem[] = [
     href: 'ai-assistant',
   },
   {
-    label: 'Profil',
-    icon: FiUser,
-    value: 'profile',
-    href: 'profile',
-  },
-  {
     label: 'Einstellungen',
     icon: FiSettings,
     value: 'settings',
@@ -351,9 +345,6 @@ export default function CompanyMobileSidebar({
                 if (item.value === 'inbox') {
                   return pathname?.includes('/inbox');
                 }
-                if (item.value === 'profile') {
-                  return pathname?.includes('/profile');
-                }
                 if (item.value === 'settings') {
                   return pathname?.includes('/settings');
                 }
@@ -379,7 +370,6 @@ export default function CompanyMobileSidebar({
                     !pathname?.includes('/orders') &&
                     !pathname?.includes('/payouts') &&
                     !pathname?.includes('/inbox') &&
-                    !pathname?.includes('/profile') &&
                     !pathname?.includes('/settings') &&
                     !pathname?.includes('/ai-assistant') &&
                     !pathname?.includes('/calendar') &&

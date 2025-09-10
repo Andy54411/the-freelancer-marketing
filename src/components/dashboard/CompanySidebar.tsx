@@ -208,12 +208,6 @@ const navigationItems: NavigationItem[] = [
     href: 'ai-assistant',
   },
   {
-    label: 'Profil',
-    icon: FiUser,
-    value: 'profile',
-    href: 'profile',
-  },
-  {
     label: 'Einstellungen',
     icon: FiSettings,
     value: 'settings',
@@ -272,7 +266,6 @@ export default function CompanySidebar({
         (!pathname.includes('/finance') &&
           !pathname.includes('/orders') &&
           !pathname.includes('/inbox') &&
-          !pathname.includes('/profile') &&
           !pathname.includes('/settings') &&
           !pathname.includes('/ai-assistant') &&
           !pathname.includes('/calendar') &&

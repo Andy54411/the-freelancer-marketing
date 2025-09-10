@@ -172,42 +172,41 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const loadProfileFromFirestore = useCallback(async (uid: string) => {
     try {
       console.log('� Loading profile from Firestore for UID:', uid);
-      
+
       // Versuche zuerst companies Collection
       const companyDoc = await getDoc(doc(db, 'companies', uid));
       if (companyDoc.exists()) {
         const companyData = companyDoc.data();
-        const profileUrl = companyData.profilePictureURL || 
-                          companyData.profilePictureFirebaseUrl || 
-                          companyData.profileImage || 
-                          null;
-        
+        const profileUrl =
+          companyData.profilePictureURL ||
+          companyData.profilePictureFirebaseUrl ||
+          companyData.profileImage ||
+          null;
+
         console.log('✅ Company profile found:', profileUrl);
         setProfilePictureURLFromStorage(profileUrl);
         return;
       }
-      
+
       // Fallback: users Collection
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        const profileUrl = userData.profilePictureURL || 
-                          userData.profileImage || 
-                          userData.photoURL || 
-                          null;
-        
+        const profileUrl =
+          userData.profilePictureURL || userData.profileImage || userData.photoURL || null;
+
         console.log('✅ User profile found:', profileUrl);
         setProfilePictureURLFromStorage(profileUrl);
         return;
       }
-      
+
       console.log('⚠️ No profile found in Firestore');
       setProfilePictureURLFromStorage(null);
     } catch (error) {
       console.error('❌ Error loading profile from Firestore:', error);
       setProfilePictureURLFromStorage(null);
     }
-  }, []);  // 🎯 NEUE FUNKTION: Lade Profilbild aus Firestore Company-Collection
+  }, []); // 🎯 NEUE FUNKTION: Lade Profilbild aus Firestore Company-Collection
   const loadProfilePictureFromFirestore = useCallback(async (uid: string) => {
     if (!uid) {
       console.log('🖼️ No UID provided for Firestore profile picture loading');
@@ -217,11 +216,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     try {
       console.log('🔍 Loading profile picture from Firestore for UID:', uid);
       const companyDoc = await getDoc(doc(db, 'companies', uid));
-      
+
       if (companyDoc.exists()) {
         const companyData = companyDoc.data();
-        const profileImage = companyData.profileImage || companyData.profileImageUrl || companyData.avatar;
-        
+        const profileImage =
+          companyData.profileImage || companyData.profileImageUrl || companyData.avatar;
+
         if (profileImage) {
           console.log('✅ Profile picture URL from Firestore:', profileImage);
           setProfilePictureFromFirestore(profileImage);
@@ -763,10 +763,21 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                             : currentUser.displayName || currentUser.email}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {authUser?.user_type
-                            ? authUser.user_type.charAt(0).toUpperCase() +
-                              authUser.user_type.slice(1)
-                            : 'Benutzer'}
+                          {(() => {
+                            if (typeof window !== 'undefined') {
+                              const currentPath = window.location.pathname;
+                              if (currentPath.includes('/dashboard/company/')) {
+                                return 'Anbieter';
+                              } else if (currentPath.includes('/dashboard/user/')) {
+                                return 'Kunde';
+                              }
+                            }
+                            // Fallback basierend auf authUser data
+                            return authUser?.user_type
+                              ? authUser.user_type.charAt(0).toUpperCase() +
+                                  authUser.user_type.slice(1)
+                              : 'Benutzer';
+                          })()}
                         </p>
                       </div>
                       <hr />
