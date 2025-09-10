@@ -105,29 +105,42 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
           _providerAvatar = companyData['profileImage'] ?? companyData['avatar'] ?? '';
           _providerRating = (companyData['averageRating'] ?? 0.0).toDouble();
           
-          // 🎯 Versuche verschiedene Feldnamen für Stadt
-          _providerCity = companyData['city'] ?? 
-                         companyData['address']?['city'] ?? 
-                         companyData['location']?['city'] ??
-                         companyData['businessAddress']?['city'] ??
-                         '';
+          // 🎯 PARSE LOCATION STRING: "Sellin, 18586" 
+          String locationString = companyData['location'] ?? '';
+          if (locationString.isNotEmpty && locationString.contains(',')) {
+            List<String> parts = locationString.split(',');
+            _providerCity = parts[0].trim();
+            _providerPostalCode = parts.length > 1 ? parts[1].trim() : '';
+          } else {
+            // Fallback zu einzelnen Feldern
+            _providerCity = companyData['city'] ?? 
+                           companyData['companyCity'] ?? 
+                           companyData['companyCityForBackend'] ?? 
+                           companyData['address']?['city'] ?? 
+                           '';
+            
+            _providerPostalCode = companyData['postalCode'] ?? 
+                                 companyData['zipCode'] ?? 
+                                 companyData['address']?['postalCode'] ??
+                                 '';
+          }
           
-          // 🎯 Versuche verschiedene Feldnamen für PLZ  
-          _providerPostalCode = companyData['postalCode'] ?? 
-                               companyData['zipCode'] ?? 
-                               companyData['address']?['postalCode'] ??
-                               companyData['address']?['zipCode'] ??
-                               companyData['location']?['postalCode'] ??
-                               companyData['businessAddress']?['postalCode'] ??
-                               '';
-          
-          // 🎯 Versuche verschiedene Feldnamen für Review-Count
-          _providerReviewCount = (companyData['reviewCount'] ?? 
-                                 companyData['totalReviews'] ?? 
-                                 companyData['reviewsCount'] ??
-                                 companyData['ratingsCount'] ??
-                                 0).toInt();
+          // 🎯 SICHERE REVIEW-COUNT PARSING
+          try {
+            var reviewCount = companyData['reviewCount'] ?? 
+                             companyData['totalReviews'] ?? 
+                             companyData['reviewsCount'] ??
+                             companyData['ratingsCount'] ??
+                             0;
+            _providerReviewCount = int.tryParse(reviewCount.toString()) ?? 0;
+          } catch (e) {
+            debugPrint('⚠️ Review count parsing error: $e');
+            _providerReviewCount = 0;
+          }
         });
+        
+        // 🎯 LADE RATING AUS REVIEWS COLLECTION
+        _loadProviderRating(widget.offer.companyUid);
         
         debugPrint('🎯 Updated state - City: $_providerCity, PLZ: $_providerPostalCode, Reviews: $_providerReviewCount');
       } else {
@@ -140,6 +153,42 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
       // Fallback auf ursprüngliche Daten
     } finally {
       setState(() => _loadingProviderDetails = false);
+    }
+  }
+
+  /// 🎯 LADE PROVIDER RATING AUS REVIEWS COLLECTION
+  Future<void> _loadProviderRating(String companyUid) async {
+    try {
+      debugPrint('⭐ Loading rating from reviews collection for: $companyUid');
+      
+      final reviewsSnapshot = await FirebaseFirestore.instance
+          .collection('reviews')
+          .where('providerId', isEqualTo: companyUid)
+          .get();
+      
+      if (reviewsSnapshot.docs.isNotEmpty) {
+        double totalRating = 0.0;
+        int reviewCount = reviewsSnapshot.docs.length;
+        
+        for (final reviewDoc in reviewsSnapshot.docs) {
+          final reviewData = reviewDoc.data();
+          double rating = (reviewData['rating'] ?? 0.0).toDouble();
+          totalRating += rating;
+        }
+        
+        double averageRating = reviewCount > 0 ? totalRating / reviewCount : 0.0;
+        
+        debugPrint('⭐ Calculated rating: $averageRating from $reviewCount reviews');
+        
+        setState(() {
+          _providerRating = averageRating;
+          _providerReviewCount = reviewCount;
+        });
+      } else {
+        debugPrint('⭐ No reviews found for provider');
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading provider rating: $e');
     }
   }
 

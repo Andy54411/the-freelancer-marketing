@@ -1224,18 +1224,36 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     return Consumer<TaskiloUser?>(
       builder: (context, user, child) {
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                TaskiloColors.primary,
-                Color(0xFF0891b2),
-              ],
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              _order?.selectedSubcategory ?? 'Auftrag',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            backgroundColor: TaskiloColors.primary,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            centerTitle: true,
           ),
-          child: _buildContent(),
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  TaskiloColors.primary,
+                  Color(0xFF0891b2),
+                ],
+              ),
+            ),
+            child: _buildContent(),
+          ),
         );
       },
     );
@@ -1292,28 +1310,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Service Title oben
-                Text(
-                  _order!.selectedSubcategory,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    decoration: TextDecoration.none,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black26,
-                        offset: Offset(0, 1),
-                        blurRadius: 2,
-                      ),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Auftrag Badge
+                // Auftrag Badge (direkt ohne doppelte Überschrift)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
