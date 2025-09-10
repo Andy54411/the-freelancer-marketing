@@ -101,11 +101,11 @@ export default function FooterSection() {
         },
         {
           title: 'Preise',
-          href: '#preise',
+          href: '/features#pricing',
         },
         {
           title: 'Hilfe',
-          href: '#hilfe',
+          href: '/contact',
         },
       ],
     },
@@ -118,7 +118,7 @@ export default function FooterSection() {
         },
         {
           title: 'Für Freelancer',
-          href: '/register/company',
+          href: '/register/company?type=freelancer',
         },
         {
           title: 'Für Kunden',
@@ -130,7 +130,7 @@ export default function FooterSection() {
         },
         {
           title: 'Anbieter werden',
-          href: '/register/company',
+          href: '/register/company?type=company',
         },
       ],
     },
@@ -192,7 +192,7 @@ export default function FooterSection() {
           </Link>
           <div className="flex flex-wrap justify-center gap-6 text-sm">
             <Link
-              href="#"
+              href="https://twitter.com/taskilo_de"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="X/Twitter"
@@ -212,7 +212,7 @@ export default function FooterSection() {
               </svg>
             </Link>
             <Link
-              href="#"
+              href="https://linkedin.com/company/taskilo"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"
@@ -232,7 +232,7 @@ export default function FooterSection() {
               </svg>
             </Link>
             <Link
-              href="#"
+              href="https://facebook.com/taskilo.de"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Facebook"
