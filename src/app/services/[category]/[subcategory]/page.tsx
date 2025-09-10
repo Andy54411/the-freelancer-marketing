@@ -6,6 +6,7 @@ import { db } from '@/firebase/clients';
 import { collection, query, getDocs, limit } from 'firebase/firestore';
 import { Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
 import { categories } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
+import { SERVICE_TAG_MAPPING } from '@/lib/serviceTagMapping';
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import Header from '@/components/Header';
 import ServiceHeader from '@/components/ServiceHeader';
@@ -694,7 +695,7 @@ export default function SubcategoryPage() {
                     key={provider.id}
                     className="bg-white/90 backdrop-blur-sm rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group border border-white/20 overflow-hidden"
                   >
-                    {/* Provider Image & Rating */}
+                    {/* Provider Image */}
                     <div className="relative group/image">
                       <img
                         src={getBannerImage(provider)}
@@ -704,18 +705,6 @@ export default function SubcategoryPage() {
                           (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
                         }}
                       />
-
-                      {/* Rating Badge */}
-                      {(provider.rating ?? 0) > 0 && (
-                        <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1 shadow-sm">
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                            <span className="text-sm font-semibold text-gray-900">
-                              {(provider.rating ?? 0).toFixed(1)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
 
                       {/* Hover Overlay for Profile View - only on image hover */}
                       <div
@@ -822,7 +811,7 @@ export default function SubcategoryPage() {
                             <span className="text-xs">Antwort in {provider.responseTime}h</span>
                           </div>
                         )}
-                      </div>{' '}
+                      </div>
                       {/* Price & Action */}
                       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                         <div className="text-right">
