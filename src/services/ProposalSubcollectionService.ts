@@ -47,7 +47,11 @@ export class ProposalSubcollectionService {
   /**
    * Create a new proposal in subcollection
    */
-  static async createProposal(quoteId: string, proposalData: ProposalData): Promise<void> {
+  static async createProposal(
+    quoteId: string,
+    proposalData: ProposalData,
+    fullResponse?: any
+  ): Promise<void> {
     const proposalId = proposalData.companyUid; // Use companyUid as document ID
     const proposalRef = db
       .collection('quotes')
@@ -65,15 +69,19 @@ export class ProposalSubcollectionService {
 
     await proposalRef.set(proposal);
 
-    // Update quote status
-    await db
-      .collection('quotes')
-      .doc(quoteId)
-      .update({
-        status: 'responded',
-        lastResponseAt: now,
-        responseCount: FieldValue.increment(1),
-      });
+    // Update quote status - include response if provided
+    const quoteUpdate: any = {
+      status: 'responded',
+      lastResponseAt: now,
+      responseCount: FieldValue.increment(1),
+    };
+
+    if (fullResponse) {
+      quoteUpdate.response = fullResponse;
+      quoteUpdate.responseAt = now;
+    }
+
+    await db.collection('quotes').doc(quoteId).update(quoteUpdate);
   }
 
   /**

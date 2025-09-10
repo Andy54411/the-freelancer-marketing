@@ -307,17 +307,29 @@ export default function QuoteResponsePage({
 
       if (apiResponse.ok) {
         const responseData = await apiResponse.json();
+        console.log('✅ Quote response submitted successfully:', responseData);
+
+        // Modal schließen
+        setShowResponseForm(false);
 
         const companyId = getCompanyId();
         router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       } else {
         const errorText = await apiResponse.text();
+        console.error('❌ Quote response failed:', errorText);
 
         try {
           const errorData = JSON.parse(errorText);
-        } catch (parseError) {}
+          alert(`Fehler beim Senden des Angebots: ${errorData.error || 'Unbekannter Fehler'}`);
+        } catch (parseError) {
+          alert(`Fehler beim Senden des Angebots: ${errorText || 'Unbekannter Fehler'}`);
+        }
       }
     } catch (error) {
+      console.error('❌ Quote response error:', error);
+      alert(
+        `Fehler beim Senden des Angebots: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     } finally {
       setSubmitting(false);
     }
@@ -1398,8 +1410,14 @@ export default function QuoteResponsePage({
                       }
 
                       // Direkt mit den konvertierten Daten senden
+                      console.log('📝 Submitting quote response:', quoteData);
                       await submitResponse(quoteData);
-                    } catch (error) {}
+                    } catch (error) {
+                      console.error('❌ Error in quote submission:', error);
+                      alert(
+                        `Fehler beim Erstellen des Angebots: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+                      );
+                    }
                   }}
                   loading={submitting}
                 />

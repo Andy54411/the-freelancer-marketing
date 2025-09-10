@@ -43,6 +43,7 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     // Quote-Daten abrufen für Notification
     const quoteDoc = await db.collection('quotes').doc(quoteId).get();
     if (!quoteDoc.exists) {
+      console.error('❌ Quote not found:', quoteId);
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
@@ -50,11 +51,12 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     const customerUid = quoteData?.customerUid;
     const subcategory = quoteData?.serviceSubcategory || quoteData?.title || 'Service';
 
-    console.log('📋 Quote info:', { customerUid, subcategory });
+    console.log('📋 Quote info:', { customerUid, subcategory, quoteStatus: quoteData?.status });
 
     // Prüfen ob bereits ein Angebot existiert
     const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid);
     if (hasExisting) {
+      console.error('❌ Proposal already exists for company:', companyUid);
       return NextResponse.json(
         { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
         { status: 409 }
@@ -81,14 +83,13 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     console.log('💾 Creating proposal with data:', proposalData);
 
     // Erstelle Proposal in Subcollection
-    await ProposalSubcollectionService.createProposal(quoteId, proposalData);
-
-    // Zusätzlich: Quote-Status auf "responded" setzen
-    await db.collection('quotes').doc(quoteId).update({
-      status: 'responded',
-      response: response,
-      responseAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    try {
+      await ProposalSubcollectionService.createProposal(quoteId, proposalData, response);
+      console.log('✅ Proposal created successfully');
+    } catch (proposalError) {
+      console.error('❌ Error creating proposal:', proposalError);
+      throw proposalError; // Re-throw to be caught by outer try-catch
+    }
 
     console.log('✅ Quote status updated to responded');
 
