@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -19,6 +21,17 @@ import 'utils/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 🎯 DEAKTIVIERE ALLE DEBUG-HIGHLIGHTING FÜR PRODUKTION
+  if (kDebugMode) {
+    // Deaktiviere alle Debug-Overlays die gelbe Hervorhebungen verursachen
+    debugPaintSizeEnabled = false;           // Keine Debug-Paint-Anzeigen
+    debugRepaintRainbowEnabled = false;      // Keine Repaint-Highlights
+    debugRepaintTextRainbowEnabled = false;  // Keine Text-Repaint-Highlights
+    
+    // Deaktiviere alle Material Debug-Features
+    // RendererBinding.instance.ensureSemantics(); // Entfernt - kann Probleme verursachen
+  }
   
   // Lade Environment Variables
   await dotenv.load(fileName: ".env");
@@ -80,6 +93,12 @@ class TaskiloApp extends StatelessWidget {
         title: 'Taskilo - Service Marktplatz',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
+        // 🎯 KOMPLETTE DEBUG-DEAKTIVIERUNG
+        showPerformanceOverlay: false,        // Keine Performance-Overlays
+        showSemanticsDebugger: false,         // Keine Accessibility-Debug-Anzeigen
+        checkerboardRasterCacheImages: false, // Keine Raster-Cache-Anzeigen
+        checkerboardOffscreenLayers: false,   // Keine Offscreen-Layer-Anzeigen
+        debugShowMaterialGrid: false,         // Keine Material-Grid-Anzeigen
         navigatorKey: NotificationNavigationService.navigatorKey,
         home: const AuthWrapper(),  // Auth-basierte Navigation
         getPages: [
