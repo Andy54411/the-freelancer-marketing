@@ -212,7 +212,7 @@ export default function FooterSection() {
               </svg>
             </Link>
             <Link
-              href="https://linkedin.com/company/taskilo"
+              href="https://www.linkedin.com/company/taskilo/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"
@@ -232,7 +232,7 @@ export default function FooterSection() {
               </svg>
             </Link>
             <Link
-              href="https://facebook.com/taskilo.de"
+              href="https://www.facebook.com/profile.php?id=61577087494516"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Facebook"
@@ -277,7 +277,7 @@ export default function FooterSection() {
               </svg>
             </Link>
             <Link
-              href="#"
+              href="https://www.instagram.com/taskilo.de"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"
