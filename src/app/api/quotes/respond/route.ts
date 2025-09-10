@@ -5,6 +5,146 @@ import {
   ProposalData,
 } from '@/services/ProposalSubcollectionService';
 import { ProjectNotificationService } from '@/lib/project-notifications';
+import admin from 'firebase-admin';
+
+/**
+ * Neue Angebot-Response Struktur verarbeiten
+ */
+async function handleNewQuoteResponse(request: NextRequest, quoteId: string, response: any) {
+  console.log('🔄 Processing new quote response structure');
+
+  // Token aus Authorization Header extrahieren
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const token = authHeader.split('Bearer ')[1];
+
+  try {
+    // Token validieren und User-Daten abrufen
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+
+    console.log('✅ User authenticated:', uid);
+
+    // User-Daten aus Firestore abrufen, um companyUid zu finden
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const userData = userDoc.data();
+    const companyUid = userData?.companyUid || uid; // Fallback auf uid falls kein companyUid
+    const companyName = userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen';
+
+    console.log('🏢 Company info:', { companyUid, companyName });
+
+    // Quote-Daten abrufen für Notification
+    const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+    if (!quoteDoc.exists) {
+      return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
+    }
+
+    const quoteData = quoteDoc.data();
+    const customerUid = quoteData?.customerUid;
+    const subcategory = quoteData?.serviceSubcategory || quoteData?.title || 'Service';
+
+    console.log('📋 Quote info:', { customerUid, subcategory });
+
+    // Prüfen ob bereits ein Angebot existiert
+    const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid);
+    if (hasExisting) {
+      return NextResponse.json(
+        { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
+        { status: 409 }
+      );
+    }
+
+    // Response-Daten in Proposal-Format konvertieren
+    const proposalData: ProposalData = {
+      companyUid,
+      providerId: companyUid,
+      message: response.message || response.notes || 'Angebot wurde erstellt',
+      totalAmount: response.totalAmount || 0,
+      currency: response.currency || 'EUR',
+      timeline: response.timeline || 'Wird noch definiert',
+      status: 'pending',
+      submittedAt: new Date().toISOString(),
+      // Erweiterte Daten für die neue Struktur
+      serviceItems: response.serviceItems || [],
+      terms: response.terms || '',
+      validUntil: response.validUntil || '',
+      additionalNotes: response.notes || '',
+    };
+
+    console.log('💾 Creating proposal with data:', proposalData);
+
+    // Erstelle Proposal in Subcollection
+    await ProposalSubcollectionService.createProposal(quoteId, proposalData);
+
+    // Zusätzlich: Quote-Status auf "responded" setzen
+    await db.collection('quotes').doc(quoteId).update({
+      status: 'responded',
+      response: response,
+      responseAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log('✅ Quote status updated to responded');
+
+    // Benachrichtigung an Kunden senden
+    if (customerUid) {
+      try {
+        await ProjectNotificationService.createNewProposalNotification(
+          quoteId,
+          customerUid,
+          companyUid,
+          {
+            companyName,
+            subcategory,
+            proposedPrice: proposalData.totalAmount,
+            proposedTimeline: proposalData.timeline,
+            message: proposalData.message,
+          }
+        );
+        console.log('📧 Notification sent to customer');
+      } catch (notificationError) {
+        console.error('❌ Error sending notification:', notificationError);
+        // Benachrichtigung-Fehler sollten die Hauptfunktion nicht blockieren
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Angebot erfolgreich abgegeben',
+      proposalId: companyUid,
+      quoteId,
+    });
+  } catch (error) {
+    console.error('❌ Error in handleNewQuoteResponse:', error);
+    return NextResponse.json(
+      {
+        error: 'Fehler beim Verarbeiten des Angebots',
+        details: error instanceof Error ? error.message : 'Unbekannter Fehler',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Behandelt Ablehnung einer Quote (action: "decline")
+ */
+async function handleQuoteDecline(request: NextRequest, quoteId: string) {
+  // TODO: Implement quote decline logic
+  // This could involve creating a decline record, updating quote status, etc.
+  console.log('📝 Quote declined for quoteId:', quoteId);
+
+  return NextResponse.json({
+    success: true,
+    message: 'Quote erfolgreich abgelehnt',
+  });
+}
 
 /**
  * API Route zum Antworten auf eine Quote (Angebot abgeben)
@@ -13,9 +153,21 @@ import { ProjectNotificationService } from '@/lib/project-notifications';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('📝 Quote Respond API called with body:', JSON.stringify(body, null, 2));
 
+    // Neue Struktur: { quoteId, action, response: { serviceItems, totalAmount, message, ... } }
+    const { quoteId, action, response } = body;
+
+    if (action === 'respond' && response) {
+      return await handleNewQuoteResponse(request, quoteId, response);
+    }
+
+    if (action === 'decline') {
+      return await handleQuoteDecline(request, quoteId);
+    }
+
+    // Alte Struktur: { quoteId, companyUid, proposedPrice, message, ... }
     const {
-      quoteId,
       companyUid,
       companyName,
       providerEmail,

@@ -14,8 +14,16 @@ export interface ProposalData {
   serviceItems?: Array<{
     title: string;
     description: string;
-    price: number;
+    price?: number;
     quantity?: number;
+    unitPrice?: number;
+    total?: number;
+    // Neue Felder für zeitbasierte Projekte
+    isTimeBasedProject?: boolean;
+    startDate?: string;
+    endDate?: string;
+    hoursPerDay?: number;
+    workingDays?: string[];
   }>;
   totalAmount: number;
   currency: string;
@@ -30,6 +38,9 @@ export interface ProposalData {
   orderId?: string; // Related order ID
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+  // Neue Felder für erweiterte Angebote
+  validUntil?: string;
+  notes?: string;
 }
 
 export class ProposalSubcollectionService {
