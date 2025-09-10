@@ -107,7 +107,7 @@ export const allFeatureDetails = {
     },
   },
 
-  'sofortbuchung-verfugbar': {
+  'sofortbuchung-verfuegbar': {
     title: 'Sofortbuchung verfügbar',
     subtitle: 'Direktbuchung ohne Wartezeit für dringende Projekte',
     description:
@@ -177,7 +177,7 @@ export const allFeatureDetails = {
     },
   },
 
-  qualitatsgarantie: {
+  qualitaetsgarantie: {
     title: 'Qualitätsgarantie',
     subtitle: 'Geld-zurück-Garantie bei nicht zufriedenstellender Leistung',
     description:
@@ -209,7 +209,7 @@ export const allFeatureDetails = {
     },
   },
 
-  'transparente-vertrage': {
+  'transparente-vertraege': {
     title: 'Transparente Verträge',
     subtitle: 'Klare Projektbeschreibungen und rechtlich bindende Bedingungen',
     description:
