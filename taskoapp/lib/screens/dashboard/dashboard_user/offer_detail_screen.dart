@@ -19,11 +19,21 @@ class OfferDetailScreen extends StatefulWidget {
 class _OfferDetailScreenState extends State<OfferDetailScreen> {
   bool _isLoading = false;
   List<Map<String, dynamic>> _serviceItems = [];
+  
+  // 🎯 PROVIDER DETAILS STATE
+  String _providerName = '';
+  String _providerAvatar = '';
+  double _providerRating = 0.0;
+  String _providerCity = '';
+  String _providerPostalCode = '';
+  int _providerReviewCount = 0;
+  bool _loadingProviderDetails = true;
 
   @override
   void initState() {
     super.initState();
     _loadServiceItems();
+    _loadProviderDetails();  // Lade Provider-Details separat
   }
 
   Future<void> _loadServiceItems() async {
@@ -45,6 +55,91 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
       }
     } catch (e) {
       debugPrint('Error loading service items: $e');
+    }
+  }
+
+  /// 🎯 LADE PROVIDER-DETAILS AUS COMPANIES COLLECTION
+  Future<void> _loadProviderDetails() async {
+    try {
+      setState(() => _loadingProviderDetails = true);
+      
+      debugPrint('🔍 Loading provider details for companyUid: ${widget.offer.companyUid}');
+      
+      // Initialisiere mit Fallback-Werten aus widget.offer
+      _providerName = widget.offer.providerName;
+      _providerAvatar = widget.offer.providerAvatar;
+      _providerRating = widget.offer.providerRating;
+      
+      debugPrint('📊 Initial provider name: $_providerName');
+      
+      // Falls bereits richtige Daten vorhanden, verwende sie ABER lade trotzdem Stadt/PLZ/Reviews
+      if (_providerName.isNotEmpty && _providerName != 'Unbekannter Anbieter') {
+        debugPrint('✅ Using existing provider data but still loading location/reviews');
+        // NICHT RETURN! Lade trotzdem Stadt/PLZ/Reviews
+      }
+      
+      // Prüfe ob companyUid vorhanden ist
+      if (widget.offer.companyUid.isEmpty) {
+        debugPrint('⚠️ No companyUid available, using fallback data');
+        setState(() => _loadingProviderDetails = false);
+        return;
+      }
+      
+      // Ansonsten lade aus companies Collection
+      debugPrint('🔍 Fetching from companies collection...');
+      final companyDoc = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(widget.offer.companyUid)
+          .get();
+      
+      if (companyDoc.exists) {
+        final companyData = companyDoc.data()!;
+        debugPrint('✅ Company data found: ${companyData.toString()}');
+        debugPrint('📍 Company city: ${companyData['city']}');
+        debugPrint('📮 Company postal: ${companyData['postalCode']}');
+        debugPrint('⭐ Company rating: ${companyData['averageRating']}');
+        debugPrint('🏢 Company name: ${companyData['companyName']}');
+        
+        setState(() {
+          _providerName = companyData['companyName'] ?? companyData['name'] ?? 'Unbekannter Anbieter';
+          _providerAvatar = companyData['profileImage'] ?? companyData['avatar'] ?? '';
+          _providerRating = (companyData['averageRating'] ?? 0.0).toDouble();
+          
+          // 🎯 Versuche verschiedene Feldnamen für Stadt
+          _providerCity = companyData['city'] ?? 
+                         companyData['address']?['city'] ?? 
+                         companyData['location']?['city'] ??
+                         companyData['businessAddress']?['city'] ??
+                         '';
+          
+          // 🎯 Versuche verschiedene Feldnamen für PLZ  
+          _providerPostalCode = companyData['postalCode'] ?? 
+                               companyData['zipCode'] ?? 
+                               companyData['address']?['postalCode'] ??
+                               companyData['address']?['zipCode'] ??
+                               companyData['location']?['postalCode'] ??
+                               companyData['businessAddress']?['postalCode'] ??
+                               '';
+          
+          // 🎯 Versuche verschiedene Feldnamen für Review-Count
+          _providerReviewCount = (companyData['reviewCount'] ?? 
+                                 companyData['totalReviews'] ?? 
+                                 companyData['reviewsCount'] ??
+                                 companyData['ratingsCount'] ??
+                                 0).toInt();
+        });
+        
+        debugPrint('🎯 Updated state - City: $_providerCity, PLZ: $_providerPostalCode, Reviews: $_providerReviewCount');
+      } else {
+        debugPrint('❌ Company document not found');
+        // Fallback auf ursprüngliche Daten
+        setState(() => _loadingProviderDetails = false);
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading provider details: $e');
+      // Fallback auf ursprüngliche Daten
+    } finally {
+      setState(() => _loadingProviderDetails = false);
     }
   }
 
@@ -144,61 +239,6 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // MEGA SICHTBARER ZURÜCK BUTTON GANZ OBEN!
-            Container(
-              width: double.infinity,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.red.shade600, Colors.orange.shade600],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    debugPrint('🚀🚀🚀 MEGA ZURÜCK BUTTON GEDRÜCKT!');
-                    Navigator.pop(context);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 36,
-                        ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          child: Text(
-                            'ZURÜCK',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2.0,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            
             // DASHBOARD LAYOUT MIT INHALT
             Expanded(
               child: DashboardLayout(
@@ -334,14 +374,14 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundImage: widget.offer.providerAvatar.isNotEmpty
-                      ? NetworkImage(widget.offer.providerAvatar)
+                  backgroundImage: _providerAvatar.isNotEmpty
+                      ? NetworkImage(_providerAvatar)
                       : null,
                   backgroundColor: TaskiloColors.primary,
-                  child: widget.offer.providerAvatar.isEmpty
+                  child: _providerAvatar.isEmpty
                       ? Text(
-                          widget.offer.providerName.isNotEmpty 
-                              ? widget.offer.providerName[0].toUpperCase()
+                          _providerName.isNotEmpty 
+                              ? _providerName[0].toUpperCase()
                               : '?',
                           style: const TextStyle(
                             color: Colors.white,
@@ -356,22 +396,30 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.offer.providerName,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      if (widget.offer.providerRating > 0) ...[
+                      _loadingProviderDetails
+                          ? const Text(
+                              'Lädt Anbieter-Daten...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            )
+                          : Text(
+                              _providerName,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                      if (!_loadingProviderDetails && _providerRating > 0) ...[
                         const SizedBox(height: 4),
                         Row(
                           children: [
                             const Icon(Icons.star, color: Colors.amber, size: 18),
                             const SizedBox(width: 4),
                             Text(
-                              widget.offer.providerRating.toStringAsFixed(1),
+                              _providerRating.toStringAsFixed(1),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -386,12 +434,11 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
                 ),
               ],
             ),
-            if (widget.offer.providerEmail.isNotEmpty || widget.offer.providerPhone.isNotEmpty) ...[
+            if (!_loadingProviderDetails) ...[
               const SizedBox(height: 16),
-              if (widget.offer.providerEmail.isNotEmpty)
-                _buildDetailRow('E-Mail', widget.offer.providerEmail),
-              if (widget.offer.providerPhone.isNotEmpty)
-                _buildDetailRow('Telefon', widget.offer.providerPhone),
+              _buildDetailRow('Stadt', _providerCity.isNotEmpty ? _providerCity : 'Nicht angegeben'),
+              _buildDetailRow('Reviews', _providerReviewCount > 0 ? '$_providerReviewCount Bewertungen' : 'Keine Bewertungen'),
+              _buildDetailRow('PLZ', _providerPostalCode.isNotEmpty ? _providerPostalCode : 'Nicht angegeben'),
             ],
           ],
         ),
