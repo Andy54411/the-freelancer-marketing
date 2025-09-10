@@ -685,8 +685,8 @@ export async function POST(req: NextRequest) {
               jobDateTo:
                 quoteData.endDate || quoteData.deadline || new Date().toISOString().split('T')[0],
               jobTimePreference: quoteData.timePreference || '09:00',
-              status: 'ABGESCHLOSSEN',
-              payoutStatus: 'available_for_payout',
+              status: 'AKTIV', // Auftrag beginnt nach Zahlung
+              payoutStatus: 'pending', // Zahlung noch nicht freigegeben
               createdAt: new Date(),
               lastUpdated: new Date(),
               orderDate: new Date(),
