@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../dashboard_layout.dart';
+import 'offer_detail_screen.dart';
 
 class IncomingOffersScreen extends StatefulWidget {
   const IncomingOffersScreen({super.key});
@@ -535,24 +536,44 @@ class _OfferCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.95),
-              Colors.white.withValues(alpha: 0.85),
-            ],
+    return GestureDetector(
+      onTap: () {
+        // Navigate to offer detail screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OfferDetailScreen(offer: offer),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+        ).then((result) {
+          // Reload offers if status changed
+          if (result != null) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (context.mounted) {
+                final parentState = context.findAncestorStateOfType<_IncomingOffersScreenState>();
+                parentState?._loadOffers();
+              }
+            });
+          }
+        });
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.95),
+                Colors.white.withValues(alpha: 0.85),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header with project info and status
@@ -709,67 +730,67 @@ class _OfferCard extends StatelessWidget {
               // Footer with timestamp and actions
               Row(
                 children: [
-                  Text(
-                    'Eingegangen: ${_formatDate(offer.submittedAt)}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
+                  Expanded(
+                    child: Text(
+                      'Eingegangen: ${_formatDate(offer.submittedAt)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[500],
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
                   if (offer.status == 'pending') ...[
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade300),
-                      ),
-                      child: TextButton(
-                        onPressed: () => onAction(offer, 'decline'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red.shade600,
-                          backgroundColor: Colors.red.shade50,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    // Kompakte Button-Row
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Ablehnen Button - subtil und modern
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => onAction(offer, 'decline'),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300, width: 1),
+                                borderRadius: BorderRadius.circular(6),
+                                color: Colors.grey.shade50,
+                              ),
+                              child: Text(
+                                'Ablehnen',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                        child: const Text(
-                          'Ablehnen',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF14AD9F).withValues(alpha: 0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () => onAction(offer, 'accept'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF14AD9F),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 2,
-                        ),
-                        child: const Text(
-                          'Annehmen',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                        const SizedBox(width: 6),
+                        // Annehmen Button - kompakt
+                        Material(
+                          color: const Color(0xFF14AD9F),
+                          borderRadius: BorderRadius.circular(6),
+                          child: InkWell(
+                            onTap: () => onAction(offer, 'accept'),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              child: const Text(
+                                'Annehmen',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ] else if (offer.status == 'accepted') ...[
                     TextButton.icon(
@@ -786,6 +807,7 @@ class _OfferCard extends StatelessWidget {
                 ],
               ),
             ],
+          ),
           ),
         ),
       ),
