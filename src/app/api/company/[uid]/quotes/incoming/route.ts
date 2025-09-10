@@ -174,7 +174,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Check if this company has already submitted a response/proposal
       let hasResponse = false;
       let responseData: Record<string, unknown> | null = null;
-      let proposalStatus = null;
+      let proposalStatus: string | null = null;
 
       try {
         // First check subcollection proposals (new format)
