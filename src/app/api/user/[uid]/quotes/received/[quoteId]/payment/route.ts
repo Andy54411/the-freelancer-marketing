@@ -208,24 +208,24 @@ export async function POST(
       },
     });
 
-    // Update proposal status to payment_pending using subcollection
-    // Note: We need to use a custom status for payment_pending since service only accepts 'accepted'/'declined'
+    // Store PaymentIntent ID for webhook processing, but keep status as 'pending'
+    // Status will only change to 'payment_pending' and then 'accepted' via webhook
     const proposalRef = db
       .collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .doc(proposalId);
     await proposalRef.update({
-      status: 'payment_pending',
       paymentIntentId: paymentIntent.id,
-      paymentPendingAt: new Date().toISOString(),
+      paymentInitiatedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      // Keep status as 'pending' - will be updated by webhook
     });
 
-    // Update quote status
+    // Don't update quote status yet - let webhook handle it
     await projectRef.update({
-      status: 'payment_pending',
       updatedAt: new Date().toISOString(),
+      // Keep existing status - will be updated by webhook
     });
 
     return NextResponse.json({
