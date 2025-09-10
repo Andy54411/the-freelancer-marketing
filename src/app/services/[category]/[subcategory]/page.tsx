@@ -798,7 +798,7 @@ export default function SubcategoryPage() {
                               <span className="text-gray-400">Noch keine Bewertungen</span>
                             </div>
                           )}
-                          {provider.completedJobs && provider.completedJobs > 0 && (
+                          {(provider.completedJobs ?? 0) > 0 && (
                             <div className="flex items-center gap-1">
                               <Briefcase className="w-3 h-3" />
                               <span>{provider.completedJobs} Aufträge</span>
