@@ -121,10 +121,16 @@ export default function IncomingQuotesPage() {
   };
 
   useEffect(() => {
-    if (firebaseUser && uid) {
+    let isMounted = true;
+
+    if (firebaseUser && uid && isMounted) {
       fetchIncomingQuotes();
     }
-  }, [firebaseUser, uid]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [firebaseUser?.uid, uid]); // Nur bei UID-Änderung neu laden
 
   // Berechne den tatsächlichen Status für eine Quote
   const getActualStatus = (quote: any) => {

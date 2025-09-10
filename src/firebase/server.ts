@@ -4,14 +4,8 @@ import * as admin from 'firebase-admin';
 if (!admin.apps.length) {
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    console.log(
-      '🔍 Checking FIREBASE_SERVICE_ACCOUNT_KEY...',
-      serviceAccountKey ? 'EXISTS' : 'MISSING'
-    );
 
     if (serviceAccountKey) {
-      console.log('📝 Parsing service account key...');
-
       // Clean escaped characters
       let cleanKey = serviceAccountKey.trim();
 
@@ -30,16 +24,11 @@ if (!admin.apps.length) {
       cleanKey = cleanKey.replace(/\\t/g, '\t');
       cleanKey = cleanKey.replace(/\\\\/g, '\\');
 
-      console.log('🔍 First 100 chars of cleaned key:', cleanKey.substring(0, 100));
-      console.log('🔍 Key starts with:', cleanKey.charAt(0), 'Second char:', cleanKey.charAt(1));
-
       // Try direct JSON.parse first
       let serviceAccount;
       try {
         serviceAccount = JSON.parse(cleanKey);
       } catch (firstError) {
-        console.log('🔄 First parse failed, trying to fix private key format...');
-
         // Fix common private key formatting issues
         let fixedKey = cleanKey;
 
@@ -55,18 +44,16 @@ if (!admin.apps.length) {
         try {
           serviceAccount = JSON.parse(fixedKey);
         } catch (secondError) {
-          console.error('❌ Both parsing methods failed:');
+          console.error('❌ Firebase service account parsing failed:');
           console.error('First error:', firstError.message);
           console.error('Second error:', secondError.message);
           throw firstError;
         }
       }
-      console.log('✅ Service account parsed successfully');
 
       // Fix private key format if needed
       if (serviceAccount?.private_key && !serviceAccount.private_key.includes('\n')) {
-        console.log('🔧 Fixing private key format...');
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n'); // Convert escaped newlines to actual newlines
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
       }
 
       admin.initializeApp({
@@ -74,14 +61,14 @@ if (!admin.apps.length) {
         projectId: 'tilvo-f142f',
       });
 
-      console.log('✅ Firebase Admin SDK initialized successfully');
+      console.log('✅ Firebase Admin SDK initialized');
     } else {
       console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_KEY not found');
       throw new Error('Firebase credentials missing');
     }
   } catch (error) {
     console.error('❌ Firebase Admin SDK initialization failed:', error);
-    throw error; // Re-throw to prevent accessing undefined firebase services
+    throw error;
   }
 }
 

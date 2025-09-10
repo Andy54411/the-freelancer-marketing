@@ -59,27 +59,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    // Query for incoming quotes - DEBUG: Get ALL quotes to see what's in the database
+    // Query for incoming quotes - Optimized to only get quotes for this provider
     let quotesSnapshot;
     try {
-      // DEBUG: Get ALL quotes first to see what we have
-      console.log(`🔍 DEBUG: Looking for quotes with providerId: ${uid}`);
-      quotesSnapshot = await db.collection('quotes').get();
-      console.log(`🔍 DEBUG: Found ${quotesSnapshot.docs.length} total quotes in database`);
+      // Get only quotes for this specific provider to improve performance
+      quotesSnapshot = await db.collection('quotes').where('providerId', '==', uid).get();
 
-      // Log all quote data for debugging
-      quotesSnapshot.docs.forEach((doc, index) => {
-        const data = doc.data();
-        console.log(`🔍 DEBUG Quote ${index + 1}:`, {
-          id: doc.id,
-          providerId: data.providerId,
-          customerUid: data.customerUid,
-          projectTitle: data.projectTitle,
-          status: data.status,
-        });
-      });
+      console.log(`🔍 Found ${quotesSnapshot.docs.length} quotes for provider ${uid}`);
     } catch (error) {
       console.error('Error fetching quotes:', error);
+      // Fallback: Get all quotes if the filtered query fails
       quotesSnapshot = await db.collection('quotes').get();
     }
 
@@ -88,13 +77,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     for (const doc of quotesSnapshot.docs) {
       const quoteData = doc.data();
 
-      // DEBUG: Don't skip any quotes for now - let's see ALL of them
-      console.log(`🔍 Processing quote ${doc.id} with providerId: ${quoteData.providerId}`);
-
-      // Skip if not for this provider (in case of fallback query) - DISABLED FOR DEBUG
-      // if (quoteData.providerId !== uid) {
-      //   continue;
-      // }
+      // Skip if not for this provider (in case of fallback query)
+      if (quoteData.providerId !== uid) {
+        continue;
+      }
 
       // Get customer information
       let customerInfo: any = null;
