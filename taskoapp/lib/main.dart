@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get/get.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/taskilo_service.dart';
 import 'services/payment_service.dart';
 import 'services/firebase_functions_service.dart';
+import 'services/push_notification_service.dart';
+import 'services/notification_navigation_service.dart';
 import 'models/user_model.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/startseite/start_screen.dart';
 import 'screens/dashboard/dashboard_user/home_screen.dart';
+import 'screens/dashboard/dashboard_user/incoming_offers_screen.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -46,6 +50,14 @@ void main() async {
   // Firebase Functions Connection testen
   final functionsReady = await FirebaseFunctionsService.testConnection();
   debugPrint('🔧 Firebase Functions ready: $functionsReady');
+
+  // Push Notifications initialisieren
+  try {
+    await PushNotificationService.initialize();
+    debugPrint('✅ Push Notifications initialized successfully');
+  } catch (e) {
+    debugPrint('⚠️ Push Notifications initialization failed: $e');
+  }
   
   runApp(const TaskiloApp());
 }
@@ -64,17 +76,39 @@ class TaskiloApp extends StatelessWidget {
           initialData: null,
         ),
       ],
-      child: MaterialApp(
+      child: GetMaterialApp(
         title: 'Taskilo - Service Marktplatz',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
+        navigatorKey: NotificationNavigationService.navigatorKey,
         home: const AuthWrapper(),  // Auth-basierte Navigation
-        routes: {
-          '/login': (context) => const LoginScreen(),
-          '/home': (context) => const DiscoverScreen(),
-          '/discover': (context) => const DiscoverScreen(),
-          '/dashboard': (context) => const HomeScreen(),
-        },
+        getPages: [
+          // Auth Routes
+          GetPage(name: '/login', page: () => const LoginScreen()),
+          GetPage(name: '/home', page: () => const DiscoverScreen()),
+          GetPage(name: '/discover', page: () => const DiscoverScreen()),
+          GetPage(name: '/dashboard', page: () => const HomeScreen()),
+          
+          // Dashboard Routes
+          GetPage(
+            name: '/dashboard/user/incoming-offers',
+            page: () => const IncomingOffersScreen(),
+          ),
+          
+          // Fallback route
+          GetPage(
+            name: '/unknown',
+            page: () => const Scaffold(
+              body: Center(child: Text('Seite nicht gefunden')),
+            ),
+          ),
+        ],
+        unknownRoute: GetPage(
+          name: '/unknown',
+          page: () => const Scaffold(
+            body: Center(child: Text('Seite nicht gefunden')),
+          ),
+        ),
       ),
     );
   }

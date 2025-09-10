@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
+import 'offer_notification_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -55,7 +56,14 @@ class AuthService {
       
       if (credential.user != null) {
         await _updateLastLoginTime(credential.user!.uid);
-        return await _getUserFromFirestore(credential.user!.uid);
+        final user = await _getUserFromFirestore(credential.user!.uid);
+        
+        // Starte Offer Monitoring für eingeloggte User
+        if (user != null) {
+          await OfferNotificationService.startOfferMonitoring();
+        }
+        
+        return user;
       }
       return null;
     } on FirebaseAuthException catch (e) {
@@ -230,6 +238,10 @@ class AuthService {
         if (existingUser != null) {
           debugPrint('📂 Bestehender User gefunden');
           await _updateLastLoginTime(userCredential.user!.uid);
+          
+          // Starte Offer Monitoring für eingeloggte User
+          await OfferNotificationService.startOfferMonitoring();
+          
           return existingUser;
         } else {
           debugPrint('👤 Neuer User - erstelle Firestore-Dokument');
@@ -249,6 +261,10 @@ class AuthService {
           await _firestore.collection('users').doc(userCredential.user!.uid).set(newUser.toFirestore());
           
           debugPrint('✅ Neuer User erfolgreich erstellt');
+          
+          // Starte Offer Monitoring für neue User
+          await OfferNotificationService.startOfferMonitoring();
+          
           return newUser;
         }
       }
@@ -327,6 +343,9 @@ class AuthService {
   Future<void> signOut() async {
     debugPrint('AUTH_SERVICE: signOut() aufgerufen');
     try {
+      // Stoppe Offer Monitoring vor dem Logout
+      await OfferNotificationService.stopOfferMonitoring();
+      
       await _auth.signOut();
       debugPrint('AUTH_SERVICE: Firebase Auth signOut erfolgreich');
     } catch (e) {

@@ -47,6 +47,7 @@ import * as financeHttpModule from './finance/functions/finance-http';
 import * as fixInconsistentPaymentModule from './fix_inconsistent_payment';
 import * as quoteNotifications from './quote_notifications';
 import * as chatNotifications from './chat_notifications';
+import * as offerPushNotifications from './offer_push_notifications';
 
 // Stripe Callables
 export const createStripeAccountIfComplete = callableStripe.createStripeAccountIfComplete;
@@ -141,6 +142,10 @@ export const onQuoteStatusChanged = quoteNotifications.onQuoteStatusChanged;
 
 // Chat Notification Triggers
 export const onChatMessageCreated = chatNotifications.onChatMessageCreated;
+
+// Offer Push Notification Triggers
+export const onOfferCreated = offerPushNotifications.onOfferCreated;
+export const sendTestPushNotification = offerPushNotifications.sendTestPushNotification;
 
 // Maintenance Functions (Temporary)
 export const updateAllUserCustomClaims = maintenanceAuth.updateAllUserCustomClaims;

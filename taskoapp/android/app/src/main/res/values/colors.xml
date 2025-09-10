@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Taskilo Primary Color für Notifications -->
+    <color name="taskilo_primary">#14AD9F</color>
+    <color name="taskilo_primary_dark">#129488</color>
+    <color name="notification_bg">#FFFFFF</color>
+    <color name="notification_text">#000000</color>
+</resources>

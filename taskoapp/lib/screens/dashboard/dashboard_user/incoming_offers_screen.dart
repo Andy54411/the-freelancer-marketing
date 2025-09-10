@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
 import '../dashboard_layout.dart';
 import 'offer_detail_screen.dart';
+import '../../../services/offer_notification_service.dart';
+import '../../../services/push_notification_service.dart';
 
 class IncomingOffersScreen extends StatefulWidget {
   const IncomingOffersScreen({super.key});
@@ -15,11 +19,50 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
   List<OfferItem> _offers = [];
   bool _isLoading = true;
   String _selectedFilter = 'all'; // all, pending, accepted, declined
+  
+  // Notification-Parameter
+  String? _highlightOfferId;
+  String? _highlightQuoteId;
+  bool _fromNotification = false;
 
   @override
   void initState() {
     super.initState();
+    _checkNotificationArguments();
     _loadOffers();
+  }
+
+  /// Prüft ob die Screen von einer Notification geöffnet wurde
+  void _checkNotificationArguments() {
+    try {
+      final arguments = Get.arguments as Map<String, dynamic>?;
+      if (arguments != null) {
+        _highlightOfferId = arguments['offerId'] as String?;
+        _highlightQuoteId = arguments['quoteId'] as String?;
+        _fromNotification = arguments['fromNotification'] as bool? ?? false;
+        
+        if (_fromNotification) {
+          debugPrint('🔔 Incoming Offers Screen von Notification geöffnet:');
+          debugPrint('   OfferId: $_highlightOfferId');
+          debugPrint('   QuoteId: $_highlightQuoteId');
+          
+          // Zeige kurzen Hinweis
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('📬 Neues Angebot erhalten!'),
+                  duration: Duration(seconds: 2),
+                  backgroundColor: Color(0xFF14AD9F),
+                ),
+              );
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Fehler beim Verarbeiten der Notification Arguments: $e');
+    }
   }
 
   Future<void> _loadOffers() async {
@@ -335,6 +378,22 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
       title: 'Eingehende Angebote',
       useGradientBackground: true,
       actions: [
+        // Test Notification Button (nur im Debug Mode)
+        if (kDebugMode)
+          IconButton(
+            icon: const Icon(Icons.notifications_active, color: Colors.white),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              await OfferNotificationService.sendTestOfferNotification();
+              await PushNotificationService.sendTestNotification();
+              if (mounted) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Test-Notifications gesendet!')),
+                );
+              }
+            },
+            tooltip: 'Test Notification',
+          ),
         IconButton(
           icon: const Icon(Icons.refresh, color: Colors.white),
           onPressed: _loadOffers,
