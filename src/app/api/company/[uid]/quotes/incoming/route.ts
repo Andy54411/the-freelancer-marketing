@@ -16,7 +16,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     try {
       decodedToken = await auth.verifyIdToken(token);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
-    const companyData = companyDoc.data();
+    const _companyData = companyDoc.data();
 
     // Get company's service subcategory to filter relevant projects - Try companies collection first
     let companyUserDoc = await db.collection('companies').doc(uid).get();
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       quotesSnapshot = await db.collection('quotes').get();
     }
 
-    const quotes: any[] = [];
+    const quotes: Record<string, unknown>[] = [];
 
     for (const doc of quotesSnapshot.docs) {
       const quoteData = doc.data();
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       // Get customer information
-      let customerInfo: any = null;
+      let customerInfo: Record<string, unknown> | null = null;
 
       // If we have customerUid, get full customer data
       if (quoteData.customerUid) {
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
       // Check if this company has already submitted a response/proposal
       let hasResponse = false;
-      let responseData: any = null;
+      let responseData: Record<string, unknown> | null = null;
       let proposalStatus = null;
 
       try {
@@ -188,7 +188,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         if (!proposalsSnapshot.empty) {
           hasResponse = true;
           responseData = proposalsSnapshot.docs[0].data();
-          proposalStatus = responseData.status; // Get proposal status
+          proposalStatus = (responseData as { status?: string })?.status || null; // Get proposal status
           console.log(`📋 Found subcollection proposal with status: ${proposalStatus}`);
         } else {
           // Fallback: Check old proposals collection
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           if (!oldProposalsSnapshot.empty) {
             hasResponse = true;
             responseData = oldProposalsSnapshot.docs[0].data();
-            proposalStatus = responseData.status;
+            proposalStatus = (responseData as { status?: string })?.status || null;
             console.log(`📋 Found old collection proposal with status: ${proposalStatus}`);
           }
         }
@@ -239,7 +239,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         serviceSubcategory: quoteData.projectSubcategory || quoteData.serviceSubcategory || '',
         projectType: 'fixed_price', // Default for quotes
         status: actualStatus,
-        budget: quoteData.budgetRange ? { budgetRange: quoteData.budgetRange } : undefined,
         budgetRange: quoteData.budgetRange || 'Nicht angegeben',
         deadline: quoteData.preferredStartDate || quoteData.deadline,
         location: quoteData.location || '',
