@@ -1,0 +1,54 @@
+# Robots.txt für Taskilo.de - Service-Marktplatz Platform
+# Optimiert für B2C und B2B Service-Buchungen
+
+User-agent: *
+
+# Erlaube alle öffentlichen Seiten
+Allow: /
+Allow: /services
+Allow: /providers
+Allow: /about
+Allow: /contact
+Allow: /impressum
+Allow: /datenschutz
+Allow: /agb
+
+# Blockiere private Dashboard-Bereiche
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /admin/
+
+# Blockiere temporäre und Test-Dateien
+Disallow: /tmp/
+Disallow: /test/
+Disallow: /_next/
+Disallow: /firebase/
+
+# Blockiere sensible Dateien
+Disallow: /*.json$
+Disallow: /firebase-config.json
+Disallow: /oauth_client_config.json
+
+# Spezielle Crawler-Regeln
+User-agent: Googlebot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /dashboard/
+Disallow: /api/
+
+# Blockiere schädliche Bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+# Sitemap-Verweis
+Sitemap: https://taskilo.de/sitemap.xml
