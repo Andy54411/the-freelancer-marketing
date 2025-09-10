@@ -28,15 +28,32 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
 
     console.log('✅ User authenticated:', uid);
 
-    // User-Daten aus Firestore abrufen, um companyUid zu finden
-    const userDoc = await db.collection('users').doc(uid).get();
-    if (!userDoc.exists) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    // B2B/B2C: Prüfe sowohl users als auch companies Collection
+    let userData: any = null;
+    let companyUid = uid; // Default fallback
+    let companyName = 'Unbekanntes Unternehmen';
 
-    const userData = userDoc.data();
-    const companyUid = userData?.companyUid || uid; // Fallback auf uid falls kein companyUid
-    const companyName = userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen';
+    // Erst in users Collection suchen (B2C)
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (userDoc.exists) {
+      userData = userDoc.data();
+      companyUid = userData?.companyUid || uid;
+      companyName = userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen';
+      console.log('👤 Found user in users collection:', { uid, companyUid, companyName });
+    } else {
+      // Dann in companies Collection suchen (B2B)
+      console.log('🔍 User not found in users collection, checking companies collection...');
+      const companyDoc = await db.collection('companies').doc(uid).get();
+      if (companyDoc.exists) {
+        userData = companyDoc.data();
+        companyUid = uid; // Bei companies ist die uid direkt die companyUid
+        companyName = userData?.companyName || userData?.name || 'Unbekanntes Unternehmen';
+        console.log('🏢 Found user in companies collection:', { uid, companyUid, companyName });
+      } else {
+        console.error('❌ User not found in users or companies collection:', uid);
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+    }
 
     console.log('🏢 Company info:', { companyUid, companyName });
 

@@ -63,10 +63,10 @@ export class ProjectNotificationService {
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
-          customerName: proposalData.customerName,
-          companyName: proposalData.companyName,
-          subcategory: proposalData.subcategory,
-          proposedPrice: proposalData.proposedPrice,
+          customerName: proposalData.customerName || 'Unbekannter Kunde',
+          companyName: proposalData.companyName || 'Unbekanntes Unternehmen',
+          subcategory: proposalData.subcategory || 'Service',
+          proposedPrice: proposalData.proposedPrice || 0,
           isCustomerAction: false,
         },
       };
@@ -83,10 +83,10 @@ export class ProjectNotificationService {
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
-          customerName: proposalData.customerName,
-          companyName: proposalData.companyName,
-          subcategory: proposalData.subcategory,
-          proposedPrice: proposalData.proposedPrice,
+          customerName: proposalData.customerName || 'Unbekannter Kunde',
+          companyName: proposalData.companyName || 'Unbekanntes Unternehmen',
+          subcategory: proposalData.subcategory || 'Service',
+          proposedPrice: proposalData.proposedPrice || 0,
           isCustomerAction: false,
         },
       };
@@ -96,9 +96,7 @@ export class ProjectNotificationService {
         db.collection('notifications').add(customerNotification),
         db.collection('notifications').add(companyNotification),
       ]);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -163,9 +161,7 @@ export class ProjectNotificationService {
       };
 
       await db.collection('notifications').add(notification);
-
     } catch (error) {
-
       throw error;
     }
   }
@@ -193,11 +189,9 @@ export class ProjectNotificationService {
     try {
       // Diese Funktion kann später für Marketplace-Features verwendet werden
       // um relevante Anbieter über neue Projektanfragen zu benachrichtigen
-
       // TODO: Implementiere Matching-Logic um relevante Companies zu finden
       // und sie über neue Projektanfragen zu benachrichtigen
     } catch (error) {
-
       throw error;
     }
   }
