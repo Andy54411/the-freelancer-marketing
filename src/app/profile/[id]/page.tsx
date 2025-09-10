@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, getDocs, limit, where } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   FiLoader,
@@ -135,6 +135,83 @@ export default function ProfilePage() {
   } | null>(null);
 
   const companyId = params?.id as string;
+
+  // Funktion zum Laden der echten abgeschlossenen Aufträge aus der reviews Collection
+  // Da Reviews nur für abgeschlossene Aufträge erstellt werden, können wir sie als Proxy verwenden
+  const loadRealCompletedJobs = async (providerId: string): Promise<number> => {
+    try {
+      console.log('🔄 Loading real completed jobs for provider:', providerId);
+
+      // Query für Reviews dieses Providers (öffentlich lesbar)
+      const reviewsQuery = query(
+        collection(db, 'reviews'),
+        where('providerId', '==', providerId),
+        limit(100) // Vernünftiges Limit für Performance
+      );
+
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      console.log('📊 Total reviews loaded for provider', providerId, ':', reviewsSnapshot.size);
+
+      // Jede Review entspricht einem abgeschlossenen Auftrag
+      const completedCount = reviewsSnapshot.size;
+
+      console.log('🎯 Real completed jobs count for', providerId, ':', completedCount);
+      return completedCount;
+    } catch (error) {
+      console.error('🚨 Error loading completed jobs:', error);
+      return 0;
+    }
+  };
+
+  // Funktion zum Laden der echten Bewertungen
+  const loadRealRatingData = async (
+    providerId: string
+  ): Promise<{ averageRating: number; totalReviews: number }> => {
+    try {
+      console.log('🔄 Loading real rating data for provider:', providerId);
+
+      const reviewsQuery = query(
+        collection(db, 'reviews'),
+        where('providerId', '==', providerId),
+        limit(100)
+      );
+
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      const reviews = reviewsSnapshot.docs.map(doc => doc.data());
+
+      if (reviews.length === 0) {
+        console.log('📭 No reviews found for provider:', providerId);
+        return { averageRating: 0, totalReviews: 0 };
+      }
+
+      // Berechne durchschnittliche Bewertung
+      const totalRating = reviews.reduce((sum, review) => {
+        const rating = Number(review.rating) || 0;
+        console.log('📊 Review rating:', rating);
+        return sum + rating;
+      }, 0);
+
+      const averageRating = totalRating / reviews.length;
+
+      console.log(
+        '⭐ Calculated rating for',
+        providerId,
+        ':',
+        averageRating,
+        'from',
+        reviews.length,
+        'reviews'
+      );
+
+      return {
+        averageRating: parseFloat(averageRating.toFixed(1)),
+        totalReviews: reviews.length,
+      };
+    } catch (error) {
+      console.error('🚨 Error loading rating data:', error);
+      return { averageRating: 0, totalReviews: 0 };
+    }
+  };
 
   // Funktion zum Starten eines neuen Chats
   const handleStartChat = () => {
@@ -318,10 +395,22 @@ export default function ProfilePage() {
                   ? 'Deutschland'
                   : userData.step2?.country || 'Deutschland';
 
-          // Extrahiere Bewertungsdaten aus der DB (keine Mock-Daten)
-          const averageRating = userData.averageRating || 0;
-          const totalReviews = userData.totalReviews || 0;
-          const completedJobs = userData.completedJobs || 0;
+          // Lade echte Bewertungsdaten und abgeschlossene Aufträge
+          const realRatingData = await loadRealRatingData(companyId);
+          const realCompletedJobs = await loadRealCompletedJobs(companyId);
+
+          console.log(
+            '📈 Profile Page: Real rating data for',
+            userData.companyName,
+            ':',
+            realRatingData
+          );
+          console.log(
+            '📈 Profile Page: Real completed jobs for',
+            userData.companyName,
+            ':',
+            realCompletedJobs
+          );
 
           // Verarbeite Skills aus verschiedenen Quellen
           const skills = userData.skills || [];
@@ -401,16 +490,16 @@ export default function ProfilePage() {
             stripeVerificationStatus: userData.stripeVerificationStatus,
             taskiloProfileUrl: userData.taskiloProfileUrl,
             // Realistische Metriken basierend auf echten Daten
-            averageRating,
-            totalReviews,
-            completedJobs,
+            averageRating: realRatingData.averageRating,
+            totalReviews: realRatingData.totalReviews,
+            completedJobs: realCompletedJobs,
             responseTime:
               userData.responseTime ||
               userData.responseTimeGuarantee ||
               userData.advanceBookingHours ||
               24,
             completionRate: 98, // Standard hohe Abschlussrate
-            totalOrders: completedJobs,
+            totalOrders: realCompletedJobs,
             // Fähigkeiten und Portfolio
             skills,
             specialties,

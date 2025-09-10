@@ -89,9 +89,13 @@ export default function SubcategoryPage() {
     );
   });
 
-  // Lade echte Bewertungen für Provider
+  // Lade echte Bewertungen und abgeschlossene Aufträge für Provider
   const enrichProvidersWithReviews = async (providers: Provider[]): Promise<Provider[]> => {
-    console.log('🔄 DEBUG: Starting to enrich', providers.length, 'providers with reviews');
+    console.log(
+      '🔄 DEBUG: Starting to enrich',
+      providers.length,
+      'providers with reviews and completed jobs'
+    );
 
     try {
       // Get all reviews from collection with improved query and limit
@@ -102,8 +106,18 @@ export default function SubcategoryPage() {
       const allReviewsSnapshot = await getDocs(reviewsQuery);
       console.log('📊 DEBUG: Total reviews loaded:', allReviewsSnapshot.size);
 
+      // Get all orders/auftraege to count completed jobs
+      const ordersQuery = query(
+        collection(db, 'auftraege'),
+        limit(1000) // Larger limit for orders
+      );
+      const allOrdersSnapshot = await getDocs(ordersQuery);
+      console.log('📊 DEBUG: Total orders loaded:', allOrdersSnapshot.size);
+
       // Create a map of providerId to reviews for efficient lookup
       const reviewsMap = new Map<string, any[]>();
+      // Create a map of providerId to completed jobs count
+      const completedJobsMap = new Map<string, number>();
 
       allReviewsSnapshot.forEach(doc => {
         const data = doc.data();
@@ -128,11 +142,36 @@ export default function SubcategoryPage() {
         );
       });
 
-      console.log('🗺️ DEBUG: Created reviews map for', reviewsMap.size, 'providers having reviews');
+      // Count completed jobs per provider
+      allOrdersSnapshot.forEach(doc => {
+        const data = doc.data();
+        const providerId = data.providerId || data.companyId;
+        const status = data.status;
 
-      // Enrich each provider with their reviews
+        // Count only completed orders
+        if (status === 'completed' || status === 'abgeschlossen' || status === 'fertig') {
+          const currentCount = completedJobsMap.get(providerId) || 0;
+          completedJobsMap.set(providerId, currentCount + 1);
+          console.log(
+            '✅ DEBUG: Completed job found for provider:',
+            providerId,
+            'Total:',
+            currentCount + 1
+          );
+        }
+      });
+
+      console.log('🗺️ DEBUG: Created reviews map for', reviewsMap.size, 'providers having reviews');
+      console.log(
+        '🗺️ DEBUG: Created completed jobs map for',
+        completedJobsMap.size,
+        'providers having completed jobs'
+      );
+
+      // Enrich each provider with their reviews and completed jobs
       const enrichedProviders = providers.map(provider => {
         const providerReviews = reviewsMap.get(provider.id) || [];
+        const completedJobs = completedJobsMap.get(provider.id) || 0;
 
         // Calculate average rating
         let averageRating = 0;
@@ -141,7 +180,7 @@ export default function SubcategoryPage() {
         if (providerReviews.length > 0) {
           totalRating = providerReviews.reduce((sum, review) => {
             const rating = Number(review.rating) || 0;
-            console.log('� DEBUG: Review rating for', provider.companyName, ':', rating);
+            console.log('📊 DEBUG: Review rating for', provider.companyName, ':', rating);
             return sum + rating;
           }, 0);
 
@@ -165,20 +204,24 @@ export default function SubcategoryPage() {
           );
         }
 
+        console.log('🔢 DEBUG: Completed jobs for', provider.companyName, ':', completedJobs);
+
         return {
           ...provider,
           rating: parseFloat(averageRating.toFixed(1)),
           reviewCount: providerReviews.length,
+          completedJobs: completedJobs,
         };
       });
 
       console.log(
-        '✅ DEBUG: Enrichment complete. Providers with ratings:',
+        '✅ DEBUG: Enrichment complete. Providers with ratings and completed jobs:',
         enrichedProviders.map(p => ({
           name: p.companyName,
           id: p.id,
           rating: p.rating,
           reviewCount: p.reviewCount,
+          completedJobs: p.completedJobs,
         }))
       );
 
@@ -189,6 +232,7 @@ export default function SubcategoryPage() {
         ...provider,
         rating: provider.rating || 0,
         reviewCount: provider.reviewCount || 0,
+        completedJobs: provider.completedJobs || 0,
       }));
     }
   };
@@ -713,17 +757,12 @@ export default function SubcategoryPage() {
                           e.preventDefault();
                           e.stopPropagation();
 
-                          // Auth-Check für Profil-Ansicht
-                          if (!user) {
-                            router.push('/login');
-                            return;
-                          }
-
+                          // Profil-Ansicht für alle User ermöglichen
                           router.push(`/profile/${provider.id}`);
                         }}
                       >
                         <button className="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium shadow-lg transform translate-y-2 group-hover/image:translate-y-0 transition-transform">
-                          {user ? 'Profil anzeigen' : 'Anmelden für Profil'}
+                          Profil anzeigen
                         </button>
                       </div>
                     </div>
