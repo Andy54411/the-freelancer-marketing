@@ -167,19 +167,26 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
 
   const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
     if (!uid) {
+      console.log('🖼️ No UID provided for profile picture loading');
       setProfilePictureURLFromStorage(null);
       return;
     }
     try {
+      console.log('🖼️ Loading profile picture for UID:', uid);
       const folderRef = storageRef(storage, `profilePictures/${uid}`);
       const list = await listAll(folderRef);
+      console.log('🖼️ Found items in profile folder:', list.items.length);
+
       if (list.items.length > 0) {
         const url = await getDownloadURL(list.items[0]);
+        console.log('✅ Profile picture URL loaded:', url);
         setProfilePictureURLFromStorage(url);
       } else {
+        console.log('⚠️ No profile picture found in storage');
         setProfilePictureURLFromStorage(null);
       }
     } catch (error) {
+      console.error('❌ Error loading profile picture:', error);
       setProfilePictureURLFromStorage(null);
     }
   }, []);

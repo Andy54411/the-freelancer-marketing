@@ -932,7 +932,7 @@ export default function ReceivedQuoteDetailPage() {
             </div>
           )}
 
-          {/* KONTAKTAUSTAUSCH ERFOLGREICH - Erweiterte Komponente mit Company-Daten-Ladung */}
+          {/* KONTAKTAUSTAUSCH - Provider kann Kundendaten erst nach Provisionszahlung sehen */}
           {(quote.status === 'contacts_exchanged' || quote.payment?.provisionStatus === 'paid') && (
             <ContactExchangeDisplay
               contactExchange={quote.contactExchange}
@@ -940,6 +940,7 @@ export default function ReceivedQuoteDetailPage() {
               customerUid={getCompanyId()}
               providerUid={quote.provider?.uid || quote.providerUid || quote.providerId}
               status={quote.status}
+              provisionPaid={quote.payment?.provisionStatus === 'paid'}
             />
           )}
 

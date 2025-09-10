@@ -153,9 +153,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               let needsRedirect = false;
               let targetPath = '';
 
-              // 1. Nach Login-Redirect
-              if (pathname?.includes('/login')) {
+              // 1. Nach Login-Redirect ODER Homepage-Redirect
+              if (pathname?.includes('/login') || pathname === '/') {
                 needsRedirect = true;
+                console.log('🔄 HOMEPAGE/LOGIN REDIRECT erkannt für:', finalRole);
               }
               // 2. Firma User auf User Dashboard - SOFORT UMLEITEN!
               else if (finalRole === 'firma' && pathname?.includes('/dashboard/user/')) {
@@ -181,7 +182,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                         : `/dashboard/user/${fbUser.uid}`; // Fallback
 
                 console.log(`🚀 AUTO-REDIRECT: ${finalRole} von ${pathname} → ${targetPath}`);
-                window.location.assign(targetPath);
+
+                // ROBUSTES REDIRECT mit Fallback
+                try {
+                  window.location.assign(targetPath);
+
+                  // Fallback nach 2 Sekunden
+                  setTimeout(() => {
+                    if (window.location.pathname !== targetPath) {
+                      console.log('⚠️ REDIRECT FALLBACK: window.location.href');
+                      window.location.href = targetPath;
+                    }
+                  }, 2000);
+                } catch (error) {
+                  console.error('❌ Redirect Error:', error);
+                  window.location.href = targetPath;
+                }
                 return;
               }
             }

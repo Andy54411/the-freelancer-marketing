@@ -30,6 +30,7 @@ interface ContactExchangeDisplayProps {
   customerUid?: string;
   providerUid?: string;
   status?: string;
+  provisionPaid?: boolean; // 🎯 NEU: Provisionsstatus prüfen
 }
 
 export function ContactExchangeDisplay({
@@ -38,6 +39,7 @@ export function ContactExchangeDisplay({
   customerUid,
   providerUid,
   status,
+  provisionPaid = false, // 🎯 Standard: false
 }: ContactExchangeDisplayProps) {
   const { firebaseUser } = useAuth();
   const [contactsFromCompanies, setContactsFromCompanies] = useState<{
@@ -345,39 +347,64 @@ export function ContactExchangeDisplay({
                 <User className="h-4 w-4 text-gray-500" />
                 <span className="font-medium">{otherContact.name}</span>
               </div>
+
+              {/* 🎯 EMAIL: Nur anzeigen wenn Provision bezahlt */}
               {otherContact.email && (
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-gray-500" />
-                  <a
-                    href={`mailto:${otherContact.email}`}
-                    className="text-[#14ad9f] hover:text-[#129488] hover:underline"
-                  >
-                    {otherContact.email}
-                  </a>
+                  {provisionPaid ? (
+                    <a
+                      href={`mailto:${otherContact.email}`}
+                      className="text-[#14ad9f] hover:text-[#129488] hover:underline"
+                    >
+                      {otherContact.email}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400">
+                      ●●●●●@●●●●●.●●● (Erst nach Provisionszahlung verfügbar)
+                    </span>
+                  )}
                 </div>
               )}
+
+              {/* 🎯 TELEFON: Nur anzeigen wenn Provision bezahlt */}
               {otherContact.phone && (
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-500" />
-                  <a
-                    href={`tel:${otherContact.phone}`}
-                    className="text-[#14ad9f] hover:text-[#129488] hover:underline"
-                  >
-                    {otherContact.phone}
-                  </a>
+                  {provisionPaid ? (
+                    <a
+                      href={`tel:${otherContact.phone}`}
+                      className="text-[#14ad9f] hover:text-[#129488] hover:underline"
+                    >
+                      {otherContact.phone}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400">
+                      +●● ●●● ●●●●●●● (Erst nach Provisionszahlung verfügbar)
+                    </span>
+                  )}
                 </div>
               )}
+
+              {/* 🎯 ADRESSE: Nur anzeigen wenn Provision bezahlt */}
               {otherContact.address && (
                 <div className="flex items-start gap-2">
                   <MapPin className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">{otherContact.address}</span>
+                  {provisionPaid ? (
+                    <span className="text-gray-700">{otherContact.address}</span>
+                  ) : (
+                    <span className="text-gray-400">
+                      Adresse nicht verfügbar (Erst nach Provisionszahlung)
+                    </span>
+                  )}
                 </div>
               )}
+
               {otherContact.contactPerson && otherContact.contactPerson !== 'Nicht angegeben' && (
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-500" />
                   <span className="text-gray-600">
-                    Ansprechpartner: {otherContact.contactPerson}
+                    Ansprechpartner: {provisionPaid ? otherContact.contactPerson : '●●●●●●●●'}
                   </span>
                 </div>
               )}

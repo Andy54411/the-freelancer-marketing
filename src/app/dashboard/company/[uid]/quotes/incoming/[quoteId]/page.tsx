@@ -1121,15 +1121,15 @@ export default function QuoteResponsePage({
             </div>
           )}
 
-        {/* Kontaktdaten für Status contacts_exchanged */}
+        {/* Kontaktdaten NUR NACH Provisionszahlung anzeigen */}
         {(quote.status === 'contacts_exchanged' ||
-          quote.status === 'accepted' ||
-          quote.payment?.provisionStatus === 'paid') && (
+          (quote.status === 'accepted' && quote.payment?.provisionStatus === 'paid')) && (
           <div className="mt-6">
             <ContactExchangeDisplay
               customerUid={quote.customer?.uid}
               providerUid={getCompanyId()}
               status={quote.status}
+              provisionPaid={quote.payment?.provisionStatus === 'paid'}
               contactExchange={
                 response
                   ? {
