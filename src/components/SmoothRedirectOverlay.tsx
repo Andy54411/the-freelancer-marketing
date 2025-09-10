@@ -22,6 +22,7 @@ export default function SmoothRedirectOverlay() {
   const [redirectMessage, setRedirectMessage] = useState('');
   const [progress, setProgress] = useState(0);
   const [userName, setUserName] = useState<string>('');
+  const [redirecting, setRedirecting] = useState(false);
 
   // Firebase-Daten laden für personalisierten Namen
   useEffect(() => {
@@ -88,7 +89,7 @@ export default function SmoothRedirectOverlay() {
   }, [user]);
 
   useEffect(() => {
-    if (!loading && user && userName) {
+    if (!loading && user && userName && !redirecting) {
       // Prüfe ob User auf falscher Seite ist und redirect benötigt
       let needsRedirect = false;
       let targetPath = '';
@@ -118,16 +119,20 @@ export default function SmoothRedirectOverlay() {
       }
 
       if (needsRedirect && targetPath) {
+        setRedirecting(true);
         setRedirectMessage(message);
         setShowOverlay(true);
 
         // Progressiver Ladebalken
         let currentProgress = 0;
         const progressInterval = setInterval(() => {
-          currentProgress += 15;
-          setProgress(currentProgress);
+          currentProgress += 10;
 
-          if (currentProgress >= 100) {
+          // Stelle sicher, dass Progress nie über 100% geht
+          const cappedProgress = Math.min(currentProgress, 100);
+          setProgress(cappedProgress);
+
+          if (cappedProgress >= 100) {
             clearInterval(progressInterval);
 
             // Kurze Verzögerung dann redirect
@@ -135,12 +140,12 @@ export default function SmoothRedirectOverlay() {
               router.push(targetPath);
             }, 300);
           }
-        }, 150);
+        }, 100);
 
         return () => clearInterval(progressInterval);
       }
     }
-  }, [user, loading, pathname, router, userName]);
+  }, [user, loading, pathname, router, userName, redirecting]);
 
   // Icon basierend auf User-Rolle
   const getRoleIcon = () => {
