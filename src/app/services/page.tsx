@@ -1,5 +1,6 @@
 'use client';
 
+import type { Metadata } from 'next';
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { categories } from '@/lib/categoriesData';

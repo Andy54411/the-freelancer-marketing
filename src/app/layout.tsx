@@ -11,6 +11,7 @@ import Chatbot from '@/components/Chatbot';
 import ConditionalFooter from '@/components/ConditionalFooter';
 import ConditionalChatbot from '@/components/ConditionalChatbot';
 import SmoothRedirectOverlay from '@/components/SmoothRedirectOverlay';
+import { StructuredData } from '@/components/seo/StructuredData';
 // import { FooterSection } from '@/components/FooterSection';
 // import GoogleAnalytics from '@/components/GoogleAnalytics'; // Removed to avoid conflicts with GTM
 import CookieBanner from '@/components/CookieBanner';
@@ -22,20 +23,116 @@ import CSPDebugger from '@/components/debug/CSPDebugger';
 import CSPMonitor from '@/components/debug/CSPMonitor';
 
 export const metadata: Metadata = {
-  title: 'TASKILO',
+  title: {
+    template: '%s | Taskilo - Service-Marktplatz für B2B & B2C',
+    default:
+      'Taskilo - Professionelle Dienstleister finden & buchen | B2B & B2C Service-Marktplatz',
+  },
   description:
-    'TASKILO bringt Kunden und Dienstleister wie Handwerker & Mietköche schnell und zuverlässig über App & Web zusammen – einfach buchen & starten!',
+    'Taskilo verbindet Kunden mit verifizierten Dienstleistern. Von Handwerkern bis Consultants - sicher buchen, flexibel zahlen, professionell abwickeln. Jetzt kostenlos registrieren!',
+  keywords: [
+    'Dienstleister finden',
+    'Handwerker buchen',
+    'B2B Services',
+    'B2C Services',
+    'Freelancer Plattform',
+    'Service Marktplatz',
+    'Taskrabbit Alternative',
+    'Fiverr Deutschland',
+    'Malt Alternative',
+    'sichere Zahlung',
+    'Stripe Connect',
+    'verifizierte Anbieter',
+    'Projektmanagement',
+    'Zeiterfassung',
+    'Rechnungsstellung',
+    'Consulting Services',
+    'lokale Dienstleister',
+    'Deutschland Service',
+    'professionelle Services',
+  ],
+  authors: [{ name: 'Taskilo Team' }],
+  creator: 'Taskilo',
+  publisher: 'Taskilo',
+  category: 'Business & Professional Services',
+  openGraph: {
+    title: 'Taskilo - Professionelle Dienstleister finden & buchen',
+    description:
+      'Service-Marktplatz für B2B & B2C: Handwerker, Consultants & Freelancer sicher buchen. Verifizierte Anbieter, flexible Zahlung, professionelle Abwicklung.',
+    url: 'https://taskilo.de',
+    siteName: 'Taskilo',
+    type: 'website',
+    locale: 'de_DE',
+    images: [
+      {
+        url: 'https://taskilo.de/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg',
+        width: 1200,
+        height: 630,
+        alt: 'Taskilo - Service-Marktplatz für professionelle Dienstleistungen',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Taskilo - Professionelle Dienstleister finden & buchen',
+    description:
+      'Service-Marktplatz für B2B & B2C: Handwerker, Consultants & Freelancer sicher buchen.',
+    images: ['https://taskilo.de/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg'],
+    creator: '@taskilo_de',
+    site: '@taskilo_de',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: 'https://taskilo.de',
+    languages: {
+      'de-DE': 'https://taskilo.de',
+      'x-default': 'https://taskilo.de',
+    },
+  },
+  verification: {
+    google: '0E8Byz81aHsAqsSa-9hmt6IHJb1irr8QfyGuo2zFp98',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'TASKILO',
+    title: 'Taskilo',
+    startupImage: [
+      {
+        url: 'https://taskilo.de/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg',
+        media:
+          '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)',
+      },
+      {
+        url: 'https://taskilo.de/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg',
+        media:
+          '(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)',
+      },
+    ],
   },
-  other: {
-    'mobile-web-app-capable': 'yes',
-    'google-site-verification': '0E8Byz81aHsAqsSa-9hmt6IHJb1irr8QfyGuo2zFp98',
-  },
+  applicationName: 'Taskilo',
+  referrer: 'origin-when-cross-origin',
   formatDetection: {
     telephone: false,
+    email: false,
+    address: false,
+  },
+  manifest: '/manifest.json',
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-title': 'Taskilo',
+    'application-name': 'Taskilo',
+    'msapplication-TileColor': '#14ad9f',
+    'theme-color': '#14ad9f',
   },
 };
 
@@ -167,6 +264,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             style={{ display: 'none', visibility: 'hidden' }}
           />
         </noscript>
+
+        {/* Strukturierte Daten für SEO */}
+        <StructuredData type="Organization" />
+        <StructuredData type="WebSite" />
       </head>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
