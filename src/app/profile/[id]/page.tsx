@@ -21,6 +21,7 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 import DirectChatModal from '@/components/DirectChatModal';
+import ProviderReviews from '@/components/ProviderReviews';
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import CreateOrderModal from '@/app/dashboard/user/[uid]/components/CreateOrderModal';
 import RequestQuoteModal from '@/components/RequestQuoteModal';
@@ -1262,118 +1263,12 @@ export default function ProfilePage() {
                       )}
                     </div>
 
-                    {/* Reviews Section - Moved to the end */}
-                    <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
-                      <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">
-                          Bewertungen{' '}
-                          {reviews.length > 0 && (
-                            <span className="text-lg font-normal text-gray-500">
-                              ({reviews.length})
-                            </span>
-                          )}
-                        </h2>
-                        {reviews.length > 0 && (
-                          <div className="flex items-center gap-2">
-                            <div className="flex">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`w-5 h-5 ${
-                                    i < Math.floor(profile.averageRating || 0)
-                                      ? 'text-yellow-400 fill-current'
-                                      : 'text-gray-300'
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <span className="font-semibold text-gray-900">
-                              {(profile.averageRating || 0).toFixed(1)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {reviewsLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                          <FiLoader className="animate-spin text-2xl text-[#14ad9f] mr-2" />
-                          <span className="text-gray-600">Lade Bewertungen...</span>
-                        </div>
-                      ) : reviews.length > 0 ? (
-                        <div className="space-y-6">
-                          {reviews.map(review => (
-                            <div
-                              key={review.id}
-                              className="border-b border-gray-200 pb-6 last:border-b-0 last:pb-0"
-                            >
-                              <div className="flex items-start gap-4">
-                                <div className="flex-shrink-0">
-                                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                                    <FiUser className="text-gray-400 text-lg" />
-                                  </div>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div>
-                                      <h4 className="font-medium text-gray-900">
-                                        {review.customerName || review.userName || 'Anonymer Kunde'}
-                                      </h4>
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <div className="flex">
-                                          {[...Array(5)].map((_, i) => (
-                                            <Star
-                                              key={i}
-                                              className={`w-4 h-4 ${
-                                                i < (review.rating || 0)
-                                                  ? 'text-yellow-400 fill-current'
-                                                  : 'text-gray-300'
-                                              }`}
-                                            />
-                                          ))}
-                                        </div>
-                                        <span className="text-sm text-gray-500">
-                                          {review.rating}/5
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <time className="text-sm text-gray-500">
-                                      {review.createdAt?.toDate
-                                        ? review.createdAt.toDate().toLocaleDateString('de-DE')
-                                        : new Date(review.createdAt).toLocaleDateString('de-DE')}
-                                    </time>
-                                  </div>
-                                  {review.comment && (
-                                    <p className="text-gray-700 leading-relaxed">
-                                      {review.comment}
-                                    </p>
-                                  )}
-                                  {review.serviceType && (
-                                    <div className="mt-3">
-                                      <span className="inline-block bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-sm">
-                                        {review.serviceType}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="mb-4">
-                            <FiAward className="mx-auto text-4xl text-gray-300" />
-                          </div>
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">
-                            Noch keine Bewertungen vorhanden
-                          </h3>
-                          <p className="text-gray-500">
-                            Seien Sie der Erste, der eine Bewertung für {profile.companyName}{' '}
-                            abgibt.
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    {/* Reviews Section - Using ProviderReviews Component */}
+                    <ProviderReviews 
+                      providerId={companyId} 
+                      reviewCount={profile.totalReviews} 
+                      averageRating={profile.averageRating} 
+                    />
                   </div>
 
                   {/* Right Column - Contact Card */}

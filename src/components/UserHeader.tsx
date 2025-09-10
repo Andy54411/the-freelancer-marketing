@@ -79,6 +79,9 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   const [profilePictureURLFromStorage, setProfilePictureURLFromStorage] = useState<string | null>(
     null
   );
+  const [profilePictureFromFirestore, setProfilePictureFromFirestore] = useState<string | null>(
+    null
+  );
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -165,29 +168,74 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     };
   }, []); // auth und db sind stabile Referenzen und müssen nicht in die deps
 
-  const loadProfilePictureFromStorage = useCallback(async (uid: string) => {
-    if (!uid) {
-      console.log('🖼️ No UID provided for profile picture loading');
+  // Lade Profil aus Firestore (Company oder User Collection)
+  const loadProfileFromFirestore = useCallback(async (uid: string) => {
+    try {
+      console.log('� Loading profile from Firestore for UID:', uid);
+      
+      // Versuche zuerst companies Collection
+      const companyDoc = await getDoc(doc(db, 'companies', uid));
+      if (companyDoc.exists()) {
+        const companyData = companyDoc.data();
+        const profileUrl = companyData.profilePictureURL || 
+                          companyData.profilePictureFirebaseUrl || 
+                          companyData.profileImage || 
+                          null;
+        
+        console.log('✅ Company profile found:', profileUrl);
+        setProfilePictureURLFromStorage(profileUrl);
+        return;
+      }
+      
+      // Fallback: users Collection
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const profileUrl = userData.profilePictureURL || 
+                          userData.profileImage || 
+                          userData.photoURL || 
+                          null;
+        
+        console.log('✅ User profile found:', profileUrl);
+        setProfilePictureURLFromStorage(profileUrl);
+        return;
+      }
+      
+      console.log('⚠️ No profile found in Firestore');
       setProfilePictureURLFromStorage(null);
+    } catch (error) {
+      console.error('❌ Error loading profile from Firestore:', error);
+      setProfilePictureURLFromStorage(null);
+    }
+  }, []);  // 🎯 NEUE FUNKTION: Lade Profilbild aus Firestore Company-Collection
+  const loadProfilePictureFromFirestore = useCallback(async (uid: string) => {
+    if (!uid) {
+      console.log('🖼️ No UID provided for Firestore profile picture loading');
+      setProfilePictureFromFirestore(null);
       return;
     }
     try {
-      console.log('🖼️ Loading profile picture for UID:', uid);
-      const folderRef = storageRef(storage, `profilePictures/${uid}`);
-      const list = await listAll(folderRef);
-      console.log('🖼️ Found items in profile folder:', list.items.length);
-
-      if (list.items.length > 0) {
-        const url = await getDownloadURL(list.items[0]);
-        console.log('✅ Profile picture URL loaded:', url);
-        setProfilePictureURLFromStorage(url);
+      console.log('🔍 Loading profile picture from Firestore for UID:', uid);
+      const companyDoc = await getDoc(doc(db, 'companies', uid));
+      
+      if (companyDoc.exists()) {
+        const companyData = companyDoc.data();
+        const profileImage = companyData.profileImage || companyData.profileImageUrl || companyData.avatar;
+        
+        if (profileImage) {
+          console.log('✅ Profile picture URL from Firestore:', profileImage);
+          setProfilePictureFromFirestore(profileImage);
+        } else {
+          console.log('⚠️ No profile picture field found in Firestore');
+          setProfilePictureFromFirestore(null);
+        }
       } else {
-        console.log('⚠️ No profile picture found in storage');
-        setProfilePictureURLFromStorage(null);
+        console.log('❌ Company document not found in Firestore');
+        setProfilePictureFromFirestore(null);
       }
     } catch (error) {
-      console.error('❌ Error loading profile picture:', error);
-      setProfilePictureURLFromStorage(null);
+      console.error('❌ Error loading profile picture from Firestore:', error);
+      setProfilePictureFromFirestore(null);
     }
   }, []);
 
@@ -196,7 +244,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
     const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
       setCurrentUser(user);
       if (user?.uid) {
-        loadProfilePictureFromStorage(user.uid);
+        loadProfileFromFirestore(user.uid);
       } else {
         setProfilePictureURLFromStorage(null);
         // If no user, and not on login page, redirect to login
@@ -208,7 +256,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       }
     });
     return () => unsubscribe();
-  }, [currentUid, router, loadProfilePictureFromStorage]);
+  }, [currentUid, router, loadProfilePictureFromFirestore]);
 
   // DEAKTIVIERT: Redirect-Logik wird jetzt im AuthContext gehandhabt
   // Smart Redirect basierend auf user_type - KORRIGIERTE LOGIK mit Loop-Schutz
@@ -273,12 +321,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         );
       }
       if (currentUser?.uid) {
-        loadProfilePictureFromStorage(currentUser.uid);
+        loadProfilePictureFromFirestore(currentUser.uid);
       }
     };
     window.addEventListener('profileUpdated', handleProfileUpdate);
     return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
-  }, [currentUser?.uid, loadProfilePictureFromStorage]);
+  }, [currentUser?.uid, loadProfilePictureFromFirestore]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

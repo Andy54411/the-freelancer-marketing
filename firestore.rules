@@ -477,9 +477,13 @@ service cloud.firestore {
       allow create: if request.auth != null && 
         request.resource.data.reviewerId == request.auth.uid;
       
-      // Nur der Reviewer kann seine eigene Bewertung aktualisieren oder Support
+      // Erweiterte Update-Berechtigung:
+      // - Der Reviewer kann seine eigene Bewertung aktualisieren
+      // - Der Provider kann providerResponse hinzufügen/bearbeiten
+      // - Support kann alles
       allow update: if request.auth != null && (
         resource.data.reviewerId == request.auth.uid ||
+        resource.data.providerId == request.auth.uid ||
         isSupportStaff()
       );
       

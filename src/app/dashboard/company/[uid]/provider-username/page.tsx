@@ -8,6 +8,7 @@ import { db, app } from '@/firebase/clients'; // Deine Firebase-Client-Initialis
 import { User as FirebaseUser, getAuth } from 'firebase/auth';
 import Image from 'next/image';
 import Link from 'next/link'; // HINZUGEFÜGT: Import für Link
+import ProviderReviews from '@/components/ProviderReviews';
 import {
   FiMapPin,
   FiMessageSquare,
@@ -485,103 +486,12 @@ const UserProfilePage = () => {
 
               {/* Hier könnten Portfolio-Projekte angezeigt werden, ähnlich wie Dienstleistungen */}
 
-              <div className="bg-white p-6 rounded-lg shadow">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">Kundenbewertungen</h2>
-                  {reviews.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 text-yellow-500">
-                        <FiStar className="fill-current" />
-                        <span className="font-semibold">
-                          {(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(
-                            1
-                          )}
-                        </span>
-                      </div>
-                      <span className="text-gray-500">({reviews.length} Bewertungen)</span>
-                    </div>
-                  )}
-                </div>
-
-                {reviews.length > 0 ? (
-                  <>
-                    {/* Bewertungsverteilung */}
-                    <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                      <div className="grid grid-cols-5 gap-2 text-center text-sm">
-                        {[5, 4, 3, 2, 1].map(star => {
-                          const count = reviews.filter(r => r.rating === star).length;
-                          const percentage =
-                            reviews.length > 0 ? (count / reviews.length) * 100 : 0;
-                          return (
-                            <div key={star} className="flex flex-col items-center">
-                              <div className="flex items-center gap-1 text-yellow-500 mb-1">
-                                <span className="text-xs">{star}</span>
-                                <FiStar size={12} className="fill-current" />
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                                <div
-                                  className="bg-yellow-500 h-2 rounded-full transition-all duration-300"
-                                  style={{ width: `${percentage}%` }}
-                                ></div>
-                              </div>
-                              <span className="text-xs text-gray-600">{count}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Bewertungsliste */}
-                    <ul className="space-y-4">
-                      {reviews.map(review => (
-                        <li key={review.id} className="border-b pb-4 last:border-b-0">
-                          <div className="flex items-start space-x-3">
-                            <Image
-                              src={review.reviewerImage || '/default-avatar.png'}
-                              alt={review.reviewerName}
-                              width={40}
-                              height={40}
-                              className="rounded-full"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="font-semibold text-gray-700">{review.reviewerName}</p>
-                                <span className="text-xs text-gray-500">
-                                  {new Date(review.date.seconds * 1000).toLocaleDateString('de-DE')}
-                                </span>
-                              </div>
-                              <div className="flex items-center text-yellow-500 mb-2">
-                                {[...Array(5)].map((_, i) => (
-                                  <FiStar
-                                    key={i}
-                                    size={14}
-                                    className={
-                                      i < review.rating
-                                        ? 'fill-current'
-                                        : 'stroke-current opacity-30'
-                                    }
-                                  />
-                                ))}
-                              </div>
-                              <p className="text-sm text-gray-600 leading-relaxed">
-                                {review.comment}
-                              </p>
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <FiMessageSquare className="mx-auto text-gray-400 text-3xl mb-2" />
-                    <p className="text-gray-500">Noch keine Bewertungen vorhanden.</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Seien Sie der Erste, der eine Bewertung abgibt!
-                    </p>
-                  </div>
-                )}
-              </div>
+              {/* Reviews Section - Using ProviderReviews Component */}
+              <ProviderReviews 
+                providerId={profile.uid} 
+                reviewCount={reviews.length} 
+                averageRating={reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0} 
+              />
 
               {/* FAQ-Sektion */}
               <div className="bg-white p-6 rounded-lg shadow">
