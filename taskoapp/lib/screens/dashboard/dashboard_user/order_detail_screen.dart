@@ -1224,13 +1224,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     return Consumer<TaskiloUser?>(
       builder: (context, user, child) {
-        return DashboardLayout(
-          title: 'Auftrag Details',
-          useGradientBackground: true,
-          showBackButton: true,
-          onBackPressed: () => Navigator.pop(context),
-          showBottomNavigation: false,
-          body: _buildContent(),
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                TaskiloColors.primary,
+                Color(0xFF0891b2),
+              ],
+            ),
+          ),
+          child: _buildContent(),
         );
       },
     );

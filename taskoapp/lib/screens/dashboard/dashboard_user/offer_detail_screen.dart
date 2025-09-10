@@ -140,43 +140,111 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DashboardLayout(
-      title: 'Angebotsdetails',
-      useGradientBackground: true,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+    return Scaffold(
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Project Info Card
-            _buildProjectInfoCard(),
-            const SizedBox(height: 16),
+            // MEGA SICHTBARER ZURÜCK BUTTON GANZ OBEN!
+            Container(
+              width: double.infinity,
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.red.shade600, Colors.orange.shade600],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    debugPrint('🚀🚀🚀 MEGA ZURÜCK BUTTON GEDRÜCKT!');
+                    Navigator.pop(context);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Text(
+                            'ZURÜCK',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.0,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
             
-            // Provider Info Card
-            _buildProviderInfoCard(),
-            const SizedBox(height: 16),
-            
-            // Offer Details Card
-            _buildOfferDetailsCard(),
-            const SizedBox(height: 16),
-            
-            // Service Items Card (if available)
-            if (_serviceItems.isNotEmpty) ...[
-              _buildServiceItemsCard(),
-              const SizedBox(height: 16),
-            ],
-            
-            // Message Card (if available)
-            if (widget.offer.message.isNotEmpty) ...[
-              _buildMessageCard(),
-              const SizedBox(height: 16),
-            ],
-            
-            // Action Buttons (only for pending offers)
-            if (widget.offer.status == 'pending') _buildActionButtons(),
-            
-            // Status Info for non-pending offers
-            if (widget.offer.status != 'pending') _buildStatusInfo(),
+            // DASHBOARD LAYOUT MIT INHALT
+            Expanded(
+              child: DashboardLayout(
+                title: 'Angebotsdetails',
+                useGradientBackground: true,
+                showBackButton: true,
+                onBackPressed: () => Navigator.pop(context),
+                body: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Project Info Card
+                      _buildProjectInfoCard(),
+                      const SizedBox(height: 16),
+                      
+                      // Provider Info Card
+                      _buildProviderInfoCard(),
+                      const SizedBox(height: 16),
+                      
+                      // Offer Details Card
+                      _buildOfferDetailsCard(),
+                      const SizedBox(height: 16),
+                      
+                      // Service Items Card (if available)
+                      if (_serviceItems.isNotEmpty) ...[
+                        _buildServiceItemsCard(),
+                        const SizedBox(height: 16),
+                      ],
+                      
+                      // Message Card (if available)
+                      if (widget.offer.message.isNotEmpty) ...[
+                        _buildMessageCard(),
+                        const SizedBox(height: 16),
+                      ],
+                      
+                      // Action Buttons (only for pending offers)
+                      if (widget.offer.status == 'pending') _buildActionButtons(),
+                      
+                      // Status Info for non-pending offers
+                      if (widget.offer.status != 'pending') _buildStatusInfo(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
