@@ -600,12 +600,6 @@ export async function POST(req: NextRequest) {
           }
 
           try {
-            console.log('🎯 Processing quote payment webhook:', {
-              quoteId,
-              proposalId,
-              paymentIntentId: paymentIntentSucceeded.id,
-            });
-
             // Handle quote -> order conversion directly in webhook
             const quoteRef = db.collection('quotes').doc(quoteId);
             const quoteDoc = await quoteRef.get();
@@ -620,33 +614,29 @@ export async function POST(req: NextRequest) {
               throw new Error(`Quote ${quoteId} has no data`);
             }
 
-            // Find the proposal in SUBCOLLECTION (new structure)
-            console.log('🔍 Looking for proposal in subcollection:', proposalId);
-            const proposalRef = db
-              .collection('quotes')
-              .doc(quoteId)
-              .collection('proposals')
-              .doc(proposalId);
+            // Find the proposal - OLD WAY (Array in main doc)
+            const proposals = quoteData?.proposals || [];
+            let proposal: any = null;
 
-            const proposalDoc = await proposalRef.get();
-
-            if (!proposalDoc.exists) {
-              console.error('❌ Proposal not found in subcollection:', proposalId);
-              throw new Error(`Proposal ${proposalId} not found in subcollection`);
+            if (Array.isArray(proposals)) {
+              proposal = proposals.find((p: any) => p.companyUid === proposalId);
+            } else if (typeof proposals === 'object' && proposals !== null) {
+              // Handle object structure
+              proposal = Object.values(proposals).find(
+                (p: any) =>
+                  p.companyUid === proposalId || p.paymentIntentId === paymentIntentSucceeded.id
+              );
             }
 
-            const proposal = proposalDoc.data();
             if (!proposal) {
-              throw new Error(`Proposal ${proposalId} not found in subcollection`);
+              throw new Error(`Proposal ${proposalId} not found`);
             }
-
-            console.log('✅ Found proposal in subcollection:', proposal);
 
             // Generate unique order ID
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
             // Extract amount from PaymentIntent if proposal amount is missing
-            const proposalAmount = proposal?.totalAmount || proposal?.price;
+            const proposalAmount = proposal.totalAmount || proposal.price;
             const finalAmount = proposalAmount || paymentIntentSucceeded.amount / 100;
 
             console.log('💰 Creating order with amount:', finalAmount);
@@ -660,9 +650,9 @@ export async function POST(req: NextRequest) {
               customerLastName: quoteData.customerName?.split(' ').slice(1).join(' ') || '',
               customerType: 'private',
               kundeId: quoteData.customerUid,
-              selectedAnbieterId: proposal?.companyUid || '',
-              providerName: proposal?.companyName || '',
-              anbieterStripeAccountId: proposal?.companyStripeAccountId || '',
+              selectedAnbieterId: proposal.companyUid || '',
+              providerName: proposal.companyName || '',
+              anbieterStripeAccountId: proposal.companyStripeAccountId || '',
               selectedCategory: quoteData.category || quoteData.serviceCategory || '',
               selectedSubcategory: quoteData.subcategory || quoteData.serviceSubcategory || '',
               projectName: quoteData.title || quoteData.projectTitle || '',
@@ -690,8 +680,8 @@ export async function POST(req: NextRequest) {
               createdAt: new Date(),
               lastUpdated: new Date(),
               orderDate: new Date(),
-              currency: proposal?.currency || 'EUR',
-              jobDurationString: proposal?.timeline || '',
+              currency: proposal.currency || 'EUR',
+              jobDurationString: proposal.timeline || '',
               subcategoryFormData: quoteData.subcategoryFormData || {},
               originalQuoteId: quoteId,
               originalProposalId: proposalId,
@@ -707,53 +697,63 @@ export async function POST(req: NextRequest) {
 
             // Save order
             await db.collection('auftraege').doc(orderId).set(orderData);
-            console.log('✅ Order created successfully:', orderId);
+            // Save order
+            await db.collection('auftraege').doc(orderId).set(orderData);
 
-            // Update proposal status in SUBCOLLECTION (new structure)
-            await proposalRef.update({
-              status: 'accepted',
-              acceptedAt: new Date().toISOString(),
-              paidAt: new Date().toISOString(),
-              paymentIntentId: paymentIntentSucceeded.id,
-              orderId: orderId,
-            });
-            console.log('✅ Updated proposal in subcollection');
+            // Update quote status - OLD WAY (update proposals array in main doc)
+            const updatedProposals = Array.isArray(proposals) ? [...proposals] : { ...proposals };
 
-            // Decline all other proposals in SUBCOLLECTION
-            const otherProposalsSnapshot = await db
-              .collection('quotes')
-              .doc(quoteId)
-              .collection('proposals')
-              .where('status', '==', 'pending')
-              .get();
-
-            const batch = db.batch();
-            otherProposalsSnapshot.docs.forEach(doc => {
-              if (doc.id !== proposalId) {
-                batch.update(doc.ref, {
-                  status: 'declined',
-                  declinedAt: new Date().toISOString(),
-                  declineReason: 'Ein anderes Angebot wurde angenommen und bezahlt',
-                });
-              }
-            });
-
-            if (!otherProposalsSnapshot.empty) {
-              await batch.commit();
-              console.log('✅ Declined other proposals');
+            if (Array.isArray(updatedProposals)) {
+              updatedProposals.forEach((p, index) => {
+                if (p.companyUid === proposalId) {
+                  p.status = 'accepted';
+                  p.acceptedAt = new Date().toISOString();
+                  p.paidAt = new Date().toISOString();
+                  p.paymentIntentId = paymentIntentSucceeded.id;
+                  p.orderId = orderId;
+                } else if (p.status === 'pending') {
+                  p.status = 'declined';
+                  p.declinedAt = new Date().toISOString();
+                  p.declineReason = 'Ein anderes Angebot wurde angenommen und bezahlt';
+                }
+              });
+            } else {
+              Object.keys(updatedProposals).forEach(key => {
+                const p = updatedProposals[key];
+                if (
+                  p.companyUid === proposalId ||
+                  p.paymentIntentId === paymentIntentSucceeded.id
+                ) {
+                  updatedProposals[key] = {
+                    ...p,
+                    status: 'accepted',
+                    acceptedAt: new Date().toISOString(),
+                    paidAt: new Date().toISOString(),
+                    paymentIntentId: paymentIntentSucceeded.id,
+                    orderId: orderId,
+                    companyUid: proposalId,
+                  };
+                } else if (p.status === 'pending') {
+                  updatedProposals[key] = {
+                    ...p,
+                    status: 'declined',
+                    declinedAt: new Date().toISOString(),
+                    declineReason: 'Ein anderes Angebot wurde angenommen und bezahlt',
+                  };
+                }
+              });
             }
 
-            // Update quote status
             await quoteRef.update({
+              proposals: updatedProposals,
               status: 'accepted',
-              acceptedProposalId: proposalId,
+              acceptedProposal: proposalId,
               acceptedAt: new Date().toISOString(),
               paidAt: new Date().toISOString(),
               paymentIntentId: paymentIntentSucceeded.id,
               orderId: orderId,
               updatedAt: new Date().toISOString(),
             });
-            console.log('✅ Updated quote status');
 
             return NextResponse.json({
               received: true,
