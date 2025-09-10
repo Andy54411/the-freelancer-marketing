@@ -106,17 +106,9 @@ export default function SubcategoryPage() {
       const allReviewsSnapshot = await getDocs(reviewsQuery);
       console.log('📊 DEBUG: Total reviews loaded:', allReviewsSnapshot.size);
 
-      // Get all orders/auftraege to count completed jobs
-      const ordersQuery = query(
-        collection(db, 'auftraege'),
-        limit(1000) // Larger limit for orders
-      );
-      const allOrdersSnapshot = await getDocs(ordersQuery);
-      console.log('📊 DEBUG: Total orders loaded:', allOrdersSnapshot.size);
-
       // Create a map of providerId to reviews for efficient lookup
       const reviewsMap = new Map<string, any[]>();
-      // Create a map of providerId to completed jobs count
+      // Create a map of providerId to completed jobs count (based on reviews)
       const completedJobsMap = new Map<string, number>();
 
       allReviewsSnapshot.forEach(doc => {
@@ -132,6 +124,10 @@ export default function SubcategoryPage() {
           ...data,
         });
 
+        // Jede Review entspricht einem abgeschlossenen Auftrag
+        const currentCompletedJobs = completedJobsMap.get(providerId) || 0;
+        completedJobsMap.set(providerId, currentCompletedJobs + 1);
+
         console.log(
           '🔍 DEBUG: Review doc:',
           doc.id,
@@ -142,30 +138,11 @@ export default function SubcategoryPage() {
         );
       });
 
-      // Count completed jobs per provider
-      allOrdersSnapshot.forEach(doc => {
-        const data = doc.data();
-        const providerId = data.providerId || data.companyId;
-        const status = data.status;
-
-        // Count only completed orders
-        if (status === 'completed' || status === 'abgeschlossen' || status === 'fertig') {
-          const currentCount = completedJobsMap.get(providerId) || 0;
-          completedJobsMap.set(providerId, currentCount + 1);
-          console.log(
-            '✅ DEBUG: Completed job found for provider:',
-            providerId,
-            'Total:',
-            currentCount + 1
-          );
-        }
-      });
-
       console.log('🗺️ DEBUG: Created reviews map for', reviewsMap.size, 'providers having reviews');
       console.log(
         '🗺️ DEBUG: Created completed jobs map for',
         completedJobsMap.size,
-        'providers having completed jobs'
+        'providers having completed jobs (based on reviews)'
       );
 
       // Enrich each provider with their reviews and completed jobs
