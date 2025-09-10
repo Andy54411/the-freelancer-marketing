@@ -545,6 +545,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               return;
             }
           } else {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Keine Stunden zur Freigabe vorhanden'),
@@ -586,6 +587,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             // Zusätzliche Zahlung erforderlich - SOFORT Payment starten
             _processPaymentFromApproval(data, timeEntryIds, totalHours);
           } else {
+            if (!mounted) return;
             debugPrint('✅ NO PAYMENT REQUIRED - SHOWING SUCCESS');
             // Erfolgreich ohne zusätzliche Zahlung
             ScaffoldMessenger.of(context).showSnackBar(
@@ -599,6 +601,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           // Daten neu laden
           _loadOrderData();
         } else {
+            if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ Fehler bei der Freigabe: ${result['error']}'),
@@ -662,6 +665,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         debugPrint('❌ STRIPE PAYMENT ERROR: $error');
         if (error is StripeException) {
           if (error.error.code == FailureCode.Canceled) {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('💳 Zahlung abgebrochen'),
@@ -669,6 +673,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               ),
             );
           } else {
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('❌ Payment-Fehler: ${error.error.localizedMessage}'),
@@ -677,6 +682,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             );
           }
         } else {
+            if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ Unbekannter Payment-Fehler: $error'),
@@ -686,6 +692,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         }
       }
     } else {
+            if (!mounted) return;
       debugPrint('❌ PAYMENT DATA MISSING!');
     }
   }
@@ -728,6 +735,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       await _loadOrderData();
       
       // Zeige Erfolgs-Nachricht
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ ${data['additionalHours']}h erfolgreich bezahlt! Status wird automatisch aktualisiert.'),
@@ -777,6 +785,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       debugPrint('✅ Payment Sheet erfolgreich abgeschlossen');
       
       // Payment erfolgreich
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ Zahlung erfolgreich! ${paymentData['additionalHours']}h freigegeben'),
@@ -793,6 +802,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       
       if (e.error.code == FailureCode.Canceled) {
         // User hat Payment abgebrochen
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Zahlung abgebrochen'),
@@ -800,6 +810,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ),
         );
       } else {
+            if (!mounted) return;
         // Anderer Stripe Fehler
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -810,6 +821,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       }
     } catch (error) {
       debugPrint('❌ Payment Error: $error');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Payment-Fehler: $error'),
@@ -820,72 +832,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   /// Zeigt Payment Dialog für zusätzliche Stunden
-  Future<void> _showPaymentDialog(int totalAmountInCents, int totalHours) async {
-    final amountInEuro = totalAmountInCents / 100.0;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('💳 Zusätzliche Zahlung erforderlich'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Für die ${totalHours}h zusätzliche Arbeitszeit ist eine Zahlung erforderlich:'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: TaskiloColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: TaskiloColors.primary),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${totalHours}h zusätzlich:',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '€${amountInEuro.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: TaskiloColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Nach der Zahlung werden die Stunden automatisch freigegeben und das Geld an den Anbieter ausgezahlt.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Später bezahlen'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _processPayment(totalAmountInCents, totalHours);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: TaskiloColors.primary,
-            ),
-            child: const Text('Jetzt bezahlen'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Startet den Payment-Prozess für zusätzliche Stunden
   Future<void> _processPayment(int totalAmountInCents, int totalHours) async {
     if (!mounted) return;
     
@@ -982,6 +928,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           totalHours: totalHours,
         );
       } else {
+            if (!mounted) return;
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1146,6 +1093,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         // Zeige finalen Success Dialog
         _showFinalSuccessDialog(data);
       } else {
+            if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Payment-Bestätigung fehlgeschlagen: ${confirmResult['error']}'),

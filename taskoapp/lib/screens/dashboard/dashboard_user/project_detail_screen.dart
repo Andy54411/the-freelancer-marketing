@@ -4,6 +4,7 @@ import '../../../services/project_service.dart';
 import '../../../services/review_service.dart';
 import '../dashboard_layout.dart';
 import 'edit_project_screen.dart';
+import 'provider_detail_screen.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final Project? project;
@@ -330,6 +331,48 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     );
   }
 
+  Future<void> _navigateToProviderProfile() async {
+    if (_providerInfo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anbieter-Informationen nicht verfügbar'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Bereite Provider-Daten für den ProviderDetailScreen vor
+    final providerData = Map<String, dynamic>.from(_providerInfo!);
+    
+    // Stelle sicher, dass wichtige Felder vorhanden sind
+    final providerId = widget.quote?.assignedTo ?? widget.quote?.providerId;
+    if (providerId != null) {
+      providerData['id'] = providerId;
+      providerData['userId'] = providerId;
+      providerData['uid'] = providerId;
+    }
+
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ProviderDetailScreen(
+            providerData: providerData,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Öffnen des Anbieter-Profils: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DashboardLayout(
@@ -626,15 +669,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                onPressed: () {
-                                  // TODO: Navigate to provider profile
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Anbieter-Profil wird geöffnet'),
-                                      backgroundColor: Color(0xFF14AD9F),
-                                    ),
-                                  );
-                                },
+                                onPressed: _navigateToProviderProfile,
                                 icon: const Icon(Icons.person, color: Colors.white),
                                 label: const Text('Profil anzeigen'),
                                 style: ElevatedButton.styleFrom(
