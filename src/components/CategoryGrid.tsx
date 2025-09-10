@@ -1,9 +1,11 @@
 'use client';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { db } from '@/firebase/clients';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs, limit, query, orderBy } from 'firebase/firestore';
+import { SERVICE_TAG_MAPPING, getTagMapping, generateServiceUrl } from '@/lib/serviceTagMapping';
 
 const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) => [
   {
@@ -129,7 +131,6 @@ const useCategoryData = () => {
 
         // Prüfe zuerst die Firestore-Verbindung
         if (!db) {
-
           return;
         }
 
@@ -170,8 +171,7 @@ const useCategoryData = () => {
         if (Object.keys(topSubcategories).length > 0) {
           setCategoryTags(prev => ({ ...prev, ...topSubcategories }));
         }
-      } catch (error) {
-
+      } catch (_error) {
         // Statische Daten bleiben als Fallback
       } finally {
         setLoading(false);
@@ -187,6 +187,25 @@ const useCategoryData = () => {
 export default function CategoryGrid() {
   const [active, setActive] = useState('moebel');
   const { categoryTags, loading } = useCategoryData();
+  const router = useRouter();
+
+  // Tag-Click Handler für Navigation
+  const handleTagClick = (tag: string) => {
+    const mapping = getTagMapping(tag);
+
+    if (!mapping) {
+      console.warn(`Kein Mapping gefunden für Tag: ${tag}`);
+      return;
+    }
+
+    // Generiere URL mit Filtern
+    const serviceUrl = generateServiceUrl(mapping);
+
+    console.log(`🚀 Navigiere zu: ${serviceUrl} für Tag: ${tag}`);
+
+    // Navigation zur Service-Seite
+    router.push(serviceUrl);
+  };
 
   // Dynamische Kategorien mit aktuellen Tags
   const categories = getCategoriesWithDynamicTags(categoryTags);
@@ -235,12 +254,13 @@ export default function CategoryGrid() {
         ))}
       </div>
 
-      {/* Tags */}
+      {/* Tags mit Navigation */}
       <div className="flex flex-wrap gap-4 justify-center md:justify-start">
         {selected.tags.map(tag => (
           <button
             key={tag}
-            className="px-6 py-2 border border-white/30 rounded-full text-base font-medium text-white/90 hover:bg-white/10 transition drop-shadow-md"
+            onClick={() => handleTagClick(tag)}
+            className="px-6 py-2 border border-white/30 rounded-full text-base font-medium text-white/90 hover:bg-white/10 hover:border-white/50 transition-all duration-200 drop-shadow-md hover:drop-shadow-lg"
           >
             {tag}
           </button>

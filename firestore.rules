@@ -470,8 +470,8 @@ service cloud.firestore {
       // Öffentlicher Lesezugriff für alle Bewertungen (Service-Discovery)
       allow get: if true;
       
-      // Öffentlicher Lesezugriff für Reviews-Listen mit Limit
-      allow list: if request.query.limit <= 100;
+      // Öffentlicher Lesezugriff für Reviews-Listen - erweiterte Berechtigung
+      allow list: if true; // Vollständig öffentlich für Service-Discovery
       
       // Nur der Reviewer kann seine eigene Bewertung erstellen
       allow create: if request.auth != null && 

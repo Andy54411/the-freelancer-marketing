@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { db } from '@/firebase/clients';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Search, Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
-import { categories, Category } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
+import { collection, query, getDocs, limit } from 'firebase/firestore';
+import { Star, MapPin, ArrowLeft, Briefcase, Clock } from 'lucide-react';
+import { categories } from '@/lib/categoriesData'; // Importiere die zentralen Kategorien
 import { ProviderBookingModal } from '@/app/dashboard/company/[uid]/provider/[id]/components/ProviderBookingModal';
 import Header from '@/components/Header';
 import ServiceHeader from '@/components/ServiceHeader';
+import AuthModal from '@/components/AuthModal';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -37,6 +38,7 @@ interface Provider {
 export default function SubcategoryPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth(); // Auth Context für intelligente Payment-Weiterleitung
   const category = (params?.category as string) || '';
   const subcategory = (params?.subcategory as string) || '';
@@ -45,16 +47,28 @@ export default function SubcategoryPage() {
   const decodedCategory = decodeURIComponent(category);
   const decodedSubcategory = decodeURIComponent(subcategory);
 
+  // Tag-basierte Navigation Parameter
+  const fromTag = searchParams?.get('tag') || '';
+  const filteredByTag = searchParams?.get('filtered') === 'true';
+
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'reviews' | 'price' | 'newest'>('rating');
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Normalisierungsfunktion
   const normalizeToSlug = (str: string) =>
-    str.toLowerCase().replace(/\s+/g, '-').replace(/&/g, 'und');
+    str
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/&/g, 'und')
+      .replace(/ä/g, 'ae')
+      .replace(/ö/g, 'oe')
+      .replace(/ü/g, 'ue')
+      .replace(/ß/g, 'ss');
 
   // Finde die Kategorie durch Vergleich der normalisierten Namen - handle both %26 and & cases
   const categoryInfo = categories.find(cat => {
@@ -76,37 +90,106 @@ export default function SubcategoryPage() {
 
   // Lade echte Bewertungen für Provider
   const enrichProvidersWithReviews = async (providers: Provider[]): Promise<Provider[]> => {
-    const enrichedProviders = await Promise.all(
-      providers.map(async provider => {
-        try {
-          // Lade Bewertungen für diesen Provider
-          const reviewsQuery = query(
-            collection(db, 'reviews'),
-            where('providerId', '==', provider.id)
-          );
-          const reviewsSnapshot = await getDocs(reviewsQuery);
+    console.log('🔄 DEBUG: Starting to enrich', providers.length, 'providers with reviews');
 
-          if (reviewsSnapshot.docs.length > 0) {
-            const reviews = reviewsSnapshot.docs.map(doc => doc.data());
-            const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
-            const averageRating = totalRating / reviews.length;
+    try {
+      // Get all reviews from collection with improved query and limit
+      const reviewsQuery = query(
+        collection(db, 'reviews'),
+        limit(500) // Reasonable limit for performance
+      );
+      const allReviewsSnapshot = await getDocs(reviewsQuery);
+      console.log('📊 DEBUG: Total reviews loaded:', allReviewsSnapshot.size);
 
-            return {
-              ...provider,
-              rating: averageRating,
-              reviewCount: reviews.length,
-            };
-          }
+      // Create a map of providerId to reviews for efficient lookup
+      const reviewsMap = new Map<string, any[]>();
 
-          // Fallback auf ursprüngliche Daten
-          return provider;
-        } catch (error) {
-          return provider;
+      allReviewsSnapshot.forEach(doc => {
+        const data = doc.data();
+        const providerId = data.providerId;
+
+        if (!reviewsMap.has(providerId)) {
+          reviewsMap.set(providerId, []);
         }
-      })
-    );
 
-    return enrichedProviders;
+        reviewsMap.get(providerId)!.push({
+          id: doc.id,
+          ...data,
+        });
+
+        console.log(
+          '🔍 DEBUG: Review doc:',
+          doc.id,
+          'providerId:',
+          providerId,
+          'rating:',
+          data.rating
+        );
+      });
+
+      console.log('🗺️ DEBUG: Created reviews map for', reviewsMap.size, 'providers having reviews');
+
+      // Enrich each provider with their reviews
+      const enrichedProviders = providers.map(provider => {
+        const providerReviews = reviewsMap.get(provider.id) || [];
+
+        // Calculate average rating
+        let averageRating = 0;
+        let totalRating = 0;
+
+        if (providerReviews.length > 0) {
+          totalRating = providerReviews.reduce((sum, review) => {
+            const rating = Number(review.rating) || 0;
+            console.log('� DEBUG: Review rating for', provider.companyName, ':', rating);
+            return sum + rating;
+          }, 0);
+
+          averageRating = totalRating / providerReviews.length;
+          console.log(
+            '⭐ DEBUG: Calculated average rating for',
+            provider.companyName,
+            ':',
+            averageRating,
+            'from',
+            providerReviews.length,
+            'reviews'
+          );
+        } else {
+          console.log(
+            '📭 DEBUG: No reviews found for',
+            provider.companyName,
+            '(ID:',
+            provider.id,
+            ')'
+          );
+        }
+
+        return {
+          ...provider,
+          rating: parseFloat(averageRating.toFixed(1)),
+          reviewCount: providerReviews.length,
+        };
+      });
+
+      console.log(
+        '✅ DEBUG: Enrichment complete. Providers with ratings:',
+        enrichedProviders.map(p => ({
+          name: p.companyName,
+          id: p.id,
+          rating: p.rating,
+          reviewCount: p.reviewCount,
+        }))
+      );
+
+      return enrichedProviders;
+    } catch (error) {
+      console.error('🚨 DEBUG: Error in enrichProvidersWithReviews:', error);
+      return providers.map(provider => ({
+        ...provider,
+        rating: provider.rating || 0,
+        reviewCount: provider.reviewCount || 0,
+      }));
+    }
   };
 
   useEffect(() => {
@@ -170,8 +253,9 @@ export default function SubcategoryPage() {
               (data.skills?.some(skill => skill.toLowerCase().includes('koch'))
                 ? 'Mietkoch'
                 : null),
-            rating: data.averageRating || data.rating || 0,
-            reviewCount: data.reviewCount || data.totalReviews || 0,
+            // Diese werden später durch echte Reviews überschrieben - Standardwerte auf 0 setzen
+            rating: 0,
+            reviewCount: 0,
             completedJobs: data.completedJobs || 0,
             isCompany: true,
             priceRange: data.priceRange,
@@ -199,45 +283,62 @@ export default function SubcategoryPage() {
           'for subcategory:',
           subcategoryName
         );
+        console.log('🎯 DEBUG: Provider selectedCategory:', provider.selectedCategory);
         console.log('🎯 DEBUG: Provider selectedSubcategory:', provider.selectedSubcategory);
         console.log('🎯 DEBUG: Provider skills:', provider.skills);
 
-        // Für Firmen: prüfe selectedSubcategory mit verschiedenen Matching-Strategien
+        // 🔧 PRIORITÄT 1: Exakte Kategorie/Unterkategorie Übereinstimmung
         if (provider.isCompany && provider.selectedSubcategory) {
           // Exakte Übereinstimmung
           if (provider.selectedSubcategory === subcategoryName) {
-            console.log('✅ DEBUG: Exact match for', provider.companyName);
+            console.log('✅ DEBUG: Exact subcategory match for', provider.companyName);
             return true;
           }
 
           // Case-insensitive Übereinstimmung
           if (provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase()) {
-            console.log('✅ DEBUG: Case-insensitive match for', provider.companyName);
+            console.log('✅ DEBUG: Case-insensitive subcategory match for', provider.companyName);
             return true;
           }
 
           // URL-Parameter Übereinstimmung
           if (provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase()) {
-            console.log('✅ DEBUG: URL parameter match for', provider.companyName);
+            console.log('✅ DEBUG: URL parameter subcategory match for', provider.companyName);
             return true;
           }
         }
 
-        // Für alle Provider: Prüfe Skills/Services Array
+        // 🔧 PRIORITÄT 2: Skills Array Übereinstimmung
         const skillsMatch = provider.skills?.some(
           skill =>
             skill.toLowerCase().includes((subcategoryName || '').toLowerCase()) ||
             skill.toLowerCase().includes(subcategory.toLowerCase())
         );
 
-        // Für Provider ohne explizite Skills/Subcategory: Prüfe Namen und Bio
+        if (skillsMatch) {
+          console.log('✅ DEBUG: Skills match for', provider.companyName);
+          return true;
+        }
+
+        // 🔧 PRIORITÄT 3: Nur sehr spezifische Matches für Namen/Bio
+        // Für Provider ohne explizite Skills/Subcategory: Prüfe Namen und Bio (STRIKTERE MATCHING)
         const nameMatch =
-          provider.companyName?.toLowerCase().includes(subcategory.toLowerCase()) ||
-          provider.userName?.toLowerCase().includes(subcategory.toLowerCase()) ||
-          provider.companyName?.toLowerCase().includes(subcategoryName?.toLowerCase() || '') ||
-          provider.userName?.toLowerCase().includes(subcategoryName?.toLowerCase() || '');
+          // Nur exakte Wort-Matches, keine Teilstring-Matches
+          provider.companyName
+            ?.toLowerCase()
+            .split(' ')
+            .some(
+              word => word === subcategory.toLowerCase() || word === subcategoryName?.toLowerCase()
+            ) ||
+          provider.userName
+            ?.toLowerCase()
+            .split(' ')
+            .some(
+              word => word === subcategory.toLowerCase() || word === subcategoryName?.toLowerCase()
+            );
 
         const bioMatch =
+          // Nur wenn die komplette Subcategory im Bio-Text vorkommt
           provider.bio?.toLowerCase().includes(subcategory.toLowerCase()) ||
           provider.bio?.toLowerCase().includes(subcategoryName?.toLowerCase() || '');
 
@@ -250,13 +351,63 @@ export default function SubcategoryPage() {
             provider.userName?.toLowerCase().includes('koch') ||
             provider.userName?.toLowerCase().includes('mietkoch'));
 
-        const finalMatch = skillsMatch || nameMatch || bioMatch || specialMietkochMatch;
+        // 🔧 ANTI-MATCH: Verhindere Cross-Category Matches
+        // Wenn Provider explizit eine andere Kategorie hat, nicht matchen
+        if (provider.selectedCategory && provider.selectedSubcategory) {
+          const providerCategory = provider.selectedCategory.toLowerCase();
+          const targetCategory = categoryInfo?.title.toLowerCase();
+
+          // Wenn Provider aus völlig anderer Kategorie kommt, ausschließen
+          if (providerCategory !== targetCategory && !specialMietkochMatch && !skillsMatch) {
+            console.log(
+              '❌ DEBUG: Category mismatch for',
+              provider.companyName,
+              'Provider:',
+              providerCategory,
+              'Target:',
+              targetCategory
+            );
+            return false;
+          }
+        }
+
+        // Tag-basierte Filterung wenn verfügbar
+        let tagMatch = false;
+        if (fromTag && filteredByTag) {
+          const tagMapping = SERVICE_TAG_MAPPING[fromTag];
+          if (tagMapping) {
+            // Prüfe ob Provider zu den Filtern aus dem Tag Mapping passt
+            const filterMatch = tagMapping.filters?.some(
+              filter =>
+                provider.companyName?.toLowerCase().includes(filter.toLowerCase()) ||
+                provider.userName?.toLowerCase().includes(filter.toLowerCase()) ||
+                provider.bio?.toLowerCase().includes(filter.toLowerCase()) ||
+                provider.skills?.some(skill => skill.toLowerCase().includes(filter.toLowerCase()))
+            );
+
+            // Zusätzlich prüfe Kategorie/Unterkategorie Match
+            const categoryMatch =
+              provider.selectedCategory?.toLowerCase() === tagMapping.category.toLowerCase() ||
+              provider.selectedSubcategory?.toLowerCase() === tagMapping.subcategory.toLowerCase();
+
+            tagMatch = filterMatch || categoryMatch;
+          }
+        }
+
+        const finalMatch =
+          skillsMatch ||
+          nameMatch ||
+          bioMatch ||
+          specialMietkochMatch ||
+          (filteredByTag ? tagMatch : true);
 
         console.log('🎯 DEBUG: Match results for', provider.companyName, ':', {
           skillsMatch,
           nameMatch,
           bioMatch,
           specialMietkochMatch,
+          tagMatch,
+          filteredByTag,
           finalMatch,
         });
 
@@ -303,7 +454,7 @@ export default function SubcategoryPage() {
       );
 
       setProviders(filteredProviders);
-    } catch (error) {
+    } catch (_error) {
     } finally {
       setLoading(false);
     }
@@ -354,22 +505,23 @@ export default function SubcategoryPage() {
   // Debug logging für troubleshooting
 
   const handleBookNow = (provider: Provider) => {
-    // Auth-Check: Wenn nicht eingeloggt, zur Registrierung weiterleiten
+    // Auth-Check: Wenn nicht eingeloggt, Auth-Modal öffnen
     if (!user) {
-      router.push('/login');
+      setSelectedProvider(provider);
+      setIsAuthModalOpen(true);
       return;
     }
 
-    // Wenn eingeloggt, Modal öffnen
+    // Wenn eingeloggt, Booking-Modal öffnen
     setSelectedProvider(provider);
     setIsBookingModalOpen(true);
   };
 
   const handleBookingConfirm = async (
-    selection: any,
-    time: string,
-    durationString: string,
-    description: string
+    _selection: any,
+    _time: string,
+    _durationString: string,
+    _description: string
   ) => {
     try {
       // Schließe das Modal
@@ -386,24 +538,18 @@ export default function SubcategoryPage() {
         return;
       }
 
-      if (user.role === 'firma') {
+      // Prüfe ob User eine Firma ist (B2B) oder Kunde (B2C)
+      // TODO: Implementiere korrekte User-Type-Detection
+      const isCompany = (user as any).isCompany || (user as any).role === 'firma';
+
+      if (isCompany) {
         // Firma → B2B Payment im Company Dashboard
 
         router.push(`/dashboard/company/${user.uid}/provider/${selectedProvider?.id}?booking=true`);
         return;
       }
 
-      if (user.role === 'kunde') {
-        // Kunde → B2C Payment Flow
-
-        router.push(
-          `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
-        );
-        return;
-      }
-
-      // Fallback für unbekannte Rollen
-
+      // Standardfall: B2C Payment Flow für normale Kunden
       router.push(
         `/auftrag/get-started?provider=${selectedProvider?.id}&category=${categoryInfo?.title}&subcategory=${subcategoryName}`
       );
@@ -497,8 +643,8 @@ export default function SubcategoryPage() {
           onSearchChange={setSearchQuery}
           sortBy={sortBy}
           onSortChange={setSortBy}
-          showAuthBanner={!user}
-          onLoginClick={() => router.push('/login')}
+          fromTag={fromTag}
+          filteredByTag={filteredByTag}
         />
 
         {/* Anbieter Liste - mit Gradient Hintergrund */}
@@ -650,9 +796,11 @@ export default function SubcategoryPage() {
                           {provider.rating && provider.rating > 0 ? (
                             <div className="flex items-center gap-1">
                               <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span>{provider.rating.toFixed(1)}</span>
+                              <span className="font-medium text-gray-900">
+                                {provider.rating.toFixed(1)}
+                              </span>
                               {provider.reviewCount && provider.reviewCount > 0 && (
-                                <span className="ml-1">({provider.reviewCount})</span>
+                                <span className="text-gray-500">({provider.reviewCount})</span>
                               )}
                             </div>
                           ) : (
@@ -691,10 +839,10 @@ export default function SubcategoryPage() {
                             e.stopPropagation();
                             handleBookNow(provider);
                           }}
-                          className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                          className="bg-[#14ad9f] hover:bg-[#129488] text-white px-3 py-1.5 rounded-lg font-medium transition-colors text-xs whitespace-nowrap"
                           type="button"
                         >
-                          {user ? 'Jetzt buchen' : 'Registrieren & buchen'}
+                          {user ? 'Jetzt buchen' : 'Anmelden & buchen'}
                         </button>
                       </div>
                     </div>
@@ -736,6 +884,17 @@ export default function SubcategoryPage() {
           )}
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setSelectedProvider(null);
+        }}
+        providerName={selectedProvider?.companyName || selectedProvider?.userName}
+        service={subcategoryName}
+      />
     </>
   );
 }
