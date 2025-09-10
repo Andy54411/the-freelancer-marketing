@@ -385,19 +385,21 @@ export default function FooterSection() {
                   id="newsletter-consent"
                   checked={consentGiven}
                   onChange={e => setConsentGiven(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-white/20 bg-white/10 text-[#14ad9f] focus:ring-[#14ad9f]"
+                  className="mt-1 h-5 w-5 rounded border-white/20 bg-white/10 text-[#14ad9f] focus:ring-[#14ad9f] focus:ring-2 flex-shrink-0"
                   disabled={isLoading}
                 />
                 <label
                   htmlFor="newsletter-consent"
-                  className="text-xs text-white/80 leading-tight cursor-pointer"
+                  className="text-xs text-white/80 leading-relaxed cursor-pointer min-h-[44px] flex items-start pt-1"
                 >
-                  Ich stimme der Verarbeitung meiner E-Mail-Adresse für den Newsletter zu. Weitere
-                  Informationen finden Sie in unserer{' '}
-                  <a href="/datenschutz" className="text-white underline hover:text-white/80">
-                    Datenschutzerklärung
-                  </a>
-                  . Jederzeit abbestellbar.
+                  <span className="block">
+                    Ich stimme der Verarbeitung meiner E-Mail-Adresse für den Newsletter zu. Weitere
+                    Informationen finden Sie in unserer{' '}
+                    <a href="/datenschutz" className="text-white underline hover:text-white/80">
+                      Datenschutzerklärung
+                    </a>
+                    . Jederzeit abbestellbar.
+                  </span>
                 </label>
               </div>
 

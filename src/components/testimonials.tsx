@@ -5,19 +5,20 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Star } from 'lucide-react';
 
 export default function Testimonials() {
-
   const testimonials = [
     {
       name: 'Maria Schmidt',
       role: 'Hausbesitzer',
-      content: 'Taskilo hat mir geholfen, einen zuverlässigen Handwerker zu finden. Schnell und unkompliziert!',
+      content:
+        'Taskilo hat mir geholfen, einen zuverlässigen Handwerker zu finden. Schnell und unkompliziert!',
       rating: 5,
       avatar: 'MS',
     },
     {
       name: 'Thomas Weber',
       role: 'Manager',
-      content: 'Perfekter Service! Die Plattform ist benutzerfreundlich und die Dienstleister sind professionell.',
+      content:
+        'Perfekter Service! Die Plattform ist benutzerfreundlich und die Dienstleister sind professionell.',
       rating: 5,
       avatar: 'TW',
     },
@@ -102,9 +103,9 @@ export default function Testimonials() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
                       {testimonial.name}
-                    </h4>
+                    </h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400">{testimonial.role}</p>
                   </div>
                 </div>

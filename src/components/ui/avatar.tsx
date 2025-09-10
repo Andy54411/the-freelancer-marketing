@@ -25,7 +25,7 @@ const AvatarImage = ({
     className={`h-full w-full object-cover rounded-full ${className}`}
     src={src}
     alt={alt}
-    onError={(e) => {
+    onError={e => {
       const target = e.target as HTMLImageElement;
       target.style.display = 'none';
     }}
@@ -39,7 +39,7 @@ const AvatarFallback = ({
 }: React.ComponentProps<typeof AvatarPrimitive.Fallback>) => (
   <AvatarPrimitive.Fallback
     data-slot="avatar-fallback"
-    className={`flex h-full w-full items-center justify-center bg-gray-200 text-gray-500 rounded-full ${className}`}
+    className={`flex h-full w-full items-center justify-center bg-gray-300 text-gray-700 rounded-full font-semibold ${className}`}
     {...props}
   />
 );

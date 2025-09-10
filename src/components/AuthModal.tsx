@@ -37,7 +37,11 @@ export default function AuthModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900">Anmeldung erforderlich</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-[#14ad9f] hover:bg-gray-100 p-2 rounded-lg transition-colors"
+            aria-label="Anmeldung-Dialog schließen"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>

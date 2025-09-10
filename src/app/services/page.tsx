@@ -65,21 +65,21 @@ export default function ServicesPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                   <div className="text-3xl mb-3">⚡</div>
-                  <h3 className="font-semibold text-white mb-2">Sofort verfügbar</h3>
+                  <h2 className="font-semibold text-white mb-2 text-lg">Sofort verfügbar</h2>
                   <p className="text-white/80 text-sm">
                     Lokale Anbieter in Ihrer Nähe finden und direkt buchen
                   </p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                   <div className="text-3xl mb-3">🛡️</div>
-                  <h3 className="font-semibold text-white mb-2">Geprüft & Sicher</h3>
+                  <h2 className="font-semibold text-white mb-2 text-lg">Geprüft & Sicher</h2>
                   <p className="text-white/80 text-sm">
                     Verifizierte Anbieter mit Bewertungssystem und Stripe-Payment
                   </p>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                   <div className="text-3xl mb-3">🎯</div>
-                  <h3 className="font-semibold text-white mb-2">B2C & B2B</h3>
+                  <h2 className="font-semibold text-white mb-2 text-lg">B2C & B2B</h2>
                   <p className="text-white/80 text-sm">
                     Für Privatpersonen und Unternehmen - flexible Abrechnung
                   </p>
@@ -100,6 +100,11 @@ export default function ServicesPage() {
             </div>
 
             {/* Categories Grid */}
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-white text-center drop-shadow-lg mb-12">
+                Service-Kategorien
+              </h2>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredCategories.map((category, index) => (
                 <Link
