@@ -97,7 +97,7 @@ export default function FooterSection() {
         },
         {
           title: 'Kategorien',
-          href: '#kategorien',
+          href: '/services',
         },
         {
           title: 'Preise',
