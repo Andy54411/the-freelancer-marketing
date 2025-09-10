@@ -52,12 +52,23 @@ export class ProposalSubcollectionService {
     proposalData: ProposalData,
     fullResponse?: any
   ): Promise<void> {
+    console.log('🔧 ProposalSubcollectionService.createProposal called');
+    console.log('🔧 Parameters:', {
+      quoteId,
+      proposalDataKeys: Object.keys(proposalData),
+      hasFullResponse: !!fullResponse,
+    });
+
     const proposalId = proposalData.companyUid; // Use companyUid as document ID
+    console.log('🔧 Using proposalId:', proposalId);
+
     const proposalRef = db
       .collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .doc(proposalId);
+
+    console.log('🔧 ProposalRef created for path:', `quotes/${quoteId}/proposals/${proposalId}`);
 
     const now = Timestamp.now();
     const proposal = {
@@ -67,7 +78,9 @@ export class ProposalSubcollectionService {
       updatedAt: now,
     };
 
+    console.log('🔧 About to set proposal document...');
     await proposalRef.set(proposal);
+    console.log('✅ Proposal document created successfully');
 
     // Update quote status - include response if provided
     const quoteUpdate: any = {
@@ -81,7 +94,10 @@ export class ProposalSubcollectionService {
       quoteUpdate.responseAt = now;
     }
 
+    console.log('🔧 About to update quote document with:', Object.keys(quoteUpdate));
     await db.collection('quotes').doc(quoteId).update(quoteUpdate);
+    console.log('✅ Quote document updated successfully');
+    console.log('🔧 ProposalSubcollectionService.createProposal completed');
   }
 
   /**

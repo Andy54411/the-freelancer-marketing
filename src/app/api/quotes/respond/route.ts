@@ -84,10 +84,15 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
 
     // Erstelle Proposal in Subcollection
     try {
+      console.log('📡 About to create proposal with service...');
       await ProposalSubcollectionService.createProposal(quoteId, proposalData, response);
       console.log('✅ Proposal created successfully');
     } catch (proposalError) {
       console.error('❌ Error creating proposal:', proposalError);
+      console.error(
+        '❌ Proposal error stack:',
+        proposalError instanceof Error ? proposalError.stack : 'No stack trace'
+      );
       throw proposalError; // Re-throw to be caught by outer try-catch
     }
 
@@ -96,6 +101,7 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     // Benachrichtigung an Kunden senden
     if (customerUid) {
       try {
+        console.log('📧 Sending notification to customer:', customerUid);
         await ProjectNotificationService.createNewProposalNotification(
           quoteId,
           customerUid,
@@ -113,8 +119,11 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
         console.error('❌ Error sending notification:', notificationError);
         // Benachrichtigung-Fehler sollten die Hauptfunktion nicht blockieren
       }
+    } else {
+      console.log('⚠️ No customerUid found, skipping notification');
     }
 
+    console.log('🎉 About to return success response');
     return NextResponse.json({
       success: true,
       message: 'Angebot erfolgreich abgegeben',
