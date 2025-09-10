@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' as stripe_lib;
 import '../dashboard_layout.dart';
 import 'offer_detail_screen.dart';
 import '../../../services/offer_notification_service.dart';
 import '../../../services/push_notification_service.dart';
+import '../../../services/quote_payment_service.dart';
 
 class IncomingOffersScreen extends StatefulWidget {
   const IncomingOffersScreen({super.key});
@@ -278,26 +280,8 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
 
   Future<void> _acceptOffer(OfferItem offer) async {
     if (offer.sourceType == 'quote') {
-      // Update proposal in subcollection
-      await FirebaseFirestore.instance
-          .collection('quotes')
-          .doc(offer.projectId)
-          .collection('proposals')
-          .doc(offer.id)
-          .update({
-        'status': 'accepted',
-        'acceptedAt': FieldValue.serverTimestamp(),
-      });
-      
-      // Update quote status
-      await FirebaseFirestore.instance
-          .collection('quotes')
-          .doc(offer.projectId)
-          .update({
-        'status': 'accepted',
-        'acceptedProposalId': offer.id,
-        'acceptedAt': FieldValue.serverTimestamp(),
-      });
+      // Sofort Zahlung initiieren nach Annahme des Angebots
+      await _initiateQuotePayment(offer);
     } else {
       // Update proposal in project_requests array
       final projectDoc = await FirebaseFirestore.instance
@@ -322,6 +306,125 @@ class _IncomingOffersScreenState extends State<IncomingOffersScreen> {
           'proposals': proposals,
           'status': 'in_progress',
         });
+      }
+    }
+  }
+
+  Future<void> _initiateQuotePayment(OfferItem offer) async {
+    try {
+      debugPrint('💳 Initiating payment for quote offer: ${offer.id}');
+      
+      // Zeige Loading-Dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  color: Color(0xFF14ad9f),
+                ),
+                SizedBox(height: 16),
+                Text('Zahlung wird vorbereitet...'),
+              ],
+            ),
+          );
+        },
+      );
+      
+      // Erstelle Payment Intent für Quote
+      final paymentResult = await QuotePaymentService.createQuotePaymentIntent(
+        quoteId: offer.projectId,
+        proposalId: offer.id,
+        amount: offer.proposedPrice,
+        quoteTitle: offer.projectTitle,
+        companyName: offer.providerName,
+      );
+      
+      // Schließe Loading-Dialog
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+      
+      if (paymentResult['success']) {
+        debugPrint('✅ Payment Intent created: ${paymentResult['paymentIntentId']}');
+        
+        // Zeige Stripe Payment Sheet
+        await _showStripePaymentSheet(
+          paymentResult['clientSecret'],
+          paymentResult['paymentDetails'],
+          offer,
+        );
+      } else {
+        throw Exception(paymentResult['error'] ?? 'Fehler beim Erstellen der Zahlung');
+      }
+    } catch (e) {
+      debugPrint('❌ Payment error: $e');
+      
+      // Schließe Loading-Dialog falls noch offen
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      // Zeige Fehler
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler bei der Zahlung: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showStripePaymentSheet(
+    String clientSecret,
+    Map<String, dynamic> paymentDetails,
+    OfferItem offer,
+  ) async {
+    try {
+      debugPrint('💳 Showing Stripe Payment Sheet...');
+      
+      // Initialisiere Payment Sheet
+      await stripe_lib.Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: stripe_lib.SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: 'Taskilo',
+          style: ThemeMode.light,
+        ),
+      );
+      
+      // Zeige Payment Sheet
+      await stripe_lib.Stripe.instance.presentPaymentSheet();
+      
+      debugPrint('✅ Payment completed successfully!');
+      
+      // Zeige Erfolg und navigiere zurück
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Zahlung erfolgreich! Auftrag wird erstellt...'),
+            backgroundColor: Color(0xFF14ad9f),
+          ),
+        );
+        
+        // Refresh die Angebotsliste
+        setState(() {});
+      }
+      
+    } catch (e) {
+      debugPrint('❌ Stripe payment error: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Zahlung fehlgeschlagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
