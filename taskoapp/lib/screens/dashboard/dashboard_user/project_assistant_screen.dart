@@ -144,9 +144,11 @@ class _ProjectAssistantScreenState extends State<ProjectAssistantScreen> {
   List<ChatMessage> _messages = [];
   List<SmartQuestion> _smartQuestions = [];
   List<Provider> _recommendedProviders = [];
+  // ignore: prefer_final_fields (Field wird mit .add(), .remove(), .clear() modifiziert)
   Set<String> _selectedProviders = {};
   
   int _currentQuestionIndex = -1;
+  // ignore: prefer_final_fields (Field wird mit [key] = value Zuweisungen modifiziert)
   Map<String, String> _questionAnswers = {};
   String _detectedCategory = '';
   String _projectDescription = '';

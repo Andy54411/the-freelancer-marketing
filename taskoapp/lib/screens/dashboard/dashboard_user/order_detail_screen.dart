@@ -757,81 +757,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     }
   }
 
-  /// Bestätigt Payment direkt ohne Dialog
-  Future<void> _confirmPaymentDirectly(Map<String, dynamic> paymentData, List<String> timeEntryIds) async {
-    try {
-      final paymentIntentClientSecret = paymentData['clientSecret'];
-      
-      if (paymentIntentClientSecret == null) {
-        throw Exception('Client Secret fehlt');
-      }
 
-      debugPrint('💳 Initialisiere Stripe Payment Sheet...');
-      
-      // Initialisiere Payment Sheet
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentIntentClientSecret,
-          style: ThemeMode.system,
-          merchantDisplayName: 'Taskilo',
-        ),
-      );
 
-      debugPrint('📱 Zeige Payment Sheet...');
-      
-      // Zeige Payment Sheet
-      await Stripe.instance.presentPaymentSheet();
-      
-      debugPrint('✅ Payment Sheet erfolgreich abgeschlossen');
-      
-      // Payment erfolgreich
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✅ Zahlung erfolgreich! ${paymentData['additionalHours']}h freigegeben'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 5),
-        ),
-      );
-      
-      // Lade Daten neu
-      await _loadOrderData();
-      
-    } on StripeException catch (e) {
-      debugPrint('❌ Stripe Error: ${e.error.localizedMessage}');
-      
-      if (e.error.code == FailureCode.Canceled) {
-        // User hat Payment abgebrochen
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Zahlung abgebrochen'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      } else {
-            if (!mounted) return;
-        // Anderer Stripe Fehler
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Zahlungsfehler: ${e.error.localizedMessage}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (error) {
-      debugPrint('❌ Payment Error: $error');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Payment-Fehler: $error'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
-  /// Zeigt Payment Dialog für zusätzliche Stunden
+
+  /// Zeigt Payment Dialog für zusätzliche Stunden (manueller Payment-Flow)
+  /// WICHTIG: Diese Funktion wird für zukünftige Features benötigt und sollte nicht entfernt werden!
+  /// Sie ermöglicht manuelle Zahlungen außerhalb des automatischen Approval-Prozesses.
+  // ignore: unused_element
   Future<void> _processPayment(int totalAmountInCents, int totalHours) async {
     if (!mounted) return;
     
@@ -928,7 +861,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           totalHours: totalHours,
         );
       } else {
-            if (!mounted) return;
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
