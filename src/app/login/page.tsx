@@ -92,7 +92,7 @@ export default function LoginPage() {
     setLoading('apple');
     setError(null);
     try {
-      const provider = new OAuthProvider('oidc.apple');
+      const provider = new OAuthProvider('apple.com');
       provider.addScope('email');
       provider.addScope('name');
       const result = await signInWithPopup(auth, provider);
