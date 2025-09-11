@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, Trash2, Plus, FileText, X } from 'lucide-react';
+import { Eye, Edit, Trash2, X } from 'lucide-react';
 import { InvoiceData } from '@/types/invoiceTypes';
 import StornoInvoice from './StornoInvoice';
 
@@ -70,42 +70,9 @@ export function InvoiceComponent({
     }
   };
 
-  const handleTemplatesPage = () => {
-    router.push('./invoices/templates');
-  };
-
-  const handleCreateInvoice = () => {
-    router.push('./invoices/create');
-  };
-
   return (
     <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle>Rechnungen</CardTitle>
-            <CardDescription>Verwalten Sie Ihre Rechnungen</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleTemplatesPage}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Templates
-            </Button>
-            <Button
-              onClick={handleCreateInvoice}
-              className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Neue Rechnung
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <div className="space-y-4">
           {invoices.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">Keine Rechnungen vorhanden</div>
