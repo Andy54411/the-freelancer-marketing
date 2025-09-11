@@ -1,6 +1,7 @@
 import React from 'react';
 import { InvoiceData } from './types';
 import { getProxiedImageUrl, isFirebaseStorageUrl } from '@/utils/imageProxy';
+import { GermanMultiPageTemplate } from './GermanMultiPageTemplate';
 
 interface TemplateProps {
   data: InvoiceData;
@@ -15,18 +16,55 @@ interface TemplateProps {
  * - Kleinunternehmerregelung Support
  * - Deutsche Steuerrecht-Compliance
  * - A4-Format (595px × 842px)
+ * - Automatische Mehrseitigkeit bei vielen Positionen
  */
 export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data }) => {
+  // Automatische Erkennung: Ab 15 Positionen mehrseitig
+  const maxItemsPerPage = 15;
+  const totalItems = data.items?.length || 0;
+  const shouldUseMultiPage = totalItems > maxItemsPerPage;
+
+  // Wenn mehrseitig nötig, lade das mehrseitige Template
+  if (shouldUseMultiPage) {
+    return <GermanMultiPageTemplate data={data} />;
+  }
   return (
     <div
       data-invoice-template
-      className="w-full max-w-[595px] min-h-[842px] bg-white p-8 font-sans text-sm leading-normal flex flex-col mx-auto"
+      className="w-full max-w-full min-h-[842px] bg-white p-8 font-sans text-sm leading-normal flex flex-col mx-auto relative"
     >
-      {/* Header mit Logo und Firmenangaben */}
-      {/* Header mit Logo und Firmenangaben */}
+      {/* Logo ganz oben */}
+      <div className="flex justify-end mb-6">
+        {data.companyLogo || data.profilePictureURL || (data as any).logo ? (
+          <img
+            src={(() => {
+              const logoUrl = data.companyLogo || data.profilePictureURL || (data as any).logo;
+              if (!logoUrl) return '';
+              return isFirebaseStorageUrl(logoUrl) ? getProxiedImageUrl(logoUrl) : logoUrl;
+            })()}
+            alt={`${data.companyName} Logo`}
+            className="h-20 w-auto max-w-[120px] object-contain"
+            onError={e => {
+              console.error('🖼️ Company Logo Error:', e);
+              e.currentTarget.style.display = 'none';
+              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'block';
+            }}
+            onLoad={() => {
+              console.log('🖼️ Company Logo erfolgreich geladen für:', data.companyName);
+            }}
+          />
+        ) : (
+          <div className="h-20 w-16 p-2 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center flex flex-col justify-center">
+            <div className="text-xs text-gray-500 font-medium">Logo</div>
+            <div className="text-xs text-gray-400 mt-1">{data.companyName}</div>
+          </div>
+        )}
+      </div>
+      {/* Header mit Firmenangaben und Rechnungsinfo */}
       <div className="flex justify-between items-start mb-8">
         {/* Linke Seite: Firmenangaben */}
-        <div className="flex-1 mr-8 mt-24">
+        <div className="flex-1">
           <div className="text-base font-bold text-gray-900 mb-1">{data.companyName}</div>
           <div className="text-sm text-gray-700 whitespace-pre-line leading-tight">
             {data.companyAddress}
@@ -43,33 +81,8 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data }) => {
           )}
         </div>
 
-        {/* Rechte Seite: Logo und Rechnungsinfo */}
-        <div className="flex flex-col min-w-[200px]">
-          {/* Logo rechts oben */}
-          <div className="mb-4">
-            <img
-              src="/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg"
-              alt={`${data.companyName} Logo`}
-              className="h-32 w-auto max-w-[300px] object-contain"
-              onError={e => {
-                console.error('🖼️ Lokales Logo Error:', e);
-                e.currentTarget.style.display = 'none';
-                const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                if (fallback) fallback.style.display = 'block';
-              }}
-              onLoad={() => {
-                console.log('🖼️ Lokales Logo erfolgreich geladen für:', data.companyName);
-              }}
-            />
-            <div
-              className="hidden p-2 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center min-w-[100px]"
-              style={{ display: 'none' }}
-            >
-              <div className="text-xs text-gray-500 font-medium">Logo</div>
-              <div className="text-xs text-gray-400 mt-1">{data.companyName}</div>
-            </div>
-          </div>
-
+        {/* Rechte Seite: Rechnungsinfo */}
+        <div className="text-right">
           <h1 className="text-xl font-bold text-[#14ad9f] mb-3">RECHNUNG</h1>
           <div className="text-sm text-gray-700">
             <div className="mb-1">
@@ -238,15 +251,15 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data }) => {
       </div>
       {/* Zahlungsbedingungen */}
       {data.paymentTerms && (
-        <div className="mb-6">
-          <div className="text-sm font-semibold text-gray-900 mb-2">Zahlungsbedingungen:</div>
-          <div className="text-gray-700 text-sm">{data.paymentTerms}</div>
+        <div className="mb-4">
+          <div className="text-xs font-semibold text-gray-900 mb-1">Zahlungsbedingungen:</div>
+          <div className="text-gray-700 text-xs">{data.paymentTerms}</div>
 
           {/* Skonto-Bedingungen anzeigen */}
           {data.skontoEnabled && data.skontoText && (
-            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded">
-              <div className="text-sm font-semibold text-green-800 mb-1">Skonto-Möglichkeit:</div>
-              <div className="text-green-700 text-sm">{data.skontoText}</div>
+            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+              <div className="text-xs font-semibold text-green-800 mb-1">Skonto-Möglichkeit:</div>
+              <div className="text-green-700 text-xs">{data.skontoText}</div>
             </div>
           )}
         </div>

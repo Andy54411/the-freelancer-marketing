@@ -16,11 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  INVOICE_TEMPLATES,
-  InvoiceTemplate,
-  InvoiceTemplateRenderer,
-} from './InvoiceTemplates';
+import { AVAILABLE_TEMPLATES, InvoiceTemplate, InvoiceTemplateRenderer } from './InvoiceTemplates';
 import { InvoiceData } from '@/types/invoiceTypes';
 
 interface InvoiceTemplatePickerProps {
@@ -34,13 +30,13 @@ interface InvoiceTemplatePickerProps {
 export function InvoiceTemplatePicker({
   trigger,
   onTemplateSelect,
-  selectedTemplate = 'classic',
+  selectedTemplate = 'german-standard',
   previewData,
   userId,
 }: InvoiceTemplatePickerProps) {
   const [open, setOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [_saving, setSaving] = useState(false);
 
   // Mock preview data if none provided
   const mockPreviewData: InvoiceData = previewData || {
@@ -108,7 +104,7 @@ export function InvoiceTemplatePicker({
           updatedAt: new Date(),
         });
         toast.success(
-          `Template "${INVOICE_TEMPLATES.find(t => t.id === template)?.name}" ausgewählt und gespeichert`
+          `Template "${AVAILABLE_TEMPLATES.find(t => t.id === template)?.name}" ausgewählt und gespeichert`
         );
       }
 
@@ -119,8 +115,7 @@ export function InvoiceTemplatePicker({
         onTemplateSelect(template);
       }
       setOpen(false);
-    } catch (error) {
-
+    } catch (_error) {
       toast.error('Fehler beim Speichern der Template-Auswahl');
 
       // Still execute callback even if save failed
@@ -152,7 +147,7 @@ export function InvoiceTemplatePicker({
           </DialogHeader>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {INVOICE_TEMPLATES.map(template => (
+            {AVAILABLE_TEMPLATES.map(template => (
               <Card
                 key={template.id}
                 className={`cursor-pointer transition-all hover:shadow-lg ${
@@ -186,7 +181,7 @@ export function InvoiceTemplatePicker({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-gray-900">{template.name}</h3>
-                      {template.id === 'modern' && (
+                      {template.id === 'german-standard' && (
                         <Badge variant="secondary" className="bg-[#14ad9f] text-white">
                           Empfohlen
                         </Badge>
@@ -230,7 +225,7 @@ export function InvoiceTemplatePicker({
           <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                Vorschau: {INVOICE_TEMPLATES.find(t => t.id === previewTemplate)?.name}
+                Vorschau: {AVAILABLE_TEMPLATES.find(t => t.id === previewTemplate)?.name}
               </DialogTitle>
               <DialogDescription>
                 So wird Ihre Rechnung mit diesem Template aussehen.

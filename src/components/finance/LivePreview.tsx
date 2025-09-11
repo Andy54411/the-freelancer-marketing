@@ -13,6 +13,7 @@ interface LivePreviewProps {
     companyPhone?: string;
     companyWebsite?: string;
     companyLogo?: string;
+    profilePictureURL?: string;
     vatId?: string;
     taxNumber?: string;
     ust?: string;

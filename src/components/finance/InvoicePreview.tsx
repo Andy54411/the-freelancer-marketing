@@ -22,6 +22,7 @@ interface InvoicePreviewProps {
     companyPhone?: string;
     companyWebsite?: string;
     companyLogo?: string;
+    profilePictureURL?: string;
     vatId?: string;
     taxNumber?: string;
     ust?: string;
@@ -52,7 +53,9 @@ export function InvoicePreview({ invoiceData, companySettings }: InvoicePreviewP
     companyEmail: companySettings?.companyEmail || 'info@ihrunternehmen.de',
     companyPhone: companySettings?.companyPhone || '+49 123 456789',
     companyWebsite: companySettings?.companyWebsite || '',
-    companyLogo: companySettings?.companyLogo || '',
+    companyLogo: companySettings?.companyLogo || companySettings?.profilePictureURL || '',
+    profilePictureURL: companySettings?.profilePictureURL || '',
+    logo: companySettings?.profilePictureURL || companySettings?.companyLogo || '',
     companyVatId: companySettings?.vatId || '',
     companyTaxNumber: companySettings?.taxNumber || '',
     items: invoiceData.items || [],
@@ -88,7 +91,84 @@ export function InvoicePreview({ invoiceData, companySettings }: InvoicePreviewP
   };
 
   const handlePrint = () => {
-    window.print();
+    // Erstelle ein neues Fenster nur für das Template
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('Print-Fenster konnte nicht geöffnet werden');
+      return;
+    }
+
+    // Hole alle Styles aus dem aktuellen Dokument
+    const allStyles = Array.from(document.styleSheets)
+      .map(styleSheet => {
+        try {
+          return Array.from(styleSheet.cssRules)
+            .map(rule => rule.cssText)
+            .join('\n');
+        } catch (e) {
+          return '';
+        }
+      })
+      .join('\n');
+
+    // Erstelle das HTML für das Print-Fenster mit dem Template
+    const printHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Rechnung ${previewData.invoiceNumber}</title>
+          <meta charset="utf-8">
+          <style>
+            ${allStyles}
+            
+            /* A4 Print-Styles */
+            @media print {
+              @page {
+                size: A4;
+                margin: 0.5in;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                background: white;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              * {
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div id="print-content"></div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+
+    // Warte bis das Dokument geladen ist
+    printWindow.onload = () => {
+      // Rendere das Template direkt ins Print-Fenster
+      import('react-dom/client').then(({ createRoot }) => {
+        const container = printWindow.document.getElementById('print-content');
+        if (container) {
+          const root = createRoot(container);
+          root.render(React.createElement(GermanStandardTemplate, { data: previewData }));
+
+          // Warte bis React gerendert hat, dann drucke
+          setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+          }, 500);
+        }
+      });
+    };
   };
 
   return (

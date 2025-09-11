@@ -80,6 +80,9 @@ export function useCompanySettings(userId?: string) {
             defaultPaymentTerms: userData.defaultPaymentTerms,
             settingsPaymentTerms: userData.settings?.paymentTerms?.defaultPaymentTerms,
             allSettings: userData.settings,
+            profilePictureURL: userData.profilePictureURL,
+            companyLogo: userData.companyLogo,
+            logoUrl: userData.logoUrl,
           });
 
           const companySettings: CompanySettings = {
@@ -102,7 +105,11 @@ export function useCompanySettings(userId?: string) {
             companyEmail: userData.email || userData.step2?.email,
             companyPhone: userData.companyPhoneNumber || userData.step2?.companyPhoneNumber,
             companyWebsite: userData.companyWebsite || userData.step2?.website,
-            companyLogo: userData.companyLogo || userData.step2?.logo || userData.logoUrl,
+            companyLogo:
+              userData.profilePictureURL ||
+              userData.companyLogo ||
+              userData.step2?.logo ||
+              userData.logoUrl,
 
             // Steuerliche Einstellungen
             taxNumber: userData.taxNumber || userData.step3?.taxNumber,

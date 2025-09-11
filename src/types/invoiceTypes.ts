@@ -42,6 +42,8 @@ export interface InvoiceData {
   companyPhone: string;
   companyWebsite: string;
   companyLogo: string;
+  profilePictureURL?: string;
+  logo?: string;
   companyVatId: string;
   companyTaxNumber: string;
   companyRegister?: string;

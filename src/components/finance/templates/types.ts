@@ -1,10 +1,5 @@
 // Shared types and interfaces for invoice templates
-export type InvoiceTemplate =
-  | 'german-standard'
-  | 'modern-business'
-  | 'classic-professional'
-  | 'minimal-clean'
-  | 'corporate-formal';
+export type InvoiceTemplate = 'german-standard' | 'german-multipage';
 
 export interface InvoiceData {
   id: string;
@@ -24,6 +19,8 @@ export interface InvoiceData {
   companyPhone: string;
   companyWebsite?: string;
   companyLogo?: string;
+  profilePictureURL?: string;
+  companyLogoUrl?: string;
   companyVatId?: string;
   companyTaxNumber?: string;
   companyRegister?: string;

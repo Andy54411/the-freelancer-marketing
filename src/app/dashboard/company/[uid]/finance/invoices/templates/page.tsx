@@ -9,7 +9,7 @@ import { ArrowLeft, Check, Eye, FileText, Loader2 } from 'lucide-react';
 import {
   InvoiceTemplateRenderer,
   InvoiceTemplate,
-  INVOICE_TEMPLATES,
+  AVAILABLE_TEMPLATES,
   InvoiceData,
 } from '@/components/finance/InvoiceTemplates';
 import { toast } from 'sonner';
@@ -54,7 +54,7 @@ export default function InvoiceTemplatesPage() {
             preferredTemplate = 'corporate-formal';
           }
 
-          if (preferredTemplate && INVOICE_TEMPLATES.some(t => t.id === preferredTemplate)) {
+          if (preferredTemplate && AVAILABLE_TEMPLATES.some(t => t.id === preferredTemplate)) {
             setSelectedTemplate(preferredTemplate as InvoiceTemplate);
           }
 
@@ -163,7 +163,7 @@ export default function InvoiceTemplatesPage() {
   const handleTemplateSelect = (templateId: InvoiceTemplate) => {
     setSelectedTemplate(templateId);
     toast.success(
-      `Template "${INVOICE_TEMPLATES.find(t => t.id === templateId)?.name}" ausgewählt`
+      `Template "${AVAILABLE_TEMPLATES.find(t => t.id === templateId)?.name}" ausgewählt`
     );
   };
 
@@ -237,14 +237,14 @@ export default function InvoiceTemplatesPage() {
                 variant="secondary"
                 className="bg-[#14ad9f]/10 text-[#14ad9f] border-[#14ad9f]/20"
               >
-                {INVOICE_TEMPLATES.find(t => t.id === selectedTemplate)?.name} ausgewählt
+                {AVAILABLE_TEMPLATES.find(t => t.id === selectedTemplate)?.name} ausgewählt
               </Badge>
             </div>
           </div>
 
           {/* Template Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {INVOICE_TEMPLATES.map(template => (
+            {AVAILABLE_TEMPLATES.map(template => (
               <Card
                 key={template.id}
                 className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
@@ -297,21 +297,17 @@ export default function InvoiceTemplatesPage() {
                     <div className="flex items-center justify-between text-xs text-gray-600">
                       <span>Stil:</span>
                       <span className="font-medium">
-                        {template.id === 'german-standard' && 'GoBD-konform'}
-                        {template.id === 'modern-business' && 'Modern & Professionell'}
-                        {template.id === 'classic-professional' && 'Traditionell'}
-                        {template.id === 'minimal-clean' && 'Minimalistisch'}
-                        {template.id === 'corporate-formal' && 'Konzernstandard'}
+                        {template.id === 'german-standard' &&
+                          'GoBD-konform mit Auto-Mehrseitigkeit'}
+                        {template.id === 'german-multipage' && 'Mehrseitig optimiert'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-600">
                       <span>Für:</span>
                       <span className="font-medium">
                         {template.id === 'german-standard' && 'Alle deutschen Unternehmen'}
-                        {template.id === 'modern-business' && 'Tech & Startups'}
-                        {template.id === 'classic-professional' && 'Traditionelle Branchen'}
-                        {template.id === 'minimal-clean' && 'Design & Beratung'}
-                        {template.id === 'corporate-formal' && 'B2B & Konzerne'}
+                        {template.id === 'german-multipage' &&
+                          'Große Rechnungen mit vielen Positionen'}
                       </span>
                     </div>
                   </div>
@@ -348,7 +344,7 @@ export default function InvoiceTemplatesPage() {
               <div className="bg-white rounded-lg max-w-7xl w-full max-h-[90vh] overflow-auto">
                 <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
                   <h3 className="font-semibold text-lg">
-                    Vorschau: {INVOICE_TEMPLATES.find(t => t.id === previewTemplate)?.name}
+                    Vorschau: {AVAILABLE_TEMPLATES.find(t => t.id === previewTemplate)?.name}
                   </h3>
                   <div className="flex gap-2">
                     <Button
