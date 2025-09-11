@@ -19,6 +19,7 @@ import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2, Eye } from 'luc
 import { toast } from 'sonner';
 import { InvoiceTemplate, InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
+import { LiveInvoicePreview } from '@/components/finance/LiveInvoicePreview';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useAuth } from '@/contexts/AuthContext';
@@ -1631,138 +1632,42 @@ export default function CreateInvoicePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Live Template Renderer */}
+                  {/* Live Invoice Preview */}
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                    <div className="h-96 overflow-y-auto relative">
-                      <div className="transform scale-[0.25] origin-top-left w-[300%] h-[500%] pointer-events-none">
-                        <InvoiceTemplateRenderer
-                          template={selectedTemplate}
-                          data={
-                            {
-                              id: 'preview',
-                              number: formData.invoiceNumber || 'R-2025-000',
-                              invoiceNumber: formData.invoiceNumber || 'R-2025-000',
-                              sequentialNumber: 0,
-                              date: formData.issueDate || new Date().toISOString().split('T')[0],
-                              issueDate:
-                                formData.issueDate || new Date().toISOString().split('T')[0],
-                              dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
-                              customerName: formData.customerName || 'Kunden auswählen...',
-                              customerAddress:
-                                formData.customerAddress || 'Kundenadresse wird hier angezeigt',
-                              customerEmail: formData.customerEmail || '',
-                              description: formData.description || '',
-                              companyName:
-                                fullCompanyData?.companyName ||
-                                companySettings?.companyName ||
-                                'Ihr Unternehmen',
-                              companyAddress:
-                                fullCompanyData?.companyAddress ||
-                                (fullCompanyData
-                                  ? [
-                                      fullCompanyData.companyStreet &&
-                                      fullCompanyData.companyHouseNumber
-                                        ? `${fullCompanyData.companyStreet} ${fullCompanyData.companyHouseNumber}`
-                                        : fullCompanyData.companyStreet,
-                                      fullCompanyData.companyPostalCode &&
-                                      fullCompanyData.companyCity
-                                        ? `${fullCompanyData.companyPostalCode} ${fullCompanyData.companyCity}`
-                                        : undefined,
-                                      fullCompanyData.companyCountry,
-                                    ]
-                                      .filter(Boolean)
-                                      .join('\n')
-                                  : companySettings?.companyAddress) ||
-                                'Ihre Firmenadresse',
-                              companyEmail:
-                                fullCompanyData?.email ||
-                                companySettings?.companyEmail ||
-                                'info@ihrunternehmen.de',
-                              companyPhone:
-                                fullCompanyData?.companyPhoneNumber ||
-                                companySettings?.companyPhone ||
-                                '+49 123 456789',
-                              companyWebsite:
-                                fullCompanyData?.companyWebsite ||
-                                companySettings?.companyWebsite ||
-                                '',
-                              companyLogo: (() => {
-                                let logo =
-                                  fullCompanyData?.companyLogo ||
-                                  fullCompanyData?.profilePictureURL ||
-                                  fullCompanyData?.step3?.profilePictureURL ||
-                                  companySettings?.companyLogo ||
-                                  '';
-
-                                // URL dekodieren falls nötig
-                                if (logo) {
-                                  try {
-                                    // Prüfe ob URL encoded ist und dekodiere sie
-                                    if (logo.includes('%2F')) {
-                                      logo = decodeURIComponent(logo);
-                                    }
-                                  } catch (error) {
-                                    console.warn('🖼️ Fehler beim URL-Dekodieren:', error);
-                                  }
-                                }
-
-                                console.log('🖼️ Live Preview Logo Debug:', {
-                                  originalLogo:
-                                    fullCompanyData?.companyLogo ||
-                                    fullCompanyData?.profilePictureURL ||
-                                    fullCompanyData?.step3?.profilePictureURL ||
-                                    companySettings?.companyLogo ||
-                                    '',
-                                  decodedLogo: logo,
-                                  companyLogo: fullCompanyData?.companyLogo,
-                                  profilePictureURL: fullCompanyData?.profilePictureURL,
-                                  step3ProfilePictureURL: fullCompanyData?.step3?.profilePictureURL,
-                                  companySettingsLogo: companySettings?.companyLogo,
-                                  fullCompanyDataAvailable: !!fullCompanyData,
-                                });
-                                return logo;
-                              })(),
-                              companyVatId: fullCompanyData?.vatId || companySettings?.vatId || '',
-                              companyTaxNumber:
-                                fullCompanyData?.taxNumber || companySettings?.taxNumber || '',
-                              companyRegister:
-                                fullCompanyData?.companyRegister ||
-                                companySettings?.companyRegister ||
-                                '',
-                              districtCourt:
-                                fullCompanyData?.districtCourt ||
-                                companySettings?.districtCourt ||
-                                '',
-                              legalForm:
-                                fullCompanyData?.legalForm || companySettings?.legalForm || '',
-                              items: items.filter(item => item.description && item.quantity > 0),
-                              amount: subtotal,
-                              tax: tax,
-                              total: total,
-                              status: 'draft' as const,
-                              notes: formData.notes,
-                              createdAt: new Date(),
-                              year: new Date().getFullYear(),
-                              companyId: 'preview',
-                              isStorno: false,
-                              isSmallBusiness: companySettings?.ust === 'kleinunternehmer' || false,
-                              vatRate: parseFloat(formData.taxRate),
-                              priceInput: 'netto' as const,
-                              taxNote: (() => {
-                                const taxNote =
-                                  formData.taxNote !== 'none' ? formData.taxNote : undefined;
-                                console.log('🔍 Invoice Create Debug - taxNote:', {
-                                  formDataTaxNote: formData.taxNote,
-                                  processedTaxNote: taxNote,
-                                  isNotNone: formData.taxNote !== 'none',
-                                });
-                                return taxNote as 'kleinunternehmer' | 'reverse-charge' | undefined;
-                              })(),
-                            } as InvoiceData
-                          }
-                          preview={true}
-                        />
-                      </div>
+                    <div style={{ height: '260px' }}>
+                      <LiveInvoicePreview
+                        invoiceData={{
+                          invoiceNumber: formData.invoiceNumber || 'R-2025-000',
+                          issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
+                          dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
+                          customerName: formData.customerName || 'Kunden auswählen...',
+                          customerAddress:
+                            formData.customerAddress || 'Kundenadresse wird hier angezeigt',
+                          customerEmail: formData.customerEmail || '',
+                          description: formData.description || '',
+                          items:
+                            items.length > 0
+                              ? items
+                              : [
+                                  {
+                                    id: 'placeholder',
+                                    description: 'Beispiel Dienstleistung',
+                                    quantity: 1,
+                                    unitPrice: 100.0,
+                                    total: 100.0,
+                                  },
+                                ],
+                          amount: subtotal,
+                          tax: tax,
+                          total: total,
+                          taxNote: (formData.taxNote !== 'none' ? formData.taxNote : undefined) as
+                            | 'kleinunternehmer'
+                            | 'reverse-charge'
+                            | undefined,
+                        }}
+                        template={selectedTemplate}
+                        companySettings={companySettings || undefined}
+                      />
                     </div>
                   </div>
 

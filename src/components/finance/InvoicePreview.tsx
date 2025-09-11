@@ -95,7 +95,7 @@ export function InvoicePreview({
   };
 
   const handlePrint = () => {
-    // In real app: Print invoice
+    // EINFACHER Ansatz - nur Drucken ohne CSS-Hacks
     window.print();
   };
 
@@ -147,7 +147,7 @@ export function InvoicePreview({
             style={{ width: '100%' }}
           >
             <div style={{ width: '100%', maxWidth: 'none' }}>
-              <InvoiceTemplateRenderer template={template} data={previewData} preview={false} />
+              <InvoiceTemplateRenderer template={template} data={previewData} preview={true} />
             </div>
           </div>
         </div>

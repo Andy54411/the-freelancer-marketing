@@ -26,20 +26,59 @@ export interface InvoiceTemplateProps {
 
 // Main Template Renderer with modular templates
 export function InvoiceTemplateRenderer({ template, data, preview = false }: InvoiceTemplateProps) {
+  // Ensure data has items - add fallback if empty
+  const processedData = {
+    ...data,
+    items:
+      data.items && data.items.length > 0
+        ? data.items
+        : [
+            {
+              id: '1',
+              description: 'Beispielposition - Dienstleistung',
+              quantity: 1,
+              unitPrice: 100.0,
+              total: 100.0,
+              taxRate: data.isSmallBusiness ? 0 : 19,
+            },
+          ],
+    // Ensure totals are calculated if missing or zero
+    amount:
+      data.amount ||
+      (data.items && data.items.length > 0
+        ? data.items.reduce((sum, item) => sum + (item.total || 0), 0)
+        : 100.0),
+    tax:
+      data.tax ||
+      (data.isSmallBusiness
+        ? 0
+        : data.items && data.items.length > 0
+          ? data.items.reduce((sum, item) => sum + (item.total || 0), 0) * 0.19
+          : 19.0),
+    total:
+      data.total ||
+      (data.items && data.items.length > 0
+        ? data.items.reduce((sum, item) => sum + (item.total || 0), 0) *
+          (data.isSmallBusiness ? 1 : 1.19)
+        : data.isSmallBusiness
+          ? 100.0
+          : 119.0),
+  };
+
   const TemplateComponent = () => {
     switch (template) {
       case 'german-standard':
-        return <GermanStandardTemplate data={data} preview={preview} />;
+        return <GermanStandardTemplate data={processedData} preview={preview} />;
       case 'modern-business':
-        return <ModernBusinessTemplate data={data} preview={preview} />;
+        return <ModernBusinessTemplate data={processedData} preview={preview} />;
       case 'classic-professional':
-        return <ClassicProfessionalTemplate data={data} preview={preview} />;
+        return <ClassicProfessionalTemplate data={processedData} preview={preview} />;
       case 'minimal-clean':
-        return <MinimalCleanTemplate data={data} preview={preview} />;
+        return <MinimalCleanTemplate data={processedData} preview={preview} />;
       case 'corporate-formal':
-        return <CorporateFormalTemplate data={data} preview={preview} />;
+        return <CorporateFormalTemplate data={processedData} preview={preview} />;
       default:
-        return <GermanStandardTemplate data={data} preview={preview} />;
+        return <GermanStandardTemplate data={processedData} preview={preview} />;
     }
   };
 
