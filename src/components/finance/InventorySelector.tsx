@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,12 +45,30 @@ export function InventorySelector({
   const [loading, setLoading] = useState(false);
   const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
 
+  const loadInventoryItems = useCallback(async () => {
+    try {
+      setLoading(true);
+      const items = await InventoryService.getInventoryItems(companyId);
+
+      // Nur aktive Artikel mit verfügbarem Bestand anzeigen
+      const activeItems = items.filter(item => item.status === 'active' && item.availableStock > 0);
+
+      setInventoryItems(activeItems);
+      setFilteredItems(activeItems);
+    } catch (error) {
+      console.error('Fehler beim Laden der Inventar-Artikel:', error);
+      toast.error('Inventar-Artikel konnten nicht geladen werden');
+    } finally {
+      setLoading(false);
+    }
+  }, [companyId]);
+
   // Lade Inventar-Artikel
   useEffect(() => {
     if (isOpen && companyId) {
       loadInventoryItems();
     }
-  }, [isOpen, companyId]);
+  }, [isOpen, companyId, loadInventoryItems]);
 
   // Filter Artikel basierend auf Suchbegriff
   useEffect(() => {
@@ -68,26 +86,6 @@ export function InventorySelector({
     }
   }, [searchTerm, inventoryItems]);
 
-  const loadInventoryItems = async () => {
-    try {
-      setLoading(true);
-      const items = await InventoryService.getInventoryItems(companyId);
-      
-      // Nur aktive Artikel mit verfügbarem Bestand anzeigen
-      const activeItems = items.filter(
-        item => item.status === 'active' && item.availableStock > 0
-      );
-      
-      setInventoryItems(activeItems);
-      setFilteredItems(activeItems);
-    } catch (error) {
-      console.error('Fehler beim Laden der Inventar-Artikel:', error);
-      toast.error('Inventar-Artikel konnten nicht geladen werden');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleQuantityChange = (itemId: string, quantity: number) => {
     setQuantities(prev => ({
       ...prev,
@@ -101,11 +99,6 @@ export function InventorySelector({
 
   const isItemSelected = (itemId: string): boolean => {
     return getSelectedQuantity(itemId) > 0;
-  };
-
-  const canAddMoreItems = (item: InventoryItem): boolean => {
-    const currentQuantity = getSelectedQuantity(item.id);
-    return currentQuantity < item.availableStock;
   };
 
   const handleAddItems = () => {
@@ -138,12 +131,12 @@ export function InventorySelector({
     // Kombiniere mit bereits ausgewählten Artikeln
     const allItems = [...selectedItems, ...newItems];
     onItemSelected(allItems);
-    
+
     // Reset state
     setQuantities({});
     setSearchTerm('');
     onClose();
-    
+
     toast.success(`${newItems.length} Artikel hinzugefügt`);
   };
 
@@ -181,7 +174,9 @@ export function InventorySelector({
               />
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>{filteredItems.length} von {inventoryItems.length} Artikeln</span>
+              <span>
+                {filteredItems.length} von {inventoryItems.length} Artikeln
+              </span>
             </div>
           </div>
 
@@ -195,9 +190,7 @@ export function InventorySelector({
               <div className="flex flex-col items-center justify-center h-40 text-gray-500">
                 <Package className="h-12 w-12 mb-2" />
                 <p>Keine Artikel gefunden</p>
-                {searchTerm && (
-                  <p className="text-sm">Versuchen Sie einen anderen Suchbegriff</p>
-                )}
+                {searchTerm && <p className="text-sm">Versuchen Sie einen anderen Suchbegriff</p>}
               </div>
             ) : (
               <div className="divide-y">
@@ -215,16 +208,20 @@ export function InventorySelector({
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-4 mt-2">
                           <Badge variant="outline" className="text-xs">
                             {item.category}
                           </Badge>
                           <span className="text-sm text-gray-600">
-                            Verfügbar: <span className="font-medium">{item.availableStock} {item.unit}</span>
+                            Verfügbar:{' '}
+                            <span className="font-medium">
+                              {item.availableStock} {item.unit}
+                            </span>
                           </span>
                           <span className="text-sm text-gray-600">
-                            Preis: <span className="font-medium">{item.sellingPrice.toFixed(2)}€</span>
+                            Preis:{' '}
+                            <span className="font-medium">{item.sellingPrice.toFixed(2)}€</span>
                           </span>
                           {item.location && (
                             <span className="text-sm text-gray-600">
@@ -246,12 +243,14 @@ export function InventorySelector({
                             min="0"
                             max={item.availableStock}
                             value={getSelectedQuantity(item.id)}
-                            onChange={e => handleQuantityChange(item.id, parseInt(e.target.value) || 0)}
+                            onChange={e =>
+                              handleQuantityChange(item.id, parseInt(e.target.value) || 0)
+                            }
                             className="w-20"
                           />
                           <span className="text-sm text-gray-500">{item.unit}</span>
                         </div>
-                        
+
                         {isItemSelected(item.id) && (
                           <CheckCircle className="h-5 w-5 text-green-600" />
                         )}
@@ -269,14 +268,16 @@ export function InventorySelector({
               <div className="text-sm text-gray-600">
                 {getTotalSelectedItems() > 0 && (
                   <>
-                    <span className="font-medium">{getTotalSelectedItems()} Artikel ausgewählt</span>
+                    <span className="font-medium">
+                      {getTotalSelectedItems()} Artikel ausgewählt
+                    </span>
                     <span className="ml-2">
                       Gesamtwert: <span className="font-medium">{getTotalValue().toFixed(2)}€</span>
                     </span>
                   </>
                 )}
               </div>
-              
+
               <div className="flex gap-2">
                 <Button variant="outline" onClick={onClose}>
                   Abbrechen

@@ -1,19 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -21,7 +14,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Package,
@@ -43,7 +35,6 @@ import {
   DeliveryNoteService,
   DeliveryNote,
   DeliveryNoteItem,
-  DeliveryNoteSettings,
 } from '@/services/deliveryNoteService';
 import { InventoryService, InventoryItem } from '@/services/inventoryService';
 import { InventorySelector } from '@/components/finance/InventorySelector';
@@ -99,11 +90,7 @@ export function DeliveryNoteComponent({
   const [templateLoading, setTemplateLoading] = useState(false);
   const [showTemplateSelect, setShowTemplateSelect] = useState(false); // Modal für Template-Auswahl
 
-  // Warehouse States (NEU für Phase 6)
-  const [warehouseEnabled, setWarehouseEnabled] = useState(true);
-  const [stockValidation, setStockValidation] = useState<{
-    [key: string]: { available: number; needed: number };
-  }>({});
+  // Warehouse enabled by default
 
   // Form State für neuen/bearbeiteten Lieferschein
   const [formData, setFormData] = useState<Partial<DeliveryNote>>({
@@ -122,13 +109,6 @@ export function DeliveryNoteComponent({
     shippingMethod: 'standard',
     warehouseUpdated: false,
     template: 'german-standard' as DeliveryNoteTemplate, // Temporärer Fallback, wird beim Load aktualisiert
-  });
-
-  const [newItem, setNewItem] = useState<Partial<DeliveryNoteItem>>({
-    description: '',
-    quantity: 1,
-    unit: 'Stk',
-    unitPrice: 0,
   });
 
   useEffect(() => {
@@ -184,7 +164,7 @@ export function DeliveryNoteComponent({
       setFormData(prev => ({ ...prev, template: templateId }));
       setShowTemplateSelect(false);
 
-      toast.success(`Template "${templateObject.name}" ausgewählt und gespeichert`);
+      toast.success(`Template &quot;${templateObject.name}&quot; ausgewählt und gespeichert`);
     } catch (error) {
       console.error('Fehler beim Speichern des Templates:', error);
       toast.error('Fehler beim Speichern der Template-Auswahl');
@@ -196,7 +176,7 @@ export function DeliveryNoteComponent({
       setLoading(true);
       const notes = await DeliveryNoteService.getDeliveryNotesByCompany(companyId);
       setDeliveryNotes(notes);
-    } catch (error) {
+    } catch (_error) {
       toast.error('Lieferscheine konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -268,7 +248,7 @@ export function DeliveryNoteComponent({
                     inventoryItem: null,
                     available: 0,
                     sufficient: false,
-                    error: `Artikel "${item.description}" nicht im Lager gefunden`,
+                    error: `Artikel &quot;${item.description}&quot; nicht im Lager gefunden`,
                   };
                 }
 
@@ -295,7 +275,7 @@ export function DeliveryNoteComponent({
                   inventoryItem: null,
                   available: 0,
                   sufficient: false,
-                  error: `Fehler beim Prüfen des Bestands für "${item.description}"`,
+                  error: `Fehler beim Prüfen des Bestands für &quot;${item.description}&quot;`,
                 };
               }
             })
@@ -336,7 +316,7 @@ export function DeliveryNoteComponent({
         showPrices: formData.showPrices || false,
         status: 'draft',
         warehouseUpdated: false,
-        stockValidated: warehouseEnabled,
+        stockValidated: true,
         shippingMethod: formData.shippingMethod,
         notes: formData.notes,
         template: templateToUse, // Verwende das ausgewählte oder Standard-Template
@@ -430,7 +410,7 @@ export function DeliveryNoteComponent({
       toast.success('Lieferschein als versendet markiert');
       await loadDeliveryNotes();
       await loadStats();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Status konnte nicht aktualisiert werden');
     }
   };
@@ -441,7 +421,7 @@ export function DeliveryNoteComponent({
       toast.success('Lieferschein als zugestellt markiert');
       await loadDeliveryNotes();
       await loadStats();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Status konnte nicht aktualisiert werden');
     }
   };
@@ -452,18 +432,8 @@ export function DeliveryNoteComponent({
       toast.success(`Rechnung ${invoiceId} erfolgreich erstellt`);
       await loadDeliveryNotes();
       await loadStats();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Rechnung konnte nicht erstellt werden');
-    }
-  };
-
-  const handleUpdateInventory = async (id: string) => {
-    try {
-      await DeliveryNoteService.updateInventoryFromDeliveryNote(id);
-      toast.success('Lagerbestand erfolgreich aktualisiert');
-      await loadDeliveryNotes();
-    } catch (error) {
-      toast.error('Lagerbestand konnte nicht aktualisiert werden');
     }
   };
 
@@ -477,14 +447,9 @@ export function DeliveryNoteComponent({
       toast.success('Lieferschein erfolgreich gelöscht');
       await loadDeliveryNotes();
       await loadStats();
-    } catch (error) {
+    } catch (_error) {
       toast.error('Lieferschein konnte nicht gelöscht werden');
     }
-  };
-
-  const addItem = () => {
-    // Funktion nicht mehr verwendet - Artikel werden über InventorySelector hinzugefügt
-    console.warn('addItem wurde aufgerufen, aber sollte durch InventorySelector ersetzt werden');
   };
 
   const removeItem = (itemId: string) => {
@@ -500,14 +465,14 @@ export function DeliveryNoteComponent({
       ...prev,
       items: items,
     }));
-    
+
     // Berechne Gesamtsumme wenn Preise angezeigt werden
     if (formData.showPrices) {
       const subtotal = items.reduce((sum, item) => sum + (item.unitPrice || 0) * item.quantity, 0);
       const vatRate = 0.19; // 19% MwSt
       const tax = subtotal * vatRate;
       const total = subtotal + tax;
-      
+
       setFormData(prev => ({
         ...prev,
         subtotal,
@@ -553,12 +518,6 @@ export function DeliveryNoteComponent({
       warehouseUpdated: false,
       template: userTemplate || undefined, // Use user's preferred template (undefined if not selected)
     });
-    setNewItem({
-      description: '',
-      quantity: 1,
-      unit: 'Stk',
-      unitPrice: 0,
-    });
     setSelectedCustomer(null);
   };
 
@@ -586,7 +545,7 @@ export function DeliveryNoteComponent({
         const error = await response.json();
         toast.error(`E-Mail-Versand fehlgeschlagen: ${error.error}`);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('E-Mail konnte nicht gesendet werden');
     }
   };
@@ -617,7 +576,7 @@ export function DeliveryNoteComponent({
       } else {
         toast.error(`Lagerbestand konnte nicht aktualisiert werden: ${result.errors.join(', ')}`);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Lagerbestand konnte nicht aktualisiert werden');
     }
   };
@@ -1096,10 +1055,13 @@ export function DeliveryNoteComponent({
                             )}
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
-                            <span>Menge: {item.quantity} {item.unit}</span>
+                            <span>
+                              Menge: {item.quantity} {item.unit}
+                            </span>
                             {formData.showPrices && item.unitPrice && (
                               <span className="ml-4">
-                                Preis: {item.unitPrice.toFixed(2)}€ × {item.quantity} = {(item.unitPrice * item.quantity).toFixed(2)}€
+                                Preis: {item.unitPrice.toFixed(2)}€ × {item.quantity} ={' '}
+                                {(item.unitPrice * item.quantity).toFixed(2)}€
                               </span>
                             )}
                             {item.warehouseLocation && (
@@ -1107,9 +1069,7 @@ export function DeliveryNoteComponent({
                             )}
                           </div>
                           {item.notes && (
-                            <div className="text-sm text-gray-500 mt-1">
-                              {item.notes}
-                            </div>
+                            <div className="text-sm text-gray-500 mt-1">{item.notes}</div>
                           )}
                         </div>
                         <Button
@@ -1122,11 +1082,15 @@ export function DeliveryNoteComponent({
                         </Button>
                       </div>
                     ))}
-                    
+
                     {formData.showPrices && (
                       <div className="border-t pt-2 mt-4">
                         <div className="text-right font-medium">
-                          Gesamt: {formData.items.reduce((sum, item) => sum + (item.unitPrice || 0) * item.quantity, 0).toFixed(2)}€
+                          Gesamt:{' '}
+                          {formData.items
+                            .reduce((sum, item) => sum + (item.unitPrice || 0) * item.quantity, 0)
+                            .toFixed(2)}
+                          €
                         </div>
                       </div>
                     )}
@@ -1137,7 +1101,12 @@ export function DeliveryNoteComponent({
                   <div className="text-center py-8 text-gray-500">
                     <Package className="h-12 w-12 mx-auto mb-2 text-gray-400" />
                     <p>Keine Artikel ausgewählt</p>
-                    <p className="text-sm">Klicken Sie auf "Aus Inventar auswählen", um Artikel hinzuzufügen</p>
+                    <p className="text-sm">
+                      {' '}
+                      <p>
+                        Klicken Sie auf &quot;Aus Inventar auswählen&quot;, um Artikel hinzuzufügen
+                      </p>
+                    </p>
                   </div>
                 )}
               </div>

@@ -37,7 +37,7 @@ export async function GET(
     console.log('✅ Delivery note loaded successfully:', data.deliveryNoteNumber || 'Unknown');
 
     // Lade Firmendaten für das Template
-    let companyData: any = {};
+    let companyData: Record<string, unknown> = {};
     if (data.companyId) {
       try {
         // Versuche erst companies Collection
@@ -53,11 +53,10 @@ export async function GET(
             console.log('✅ Company data loaded from users collection');
           }
         }
-        
+
         // Debug: Log welche profilePictureURL gefunden wurde
         const profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
         console.log('🖼️ Profile picture URL found:', profileUrl);
-        
       } catch (error) {
         console.warn('Could not load company data:', error);
       }

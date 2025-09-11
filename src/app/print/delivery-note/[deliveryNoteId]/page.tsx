@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { DeliveryNote } from '@/services/deliveryNoteService';
 import { DeliveryNoteTemplateRenderer } from '@/components/finance/delivery-note-templates/DeliveryNoteTemplateRenderer';
@@ -19,11 +19,7 @@ export default function PrintDeliveryNotePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDeliveryNote();
-  }, [deliveryNoteId]);
-
-  const loadDeliveryNote = async () => {
+  const loadDeliveryNote = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -82,7 +78,8 @@ export default function PrintDeliveryNotePage() {
         companyEmail: userData.companyEmail || userData.email || 'info@taskilo.de',
         companyPhone: userData.companyPhone || userData.phone || '',
         companyWebsite: userData.companyWebsite || 'www.taskilo.de',
-        companyLogo: userData.companyLogo || userData.profilePictureURL || userData.profilePictureFirebaseUrl,
+        companyLogo:
+          userData.companyLogo || userData.profilePictureURL || userData.profilePictureFirebaseUrl,
         profilePictureURL: userData.profilePictureURL || userData.profilePictureFirebaseUrl,
         companyVatId: userData.companyVatId,
         companyTaxNumber: userData.companyTaxNumber,
@@ -132,18 +129,11 @@ export default function PrintDeliveryNotePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [deliveryNoteId]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE');
-  };
+  useEffect(() => {
+    loadDeliveryNote();
+  }, [loadDeliveryNote]);
 
   // Initialize print mode when component loads
   useEffect(() => {
@@ -172,7 +162,10 @@ export default function PrintDeliveryNotePage() {
     if (deliveryNoteData && !loading && !error) {
       // Warte kurz bis alle Bilder geladen sind, dann öffne Print-Dialog
       const timer = setTimeout(() => {
-        console.log('🖨️ Auto-triggering print dialog for delivery note:', deliveryNoteData.deliveryNoteNumber);
+        console.log(
+          '🖨️ Auto-triggering print dialog for delivery note:',
+          deliveryNoteData.deliveryNoteNumber
+        );
         window.print();
       }, 1500); // 1.5 Sekunden warten für Bilder/Layout
 
@@ -221,7 +214,7 @@ export default function PrintDeliveryNotePage() {
           .no-print {
             display: none !important;
           }
-          
+
           @page {
             margin: 15mm; /* Konsistent mit globalem @page */
           }
@@ -308,14 +301,14 @@ export default function PrintDeliveryNotePage() {
             page-break-inside: avoid;
             font-size: 9pt !important; /* Noch kleinere Schrift beim Drucken */
           }
-          
+
           /* Optimiere Tabellen für A4 */
           .delivery-note-print-content table {
             width: 100% !important;
             border-collapse: collapse !important;
             font-size: 8pt !important;
           }
-          
+
           .delivery-note-print-content th,
           .delivery-note-print-content td {
             padding: 1pt 3pt !important;
