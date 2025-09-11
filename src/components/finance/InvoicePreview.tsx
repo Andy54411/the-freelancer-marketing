@@ -141,13 +141,16 @@ export function InvoicePreview({
           </div>
         </DialogHeader>
 
-        <div className="overflow-y-auto max-h-[80vh] p-1">
+        <div
+          className="overflow-y-auto p-1"
+          style={{ height: 'calc(95vh - 200px)', maxHeight: 'calc(95vh - 200px)' }}
+        >
           <div
             className="bg-white rounded-lg shadow-lg border w-full invoice-modal-container"
             style={{ width: '100%' }}
           >
             <div style={{ width: '100%', maxWidth: 'none' }}>
-              <InvoiceTemplateRenderer template={template} data={previewData} preview={false} />
+              <InvoiceTemplateRenderer template={template} data={previewData} preview={true} />
             </div>
           </div>
         </div>

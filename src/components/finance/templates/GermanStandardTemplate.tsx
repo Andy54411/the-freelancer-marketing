@@ -19,7 +19,9 @@ interface TemplateProps {
  */
 export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview = false }) => {
   return (
-    <div className="w-full max-w-[595px] min-h-[842px] bg-white p-8 font-sans text-sm leading-normal flex flex-col mx-auto">
+    <div
+      className={`w-full ${preview ? 'max-w-none' : 'max-w-[595px]'} min-h-[842px] bg-white p-8 font-sans text-sm leading-normal flex flex-col mx-auto`}
+    >
       {/* Header mit Logo und Firmenangaben */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex-1 mr-8">
