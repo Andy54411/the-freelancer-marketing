@@ -159,13 +159,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://vitals.vercel-insights.com" />
         <link rel="dns-prefetch" href="https://va.vercel-scripts.com" />
 
-        {/* Google Tag Manager */}
+        {/* Google Tag Manager - Only in Production */}
+        {process.env.NODE_ENV === 'development' && (
+          <Script
+            id="gtm-dev-notice"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                console.log('%c[DEV] Google Tag Manager deaktiviert', 'color: orange; font-weight: bold;');
+                console.log('%cGoogle Analytics/GTM wird nur in der Produktion geladen, um postMessage-Fehler zu vermeiden.', 'color: gray;');
+                console.log('%cTeste GTM-Funktionalität auf: https://taskilo.de', 'color: blue;');
+              `,
+            }}
+          />
+        )}
+
         {/* Google Consent Mode V2 - Initialize before any tracking */}
-        <Script
-          id="google-consent-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
+        {process.env.NODE_ENV === 'production' && (
+          <Script
+            id="google-consent-init"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
 
@@ -237,33 +252,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
               }
             `,
-          }}
-        />
+            }}
+          />
+        )}
 
         {/* Google Tag Manager Script */}
-        <Script
-          id="gtm-script"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
+        {process.env.NODE_ENV === 'production' && (
+          <Script
+            id="gtm-script"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
               (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
               new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
               j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
               })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');
             `,
-          }}
-        />
+            }}
+          />
+        )}
 
         {/* Google Tag Manager NoScript Fallback */}
-        <noscript>
-          <iframe
-            src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
+        {process.env.NODE_ENV === 'production' && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+            />
+          </noscript>
+        )}
 
         {/* Strukturierte Daten für SEO */}
         <StructuredData type="Organization" />

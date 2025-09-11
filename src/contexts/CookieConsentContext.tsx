@@ -59,8 +59,12 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
 
       // GTM sollte bereits initialisiert sein, aber sicherheitshalber nochmal senden
       setTimeout(() => {
-
-        sendConsentToGTM(parsedConsent);
+        // Only send to GTM in production
+        if (process.env.NODE_ENV === 'production') {
+          sendConsentToGTM(parsedConsent);
+        } else {
+          console.log('[DEV] Cookie consent loaded (GTM disabled in development):', parsedConsent);
+        }
       }, 200);
     }
   }, []);
@@ -71,8 +75,12 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
     localStorage.setItem('taskilo-cookie-consent', JSON.stringify(updatedConsent));
     setBannerVisible(false);
 
-    // 🚀 WICHTIG: Neue Einwilligung sofort an GTM senden
-    sendConsentToGTM(updatedConsent);
+    // Neue Einwilligung sofort an GTM senden
+    if (process.env.NODE_ENV === 'production') {
+      sendConsentToGTM(updatedConsent);
+    } else {
+      console.log('[DEV] Cookie consent updated (GTM disabled in development):', updatedConsent);
+    }
   };
 
   const acceptAll = () => {

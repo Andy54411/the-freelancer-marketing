@@ -18,6 +18,12 @@ export const sendConsentToGTM = (consent: {
 }) => {
   if (typeof window === 'undefined') return;
 
+  // Skip GTM in development to avoid postMessage errors
+  if (process.env.NODE_ENV === 'development' && window.location.hostname === 'localhost') {
+    console.log('GTM disabled in development environment to prevent postMessage errors');
+    return;
+  }
+
   window.dataLayer = window.dataLayer || [];
 
   // Speichere Consent mit Timestamp
@@ -50,9 +56,7 @@ export const sendConsentToGTM = (consent: {
   // Method 2: Direct gtag consent update (primary method)
   if (typeof (window as any).gtag !== 'undefined') {
     (window as any).gtag('consent', 'update', consentUpdate);
-
   } else {
-
   }
 
   // Method 3: Alternative DataLayer push format
@@ -96,7 +100,6 @@ export const sendConsentToGTM = (consent: {
     consent_personalization: consent.personalization,
     timestamp: new Date().toISOString(),
   });
-
 };
 
 /**
@@ -109,9 +112,7 @@ export const hasAnalyticsConsent = (): boolean => {
       const consentObj = JSON.parse(consent);
       return consentObj.analytics === true;
     }
-  } catch (e) {
-
-  }
+  } catch (e) {}
   return false;
 };
 
@@ -125,9 +126,7 @@ export const hasMarketingConsent = (): boolean => {
       const consentObj = JSON.parse(consent);
       return consentObj.marketing === true;
     }
-  } catch (e) {
-
-  }
+  } catch (e) {}
   return false;
 };
 
@@ -141,9 +140,7 @@ export const hasFunctionalConsent = (): boolean => {
       const consentObj = JSON.parse(consent);
       return consentObj.functional === true;
     }
-  } catch (e) {
-
-  }
+  } catch (e) {}
   return false;
 };
 
@@ -156,7 +153,6 @@ export const trackPageViewWithConsent = (pageData?: {
   page_path?: string;
 }) => {
   if (!hasAnalyticsConsent()) {
-
     return;
   }
 
@@ -180,7 +176,6 @@ export const trackButtonClickWithConsent = (buttonData: {
   button_class?: string;
 }) => {
   if (!hasAnalyticsConsent()) {
-
     return;
   }
 
@@ -205,7 +200,6 @@ export const trackFormSubmitWithConsent = (formData: {
   form_action?: string;
 }) => {
   if (!hasAnalyticsConsent()) {
-
     return;
   }
 
@@ -231,7 +225,6 @@ export const trackPurchaseWithConsent = (purchaseData: {
   items: any[];
 }) => {
   if (!hasAnalyticsConsent()) {
-
     return;
   }
 
@@ -259,7 +252,6 @@ export const trackServiceBookingWithConsent = (serviceData: {
   provider_name?: string;
 }) => {
   if (!hasAnalyticsConsent()) {
-
     return;
   }
 
@@ -301,7 +293,6 @@ export const removeTrackingCookies = () => {
       document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
     }
   });
-
 };
 
 /**
@@ -325,5 +316,4 @@ export const revokeAllConsents = () => {
     consent_personalization: false,
     timestamp: new Date().toISOString(),
   });
-
 };
