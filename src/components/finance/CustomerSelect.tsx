@@ -82,9 +82,12 @@ export function CustomerSelect({
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
+        // Generiere customerNumber falls nicht vorhanden
+        const customerNumber = data.customerNumber || `KD-${doc.id.substring(0, 6).toUpperCase()}`;
+
         loadedCustomers.push({
           id: doc.id,
-          customerNumber: data.customerNumber || 'KD-000',
+          customerNumber,
           name: data.name || '',
           email: data.email || '',
           phone: data.phone || '',
@@ -106,13 +109,14 @@ export function CustomerSelect({
         });
       });
 
+      console.log(
+        'Loaded customers:',
+        loadedCustomers.map(c => ({ name: c.name, customerNumber: c.customerNumber }))
+      );
       setCustomers(loadedCustomers);
-
     } catch (error) {
-
       if (error.code === 'permission-denied') {
         toast.error('Keine Berechtigung zum Laden der Kundendaten. Überprüfen Sie Ihre Anmeldung.');
-
       } else {
         toast.error('Fehler beim Laden der Kundendaten');
       }
@@ -150,7 +154,9 @@ export function CustomerSelect({
           <div className="flex items-center justify-between">
             <div>
               <div className="font-medium">{selectedCustomer.name}</div>
-              <div className="text-sm text-gray-600">{selectedCustomer.customerNumber}</div>
+              <div className="text-sm text-gray-600">
+                <span className="font-mono">{selectedCustomer.customerNumber}</span>
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={handleOpen}>
               Ändern
@@ -226,7 +232,9 @@ export function CustomerSelect({
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="font-medium">{customer.name}</div>
-                          <div className="text-sm text-gray-600">{customer.customerNumber}</div>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-mono">{customer.customerNumber}</span>
+                          </div>
                           <div className="text-sm text-gray-500">{customer.email}</div>
                         </div>
                         <div className="text-right text-sm text-gray-500">

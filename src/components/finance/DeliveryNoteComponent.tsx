@@ -49,21 +49,31 @@ import { Customer } from '@/components/finance/AddCustomerModal';
 import { CustomerSelect } from '@/components/finance/CustomerSelect';
 import { WarehouseService } from '@/services/warehouseService';
 import { UserPreferencesService } from '@/lib/userPreferences';
-import { InvoiceTemplate, DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/InvoiceTemplates';
+import { InvoiceTemplate, AVAILABLE_TEMPLATES } from '@/components/finance/InvoiceTemplates';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DeliveryNoteComponentProps {
   companyId: string;
+  showCreateModal?: boolean;
+  setShowCreateModal?: (show: boolean) => void;
 }
 
-export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps) {
+export function DeliveryNoteComponent({
+  companyId,
+  showCreateModal: externalShowCreateModal,
+  setShowCreateModal: externalSetShowCreateModal,
+}: DeliveryNoteComponentProps) {
   const { user } = useAuth();
   const [deliveryNotes, setDeliveryNotes] = useState<DeliveryNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedNote, setSelectedNote] = useState<DeliveryNote | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [internalShowCreateModal, setInternalShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Use external state if provided, otherwise use internal state
+  const showCreateModal = externalShowCreateModal ?? internalShowCreateModal;
+  const setShowCreateModal = externalSetShowCreateModal ?? setInternalShowCreateModal;
   const [stats, setStats] = useState({
     total: 0,
     sent: 0,
@@ -77,8 +87,9 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
   const [showCustomerSelect, setShowCustomerSelect] = useState(false);
 
   // Template States (NEU für Phase 2)
-  const [userTemplate, setUserTemplate] = useState<InvoiceTemplate>(DEFAULT_INVOICE_TEMPLATE);
+  const [userTemplate, setUserTemplate] = useState<InvoiceTemplate | null>(null); // null = nicht ausgewählt
   const [templateLoading, setTemplateLoading] = useState(false);
+  const [showTemplateSelect, setShowTemplateSelect] = useState(false); // Modal für Template-Auswahl
 
   // Warehouse States (NEU für Phase 6)
   const [warehouseEnabled, setWarehouseEnabled] = useState(true);
@@ -102,7 +113,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
     notes: '',
     shippingMethod: 'standard',
     warehouseUpdated: false,
-    template: DEFAULT_INVOICE_TEMPLATE, // NEU für Phase 2
+    template: 'german-standard', // Temporärer Fallback, wird beim Load aktualisiert
   });
 
   const [newItem, setNewItem] = useState<Partial<DeliveryNoteItem>>({
@@ -124,16 +135,48 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
 
     try {
       setTemplateLoading(true);
-      const template = await UserPreferencesService.getPreferredTemplate(user.uid);
-      setUserTemplate(template);
-      setFormData(prev => ({ ...prev, template }));
-    } catch (error) {
+      const template = await UserPreferencesService.getPreferredTemplate(user.uid, companyId);
 
-      // Fallback zu Default Template
-      setUserTemplate(DEFAULT_INVOICE_TEMPLATE);
-      setFormData(prev => ({ ...prev, template: DEFAULT_INVOICE_TEMPLATE }));
+      if (template) {
+        // Template ist ausgewählt
+        setUserTemplate(template);
+        setFormData(prev => ({ ...prev, template }));
+      } else {
+        // Kein Template ausgewählt - Modal zeigen
+        setUserTemplate(null);
+        setShowTemplateSelect(true);
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des User Templates:', error);
+      // Bei Fehler auch Template-Auswahl anzeigen
+      setUserTemplate(null);
+      setShowTemplateSelect(true);
     } finally {
       setTemplateLoading(false);
+    }
+  };
+
+  // Template Selection Handler (NEU für Phase 2)
+  const handleTemplateSelect = async (templateObject: any) => {
+    try {
+      const templateId = templateObject.id as InvoiceTemplate;
+
+      // Speichere Template in User Preferences
+      if (user?.uid) {
+        await UserPreferencesService.updateUserPreferences(user.uid, {
+          preferredInvoiceTemplate: templateId,
+        });
+      }
+
+      // Update states
+      setUserTemplate(templateId);
+      setFormData(prev => ({ ...prev, template: templateId }));
+      setShowTemplateSelect(false);
+
+      toast.success(`Template "${templateObject.name}" ausgewählt und gespeichert`);
+    } catch (error) {
+      console.error('Fehler beim Speichern des Templates:', error);
+      toast.error('Fehler beim Speichern der Template-Auswahl');
     }
   };
 
@@ -143,7 +186,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       const notes = await DeliveryNoteService.getDeliveryNotesByCompany(companyId);
       setDeliveryNotes(notes);
     } catch (error) {
-
       toast.error('Lieferscheine konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -154,13 +196,18 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
     try {
       const statistics = await DeliveryNoteService.getDeliveryNoteStats(companyId);
       setStats(statistics);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const handleCreateDeliveryNote = async () => {
     try {
+      // Prüfe ob Template ausgewählt ist
+      if (!userTemplate) {
+        toast.error('Bitte wählen Sie zuerst ein Template aus');
+        setShowTemplateSelect(true);
+        return;
+      }
+
       if (!formData.customerName || !formData.customerAddress || !formData.items?.length) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         return;
@@ -211,7 +258,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
         stockValidated: warehouseEnabled,
         shippingMethod: formData.shippingMethod,
         notes: formData.notes,
-        template: typeof userTemplate === 'string' ? userTemplate : 'professional',
+        template: userTemplate, // undefined wenn kein Template ausgewählt - dann Modal
         createdBy: companyId,
       });
 
@@ -221,7 +268,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-
       toast.error('Lieferschein konnte nicht erstellt werden');
     }
   };
@@ -238,7 +284,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-
       toast.error('Lieferschein konnte nicht aktualisiert werden');
     }
   };
@@ -251,7 +296,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-
       toast.error('Status konnte nicht aktualisiert werden');
     }
   };
@@ -263,7 +307,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-
       toast.error('Status konnte nicht aktualisiert werden');
     }
   };
@@ -275,7 +318,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-
       toast.error('Rechnung konnte nicht erstellt werden');
     }
   };
@@ -286,7 +328,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       toast.success('Lagerbestand erfolgreich aktualisiert');
       await loadDeliveryNotes();
     } catch (error) {
-
       toast.error('Lagerbestand konnte nicht aktualisiert werden');
     }
   };
@@ -302,7 +343,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-
       toast.error('Lieferschein konnte nicht gelöscht werden');
     }
   };
@@ -376,7 +416,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
       notes: '',
       shippingMethod: 'standard',
       warehouseUpdated: false,
-      template: userTemplate, // Use user's preferred template
+      template: userTemplate || undefined, // Use user's preferred template (undefined if not selected)
     });
     setNewItem({
       description: '',
@@ -412,7 +452,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
         toast.error(`E-Mail-Versand fehlgeschlagen: ${error.error}`);
       }
     } catch (error) {
-
       toast.error('E-Mail konnte nicht gesendet werden');
     }
   };
@@ -444,7 +483,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
         toast.error(`Lagerbestand konnte nicht aktualisiert werden: ${result.errors.join(', ')}`);
       }
     } catch (error) {
-
       toast.error('Lagerbestand konnte nicht aktualisiert werden');
     }
   };
@@ -517,23 +555,6 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Lieferscheine</h2>
-          <p className="text-gray-600 mt-1">
-            Erstellen und verwalten Sie Lieferscheine mit automatischer Lageraktualisierung
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Neuer Lieferschein
-        </Button>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
@@ -816,7 +837,7 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
                       className="w-full h-20 border-dashed border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Kunde aus Datenbank auswählen
+                      Kunde aus Datenbank auswählen (KD-Nummer)
                     </Button>
                   )}
                 </div>
@@ -1100,6 +1121,55 @@ export function DeliveryNoteComponent({ companyId }: DeliveryNoteComponentProps)
         onClose={() => setShowCustomerSelect(false)}
         onOpenRequest={() => setShowCustomerSelect(true)}
       />
+
+      {/* Template Selection Modal (NEU für Phase 2) */}
+      {showTemplateSelect && (
+        <Dialog open={showTemplateSelect} onOpenChange={setShowTemplateSelect}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Template auswählen</DialogTitle>
+              <DialogDescription>
+                Wählen Sie ein Template für Ihre Lieferscheine. Diese Auswahl wird für alle
+                zukünftigen Lieferscheine gespeichert.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {templateLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#14ad9f]"></div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {AVAILABLE_TEMPLATES.map(template => (
+                    <div
+                      key={template.id}
+                      className="border rounded-lg p-4 cursor-pointer hover:border-[#14ad9f] transition-colors"
+                      onClick={() => handleTemplateSelect(template)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium">{template.name}</h3>
+                          <p className="text-sm text-gray-600">{template.description}</p>
+                        </div>
+                        <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488] text-white">
+                          Auswählen
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" onClick={() => setShowTemplateSelect(false)}>
+                Abbrechen
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
