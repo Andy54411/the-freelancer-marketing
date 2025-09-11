@@ -16,7 +16,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
+import { DeliveryNoteTemplate } from '@/components/finance/delivery-note-templates/types';
 
 export interface DeliveryNote {
   id: string;
@@ -41,7 +41,7 @@ export interface DeliveryNote {
   tax?: number;
   total?: number;
   vatRate?: number;
-  template?: InvoiceTemplate | null;
+  template?: DeliveryNoteTemplate | null;
   // E-Mail-Tracking Felder
   emailSent?: boolean;
   emailSentAt?: string;
@@ -82,7 +82,7 @@ export interface DeliveryNoteItem {
   notes?: string;
 }
 
-export interface DeliveryNoteTemplate {
+export interface DeliveryNoteLayoutTemplate {
   id: string;
   name: string;
   companyId: string;
@@ -146,12 +146,24 @@ export class DeliveryNoteService {
     noteData: Omit<DeliveryNote, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log('� Creating delivery note for company:', noteData.companyId);
+      console.log('📋 Creating delivery note for company:', noteData.companyId);
 
-      // Sequenznummer generieren
-      const settings = await this.getSettings(noteData.companyId || '');
-      const sequentialNumber = settings?.nextNumber || 1;
-      const deliveryNoteNumber = this.generateDeliveryNoteNumber(settings, sequentialNumber);
+      // Sequenznummer generieren - Mit Fallback für fehlende Settings
+      let settings: DeliveryNoteSettings | null = null;
+      let sequentialNumber = 1;
+      let deliveryNoteNumber = '';
+
+      try {
+        settings = await this.getSettings(noteData.companyId || '');
+        sequentialNumber = settings?.nextNumber || 1;
+        deliveryNoteNumber = this.generateDeliveryNoteNumber(settings, sequentialNumber);
+      } catch (settingsError) {
+        console.warn('⚠️ Could not load settings, using defaults:', settingsError);
+        // Fallback: Einfache Nummerierung ohne Settings
+        const timestamp = Date.now();
+        deliveryNoteNumber = `LS-${timestamp}`;
+        sequentialNumber = 1;
+      }
 
       console.log('📋 Generated delivery note number:', deliveryNoteNumber);
 
@@ -166,12 +178,16 @@ export class DeliveryNoteService {
 
       console.log('✅ Delivery note created successfully with ID:', docRef.id);
 
-      // Nächste Nummer aktualisieren
-      if (settings) {
-        await this.updateSettings(noteData.companyId || '', {
-          ...settings,
-          nextNumber: sequentialNumber + 1,
-        });
+      // Nächste Nummer aktualisieren - Nur wenn Settings verfügbar sind
+      if (settings && noteData.companyId) {
+        try {
+          await this.updateSettings(noteData.companyId, {
+            ...settings,
+            nextNumber: sequentialNumber + 1,
+          });
+        } catch (updateError) {
+          console.warn('⚠️ Could not update settings, continuing anyway:', updateError);
+        }
       }
 
       return docRef.id;
@@ -455,6 +471,13 @@ export class DeliveryNoteService {
       return settings;
     } catch (error) {
       console.error('📋 Error loading delivery note settings:', error);
+      // Bei Berechtigungsfehlern oder anderen Problemen null zurückgeben
+      if (error && typeof error === 'object' && 'code' in error) {
+        const firebaseError = error as any;
+        if (firebaseError.code === 'permission-denied') {
+          console.warn('📋 Permission denied for delivery note settings, using defaults');
+        }
+      }
       return null;
     }
   }
@@ -509,7 +532,7 @@ export class DeliveryNoteService {
   /**
    * Lädt alle Templates für ein Unternehmen
    */
-  static async getTemplates(companyId: string): Promise<DeliveryNoteTemplate[]> {
+  static async getTemplates(companyId: string): Promise<DeliveryNoteLayoutTemplate[]> {
     try {
       const q = query(
         collection(db, this.TEMPLATES_COLLECTION),
@@ -523,7 +546,7 @@ export class DeliveryNoteService {
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-      })) as DeliveryNoteTemplate[];
+      })) as DeliveryNoteLayoutTemplate[];
     } catch (error) {
       throw new Error('Templates konnten nicht geladen werden');
     }

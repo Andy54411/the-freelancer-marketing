@@ -49,7 +49,7 @@ import { Customer } from '@/components/finance/AddCustomerModal';
 import { CustomerSelect } from '@/components/finance/CustomerSelect';
 import { WarehouseService } from '@/services/warehouseService';
 import { UserPreferencesService } from '@/lib/userPreferences';
-import { InvoiceTemplate, AVAILABLE_TEMPLATES } from '@/components/finance/InvoiceTemplates';
+import { DeliveryNoteTemplate, AVAILABLE_DELIVERY_NOTE_TEMPLATES } from '@/components/finance/delivery-note-templates';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DeliveryNoteComponentProps {
@@ -87,7 +87,7 @@ export function DeliveryNoteComponent({
   const [showCustomerSelect, setShowCustomerSelect] = useState(false);
 
   // Template States (NEU für Phase 2)
-  const [userTemplate, setUserTemplate] = useState<InvoiceTemplate | null>(null); // null = nicht ausgewählt
+  const [userTemplate, setUserTemplate] = useState<DeliveryNoteTemplate | null>(null); // null = nicht ausgewählt
   const [templateLoading, setTemplateLoading] = useState(false);
   const [showTemplateSelect, setShowTemplateSelect] = useState(false); // Modal für Template-Auswahl
 
@@ -113,7 +113,7 @@ export function DeliveryNoteComponent({
     notes: '',
     shippingMethod: 'standard',
     warehouseUpdated: false,
-    template: 'german-standard', // Temporärer Fallback, wird beim Load aktualisiert
+    template: 'german-standard' as DeliveryNoteTemplate, // Temporärer Fallback, wird beim Load aktualisiert
   });
 
   const [newItem, setNewItem] = useState<Partial<DeliveryNoteItem>>({
@@ -135,7 +135,7 @@ export function DeliveryNoteComponent({
 
     try {
       setTemplateLoading(true);
-      const template = await UserPreferencesService.getPreferredTemplate(user.uid, companyId);
+      const template = await UserPreferencesService.getPreferredDeliveryNoteTemplate(user.uid, companyId);
 
       if (template) {
         // Template ist ausgewählt
@@ -159,12 +159,12 @@ export function DeliveryNoteComponent({
   // Template Selection Handler (NEU für Phase 2)
   const handleTemplateSelect = async (templateObject: any) => {
     try {
-      const templateId = templateObject.id as InvoiceTemplate;
+      const templateId = templateObject.id as DeliveryNoteTemplate;
 
       // Speichere Template in User Preferences
       if (user?.uid) {
         await UserPreferencesService.updateUserPreferences(user.uid, {
-          preferredInvoiceTemplate: templateId,
+          preferredDeliveryNoteTemplate: templateId,
         });
       }
 
@@ -218,8 +218,11 @@ export function DeliveryNoteComponent({
         return;
       }
 
-      const companyId = user?.uid;
-      if (!companyId) throw new Error('Keine Firma gefunden');
+      // Verwende die companyId aus den Props (sollte vom AuthContext/Layout kommen)
+      const effectiveCompanyId = companyId || user?.uid;
+      if (!effectiveCompanyId) throw new Error('Keine Firma gefunden');
+
+      console.log('🏢 Using companyId for delivery note creation:', effectiveCompanyId);
 
       // Phase 6: Warehouse-Integration - Lagerbestand prüfen vor Erstellung
       if (warehouseEnabled && formData.items) {
@@ -248,7 +251,7 @@ export function DeliveryNoteComponent({
       }
 
       const deliveryNoteId = await DeliveryNoteService.createDeliveryNote({
-        companyId,
+        companyId: effectiveCompanyId,
         customerId: formData.customerId || '',
         customerName: formData.customerName,
         customerEmail: formData.customerEmail,
@@ -267,7 +270,7 @@ export function DeliveryNoteComponent({
         shippingMethod: formData.shippingMethod,
         notes: formData.notes,
         template: templateToUse, // Verwende das ausgewählte oder Standard-Template
-        createdBy: companyId,
+        createdBy: effectiveCompanyId,
       });
 
       toast.success('Lieferschein erfolgreich erstellt');
@@ -674,30 +677,53 @@ export function DeliveryNoteComponent({
                   {deliveryNotes.map(note => (
                     <div
                       key={note.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                      className="border rounded-lg p-4 hover:shadow-sm transition-shadow bg-white"
                     >
-                      <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
-                          <Package className="h-8 w-8 text-[#14ad9f]" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{note.deliveryNoteNumber}</h4>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-sm text-gray-600">{note.customerName}</span>
-                            <span className="text-sm text-gray-400">•</span>
-                            <span className="text-sm text-gray-600">{note.deliveryDate}</span>
+                      {/* Header: Nummer, Status und wichtige Infos in einer Zeile */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <Package className="h-5 w-5 text-[#14ad9f]" />
+                          <div className="flex items-center space-x-3">
+                            <h3 className="text-base font-semibold text-gray-900">
+                              {note.deliveryNoteNumber}
+                            </h3>
                             {getStatusBadge(note.status)}
                           </div>
-                          {note.trackingNumber && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              Sendung: {note.trackingNumber}
-                            </div>
-                          )}
+                        </div>
+                        <div className="text-right text-sm text-gray-600">
+                          {note.deliveryDate}
                         </div>
                       </div>
 
+                      {/* Kunde und Details in einer kompakten Zeile */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{note.customerName}</p>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                            <span>{note.items.length} Artikel</span>
+                            {note.showPrices && note.total && (
+                              <span className="font-medium text-gray-900">
+                                {note.total.toFixed(2)} €
+                              </span>
+                            )}
+                            {note.orderNumber && (
+                              <span>Bestellung: {note.orderNumber}</span>
+                            )}
+                            {note.trackingNumber && (
+                              <span>Sendung: {note.trackingNumber}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Aktions-Buttons kompakt */}
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => setSelectedNote(note)}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setSelectedNote(note)}
+                          className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                        >
                           <Eye className="h-4 w-4 mr-1" />
                           Anzeigen
                         </Button>
@@ -712,6 +738,7 @@ export function DeliveryNoteComponent({
                               variant="outline"
                               size="sm"
                               onClick={() => handleMarkAsSent(note.id!)}
+                              className="border-green-500 text-green-600 hover:bg-green-500 hover:text-white"
                             >
                               <Send className="h-4 w-4 mr-1" />
                               Versenden
@@ -724,6 +751,7 @@ export function DeliveryNoteComponent({
                             variant="outline"
                             size="sm"
                             onClick={() => handleMarkAsDelivered(note.id!)}
+                            className="border-green-500 text-green-600 hover:bg-green-500 hover:text-white"
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Zugestellt
@@ -735,6 +763,7 @@ export function DeliveryNoteComponent({
                             variant="outline"
                             size="sm"
                             onClick={() => handleCreateInvoice(note.id!)}
+                            className="border-purple-500 text-purple-600 hover:bg-purple-500 hover:text-white"
                           >
                             <FileText className="h-4 w-4 mr-1" />
                             Rechnung
@@ -746,7 +775,7 @@ export function DeliveryNoteComponent({
                             variant="outline"
                             size="sm"
                             onClick={() => handleProcessWarehouseStock(note)}
-                            className="text-[#14ad9f] border-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                            className="border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white"
                           >
                             <RefreshCw className="h-4 w-4 mr-1" />
                             Lager aktualisieren
@@ -758,7 +787,7 @@ export function DeliveryNoteComponent({
                             variant="outline"
                             size="sm"
                             onClick={() => handleSendEmail(note)}
-                            className="text-blue-600 border-blue-600 hover:bg-blue-600 hover:text-white"
+                            className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white"
                           >
                             <Send className="h-4 w-4 mr-1" />
                             E-Mail senden
@@ -769,7 +798,7 @@ export function DeliveryNoteComponent({
                           variant="outline"
                           size="sm"
                           onClick={() => window.open(`/print/delivery-note/${note.id}`, '_blank')}
-                          className="text-gray-600 hover:bg-gray-100"
+                          className="border-gray-300 text-gray-600 hover:bg-gray-100"
                         >
                           <Download className="h-4 w-4 mr-1" />
                           Drucken
@@ -779,9 +808,10 @@ export function DeliveryNoteComponent({
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteDeliveryNote(note.id!)}
-                          className="text-red-600 hover:text-red-700"
+                          className="border-red-500 text-red-600 hover:bg-red-500 hover:text-white"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Löschen
                         </Button>
                       </div>
                     </div>
@@ -1162,7 +1192,7 @@ export function DeliveryNoteComponent({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {AVAILABLE_TEMPLATES.map(template => (
+                  {AVAILABLE_DELIVERY_NOTE_TEMPLATES.map(template => (
                     <div
                       key={template.id}
                       className="border rounded-lg p-4 cursor-pointer hover:border-[#14ad9f] transition-colors"

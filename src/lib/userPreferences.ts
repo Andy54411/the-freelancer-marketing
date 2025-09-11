@@ -2,9 +2,11 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceTemplate, AVAILABLE_TEMPLATES } from '@/components/finance/InvoiceTemplates';
+import { DeliveryNoteTemplate, AVAILABLE_DELIVERY_NOTE_TEMPLATES } from '@/components/finance/delivery-note-templates';
 
 export interface UserPreferences {
   preferredInvoiceTemplate: InvoiceTemplate | null; // null bedeutet: User muss auswählen
+  preferredDeliveryNoteTemplate: DeliveryNoteTemplate | null; // null bedeutet: User muss auswählen
   preferredLanguage?: string;
   preferredCurrency?: string;
 }
@@ -47,6 +49,7 @@ export class UserPreferencesService {
         const data = docSnap.data();
         return {
           preferredInvoiceTemplate: data.preferredInvoiceTemplate || null, // null wenn nicht gesetzt
+          preferredDeliveryNoteTemplate: data.preferredDeliveryNoteTemplate || null, // null wenn nicht gesetzt
           preferredLanguage: data.preferredLanguage || 'de',
           preferredCurrency: data.preferredCurrency || 'EUR',
         };
@@ -57,6 +60,7 @@ export class UserPreferencesService {
 
       return {
         preferredInvoiceTemplate: defaultTemplate, // kann null sein
+        preferredDeliveryNoteTemplate: null, // User muss Template auswählen
         preferredLanguage: 'de',
         preferredCurrency: 'EUR',
       };
@@ -64,6 +68,7 @@ export class UserPreferencesService {
       const fallbackTemplate = AVAILABLE_TEMPLATES[0]?.id as InvoiceTemplate;
       return {
         preferredInvoiceTemplate: fallbackTemplate,
+        preferredDeliveryNoteTemplate: 'german-standard', // Default
         preferredLanguage: 'de',
         preferredCurrency: 'EUR',
       };
@@ -102,5 +107,17 @@ export class UserPreferencesService {
   ): Promise<InvoiceTemplate | null> {
     const preferences = await this.getUserPreferences(userId, companyId);
     return preferences.preferredInvoiceTemplate; // kann null sein
+  }
+
+  /**
+   * Holt nur das bevorzugte Delivery Note Template
+   * Gibt null zurück wenn kein Template ausgewählt ist - dann soll Modal erscheinen
+   */
+  static async getPreferredDeliveryNoteTemplate(
+    userId: string,
+    companyId?: string
+  ): Promise<DeliveryNoteTemplate | null> {
+    const preferences = await this.getUserPreferences(userId, companyId);
+    return preferences.preferredDeliveryNoteTemplate; // kann null sein
   }
 }

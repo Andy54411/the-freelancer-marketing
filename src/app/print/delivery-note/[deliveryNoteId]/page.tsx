@@ -3,12 +3,18 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { DeliveryNoteService, DeliveryNote } from '@/services/deliveryNoteService';
+import { DeliveryNoteTemplateRenderer } from '@/components/finance/delivery-note-templates/DeliveryNoteTemplateRenderer';
+import { DeliveryNoteData, DeliveryNoteTemplate } from '@/components/finance/delivery-note-templates/types';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 
 export default function PrintDeliveryNotePage() {
   const params = useParams();
   const deliveryNoteId = typeof params?.deliveryNoteId === 'string' ? params.deliveryNoteId : '';
 
   const [deliveryNote, setDeliveryNote] = useState<DeliveryNote | null>(null);
+  const [deliveryNoteData, setDeliveryNoteData] = useState<DeliveryNoteData | null>(null);
+  const [userTemplate, setUserTemplate] = useState<DeliveryNoteTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,8 +31,126 @@ export default function PrintDeliveryNotePage() {
         return;
       }
       setDeliveryNote(note);
-    } catch (error) {
 
+      // Lade Firmendaten und Template-Einstellungen
+      if (note.companyId) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', note.companyId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            
+            // Template-Präferenz laden
+            const preferredTemplate = userData.preferredDeliveryNoteTemplate as DeliveryNoteTemplate;
+            setUserTemplate(preferredTemplate || 'german-standard');
+
+            // Daten für Template-Renderer konvertieren
+            const templateData: DeliveryNoteData = {
+              id: note.id,
+              deliveryNoteNumber: note.deliveryNoteNumber,
+              sequentialNumber: note.sequentialNumber,
+              date: note.date,
+              deliveryDate: note.deliveryDate,
+              customerName: note.customerName,
+              customerAddress: note.customerAddress,
+              customerEmail: note.customerEmail,
+              customerId: note.customerId,
+              companyId: note.companyId,
+              orderNumber: note.orderNumber,
+              customerOrderNumber: note.customerOrderNumber,
+              
+              // Firmendaten aus Firestore
+              companyName: userData.companyName || userData.name || 'Taskilo',
+              companyAddress: userData.companyAddress || 'Musterstraße 123\n12345 Musterstadt',
+              companyEmail: userData.companyEmail || userData.email || 'info@taskilo.de',
+              companyPhone: userData.companyPhone || userData.phone || '',
+              companyWebsite: userData.companyWebsite || 'www.taskilo.de',
+              companyLogo: userData.companyLogo || userData.profilePictureURL,
+              profilePictureURL: userData.profilePictureURL,
+              companyVatId: userData.companyVatId,
+              companyTaxNumber: userData.companyTaxNumber,
+              companyRegister: userData.companyRegister,
+              districtCourt: userData.districtCourt,
+              legalForm: userData.legalForm,
+              iban: userData.iban,
+              accountHolder: userData.accountHolder,
+              
+              items: note.items.map(item => ({
+                id: item.id,
+                productId: item.productId,
+                description: item.description,
+                quantity: item.quantity,
+                unit: item.unit,
+                unitPrice: item.unitPrice,
+                total: item.total,
+                stockReduced: item.stockReduced,
+                warehouseLocation: item.warehouseLocation,
+                serialNumbers: item.serialNumbers,
+                notes: item.notes,
+              })),
+              
+              showPrices: note.showPrices,
+              subtotal: note.subtotal,
+              tax: note.tax,
+              total: note.total,
+              vatRate: note.vatRate,
+              isSmallBusiness: userData.isSmallBusiness || false,
+              
+              status: note.status,
+              notes: note.notes,
+              specialInstructions: note.specialInstructions,
+              shippingMethod: note.shippingMethod,
+              trackingNumber: note.trackingNumber,
+              deliveryTerms: userData.deliveryTerms,
+              
+              createdAt: note.createdAt,
+              updatedAt: note.updatedAt,
+              createdBy: note.createdBy,
+            };
+            
+            setDeliveryNoteData(templateData);
+          }
+        } catch (error) {
+          console.error('Fehler beim Laden der Benutzerdaten:', error);
+          // Fallback mit minimalen Daten
+          const fallbackData: DeliveryNoteData = {
+            id: note.id,
+            deliveryNoteNumber: note.deliveryNoteNumber,
+            date: note.date,
+            deliveryDate: note.deliveryDate,
+            customerName: note.customerName,
+            customerAddress: note.customerAddress,
+            customerEmail: note.customerEmail,
+            companyName: 'Taskilo',
+            companyAddress: 'Musterstraße 123\n12345 Musterstadt',
+            companyEmail: 'info@taskilo.de',
+            companyPhone: '',
+            items: note.items.map(item => ({
+              id: item.id,
+              description: item.description,
+              quantity: item.quantity,
+              unit: item.unit,
+              unitPrice: item.unitPrice,
+              total: item.total,
+              stockReduced: item.stockReduced || false,
+            })),
+            showPrices: note.showPrices,
+            subtotal: note.subtotal,
+            tax: note.tax,
+            total: note.total,
+            vatRate: note.vatRate,
+            isSmallBusiness: false,
+            status: note.status,
+            notes: note.notes,
+            createdAt: note.createdAt,
+            updatedAt: note.updatedAt,
+            createdBy: note.createdBy,
+          };
+          setDeliveryNoteData(fallbackData);
+          setUserTemplate('german-standard');
+        }
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des Lieferscheins:', error);
       setError('Fehler beim Laden des Lieferscheins');
     } finally {
       setLoading(false);
@@ -44,6 +168,28 @@ export default function PrintDeliveryNotePage() {
     return new Date(dateString).toLocaleDateString('de-DE');
   };
 
+  // Initialize print mode when component loads
+  useEffect(() => {
+    const initializePage = async () => {
+      // Add print-page class to body for PDF generation
+      document.body.classList.add('print-page');
+      
+      // Set page title for PDF
+      if (deliveryNote) {
+        document.title = `Lieferschein ${deliveryNote.deliveryNoteNumber}`;
+      }
+    };
+    
+    if (deliveryNote) {
+      initializePage();
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('print-page');
+    };
+  }, [deliveryNote]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -55,7 +201,7 @@ export default function PrintDeliveryNotePage() {
     );
   }
 
-  if (error || !deliveryNote) {
+  if (error || !deliveryNote || !deliveryNoteData) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
@@ -69,15 +215,90 @@ export default function PrintDeliveryNotePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white print:p-0 p-8">
+    <>
+      {/* Print-spezifische CSS-Optimierungen für A4-Format */}
       <style jsx global>{`
+        @page {
+          size: A4;
+          margin: 20mm;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        /* Hide browser UI elements that might appear in PDF */
         @media print {
-          body {
+          @page {
             margin: 0;
           }
+
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
+
           .no-print {
             display: none !important;
           }
+
+          /* Ensure proper font rendering in PDF */
+          body.print-page * {
+            color-adjust: exact !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+        }
+
+        /* Hide everything except delivery note content when printing */
+        body.print-page * {
+          visibility: hidden !important;
+        }
+
+        body.print-page .delivery-note-print-content,
+        body.print-page .delivery-note-print-content * {
+          visibility: visible !important;
+        }
+
+        body.print-page > *:not(.delivery-note-print-content) {
+          display: none !important;
+        }
+
+        .delivery-note-print-content {
+          width: 100% !important;
+          max-width: 210mm !important; /* A4 Breite */
+          margin: 0 auto !important;
+          padding: 20mm !important; /* A4 Standard-Ränder */
+          background: white !important;
+          box-sizing: border-box;
+          min-height: 257mm; /* A4 Höhe minus Ränder */
+          font-size: 11pt !important;
+          line-height: 1.3 !important;
+        }
+
+        .delivery-note-print-content h1 {
+          font-size: 16pt !important;
+          margin-bottom: 8pt !important;
+        }
+
+        .delivery-note-print-content h2 {
+          font-size: 14pt !important;
+          margin-bottom: 6pt !important;
+        }
+
+        .delivery-note-print-content h3 {
+          font-size: 12pt !important;
+          margin-bottom: 4pt !important;
+        }
+
+        .delivery-note-print-content table {
+          font-size: 10pt !important;
+        }
+
+        .delivery-note-print-content .text-sm {
+          font-size: 9pt !important;
+        }
+
+        .delivery-note-print-content .text-xs {
+          font-size: 8pt !important;
         }
       `}</style>
 
@@ -97,161 +318,22 @@ export default function PrintDeliveryNotePage() {
         </button>
       </div>
 
-      {/* Delivery Note Content */}
-      <div className="max-w-4xl mx-auto bg-white">
-        {/* Header */}
-        <div className="border-b-3 border-[#14ad9f] pb-6 mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-[#14ad9f] mb-4">Taskilo</h1>
-              <div className="text-gray-600">
-                <p>Musterstraße 123</p>
-                <p>12345 Musterstadt</p>
-                <p>Deutschland</p>
-                <p className="text-[#14ad9f] mt-2">info@taskilo.de</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <h2 className="text-4xl font-light text-gray-800 mb-4">LIEFERSCHEIN</h2>
-              <div className="text-gray-600">
-                <p>
-                  <strong>Nr:</strong> {deliveryNote.deliveryNoteNumber}
-                </p>
-                <p>
-                  <strong>Datum:</strong> {formatDate(deliveryNote.date)}
-                </p>
-                <p>
-                  <strong>Lieferdatum:</strong> {formatDate(deliveryNote.deliveryDate)}
-                </p>
-                {deliveryNote.orderNumber && (
-                  <p>
-                    <strong>Bestellung:</strong> {deliveryNote.orderNumber}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* Sauberer Delivery Note Content - NUR der Lieferschein */}
+      <div className="delivery-note-print-content">
+        {/* Debug: Daten anzeigen */}
+        <div style={{ display: 'none' }}>
+          DEBUG: Delivery Note ID: {deliveryNote.id}, Number: {deliveryNote.deliveryNoteNumber}
         </div>
 
-        {/* Customer Information */}
-        <div className="bg-gray-50 p-6 rounded-lg mb-8">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Lieferadresse:</h3>
-          <div>
-            <div className="font-semibold text-lg text-gray-900">{deliveryNote.customerName}</div>
-            <div className="text-gray-600 mt-2 leading-relaxed">
-              {deliveryNote.customerAddress.split('\n').map((line, i) => (
-                <div key={i}>{line}</div>
-              ))}
-            </div>
-            {deliveryNote.customerEmail && (
-              <div className="text-[#14ad9f] font-medium mt-2">{deliveryNote.customerEmail}</div>
-            )}
-          </div>
-        </div>
-
-        {/* Items Table */}
-        <div className="mb-8">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-[#14ad9f] text-white">
-                <th className="text-left p-4 border">Pos.</th>
-                <th className="text-left p-4 border">Beschreibung</th>
-                <th className="text-right p-4 border">Menge</th>
-                <th className="text-right p-4 border">Einheit</th>
-                {deliveryNote.showPrices && (
-                  <>
-                    <th className="text-right p-4 border">Einzelpreis</th>
-                    <th className="text-right p-4 border">Gesamt</th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {deliveryNote.items.map((item, index) => (
-                <tr key={item.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="p-4 border">{index + 1}</td>
-                  <td className="p-4 border">{item.description}</td>
-                  <td className="p-4 border text-right">{item.quantity}</td>
-                  <td className="p-4 border text-right">{item.unit}</td>
-                  {deliveryNote.showPrices && (
-                    <>
-                      <td className="p-4 border text-right">
-                        {item.unitPrice ? formatCurrency(item.unitPrice) : '-'}
-                      </td>
-                      <td className="p-4 border text-right font-medium">
-                        {item.total
-                          ? formatCurrency(item.total)
-                          : item.unitPrice
-                            ? formatCurrency(item.quantity * item.unitPrice)
-                            : '-'}
-                      </td>
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Totals */}
-        {deliveryNote.showPrices && deliveryNote.total && (
-          <div className="flex justify-end mb-8">
-            <div className="w-80 space-y-2">
-              {deliveryNote.subtotal && (
-                <div className="flex justify-between py-2 text-gray-600 border-b">
-                  <span>Zwischensumme:</span>
-                  <span>{formatCurrency(deliveryNote.subtotal)}</span>
-                </div>
-              )}
-              {deliveryNote.tax && (
-                <div className="flex justify-between py-2 text-gray-600 border-b">
-                  <span>MwSt. ({deliveryNote.vatRate || 19}%):</span>
-                  <span>{formatCurrency(deliveryNote.tax)}</span>
-                </div>
-              )}
-              <div className="flex justify-between py-4 text-xl font-medium bg-[#14ad9f] text-white px-4 rounded-lg">
-                <span>Gesamtwert:</span>
-                <span>{formatCurrency(deliveryNote.total)}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Notes */}
-        {deliveryNote.notes && (
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Bemerkungen:</h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-gray-700 leading-relaxed">{deliveryNote.notes}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="border-t pt-6 mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
-            <div>
-              <h4 className="font-semibold text-gray-800 mb-2">Vielen Dank für Ihr Vertrauen!</h4>
-              <p className="text-gray-600">
-                Diese Lieferung wurde sorgfältig zusammengestellt und geprüft. Bei Fragen oder
-                Problemen kontaktieren Sie uns gerne.
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-gray-600 space-y-1">
-                <div className="font-medium text-[#14ad9f]">Taskilo</div>
-                <div>E-Mail: info@taskilo.de</div>
-                <div>Web: www.taskilo.de</div>
-              </div>
-            </div>
-          </div>
-          <div className="text-center mt-6 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 italic">
-              Dieser Lieferschein wurde automatisch erstellt und ist ohne Unterschrift gültig.
-            </p>
-          </div>
+        {/* Template-basiertes A4-optimiertes Layout */}
+        <div className="print-delivery-note-wrapper">
+          <DeliveryNoteTemplateRenderer
+            template={userTemplate}
+            data={deliveryNoteData}
+            preview={false}
+          />
         </div>
       </div>
-    </div>
+    </>
   );
 }
