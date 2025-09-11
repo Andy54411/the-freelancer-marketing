@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { DeliveryNoteService, DeliveryNote } from '@/services/deliveryNoteService';
+import { DeliveryNote } from '@/services/deliveryNoteService';
 import { DeliveryNoteTemplateRenderer } from '@/components/finance/delivery-note-templates/DeliveryNoteTemplateRenderer';
-import { DeliveryNoteData, DeliveryNoteTemplate } from '@/components/finance/delivery-note-templates/types';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import {
+  DeliveryNoteData,
+  DeliveryNoteTemplate,
+} from '@/components/finance/delivery-note-templates/types';
 
 export default function PrintDeliveryNotePage() {
   const params = useParams();
@@ -25,130 +26,106 @@ export default function PrintDeliveryNotePage() {
   const loadDeliveryNote = async () => {
     try {
       setLoading(true);
-      const note = await DeliveryNoteService.getDeliveryNote(deliveryNoteId);
-      if (!note) {
+
+      console.log('🔍 Loading delivery note via API:', deliveryNoteId);
+
+      // Verwende API-Route anstatt direkten Firestore-Zugriff
+      const response = await fetch(`/api/delivery-note/${deliveryNoteId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Lieferschein nicht gefunden');
+          return;
+        }
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success || !result.deliveryNote) {
         setError('Lieferschein nicht gefunden');
         return;
       }
+
+      const note = result.deliveryNote;
+      const userData = result.companyData || {};
+
       setDeliveryNote(note);
 
-      // Lade Firmendaten und Template-Einstellungen
-      if (note.companyId) {
-        try {
-          const userDoc = await getDoc(doc(db, 'users', note.companyId));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            
-            // Template-Präferenz laden
-            const preferredTemplate = userData.preferredDeliveryNoteTemplate as DeliveryNoteTemplate;
-            setUserTemplate(preferredTemplate || 'german-standard');
+      // Template-Präferenz laden
+      const preferredTemplate = userData.preferredDeliveryNoteTemplate as DeliveryNoteTemplate;
+      setUserTemplate(preferredTemplate || 'german-standard');
 
-            // Daten für Template-Renderer konvertieren
-            const templateData: DeliveryNoteData = {
-              id: note.id,
-              deliveryNoteNumber: note.deliveryNoteNumber,
-              sequentialNumber: note.sequentialNumber,
-              date: note.date,
-              deliveryDate: note.deliveryDate,
-              customerName: note.customerName,
-              customerAddress: note.customerAddress,
-              customerEmail: note.customerEmail,
-              customerId: note.customerId,
-              companyId: note.companyId,
-              orderNumber: note.orderNumber,
-              customerOrderNumber: note.customerOrderNumber,
-              
-              // Firmendaten aus Firestore
-              companyName: userData.companyName || userData.name || 'Taskilo',
-              companyAddress: userData.companyAddress || 'Musterstraße 123\n12345 Musterstadt',
-              companyEmail: userData.companyEmail || userData.email || 'info@taskilo.de',
-              companyPhone: userData.companyPhone || userData.phone || '',
-              companyWebsite: userData.companyWebsite || 'www.taskilo.de',
-              companyLogo: userData.companyLogo || userData.profilePictureURL,
-              profilePictureURL: userData.profilePictureURL,
-              companyVatId: userData.companyVatId,
-              companyTaxNumber: userData.companyTaxNumber,
-              companyRegister: userData.companyRegister,
-              districtCourt: userData.districtCourt,
-              legalForm: userData.legalForm,
-              iban: userData.iban,
-              accountHolder: userData.accountHolder,
-              
-              items: note.items.map(item => ({
-                id: item.id,
-                productId: item.productId,
-                description: item.description,
-                quantity: item.quantity,
-                unit: item.unit,
-                unitPrice: item.unitPrice,
-                total: item.total,
-                stockReduced: item.stockReduced,
-                warehouseLocation: item.warehouseLocation,
-                serialNumbers: item.serialNumbers,
-                notes: item.notes,
-              })),
-              
-              showPrices: note.showPrices,
-              subtotal: note.subtotal,
-              tax: note.tax,
-              total: note.total,
-              vatRate: note.vatRate,
-              isSmallBusiness: userData.isSmallBusiness || false,
-              
-              status: note.status,
-              notes: note.notes,
-              specialInstructions: note.specialInstructions,
-              shippingMethod: note.shippingMethod,
-              trackingNumber: note.trackingNumber,
-              deliveryTerms: userData.deliveryTerms,
-              
-              createdAt: note.createdAt,
-              updatedAt: note.updatedAt,
-              createdBy: note.createdBy,
-            };
-            
-            setDeliveryNoteData(templateData);
-          }
-        } catch (error) {
-          console.error('Fehler beim Laden der Benutzerdaten:', error);
-          // Fallback mit minimalen Daten
-          const fallbackData: DeliveryNoteData = {
-            id: note.id,
-            deliveryNoteNumber: note.deliveryNoteNumber,
-            date: note.date,
-            deliveryDate: note.deliveryDate,
-            customerName: note.customerName,
-            customerAddress: note.customerAddress,
-            customerEmail: note.customerEmail,
-            companyName: 'Taskilo',
-            companyAddress: 'Musterstraße 123\n12345 Musterstadt',
-            companyEmail: 'info@taskilo.de',
-            companyPhone: '',
-            items: note.items.map(item => ({
-              id: item.id,
-              description: item.description,
-              quantity: item.quantity,
-              unit: item.unit,
-              unitPrice: item.unitPrice,
-              total: item.total,
-              stockReduced: item.stockReduced || false,
-            })),
-            showPrices: note.showPrices,
-            subtotal: note.subtotal,
-            tax: note.tax,
-            total: note.total,
-            vatRate: note.vatRate,
-            isSmallBusiness: false,
-            status: note.status,
-            notes: note.notes,
-            createdAt: note.createdAt,
-            updatedAt: note.updatedAt,
-            createdBy: note.createdBy,
-          };
-          setDeliveryNoteData(fallbackData);
-          setUserTemplate('german-standard');
-        }
-      }
+      // Daten für Template-Renderer konvertieren
+      const templateData: DeliveryNoteData = {
+        id: note.id,
+        deliveryNoteNumber: note.deliveryNoteNumber,
+        sequentialNumber: note.sequentialNumber,
+        date: note.date,
+        deliveryDate: note.deliveryDate,
+        customerName: note.customerName,
+        customerAddress: note.customerAddress,
+        customerEmail: note.customerEmail,
+        customerId: note.customerId,
+        companyId: note.companyId,
+        orderNumber: note.orderNumber,
+        customerOrderNumber: note.customerOrderNumber,
+
+        // Firmendaten aus API-Response
+        companyName: userData.companyName || userData.name || 'Taskilo',
+        companyAddress: userData.companyAddress || 'Musterstraße 123\n12345 Musterstadt',
+        companyEmail: userData.companyEmail || userData.email || 'info@taskilo.de',
+        companyPhone: userData.companyPhone || userData.phone || '',
+        companyWebsite: userData.companyWebsite || 'www.taskilo.de',
+        companyLogo: userData.companyLogo || userData.profilePictureURL,
+        profilePictureURL: userData.profilePictureURL,
+        companyVatId: userData.companyVatId,
+        companyTaxNumber: userData.companyTaxNumber,
+        companyRegister: userData.companyRegister,
+        districtCourt: userData.districtCourt,
+        legalForm: userData.legalForm,
+        iban: userData.iban,
+        accountHolder: userData.accountHolder,
+
+        items: note.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          description: item.description,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          total: item.total,
+          stockReduced: item.stockReduced,
+          warehouseLocation: item.warehouseLocation,
+          serialNumbers: item.serialNumbers,
+          notes: item.notes,
+        })),
+
+        showPrices: note.showPrices,
+        subtotal: note.subtotal,
+        tax: note.tax,
+        total: note.total,
+        vatRate: note.vatRate,
+        isSmallBusiness: userData.isSmallBusiness || false,
+
+        status: note.status,
+        notes: note.notes,
+        specialInstructions: note.specialInstructions,
+        shippingMethod: note.shippingMethod,
+        trackingNumber: note.trackingNumber,
+        deliveryTerms: userData.deliveryTerms,
+
+        createdAt: note.createdAt,
+        updatedAt: note.updatedAt,
+        createdBy: note.createdBy,
+      };
+
+      setDeliveryNoteData(templateData);
     } catch (error) {
       console.error('Fehler beim Laden des Lieferscheins:', error);
       setError('Fehler beim Laden des Lieferscheins');
@@ -173,17 +150,17 @@ export default function PrintDeliveryNotePage() {
     const initializePage = async () => {
       // Add print-page class to body for PDF generation
       document.body.classList.add('print-page');
-      
+
       // Set page title for PDF
       if (deliveryNote) {
         document.title = `Lieferschein ${deliveryNote.deliveryNoteNumber}`;
       }
     };
-    
+
     if (deliveryNote) {
       initializePage();
     }
-    
+
     // Cleanup on unmount
     return () => {
       document.body.classList.remove('print-page');
