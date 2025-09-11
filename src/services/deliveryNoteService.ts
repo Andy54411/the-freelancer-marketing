@@ -151,10 +151,17 @@ export class DeliveryNoteService {
       console.log('📋 Full noteData:', JSON.stringify(noteData, null, 2));
 
       // Sequenznummer generieren - Mit Fallback für fehlende Settings
-      let settings: DeliveryNoteSettings | null = null;
+      const settings: DeliveryNoteSettings | null = null;
       let sequentialNumber = 1;
       let deliveryNoteNumber = '';
 
+      // TEMPORÄRER FIX: Überspringe Settings-Laden für Debug
+      console.log('🔧 SKIPPING SETTINGS LOAD FOR DEBUG');
+      const timestamp = Date.now();
+      deliveryNoteNumber = `LS-${timestamp}`;
+      sequentialNumber = 1;
+
+      /*
       try {
         settings = await this.getSettings(noteData.companyId || '');
         sequentialNumber = settings?.nextNumber || 1;
@@ -166,6 +173,7 @@ export class DeliveryNoteService {
         deliveryNoteNumber = `LS-${timestamp}`;
         sequentialNumber = 1;
       }
+      */
 
       console.log('📋 Generated delivery note number:', deliveryNoteNumber);
 
@@ -187,10 +195,26 @@ export class DeliveryNoteService {
       };
       console.log('📄 Document data to save:', JSON.stringify(docData, null, 2));
 
+      // Datenvalidierung vor dem Schreiben
+      if (!docData.companyId) {
+        throw new Error('CompanyId is required but missing');
+      }
+      if (!docData.customerName) {
+        throw new Error('CustomerName is required but missing');
+      }
+      if (!docData.items || !Array.isArray(docData.items)) {
+        throw new Error('Items array is required but missing or invalid');
+      }
+
+      console.log('✅ Data validation passed, attempting to write to Firestore...');
       const docRef = await addDoc(collectionRef, docData);
 
       console.log('✅ Delivery note created successfully with ID:', docRef.id);
 
+      // TEMPORÄRER FIX: Überspringe Settings-Update für Debug
+      console.log('🔧 SKIPPING SETTINGS UPDATE FOR DEBUG');
+
+      /*
       // Nächste Nummer aktualisieren - Nur wenn Settings verfügbar sind
       if (settings && noteData.companyId) {
         try {
@@ -202,6 +226,7 @@ export class DeliveryNoteService {
           console.warn('⚠️ Could not update settings, continuing anyway:', updateError);
         }
       }
+      */
 
       return docRef.id;
     } catch (error) {
@@ -461,12 +486,16 @@ export class DeliveryNoteService {
    */
   static async getSettings(companyId: string): Promise<DeliveryNoteSettings | null> {
     try {
+      console.log('⚙️ Loading delivery note settings for company:', companyId);
+
       const q = query(
         collection(db, this.SETTINGS_COLLECTION),
         where('companyId', '==', companyId)
       );
 
+      console.log('⚙️ Executing settings query...');
       const querySnapshot = await getDocs(q);
+      console.log('⚙️ Settings query completed, found docs:', querySnapshot.size);
 
       if (querySnapshot.empty) {
         console.log('📋 No delivery note settings found, using defaults for company:', companyId);
