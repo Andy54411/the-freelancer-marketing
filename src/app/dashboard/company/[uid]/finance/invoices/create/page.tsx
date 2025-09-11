@@ -1377,20 +1377,45 @@ export default function CreateInvoicePage() {
                       }));
                     }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Steuerhinweis auswählen (optional)" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-w-md w-80">
                       <SelectItem value="none">Kein Steuerhinweis</SelectItem>
-                      <SelectItem value="kleinunternehmer">
-                        Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.
+                      <SelectItem
+                        value="kleinunternehmer"
+                        className="whitespace-normal py-3 h-auto leading-relaxed"
+                      >
+                        <div className="text-sm">
+                          Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.
+                        </div>
                       </SelectItem>
-                      <SelectItem value="reverse-charge">
-                        Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als
-                        Leistungsempfänger die Umsatzsteuer als Unternehmer.
+                      <SelectItem
+                        value="reverse-charge"
+                        className="whitespace-normal py-3 h-auto leading-relaxed"
+                      >
+                        <div className="text-sm">
+                          Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als
+                          Leistungsempfänger die Umsatzsteuer als Unternehmer.
+                        </div>
                       </SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Anzeige des ausgewählten Steuerhinweises */}
+                  {formData.taxNote && formData.taxNote !== 'none' && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-md border-l-4 border-[#14ad9f]">
+                      <div className="text-sm text-gray-700">
+                        <strong>Ausgewählter Steuerhinweis:</strong>
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1 leading-relaxed">
+                        {formData.taxNote === 'kleinunternehmer' &&
+                          'Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.'}
+                        {formData.taxNote === 'reverse-charge' &&
+                          'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1723,7 +1748,16 @@ export default function CreateInvoicePage() {
                               isSmallBusiness: companySettings?.ust === 'kleinunternehmer' || false,
                               vatRate: parseFloat(formData.taxRate),
                               priceInput: 'netto' as const,
-                              ...(formData.taxNote !== 'none' && { taxNote: formData.taxNote }),
+                              taxNote: (() => {
+                                const taxNote =
+                                  formData.taxNote !== 'none' ? formData.taxNote : undefined;
+                                console.log('🔍 Invoice Create Debug - taxNote:', {
+                                  formDataTaxNote: formData.taxNote,
+                                  processedTaxNote: taxNote,
+                                  isNotNone: formData.taxNote !== 'none',
+                                });
+                                return taxNote as 'kleinunternehmer' | 'reverse-charge' | undefined;
+                              })(),
                             } as InvoiceData
                           }
                           preview={true}
@@ -1746,7 +1780,10 @@ export default function CreateInvoicePage() {
                       amount: subtotal,
                       tax: tax,
                       total: total,
-                      taxNote: formData.taxNote !== 'none' ? formData.taxNote : undefined,
+                      taxNote: (formData.taxNote !== 'none' ? formData.taxNote : undefined) as
+                        | 'kleinunternehmer'
+                        | 'reverse-charge'
+                        | undefined,
                     }}
                     template={selectedTemplate}
                     companySettings={companySettings || undefined}

@@ -259,12 +259,19 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ) => {
     try {
+      console.log('🔍 Starting customer creation process...');
+      console.log('📍 Company ID:', companyId);
+      console.log('👤 Current User:', user?.uid);
+      console.log('📋 Customer Data:', customerData);
+
       if (!user) {
+        console.error('❌ User not authenticated');
         throw new Error('Benutzer nicht authentifiziert');
       }
 
       // Verify user has permission to add customers to this company
       if (user.uid !== companyId) {
+        console.error('❌ Permission denied - user:', user.uid, 'companyId:', companyId);
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
@@ -299,7 +306,10 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         updatedAt: serverTimestamp(),
       };
 
+      console.log('💾 Final customer document to save:', newCustomer);
+
       const docRef = await addDoc(collection(db, 'customers'), newCustomer);
+      console.log('✅ Customer document created with ID:', docRef.id);
 
       const addedCustomer: Customer = {
         ...customerData,
@@ -310,15 +320,23 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         createdAt: new Date().toISOString(),
       };
 
+      console.log('📋 Adding customer to local state:', addedCustomer);
       setCustomers(prev => [addedCustomer, ...prev]);
       setNextCustomerNumber(generateNextCustomerNumber([addedCustomer, ...customers]));
 
       toast.success(`Kunde ${customerData.name} erfolgreich hinzugefügt`);
+      console.log('✅ Customer creation completed successfully');
     } catch (error) {
+      console.error('❌ Error in handleAddCustomer:', error);
+      console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
       // More detailed error logging
       if (error instanceof Error) {
+        console.error('📋 Error stack:', error.stack);
       }
 
+      toast.error(
+        `Fehler beim Hinzufügen des Kunden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
       throw error;
     }
   };

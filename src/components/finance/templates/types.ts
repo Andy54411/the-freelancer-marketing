@@ -45,6 +45,7 @@ export interface InvoiceData {
   stornoReason?: string;
   stornoDate?: Date;
   stornoBy?: string;
+  taxNote?: 'kleinunternehmer' | 'reverse-charge' | 'none';
 
   // Template-spezifische Felder
   paymentTerms?: string;

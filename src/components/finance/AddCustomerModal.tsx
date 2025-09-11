@@ -131,6 +131,10 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    console.log('🔍 AddCustomerModal - Starting form submission...');
+    console.log('📋 Form Data:', formData);
+    console.log('👥 Contact Persons:', contactPersons);
+
     if (
       !formData.name.trim() ||
       !formData.email.trim() ||
@@ -138,6 +142,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       !formData.city.trim() ||
       !formData.postalCode.trim()
     ) {
+      console.error('❌ Required fields missing');
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
     }
@@ -145,6 +150,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
+      console.error('❌ Invalid email format:', formData.email);
       toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
       return;
     }
@@ -154,7 +160,10 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       cp => cp.firstName.trim() && cp.lastName.trim() && cp.email.trim()
     );
 
+    console.log('👥 Valid contact persons:', validContactPersons.length);
+
     if (validContactPersons.length === 0) {
+      console.error('❌ No valid contact persons');
       toast.error('Mindestens ein Ansprechpartner mit Name und E-Mail ist erforderlich');
       return;
     }
@@ -162,14 +171,17 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     // Validate contact person emails
     for (const cp of validContactPersons) {
       if (!emailRegex.test(cp.email)) {
+        console.error('❌ Invalid contact person email:', cp.email);
         toast.error(`Ungültige E-Mail-Adresse für ${cp.firstName} ${cp.lastName}`);
         return;
       }
     }
 
     try {
+      console.log('💾 Calling onAddCustomer function...');
       setLoading(true);
-      await onAddCustomer({
+
+      const customerDataToSave = {
         customerNumber: formData.customerNumber,
         name: formData.name.trim(),
         email: formData.email.trim(),
@@ -194,7 +206,13 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
           position: cp.position?.trim() || undefined,
           department: cp.department?.trim() || undefined,
         })),
-      });
+      };
+
+      console.log('📋 Final customer data to save:', customerDataToSave);
+
+      await onAddCustomer(customerDataToSave);
+
+      console.log('✅ Customer successfully added via onAddCustomer');
 
       // Reset form
       setFormData({
@@ -227,8 +245,13 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
 
       setOpen(false);
       toast.success('Kunde erfolgreich hinzugefügt');
+      console.log('✅ Form reset and modal closed');
     } catch (error) {
-      toast.error('Fehler beim Hinzufügen des Kunden');
+      console.error('❌ Error in handleSubmit:', error);
+      console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
+      toast.error(
+        `Fehler beim Hinzufügen des Kunden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     } finally {
       setLoading(false);
     }

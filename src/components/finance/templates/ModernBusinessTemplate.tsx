@@ -229,12 +229,19 @@ export const ModernBusinessTemplate: React.FC<TemplateProps> = ({ data, preview 
         </div>
       </div>
 
-      {/* Kleinunternehmer-Hinweis */}
-      {data.isSmallBusiness && (
+      {/* Steuerhinweise */}
+      {(data.isSmallBusiness ||
+        data.taxNote === 'kleinunternehmer' ||
+        data.taxNote === 'reverse-charge') && (
         <div className="px-8 mb-6">
           <div className="bg-amber-50 border border-amber-200 rounded p-4">
             <div className="text-sm text-amber-800">
-              <strong>Hinweis:</strong> Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
+              <strong>Steuerhinweis:</strong>{' '}
+              {data.isSmallBusiness || data.taxNote === 'kleinunternehmer'
+                ? 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'
+                : data.taxNote === 'reverse-charge'
+                  ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
+                  : 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'}
             </div>
           </div>
         </div>

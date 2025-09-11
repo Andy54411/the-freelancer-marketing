@@ -126,7 +126,13 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
                   {item.unitPrice?.toFixed(2)} €
                 </td>
                 <td className="border border-gray-300 p-2 text-center">
-                  {data.isSmallBusiness ? '-' : `${item.taxRate || 19}%`}
+                  {data.isSmallBusiness
+                    ? '-'
+                    : data.tax === 0 && !data.isSmallBusiness
+                      ? '0%'
+                      : data.taxNote === 'reverse-charge'
+                        ? '0%'
+                        : `${item.taxRate || 19}%`}
                 </td>
                 <td className="border border-gray-300 p-2 text-right font-semibold">
                   {item.total?.toFixed(2)} €
@@ -201,11 +207,43 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
         </div>
       )}
 
-      {/* Kleinunternehmer-Hinweis */}
-      {data.isSmallBusiness && (
+      {/* Steuerhinweise - Debug */}
+      {(() => {
+        const shouldShowTaxNote =
+          data.isSmallBusiness ||
+          data.taxNote === 'kleinunternehmer' ||
+          data.taxNote === 'reverse-charge' ||
+          (data.vatRate === 0 && data.tax === 0) ||
+          (data.tax === 0 && !data.isSmallBusiness); // Fallback für 0€ Steuer ohne explizite taxNote
+        console.log('🔍 GermanStandardTemplate Debug:', {
+          taxNote: data.taxNote,
+          isSmallBusiness: data.isSmallBusiness,
+          vatRate: data.vatRate,
+          tax: data.tax,
+          shouldShowTaxNote,
+          fallbackCondition: data.tax === 0 && !data.isSmallBusiness,
+        });
+        return null;
+      })()}
+
+      {/* Steuerhinweise */}
+      {(data.isSmallBusiness ||
+        data.taxNote === 'kleinunternehmer' ||
+        data.taxNote === 'reverse-charge' ||
+        (data.vatRate === 0 && data.tax === 0) ||
+        (data.tax === 0 && !data.isSmallBusiness)) && (
         <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded">
           <div className="text-xs text-yellow-800">
-            <strong>Hinweis:</strong> Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.
+            <strong>Steuerhinweis:</strong>{' '}
+            {data.isSmallBusiness || data.taxNote === 'kleinunternehmer'
+              ? 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'
+              : data.taxNote === 'reverse-charge'
+                ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
+                : data.vatRate === 0 && data.tax === 0
+                  ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
+                  : data.tax === 0 && !data.isSmallBusiness
+                    ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
+                    : 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'}
           </div>
         </div>
       )}
