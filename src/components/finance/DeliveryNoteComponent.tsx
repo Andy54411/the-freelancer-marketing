@@ -37,7 +37,8 @@ import {
   DeliveryNoteItem,
 } from '@/services/deliveryNoteService';
 import { InventoryService, InventoryItem } from '@/services/inventoryService';
-import { InventorySelector } from '@/components/finance/InventorySelector';
+import { InventorySelector } from './InventorySelector';
+import { DeliveryNoteSettingsComponent } from './DeliveryNoteSettings';
 import { Customer } from '@/components/finance/AddCustomerModal';
 import { CustomerSelect } from '@/components/finance/CustomerSelect';
 import { WarehouseService } from '@/services/warehouseService';
@@ -887,23 +888,7 @@ export function DeliveryNoteComponent({
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Lieferschein-Einstellungen</CardTitle>
-              <CardDescription>
-                Konfigurieren Sie Nummerierung, Templates und Automatisierung
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Einstellungen</h3>
-                <p className="text-gray-600">
-                  Hier können Sie Ihre Lieferschein-Einstellungen verwalten.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <DeliveryNoteSettingsComponent companyId={companyId} />
         </TabsContent>
       </Tabs>
 
