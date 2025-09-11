@@ -3,7 +3,6 @@ import { InvoiceData } from './types';
 
 interface TemplateProps {
   data: InvoiceData;
-  preview?: boolean;
 }
 
 /**
@@ -17,7 +16,7 @@ interface TemplateProps {
  * - Deutsche Rechtskonformität
  * - Flexbox Layout für perfekte Positionierung
  */
-export const ModernBusinessTemplate: React.FC<TemplateProps> = ({ data, preview = false }) => {
+export const ModernBusinessTemplate: React.FC<TemplateProps> = ({ data }) => {
   return (
     <div className="w-full max-w-[595px] min-h-[842px] bg-white font-sans text-sm leading-normal flex flex-col mx-auto">
       {/* Header mit Gradient-Background */}

@@ -17,9 +17,8 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { InvoiceTemplate, InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
-import { LiveInvoicePreview } from '@/components/finance/LiveInvoicePreview';
+import { LivePreview } from '@/components/finance/LivePreview';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,14 +88,6 @@ export default function CreateInvoicePage() {
           const companyData = response.company;
           setFullCompanyData(companyData);
 
-          const savedTemplate = companyData.preferredInvoiceTemplate;
-          if (savedTemplate) {
-            setSelectedTemplate(savedTemplate as InvoiceTemplate);
-            console.log('✅ Template aus API geladen:', savedTemplate);
-          } else {
-            console.log('⚠️ Kein Template in Datenbank gefunden, verwende Standard');
-          }
-
           // Prüfe Kleinunternehmer-Status aus der Datenbank
           const isKleinunternehmer =
             companyData.kleinunternehmer === 'ja' || companyData.step2?.kleinunternehmer === 'ja';
@@ -144,7 +135,6 @@ export default function CreateInvoicePage() {
               step3Full: companyData.step3,
             },
             name: companyData.companyName,
-            template: savedTemplate,
             kleinunternehmer: isKleinunternehmer,
             kleinunternehmerField: companyData.kleinunternehmer,
             step2Kleinunternehmer: companyData.step2?.kleinunternehmer,
@@ -183,10 +173,14 @@ export default function CreateInvoicePage() {
     taxNote: 'none', // Standard: Kein Steuerhinweis
     notes: '',
     paymentTerms: '', // Zahlungskonditionen
+    // Skonto-Felder hinzufügen
+    skontoEnabled: false,
+    skontoDays: 3,
+    skontoPercentage: 2.0,
+    skontoText: '', // Text für Skonto-Bedingungen
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>('german-standard');
 
   const [items, setItems] = useState<InvoiceItem[]>([
     {
@@ -287,6 +281,46 @@ export default function CreateInvoicePage() {
     }
   }, [searchParams]);
 
+  // Initialize payment terms from company settings when component loads
+  React.useEffect(() => {
+    console.log('🔍 Debug Company Settings loaded:', {
+      companySettings,
+      defaultPaymentTerms: companySettings?.defaultPaymentTerms,
+      hasSettings: !!companySettings,
+      currentPaymentTerms: formData.paymentTerms,
+    });
+
+    if (companySettings && companySettings.defaultPaymentTerms && !formData.paymentTerms) {
+      const paymentDays = companySettings.defaultPaymentTerms.days || 14;
+      const paymentText =
+        companySettings.defaultPaymentTerms.text ||
+        `Zahlbar binnen ${paymentDays} Tagen ohne Abzug`;
+      const skontoEnabled = companySettings.defaultPaymentTerms.skontoEnabled || false;
+      const skontoDays = companySettings.defaultPaymentTerms.skontoDays || 3;
+      const skontoPercentage = companySettings.defaultPaymentTerms.skontoPercentage || 2.0;
+
+      setFormData(prev => ({
+        ...prev,
+        paymentTerms: paymentText,
+        skontoEnabled: skontoEnabled,
+        skontoDays: skontoDays,
+        skontoPercentage: skontoPercentage,
+        skontoText: skontoEnabled
+          ? `${skontoPercentage}% Skonto bei Zahlung binnen ${skontoDays} Tagen`
+          : '',
+      }));
+
+      console.log('✅ Initial Payment Terms from Company Settings:', {
+        days: paymentDays,
+        text: paymentText,
+        skontoEnabled: skontoEnabled,
+        skontoDays: skontoDays,
+        skontoPercentage: skontoPercentage,
+        defaultPaymentTerms: companySettings.defaultPaymentTerms,
+      });
+    }
+  }, [companySettings]);
+
   // Auto-generate invoice number only when finalizing (not for drafts)
   React.useEffect(() => {
     // Keine automatische Generierung der Rechnungsnummer für Entwürfe
@@ -299,19 +333,32 @@ export default function CreateInvoicePage() {
       const issueDate = new Date(formData.issueDate);
       const paymentDays = companySettings.defaultPaymentTerms?.days || 14;
 
-      // Set payment terms if empty or still default
-      if (
+      // Set payment terms if empty, default, or different from company settings
+      const isDefaultPaymentTerms =
         !formData.paymentTerms ||
         formData.paymentTerms === '' ||
-        formData.paymentTerms === 'Zahlbar binnen 14 Tagen ohne Abzug'
-      ) {
+        (formData.paymentTerms.includes('Zahlbar binnen') &&
+          formData.paymentTerms.includes('Tagen ohne Abzug')) ||
+        formData.paymentTerms === 'Zahlbar binnen 14 Tagen ohne Abzug';
+
+      if (isDefaultPaymentTerms) {
         const paymentText =
           companySettings.defaultPaymentTerms?.text ||
           `Zahlbar binnen ${paymentDays} Tagen ohne Abzug`;
 
+        const skontoEnabled = companySettings.defaultPaymentTerms?.skontoEnabled || false;
+        const skontoDays = companySettings.defaultPaymentTerms?.skontoDays || 3;
+        const skontoPercentage = companySettings.defaultPaymentTerms?.skontoPercentage || 2.0;
+
         setFormData(prev => ({
           ...prev,
           paymentTerms: paymentText,
+          skontoEnabled: skontoEnabled,
+          skontoDays: skontoDays,
+          skontoPercentage: skontoPercentage,
+          skontoText: skontoEnabled
+            ? `${skontoPercentage}% Skonto bei Zahlung binnen ${skontoDays} Tagen`
+            : '',
           // Only update due date if not already set
           dueDate:
             prev.dueDate ||
@@ -323,7 +370,11 @@ export default function CreateInvoicePage() {
         console.log('✅ Payment Terms from Company Settings applied:', {
           days: paymentDays,
           text: paymentText,
+          skontoEnabled: skontoEnabled,
+          skontoDays: skontoDays,
+          skontoPercentage: skontoPercentage,
           companySettings: companySettings.defaultPaymentTerms,
+          previousTerms: formData.paymentTerms,
         });
       }
     }
@@ -1127,7 +1178,11 @@ export default function CreateInvoicePage() {
         taxNote: formData.taxNote,
         notes: formData.notes,
         paymentTerms: formData.paymentTerms, // Zahlungskonditionen
-        template: selectedTemplate,
+        // Skonto-Daten für Speicherung
+        skontoEnabled: formData.skontoEnabled,
+        skontoDays: formData.skontoDays,
+        skontoPercentage: formData.skontoPercentage,
+        skontoText: formData.skontoText,
         status: action === 'finalize' ? 'finalized' : 'draft',
       };
 
@@ -1382,6 +1437,126 @@ export default function CreateInvoicePage() {
               </CardContent>
             </Card>
 
+            {/* Invoice Items */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Rechnungspositionen</CardTitle>
+                    <CardDescription>Fügen Sie Leistungen und Produkte hinzu</CardDescription>
+                  </div>
+                  <Button type="button" variant="outline" onClick={addItem}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Position hinzufügen
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {items.map((item, index) => (
+                    <div
+                      key={item.id}
+                      className="grid grid-cols-12 gap-3 items-end p-4 border rounded-lg"
+                    >
+                      <div className="col-span-12 md:col-span-5">
+                        <Label htmlFor={`description_${item.id}`}>Beschreibung</Label>
+                        <Input
+                          id={`description_${item.id}`}
+                          value={item.description}
+                          onChange={e => updateItem(item.id, 'description', e.target.value)}
+                          placeholder="Leistungsbeschreibung"
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-2">
+                        <Label htmlFor={`quantity_${item.id}`}>Menge</Label>
+                        <Input
+                          id={`quantity_${item.id}`}
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={item.quantity}
+                          onChange={e =>
+                            updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)
+                          }
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-2">
+                        <Label htmlFor={`unitPrice_${item.id}`}>Einzelpreis (€)</Label>
+                        <Input
+                          id={`unitPrice_${item.id}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={e =>
+                            updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </div>
+                      <div className="col-span-3 md:col-span-2">
+                        <Label>Gesamt</Label>
+                        <div className="text-lg font-medium text-gray-900 mt-2">
+                          {formatCurrency(item.total)}
+                        </div>
+                      </div>
+                      <div className="col-span-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeItem(item.id)}
+                          disabled={items.length === 1}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Summary Row */}
+                <div className="border-t pt-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="text-sm text-gray-600">
+                      <p>
+                        {(() => {
+                          const { subtotal } = calculateTotals();
+                          const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+                          return `${items.length} Position${items.length !== 1 ? 'en' : ''} • ${totalItems} Artikel • Netto: ${formatCurrency(subtotal)}`;
+                        })()}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end space-y-1">
+                      {(() => {
+                        const { subtotal, tax, total } = calculateTotals();
+                        return (
+                          <>
+                            <div className="flex justify-between w-48">
+                              <span className="text-sm text-gray-600">Zwischensumme:</span>
+                              <span className="text-sm font-medium">
+                                {formatCurrency(subtotal)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between w-48">
+                              <span className="text-sm text-gray-600">
+                                MwSt ({formData.taxRate}%):
+                              </span>
+                              <span className="text-sm font-medium">{formatCurrency(tax)}</span>
+                            </div>
+                            <div className="flex justify-between w-48 text-lg font-bold pt-2 border-t">
+                              <span>Gesamtbetrag:</span>
+                              <span className="text-[#14ad9f]">{formatCurrency(total)}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Steuerhinweise */}
             <Card>
               <CardHeader>
@@ -1527,143 +1702,88 @@ export default function CreateInvoicePage() {
                     })()}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Invoice Items */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Rechnungspositionen</CardTitle>
-                    <CardDescription>Fügen Sie Leistungen und Produkte hinzu</CardDescription>
+                {/* Skonto-Einstellungen */}
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="skontoEnabled"
+                      checked={formData.skontoEnabled}
+                      onChange={e => {
+                        const enabled = e.target.checked;
+                        const skontoText = enabled
+                          ? `${formData.skontoPercentage}% Skonto bei Zahlung binnen ${formData.skontoDays} Tagen`
+                          : '';
+                        setFormData(prev => ({
+                          ...prev,
+                          skontoEnabled: enabled,
+                          skontoText: skontoText,
+                        }));
+                      }}
+                      className="rounded border-gray-300 text-[#14ad9f] focus:ring-[#14ad9f]"
+                    />
+                    <Label htmlFor="skontoEnabled" className="text-sm font-medium">
+                      Skonto gewähren
+                    </Label>
                   </div>
-                  <Button type="button" variant="outline" onClick={addItem}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Position hinzufügen
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {items.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="grid grid-cols-12 gap-3 items-end p-4 border rounded-lg"
-                    >
-                      <div className="col-span-12 md:col-span-5">
-                        <Label htmlFor={`description_${item.id}`}>Beschreibung</Label>
+
+                  {formData.skontoEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="skontoDays">Skonto-Tage</Label>
                         <Input
-                          id={`description_${item.id}`}
-                          value={item.description}
-                          onChange={e => updateItem(item.id, 'description', e.target.value)}
-                          placeholder="Leistungsbeschreibung"
-                        />
-                      </div>
-                      <div className="col-span-4 md:col-span-2">
-                        <Label htmlFor={`quantity_${item.id}`}>Menge</Label>
-                        <Input
-                          id={`quantity_${item.id}`}
+                          id="skontoDays"
                           type="number"
                           min="1"
-                          step="1"
-                          value={item.quantity}
-                          onChange={e =>
-                            updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)
-                          }
+                          max="30"
+                          value={formData.skontoDays}
+                          onChange={e => {
+                            const days = parseInt(e.target.value) || 3;
+                            const skontoText = `${formData.skontoPercentage}% Skonto bei Zahlung binnen ${days} Tagen`;
+                            setFormData(prev => ({
+                              ...prev,
+                              skontoDays: days,
+                              skontoText: skontoText,
+                            }));
+                          }}
+                          placeholder="3"
                         />
                       </div>
-                      <div className="col-span-4 md:col-span-2">
-                        <Label htmlFor={`unitPrice_${item.id}`}>Einzelpreis (€)</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="skontoPercentage">Skonto-Prozentsatz (%)</Label>
                         <Input
-                          id={`unitPrice_${item.id}`}
+                          id="skontoPercentage"
                           type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={e =>
-                            updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)
-                          }
+                          step="0.1"
+                          min="0.1"
+                          max="10"
+                          value={formData.skontoPercentage}
+                          onChange={e => {
+                            const percentage = parseFloat(e.target.value) || 2.0;
+                            const skontoText = `${percentage}% Skonto bei Zahlung binnen ${formData.skontoDays} Tagen`;
+                            setFormData(prev => ({
+                              ...prev,
+                              skontoPercentage: percentage,
+                              skontoText: skontoText,
+                            }));
+                          }}
+                          placeholder="2.0"
                         />
                       </div>
-                      <div className="col-span-3 md:col-span-2">
-                        <Label>Gesamt</Label>
-                        <div className="text-lg font-medium text-gray-900 mt-2">
-                          {formatCurrency(item.total)}
-                        </div>
-                      </div>
-                      <div className="col-span-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeItem(item.id)}
-                          disabled={items.length === 1}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="md:col-span-2 space-y-2">
+                        <Label htmlFor="skontoText">Skonto-Text für Rechnung</Label>
+                        <Input
+                          id="skontoText"
+                          value={formData.skontoText}
+                          onChange={e =>
+                            setFormData(prev => ({ ...prev, skontoText: e.target.value }))
+                          }
+                          placeholder="2% Skonto bei Zahlung binnen 3 Tagen"
+                        />
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Totals */}
-                <div className="mt-6 pt-6 border-t">
-                  <div className="flex justify-end">
-                    <div className="w-80 space-y-2">
-                      <div className="flex justify-between">
-                        <span>Zwischensumme:</span>
-                        <span className="font-medium">{formatCurrency(subtotal)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <span>MwSt.:</span>
-                          <Select
-                            value={formData.taxRate.toString()}
-                            onValueChange={value => {
-                              // Verhindere Änderung bei Kleinunternehmer
-                              if (formData.taxNote === 'kleinunternehmer') {
-                                toast.error(
-                                  'Bei Kleinunternehmerregelung ist der Steuersatz 0% und kann nicht geändert werden.'
-                                );
-                                return;
-                              }
-                              // Verhindere Änderung bei Reverse-Charge
-                              if (formData.taxNote === 'reverse-charge') {
-                                toast.error(
-                                  'Bei Reverse-Charge-Verfahren ist der Steuersatz 0% und kann nicht geändert werden.'
-                                );
-                                return;
-                              }
-                              console.log('MwSt changed to:', value);
-                              setFormData(prev => ({ ...prev, taxRate: value }));
-                            }}
-                            disabled={
-                              formData.taxNote === 'kleinunternehmer' ||
-                              formData.taxNote === 'reverse-charge'
-                            }
-                          >
-                            <SelectTrigger
-                              className={`w-20 h-8 ${formData.taxNote === 'kleinunternehmer' || formData.taxNote === 'reverse-charge' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              <SelectValue placeholder="19%" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0">0%</SelectItem>
-                              <SelectItem value="7">7%</SelectItem>
-                              <SelectItem value="19">19%</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <span className="font-medium">{formatCurrency(tax)}</span>
-                      </div>
-                      <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                        <span>Gesamtbetrag:</span>
-                        <span className="text-[#14ad9f]">{formatCurrency(total)}</span>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1744,7 +1864,7 @@ export default function CreateInvoicePage() {
                   {/* Live Invoice Preview */}
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                     <div style={{ height: '260px' }}>
-                      <LiveInvoicePreview
+                      <LivePreview
                         invoiceData={{
                           invoiceNumber: formData.invoiceNumber || 'R-2025-000',
                           issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
@@ -1774,8 +1894,12 @@ export default function CreateInvoicePage() {
                             | 'reverse-charge'
                             | undefined,
                           paymentTerms: formData.paymentTerms,
+                          // Skonto-Daten für Preview
+                          skontoEnabled: formData.skontoEnabled,
+                          skontoDays: formData.skontoDays,
+                          skontoPercentage: formData.skontoPercentage,
+                          skontoText: formData.skontoText,
                         }}
-                        template={selectedTemplate}
                         companySettings={companySettings || undefined}
                       />
                     </div>
@@ -1800,18 +1924,13 @@ export default function CreateInvoicePage() {
                         | 'reverse-charge'
                         | undefined,
                       paymentTerms: formData.paymentTerms,
+                      // Skonto-Daten für PDF Preview
+                      skontoEnabled: formData.skontoEnabled,
+                      skontoDays: formData.skontoDays,
+                      skontoPercentage: formData.skontoPercentage,
+                      skontoText: formData.skontoText,
                     }}
-                    template={selectedTemplate}
                     companySettings={companySettings || undefined}
-                    trigger={
-                      <Button
-                        variant="outline"
-                        className="w-full border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Vollbild PDF-Vorschau
-                      </Button>
-                    }
                   />
                 </div>
               </CardContent>

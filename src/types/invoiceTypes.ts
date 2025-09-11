@@ -77,6 +77,13 @@ export interface InvoiceData {
   notes?: string;
   taxNote?: 'kleinunternehmer' | 'reverse-charge' | 'none'; // Steuerhinweise (Kleinunternehmer, Reverse-Charge, etc.)
   paymentTerms?: string;
+
+  // Skonto-Einstellungen
+  skontoEnabled?: boolean;
+  skontoDays?: number;
+  skontoPercentage?: number;
+  skontoText?: string;
+
   bankDetails?: {
     iban: string;
     bic?: string;

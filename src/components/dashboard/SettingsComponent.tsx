@@ -330,6 +330,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           masterCraftsmanCertificateFile: null,
           identityFrontFile: null,
           identityBackFile: null,
+          // Standard Zahlungskonditionen für Timeout-Fallback
+          defaultPaymentTerms: undefined,
         });
       }
     }, 10000); // 10 Sekunden Timeout
@@ -515,6 +517,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         masterCraftsmanCertificateFile: null,
         identityFrontFile: null,
         identityBackFile: null,
+        // Zahlungskonditionen aus userData laden
+        defaultPaymentTerms: get('defaultPaymentTerms', undefined),
       };
 
       console.log('✅ SettingsComponent: Form data created successfully:', formData);
@@ -593,6 +597,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         masterCraftsmanCertificateFile: null,
         identityFrontFile: null,
         identityBackFile: null,
+        // Standard Zahlungskonditionen für Fallback
+        defaultPaymentTerms: undefined,
       });
     }
   }, [userData]);
@@ -925,6 +931,8 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       profileBannerImage: (updatedForm as any).publicProfile?.profileBannerImage || '',
       businessLicense: (updatedForm as any).publicProfile?.businessLicense || '',
       certifications: (updatedForm as any).publicProfile?.certifications || [],
+      // Zahlungskonditionen aus dem Form-State übernehmen
+      defaultPaymentTerms: updatedForm.defaultPaymentTerms || null,
       updatedAt: new Date().toISOString(),
     };
 

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/clients';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { admin, db } from '@/firebase/server';
 
 interface PaymentTermsSettings {
   companyId: string;
@@ -25,20 +24,47 @@ interface PaymentTermsSettings {
 /**
  * GET: Lade aktuelle Zahlungskonditionen-Einstellungen
  */
-export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
-    const { uid } = params;
+    const { uid } = await params;
 
     // Lade Company-Dokument
-    const companyRef = doc(db, 'companies', uid);
-    const companyDoc = await getDoc(companyRef);
+    const companyRef = db.collection('companies').doc(uid);
+    const companyDoc = await companyRef.get();
 
-    if (!companyDoc.exists()) {
+    if (!companyDoc.exists) {
       return NextResponse.json({ error: 'Unternehmen nicht gefunden' }, { status: 404 });
     }
 
     const companyData = companyDoc.data();
-    const paymentTermsSettings = companyData?.settings?.paymentTerms || getDefaultPaymentTerms();
+
+    console.log('🔍 PaymentTerms API Debug:', {
+      hasSettingsPaymentTerms: !!companyData?.settings?.paymentTerms,
+      hasDefaultPaymentTerms: !!companyData?.defaultPaymentTerms,
+      settingsPaymentTerms: companyData?.settings?.paymentTerms,
+      defaultPaymentTerms: companyData?.defaultPaymentTerms,
+    });
+
+    // Prüfe zuerst settings.paymentTerms, dann defaultPaymentTerms, dann Fallback
+    let paymentTermsSettings = companyData?.settings?.paymentTerms;
+
+    if (!paymentTermsSettings && companyData?.defaultPaymentTerms) {
+      // Fallback: Aus normalen Firmeneinstellungen laden
+      console.log('📋 PaymentTerms API: Loading from company defaultPaymentTerms fallback');
+      paymentTermsSettings = {
+        companyId: uid,
+        defaultPaymentTerms: companyData.defaultPaymentTerms,
+        customPaymentTerms: [],
+        lastUpdated: new Date(),
+        updatedBy: 'Migration from company settings',
+      };
+    } else if (!paymentTermsSettings) {
+      // Keine Einstellungen vorhanden: Standard-Werte
+      console.log('📋 PaymentTerms API: Using default payment terms');
+      paymentTermsSettings = getDefaultPaymentTerms();
+    } else {
+      console.log('📋 PaymentTerms API: Loading from settings.paymentTerms');
+    }
 
     return NextResponse.json({
       success: true,
@@ -56,9 +82,9 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
 /**
  * PUT: Aktualisiere Zahlungskonditionen-Einstellungen
  */
-export async function PUT(request: NextRequest, { params }: { params: { uid: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
   try {
-    const { uid } = params;
+    const { uid } = await params;
     const body = await request.json();
 
     // Validierung
@@ -68,10 +94,10 @@ export async function PUT(request: NextRequest, { params }: { params: { uid: str
     }
 
     // Lade Company-Dokument
-    const companyRef = doc(db, 'companies', uid);
-    const companyDoc = await getDoc(companyRef);
+    const companyRef = db.collection('companies').doc(uid);
+    const companyDoc = await companyRef.get();
 
-    if (!companyDoc.exists()) {
+    if (!companyDoc.exists) {
       return NextResponse.json({ error: 'Unternehmen nicht gefunden' }, { status: 404 });
     }
 
@@ -96,9 +122,9 @@ export async function PUT(request: NextRequest, { params }: { params: { uid: str
     };
 
     // Update Unternehmensdaten
-    await updateDoc(companyRef, {
+    await companyRef.update({
       'settings.paymentTerms': paymentTermsSettings,
-      'settings.lastUpdated': new Date(),
+      'settings.lastUpdated': admin.firestore.FieldValue.serverTimestamp(),
       defaultPaymentTerms: paymentTermsSettings.defaultPaymentTerms, // Auch auf root level für useCompanySettings
     });
 

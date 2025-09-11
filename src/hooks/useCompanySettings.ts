@@ -76,6 +76,12 @@ export function useCompanySettings(userId?: string) {
         }
 
         if (userData) {
+          console.log('🔍 useCompanySettings: Raw userData from Firestore:', {
+            defaultPaymentTerms: userData.defaultPaymentTerms,
+            settingsPaymentTerms: userData.settings?.paymentTerms?.defaultPaymentTerms,
+            allSettings: userData.settings,
+          });
+
           const companySettings: CompanySettings = {
             // Firmendaten
             companyName: userData.companyName || userData.step2?.companyName || '',
@@ -116,14 +122,27 @@ export function useCompanySettings(userId?: string) {
             iban: userData.iban || userData.step4?.iban,
             accountHolder: userData.accountHolder || userData.step4?.accountHolder,
 
-            // Zahlungskonditionen
-            defaultPaymentTerms: userData.defaultPaymentTerms || {
-              days: 14, // Standard: 14 Tage Zahlungsziel
-              text: 'Zahlbar binnen 14 Tagen ohne Abzug',
-              skontoEnabled: false,
-              skontoDays: 10,
-              skontoPercentage: 2,
-            },
+            // Zahlungskonditionen - Priorität: settings.paymentTerms.defaultPaymentTerms > root defaultPaymentTerms > fallback
+            defaultPaymentTerms: userData.settings?.paymentTerms?.defaultPaymentTerms ||
+              userData.defaultPaymentTerms ||
+              // Prüfe auch direkt in step5 für Migration
+              (userData.step5?.paymentTerms
+                ? {
+                    days: userData.step5.paymentTerms.days || 14,
+                    text:
+                      userData.step5.paymentTerms.text ||
+                      `Zahlbar binnen ${userData.step5.paymentTerms.days || 14} Tagen ohne Abzug`,
+                    skontoEnabled: userData.step5.paymentTerms.skontoEnabled || false,
+                    skontoDays: userData.step5.paymentTerms.skontoDays || 10,
+                    skontoPercentage: userData.step5.paymentTerms.skontoPercentage || 2,
+                  }
+                : null) || {
+                days: 14, // Standard: 14 Tage Zahlungsziel
+                text: 'Zahlbar binnen 14 Tagen ohne Abzug',
+                skontoEnabled: false,
+                skontoDays: 10,
+                skontoPercentage: 2,
+              },
 
             // Rechtliche Angaben
             legalForm: userData.legalForm || userData.step2?.legalForm,

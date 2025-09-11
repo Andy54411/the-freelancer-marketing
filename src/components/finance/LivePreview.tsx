@@ -1,19 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Eye, Printer } from 'lucide-react';
 import { GermanStandardTemplate } from './templates/GermanStandardTemplate';
 import { InvoiceData } from '@/types/invoiceTypes';
 
-interface InvoicePreviewProps {
+interface LivePreviewProps {
   invoiceData: Partial<InvoiceData>;
   companySettings?: {
     companyName?: string;
@@ -33,8 +24,8 @@ interface InvoicePreviewProps {
   };
 }
 
-export function InvoicePreview({ invoiceData, companySettings }: InvoicePreviewProps) {
-  // Einfache Daten-Vorbereitung
+export function LivePreview({ invoiceData, companySettings }: LivePreviewProps) {
+  // Einfache Daten-Vorbereitung für Live Preview
   const previewData: InvoiceData = {
     id: 'preview',
     number: invoiceData.invoiceNumber || 'R-2025-000',
@@ -55,7 +46,15 @@ export function InvoicePreview({ invoiceData, companySettings }: InvoicePreviewP
     companyLogo: companySettings?.companyLogo || '',
     companyVatId: companySettings?.vatId || '',
     companyTaxNumber: companySettings?.taxNumber || '',
-    items: invoiceData.items || [],
+    items: invoiceData.items || [
+      {
+        id: 'placeholder',
+        description: 'Beispiel Dienstleistung',
+        quantity: 1,
+        unitPrice: 100.0,
+        total: 100.0,
+      },
+    ],
     amount: invoiceData.amount || 0,
     tax: invoiceData.tax || 0,
     total: invoiceData.total || 0,
@@ -87,37 +86,17 @@ export function InvoicePreview({ invoiceData, companySettings }: InvoicePreviewP
     notes: invoiceData.notes || '',
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full">
-          <Eye className="h-4 w-4 mr-2" />
-          Vorschau anzeigen
-        </Button>
-      </DialogTrigger>
-
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Rechnungsvorschau
-            </DialogTitle>
-            <Button onClick={handlePrint} variant="outline" size="sm">
-              <Printer className="h-4 w-4 mr-2" />
-              Drucken
-            </Button>
-          </div>
-        </DialogHeader>
-
-        <div className="bg-white">
-          <GermanStandardTemplate data={previewData} />
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div
+      className="w-full h-full overflow-hidden bg-white"
+      style={{
+        transform: 'scale(0.25)',
+        transformOrigin: 'top left',
+        width: '400%',
+        height: '400%',
+      }}
+    >
+      <GermanStandardTemplate data={previewData} />
+    </div>
   );
 }

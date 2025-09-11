@@ -49,6 +49,13 @@ export interface InvoiceData {
 
   // Template-spezifische Felder
   paymentTerms?: string;
+
+  // Skonto-Einstellungen
+  skontoEnabled?: boolean;
+  skontoDays?: number;
+  skontoPercentage?: number;
+  skontoText?: string;
+
   bankDetails?: {
     iban: string;
     bic?: string;

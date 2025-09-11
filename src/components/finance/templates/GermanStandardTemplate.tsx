@@ -4,7 +4,6 @@ import { getProxiedImageUrl, isFirebaseStorageUrl } from '@/utils/imageProxy';
 
 interface TemplateProps {
   data: InvoiceData;
-  preview?: boolean;
 }
 
 /**
@@ -17,34 +16,43 @@ interface TemplateProps {
  * - Deutsche Steuerrecht-Compliance
  * - A4-Format (595px × 842px)
  */
-export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview = false }) => {
+export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data }) => {
   return (
     <div
       data-invoice-template
-      className={`w-full ${preview ? 'max-w-none' : 'max-w-[595px]'} min-h-[842px] bg-white p-8 font-sans text-sm leading-normal flex flex-col mx-auto`}
+      className="w-full max-w-[595px] min-h-[842px] bg-white p-8 font-sans text-sm leading-normal flex flex-col mx-auto"
     >
       {/* Header mit Logo und Firmenangaben */}
       {/* Header mit Logo und Firmenangaben */}
       <div className="flex justify-between items-start mb-8">
-        <div className="flex-1 mr-8">
-          <div className="text-lg font-bold text-gray-900 mb-2">{data.companyName}</div>
-          <div className="text-gray-700 whitespace-pre-line">{data.companyAddress}</div>
+        {/* Linke Seite: Firmenangaben */}
+        <div className="flex-1 mr-8 mt-24">
+          <div className="text-base font-bold text-gray-900 mb-1">{data.companyName}</div>
+          <div className="text-sm text-gray-700 whitespace-pre-line leading-tight">
+            {data.companyAddress}
+          </div>
 
-          {data.companyPhone && <div className="text-gray-700 mt-1">Tel: {data.companyPhone}</div>}
-          {data.companyEmail && <div className="text-gray-700">E-Mail: {data.companyEmail}</div>}
-          {data.companyWebsite && <div className="text-gray-700">Web: {data.companyWebsite}</div>}
+          {data.companyPhone && (
+            <div className="text-sm text-gray-700 mt-1">Tel: {data.companyPhone}</div>
+          )}
+          {data.companyEmail && (
+            <div className="text-sm text-gray-700">E-Mail: {data.companyEmail}</div>
+          )}
+          {data.companyWebsite && (
+            <div className="text-sm text-gray-700">Web: {data.companyWebsite}</div>
+          )}
         </div>
 
-        <div className="text-right flex flex-col items-end min-w-[200px]">
-          {/* Logo rechts oben mit Fallback auf lokales Bild */}
+        {/* Rechte Seite: Logo und Rechnungsinfo */}
+        <div className="flex flex-col min-w-[200px]">
+          {/* Logo rechts oben */}
           <div className="mb-4">
             <img
               src="/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg"
               alt={`${data.companyName} Logo`}
-              className="h-40 w-auto max-w-[400px] object-contain"
+              className="h-32 w-auto max-w-[300px] object-contain"
               onError={e => {
                 console.error('🖼️ Lokales Logo Error:', e);
-                // Fallback: Logo verstecken und Placeholder anzeigen
                 e.currentTarget.style.display = 'none';
                 const fallback = e.currentTarget.nextElementSibling as HTMLElement;
                 if (fallback) fallback.style.display = 'block';
@@ -54,7 +62,7 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
               }}
             />
             <div
-              className="hidden p-3 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center min-w-[120px]"
+              className="hidden p-2 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center min-w-[100px]"
               style={{ display: 'none' }}
             >
               <div className="text-xs text-gray-500 font-medium">Logo</div>
@@ -62,8 +70,8 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
             </div>
           </div>
 
-          <h1 className="text-2xl font-bold text-[#14ad9f] mb-4">RECHNUNG</h1>
-          <div className="text-gray-700">
+          <h1 className="text-xl font-bold text-[#14ad9f] mb-3">RECHNUNG</h1>
+          <div className="text-sm text-gray-700">
             <div className="mb-1">
               <strong>Rechnungsnr.:</strong> {data.invoiceNumber}
             </div>
@@ -75,11 +83,10 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
             </div>
           </div>
         </div>
-      </div>
-
+      </div>{' '}
       {/* Steuerliche Pflichtangaben (UStG §14) */}
-      <div className="border-t border-gray-300 pt-4 mb-6">
-        <div className="text-xs text-gray-600 space-y-1">
+      <div className="border-t border-gray-300 pt-3 mb-4">
+        <div className="text-xs text-gray-600 space-y-0.5 leading-tight">
           {data.companyTaxNumber && (
             <div>
               <strong>Steuernummer:</strong> {data.companyTaxNumber}
@@ -96,19 +103,19 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
           </div>
         </div>
       </div>
-
       {/* Rechnungsempfänger */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="text-sm font-semibold text-gray-900 mb-2">Rechnungsempfänger:</div>
-        <div className="bg-gray-50 p-4 border border-gray-200">
-          <div className="font-semibold text-gray-900">{data.customerName}</div>
-          <div className="text-gray-700 whitespace-pre-line">{data.customerAddress}</div>
+        <div className="bg-gray-50 p-3 border border-gray-200">
+          <div className="font-semibold text-sm text-gray-900">{data.customerName}</div>
+          <div className="text-xs text-gray-700 whitespace-pre-line leading-tight">
+            {data.customerAddress}
+          </div>
           {data.customerEmail && (
-            <div className="text-gray-700 mt-1">E-Mail: {data.customerEmail}</div>
+            <div className="text-xs text-gray-700 mt-1">E-Mail: {data.customerEmail}</div>
           )}
         </div>
       </div>
-
       {/* Rechnungspositionen */}
       <div className="mb-8">
         <table className="w-full border-collapse">
@@ -146,7 +153,6 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
           </tbody>
         </table>
       </div>
-
       {/* Summenbereich mit deutscher Steuerlogik */}
       <div className="flex justify-between mb-8">
         {/* Bankdaten und Steuerhinweise links */}
@@ -230,15 +236,21 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
           </div>
         </div>
       </div>
-
       {/* Zahlungsbedingungen */}
       {data.paymentTerms && (
         <div className="mb-6">
           <div className="text-sm font-semibold text-gray-900 mb-2">Zahlungsbedingungen:</div>
           <div className="text-gray-700 text-sm">{data.paymentTerms}</div>
+
+          {/* Skonto-Bedingungen anzeigen */}
+          {data.skontoEnabled && data.skontoText && (
+            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded">
+              <div className="text-sm font-semibold text-green-800 mb-1">Skonto-Möglichkeit:</div>
+              <div className="text-green-700 text-sm">{data.skontoText}</div>
+            </div>
+          )}
         </div>
       )}
-
       {/* Bemerkungen */}
       {data.notes && (
         <div className="mb-6">
@@ -246,10 +258,8 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
           <div className="text-gray-700 text-sm whitespace-pre-line">{data.notes}</div>
         </div>
       )}
-
       {/* Spacer um Footer nach unten zu drücken */}
       <div className="flex-grow"></div>
-
       {/* Footer mit Rechtlichen Hinweisen */}
       <div className="mt-8 pt-4 border-t border-gray-300">
         <div className="text-xs text-gray-500 text-center">
