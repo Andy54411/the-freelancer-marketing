@@ -182,6 +182,7 @@ export default function CreateInvoicePage() {
     taxRate: '19', // Standard German VAT
     taxNote: 'none', // Standard: Kein Steuerhinweis
     notes: '',
+    paymentTerms: '', // Zahlungskonditionen
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -292,17 +293,41 @@ export default function CreateInvoicePage() {
     // Die Nummer wird erst beim Finalisieren erstellt
   }, [uid]); // Entferne die automatische Generierung komplett
 
-  // Auto-set due date (14 days from issue date)
+  // Auto-set due date und payment terms basierend auf Company Settings
   React.useEffect(() => {
-    if (formData.issueDate && !formData.dueDate) {
+    if (companySettings && formData.issueDate) {
       const issueDate = new Date(formData.issueDate);
-      const dueDate = new Date(issueDate.getTime() + 14 * 24 * 60 * 60 * 1000);
-      setFormData(prev => ({
-        ...prev,
-        dueDate: dueDate.toISOString().split('T')[0],
-      }));
+      const paymentDays = companySettings.defaultPaymentTerms?.days || 14;
+
+      // Set payment terms if empty or still default
+      if (
+        !formData.paymentTerms ||
+        formData.paymentTerms === '' ||
+        formData.paymentTerms === 'Zahlbar binnen 14 Tagen ohne Abzug'
+      ) {
+        const paymentText =
+          companySettings.defaultPaymentTerms?.text ||
+          `Zahlbar binnen ${paymentDays} Tagen ohne Abzug`;
+
+        setFormData(prev => ({
+          ...prev,
+          paymentTerms: paymentText,
+          // Only update due date if not already set
+          dueDate:
+            prev.dueDate ||
+            new Date(issueDate.getTime() + paymentDays * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0],
+        }));
+
+        console.log('✅ Payment Terms from Company Settings applied:', {
+          days: paymentDays,
+          text: paymentText,
+          companySettings: companySettings.defaultPaymentTerms,
+        });
+      }
     }
-  }, [formData.issueDate, formData.dueDate]);
+  }, [formData.issueDate, companySettings]);
 
   // Sicherheitsprüfung: Nur der Owner kann Rechnungen erstellen
   if (!user || user.uid !== uid) {
@@ -1101,6 +1126,7 @@ export default function CreateInvoicePage() {
         taxRate: formData.taxRate,
         taxNote: formData.taxNote,
         notes: formData.notes,
+        paymentTerms: formData.paymentTerms, // Zahlungskonditionen
         template: selectedTemplate,
         status: action === 'finalize' ? 'finalized' : 'draft',
       };
@@ -1421,6 +1447,89 @@ export default function CreateInvoicePage() {
               </CardContent>
             </Card>
 
+            {/* Zahlungskonditionen */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Zahlungskonditionen</CardTitle>
+                <CardDescription>
+                  Bearbeiten Sie die Zahlungskonditionen für diese Rechnung
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="paymentTerms">Zahlungskonditionen</Label>
+                  <Textarea
+                    id="paymentTerms"
+                    value={formData.paymentTerms}
+                    onChange={e => setFormData(prev => ({ ...prev, paymentTerms: e.target.value }))}
+                    placeholder="z.B. Zahlbar binnen 14 Tagen ohne Abzug"
+                    rows={2}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Automatisch basierend auf Ihren Firmeneinstellungen gesetzt. Sie können diese
+                    für diese Rechnung anpassen.
+                  </p>
+                </div>
+
+                {/* Schnellauswahl für Zahlungskonditionen */}
+                <div className="space-y-2">
+                  <Label>Schnellauswahl</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {(() => {
+                      const companyDays = companySettings?.defaultPaymentTerms?.days || 14;
+                      const baseOptions = [
+                        { days: 7, text: 'Zahlbar binnen 7 Tagen ohne Abzug' },
+                        { days: 14, text: 'Zahlbar binnen 14 Tagen ohne Abzug' },
+                        { days: 30, text: 'Zahlbar binnen 30 Tagen ohne Abzug' },
+                        { days: 0, text: 'Sofort fällig bei Erhalt' },
+                      ];
+
+                      // Add company default if it's not already in the list
+                      if (![7, 14, 30, 0].includes(companyDays)) {
+                        baseOptions.unshift({
+                          days: companyDays,
+                          text:
+                            companySettings?.defaultPaymentTerms?.text ||
+                            `Zahlbar binnen ${companyDays} Tagen ohne Abzug`,
+                        });
+                      }
+
+                      return baseOptions.map(option => (
+                        <Button
+                          key={option.days}
+                          type="button"
+                          variant={
+                            // Highlight company default
+                            option.days === companyDays ? 'default' : 'outline'
+                          }
+                          size="sm"
+                          onClick={() => {
+                            const issueDate = new Date(formData.issueDate);
+                            const dueDate = new Date(
+                              issueDate.getTime() + option.days * 24 * 60 * 60 * 1000
+                            );
+                            setFormData(prev => ({
+                              ...prev,
+                              paymentTerms: option.text,
+                              dueDate: dueDate.toISOString().split('T')[0],
+                            }));
+                          }}
+                          className={`text-xs justify-center ${
+                            option.days === companyDays
+                              ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
+                              : ''
+                          }`}
+                        >
+                          {option.days === 0 ? 'Sofort' : `${option.days} Tage`}
+                          {option.days === companyDays && ' (Standard)'}
+                        </Button>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Invoice Items */}
             <Card>
               <CardHeader>
@@ -1664,6 +1773,7 @@ export default function CreateInvoicePage() {
                             | 'kleinunternehmer'
                             | 'reverse-charge'
                             | undefined,
+                          paymentTerms: formData.paymentTerms,
                         }}
                         template={selectedTemplate}
                         companySettings={companySettings || undefined}
@@ -1689,6 +1799,7 @@ export default function CreateInvoicePage() {
                         | 'kleinunternehmer'
                         | 'reverse-charge'
                         | undefined,
+                      paymentTerms: formData.paymentTerms,
                     }}
                     template={selectedTemplate}
                     companySettings={companySettings || undefined}

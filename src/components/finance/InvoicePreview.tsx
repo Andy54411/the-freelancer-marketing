@@ -84,6 +84,27 @@ export function InvoicePreview({
       companySettings?.ust === 'kleinunternehmer' || companySettings?.isSmallBusiness || false,
     vatRate: 19,
     priceInput: 'netto' as const,
+    // Steuerhinweis hinzufügen - wichtig für Anzeige!
+    taxNote:
+      invoiceData.taxNote ||
+      (companySettings?.ust === 'kleinunternehmer'
+        ? 'kleinunternehmer'
+        : invoiceData.tax === 0
+          ? 'reverse-charge'
+          : 'none'),
+    // Bankdaten hinzufügen - wichtig für Anzeige!
+    bankDetails:
+      companySettings?.iban ||
+      companySettings?.bic ||
+      companySettings?.accountHolder ||
+      companySettings?.bankName
+        ? {
+            iban: companySettings.iban || '',
+            bic: companySettings.bic,
+            accountHolder: companySettings.accountHolder || '',
+            bankName: companySettings.bankName,
+          }
+        : undefined,
   };
 
   const handleDownloadPDF = () => {
@@ -168,6 +189,29 @@ export function InvoicePreview({
                 color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 box-shadow: none !important;
+              }
+              
+              /* Steuerhinweise sichtbar machen */
+              .bg-yellow-50, 
+              .border-yellow-200,
+              [class*="yellow"],
+              .text-yellow-800 {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                background-color: #fefce8 !important;
+                border-color: #fde047 !important;
+                color: #a16207 !important;
+              }
+              
+              /* Alle Hintergrundfarben erhalten */
+              [class*="bg-"], 
+              [class*="border-"],
+              [style*="background"],
+              [style*="border"] {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
             }
           </style>

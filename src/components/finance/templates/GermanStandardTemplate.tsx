@@ -148,7 +148,64 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
       </div>
 
       {/* Summenbereich mit deutscher Steuerlogik */}
-      <div className="flex justify-end mb-8">
+      <div className="flex justify-between mb-8">
+        {/* Bankdaten und Steuerhinweise links */}
+        <div className="w-96 pr-8">
+          {/* Bankverbindung */}
+          {data.bankDetails && (
+            <div className="mb-4">
+              <div className="text-sm font-semibold text-gray-900 mb-2">Bankverbindung:</div>
+              <div className="text-gray-700 text-sm">
+                {data.bankDetails.iban && (
+                  <div>
+                    <strong>IBAN:</strong> {data.bankDetails.iban}
+                  </div>
+                )}
+                {data.bankDetails.bic && (
+                  <div>
+                    <strong>BIC:</strong> {data.bankDetails.bic}
+                  </div>
+                )}
+                {data.bankDetails.accountHolder && (
+                  <div>
+                    <strong>Kontoinhaber:</strong> {data.bankDetails.accountHolder}
+                  </div>
+                )}
+                {data.bankDetails.bankName && (
+                  <div>
+                    <strong>Bank:</strong> {data.bankDetails.bankName}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Steuerhinweise */}
+          {(data.isSmallBusiness ||
+            data.taxNote === 'kleinunternehmer' ||
+            data.taxNote === 'reverse-charge' ||
+            (data.vatRate === 0 && data.tax === 0) ||
+            (data.tax === 0 && !data.isSmallBusiness)) && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <div className="text-xs text-yellow-800">
+                <div className="font-semibold mb-1">Steuerhinweis:</div>
+                <div className="leading-relaxed">
+                  {data.isSmallBusiness || data.taxNote === 'kleinunternehmer'
+                    ? 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'
+                    : data.taxNote === 'reverse-charge'
+                      ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
+                      : data.vatRate === 0 && data.tax === 0
+                        ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
+                        : data.tax === 0 && !data.isSmallBusiness
+                          ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
+                          : 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Summen rechts */}
         <div className="w-64">
           <div className="flex justify-between py-2 border-b border-gray-200">
             <span>Nettobetrag:</span>
@@ -179,76 +236,6 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview 
         <div className="mb-6">
           <div className="text-sm font-semibold text-gray-900 mb-2">Zahlungsbedingungen:</div>
           <div className="text-gray-700 text-sm">{data.paymentTerms}</div>
-        </div>
-      )}
-
-      {/* Bankverbindung */}
-      {data.bankDetails && (
-        <div className="mb-6">
-          <div className="text-sm font-semibold text-gray-900 mb-2">Bankverbindung:</div>
-          <div className="text-gray-700 text-sm">
-            {data.bankDetails.iban && (
-              <div>
-                <strong>IBAN:</strong> {data.bankDetails.iban}
-              </div>
-            )}
-            {data.bankDetails.bic && (
-              <div>
-                <strong>BIC:</strong> {data.bankDetails.bic}
-              </div>
-            )}
-            {data.bankDetails.accountHolder && (
-              <div>
-                <strong>Kontoinhaber:</strong> {data.bankDetails.accountHolder}
-              </div>
-            )}
-            {data.bankDetails.bankName && (
-              <div>
-                <strong>Bank:</strong> {data.bankDetails.bankName}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Steuerhinweise - Debug */}
-      {(() => {
-        const shouldShowTaxNote =
-          data.isSmallBusiness ||
-          data.taxNote === 'kleinunternehmer' ||
-          data.taxNote === 'reverse-charge' ||
-          (data.vatRate === 0 && data.tax === 0) ||
-          (data.tax === 0 && !data.isSmallBusiness); // Fallback für 0€ Steuer ohne explizite taxNote
-        console.log('🔍 GermanStandardTemplate Debug:', {
-          taxNote: data.taxNote,
-          isSmallBusiness: data.isSmallBusiness,
-          vatRate: data.vatRate,
-          tax: data.tax,
-          shouldShowTaxNote,
-          fallbackCondition: data.tax === 0 && !data.isSmallBusiness,
-        });
-        return null;
-      })()}
-
-      {/* Steuerhinweise */}
-      {(data.isSmallBusiness ||
-        data.taxNote === 'kleinunternehmer' ||
-        data.taxNote === 'reverse-charge' ||
-        (data.vatRate === 0 && data.tax === 0) ||
-        (data.tax === 0 && !data.isSmallBusiness)) && (
-        <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded">
-          <div className="text-xs text-yellow-800">
-            <strong>Steuerhinweis:</strong>{' '}
-            {data.isSmallBusiness || data.taxNote === 'kleinunternehmer'
-              ? 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'
-              : data.taxNote === 'reverse-charge'
-                ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
-                : data.vatRate === 0 && data.tax === 0
-                  ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
-                  : data.tax === 0 && !data.isSmallBusiness
-                    ? 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'
-                    : 'Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.'}
-          </div>
         </div>
       )}
 

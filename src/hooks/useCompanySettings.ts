@@ -32,6 +32,15 @@ export interface CompanySettings {
   iban?: string;
   accountHolder?: string;
 
+  // Zahlungskonditionen
+  defaultPaymentTerms?: {
+    days: number; // Standard-Zahlungsziel in Tagen
+    text: string; // Text für Rechnung (z.B. "Zahlbar binnen 14 Tagen ohne Abzug")
+    skontoEnabled?: boolean; // Skonto aktiviert
+    skontoDays?: number; // Skonto-Frist in Tagen
+    skontoPercentage?: number; // Skonto-Prozentsatz
+  };
+
   // Rechtliche Angaben
   legalForm?: string;
 }
@@ -106,6 +115,15 @@ export function useCompanySettings(userId?: string) {
             // Banking
             iban: userData.iban || userData.step4?.iban,
             accountHolder: userData.accountHolder || userData.step4?.accountHolder,
+
+            // Zahlungskonditionen
+            defaultPaymentTerms: userData.defaultPaymentTerms || {
+              days: 14, // Standard: 14 Tage Zahlungsziel
+              text: 'Zahlbar binnen 14 Tagen ohne Abzug',
+              skontoEnabled: false,
+              skontoDays: 10,
+              skontoPercentage: 2,
+            },
 
             // Rechtliche Angaben
             legalForm: userData.legalForm || userData.step2?.legalForm,

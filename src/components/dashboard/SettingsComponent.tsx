@@ -6,6 +6,8 @@ import { db, app as firebaseApp } from '../../firebase/clients';
 import GeneralForm from '@/components/dashboard_setting/allgemein';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import BankForm from '@/components/dashboard_setting/bankverbindung';
+import PaymentTermsForm from '@/components/settings/PaymentTermsForm';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import LogoForm from '@/components/dashboard_setting/logo';
 import FAQsForm from '@/components/dashboard_setting/faqs';
 import PortfolioForm from '@/components/dashboard_setting/portfolio';
@@ -212,6 +214,13 @@ export interface UserDataForSettings {
   identityFrontFile: File | null;
   identityBackFile: File | null;
   stripeAccountId: string | null; // Erlaube `null`
+  defaultPaymentTerms?: {
+    days: number;
+    text: string;
+    skontoEnabled: boolean;
+    skontoDays: number;
+    skontoPercentage: number;
+  };
 }
 
 interface SettingsPageProps {
@@ -224,7 +233,15 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   const [form, setForm] = useState<UserDataForSettings | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'general' | 'accounting' | 'bank' | 'logo' | 'portfolio' | 'faqs' | 'payouts' | 'storno'
+    | 'general'
+    | 'accounting'
+    | 'payment-terms'
+    | 'bank'
+    | 'logo'
+    | 'portfolio'
+    | 'faqs'
+    | 'payouts'
+    | 'storno'
   >('general');
   const [showManagingDirectorPersonalModal, setShowManagingDirectorPersonalModal] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
@@ -1019,6 +1036,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   type TabKey =
     | 'general'
     | 'accounting'
+    | 'payment-terms'
     | 'bank'
     | 'logo'
     | 'portfolio'
@@ -1033,6 +1051,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   const tabsToDisplay: TabDefinition[] = [
     { key: 'general', label: 'Allgemein' },
     { key: 'accounting', label: 'Buchhaltung & Steuer' },
+    { key: 'payment-terms', label: 'Zahlungskonditionen' },
     { key: 'bank', label: 'Bankverbindung' },
     { key: 'logo', label: 'Logo & Dokumente' },
     { key: 'portfolio', label: 'Portfolio' },
@@ -1096,6 +1115,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-8">
           {activeTab === 'general' && 'Allgemeine Firmendaten'}
           {activeTab === 'accounting' && 'Buchhaltung & Steuern'}
+          {activeTab === 'payment-terms' && 'Zahlungskonditionen'}
           {activeTab === 'bank' && 'Bankverbindung'}
           {activeTab === 'logo' && 'Logo & Dokumente'}
           {activeTab === 'portfolio' && 'Portfolio'}
@@ -1113,6 +1133,9 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         )}
         {form && activeTab === 'accounting' && (
           <AccountingForm formData={form} handleChange={handleChange} />
+        )}
+        {form && activeTab === 'payment-terms' && (
+          <PaymentTermsForm formData={form} handleChange={handleChange} />
         )}
         {form && activeTab === 'bank' && <BankForm formData={form} handleChange={handleChange} />}
         {form && activeTab === 'logo' && <LogoForm formData={form} handleChange={handleChange} />}
