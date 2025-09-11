@@ -19,7 +19,7 @@ interface TemplateProps {
  */
 export const ModernBusinessTemplate: React.FC<TemplateProps> = ({ data, preview = false }) => {
   return (
-    <div className="w-full max-w-[595px] min-h-[842px] bg-white font-sans text-sm leading-normal flex flex-col mx-auto">
+    <div className="w-full bg-white font-sans text-sm leading-normal flex flex-col">
       {/* Header mit Gradient-Background */}
       <div className="bg-gradient-to-r from-[#14ad9f] to-[#0f9d84] text-white p-8 mb-8">
         <div className="flex justify-between items-start">

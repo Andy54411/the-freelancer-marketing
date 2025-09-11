@@ -18,6 +18,7 @@ import {
 import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceTemplate, InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
+import { LiveInvoicePreview } from '@/components/finance/LiveInvoicePreview';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
@@ -1621,185 +1622,129 @@ export default function CreateInvoicePage() {
         <div className="lg:col-span-1">
           <div className="sticky top-8 space-y-4">
             {/* Live Invoice Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  Live Vorschau
-                </CardTitle>
-                <CardDescription>Echtzeitvorschau Ihrer Rechnung</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Live Template Renderer */}
-                  <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                    <div className="h-96 overflow-y-auto relative">
-                      <div className="transform scale-[0.33] origin-top-left w-[303%] h-[303%] pointer-events-none">
-                        <InvoiceTemplateRenderer
-                          template={selectedTemplate}
-                          data={
-                            {
-                              id: 'preview',
-                              number: formData.invoiceNumber || 'R-2025-000',
-                              invoiceNumber: formData.invoiceNumber || 'R-2025-000',
-                              sequentialNumber: 0,
-                              date: formData.issueDate || new Date().toISOString().split('T')[0],
-                              issueDate:
-                                formData.issueDate || new Date().toISOString().split('T')[0],
-                              dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
-                              customerName: formData.customerName || 'Kunden auswählen...',
-                              customerAddress:
-                                formData.customerAddress || 'Kundenadresse wird hier angezeigt',
-                              customerEmail: formData.customerEmail || '',
-                              description: formData.description || '',
-                              companyName:
-                                fullCompanyData?.companyName ||
-                                companySettings?.companyName ||
-                                'Ihr Unternehmen',
-                              companyAddress:
-                                fullCompanyData?.companyAddress ||
-                                (fullCompanyData
-                                  ? [
-                                      fullCompanyData.companyStreet &&
-                                      fullCompanyData.companyHouseNumber
-                                        ? `${fullCompanyData.companyStreet} ${fullCompanyData.companyHouseNumber}`
-                                        : fullCompanyData.companyStreet,
-                                      fullCompanyData.companyPostalCode &&
-                                      fullCompanyData.companyCity
-                                        ? `${fullCompanyData.companyPostalCode} ${fullCompanyData.companyCity}`
-                                        : undefined,
-                                      fullCompanyData.companyCountry,
-                                    ]
-                                      .filter(Boolean)
-                                      .join('\n')
-                                  : companySettings?.companyAddress) ||
-                                'Ihre Firmenadresse',
-                              companyEmail:
-                                fullCompanyData?.email ||
-                                companySettings?.companyEmail ||
-                                'info@ihrunternehmen.de',
-                              companyPhone:
-                                fullCompanyData?.companyPhoneNumber ||
-                                companySettings?.companyPhone ||
-                                '+49 123 456789',
-                              companyWebsite:
-                                fullCompanyData?.companyWebsite ||
-                                companySettings?.companyWebsite ||
-                                '',
-                              companyLogo: (() => {
-                                let logo =
-                                  fullCompanyData?.companyLogo ||
-                                  fullCompanyData?.profilePictureURL ||
-                                  fullCompanyData?.step3?.profilePictureURL ||
-                                  companySettings?.companyLogo ||
-                                  '';
+            <LiveInvoicePreview
+              template={selectedTemplate}
+              invoiceData={
+                {
+                  id: 'preview',
+                  number: formData.invoiceNumber || 'R-2025-000',
+                  invoiceNumber: formData.invoiceNumber || 'R-2025-000',
+                  sequentialNumber: 0,
+                  date: formData.issueDate || new Date().toISOString().split('T')[0],
+                  issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
+                  dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
+                  customerName: formData.customerName || 'Kunden auswählen...',
+                  customerAddress: formData.customerAddress || 'Kundenadresse wird hier angezeigt',
+                  customerEmail: formData.customerEmail || '',
+                  description: formData.description || '',
+                  companyName:
+                    fullCompanyData?.companyName ||
+                    companySettings?.companyName ||
+                    'Ihr Unternehmen',
+                  companyAddress:
+                    fullCompanyData?.companyAddress ||
+                    (fullCompanyData
+                      ? [
+                          fullCompanyData.companyStreet && fullCompanyData.companyHouseNumber
+                            ? `${fullCompanyData.companyStreet} ${fullCompanyData.companyHouseNumber}`
+                            : fullCompanyData.companyStreet,
+                          fullCompanyData.companyPostalCode && fullCompanyData.companyCity
+                            ? `${fullCompanyData.companyPostalCode} ${fullCompanyData.companyCity}`
+                            : undefined,
+                          fullCompanyData.companyCountry,
+                        ]
+                          .filter(Boolean)
+                          .join('\n')
+                      : companySettings?.companyAddress) ||
+                    'Ihre Firmenadresse',
+                  companyEmail:
+                    fullCompanyData?.email ||
+                    companySettings?.companyEmail ||
+                    'info@ihrunternehmen.de',
+                  companyPhone:
+                    fullCompanyData?.companyPhoneNumber ||
+                    companySettings?.companyPhone ||
+                    '+49 123 456789',
+                  companyWebsite:
+                    fullCompanyData?.companyWebsite || companySettings?.companyWebsite || '',
+                  companyLogo: (() => {
+                    let logo =
+                      fullCompanyData?.companyLogo ||
+                      fullCompanyData?.profilePictureURL ||
+                      fullCompanyData?.step3?.profilePictureURL ||
+                      companySettings?.companyLogo ||
+                      '';
 
-                                // URL dekodieren falls nötig
-                                if (logo) {
-                                  try {
-                                    // Prüfe ob URL encoded ist und dekodiere sie
-                                    if (logo.includes('%2F')) {
-                                      logo = decodeURIComponent(logo);
-                                    }
-                                  } catch (error) {
-                                    console.warn('🖼️ Fehler beim URL-Dekodieren:', error);
-                                  }
-                                }
-
-                                console.log('🖼️ Live Preview Logo Debug:', {
-                                  originalLogo:
-                                    fullCompanyData?.companyLogo ||
-                                    fullCompanyData?.profilePictureURL ||
-                                    fullCompanyData?.step3?.profilePictureURL ||
-                                    companySettings?.companyLogo ||
-                                    '',
-                                  decodedLogo: logo,
-                                  companyLogo: fullCompanyData?.companyLogo,
-                                  profilePictureURL: fullCompanyData?.profilePictureURL,
-                                  step3ProfilePictureURL: fullCompanyData?.step3?.profilePictureURL,
-                                  companySettingsLogo: companySettings?.companyLogo,
-                                  fullCompanyDataAvailable: !!fullCompanyData,
-                                });
-                                return logo;
-                              })(),
-                              companyVatId: fullCompanyData?.vatId || companySettings?.vatId || '',
-                              companyTaxNumber:
-                                fullCompanyData?.taxNumber || companySettings?.taxNumber || '',
-                              companyRegister:
-                                fullCompanyData?.companyRegister ||
-                                companySettings?.companyRegister ||
-                                '',
-                              districtCourt:
-                                fullCompanyData?.districtCourt ||
-                                companySettings?.districtCourt ||
-                                '',
-                              legalForm:
-                                fullCompanyData?.legalForm || companySettings?.legalForm || '',
-                              items: items.filter(item => item.description && item.quantity > 0),
-                              amount: subtotal,
-                              tax: tax,
-                              total: total,
-                              status: 'draft' as const,
-                              notes: formData.notes,
-                              createdAt: new Date(),
-                              year: new Date().getFullYear(),
-                              companyId: 'preview',
-                              isStorno: false,
-                              isSmallBusiness: companySettings?.ust === 'kleinunternehmer' || false,
-                              vatRate: parseFloat(formData.taxRate),
-                              priceInput: 'netto' as const,
-                              taxNote: (() => {
-                                const taxNote =
-                                  formData.taxNote !== 'none' ? formData.taxNote : undefined;
-                                console.log('🔍 Invoice Create Debug - taxNote:', {
-                                  formDataTaxNote: formData.taxNote,
-                                  processedTaxNote: taxNote,
-                                  isNotNone: formData.taxNote !== 'none',
-                                });
-                                return taxNote as 'kleinunternehmer' | 'reverse-charge' | undefined;
-                              })(),
-                            } as InvoiceData
-                          }
-                          preview={true}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* PDF Preview Button */}
-                  <InvoicePreview
-                    invoiceData={{
-                      invoiceNumber: formData.invoiceNumber,
-                      issueDate: formData.issueDate,
-                      dueDate: formData.dueDate,
-                      customerName: formData.customerName,
-                      customerAddress: formData.customerAddress,
-                      customerEmail: formData.customerEmail,
-                      description: formData.description,
-                      items: items,
-                      amount: subtotal,
-                      tax: tax,
-                      total: total,
-                      taxNote: (formData.taxNote !== 'none' ? formData.taxNote : undefined) as
-                        | 'kleinunternehmer'
-                        | 'reverse-charge'
-                        | undefined,
-                    }}
-                    template={selectedTemplate}
-                    companySettings={companySettings || undefined}
-                    trigger={
-                      <Button
-                        variant="outline"
-                        className="w-full border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Vollbild PDF-Vorschau
-                      </Button>
+                    if (logo) {
+                      try {
+                        if (logo.includes('%2F')) {
+                          logo = decodeURIComponent(logo);
+                        }
+                      } catch (error) {
+                        console.warn('Logo URL-Dekodieren:', error);
+                      }
                     }
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                    return logo;
+                  })(),
+                  companyVatId: fullCompanyData?.vatId || companySettings?.vatId || '',
+                  companyTaxNumber: fullCompanyData?.taxNumber || companySettings?.taxNumber || '',
+                  companyRegister:
+                    fullCompanyData?.companyRegister || companySettings?.companyRegister || '',
+                  districtCourt:
+                    fullCompanyData?.districtCourt || companySettings?.districtCourt || '',
+                  legalForm: fullCompanyData?.legalForm || companySettings?.legalForm || '',
+                  items: items.filter(item => item.description && item.quantity > 0),
+                  amount: subtotal,
+                  tax: tax,
+                  total: total,
+                  status: 'draft' as const,
+                  notes: formData.notes,
+                  createdAt: new Date(),
+                  year: new Date().getFullYear(),
+                  companyId: 'preview',
+                  isStorno: false,
+                  isSmallBusiness: companySettings?.ust === 'kleinunternehmer' || false,
+                  vatRate: parseFloat(formData.taxRate),
+                  priceInput: 'netto' as const,
+                  taxNote: (() => {
+                    const taxNote = formData.taxNote !== 'none' ? formData.taxNote : undefined;
+                    return taxNote as 'kleinunternehmer' | 'reverse-charge' | undefined;
+                  })(),
+                } as InvoiceData
+              }
+            />
+
+            {/* PDF Preview Button */}
+            <InvoicePreview
+              invoiceData={{
+                invoiceNumber: formData.invoiceNumber,
+                issueDate: formData.issueDate,
+                dueDate: formData.dueDate,
+                customerName: formData.customerName,
+                customerAddress: formData.customerAddress,
+                customerEmail: formData.customerEmail,
+                description: formData.description,
+                items: items,
+                amount: subtotal,
+                tax: tax,
+                total: total,
+                taxNote: (formData.taxNote !== 'none' ? formData.taxNote : undefined) as
+                  | 'kleinunternehmer'
+                  | 'reverse-charge'
+                  | undefined,
+              }}
+              template={selectedTemplate}
+              companySettings={companySettings || undefined}
+              trigger={
+                <Button
+                  variant="outline"
+                  className="w-full border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Vollbild PDF-Vorschau
+                </Button>
+              }
+            />
 
             {/* Quick Stats */}
             <Card>

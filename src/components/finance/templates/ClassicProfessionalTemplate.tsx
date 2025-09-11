@@ -8,7 +8,7 @@ interface TemplateProps {
 
 export const ClassicProfessionalTemplate: React.FC<TemplateProps> = ({ data, preview = false }) => {
   return (
-    <div className="w-[595px] h-[842px] bg-white p-8 font-sans text-sm">
+    <div className="w-full bg-white p-8 font-sans text-sm">
       <div className="text-center text-gray-500 mt-64">
         Classic Professional Template - Coming Soon
         <br />
