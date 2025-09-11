@@ -45,7 +45,7 @@ export function InvoiceTemplateRenderer({ template, data, preview = false }: Inv
 
   return (
     <div
-      className={`bg-white shadow-sm ${preview ? 'scale-90 transform-origin-top-left' : ''}`}
+      className="bg-white shadow-sm"
       style={{
         width: '595px', // A4 width in pixels at 72 DPI
         minHeight: '842px', // A4 height in pixels at 72 DPI

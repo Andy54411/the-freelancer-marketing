@@ -1634,7 +1634,7 @@ export default function CreateInvoicePage() {
                   {/* Live Template Renderer */}
                   <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
                     <div className="h-96 overflow-y-auto relative">
-                      <div className="transform scale-[0.25] origin-top-left w-[300%] h-[500%] pointer-events-none">
+                      <div className="transform scale-[0.33] origin-top-left w-[303%] h-[303%] pointer-events-none">
                         <InvoiceTemplateRenderer
                           template={selectedTemplate}
                           data={
