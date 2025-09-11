@@ -95,7 +95,6 @@ export default function LoginPopup({
 
         if (firebaseError.code === 'auth/popup-closed-by-user') {
           // Kein Fehler anzeigen, Nutzer hat das Popup geschlossen
-
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
           setError(
             'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
@@ -115,25 +114,24 @@ export default function LoginPopup({
     setLoading('apple');
     setError(null);
     try {
-      const provider = new OAuthProvider('apple.com');
-      // Optional: Fügen Sie Bereiche hinzu oder passen Sie Parameter an
-      // provider.addScope('email');
-      // provider.addScope('name');
+      const provider = new OAuthProvider('oidc.apple');
+      provider.addScope('email');
+      provider.addScope('name');
       const result = await signInWithPopup(auth, provider);
+      console.log('Apple Sign-In erfolgreich:', result);
 
-      onLoginSuccess(result.user);
+      // Das Popup schließen und die Weiterleitung wird vom AuthContext gehandhabt
+      onClose();
     } catch (err: unknown) {
-      if (typeof err === 'object' && err !== null && 'code' in err && 'message' in err) {
-        const firebaseError = err as { code: string; message: string };
-
-        if (firebaseError.code === 'auth/popup-closed-by-user') {
-
-        } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
-          setError(
-            'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
-          );
+      console.error('Apple Sign-In Fehler:', err);
+      if (err && typeof err === 'object' && 'code' in err) {
+        const firebaseErr = err as { code: string; message: string };
+        if (firebaseErr.code === 'auth/popup-closed-by-user') {
+          // Popup wurde vom Benutzer geschlossen - kein Fehler anzeigen
+        } else if (firebaseErr.code === 'auth/cancelled-popup-request') {
+          // Popup-Anfrage wurde abgebrochen - kein Fehler anzeigen
         } else {
-          setError('Apple Login fehlgeschlagen.');
+          setError('Apple Sign-In fehlgeschlagen. Bitte versuchen Sie es erneut.');
         }
       } else {
         setError('Ein unbekannter Fehler ist aufgetreten.');

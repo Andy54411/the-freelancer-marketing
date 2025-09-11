@@ -93,6 +93,8 @@ export default function LoginPage() {
     setError(null);
     try {
       const provider = new OAuthProvider('oidc.apple');
+      provider.addScope('email');
+      provider.addScope('name');
       const result = await signInWithPopup(auth, provider);
       // Die Weiterleitung wird jetzt vollständig vom AuthContext gehandhabt.
       // Nach einem erfolgreichen Login wird die Seite durch die Weiterleitung
