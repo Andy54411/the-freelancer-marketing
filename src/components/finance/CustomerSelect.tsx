@@ -178,6 +178,98 @@ export function CustomerSelect({
     }
   }, [companyId]);
 
+  // Render different content based on control mode
+  if (isOpen !== undefined) {
+    // External control mode - only render dialog content
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[800px] w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>Kunde auswählen</DialogTitle>
+            <DialogDescription>
+              Wählen Sie einen bestehenden Kunden für diese Rechnung aus.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Kunde suchen..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Customer List */}
+            <div className="max-h-[300px] overflow-y-auto space-y-2">
+              {loading ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#14ad9f]"></div>
+                </div>
+              ) : filteredCustomers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {searchTerm ? 'Keine Kunden gefunden' : 'Keine Kunden vorhanden'}
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    {searchTerm
+                      ? 'Versuchen Sie einen anderen Suchbegriff oder erstellen Sie einen neuen Kunden.'
+                      : 'Erstellen Sie zunächst Kunden in der Kundenverwaltung, um sie hier auswählen zu können.'}
+                  </p>
+                  <Button
+                    onClick={() => {
+                      window.open(
+                        '/dashboard/company/' + companyId + '/finance/customers',
+                        '_blank'
+                      );
+                    }}
+                    className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Kunden erstellen
+                  </Button>
+                </div>
+              ) : (
+                filteredCustomers.map(customer => (
+                  <div
+                    key={customer.id}
+                    className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => handleCustomerSelect(customer)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-sm text-gray-600">
+                          <span className="font-mono">{customer.customerNumber}</span>
+                        </div>
+                        <div className="text-sm text-gray-500">{customer.email}</div>
+                      </div>
+                      <div className="text-right text-sm text-gray-500">
+                        <div>{customer.totalInvoices} Rechnungen</div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="border-t pt-4">
+              <p className="text-sm text-gray-500 text-center">
+                Neuen Kunden hinzufügen? Gehen Sie zu{' '}
+                <span className="text-[#14ad9f] font-medium">Finanzen → Kunden</span>
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Internal control mode - render full UI with trigger
   return (
     <div className="space-y-2">
       <Label>Kunde auswählen *</Label>
@@ -249,7 +341,7 @@ export function CustomerSelect({
                           '_blank'
                         );
                       }}
-                      className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                      className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Kunden erstellen
@@ -279,7 +371,6 @@ export function CustomerSelect({
                 )}
               </div>
 
-              {/* Add new customer hint */}
               <div className="border-t pt-4">
                 <p className="text-sm text-gray-500 text-center">
                   Neuen Kunden hinzufügen? Gehen Sie zu{' '}

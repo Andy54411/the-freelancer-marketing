@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import { db } from '@/firebase/server';
 
 export async function GET(
   request: NextRequest,
@@ -15,16 +14,16 @@ export async function GET(
 
     console.log('🔍 Loading delivery note via API:', deliveryNoteId);
 
-    // Direkter Firestore-Zugriff mit Admin-Berechtigung
-    const docRef = doc(db, 'deliveryNotes', deliveryNoteId);
-    const docSnap = await getDoc(docRef);
+    // Verwende Firebase Admin SDK für server-seitigen Zugriff
+    const docRef = db.collection('deliveryNotes').doc(deliveryNoteId);
+    const docSnap = await docRef.get();
 
-    if (!docSnap.exists()) {
+    if (!docSnap.exists) {
       console.log('❌ Delivery note not found:', deliveryNoteId);
       return NextResponse.json({ error: 'Lieferschein nicht gefunden' }, { status: 404 });
     }
 
-    const data = docSnap.data();
+    const data = docSnap.data()!;
     const deliveryNote = {
       id: docSnap.id,
       ...data,
@@ -41,9 +40,9 @@ export async function GET(
     let companyData = {};
     if (data.companyId) {
       try {
-        const userDoc = await getDoc(doc(db, 'users', data.companyId));
-        if (userDoc.exists()) {
-          companyData = userDoc.data();
+        const userDoc = await db.collection('users').doc(data.companyId).get();
+        if (userDoc.exists) {
+          companyData = userDoc.data()!;
         }
       } catch (error) {
         console.warn('Could not load company data:', error);
