@@ -252,8 +252,14 @@ export function DeliveryNoteComponent({
         throw new Error(`Firestore permission test failed: ${testError.message}`);
       }
 
+      console.log('📦 Checking warehouse integration...');
+
+      // TEMPORÄRER FIX: Überspringe Warehouse-Integration für Debug
+      console.log('🔧 SKIPPING WAREHOUSE INTEGRATION FOR DEBUG');
+      /*
       // Phase 6: Warehouse-Integration - Lagerbestand prüfen vor Erstellung
       if (warehouseEnabled && formData.items) {
+        console.log('📦 Warehouse enabled, checking stock...');
         const stockCheckResults = await Promise.all(
           formData.items.map(async item => {
             const warehouseItem = await WarehouseService.getWarehouseItemBySku(item.description); // Annahme: SKU in description
@@ -277,6 +283,9 @@ export function DeliveryNoteComponent({
           return;
         }
       }
+      */
+
+      console.log('🏗️ Creating delivery note via service...');
 
       const deliveryNoteId = await DeliveryNoteService.createDeliveryNote({
         companyId: effectiveCompanyId,
