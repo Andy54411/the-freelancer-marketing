@@ -82,8 +82,8 @@ export default function PrintDeliveryNotePage() {
         companyEmail: userData.companyEmail || userData.email || 'info@taskilo.de',
         companyPhone: userData.companyPhone || userData.phone || '',
         companyWebsite: userData.companyWebsite || 'www.taskilo.de',
-        companyLogo: userData.companyLogo || userData.profilePictureURL,
-        profilePictureURL: userData.profilePictureURL,
+        companyLogo: userData.companyLogo || userData.profilePictureURL || userData.profilePictureFirebaseUrl,
+        profilePictureURL: userData.profilePictureURL || userData.profilePictureFirebaseUrl,
         companyVatId: userData.companyVatId,
         companyTaxNumber: userData.companyTaxNumber,
         companyRegister: userData.companyRegister,
@@ -167,6 +167,19 @@ export default function PrintDeliveryNotePage() {
     };
   }, [deliveryNote]);
 
+  // Auto-trigger print dialog when page is fully loaded
+  useEffect(() => {
+    if (deliveryNoteData && !loading && !error) {
+      // Warte kurz bis alle Bilder geladen sind, dann öffne Print-Dialog
+      const timer = setTimeout(() => {
+        console.log('🖨️ Auto-triggering print dialog for delivery note:', deliveryNoteData.deliveryNoteNumber);
+        window.print();
+      }, 1500); // 1.5 Sekunden warten für Bilder/Layout
+
+      return () => clearTimeout(timer);
+    }
+  }, [deliveryNoteData, loading, error]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -197,21 +210,27 @@ export default function PrintDeliveryNotePage() {
       <style jsx global>{`
         @page {
           size: A4;
-          margin: 20mm;
+          margin: 15mm; /* Kleinere Ränder für mehr Platz */
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
 
         /* Hide browser UI elements that might appear in PDF */
         @media print {
+          /* Hide navigation and controls when printing */
+          .no-print {
+            display: none !important;
+          }
+          
           @page {
-            margin: 0;
+            margin: 15mm; /* Konsistent mit globalem @page */
           }
 
           body {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
+            font-size: 10pt !important; /* Kleinere Schrift für mehr Inhalt */
           }
 
           .no-print {
@@ -241,14 +260,14 @@ export default function PrintDeliveryNotePage() {
 
         .delivery-note-print-content {
           width: 100% !important;
-          max-width: 210mm !important; /* A4 Breite */
-          margin: 0 auto !important;
-          padding: 20mm !important; /* A4 Standard-Ränder */
+          max-width: 100% !important; /* Nutze volle Breite */
+          margin: 0 !important;
+          padding: 20px !important; /* Kleines Padding für bessere Lesbarkeit */
           background: white !important;
           box-sizing: border-box;
-          min-height: 257mm; /* A4 Höhe minus Ränder */
-          font-size: 11pt !important;
-          line-height: 1.3 !important;
+          min-height: 100vh !important; /* Nutze volle Höhe */
+          font-size: 10pt !important;
+          line-height: 1.4 !important;
         }
 
         .delivery-note-print-content h1 {
@@ -276,6 +295,49 @@ export default function PrintDeliveryNotePage() {
 
         .delivery-note-print-content .text-xs {
           font-size: 8pt !important;
+        }
+
+        /* Print-spezifische Optimierungen für A4-Vollausnutzung */
+        @media print {
+          .delivery-note-print-content {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important; /* Kein extra Padding, da @page margin gesetzt ist */
+            min-height: 100% !important;
+            page-break-inside: avoid;
+            font-size: 9pt !important; /* Noch kleinere Schrift beim Drucken */
+          }
+          
+          /* Optimiere Tabellen für A4 */
+          .delivery-note-print-content table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 8pt !important;
+          }
+          
+          .delivery-note-print-content th,
+          .delivery-note-print-content td {
+            padding: 1pt 3pt !important;
+            border: 0.5pt solid #000 !important;
+            font-size: 8pt !important;
+          }
+
+          /* Kompaktere Überschriften beim Drucken */
+          .delivery-note-print-content h1 {
+            font-size: 12pt !important;
+            margin-bottom: 4pt !important;
+          }
+
+          .delivery-note-print-content h2 {
+            font-size: 11pt !important;
+            margin-bottom: 3pt !important;
+          }
+
+          .delivery-note-print-content h3 {
+            font-size: 10pt !important;
+            margin-bottom: 2pt !important;
+          }
         }
       `}</style>
 

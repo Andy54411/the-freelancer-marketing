@@ -37,13 +37,27 @@ export async function GET(
     console.log('✅ Delivery note loaded successfully:', data.deliveryNoteNumber || 'Unknown');
 
     // Lade Firmendaten für das Template
-    let companyData = {};
+    let companyData: any = {};
     if (data.companyId) {
       try {
-        const userDoc = await db.collection('users').doc(data.companyId).get();
-        if (userDoc.exists) {
-          companyData = userDoc.data()!;
+        // Versuche erst companies Collection
+        const companyDoc = await db.collection('companies').doc(data.companyId).get();
+        if (companyDoc.exists) {
+          companyData = companyDoc.data()!;
+          console.log('✅ Company data loaded from companies collection');
+        } else {
+          // Fallback: users Collection
+          const userDoc = await db.collection('users').doc(data.companyId).get();
+          if (userDoc.exists) {
+            companyData = userDoc.data()!;
+            console.log('✅ Company data loaded from users collection');
+          }
         }
+        
+        // Debug: Log welche profilePictureURL gefunden wurde
+        const profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
+        console.log('🖼️ Profile picture URL found:', profileUrl);
+        
       } catch (error) {
         console.warn('Could not load company data:', error);
       }

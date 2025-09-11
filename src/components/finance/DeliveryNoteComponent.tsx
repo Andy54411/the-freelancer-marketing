@@ -46,6 +46,7 @@ import {
   DeliveryNoteSettings,
 } from '@/services/deliveryNoteService';
 import { InventoryService, InventoryItem } from '@/services/inventoryService';
+import { InventorySelector } from '@/components/finance/InventorySelector';
 import { Customer } from '@/components/finance/AddCustomerModal';
 import { CustomerSelect } from '@/components/finance/CustomerSelect';
 import { WarehouseService } from '@/services/warehouseService';
@@ -89,6 +90,9 @@ export function DeliveryNoteComponent({
   // Customer States (Phase 1)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showCustomerSelect, setShowCustomerSelect] = useState(false);
+
+  // Inventory States (NEU)
+  const [showInventorySelector, setShowInventorySelector] = useState(false);
 
   // Template States (NEU für Phase 2)
   const [userTemplate, setUserTemplate] = useState<DeliveryNoteTemplate | null>(null); // null = nicht ausgewählt
@@ -479,32 +483,8 @@ export function DeliveryNoteComponent({
   };
 
   const addItem = () => {
-    if (!newItem.description || !newItem.quantity) {
-      toast.error('Bitte füllen Sie alle Felder aus');
-      return;
-    }
-
-    const item: DeliveryNoteItem = {
-      id: Date.now().toString(),
-      description: newItem.description,
-      quantity: newItem.quantity,
-      unit: newItem.unit || 'Stk',
-      unitPrice: newItem.unitPrice || 0,
-      total: (newItem.quantity || 0) * (newItem.unitPrice || 0),
-      stockReduced: false,
-    };
-
-    setFormData(prev => ({
-      ...prev,
-      items: [...(prev.items || []), item],
-    }));
-
-    setNewItem({
-      description: '',
-      quantity: 1,
-      unit: 'Stk',
-      unitPrice: 0,
-    });
+    // Funktion nicht mehr verwendet - Artikel werden über InventorySelector hinzugefügt
+    console.warn('addItem wurde aufgerufen, aber sollte durch InventorySelector ersetzt werden');
   };
 
   const removeItem = (itemId: string) => {
@@ -512,6 +492,30 @@ export function DeliveryNoteComponent({
       ...prev,
       items: prev.items?.filter(item => item.id !== itemId) || [],
     }));
+  };
+
+  // Inventory Selection Handler (NEU)
+  const handleInventoryItemsSelected = (items: DeliveryNoteItem[]) => {
+    setFormData(prev => ({
+      ...prev,
+      items: items,
+    }));
+    
+    // Berechne Gesamtsumme wenn Preise angezeigt werden
+    if (formData.showPrices) {
+      const subtotal = items.reduce((sum, item) => sum + (item.unitPrice || 0) * item.quantity, 0);
+      const vatRate = 0.19; // 19% MwSt
+      const tax = subtotal * vatRate;
+      const total = subtotal + tax;
+      
+      setFormData(prev => ({
+        ...prev,
+        subtotal,
+        tax,
+        total,
+        vatRate,
+      }));
+    }
   };
 
   // Customer Selection Handler (NEU für Phase 1)
@@ -852,7 +856,7 @@ export function DeliveryNoteComponent({
                             variant="outline"
                             size="sm"
                             onClick={() => handleMarkAsDelivered(note.id!)}
-                            className="border-green-500 text-green-600 hover:bg-green-500 hover:text-white"
+                            className="border-green-500 text-green-600 hover:bg-green-50 hover:border-green-600"
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Zugestellt
@@ -864,7 +868,7 @@ export function DeliveryNoteComponent({
                             variant="outline"
                             size="sm"
                             onClick={() => handleCreateInvoice(note.id!)}
-                            className="border-purple-500 text-purple-600 hover:bg-purple-500 hover:text-white"
+                            className="border-purple-500 text-purple-600 hover:bg-purple-50 hover:border-purple-600"
                           >
                             <FileText className="h-4 w-4 mr-1" />
                             Rechnung
@@ -876,7 +880,7 @@ export function DeliveryNoteComponent({
                             variant="outline"
                             size="sm"
                             onClick={() => handleProcessWarehouseStock(note)}
-                            className="border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white"
+                            className="border-orange-500 text-orange-600 hover:bg-orange-50 hover:border-orange-600"
                           >
                             <RefreshCw className="h-4 w-4 mr-1" />
                             Lager aktualisieren
@@ -888,7 +892,7 @@ export function DeliveryNoteComponent({
                             variant="outline"
                             size="sm"
                             onClick={() => handleSendEmail(note)}
-                            className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white"
+                            className="border-blue-500 text-blue-600 hover:bg-blue-50 hover:border-blue-600"
                           >
                             <Send className="h-4 w-4 mr-1" />
                             E-Mail senden
@@ -899,7 +903,7 @@ export function DeliveryNoteComponent({
                           variant="outline"
                           size="sm"
                           onClick={() => window.open(`/print/delivery-note/${note.id}`, '_blank')}
-                          className="border-gray-300 text-gray-600 hover:bg-gray-100"
+                          className="border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
                         >
                           <Download className="h-4 w-4 mr-1" />
                           Drucken
@@ -909,7 +913,7 @@ export function DeliveryNoteComponent({
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteDeliveryNote(note.id!)}
-                          className="border-red-500 text-red-600 hover:bg-red-500 hover:text-white"
+                          className="border-red-500 text-red-600 hover:bg-red-50 hover:border-red-600"
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Löschen
@@ -1058,68 +1062,82 @@ export function DeliveryNoteComponent({
                 </div>
               </div>
 
-              {/* Artikel hinzufügen */}
+              {/* Artikel aus Inventar auswählen */}
               <div className="space-y-4">
-                <Label>Artikel hinzufügen</Label>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-                  <Input
-                    placeholder="Beschreibung"
-                    value={newItem.description}
-                    onChange={e => setNewItem(prev => ({ ...prev, description: e.target.value }))}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Menge"
-                    value={newItem.quantity}
-                    onChange={e =>
-                      setNewItem(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))
-                    }
-                  />
-                  <Input
-                    placeholder="Einheit"
-                    value={newItem.unit}
-                    onChange={e => setNewItem(prev => ({ ...prev, unit: e.target.value }))}
-                  />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Preis"
-                    value={newItem.unitPrice}
-                    onChange={e =>
-                      setNewItem(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))
-                    }
-                  />
-                  <Button onClick={addItem} size="sm">
-                    <Plus className="h-4 w-4" />
+                <div className="flex items-center justify-between">
+                  <Label>Artikel</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowInventorySelector(true)}
+                    className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Aus Inventar auswählen
                   </Button>
                 </div>
 
                 {/* Artikel-Liste */}
                 {formData.items && formData.items.length > 0 && (
                   <div className="space-y-2">
-                    <Label>Artikel</Label>
                     {formData.items.map(item => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-2 border rounded"
+                        className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
                       >
                         <div className="flex-1">
-                          <span className="font-medium">{item.description}</span>
-                          <span className="text-gray-600 ml-2">
-                            {item.quantity} {item.unit}
-                            {formData.showPrices && ` × ${item.unitPrice?.toFixed(2)}€`}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{item.description}</span>
+                            {item.productId && (
+                              <Badge variant="outline" className="text-xs">
+                                Inventar
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            <span>Menge: {item.quantity} {item.unit}</span>
+                            {formData.showPrices && item.unitPrice && (
+                              <span className="ml-4">
+                                Preis: {item.unitPrice.toFixed(2)}€ × {item.quantity} = {(item.unitPrice * item.quantity).toFixed(2)}€
+                              </span>
+                            )}
+                            {item.warehouseLocation && (
+                              <span className="ml-4">Lager: {item.warehouseLocation}</span>
+                            )}
+                          </div>
+                          {item.notes && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              {item.notes}
+                            </div>
+                          )}
                         </div>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => removeItem(item.id)}
-                          className="text-red-600"
+                          className="text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     ))}
+                    
+                    {formData.showPrices && (
+                      <div className="border-t pt-2 mt-4">
+                        <div className="text-right font-medium">
+                          Gesamt: {formData.items.reduce((sum, item) => sum + (item.unitPrice || 0) * item.quantity, 0).toFixed(2)}€
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(!formData.items || formData.items.length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Package className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                    <p>Keine Artikel ausgewählt</p>
+                    <p className="text-sm">Klicken Sie auf "Aus Inventar auswählen", um Artikel hinzuzufügen</p>
                   </div>
                 )}
               </div>
@@ -1322,6 +1340,15 @@ export function DeliveryNoteComponent({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Inventory Selector */}
+      <InventorySelector
+        isOpen={showInventorySelector}
+        onClose={() => setShowInventorySelector(false)}
+        companyId={companyId}
+        onItemSelected={handleInventoryItemsSelected}
+        selectedItems={formData.items || []}
+      />
     </div>
   );
 }
