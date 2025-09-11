@@ -1,0 +1,98 @@
+/**
+ * TASKILO PRINT-ONLY CSS
+ * Diese Datei verändert NICHTS am Layout - nur Druckformat!
+ * Keine Layout-Änderungen - nur A4 randlos mit vollem Inhalt
+ */
+
+@media print {
+  /* A4 RANDLOS ohne Seitenränder */
+  @page {
+    size: A4;
+    margin: 0mm !important;
+    padding: 0mm !important;
+  }
+
+  /* Browser-Header/Footer entfernen */
+  @page :first {
+    margin-top: 0mm !important;
+  }
+
+  @page :left {
+    margin-left: 0mm !important;
+  }
+
+  @page :right {
+    margin-right: 0mm !important;
+  }
+
+  /* Körper randlos auf volle A4-Größe */
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* HTML randlos */
+  html {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+  }
+
+  /* Alle Container auf volle Größe ohne Ränder */
+  * {
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+
+  /* Print-Root Element auf volle A4-Größe */
+  #print-root {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Alle Farben und Hintergründe erhalten */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Taskilo-Farben im Druck erhalten */
+  [class*='14ad9f'],
+  [style*='#14ad9f'],
+  [class*='bg-primary'],
+  [class*='text-primary'] {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Seitenwechsel verhindern */
+  * {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Nur für Druck: Alles andere verstecken */
+  body > *:not(#print-root) {
+    display: none !important;
+  }
+
+  /* Headers, Navs, Sidebars verstecken beim Drucken */
+  header,
+  nav,
+  aside,
+  .no-print {
+    display: none !important;
+  }
+}

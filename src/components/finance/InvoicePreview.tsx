@@ -95,8 +95,98 @@ export function InvoicePreview({
   };
 
   const handlePrint = () => {
-    // EINFACHER Ansatz - nur Drucken ohne CSS-Hacks
-    window.print();
+    // Template direkt aus dem Dialog-Container finden
+    const dialogContainer = document.querySelector('.invoice-modal-container');
+    if (!dialogContainer) {
+      console.error('Invoice container nicht gefunden');
+      return;
+    }
+
+    // Template-Element darin finden
+    const templateElement = dialogContainer.querySelector('[data-invoice-template]') as HTMLElement;
+    if (!templateElement) {
+      console.error('Template element nicht gefunden');
+      return;
+    }
+
+    // Alle Styles aus dem aktuellen Dokument sammeln
+    const allStyles = Array.from(document.styleSheets)
+      .map(styleSheet => {
+        try {
+          return Array.from(styleSheet.cssRules)
+            .map(rule => rule.cssText)
+            .join('\n');
+        } catch (e) {
+          return '';
+        }
+      })
+      .join('\n');
+
+    // Template HTML kopieren
+    const templateHTML = templateElement.outerHTML;
+
+    // Neues Print-Fenster öffnen
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      console.error('Print-Fenster konnte nicht geöffnet werden');
+      return;
+    }
+
+    // Print-HTML mit allen Styles und A4 randlos CSS erstellen
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Rechnung ${previewData.invoiceNumber}</title>
+          <meta charset="utf-8">
+          <style>
+            /* Alle originalen Styles */
+            ${allStyles}
+            
+            /* A4 randlos Print-Styles */
+            @media print {
+              @page {
+                size: A4;
+                margin: 0mm !important;
+              }
+              body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              html {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+              * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                box-shadow: none !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${templateHTML}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+
+    // Warten bis geladen, dann drucken
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 1000);
+    };
   };
 
   return (

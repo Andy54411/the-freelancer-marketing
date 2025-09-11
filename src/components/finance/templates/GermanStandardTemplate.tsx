@@ -20,6 +20,7 @@ interface TemplateProps {
 export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data, preview = false }) => {
   return (
     <div
+      data-invoice-template
       className={`w-full ${preview ? 'max-w-none' : 'max-w-[595px]'} min-h-[842px] bg-white p-8 font-sans text-sm leading-normal flex flex-col mx-auto`}
     >
       {/* Header mit Logo und Firmenangaben */}
