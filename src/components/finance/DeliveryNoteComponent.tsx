@@ -201,17 +201,25 @@ export function DeliveryNoteComponent({
 
   const handleCreateDeliveryNote = async () => {
     try {
-      // Prüfe ob Template ausgewählt ist
-      if (!userTemplate) {
-        toast.error('Bitte wählen Sie zuerst ein Template aus');
-        setShowTemplateSelect(true);
+      // Template-Auswahl - verwende Standard wenn kein Template ausgewählt
+      let templateToUse = userTemplate;
+      if (!templateToUse) {
+        // Default Template setzen - German Standard
+        templateToUse = 'german-standard';
+      }
+
+      if (!formData.customerName || !formData.customerAddress) {
+        toast.error('Bitte wählen Sie einen Kunden aus');
         return;
       }
 
-      if (!formData.customerName || !formData.customerAddress || !formData.items?.length) {
-        toast.error('Bitte füllen Sie alle Pflichtfelder aus');
+      if (!formData.items?.length) {
+        toast.error('Bitte fügen Sie mindestens einen Artikel hinzu');
         return;
       }
+
+      const companyId = user?.uid;
+      if (!companyId) throw new Error('Keine Firma gefunden');
 
       // Phase 6: Warehouse-Integration - Lagerbestand prüfen vor Erstellung
       if (warehouseEnabled && formData.items) {
@@ -258,7 +266,7 @@ export function DeliveryNoteComponent({
         stockValidated: warehouseEnabled,
         shippingMethod: formData.shippingMethod,
         notes: formData.notes,
-        template: userTemplate, // undefined wenn kein Template ausgewählt - dann Modal
+        template: templateToUse, // Verwende das ausgewählte oder Standard-Template
         createdBy: companyId,
       });
 
@@ -268,7 +276,20 @@ export function DeliveryNoteComponent({
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-      toast.error('Lieferschein konnte nicht erstellt werden');
+      console.error('Fehler beim Erstellen des Lieferscheins:', error);
+      if (error instanceof Error) {
+        if (error.message.includes('permissions')) {
+          toast.error(
+            'Keine Berechtigung zum Erstellen von Lieferscheinen. Bitte kontaktieren Sie den Support.'
+          );
+        } else if (error.message.includes('network')) {
+          toast.error('Netzwerkfehler. Bitte prüfen Sie Ihre Internetverbindung.');
+        } else {
+          toast.error(`Fehler: ${error.message}`);
+        }
+      } else {
+        toast.error('Lieferschein konnte nicht erstellt werden');
+      }
     }
   };
 

@@ -92,6 +92,12 @@ export function CustomerSelect({
         // Generiere customerNumber falls nicht vorhanden
         const customerNumber = data.customerNumber || `KD-${doc.id.substring(0, 6).toUpperCase()}`;
 
+        // Filter: Nur echte Kunden (KD-) anzeigen, keine Lieferanten (LF-)
+        if (!customerNumber.startsWith('KD-')) {
+          console.log('⏭️ Skipping supplier:', customerNumber, data.name);
+          return; // Skip Lieferanten
+        }
+
         loadedCustomers.push({
           id: doc.id,
           customerNumber,

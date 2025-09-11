@@ -146,18 +146,25 @@ export class DeliveryNoteService {
     noteData: Omit<DeliveryNote, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
+      console.log('� Creating delivery note for company:', noteData.companyId);
+
       // Sequenznummer generieren
       const settings = await this.getSettings(noteData.companyId || '');
       const sequentialNumber = settings?.nextNumber || 1;
       const deliveryNoteNumber = this.generateDeliveryNoteNumber(settings, sequentialNumber);
 
-      const docRef = await addDoc(collection(db, this.COLLECTION), {
+      console.log('📋 Generated delivery note number:', deliveryNoteNumber);
+
+      const collectionRef = collection(db, this.COLLECTION);
+      const docRef = await addDoc(collectionRef, {
         ...noteData,
         deliveryNoteNumber,
         sequentialNumber,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+
+      console.log('✅ Delivery note created successfully with ID:', docRef.id);
 
       // Nächste Nummer aktualisieren
       if (settings) {
@@ -169,6 +176,10 @@ export class DeliveryNoteService {
 
       return docRef.id;
     } catch (error) {
+      console.error('❌ Error creating delivery note:', error);
+      if (error instanceof Error) {
+        throw error; // Re-throw original error to preserve error details
+      }
       throw new Error('Lieferschein konnte nicht erstellt werden');
     }
   }
@@ -204,23 +215,54 @@ export class DeliveryNoteService {
    */
   static async getDeliveryNotesByCompany(companyId: string): Promise<DeliveryNote[]> {
     try {
-      const q = query(
-        collection(db, this.COLLECTION),
-        where('companyId', '==', companyId),
-        orderBy('createdAt', 'desc')
-      );
+      console.log('📋 Loading delivery notes for company:', companyId);
 
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        updatedAt: doc.data().updatedAt?.toDate() || new Date(),
-        sentAt: doc.data().sentAt?.toDate(),
-        deliveredAt: doc.data().deliveredAt?.toDate(),
-        invoicedAt: doc.data().invoicedAt?.toDate(),
-      })) as DeliveryNote[];
+      // Erste Variante: Mit orderBy - falls Index vorhanden
+      try {
+        const q = query(
+          collection(db, this.COLLECTION),
+          where('companyId', '==', companyId),
+          orderBy('createdAt', 'desc')
+        );
+
+        const querySnapshot = await getDocs(q);
+        console.log('📋 Delivery notes found (with orderBy):', querySnapshot.docs.length);
+
+        return querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          sentAt: doc.data().sentAt?.toDate(),
+          deliveredAt: doc.data().deliveredAt?.toDate(),
+          invoicedAt: doc.data().invoicedAt?.toDate(),
+        })) as DeliveryNote[];
+      } catch (indexError) {
+        console.log('📋 OrderBy failed, trying without index:', indexError);
+
+        // Fallback: Ohne orderBy
+        const q = query(collection(db, this.COLLECTION), where('companyId', '==', companyId));
+
+        const querySnapshot = await getDocs(q);
+        console.log('📋 Delivery notes found (without orderBy):', querySnapshot.docs.length);
+
+        const deliveryNotes = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          updatedAt: doc.data().updatedAt?.toDate() || new Date(),
+          sentAt: doc.data().sentAt?.toDate(),
+          deliveredAt: doc.data().deliveredAt?.toDate(),
+          invoicedAt: doc.data().invoicedAt?.toDate(),
+        })) as DeliveryNote[];
+
+        // Manuell nach createdAt sortieren
+        return deliveryNotes.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      }
     } catch (error) {
+      console.error('❌ Error loading delivery notes:', error);
       throw new Error('Lieferscheine konnten nicht geladen werden');
     }
   }
@@ -396,17 +438,23 @@ export class DeliveryNoteService {
       );
 
       const querySnapshot = await getDocs(q);
+
       if (querySnapshot.empty) {
+        console.log('📋 No delivery note settings found, using defaults for company:', companyId);
         return null;
       }
 
       const doc = querySnapshot.docs[0];
-      return {
+      const settings = {
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate() || new Date(),
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       } as DeliveryNoteSettings;
+
+      console.log('📋 Delivery note settings loaded successfully for company:', companyId);
+      return settings;
     } catch (error) {
+      console.error('📋 Error loading delivery note settings:', error);
       return null;
     }
   }

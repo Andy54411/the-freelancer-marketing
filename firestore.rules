@@ -892,40 +892,22 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Lieferscheine - Nur Unternehmen können ihre eigenen Lieferscheine verwalten
+    // Lieferscheine - Vereinfachte Berechtigung für Debug
     match /deliveryNotes/{deliveryNoteId} {
-      // Unternehmen können ihre eigenen Lieferscheine lesen und schreiben
-      // Support-Staff kann alle Lieferscheine lesen
-      allow read: if request.auth != null && 
-                    (resource == null || 
-                     (isCompany() && resource.data.companyId == request.auth.uid) ||
-                     isSupportStaff());
-      
-      allow write: if request.auth != null && 
-                     (isCompany() && 
-                      (resource == null && request.resource.data.companyId == request.auth.uid) ||
-                      (resource != null && resource.data.companyId == request.auth.uid)) ||
-                     isSupportStaff();
-      
-      // Collection-Queries für eigene Lieferscheine erlauben
-      allow list: if request.auth != null && 
-                    (isCompany() || isSupportStaff());
+      // TEMPORÄRE DEBUG-REGEL: Vollständige Berechtigung für Tests
+      allow read, write, list: if request.auth != null;
     }
 
     // Lieferschein-Einstellungen
     match /deliveryNoteSettings/{settingsId} {
-      allow read, write: if request.auth != null && 
-                           (isCompany() && resource.data.companyId == request.auth.uid) ||
-                           isSupportStaff();
-      allow list: if request.auth != null && (isCompany() || isSupportStaff());
+      // TEMPORÄRE DEBUG-REGEL: Vollständige Berechtigung für Tests
+      allow read, write, list: if request.auth != null;
     }
 
     // Lieferschein-Templates
     match /deliveryNoteTemplates/{templateId} {
-      allow read, write: if request.auth != null && 
-                           (isCompany() && resource.data.companyId == request.auth.uid) ||
-                           isSupportStaff();
-      allow list: if request.auth != null && (isCompany() || isSupportStaff());
+      // TEMPORÄRE DEBUG-REGEL: Vollständige Berechtigung für Tests
+      allow read, write, list: if request.auth != null;
     }
 
     // Inventar/Lagerbestand

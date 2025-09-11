@@ -82,14 +82,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
       try {
         if (fbUser) {
-          // Token aktualisieren, um die neuesten Claims zu erhalten.
-          const idTokenResult = await fbUser.getIdTokenResult(true);
+          // Token aktualisieren nur bei tatsächlichen Änderungen, nicht bei jedem Call
+          const idTokenResult = await fbUser.getIdTokenResult(false); // false = cached token verwenden
           setFirebaseUser(fbUser);
-
-          // Debug: Claims loggen
 
           if (!db) {
             throw new Error('Firestore DB-Instanz ist nicht initialisiert.');
+          }
+
+          // Performance-Optimierung: User-Daten nur laden, wenn noch nicht vorhanden oder geändert
+          if (user?.uid === fbUser.uid && user?.email === fbUser.email) {
+            // User ist bereits geladen und unverändert, skip DB queries
+            setLoading(false);
+            return;
           }
 
           // Versuche zuerst users collection
@@ -252,7 +257,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [pathname, isRedirecting]); // KRITISCH: pathname als Dependency hinzufügen!
+  }, []); // PERFORMANCE: Entferne pathname und isRedirecting Dependencies
 
   // Effekt für die Weiterleitung nach erfolgreichem Login
   useEffect(() => {
