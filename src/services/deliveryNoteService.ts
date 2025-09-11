@@ -15,7 +15,6 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 import { db } from '@/firebase/clients';
 import { DeliveryNoteTemplate } from '@/components/finance/delivery-note-templates/types';
 
@@ -148,24 +147,18 @@ export class DeliveryNoteService {
   ): Promise<string> {
     try {
       console.log('📋 Creating delivery note for company:', noteData.companyId);
-      console.log('📋 Full noteData:', JSON.stringify(noteData, null, 2));
 
-      // Sequenznummer generieren - Mit Fallback für fehlende Settings
-      const settings: DeliveryNoteSettings | null = null;
+      // Sequenznummer generieren - Mit robuster Fehlerbehandlung für Settings
+      let settings: DeliveryNoteSettings | null = null;
       let sequentialNumber = 1;
       let deliveryNoteNumber = '';
 
-      // TEMPORÄRER FIX: Überspringe Settings-Laden für Debug
-      console.log('🔧 SKIPPING SETTINGS LOAD FOR DEBUG');
-      const timestamp = Date.now();
-      deliveryNoteNumber = `LS-${timestamp}`;
-      sequentialNumber = 1;
-
-      /*
       try {
+        console.log('⚙️ Loading delivery note settings...');
         settings = await this.getSettings(noteData.companyId || '');
         sequentialNumber = settings?.nextNumber || 1;
         deliveryNoteNumber = this.generateDeliveryNoteNumber(settings, sequentialNumber);
+        console.log('✅ Settings loaded successfully');
       } catch (settingsError) {
         console.warn('⚠️ Could not load settings, using defaults:', settingsError);
         // Fallback: Einfache Nummerierung ohne Settings
@@ -173,18 +166,10 @@ export class DeliveryNoteService {
         deliveryNoteNumber = `LS-${timestamp}`;
         sequentialNumber = 1;
       }
-      */
 
       console.log('📋 Generated delivery note number:', deliveryNoteNumber);
 
-      // Debug: Firebase Auth State prüfen
-      const auth = getAuth();
-      console.log('🔐 Current auth user:', auth.currentUser?.uid);
-      console.log('🔐 User email:', auth.currentUser?.email);
-      console.log('🔐 Auth state:', !!auth.currentUser);
-
       const collectionRef = collection(db, this.COLLECTION);
-      console.log('📁 Collection reference created for:', this.COLLECTION);
 
       const docData = {
         ...noteData,
@@ -193,7 +178,6 @@ export class DeliveryNoteService {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      console.log('📄 Document data to save:', JSON.stringify(docData, null, 2));
 
       // Datenvalidierung vor dem Schreiben
       if (!docData.companyId) {
@@ -206,28 +190,25 @@ export class DeliveryNoteService {
         throw new Error('Items array is required but missing or invalid');
       }
 
-      console.log('✅ Data validation passed, attempting to write to Firestore...');
       const docRef = await addDoc(collectionRef, docData);
 
       console.log('✅ Delivery note created successfully with ID:', docRef.id);
 
-      // TEMPORÄRER FIX: Überspringe Settings-Update für Debug
-      console.log('🔧 SKIPPING SETTINGS UPDATE FOR DEBUG');
-
-      /*
-      // Nächste Nummer aktualisieren - Nur wenn Settings verfügbar sind
+      // Nächste Nummer aktualisieren - Mit Fehlerbehandlung
       if (settings && noteData.companyId) {
         try {
+          console.log('⚙️ Updating settings with next number...');
           await this.updateSettings(noteData.companyId, {
             ...settings,
             nextNumber: sequentialNumber + 1,
           });
+          console.log('✅ Settings updated successfully');
         } catch (updateError) {
           console.warn('⚠️ Could not update settings, continuing anyway:', updateError);
         }
+      } else {
+        console.log('⚙️ No settings to update or missing companyId');
       }
-      */
-
       return docRef.id;
     } catch (error) {
       console.error('❌ Error creating delivery note:', error);

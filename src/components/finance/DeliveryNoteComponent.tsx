@@ -39,14 +39,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { addDoc, collection, deleteDoc, doc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
 import {
   DeliveryNoteService,
   DeliveryNote,
   DeliveryNoteItem,
   DeliveryNoteSettings,
 } from '@/services/deliveryNoteService';
+import { InventoryService, InventoryItem } from '@/services/inventoryService';
 import { Customer } from '@/components/finance/AddCustomerModal';
 import { CustomerSelect } from '@/components/finance/CustomerSelect';
 import { WarehouseService } from '@/services/warehouseService';
@@ -209,8 +208,6 @@ export function DeliveryNoteComponent({
 
   const handleCreateDeliveryNote = async () => {
     try {
-      console.log('🚀 handleCreateDeliveryNote started');
-
       // Template-Auswahl - verwende Standard wenn kein Template ausgewählt
       let templateToUse = userTemplate;
       if (!templateToUse) {
@@ -232,61 +229,93 @@ export function DeliveryNoteComponent({
       const effectiveCompanyId = companyId || user?.uid;
       if (!effectiveCompanyId) throw new Error('Keine Firma gefunden');
 
-      console.log('🏢 Using companyId for delivery note creation:', effectiveCompanyId);
+      console.log('🏢 Creating delivery note for company:', effectiveCompanyId);
 
-      // DEBUG: Test einfacher Firestore Write
-      console.log('🔍 Testing simple Firestore write permission...');
-      try {
-        const testDoc = await addDoc(collection(db, 'deliveryNotes'), {
-          test: true,
-          companyId: effectiveCompanyId,
-          createdAt: new Date(),
-        });
-        console.log('✅ Simple Firestore write successful:', testDoc.id);
+      // Lagerbestand-Integration - Prüfung vor Erstellung
+      if (formData.items && formData.items.length > 0) {
+        try {
+          console.log('📦 Checking inventory stock for delivery note items...');
 
-        // Test-Dokument wieder löschen
-        await deleteDoc(doc(db, 'deliveryNotes', testDoc.id));
-        console.log('✅ Test document deleted');
-      } catch (testError) {
-        console.error('❌ Simple Firestore write failed:', testError);
-        throw new Error(`Firestore permission test failed: ${testError.message}`);
-      }
+          const stockCheckResults = await Promise.all(
+            formData.items.map(async item => {
+              try {
+                // Erst nach SKU suchen (falls vorhanden), dann nach Name
+                let inventoryItem: InventoryItem | null = null;
+                if (item.description.includes('-') || item.description.includes('_')) {
+                  // Könnte eine SKU sein
+                  inventoryItem = await InventoryService.getInventoryItemBySku(
+                    effectiveCompanyId,
+                    item.description
+                  );
+                }
 
-      console.log('📦 Checking warehouse integration...');
+                if (!inventoryItem) {
+                  // Nach Name suchen
+                  inventoryItem = await InventoryService.getInventoryItemByName(
+                    effectiveCompanyId,
+                    item.description
+                  );
+                }
 
-      // TEMPORÄRER FIX: Überspringe Warehouse-Integration für Debug
-      console.log('🔧 SKIPPING WAREHOUSE INTEGRATION FOR DEBUG');
-      /*
-      // Phase 6: Warehouse-Integration - Lagerbestand prüfen vor Erstellung
-      if (warehouseEnabled && formData.items) {
-        console.log('📦 Warehouse enabled, checking stock...');
-        const stockCheckResults = await Promise.all(
-          formData.items.map(async item => {
-            const warehouseItem = await WarehouseService.getWarehouseItemBySku(item.description); // Annahme: SKU in description
-            return {
-              item,
-              available: warehouseItem?.currentStock || 0,
-              sufficient: !warehouseItem || warehouseItem.currentStock >= item.quantity,
-            };
-          })
-        );
+                if (!inventoryItem) {
+                  console.warn(`⚠️ Item not found in inventory: ${item.description}`);
+                  return {
+                    item,
+                    inventoryItem: null,
+                    available: 0,
+                    sufficient: false,
+                    error: `Artikel "${item.description}" nicht im Lager gefunden`,
+                  };
+                }
 
-        const insufficientStock = stockCheckResults.filter(result => !result.sufficient);
-        if (insufficientStock.length > 0) {
-          const stockMessage = insufficientStock
-            .map(
-              result =>
-                `${result.item.description}: Verfügbar ${result.available}, benötigt ${result.item.quantity}`
-            )
-            .join(', ');
-          toast.error(`Nicht genügend Lagerbestand: ${stockMessage}`);
-          return;
+                const available = inventoryItem.availableStock;
+                const sufficient = available >= item.quantity;
+
+                console.log(
+                  `📦 Stock check for ${item.description}: ${available} verfügbar, ${item.quantity} benötigt`
+                );
+
+                return {
+                  item,
+                  inventoryItem,
+                  available,
+                  sufficient,
+                  error: sufficient
+                    ? null
+                    : `Nicht genügend Bestand: ${available} verfügbar, ${item.quantity} benötigt`,
+                };
+              } catch (itemError) {
+                console.warn(`⚠️ Could not check stock for item ${item.description}:`, itemError);
+                return {
+                  item,
+                  inventoryItem: null,
+                  available: 0,
+                  sufficient: false,
+                  error: `Fehler beim Prüfen des Bestands für "${item.description}"`,
+                };
+              }
+            })
+          );
+
+          // Prüfen ob alle Artikel ausreichend verfügbar sind
+          const insufficientStock = stockCheckResults.filter(result => !result.sufficient);
+          if (insufficientStock.length > 0) {
+            const errorMessages = insufficientStock.map(result => result.error).join('\n');
+            toast.error(`Lagerbestand-Probleme:\n${errorMessages}`);
+            return;
+          }
+
+          console.log('✅ Inventory stock check completed successfully - all items available');
+        } catch (inventoryError) {
+          console.warn(
+            '⚠️ Inventory integration failed, proceeding without stock check:',
+            inventoryError
+          );
+          toast.warning(
+            'Warnung: Lagerbestand konnte nicht geprüft werden. Lieferschein wird trotzdem erstellt.'
+          );
         }
       }
-      */
-
-      console.log('🏗️ Creating delivery note via service...');
-
       const deliveryNoteId = await DeliveryNoteService.createDeliveryNote({
         companyId: effectiveCompanyId,
         customerId: formData.customerId || '',
@@ -310,7 +339,48 @@ export function DeliveryNoteComponent({
         createdBy: effectiveCompanyId,
       });
 
-      toast.success('Lieferschein erfolgreich erstellt');
+      console.log('✅ Delivery note created successfully with ID:', deliveryNoteId);
+
+      // Automatische Lagerbestand-Reduzierung
+      if (formData.items && formData.items.length > 0) {
+        try {
+          console.log('📦 Reducing inventory stock after delivery note creation...');
+
+          const inventoryItems = formData.items.map(item => ({
+            name: item.description,
+            sku:
+              item.description.includes('-') || item.description.includes('_')
+                ? item.description
+                : undefined,
+            quantity: item.quantity,
+            unit: item.unit,
+          }));
+
+          const stockResult = await InventoryService.reduceStockForDeliveryNote(
+            effectiveCompanyId,
+            inventoryItems,
+            deliveryNoteId
+          );
+
+          if (stockResult.success) {
+            console.log('✅ Inventory stock reduced successfully');
+            toast.success('Lieferschein erfolgreich erstellt und Lagerbestand aktualisiert');
+          } else {
+            console.warn('⚠️ Stock reduction failed:', stockResult.errors);
+            toast.warning(
+              `Lieferschein erstellt, aber Lagerbestand-Update fehlgeschlagen: ${stockResult.errors.join(', ')}`
+            );
+          }
+        } catch (stockError) {
+          console.error('❌ Error reducing inventory stock:', stockError);
+          toast.warning(
+            'Lieferschein erstellt, aber Lagerbestand konnte nicht automatisch reduziert werden'
+          );
+        }
+      } else {
+        toast.success('Lieferschein erfolgreich erstellt');
+      }
+
       setShowCreateModal(false);
       resetForm();
       await loadDeliveryNotes();

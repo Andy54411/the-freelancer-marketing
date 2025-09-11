@@ -212,6 +212,116 @@ export class InventoryService {
   }
 
   /**
+   * Inventar-Artikel nach SKU oder Name finden
+   */
+  static async findInventoryItems(companyId: string, searchTerm: string): Promise<InventoryItem[]> {
+    try {
+      console.log('🔍 Searching inventory for:', searchTerm, 'in company:', companyId);
+
+      const itemsRef = collection(db, 'inventory');
+
+      // Suche nach exakter SKU oder Name (case-insensitive)
+      const searchLower = searchTerm.toLowerCase();
+
+      // Alle Artikel der Firma laden und dann filtern (Firebase hat begrenzte String-Suche)
+      const itemsQuery = query(
+        itemsRef,
+        where('companyId', '==', companyId),
+        where('status', '==', 'active')
+      );
+
+      const snapshot = await getDocs(itemsQuery);
+      const allItems = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const currentStock = data.currentStock || 0;
+        const reservedStock = data.reservedStock || 0;
+        const availableStock = currentStock - reservedStock;
+
+        return {
+          id: doc.id,
+          name: data.name || '',
+          description: data.description,
+          sku: data.sku || '',
+          category: data.category || 'Allgemein',
+          unit: data.unit || 'Stück',
+          currentStock,
+          reservedStock,
+          availableStock,
+          minStock: data.minStock || 0,
+          maxStock: data.maxStock,
+          purchasePrice: data.purchasePrice || 0,
+          sellingPrice: data.sellingPrice || 0,
+          supplierName: data.supplierName,
+          supplierContact: data.supplierContact,
+          location: data.location,
+          barcode: data.barcode,
+          image: data.image,
+          status: data.status || 'active',
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          companyId: data.companyId,
+          weight: data.weight,
+          dimensions: data.dimensions,
+          notes: data.notes,
+          stockValue: currentStock * (data.purchasePrice || 0),
+          isLowStock: currentStock <= (data.minStock || 0),
+          isOutOfStock: currentStock === 0,
+        } as InventoryItem;
+      });
+
+      // Client-seitige Filterung nach SKU oder Name
+      const filteredItems = allItems.filter(
+        item =>
+          item.sku.toLowerCase().includes(searchLower) ||
+          item.name.toLowerCase().includes(searchLower) ||
+          (item.description && item.description.toLowerCase().includes(searchLower))
+      );
+
+      console.log(`📦 Found ${filteredItems.length} inventory items matching "${searchTerm}"`);
+      return filteredItems;
+    } catch (error) {
+      console.error('❌ Error searching inventory:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Einzelnen Inventar-Artikel nach SKU finden
+   */
+  static async getInventoryItemBySku(
+    companyId: string,
+    sku: string
+  ): Promise<InventoryItem | null> {
+    try {
+      const items = await this.findInventoryItems(companyId, sku);
+      // Exakte SKU-Match bevorzugen
+      const exactMatch = items.find(item => item.sku.toLowerCase() === sku.toLowerCase());
+      return exactMatch || items[0] || null;
+    } catch (error) {
+      console.error('❌ Error finding item by SKU:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Inventar-Artikel nach Name finden
+   */
+  static async getInventoryItemByName(
+    companyId: string,
+    name: string
+  ): Promise<InventoryItem | null> {
+    try {
+      const items = await this.findInventoryItems(companyId, name);
+      // Exakte Name-Match bevorzugen
+      const exactMatch = items.find(item => item.name.toLowerCase() === name.toLowerCase());
+      return exactMatch || items[0] || null;
+    } catch (error) {
+      console.error('❌ Error finding item by name:', error);
+      return null;
+    }
+  }
+
+  /**
    * Inventar-Statistiken berechnen
    */
   static async getInventoryStats(companyId: string): Promise<InventoryStats> {
@@ -651,6 +761,109 @@ export class InventoryService {
       return categories.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       throw error;
+    }
+  }
+
+  /**
+   * Lagerbestand für Lieferschein reduzieren
+   */
+  static async reduceStockForDeliveryNote(
+    companyId: string,
+    items: Array<{ name: string; sku?: string; quantity: number; unit: string }>,
+    deliveryNoteId: string
+  ): Promise<{ success: boolean; errors: string[] }> {
+    try {
+      console.log('📦 Reducing stock for delivery note:', deliveryNoteId);
+
+      const batch = writeBatch(db);
+      const errors: string[] = [];
+
+      for (const deliveryItem of items) {
+        try {
+          // Artikel im Inventar finden (erst nach SKU, dann nach Name)
+          let inventoryItem: InventoryItem | null = null;
+
+          if (deliveryItem.sku) {
+            inventoryItem = await this.getInventoryItemBySku(companyId, deliveryItem.sku);
+          }
+
+          if (!inventoryItem) {
+            inventoryItem = await this.getInventoryItemByName(companyId, deliveryItem.name);
+          }
+
+          if (!inventoryItem) {
+            console.warn(
+              `⚠️ Item not found in inventory: ${deliveryItem.name} (SKU: ${deliveryItem.sku})`
+            );
+            errors.push(`Artikel "${deliveryItem.name}" nicht im Lager gefunden`);
+            continue;
+          }
+
+          // Verfügbaren Bestand prüfen
+          const availableStock = inventoryItem.availableStock;
+          if (availableStock < deliveryItem.quantity) {
+            console.warn(
+              `⚠️ Insufficient stock for ${inventoryItem.name}: available ${availableStock}, needed ${deliveryItem.quantity}`
+            );
+            errors.push(
+              `Nicht genügend Bestand für "${inventoryItem.name}": Verfügbar ${availableStock}, benötigt ${deliveryItem.quantity}`
+            );
+            continue;
+          }
+
+          // Neuen Bestand berechnen
+          const newStock = inventoryItem.currentStock - deliveryItem.quantity;
+          const newAvailableStock = newStock - inventoryItem.reservedStock;
+
+          // Inventar-Item aktualisieren
+          const itemRef = doc(db, 'inventory', inventoryItem.id);
+          batch.update(itemRef, {
+            currentStock: newStock,
+            availableStock: newAvailableStock,
+            stockValue: newStock * inventoryItem.purchasePrice,
+            isLowStock: newStock <= inventoryItem.minStock,
+            isOutOfStock: newStock === 0,
+            updatedAt: serverTimestamp(),
+          });
+
+          // Stock-Movement hinzufügen
+          const movementRef = doc(collection(db, 'stockMovements'));
+          batch.set(movementRef, {
+            itemId: inventoryItem.id,
+            itemName: inventoryItem.name,
+            type: 'out',
+            quantity: deliveryItem.quantity,
+            previousStock: inventoryItem.currentStock,
+            newStock: newStock,
+            unit: inventoryItem.unit,
+            reason: `Lieferschein ${deliveryNoteId}`,
+            reference: deliveryNoteId,
+            createdAt: serverTimestamp(),
+            createdBy: companyId,
+            companyId: companyId,
+          });
+
+          console.log(
+            `✅ Stock reduction prepared for ${inventoryItem.name}: ${inventoryItem.currentStock} → ${newStock}`
+          );
+        } catch (itemError) {
+          console.error(`❌ Error processing item ${deliveryItem.name}:`, itemError);
+          errors.push(`Fehler bei Artikel "${deliveryItem.name}": ${itemError.message}`);
+        }
+      }
+
+      // Batch-Update ausführen wenn keine Fehler
+      if (errors.length === 0) {
+        await batch.commit();
+        console.log('✅ Stock reduction completed successfully');
+        return { success: true, errors: [] };
+      } else {
+        console.warn('⚠️ Stock reduction aborted due to errors:', errors);
+        return { success: false, errors };
+      }
+    } catch (error) {
+      console.error('❌ Error reducing stock:', error);
+      return { success: false, errors: [`Allgemeiner Fehler: ${error.message}`] };
     }
   }
 }
