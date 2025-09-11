@@ -39,6 +39,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { addDoc, collection, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '@/firebase/clients';
 import {
   DeliveryNoteService,
   DeliveryNote,
@@ -49,7 +51,10 @@ import { Customer } from '@/components/finance/AddCustomerModal';
 import { CustomerSelect } from '@/components/finance/CustomerSelect';
 import { WarehouseService } from '@/services/warehouseService';
 import { UserPreferencesService } from '@/lib/userPreferences';
-import { DeliveryNoteTemplate, AVAILABLE_DELIVERY_NOTE_TEMPLATES } from '@/components/finance/delivery-note-templates';
+import {
+  DeliveryNoteTemplate,
+  AVAILABLE_DELIVERY_NOTE_TEMPLATES,
+} from '@/components/finance/delivery-note-templates';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DeliveryNoteComponentProps {
@@ -135,7 +140,10 @@ export function DeliveryNoteComponent({
 
     try {
       setTemplateLoading(true);
-      const template = await UserPreferencesService.getPreferredDeliveryNoteTemplate(user.uid, companyId);
+      const template = await UserPreferencesService.getPreferredDeliveryNoteTemplate(
+        user.uid,
+        companyId
+      );
 
       if (template) {
         // Template ist ausgewählt
@@ -201,6 +209,8 @@ export function DeliveryNoteComponent({
 
   const handleCreateDeliveryNote = async () => {
     try {
+      console.log('🚀 handleCreateDeliveryNote started');
+
       // Template-Auswahl - verwende Standard wenn kein Template ausgewählt
       let templateToUse = userTemplate;
       if (!templateToUse) {
@@ -223,6 +233,24 @@ export function DeliveryNoteComponent({
       if (!effectiveCompanyId) throw new Error('Keine Firma gefunden');
 
       console.log('🏢 Using companyId for delivery note creation:', effectiveCompanyId);
+
+      // DEBUG: Test einfacher Firestore Write
+      console.log('🔍 Testing simple Firestore write permission...');
+      try {
+        const testDoc = await addDoc(collection(db, 'deliveryNotes'), {
+          test: true,
+          companyId: effectiveCompanyId,
+          createdAt: new Date(),
+        });
+        console.log('✅ Simple Firestore write successful:', testDoc.id);
+
+        // Test-Dokument wieder löschen
+        await deleteDoc(doc(db, 'deliveryNotes', testDoc.id));
+        console.log('✅ Test document deleted');
+      } catch (testError) {
+        console.error('❌ Simple Firestore write failed:', testError);
+        throw new Error(`Firestore permission test failed: ${testError.message}`);
+      }
 
       // Phase 6: Warehouse-Integration - Lagerbestand prüfen vor Erstellung
       if (warehouseEnabled && formData.items) {
@@ -690,9 +718,7 @@ export function DeliveryNoteComponent({
                             {getStatusBadge(note.status)}
                           </div>
                         </div>
-                        <div className="text-right text-sm text-gray-600">
-                          {note.deliveryDate}
-                        </div>
+                        <div className="text-right text-sm text-gray-600">{note.deliveryDate}</div>
                       </div>
 
                       {/* Kunde und Details in einer kompakten Zeile */}
@@ -706,21 +732,17 @@ export function DeliveryNoteComponent({
                                 {note.total.toFixed(2)} €
                               </span>
                             )}
-                            {note.orderNumber && (
-                              <span>Bestellung: {note.orderNumber}</span>
-                            )}
-                            {note.trackingNumber && (
-                              <span>Sendung: {note.trackingNumber}</span>
-                            )}
+                            {note.orderNumber && <span>Bestellung: {note.orderNumber}</span>}
+                            {note.trackingNumber && <span>Sendung: {note.trackingNumber}</span>}
                           </div>
                         </div>
                       </div>
 
                       {/* Aktions-Buttons kompakt */}
                       <div className="flex items-center space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => setSelectedNote(note)}
                           className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
                         >

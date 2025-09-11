@@ -15,6 +15,7 @@ import {
   where,
   orderBy,
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { db } from '@/firebase/clients';
 import { DeliveryNoteTemplate } from '@/components/finance/delivery-note-templates/types';
 
@@ -147,6 +148,7 @@ export class DeliveryNoteService {
   ): Promise<string> {
     try {
       console.log('📋 Creating delivery note for company:', noteData.companyId);
+      console.log('📋 Full noteData:', JSON.stringify(noteData, null, 2));
 
       // Sequenznummer generieren - Mit Fallback für fehlende Settings
       let settings: DeliveryNoteSettings | null = null;
@@ -167,14 +169,25 @@ export class DeliveryNoteService {
 
       console.log('📋 Generated delivery note number:', deliveryNoteNumber);
 
+      // Debug: Firebase Auth State prüfen
+      const auth = getAuth();
+      console.log('🔐 Current auth user:', auth.currentUser?.uid);
+      console.log('🔐 User email:', auth.currentUser?.email);
+      console.log('🔐 Auth state:', !!auth.currentUser);
+
       const collectionRef = collection(db, this.COLLECTION);
-      const docRef = await addDoc(collectionRef, {
+      console.log('📁 Collection reference created for:', this.COLLECTION);
+
+      const docData = {
         ...noteData,
         deliveryNoteNumber,
         sequentialNumber,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+      console.log('📄 Document data to save:', JSON.stringify(docData, null, 2));
+
+      const docRef = await addDoc(collectionRef, docData);
 
       console.log('✅ Delivery note created successfully with ID:', docRef.id);
 
