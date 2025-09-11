@@ -34,7 +34,6 @@ export default function LoginPage() {
       // Nach einem erfolgreichen Login wird die Seite durch die Weiterleitung
       // ohnehin unmounted. Das Zurücksetzen des Ladezustands ist nur bei
       // einem Fehler notwendig.
-
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as { code: string; message: string };
@@ -69,13 +68,11 @@ export default function LoginPage() {
       // Nach einem erfolgreichen Login wird die Seite durch die Weiterleitung
       // ohnehin unmounted. Das Zurücksetzen des Ladezustands ist nur bei
       // einem Fehler notwendig.
-
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as { code: string; message: string };
 
         if (firebaseError.code === 'auth/popup-closed-by-user') {
-
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
           setError(
             'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
@@ -95,19 +92,17 @@ export default function LoginPage() {
     setLoading('apple');
     setError(null);
     try {
-      const provider = new OAuthProvider('apple.com');
+      const provider = new OAuthProvider('oidc.apple');
       const result = await signInWithPopup(auth, provider);
       // Die Weiterleitung wird jetzt vollständig vom AuthContext gehandhabt.
       // Nach einem erfolgreichen Login wird die Seite durch die Weiterleitung
       // ohnehin unmounted. Das Zurücksetzen des Ladezustands ist nur bei
       // einem Fehler notwendig.
-
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as { code: string; message: string };
 
         if (firebaseError.code === 'auth/popup-closed-by-user') {
-
         } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
           setError(
             'Ein Konto mit dieser E-Mail-Adresse existiert bereits mit einer anderen Anmeldemethode.'
