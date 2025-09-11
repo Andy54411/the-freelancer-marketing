@@ -40,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Get Firebase DB dynamically
     const db = await getFirebaseDb();
 
-    // Lade Kunden aus Firestore
+    // Lade nur echte Kunden aus Firestore (keine Lieferanten)
     const customersQuery = await db
       .collection('customers')
       .where('companyId', '==', uid)
@@ -51,6 +51,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     customersQuery.forEach((doc: any) => {
       const data = doc.data();
+
+      // Filter: Nur echte Kunden, keine Lieferanten
+      const isSupplier = data.isSupplier === true;
+      const customerNumber = data.customerNumber || '';
+      const isLieferantNumber = customerNumber.startsWith('LF-');
+
+      // Überspringe Lieferanten basierend auf isSupplier Flag oder LF-Nummer
+      if (isSupplier || isLieferantNumber) {
+        console.log(`🚫 Skipping supplier: ${data.name} (${customerNumber})`);
+        return;
+      }
+
       customers.push({
         id: doc.id,
         customerNumber: data.customerNumber || '',

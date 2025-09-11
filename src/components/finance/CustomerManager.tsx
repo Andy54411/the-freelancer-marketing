@@ -46,6 +46,25 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     [customerId: string]: { totalAmount: number; totalInvoices: number };
   }>({});
 
+  // Generiere eine eindeutige Kundennummer
+  const generateUniqueCustomerNumber = (existingNumbers: string[]): string => {
+    const kdNumbers = existingNumbers
+      .filter(num => num && num.startsWith('KD-'))
+      .map(num => parseInt(num.replace('KD-', ''), 10))
+      .filter(num => !isNaN(num));
+
+    let nextNumber = Math.max(...kdNumbers, 0) + 1;
+    let newNumber = `KD-${String(nextNumber).padStart(3, '0')}`;
+
+    // Sicherstellen, dass die Nummer wirklich eindeutig ist
+    while (existingNumbers.includes(newNumber)) {
+      nextNumber++;
+      newNumber = `KD-${String(nextNumber).padStart(3, '0')}`;
+    }
+
+    return newNumber;
+  };
+
   // Generate next customer number
   const generateNextCustomerNumber = (existingCustomers: Customer[]) => {
     if (existingCustomers.length === 0) {
@@ -194,11 +213,13 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       }
 
       setLoading(true);
+
+      // TEMPORÄRE VEREINFACHTE QUERY - Index-Problem umgehen
+      console.log('🔍 Executing simplified customers query...');
       const customersQuery = query(
         collection(db, 'customers'),
-        where('companyId', '==', companyId),
-        where('isSupplier', '!=', true), // Nur echte Kunden, keine Lieferanten
-        orderBy('createdAt', 'desc')
+        where('companyId', '==', companyId)
+        // Temporär ohne isSupplier Filter und orderBy
       );
 
       console.log('🔍 Executing customers query...');
@@ -227,6 +248,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           taxNumber: data.taxNumber,
           vatId: data.vatId,
           vatValidated: data.vatValidated || false,
+          isSupplier: data.isSupplier || false, // Defaultwert für alte Daten
           totalInvoices: data.totalInvoices || 0,
           totalAmount: data.totalAmount || 0,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
@@ -235,16 +257,39 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         });
       });
 
+      // Client-seitige Filterung und Sortierung
+      const filteredCustomers = loadedCustomers
+        .filter(customer => {
+          // Robuste Filterung: Nur echte Kunden (keine Lieferanten)
+          // - Explizit isSupplier === false ODER
+          // - isSupplier ist undefined/null UND customerNumber beginnt NICHT mit "LF-"
+          const isNotSupplier =
+            customer.isSupplier === false ||
+            (customer.isSupplier == null && !customer.customerNumber?.startsWith('LF-'));
+
+          console.log(
+            `🔍 Customer ${customer.customerNumber} (${customer.name}): isSupplier=${customer.isSupplier}, filtered=${isNotSupplier}`
+          );
+          return isNotSupplier;
+        })
+        .sort((a, b) => {
+          // Sortierung nach createdAt (neueste zuerst)
+          const dateA = new Date(a.createdAt || 0).getTime();
+          const dateB = new Date(b.createdAt || 0).getTime();
+          return dateB - dateA;
+        });
+
       console.log('✅ Processed customers:', loadedCustomers.length);
-      console.log('📊 Customer details:', loadedCustomers);
+      console.log('🔍 Filtered customers (no suppliers):', filteredCustomers.length);
+      console.log('📊 Customer details:', filteredCustomers);
 
-      setCustomers(loadedCustomers);
-      setNextCustomerNumber(generateNextCustomerNumber(loadedCustomers));
+      setCustomers(filteredCustomers);
+      setNextCustomerNumber(generateNextCustomerNumber(filteredCustomers));
 
-      console.log('🔢 Next customer number:', generateNextCustomerNumber(loadedCustomers));
+      console.log('🔢 Next customer number:', generateNextCustomerNumber(filteredCustomers));
 
       // Lade die korrekten Statistiken für jeden Kunden
-      loadCustomerStatsInBackground(loadedCustomers);
+      loadCustomerStatsInBackground(filteredCustomers);
     } catch (error) {
       console.error('❌ Error loading customers:', error);
       console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
@@ -275,8 +320,16 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
+      // Generiere neue Kundennummer BEVOR das Speichern
+      const actualCustomerNumber =
+        customerData.customerNumber || generateNextCustomerNumber(customers);
+      console.log('🔢 Using customer number:', actualCustomerNumber);
+
       // Filter undefined values for Firebase compatibility
-      const cleanCustomerData = Object.entries(customerData).reduce((acc, [key, value]) => {
+      const cleanCustomerData = Object.entries({
+        ...customerData,
+        customerNumber: actualCustomerNumber, // Verwende die generierte Nummer
+      }).reduce((acc, [key, value]) => {
         if (value !== undefined && value !== null) {
           acc[key] = value;
         }
@@ -298,6 +351,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       const newCustomer = {
         ...cleanCustomerData,
         companyId,
+        isSupplier: false, // Explizit als Kunde markieren (nicht Lieferant)
         totalInvoices: 0,
         totalAmount: 0,
         createdAt: serverTimestamp(),
@@ -313,8 +367,10 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       const addedCustomer: Customer = {
         ...customerData,
+        customerNumber: actualCustomerNumber, // Verwende die tatsächlich gespeicherte Nummer
         id: docRef.id,
         companyId,
+        isSupplier: false, // Explizit als Kunde markieren
         totalInvoices: 0,
         totalAmount: 0,
         createdAt: new Date().toISOString(),
@@ -322,7 +378,11 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       console.log('📋 Adding customer to local state:', addedCustomer);
       setCustomers(prev => [addedCustomer, ...prev]);
-      setNextCustomerNumber(generateNextCustomerNumber([addedCustomer, ...customers]));
+
+      // Generiere die NÄCHSTE Kundennummer für den nächsten Kunden
+      const nextNum = generateNextCustomerNumber([addedCustomer, ...customers]);
+      setNextCustomerNumber(nextNum);
+      console.log('🔢 Next customer number updated to:', nextNum);
 
       toast.success(`Kunde ${customerData.name} erfolgreich hinzugefügt`);
       console.log('✅ Customer creation completed successfully');
@@ -613,10 +673,12 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
               Verwalten Sie Ihre Kundendaten ({customers.length} Kunden)
             </CardDescription>
           </div>
-          <AddCustomerModal
-            onAddCustomer={handleAddCustomer}
-            nextCustomerNumber={nextCustomerNumber}
-          />
+          <div className="flex gap-2">
+            <AddCustomerModal
+              onAddCustomer={handleAddCustomer}
+              nextCustomerNumber={nextCustomerNumber}
+            />
+          </div>
         </div>
       </CardHeader>
 
