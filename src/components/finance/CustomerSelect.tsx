@@ -71,17 +71,24 @@ export function CustomerSelect({
   const loadCustomers = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading customers for companyId:', companyId);
+
       const customersQuery = query(
         collection(db, 'customers'),
         where('companyId', '==', companyId),
         orderBy('name', 'asc')
       );
 
+      console.log('📋 Executing Firestore query...');
       const querySnapshot = await getDocs(customersQuery);
+      console.log('📊 Query result - docs count:', querySnapshot.size);
+
       const loadedCustomers: Customer[] = [];
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
+        console.log('📝 Processing customer doc:', doc.id, data);
+
         // Generiere customerNumber falls nicht vorhanden
         const customerNumber = data.customerNumber || `KD-${doc.id.substring(0, 6).toUpperCase()}`;
 
@@ -109,14 +116,34 @@ export function CustomerSelect({
         });
       });
 
+      console.log('✅ Loaded customers:', loadedCustomers.length);
       console.log(
-        'Loaded customers:',
-        loadedCustomers.map(c => ({ name: c.name, customerNumber: c.customerNumber }))
+        '👥 Customer details:',
+        loadedCustomers.map(c => ({
+          id: c.id,
+          name: c.name,
+          customerNumber: c.customerNumber,
+          companyId: c.companyId,
+        }))
       );
       setCustomers(loadedCustomers);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Error loading customers:', error);
+      console.error('🔍 Error details:', {
+        code: error.code,
+        message: error.message,
+        companyId,
+        stack: error.stack,
+      });
+
       if (error.code === 'permission-denied') {
+        console.error(
+          '🚫 Firestore permission denied - check security rules for customers collection'
+        );
         toast.error('Keine Berechtigung zum Laden der Kundendaten. Überprüfen Sie Ihre Anmeldung.');
+      } else if (error.code === 'failed-precondition') {
+        console.error('🗂️ Missing Firestore index - check console for required index');
+        toast.error('Firestore Index fehlt - siehe Konsole für Details');
       } else {
         toast.error('Fehler beim Laden der Kundendaten');
       }
