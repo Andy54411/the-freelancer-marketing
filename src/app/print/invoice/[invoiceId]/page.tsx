@@ -38,13 +38,19 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         // 2. Lade IMMER das globale Template des Benutzers
         if (data.companyId) {
           try {
+            console.log('Loading template for company:', data.companyId);
             const companyDoc = await getDoc(doc(db, 'companies', data.companyId));
             if (companyDoc.exists()) {
               const companyData = companyDoc.data();
+              console.log('Company data:', companyData);
               const preferredTemplate = companyData.preferredInvoiceTemplate as string;
+              console.log('Preferred template:', preferredTemplate);
               setUserTemplate(preferredTemplate);
+            } else {
+              console.log('Company document does not exist');
             }
           } catch (error) {
+            console.error('Error loading template:', error);
             // Fallback auf Default-Template wird unten im JSX gehandhabt
           }
         }
@@ -241,9 +247,25 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
       {/* Sauberer Invoice Content - NUR die Rechnung */}
       <div className="invoice-print-content">
         {/* Debug: Daten anzeigen */}
-        <div style={{ display: 'none' }}>
-          DEBUG: Invoice ID: {invoiceData.id}, Number:{' '}
-          {invoiceData.invoiceNumber || invoiceData.number}
+        <div
+          style={{
+            display: 'block',
+            marginBottom: '20px',
+            padding: '10px',
+            backgroundColor: '#f0f0f0',
+          }}
+        >
+          <strong>DEBUG INFO:</strong>
+          <br />
+          Invoice ID: {invoiceData.id}
+          <br />
+          Invoice Number: {invoiceData.invoiceNumber || invoiceData.number}
+          <br />
+          Company ID: {invoiceData.companyId}
+          <br />
+          User Template: {userTemplate || 'NULL'}
+          <br />
+          Default Template: {DEFAULT_INVOICE_TEMPLATE}
         </div>
 
         {/* Minimales A4-optimiertes Layout */}
