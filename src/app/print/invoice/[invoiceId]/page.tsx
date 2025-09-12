@@ -1,11 +1,8 @@
 'use client';
 
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
-import {
-  InvoiceTemplateRenderer,
-  type InvoiceTemplate,
-  DEFAULT_INVOICE_TEMPLATE,
-} from '@/components/finance/InvoiceTemplates';
+import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
+import { DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/templates/types';
 import { db } from '@/firebase/clients';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
@@ -23,7 +20,7 @@ interface PrintInvoicePageProps {
  */
 export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [userTemplate, setUserTemplate] = useState<InvoiceTemplate | null>(null);
+  const [userTemplate, setUserTemplate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,19 +38,17 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         // 2. Lade IMMER das globale Template des Benutzers
         if (data.companyId) {
           try {
-            const userDoc = await getDoc(doc(db, 'users', data.companyId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              const preferredTemplate = userData.preferredInvoiceTemplate as InvoiceTemplate;
+            const companyDoc = await getDoc(doc(db, 'companies', data.companyId));
+            if (companyDoc.exists()) {
+              const companyData = companyDoc.data();
+              const preferredTemplate = companyData.preferredInvoiceTemplate as string;
               setUserTemplate(preferredTemplate);
             }
           } catch (error) {
-
             // Fallback auf Default-Template wird unten im JSX gehandhabt
           }
         }
       } catch (error) {
-
         notFound();
       } finally {
         setLoading(false);
@@ -66,15 +61,12 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
       const resolvedParams = await params;
       // Add print-page class to body
       document.body.classList.add('print-page');
-
     };
 
     initializePage();
 
     // Ensure all images and assets are loaded
-    const handleLoad = () => {
-
-    };
+    const handleLoad = () => {};
 
     window.addEventListener('load', handleLoad);
 
@@ -257,7 +249,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         {/* Minimales A4-optimiertes Layout */}
         <div className="print-invoice-wrapper">
           <InvoiceTemplateRenderer
-            template={(userTemplate || DEFAULT_INVOICE_TEMPLATE) as InvoiceTemplate}
+            template={userTemplate || DEFAULT_INVOICE_TEMPLATE}
             data={invoiceData}
             preview={false}
           />
