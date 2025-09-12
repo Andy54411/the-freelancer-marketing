@@ -55,6 +55,11 @@ export default function EditQuotePage() {
     try {
       setLoading(true);
       const quoteData = await QuoteService.getQuote(uid, quoteId);
+      if (!quoteData) {
+        toast.error('Angebot nicht gefunden');
+        router.push(`/dashboard/company/${uid}/finance/quotes`);
+        return;
+      }
       setQuote(quoteData);
 
       // Formular mit Quote-Daten füllen
