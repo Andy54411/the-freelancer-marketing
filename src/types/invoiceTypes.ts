@@ -11,6 +11,7 @@ export interface InvoiceItem {
   description: string;
   quantity: number;
   unitPrice: number;
+  discount?: number; // Rabatt in Prozent (0-100), optional für Rückwärtskompatibilität
   total: number;
   taxRate?: number;
 }

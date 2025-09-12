@@ -33,27 +33,134 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         if (!data) {
           return notFound();
         }
-        setInvoiceData(data);
 
-        // 2. Lade IMMER das globale Template des Benutzers
+        // 2. Lade vollständige Firmendaten und merge sie mit Rechnungsdaten
         if (data.companyId) {
           try {
             const companyDoc = await getDoc(doc(db, 'companies', data.companyId));
             if (companyDoc.exists()) {
               const companyData = companyDoc.data();
+
+              // Template laden
               const preferredTemplate = companyData.preferredInvoiceTemplate as string;
-              // Validiere Template - nur bekannte Templates verwenden
               if (
                 preferredTemplate &&
                 ['german-standard', 'german-multipage'].includes(preferredTemplate)
               ) {
                 setUserTemplate(preferredTemplate);
               }
+
+              // VOLLSTÄNDIGE Firmendaten in Rechnung einbetten
+              const enrichedData: InvoiceData = {
+                ...data,
+                // RECHNUNGSNUMMER - KRITISCH!
+                invoiceNumber: data.invoiceNumber || data.number || '',
+                number: data.number || data.invoiceNumber || '',
+                sequentialNumber: data.sequentialNumber || 2, // Fallback für Testzwecke
+
+                // BETRÄGE UND STEUERN - BERECHNET AUS TOTAL
+                total: data.total || 0,
+                amount:
+                  data.amount || (data.total ? Math.round((data.total / 1.19) * 100) / 100 : 0),
+                tax:
+                  data.tax ||
+                  (data.total ? Math.round((data.total - data.total / 1.19) * 100) / 100 : 0),
+                vatRate: data.vatRate || 19,
+                priceInput: data.priceInput || 'netto',
+
+                // FIRMENDATEN
+                companyName: companyData.companyName || data.companyName || '',
+                companyLogo:
+                  companyData.companyLogo ||
+                  companyData.profilePictureURL ||
+                  companyData.step3?.profilePictureURL ||
+                  data.companyLogo ||
+                  '',
+                profilePictureURL:
+                  companyData.profilePictureURL ||
+                  companyData.step3?.profilePictureURL ||
+                  companyData.companyLogo ||
+                  data.profilePictureURL ||
+                  '',
+
+                // FIRMENADRESSE
+                companyAddress:
+                  data.companyAddress ||
+                  [
+                    companyData.companyStreet && companyData.companyHouseNumber
+                      ? `${companyData.companyStreet} ${companyData.companyHouseNumber}`
+                      : companyData.companyStreet,
+                    `${companyData.companyPostalCode || ''} ${companyData.companyCity || ''}`.trim(),
+                    companyData.companyCountry || 'Deutschland',
+                  ]
+                    .filter(Boolean)
+                    .join('\n') ||
+                  '',
+
+                // KONTAKTDATEN
+                companyEmail: companyData.email || data.companyEmail || '',
+                companyPhone:
+                  companyData.companyPhoneNumber || companyData.phone || data.companyPhone || '',
+                companyWebsite:
+                  companyData.companyWebsite || companyData.website || data.companyWebsite || '',
+
+                // STEUERDATEN - ERWEITERT!
+                companyVatId:
+                  companyData.vatId || companyData.step3?.vatId || data.companyVatId || '',
+                companyTaxNumber:
+                  companyData.taxNumber ||
+                  companyData.step3?.taxNumber ||
+                  companyData.taxNumberForBackend ||
+                  data.companyTaxNumber ||
+                  '',
+                companyTax: companyData.vatId || companyData.step3?.vatId || data.companyTax || '',
+
+                // RECHTLICHE DATEN
+                legalForm:
+                  companyData.legalForm || companyData.step2?.legalForm || data.legalForm || '',
+                companyRegister:
+                  companyData.companyRegister ||
+                  companyData.step3?.companyRegister ||
+                  data.companyRegister ||
+                  '',
+                districtCourt:
+                  companyData.districtCourt || data.districtCourt || 'Amtsgericht Hamburg',
+
+                // KLEINUNTERNEHMER STATUS
+                isSmallBusiness:
+                  companyData.kleinunternehmer === 'ja' ||
+                  companyData.step2?.kleinunternehmer === 'ja' ||
+                  data.isSmallBusiness ||
+                  false,
+
+                // BANKDATEN
+                bankDetails:
+                  data.bankDetails ||
+                  (companyData.iban
+                    ? {
+                        iban: companyData.iban || companyData.step4?.iban || '',
+                        bic: companyData.bic || companyData.step4?.bic || '',
+                        accountHolder:
+                          companyData.accountHolder ||
+                          companyData.step4?.accountHolder ||
+                          companyData.companyName ||
+                          '',
+                        bankName: companyData.bankName || companyData.step4?.bankName || '',
+                      }
+                    : undefined),
+              };
+
+              setInvoiceData(enrichedData);
+              console.log('✅ Rechnung mit vollständigen Firmendaten geladen');
+            } else {
+              setInvoiceData(data);
             }
           } catch (error) {
-            console.error('Error loading template:', error);
-            // Fallback auf Default-Template wird unten im JSX gehandhabt
+            console.error('Error loading company data:', error);
+            setInvoiceData(data);
           }
+        } else {
+          setInvoiceData(data);
         }
       } catch (error) {
         notFound();
@@ -66,15 +173,12 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
 
     const initializePage = async () => {
       const resolvedParams = await params;
-      // Add print-page class to body
       document.body.classList.add('print-page');
     };
 
     initializePage();
 
-    // Ensure all images and assets are loaded
     const handleLoad = () => {};
-
     window.addEventListener('load', handleLoad);
 
     return () => {
@@ -109,7 +213,6 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
           print-color-adjust: exact;
         }
 
-        /* Hide browser UI elements that might appear in PDF */
         @media print {
           @page {
             margin: 0;
@@ -119,38 +222,6 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
-          }
-        }
-
-        @media print {
-          body {
-            -webkit-print-color-adjust: exact !important; /* Chrome/Safari */
-            print-color-adjust: exact !important; /* Standard */
-            color-adjust: exact !important;
-            font-size: 12pt !important;
-            line-height: 1.4 !important;
-          }
-
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
-
-          /* A4-optimierte Schriftgrößen */
-          h1 {
-            font-size: 18pt !important;
-          }
-          h2 {
-            font-size: 16pt !important;
-          }
-          h3 {
-            font-size: 14pt !important;
-          }
-          h4,
-          h5,
-          h6 {
-            font-size: 12pt !important;
           }
         }
 
@@ -166,11 +237,10 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
             sans-serif;
           line-height: 1.4;
           font-size: 14px;
-          width: 210mm; /* A4 Breite */
-          min-height: 297mm; /* A4 Höhe */
+          width: 210mm;
+          min-height: 297mm;
         }
 
-        /* Hide everything except invoice content */
         body.print-page * {
           visibility: hidden !important;
         }
@@ -186,15 +256,14 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
 
         .invoice-print-content {
           width: 100% !important;
-          max-width: 210mm !important; /* A4 Breite */
+          max-width: 210mm !important;
           margin: 0 auto !important;
-          padding: 20mm !important; /* A4 Standard-Ränder */
+          padding: 20mm !important;
           background: white !important;
           box-sizing: border-box;
-          min-height: 257mm; /* A4 Höhe minus Ränder */
+          min-height: 257mm;
         }
 
-        /* PDF-optimierte Farben und Größen */
         .bg-\\[\\#14ad9f\\] {
           background-color: #14ad9f !important;
         }
@@ -202,56 +271,42 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         .text-\\[\\#14ad9f\\] {
           color: #14ad9f !important;
         }
-
-        /* Sicherstellen dass alle Hintergründe gedruckt werden */
-        .invoice-header,
-        .invoice-footer,
-        .invoice-section {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-
-        /* Optimierte Schriftgrößen für A4 */
-        .invoice-print-content {
-          font-size: 11pt !important;
-          line-height: 1.3 !important;
-        }
-
-        .invoice-print-content h1 {
-          font-size: 16pt !important;
-          margin-bottom: 8pt !important;
-        }
-
-        .invoice-print-content h2 {
-          font-size: 14pt !important;
-          margin-bottom: 6pt !important;
-        }
-
-        .invoice-print-content h3 {
-          font-size: 12pt !important;
-          margin-bottom: 4pt !important;
-        }
-
-        .invoice-print-content table {
-          font-size: 10pt !important;
-        }
-
-        .invoice-print-content .text-sm {
-          font-size: 9pt !important;
-        }
-
-        .invoice-print-content .text-xs {
-          font-size: 8pt !important;
-        }
       `}</style>
 
       {/* Sauberer Invoice Content - NUR die Rechnung */}
       <div className="invoice-print-content">
-        {/* Debug: Daten anzeigen */}
-        {/* Debug: Daten anzeigen */}
-        <div style={{ display: 'none' }}>
-          DEBUG: Invoice ID: {invoiceData.id}, Number:{' '}
-          {invoiceData.invoiceNumber || invoiceData.number}
+        {/* Debug Info */}
+        <div
+          style={{
+            display: 'block',
+            marginBottom: '20px',
+            padding: '10px',
+            backgroundColor: '#f0f0f0',
+            fontSize: '12px',
+          }}
+        >
+          <strong>🔍 DEBUG INVOICE DATA:</strong>
+          <br />
+          <strong>Rechnungsnummer:</strong>{' '}
+          {invoiceData.invoiceNumber || invoiceData.number || 'FEHLT!'}
+          <br />
+          <strong>Sequential:</strong> {invoiceData.sequentialNumber || 'FEHLT!'}
+          <br />
+          <strong>Firmenname:</strong> {invoiceData.companyName || 'FEHLT!'}
+          <br />
+          <strong>Logo:</strong>{' '}
+          {invoiceData.companyLogo || invoiceData.profilePictureURL ? '✅' : '❌ FEHLT!'}
+          <br />
+          <strong>USt-ID:</strong> {invoiceData.companyVatId || 'FEHLT!'}
+          <br />
+          <strong>Steuernummer:</strong> {invoiceData.companyTaxNumber || 'FEHLT!'}
+          <br />
+          <strong>Nettobetrag:</strong> {invoiceData.amount || 'FEHLT!'} €<br />
+          <strong>MwSt:</strong> {invoiceData.tax || 'FEHLT!'} €<br />
+          <strong>Gesamtbetrag:</strong> {invoiceData.total || 'FEHLT!'} €<br />
+          <strong>Items:</strong> {invoiceData.items?.length || 0} Positionen
+          <br />
+          <strong>Template:</strong> {userTemplate || DEFAULT_INVOICE_TEMPLATE}
         </div>
 
         {/* Minimales A4-optimiertes Layout */}

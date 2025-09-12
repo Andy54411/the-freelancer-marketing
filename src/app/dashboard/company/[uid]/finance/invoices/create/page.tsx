@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -15,7 +16,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Plus, Trash2, Calculator, FileText, Loader2, Eye } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import {
+  ModalCard,
+  ModalCardHeader,
+  ModalCardTitle,
+  ModalCardDescription,
+  ModalCardContent,
+  ModalCardSection,
+  ModalCardActions,
+} from '@/components/ui/modal-card';
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Calculator,
+  FileText,
+  Loader2,
+  Eye,
+  MoreVertical,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
 import { LivePreview } from '@/components/finance/LivePreview';
@@ -59,6 +94,7 @@ interface InvoiceItem {
   description: string;
   quantity: number;
   unitPrice: number;
+  discount: number; // Rabatt in Prozent (0-100)
   total: number;
 }
 
@@ -181,6 +217,45 @@ export default function CreateInvoicePage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEInvoiceEnabled, setIsEInvoiceEnabled] = useState(false);
+  const [showEInvoiceModal, setShowEInvoiceModal] = useState(false);
+  const [modalFormData, setModalFormData] = useState({
+    companyName: '',
+    companyStreet: '',
+    companyCity: '',
+    companyPostalCode: '',
+    companyCountry: '',
+    taxNumber: '',
+    vatId: '',
+    registrationNumber: '',
+    iban: '',
+    bic: '',
+    contactEmail: '',
+  });
+
+  // Auto-fill modalFormData mit verfügbaren Firmendaten
+  useEffect(() => {
+    if (fullCompanyData && showEInvoiceModal) {
+      setModalFormData(prev => ({
+        ...prev,
+        companyName: fullCompanyData.companyName || prev.companyName,
+        companyStreet: fullCompanyData.companyStreet || prev.companyStreet,
+        companyCity: fullCompanyData.companyCity || prev.companyCity,
+        companyPostalCode: fullCompanyData.companyPostalCode || prev.companyPostalCode,
+        companyCountry: fullCompanyData.companyCountry || prev.companyCountry,
+        taxNumber: fullCompanyData.taxNumber || prev.taxNumber,
+        vatId: fullCompanyData.vatId || prev.vatId,
+        registrationNumber: fullCompanyData.registrationNumber || prev.registrationNumber,
+        iban: fullCompanyData.bankDetails?.iban || prev.iban,
+        bic: fullCompanyData.bankDetails?.bic || prev.bic,
+        contactEmail:
+          fullCompanyData.contactEmail ||
+          fullCompanyData.email ||
+          fullCompanyData.step1?.email ||
+          prev.contactEmail,
+      }));
+    }
+  }, [fullCompanyData, showEInvoiceModal]);
 
   const [items, setItems] = useState<InvoiceItem[]>([
     {
@@ -188,6 +263,7 @@ export default function CreateInvoicePage() {
       description: 'Leistung',
       quantity: 1,
       unitPrice: 50,
+      discount: 0,
       total: 50,
     },
   ]);
@@ -241,6 +317,7 @@ export default function CreateInvoicePage() {
               description: dayItem.description, // Format: "2025-01-19: Projektname (8.5h)"
               quantity: dayItem.hours,
               unitPrice: dayItem.hourlyRate,
+              discount: 0,
               total: dayItem.amount,
             })
           );
@@ -254,6 +331,7 @@ export default function CreateInvoicePage() {
               description: `Projektarbeit: ${projectData.projectName}`,
               quantity: projectData.totalHours,
               unitPrice: projectData.hourlyRate,
+              discount: 0,
               total: projectData.revenue,
             },
           ];
@@ -1023,6 +1101,7 @@ export default function CreateInvoicePage() {
       description: '',
       quantity: 1,
       unitPrice: 0,
+      discount: 0,
       total: 0,
     };
     setItems(prev => [...prev, newItem]);
@@ -1040,9 +1119,11 @@ export default function CreateInvoicePage() {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
 
-          // Recalculate total if quantity or unitPrice changed
-          if (field === 'quantity' || field === 'unitPrice') {
-            updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
+          // Recalculate total if quantity, unitPrice, or discount changed
+          if (field === 'quantity' || field === 'unitPrice' || field === 'discount') {
+            const baseTotal = updatedItem.quantity * updatedItem.unitPrice;
+            const discountAmount = (baseTotal * updatedItem.discount) / 100;
+            updatedItem.total = baseTotal - discountAmount;
           }
 
           return updatedItem;
@@ -1218,6 +1299,151 @@ export default function CreateInvoicePage() {
     }
   };
 
+  // E-Rechnung Validierung
+  const validateEInvoiceRequirements = () => {
+    if (!fullCompanyData)
+      return { valid: false, missing: ['Firmendaten nicht geladen'], missingFields: ['all'] };
+
+    const missing: string[] = [];
+    const missingFields: string[] = [];
+
+    // Pflichtfelder für E-Rechnung prüfen
+    if (!fullCompanyData.companyName) {
+      missing.push('Firmenname');
+      missingFields.push('companyName');
+    }
+    if (!fullCompanyData.companyStreet) {
+      missing.push('Firmenadresse');
+      missingFields.push('companyStreet');
+    }
+    if (!fullCompanyData.companyCity) {
+      missing.push('Stadt');
+      missingFields.push('companyCity');
+    }
+    if (!fullCompanyData.companyPostalCode) {
+      missing.push('Postleitzahl');
+      missingFields.push('companyPostalCode');
+    }
+    if (!fullCompanyData.companyCountry) {
+      missing.push('Land');
+      missingFields.push('companyCountry');
+    }
+    if (!fullCompanyData.taxNumber && !fullCompanyData.vatId) {
+      missing.push('Steuernummer oder USt-IdNr.');
+      missingFields.push('taxNumber', 'vatId');
+    }
+    if (!fullCompanyData.registrationNumber) {
+      missing.push('Handelsregisternummer');
+      missingFields.push('registrationNumber');
+    }
+    if (!fullCompanyData.bankDetails?.iban) {
+      missing.push('IBAN');
+      missingFields.push('iban');
+    }
+    if (!fullCompanyData.bankDetails?.bic) {
+      missing.push('BIC');
+      missingFields.push('bic');
+    }
+    if (!fullCompanyData.contactEmail && !fullCompanyData.email && !fullCompanyData.step1?.email) {
+      missing.push('Kontakt E-Mail');
+      missingFields.push('contactEmail');
+    }
+
+    return { valid: missing.length === 0, missing, missingFields };
+  };
+
+  // Prüft ob ein Feld fehlt und angezeigt werden soll
+  const isFieldMissing = (fieldName: string) => {
+    const validation = validateEInvoiceRequirements();
+    return validation.missingFields.includes(fieldName);
+  };
+
+  const handleEInvoiceToggle = (checked: boolean) => {
+    if (checked) {
+      const validation = validateEInvoiceRequirements();
+      if (!validation.valid) {
+        // Befülle Modal-Form mit vorhandenen Daten
+        if (fullCompanyData) {
+          setModalFormData({
+            companyName: fullCompanyData.companyName || '',
+            companyStreet: fullCompanyData.companyStreet || '',
+            companyCity: fullCompanyData.companyCity || '',
+            companyPostalCode: fullCompanyData.companyPostalCode || '',
+            companyCountry: fullCompanyData.companyCountry || '',
+            taxNumber: fullCompanyData.taxNumber || '',
+            vatId: fullCompanyData.vatId || '',
+            registrationNumber: fullCompanyData.registrationNumber || '',
+            iban: fullCompanyData.bankDetails?.iban || '',
+            bic: fullCompanyData.bankDetails?.bic || '',
+            contactEmail:
+              fullCompanyData.contactEmail ||
+              fullCompanyData.email ||
+              fullCompanyData.step1?.email ||
+              '',
+          });
+        }
+        setShowEInvoiceModal(true);
+        return; // Toggle bleibt deaktiviert
+      }
+    }
+    setIsEInvoiceEnabled(checked);
+  };
+
+  const handleSaveEInvoiceData = async () => {
+    try {
+      setIsSubmitting(true);
+
+      // Update company data via API
+      const response = await fetch(`/api/companies/${uid}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyName: modalFormData.companyName,
+          companyStreet: modalFormData.companyStreet,
+          companyCity: modalFormData.companyCity,
+          companyPostalCode: modalFormData.companyPostalCode,
+          companyCountry: modalFormData.companyCountry,
+          taxNumber: modalFormData.taxNumber,
+          vatId: modalFormData.vatId,
+          registrationNumber: modalFormData.registrationNumber,
+          contactEmail: modalFormData.contactEmail,
+          bankDetails: {
+            ...fullCompanyData?.bankDetails,
+            iban: modalFormData.iban,
+            bic: modalFormData.bic,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        // Update local data
+        setFullCompanyData(prev => ({
+          ...prev,
+          ...modalFormData,
+          bankDetails: {
+            ...prev?.bankDetails,
+            iban: modalFormData.iban,
+            bic: modalFormData.bic,
+          },
+        }));
+
+        // Aktiviere E-Rechnung
+        setIsEInvoiceEnabled(true);
+        setShowEInvoiceModal(false);
+        toast.success('Firmendaten gespeichert - E-Rechnung aktiviert!');
+      } else {
+        throw new Error('Fehler beim Speichern');
+      }
+    } catch (error) {
+      console.error('Fehler beim Speichern der Firmendaten:', error);
+      toast.error('Fehler beim Speichern der Firmendaten');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleBackToInvoices = () => {
     router.push(`/dashboard/company/${uid}/finance/invoices`);
   };
@@ -1237,11 +1463,78 @@ export default function CreateInvoicePage() {
           Zurück zu Rechnungen
         </Button>
 
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Neue Rechnung erstellen</h1>
-          <p className="text-gray-600">
-            Erstellen Sie eine professionelle Rechnung für Ihre Kunden.
-          </p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Neue Rechnung erstellen</h1>
+            <p className="text-gray-600">
+              Erstellen Sie eine professionelle Rechnung für Ihre Kunden.
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-4">
+            {/* E-Rechnung Toggle */}
+            <div className="flex items-center space-x-3">
+              <Label htmlFor="e-invoice-toggle" className="text-sm font-medium">
+                E-Rechnung
+              </Label>
+              <Switch
+                id="e-invoice-toggle"
+                checked={isEInvoiceEnabled}
+                onCheckedChange={handleEInvoiceToggle}
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              className="text-sm"
+              onClick={e => handleSubmit(e as any, 'draft')}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Speichern
+            </Button>
+
+            <Button
+              className="text-sm bg-[#14ad9f] hover:bg-[#129488]"
+              onClick={e => handleSubmit(e as any, 'finalize')}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Speichern und aktivieren
+            </Button>
+
+            {/* Dropdown Menu für weitere Aktionen */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="px-2">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={() => {
+                    // TODO: Aufgabe erstellen Funktionalität
+                    toast.info('Aufgabe erstellen - Coming Soon');
+                  }}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Aufgabe erstellen
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (confirm('Möchten Sie die Rechnung wirklich löschen?')) {
+                      router.push(`/dashboard/company/${uid}/finance/invoices`);
+                    }
+                  }}
+                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Löschen
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
@@ -1452,67 +1745,112 @@ export default function CreateInvoicePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {items.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="grid grid-cols-12 gap-3 items-end p-4 border rounded-lg"
-                    >
-                      <div className="col-span-12 md:col-span-5">
-                        <Label htmlFor={`description_${item.id}`}>Beschreibung</Label>
-                        <Input
-                          id={`description_${item.id}`}
-                          value={item.description}
-                          onChange={e => updateItem(item.id, 'description', e.target.value)}
-                          placeholder="Leistungsbeschreibung"
-                        />
-                      </div>
-                      <div className="col-span-4 md:col-span-2">
-                        <Label htmlFor={`quantity_${item.id}`}>Menge</Label>
-                        <Input
-                          id={`quantity_${item.id}`}
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={item.quantity}
-                          onChange={e =>
-                            updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)
-                          }
-                        />
-                      </div>
-                      <div className="col-span-4 md:col-span-2">
-                        <Label htmlFor={`unitPrice_${item.id}`}>Einzelpreis (€)</Label>
-                        <Input
-                          id={`unitPrice_${item.id}`}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={e =>
-                            updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </div>
-                      <div className="col-span-3 md:col-span-2">
-                        <Label>Gesamt</Label>
-                        <div className="text-lg font-medium text-gray-900 mt-2">
-                          {formatCurrency(item.total)}
-                        </div>
-                      </div>
-                      <div className="col-span-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeItem(item.id)}
-                          disabled={items.length === 1}
-                          className="text-red-600 hover:text-red-700"
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-3 px-3 font-medium text-gray-700 dark:text-gray-300">
+                          Produkt oder Service
+                        </th>
+                        <th className="text-center py-3 px-2 font-medium text-gray-700 dark:text-gray-300 w-20">
+                          Menge
+                        </th>
+                        <th className="text-right py-3 px-2 font-medium text-gray-700 dark:text-gray-300 w-28">
+                          Preis
+                        </th>
+                        <th className="text-center py-3 px-2 font-medium text-gray-700 dark:text-gray-300 w-20">
+                          Rabatt
+                        </th>
+                        <th className="text-right py-3 px-2 font-medium text-gray-700 dark:text-gray-300 w-28">
+                          Betrag
+                        </th>
+                        <th className="w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, index) => (
+                        <tr
+                          key={item.id}
+                          className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                          <td className="py-3 px-3">
+                            <Input
+                              value={item.description}
+                              onChange={e => updateItem(item.id, 'description', e.target.value)}
+                              placeholder="Leistungsbeschreibung eingeben..."
+                              className="border-0 bg-transparent p-0 focus:ring-0 text-base"
+                            />
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <Input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={item.quantity}
+                              onChange={e =>
+                                updateItem(item.id, 'quantity', parseInt(e.target.value) || 1)
+                              }
+                              className="w-16 text-center mx-auto"
+                            />
+                          </td>
+                          <td className="py-3 px-2">
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.unitPrice}
+                                onChange={e =>
+                                  updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)
+                                }
+                                className="text-right pr-6 w-24"
+                                placeholder="0,00"
+                              />
+                              <span className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                                €
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                value={item.discount}
+                                onChange={e =>
+                                  updateItem(item.id, 'discount', parseFloat(e.target.value) || 0)
+                                }
+                                className="w-16 text-center pr-5 mx-auto"
+                                placeholder="0"
+                              />
+                              <span className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                                %
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            <div className="text-base font-semibold text-gray-900 dark:text-white">
+                              {formatCurrency(item.total)}
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeItem(item.id)}
+                              disabled={items.length === 1}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* Summary Row */}
@@ -1795,15 +2133,55 @@ export default function CreateInvoicePage() {
                 <CardDescription>Optionale Anmerkungen für die Rechnung</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notizen</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Zusätzliche Informationen oder Zahlungshinweise..."
-                    rows={3}
-                  />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notizen</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Zusätzliche Informationen oder Zahlungshinweise..."
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* E-Rechnung Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-blue-100 rounded-full">
+                        <FileText className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="eInvoiceEnabled"
+                          className="text-sm font-medium text-blue-800"
+                        >
+                          E-Rechnung aktivieren
+                        </Label>
+                        <p className="text-xs text-blue-600 mt-1">
+                          Für B2B-Rechnungen ab 01.01.2025 verpflichtend
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      id="eInvoiceEnabled"
+                      checked={isEInvoiceEnabled}
+                      onCheckedChange={handleEInvoiceToggle}
+                      className="data-[state=checked]:bg-[#14ad9f]"
+                    />
+                  </div>
+
+                  {isEInvoiceEnabled && (
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center text-green-800">
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <span className="text-sm font-medium">E-Rechnung aktiviert</span>
+                      </div>
+                      <p className="text-xs text-green-700 mt-1">
+                        Diese Rechnung wird im E-Rechnung-Format (XRechnung/ZUGFeRD) erstellt.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1977,6 +2355,317 @@ export default function CreateInvoicePage() {
           </div>
         </div>
       </div>
+
+      {/* E-Rechnung Profil-Vervollständigung Modal */}
+      <Sheet open={showEInvoiceModal} onOpenChange={setShowEInvoiceModal}>
+        <SheetContent
+          side="right"
+          className="!w-[90vw] !max-w-[900px] overflow-y-auto p-0 bg-transparent border-none"
+          style={{ width: '90vw', maxWidth: '900px' }}
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>E-Rechnung einrichten</SheetTitle>
+          </SheetHeader>
+
+          <div className="p-6 min-h-full">
+            <ModalCard variant="elevated" className="w-full shadow-2xl">
+              <ModalCardHeader icon={<AlertCircle className="h-5 w-5 text-amber-600" />}>
+                <ModalCardTitle>E-Rechnung einrichten</ModalCardTitle>
+                <ModalCardDescription>
+                  Vervollständigen Sie Ihre Firmendaten für die E-Rechnung
+                </ModalCardDescription>
+              </ModalCardHeader>
+
+              <ModalCardContent spacing="lg">
+                {/* Firmeninformationen */}
+                {(isFieldMissing('companyName') ||
+                  isFieldMissing('companyStreet') ||
+                  isFieldMissing('companyCity') ||
+                  isFieldMissing('companyPostalCode') ||
+                  isFieldMissing('companyCountry')) && (
+                  <ModalCardSection title="Firmeninformationen" variant="default">
+                    <div className="space-y-4">
+                      {isFieldMissing('companyName') && (
+                        <div>
+                          <Label
+                            htmlFor="modal-companyName"
+                            className="text-sm font-medium text-gray-700"
+                          >
+                            Firmenname
+                          </Label>
+                          <Input
+                            id="modal-companyName"
+                            value={modalFormData.companyName}
+                            onChange={e =>
+                              setModalFormData(prev => ({ ...prev, companyName: e.target.value }))
+                            }
+                            placeholder="Mustermann GmbH"
+                            className="rounded-xl mt-1"
+                          />
+                        </div>
+                      )}
+
+                      {isFieldMissing('companyStreet') && (
+                        <div>
+                          <Label
+                            htmlFor="modal-companyStreet"
+                            className="text-sm font-medium text-gray-700"
+                          >
+                            Straße und Hausnummer
+                          </Label>
+                          <Input
+                            id="modal-companyStreet"
+                            value={modalFormData.companyStreet}
+                            onChange={e =>
+                              setModalFormData(prev => ({ ...prev, companyStreet: e.target.value }))
+                            }
+                            placeholder="Musterstraße 123"
+                            className="rounded-xl mt-1"
+                          />
+                        </div>
+                      )}
+
+                      {(isFieldMissing('companyPostalCode') || isFieldMissing('companyCity')) && (
+                        <div className="grid grid-cols-2 gap-3">
+                          {isFieldMissing('companyPostalCode') && (
+                            <div>
+                              <Label
+                                htmlFor="modal-companyPostalCode"
+                                className="text-sm font-medium text-gray-700"
+                              >
+                                PLZ
+                              </Label>
+                              <Input
+                                id="modal-companyPostalCode"
+                                value={modalFormData.companyPostalCode}
+                                onChange={e =>
+                                  setModalFormData(prev => ({
+                                    ...prev,
+                                    companyPostalCode: e.target.value,
+                                  }))
+                                }
+                                placeholder="12345"
+                                className="rounded-xl mt-1"
+                              />
+                            </div>
+                          )}
+                          {isFieldMissing('companyCity') && (
+                            <div>
+                              <Label
+                                htmlFor="modal-companyCity"
+                                className="text-sm font-medium text-gray-700"
+                              >
+                                Stadt
+                              </Label>
+                              <Input
+                                id="modal-companyCity"
+                                value={modalFormData.companyCity}
+                                onChange={e =>
+                                  setModalFormData(prev => ({
+                                    ...prev,
+                                    companyCity: e.target.value,
+                                  }))
+                                }
+                                placeholder="Berlin"
+                                className="rounded-xl mt-1"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {isFieldMissing('companyCountry') && (
+                        <div>
+                          <Label
+                            htmlFor="modal-companyCountry"
+                            className="text-sm font-medium text-gray-700"
+                          >
+                            Land
+                          </Label>
+                          <Input
+                            id="modal-companyCountry"
+                            value={modalFormData.companyCountry}
+                            onChange={e =>
+                              setModalFormData(prev => ({
+                                ...prev,
+                                companyCountry: e.target.value,
+                              }))
+                            }
+                            placeholder="Deutschland"
+                            className="rounded-xl mt-1"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </ModalCardSection>
+                )}
+
+                {/* Steuerinformationen */}
+                {(isFieldMissing('taxNumber') ||
+                  isFieldMissing('vatId') ||
+                  isFieldMissing('registrationNumber')) && (
+                  <ModalCardSection title="Steuerinformationen" variant="info">
+                    <div className="space-y-4">
+                      {(isFieldMissing('taxNumber') || isFieldMissing('vatId')) && (
+                        <>
+                          <div>
+                            <Label
+                              htmlFor="modal-taxNumber"
+                              className="text-sm font-medium text-gray-700"
+                            >
+                              Steuernummer
+                            </Label>
+                            <Input
+                              id="modal-taxNumber"
+                              value={modalFormData.taxNumber}
+                              onChange={e =>
+                                setModalFormData(prev => ({ ...prev, taxNumber: e.target.value }))
+                              }
+                              placeholder="123/456/78901"
+                              className="rounded-xl mt-1"
+                            />
+                          </div>
+
+                          <div>
+                            <Label
+                              htmlFor="modal-vatId"
+                              className="text-sm font-medium text-gray-700"
+                            >
+                              USt-IdNr.
+                            </Label>
+                            <Input
+                              id="modal-vatId"
+                              value={modalFormData.vatId}
+                              onChange={e =>
+                                setModalFormData(prev => ({ ...prev, vatId: e.target.value }))
+                              }
+                              placeholder="DE123456789"
+                              className="rounded-xl mt-1"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {isFieldMissing('registrationNumber') && (
+                        <div>
+                          <Label
+                            htmlFor="modal-registrationNumber"
+                            className="text-sm font-medium text-gray-700"
+                          >
+                            Handelsregisternummer
+                          </Label>
+                          <Input
+                            id="modal-registrationNumber"
+                            value={modalFormData.registrationNumber}
+                            onChange={e =>
+                              setModalFormData(prev => ({
+                                ...prev,
+                                registrationNumber: e.target.value,
+                              }))
+                            }
+                            placeholder="HRB 12345"
+                            className="rounded-xl mt-1"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </ModalCardSection>
+                )}
+
+                {/* Bankdaten */}
+                {(isFieldMissing('iban') || isFieldMissing('bic')) && (
+                  <ModalCardSection title="Bankdaten" variant="warning">
+                    <div className="space-y-4">
+                      {isFieldMissing('iban') && (
+                        <div>
+                          <Label htmlFor="modal-iban" className="text-sm font-medium text-gray-700">
+                            IBAN
+                          </Label>
+                          <Input
+                            id="modal-iban"
+                            value={modalFormData.iban}
+                            onChange={e =>
+                              setModalFormData(prev => ({ ...prev, iban: e.target.value }))
+                            }
+                            placeholder="DE89 3704 0044 0532 0130 00"
+                            className="rounded-xl mt-1"
+                          />
+                        </div>
+                      )}
+
+                      {isFieldMissing('bic') && (
+                        <div>
+                          <Label htmlFor="modal-bic" className="text-sm font-medium text-gray-700">
+                            BIC
+                          </Label>
+                          <Input
+                            id="modal-bic"
+                            value={modalFormData.bic}
+                            onChange={e =>
+                              setModalFormData(prev => ({ ...prev, bic: e.target.value }))
+                            }
+                            placeholder="COBADEFFXXX"
+                            className="rounded-xl mt-1"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </ModalCardSection>
+                )}
+
+                {/* Kontaktdaten */}
+                {isFieldMissing('contactEmail') && (
+                  <ModalCardSection title="Kontaktdaten" variant="default">
+                    <div>
+                      <Label
+                        htmlFor="modal-contactEmail"
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        E-Mail
+                      </Label>
+                      <Input
+                        id="modal-contactEmail"
+                        type="email"
+                        value={modalFormData.contactEmail}
+                        onChange={e =>
+                          setModalFormData(prev => ({ ...prev, contactEmail: e.target.value }))
+                        }
+                        placeholder="info@mustermann.de"
+                        className="rounded-xl mt-1"
+                      />
+                    </div>
+                  </ModalCardSection>
+                )}
+
+                {/* Aktionen */}
+                <ModalCardActions>
+                  <Button
+                    className="bg-[#14ad9f] hover:bg-[#129488] rounded-full py-3"
+                    onClick={handleSaveEInvoiceData}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    )}
+                    Speichern und E-Rechnung aktivieren
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="rounded-full py-3"
+                    onClick={() => setShowEInvoiceModal(false)}
+                    disabled={isSubmitting}
+                  >
+                    Abbrechen
+                  </Button>
+                </ModalCardActions>
+              </ModalCardContent>
+            </ModalCard>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

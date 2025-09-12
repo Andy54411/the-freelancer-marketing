@@ -53,6 +53,37 @@ export default function InvoiceDetailPage() {
     }
   };
 
+  // Berechne korrekte Summen basierend auf Items
+  const calculateInvoiceTotals = (invoice: InvoiceData) => {
+    if (!invoice.items || invoice.items.length === 0) {
+      return {
+        subtotal: invoice.amount || 0,
+        taxAmount: invoice.tax || 0,
+        total: invoice.total || invoice.amount || 0,
+      };
+    }
+
+    // Berechne Zwischensumme aus Items
+    const subtotal = invoice.items.reduce((sum, item) => sum + (item.total || 0), 0);
+
+    // Berechne Steuer
+    const vatRate = invoice.vatRate || 19;
+    const taxAmount = invoice.isSmallBusiness ? 0 : (subtotal * vatRate) / 100;
+
+    // Gesamtsumme
+    const total = subtotal + taxAmount;
+
+    return {
+      subtotal: subtotal,
+      taxAmount: taxAmount,
+      total: total,
+    };
+  };
+
+  const invoiceTotals = invoice
+    ? calculateInvoiceTotals(invoice)
+    : { subtotal: 0, taxAmount: 0, total: 0 };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('de-DE', {
       style: 'currency',
@@ -296,202 +327,364 @@ export default function InvoiceDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Header */}
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={handleBackToInvoices}
-          className="mb-4 text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück zu Rechnungen
-        </Button>
-
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {invoice.status === 'draft'
-                ? 'Rechnungsentwurf'
-                : `Rechnung ${invoice.invoiceNumber || invoice.number || invoice.sequentialNumber}`}
-            </h1>
-            <div className="flex items-center gap-4">
-              {getStatusBadge(invoice.status)}
-              <span className="text-gray-600">
-                Erstellt am {new Date(invoice.date).toLocaleDateString('de-DE')}
-              </span>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            {invoice.status === 'draft' && (
-              <>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto">
+        {/* Top Navigation Bar */}
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
                 <Button
-                  variant="outline"
-                  onClick={handleEditInvoice}
-                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+                  variant="ghost"
+                  onClick={handleBackToInvoices}
+                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-2"
                 >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Bearbeiten
+                  <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <Button
-                  onClick={handleFinalizeInvoice}
-                  disabled={updating}
-                  className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  {updating ? 'Finalisiere...' : 'Finalisieren'}
-                </Button>
-              </>
-            )}
-
-            {(invoice.status === 'finalized' || invoice.status === 'sent') && (
-              <Button
-                variant="outline"
-                className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                onClick={() => setSendDialogOpen(true)}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {invoice.status === 'sent' ? 'Erneut senden' : 'Senden'}
-              </Button>
-            )}
-
-            <Button
-              variant="outline"
-              onClick={handleDownloadPdf}
-              disabled={downloadingPdf}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              {downloadingPdf ? 'Erstelle PDF...' : 'PDF'}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Invoice Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Invoice Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Customer Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Kunde</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="font-medium text-lg">{invoice.customerName}</div>
-                <div className="text-gray-600">{invoice.customerEmail}</div>
-                <div className="text-gray-600 whitespace-pre-line">{invoice.customerAddress}</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Invoice Items */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Rechnungspositionen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {invoice.items?.map((item, index) => (
-                  <div
-                    key={index}
-                    className="grid grid-cols-12 gap-4 py-3 border-b last:border-b-0"
-                  >
-                    <div className="col-span-6">
-                      <div className="font-medium">{item.description}</div>
-                    </div>
-                    <div className="col-span-2 text-center">{item.quantity}</div>
-                    <div className="col-span-2 text-right">{formatCurrency(item.unitPrice)}</div>
-                    <div className="col-span-2 text-right font-medium">
-                      {formatCurrency(item.total)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Notes */}
-          {invoice.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Anmerkungen</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 whitespace-pre-line">{invoice.notes}</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Right Column: Summary & Dates */}
-        <div className="space-y-6">
-          {/* Financial Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Zusammenfassung</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Zwischensumme:</span>
-                <span>{formatCurrency(invoice.amount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">MwSt.:</span>
-                <span>{formatCurrency(invoice.tax)}</span>
-              </div>
-              <div className="border-t pt-3 flex justify-between font-bold text-lg">
-                <span>Gesamtbetrag:</span>
-                <span className="text-[#14ad9f]">{formatCurrency(invoice.total)}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Important Dates */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Termine</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Rechnungsdatum:</span>
-                <span>{new Date(invoice.date).toLocaleDateString('de-DE')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Fälligkeitsdatum:</span>
-                <span
-                  className={
-                    new Date(invoice.dueDate) < new Date() ? 'text-red-600 font-medium' : ''
-                  }
-                >
-                  {new Date(invoice.dueDate).toLocaleDateString('de-DE')}
-                </span>
-              </div>
-              {invoice.status === 'draft' && (
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ Diese Rechnung ist noch ein Entwurf. Finalisieren Sie sie, um eine offizielle
-                    Rechnungsnummer zu erhalten.
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {invoice.status === 'draft'
+                      ? 'Rechnungsentwurf'
+                      : `Rechnung ${invoice.invoiceNumber || invoice.number || `#${invoice.sequentialNumber || 'TEMP'}`}`}
+                  </h1>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {invoice.customerName && `${invoice.customerName} • `}
+                    {formatCurrency(invoiceTotals.total)}
                   </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              </div>
 
-      {/* Send Invoice Dialog */}
-      {invoice && (
-        <SendInvoiceDialog
-          isOpen={sendDialogOpen}
-          onClose={() => setSendDialogOpen(false)}
-          invoice={invoice}
-          companyName={invoice.companyName || 'Ihr Unternehmen'}
-        />
-      )}
+              <div className="flex items-center space-x-3">
+                {getStatusBadge(invoice.status)}
+
+                {invoice.status === 'draft' && (
+                  <Button
+                    onClick={handleFinalizeInvoice}
+                    disabled={updating}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white px-4 py-2"
+                  >
+                    {updating ? 'Finalisiere...' : 'Finalisieren'}
+                  </Button>
+                )}
+
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadPdf}
+                  disabled={downloadingPdf}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {downloadingPdf ? 'PDF...' : 'PDF'}
+                </Button>
+
+                {invoice.status !== 'draft' && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setSendDialogOpen(true)}
+                    className="border-blue-500 text-blue-600 hover:bg-blue-50 px-4 py-2"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Senden
+                  </Button>
+                )}
+
+                {invoice.status === 'draft' && (
+                  <Button
+                    variant="outline"
+                    onClick={handleEditInvoice}
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Bearbeiten
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="p-6">
+          <div className="grid grid-cols-12 gap-6">
+            {/* Left Content - Invoice Details */}
+            <div className="col-span-12 lg:col-span-8">
+              {/* Invoice Header Info */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        Rechnungsnummer
+                      </h3>
+                      <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                        {invoice.invoiceNumber ||
+                          invoice.number ||
+                          `#${invoice.sequentialNumber || 'TEMP'}`}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        Rechnungsdatum
+                      </h3>
+                      <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+                        {new Date(invoice.issueDate || invoice.date).toLocaleDateString('de-DE')}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        Fälligkeitsdatum
+                      </h3>
+                      <p
+                        className={`mt-1 text-lg font-semibold ${
+                          new Date(invoice.dueDate) < new Date()
+                            ? 'text-red-600'
+                            : 'text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {new Date(invoice.dueDate).toLocaleDateString('de-DE')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Customer Information */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Kunde</h2>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                        Name
+                      </h3>
+                      <p className="text-gray-900 dark:text-white font-medium">
+                        {invoice.customerName || 'Nicht angegeben'}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                        E-Mail
+                      </h3>
+                      <p className="text-gray-900 dark:text-white">
+                        {invoice.customerEmail || 'Nicht angegeben'}
+                      </p>
+                    </div>
+                    {invoice.customerAddress && (
+                      <div className="md:col-span-2">
+                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                          Adresse
+                        </h3>
+                        <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                          {invoice.customerAddress}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Invoice Items Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Positionen
+                  </h2>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-700">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Beschreibung
+                        </th>
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Menge
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Einzelpreis
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Gesamtpreis
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                      {invoice.items?.map((item, index) => (
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {item.description}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center text-sm text-gray-900 dark:text-white">
+                            {item.quantity}
+                          </td>
+                          <td className="px-6 py-4 text-right text-sm text-gray-900 dark:text-white">
+                            {formatCurrency(item.unitPrice)}
+                          </td>
+                          <td className="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">
+                            {formatCurrency(item.total)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {invoice.notes && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mt-6">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Anmerkungen
+                    </h2>
+                  </div>
+                  <div className="p-6">
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">
+                      {invoice.notes}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right Sidebar */}
+            <div className="col-span-12 lg:col-span-4">
+              {/* Financial Summary */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-6">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Summen</h2>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Zwischensumme
+                      </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {formatCurrency(invoiceTotals.subtotal)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {invoice.isSmallBusiness
+                          ? 'MwSt. (Kleinunternehmer)'
+                          : `MwSt. (${invoice.vatRate || '19'}%)`}
+                      </span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {invoice.isSmallBusiness
+                          ? 'keine MwSt.'
+                          : formatCurrency(invoiceTotals.taxAmount)}
+                      </span>
+                    </div>
+                    <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-base font-semibold text-gray-900 dark:text-white">
+                          Gesamtbetrag
+                        </span>
+                        <span className="text-xl font-bold text-[#14ad9f]">
+                          {formatCurrency(invoiceTotals.total)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status & Alerts */}
+              {invoice.status === 'draft' && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <FileText className="h-5 w-5 text-amber-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                        Entwurf
+                      </h3>
+                      <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                        Diese Rechnung ist noch ein Entwurf. Finalisieren Sie sie, um eine
+                        offizielle Rechnungsnummer zu erhalten.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {new Date(invoice.dueDate) < new Date() && invoice.status !== 'paid' && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <X className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                        Überfällig
+                      </h3>
+                      <p className="mt-1 text-sm text-red-700 dark:text-red-300">
+                        Fällig seit {new Date(invoice.dueDate).toLocaleDateString('de-DE')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Quick Actions */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Aktionen</h2>
+                </div>
+                <div className="p-6 space-y-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadPdf}
+                    disabled={downloadingPdf}
+                    className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                  >
+                    <Download className="h-4 w-4 mr-3" />
+                    {downloadingPdf ? 'PDF wird erstellt...' : 'PDF herunterladen'}
+                  </Button>
+
+                  {invoice.status !== 'draft' && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setSendDialogOpen(true)}
+                      className="w-full justify-start border-blue-300 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Send className="h-4 w-4 mr-3" />
+                      Per E-Mail senden
+                    </Button>
+                  )}
+
+                  {invoice.status === 'draft' && (
+                    <Button
+                      variant="outline"
+                      onClick={handleEditInvoice}
+                      className="w-full justify-start border-gray-300 hover:bg-gray-50"
+                    >
+                      <Edit className="h-4 w-4 mr-3" />
+                      Bearbeiten
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Send Invoice Dialog */}
+        {invoice && (
+          <SendInvoiceDialog
+            isOpen={sendDialogOpen}
+            onClose={() => setSendDialogOpen(false)}
+            invoice={invoice}
+            companyName={invoice.companyName || 'Ihr Unternehmen'}
+          />
+        )}
+      </div>
     </div>
   );
 }

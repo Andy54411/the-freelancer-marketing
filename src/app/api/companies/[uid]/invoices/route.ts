@@ -101,6 +101,59 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Get Firebase DB dynamically
     const db = await getFirebaseDb();
 
+    // 🧾 KRITISCH: Automatische fortlaufende Rechnungsnummer generieren
+    let finalInvoiceNumber = body.invoiceNumber || '';
+    let sequentialNumber = 1;
+
+    if (!finalInvoiceNumber) {
+      // 1. Lade Company-Einstellungen für lastInvoiceNumber
+      try {
+        const companyDoc = await db.collection('companies').doc(uid).get();
+        const companyData = companyDoc.data();
+        const lastInvoiceNumber = companyData?.step3?.lastInvoiceNumber;
+
+        // 2. Ermittle nächste Nummer basierend auf lastInvoiceNumber
+        const currentYear = new Date().getFullYear();
+
+        if (lastInvoiceNumber) {
+          // Extrahiere Nummer aus Format R-2024-123 oder 2024-123
+          const match = lastInvoiceNumber.match(/(\d+)$/);
+          if (match) {
+            sequentialNumber = parseInt(match[1]) + 1;
+          }
+        }
+
+        // 3. Prüfe, ob diese Nummer bereits existiert (Safety Check)
+        let numberExists = true;
+        while (numberExists) {
+          const testNumber = `R-${currentYear}-${sequentialNumber.toString().padStart(3, '0')}`;
+          const existingInvoice = await db
+            .collection('invoices')
+            .where('companyId', '==', uid)
+            .where('invoiceNumber', '==', testNumber)
+            .limit(1)
+            .get();
+
+          if (existingInvoice.empty) {
+            numberExists = false;
+            finalInvoiceNumber = testNumber;
+          } else {
+            sequentialNumber++;
+          }
+        }
+
+        // 4. Update Company lastInvoiceNumber
+        await db.collection('companies').doc(uid).update({
+          'step3.lastInvoiceNumber': finalInvoiceNumber,
+        });
+      } catch (error) {
+        console.error('Fehler bei Rechnungsnummer-Generierung:', error);
+        // Fallback: Zeitstempel-basierte Nummer
+        const fallbackNumber = Date.now() % 10000;
+        finalInvoiceNumber = `R-${new Date().getFullYear()}-${fallbackNumber.toString().padStart(3, '0')}`;
+      }
+    }
+
     // Berechne Totalsumme
     const subtotal =
       body.items?.reduce((sum: number, item: any) => sum + (item.total || 0), 0) || 0;
@@ -111,7 +164,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Erstelle neue Rechnung
     const newInvoice = {
       companyId: uid,
-      invoiceNumber: body.invoiceNumber || '',
+      invoiceNumber: finalInvoiceNumber,
+      sequentialNumber: sequentialNumber,
       customerName: body.customerName || '',
       customerEmail: body.customerEmail || '',
       customerAddress: body.customerAddress || '',
