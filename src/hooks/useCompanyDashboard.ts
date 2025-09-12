@@ -28,6 +28,24 @@ export function useCompanyDashboard() {
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [userData, setUserData] = useState<RawFirestoreUserData | null>(null);
   const tableData = useMemo(() => tableJsonData, []);
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean>(false);
+  const [completionPercentage, setCompletionPercentage] = useState<number>(0);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+
+  // Hilfsfunktion: Leite nächsten Onboarding-Schritt aus fehlenden Bereichen ab
+  const deriveCurrentStep = (missing: string[]): number => {
+    // Reihenfolge der Priorität: Allgemeine Firmendaten (1) → Buchhaltung & Steuer (2) → Logo/Identität (3) → Bankverbindung (4) → Abschluss (5)
+    if (missing.includes('Allgemeine Firmendaten')) return 1;
+    if (missing.includes('Buchhaltung & Steuer')) return 2;
+    if (
+      missing.includes('Logo') ||
+      missing.includes('Ausweis Vorderseite') ||
+      missing.includes('Ausweis Rückseite')
+    )
+      return 3;
+    if (missing.includes('Bankverbindung')) return 4;
+    return 5;
+  };
 
   useEffect(() => {
     // Nichts tun, solange der zentrale Auth-Status noch nicht geklärt ist.
@@ -104,6 +122,13 @@ export function useCompanyDashboard() {
         if (!isNonEmptyString(identityBack)) missing.push('Ausweis Rückseite');
 
         setMissingFields(missing);
+        // Zentralen Onboarding-Status ableiten
+        const totalAreas = 6; // Anzahl der betrachteten Bereiche
+        const completed = Math.max(0, totalAreas - missing.length);
+        const percent = Math.round((completed / totalAreas) * 100);
+        setNeedsOnboarding(missing.length > 0);
+        setCompletionPercentage(percent);
+        setCurrentStep(deriveCurrentStep(missing));
         if (missing.length > 0) {
           setShowPopup(true);
           setView('settings');
@@ -129,5 +154,8 @@ export function useCompanyDashboard() {
     missingFields,
     userData,
     tableData,
+    needsOnboarding,
+    completionPercentage,
+    currentStep,
   };
 }

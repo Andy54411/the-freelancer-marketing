@@ -113,6 +113,18 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Den Hook verwenden, um Unternehmensdaten und -zustand abzurufen
   const { isChecking, isAuthorized, userData, view, setView } = useCompanyDashboard();
 
+  // Zentrale Weiterleitung: Ist die Prüfung abgeschlossen und der Nutzer nicht autorisiert,
+  // leite auf die Login-Seite weiter und bewahre den Rückkehrpfad.
+  useEffect(() => {
+    if (!isChecking && !isAuthorized) {
+      const currentPath =
+        typeof window !== 'undefined'
+          ? `${window.location.pathname}${window.location.search}`
+          : pathname || '';
+      router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+    }
+  }, [isChecking, isAuthorized, router, pathname]);
+
   // Bestimme den aktuellen Pfad für die Navigation
   const getCurrentView = useCallback(() => {
     if (pathname?.includes('/banking')) return 'banking';
@@ -229,6 +241,16 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
       <div className="flex justify-center items-center min-h-screen">
         <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
         Lade Dashboard...
+      </div>
+    );
+  }
+
+  // Nicht autorisiert: zeige kurzen Redirect-Hinweis (die useEffect oben führt die Weiterleitung aus)
+  if (!isAuthorized) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <FiLoader className="animate-spin text-4xl text-[#14ad9f] mr-3" />
+        Weiterleitung zum Login...
       </div>
     );
   }

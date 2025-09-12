@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// Tabs entfernt: Übersicht-Tab wird nicht mehr benötigt
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,6 @@ interface QuoteComponentProps {
 export function QuoteComponent({ companyId }: QuoteComponentProps) {
   const [quotes, setQuotes] = useState<QuoteType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   const [selectedQuote, setSelectedQuote] = useState<QuoteType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState({
@@ -70,7 +69,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
         setLoading(true);
         const quotesData = await QuoteService.getQuotes(companyId);
         const statsData = await QuoteService.getQuoteStatistics(companyId);
-        
+
         setQuotes(quotesData);
         setStats(statsData);
       } catch (error) {
@@ -84,7 +83,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
     loadQuotes();
 
     // Real-time Updates
-    const unsubscribe = QuoteService.subscribeToQuotes(companyId, (quotesData) => {
+    const unsubscribe = QuoteService.subscribeToQuotes(companyId, quotesData => {
       setQuotes(quotesData);
     });
 
@@ -169,7 +168,9 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
           <p className="text-gray-600 mt-1">Professionelle Angebote erstellen und verwalten</p>
         </div>
         <Button
-          onClick={() => window.location.href = `/dashboard/company/${companyId}/finance/quotes/create`}
+          onClick={() =>
+            (window.location.href = `/dashboard/company/${companyId}/finance/quotes/create`)
+          }
           className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -177,197 +178,191 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger value="overview">Übersicht</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <FileText className="h-8 w-8 text-[#14ad9f]" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Gesamt</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Send className="h-8 w-8 text-blue-500" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Versendet</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.sent}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Check className="h-8 w-8 text-green-500" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Angenommen</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.accepted}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <X className="h-8 w-8 text-red-500" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Abgelehnt</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.rejected}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search */}
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Angebote suchen..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          {/* Quotes List */}
+      <div className="space-y-4">
+        {/* Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Angebote</CardTitle>
-              <CardDescription>Alle erstellten Angebote im Überblick</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredQuotes.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {searchTerm ? 'Keine Angebote gefunden' : 'Keine Angebote vorhanden'}
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    {searchTerm
-                      ? 'Versuchen Sie andere Suchbegriffe'
-                      : 'Erstellen Sie Ihr erstes professionelles Angebot'}
-                  </p>
-                  {!searchTerm && (
-                    <Button
-                      onClick={() => window.location.href = `/dashboard/company/${companyId}/finance/quotes/create`}
-                      className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-                    >
-                      Erstes Angebot erstellen
-                    </Button>
-                  )}
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <FileText className="h-8 w-8 text-[#14ad9f]" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Gesamt</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredQuotes.map(quote => (
-                    <div
-                      key={quote.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="flex-shrink-0">
-                          <FileText className="h-8 w-8 text-[#14ad9f]" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{quote.number}</h4>
-                          <p className="text-sm text-gray-600">{quote.customerName}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            {getStatusBadge(quote.status)}
-                            <span className="text-xs text-gray-500">
-                              Gültig bis: {new Date(quote.validUntil).toLocaleDateString('de-DE')}
-                            </span>
-                          </div>
-                        </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <Send className="h-8 w-8 text-blue-500" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Versendet</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.sent}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <Check className="h-8 w-8 text-green-500" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Angenommen</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.accepted}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center">
+                <X className="h-8 w-8 text-red-500" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Abgelehnt</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.rejected}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center space-x-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Angebote suchen..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        {/* Quotes List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Angebote</CardTitle>
+            <CardDescription>Alle erstellten Angebote im Überblick</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {filteredQuotes.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {searchTerm ? 'Keine Angebote gefunden' : 'Keine Angebote vorhanden'}
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  {searchTerm
+                    ? 'Versuchen Sie andere Suchbegriffe'
+                    : 'Erstellen Sie Ihr erstes professionelles Angebot'}
+                </p>
+                {!searchTerm && (
+                  <Button
+                    onClick={() =>
+                      (window.location.href = `/dashboard/company/${companyId}/finance/quotes/create`)
+                    }
+                    className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
+                  >
+                    Erstes Angebot erstellen
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredQuotes.map(quote => (
+                  <div
+                    key={quote.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <FileText className="h-8 w-8 text-[#14ad9f]" />
                       </div>
-
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <p className="font-medium text-gray-900">{formatCurrency(quote.total)}</p>
-                          <p className="text-sm text-gray-600">
-                            {new Date(quote.date).toLocaleDateString('de-DE')}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewQuote(quote)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Ansehen
-                          </Button>
-
-                          {quote.status === 'draft' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleSendQuote(quote)}
-                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                            >
-                              <Send className="h-4 w-4 mr-1" />
-                              Versenden
-                            </Button>
-                          )}
-
-                          {quote.status === 'accepted' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleConvertToInvoice(quote)}
-                              className="text-green-600 border-green-200 hover:bg-green-50"
-                            >
-                              <FileText className="h-4 w-4 mr-1" />
-                              In Rechnung
-                            </Button>
-                          )}
-
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => window.location.href = `/dashboard/company/${companyId}/finance/quotes/${quote.id}/edit`}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Bearbeiten
-                          </Button>
-
-                          {quote.status === 'draft' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteQuote(quote)}
-                              className="text-red-600 border-red-200 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                      <div>
+                        <h4 className="font-medium text-gray-900">{quote.number}</h4>
+                        <p className="text-sm text-gray-600">{quote.customerName}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          {getStatusBadge(quote.status)}
+                          <span className="text-xs text-gray-500">
+                            Gültig bis: {new Date(quote.validUntil).toLocaleDateString('de-DE')}
+                          </span>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">{formatCurrency(quote.total)}</p>
+                        <p className="text-sm text-gray-600">
+                          {new Date(quote.date).toLocaleDateString('de-DE')}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleViewQuote(quote)}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ansehen
+                        </Button>
+
+                        {quote.status === 'draft' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSendQuote(quote)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            <Send className="h-4 w-4 mr-1" />
+                            Versenden
+                          </Button>
+                        )}
+
+                        {quote.status === 'accepted' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleConvertToInvoice(quote)}
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            In Rechnung
+                          </Button>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            (window.location.href = `/dashboard/company/${companyId}/finance/quotes/${quote.id}/edit`)
+                          }
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Bearbeiten
+                        </Button>
+
+                        {quote.status === 'draft' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteQuote(quote)}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
