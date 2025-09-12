@@ -127,7 +127,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       taxNote: body.taxNote || 'none',
       notes: body.notes || '',
       template: body.template || 'german-standard',
-      status: 'draft',
+      status: body.status || 'draft', // Fixed: Use status from request body
       pdfUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
