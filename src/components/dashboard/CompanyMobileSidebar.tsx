@@ -23,6 +23,9 @@ import {
   Building2 as FiBuilding2,
   Folder as FiFolder,
   FileText as FiFileText,
+  Users as FiUsers,
+  FolderTree as FiFolderTree,
+  Boxes as FiBoxes,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -83,6 +86,34 @@ const navigationItems: NavigationItem[] = [
     subItems: [{ label: 'Eingehend', value: 'quotes-incoming', href: 'quotes/incoming' }],
   },
   {
+    label: 'Rechnungen',
+    icon: FiFileText,
+    value: 'invoices',
+    subItems: [
+      { label: 'Alle Rechnungen', value: 'invoices-overview', href: 'finance/invoices' },
+      { label: 'Kassenbuch', value: 'invoices-other-income', href: 'finance/cashbook' },
+      { label: 'E-Rechnungen', value: 'invoices-einvoices', href: 'finance/einvoices' },
+      { label: 'Lieferscheine', value: 'invoices-delivery-notes', href: 'finance/delivery-notes' },
+      { label: 'Ausgaben', value: 'invoices-expenses', href: 'finance/expenses' },
+      { label: 'Wiederkehrend', value: 'invoices-recurring', href: 'finance/invoices/recurring' },
+      { label: 'Rechnung erstellen', value: 'invoices-create', href: 'finance/invoices/create' },
+      { label: 'Mahnungen', value: 'invoices-reminders', href: 'finance/reminders' },
+      { label: 'Gutschriften', value: 'invoices-credits', href: 'finance/credits' },
+    ],
+  },
+  {
+    label: 'Kunden',
+    icon: FiUsers,
+    value: 'customers',
+    href: 'finance/customers',
+  },
+  {
+    label: 'Lieferanten',
+    icon: FiFolder,
+    value: 'suppliers',
+    href: 'finance/suppliers',
+  },
+  {
     label: 'Posteingang',
     icon: FiMail,
     value: 'inbox',
@@ -95,103 +126,23 @@ const navigationItems: NavigationItem[] = [
     href: 'calendar',
   },
   {
-    label: 'Banking',
-    icon: FiBanknote,
-    value: 'banking',
-    subItems: [
-      { label: 'Übersicht', value: 'banking-overview', href: 'banking' },
-      { label: 'Bank verbinden', value: 'banking-connect', href: 'banking/connect' },
-      { label: 'Konten', value: 'banking-accounts', href: 'banking/accounts' },
-      { label: 'Transaktionen', value: 'banking-transactions', href: 'banking/transactions' },
-      { label: 'Import & Sync', value: 'banking-import', href: 'banking/import' },
-      { label: 'Abgleich', value: 'banking-reconciliation', href: 'banking/reconciliation' },
-    ],
-  },
-  {
     label: 'Finanzen',
     icon: FiDollarSign,
     value: 'finance',
     subItems: [
-      {
-        label: 'Dashboard',
-        value: 'finance-overview',
-        href: 'finance',
-      },
-      {
-        label: 'Rechnungen',
-        value: 'finance-invoices',
-        href: 'finance/invoices',
-      },
-      {
-        label: 'E-Rechnungen',
-        value: 'finance-einvoices',
-        href: 'finance/einvoices',
-      },
-      {
-        label: 'Lieferscheine',
-        value: 'finance-delivery-notes',
-        href: 'finance/delivery-notes',
-      },
-      {
-        label: 'Angebote',
-        value: 'finance-quotes',
-        href: 'finance/quotes',
-      },
-      {
-        label: 'Gutschriften',
-        value: 'finance-credits',
-        href: 'finance/credits',
-      },
-      {
-        label: 'Mahnungen',
-        value: 'finance-reminders',
-        href: 'finance/reminders',
-      },
-      {
-        label: 'Kunden & CRM',
-        value: 'finance-customers',
-        href: 'finance/customers',
-      },
-      {
-        label: 'Ausgaben',
-        value: 'finance-expenses',
-        href: 'finance/expenses',
-      },
-      {
-        label: 'Zahlungen',
-        value: 'finance-payments',
-        href: 'finance/payments',
-      },
-      {
-        label: 'Zeiterfassung',
-        value: 'finance-time-tracking',
-        href: 'finance/time-tracking',
-      },
-      {
-        label: 'Projekte',
-        value: 'finance-projects',
-        href: 'finance/projects',
-      },
-      {
-        label: 'Steuern & Berichte',
-        value: 'finance-taxes',
-        href: 'finance/taxes',
-      },
-      {
-        label: 'Lagerbestand',
-        value: 'finance-inventory',
-        href: 'finance/inventory',
-      },
-      {
-        label: 'Kassenbuch',
-        value: 'finance-cashbook',
-        href: 'finance/cashbook',
-      },
-      {
-        label: 'Auswertungen',
-        value: 'finance-reports',
-        href: 'finance/reports',
-      },
+      { label: 'Dashboard', value: 'finance-overview', href: 'finance' },
+      { label: 'Angebote', value: 'finance-quotes', href: 'finance/quotes' },
+      { label: 'Steuern & Berichte', value: 'finance-taxes', href: 'finance/taxes' },
+      { label: 'Lagerbestand', value: 'finance-inventory', href: 'finance/inventory' },
+      { label: 'Auswertungen', value: 'finance-reports', href: 'finance/reports' },
+    ],
+  },
+  {
+    label: 'Projekte',
+    icon: FiFolderTree,
+    value: 'projects',
+    subItems: [
+      { label: 'Zeiterfassung', value: 'projects-time-tracking', href: 'finance/time-tracking' },
     ],
   },
   {
@@ -219,6 +170,7 @@ const navigationItems: NavigationItem[] = [
         value: 'banking-transactions',
         href: 'banking/transactions',
       },
+      { label: 'Zahlungen', value: 'banking-payments', href: 'finance/payments' },
       {
         label: 'Import & Sync',
         value: 'banking-import',
@@ -241,28 +193,10 @@ const navigationItems: NavigationItem[] = [
     label: 'Steuerportal',
     icon: FiShield,
     value: 'steuerportal',
-    href: 'steuerportal',
-  },
-  {
-    label: 'DATEV Integration',
-    icon: FiDollarSign,
-    value: 'datev-overview',
     subItems: [
-      {
-        label: 'Dashboard',
-        value: 'datev-main',
-        href: 'datev',
-      },
-      {
-        label: 'Übersicht',
-        value: 'datev-overview',
-        href: 'datev/overview',
-      },
-      {
-        label: 'Einrichtung',
-        value: 'datev-setup',
-        href: 'datev/setup',
-      },
+      { label: 'Steuern', value: 'steuerportal-taxes', href: 'finance/taxes' },
+      { label: 'Auswertung', value: 'steuerportal-reports', href: 'finance/reports' },
+      { label: 'DATEV', value: 'steuerportal-datev', href: 'datev' },
     ],
   },
   {
@@ -337,10 +271,49 @@ export default function CompanyMobileSidebar({
               const isMainActive = (() => {
                 // Spezifische Pfad-Matches für jeden Bereich
                 if (item.value === 'finance') {
-                  return pathname?.includes('/finance') || pathname?.includes('/payouts');
+                  return (
+                    (pathname?.includes('/finance') &&
+                      !pathname?.includes('/finance/invoices') &&
+                      !pathname?.includes('/finance/einvoices') &&
+                      !pathname?.includes('/finance/invoices/create') &&
+                      !pathname?.includes('/finance/reminders') &&
+                      !pathname?.includes('/finance/credits') &&
+                      !pathname?.includes('/finance/cashbook') &&
+                      !pathname?.includes('/finance/customers') &&
+                      !pathname?.includes('/finance/suppliers') &&
+                      !pathname?.includes('/finance/payments') &&
+                      !pathname?.includes('/finance/time-tracking') &&
+                      !pathname?.includes('/finance/projects')) ||
+                    pathname?.includes('/payouts')
+                  );
+                }
+                if (item.value === 'invoices') {
+                  return (
+                    pathname?.includes('/finance/invoices') ||
+                    pathname?.includes('/finance/einvoices') ||
+                    pathname?.includes('/finance/invoices/create') ||
+                    pathname?.includes('/finance/reminders') ||
+                    pathname?.includes('/finance/credits') ||
+                    pathname?.includes('/finance/cashbook')
+                  );
+                }
+                if (item.value === 'customers') {
+                  return pathname?.includes('/finance/customers');
+                }
+                if (item.value === 'suppliers') {
+                  return pathname?.includes('/finance/suppliers');
                 }
                 if (item.value === 'orders') {
                   return pathname?.includes('/orders');
+                }
+                if (item.value === 'projects') {
+                  return (
+                    pathname?.includes('/finance/projects') ||
+                    pathname?.includes('/finance/time-tracking')
+                  );
+                }
+                if (item.value === 'banking') {
+                  return pathname?.includes('/banking') || pathname?.includes('/finance/payments');
                 }
                 if (item.value === 'inbox') {
                   return pathname?.includes('/inbox');
@@ -358,7 +331,12 @@ export default function CompanyMobileSidebar({
                   return pathname?.includes('/reviews');
                 }
                 if (item.value === 'steuerportal') {
-                  return pathname?.includes('/steuerportal');
+                  return (
+                    pathname?.includes('/steuerportal') ||
+                    pathname?.includes('/datev') ||
+                    pathname?.includes('/finance/taxes') ||
+                    pathname?.includes('/finance/reports')
+                  );
                 }
                 if (item.value === 'taskilo-advertising') {
                   return pathname?.includes('/taskilo-advertising');

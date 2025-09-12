@@ -25,6 +25,8 @@ import {
   CalendarDays as FiCalendarDays,
   FileText as FiFileText,
   Folder as FiFolder,
+  FolderTree as FiFolderTree,
+  Boxes as FiBoxes,
   HelpCircle as FiHelpCircle,
 } from 'lucide-react';
 
@@ -77,7 +79,11 @@ const navigationItems: NavigationItem[] = [
       { label: 'Verfügbare Projekte', value: 'marketplace-projects', href: 'marketplace/projects' },
       { label: 'Meine Bewerbungen', value: 'marketplace-proposals', href: 'marketplace/proposals' },
       { label: 'Direkte Anfragen', value: 'marketplace-quotes', href: 'marketplace/quotes' },
-      { label: 'Kategorie-Anfragen', value: 'marketplace-project-quotes', href: 'marketplace/project-quotes' },
+      {
+        label: 'Kategorie-Anfragen',
+        value: 'marketplace-project-quotes',
+        href: 'marketplace/project-quotes',
+      },
     ],
   },
   {
@@ -105,6 +111,34 @@ const navigationItems: NavigationItem[] = [
     href: 'calendar',
   },
   {
+    label: 'Rechnungen',
+    icon: FiFileText,
+    value: 'invoices',
+    subItems: [
+      { label: 'Alle Rechnungen', value: 'invoices-overview', href: 'finance/invoices' },
+      { label: 'Kassenbuch', value: 'invoices-other-income', href: 'finance/cashbook' },
+      { label: 'E-Rechnungen', value: 'invoices-einvoices', href: 'finance/einvoices' },
+      { label: 'Lieferscheine', value: 'invoices-delivery-notes', href: 'finance/delivery-notes' },
+      { label: 'Ausgaben', value: 'invoices-expenses', href: 'finance/expenses' },
+      { label: 'Wiederkehrend', value: 'invoices-recurring', href: 'finance/invoices/recurring' },
+      { label: 'Rechnung erstellen', value: 'invoices-create', href: 'finance/invoices/create' },
+      { label: 'Mahnungen', value: 'invoices-reminders', href: 'finance/reminders' },
+      { label: 'Gutschriften', value: 'invoices-credits', href: 'finance/credits' },
+    ],
+  },
+  {
+    label: 'Kunden',
+    icon: FiUsers,
+    value: 'customers',
+    href: 'finance/customers',
+  },
+  {
+    label: 'Lieferanten',
+    icon: FiFolder,
+    value: 'suppliers',
+    href: 'finance/suppliers',
+  },
+  {
     label: 'Banking',
     icon: FiBanknote,
     value: 'banking',
@@ -112,32 +146,24 @@ const navigationItems: NavigationItem[] = [
       { label: 'Dashboard', value: 'banking-overview', href: 'banking' },
       { label: 'Konten', value: 'banking-accounts', href: 'banking/accounts' },
       { label: 'Transaktionen', value: 'banking-transactions', href: 'banking/transactions' },
+      { label: 'Zahlungen', value: 'banking-payments', href: 'finance/payments' },
       { label: 'Import & Sync', value: 'banking-import', href: 'banking/import' },
       { label: 'Abgleich', value: 'banking-reconciliation', href: 'banking/reconciliation' },
     ],
   },
   {
-    label: 'Finanzen',
-    icon: FiDollarSign,
-    value: 'finance',
+    label: 'Projekte',
+    icon: FiFolderTree,
+    value: 'projects',
     subItems: [
-      { label: 'Dashboard', value: 'finance-overview', href: 'finance' },
-      { label: 'Rechnungen', value: 'finance-invoices', href: 'finance/invoices' },
-      { label: 'E-Rechnungen', value: 'finance-einvoices', href: 'finance/einvoices' },
-      { label: 'Lieferscheine', value: 'finance-delivery-notes', href: 'finance/delivery-notes' },
-      { label: 'Gutschriften', value: 'finance-credits', href: 'finance/credits' },
-      { label: 'Mahnungen', value: 'finance-reminders', href: 'finance/reminders' },
-      { label: 'Kunden', value: 'finance-customers', href: 'finance/customers' },
-      { label: 'Lieferanten', value: 'finance-suppliers', href: 'finance/suppliers' },
-      { label: 'Ausgaben', value: 'finance-expenses', href: 'finance/expenses' },
-      { label: 'Zahlungen', value: 'finance-payments', href: 'finance/payments' },
-      { label: 'Zeiterfassung', value: 'finance-time-tracking', href: 'finance/time-tracking' },
-      { label: 'Projekte', value: 'finance-projects', href: 'finance/projects' },
-      { label: 'Steuern', value: 'finance-taxes', href: 'finance/taxes' },
-      { label: 'Lagerbestand', value: 'finance-inventory', href: 'finance/inventory' },
-      { label: 'Kassenbuch', value: 'finance-cashbook', href: 'finance/cashbook' },
-      { label: 'Auswertungen', value: 'finance-reports', href: 'finance/reports' },
+      { label: 'Zeiterfassung', value: 'projects-time-tracking', href: 'finance/time-tracking' },
     ],
+  },
+  {
+    label: 'Lagerbestand',
+    icon: FiBoxes,
+    value: 'inventory',
+    href: 'finance/inventory',
   },
   {
     label: 'Personal',
@@ -178,20 +204,14 @@ const navigationItems: NavigationItem[] = [
     href: 'taskilo-advertising',
   },
   {
-    label: 'DATEV',
-    icon: FiDollarSign,
-    value: 'datev-overview',
-    subItems: [
-      { label: 'Dashboard', value: 'datev-main', href: 'datev' },
-      { label: 'Übersicht', value: 'datev-overview', href: 'datev/overview' },
-      { label: 'Setup', value: 'datev-setup', href: 'datev/setup' },
-    ],
-  },
-  {
     label: 'Steuerportal',
     icon: FiShield,
     value: 'steuerportal',
-    href: 'steuerportal',
+    subItems: [
+      { label: 'Steuern', value: 'steuerportal-taxes', href: 'finance/taxes' },
+      { label: 'Auswertung', value: 'steuerportal-reports', href: 'finance/reports' },
+      { label: 'DATEV', value: 'steuerportal-datev', href: 'datev' },
+    ],
   },
   {
     label: 'Bewertungen',
@@ -230,24 +250,61 @@ export default function CompanySidebar({
   const pathname = usePathname();
 
   const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
-
   const isItemActive = (item: NavigationItem) => {
     // Marketplace aktiv wenn Marketplace-Pfad
     if (item.value === 'marketplace') {
       return pathname?.includes('/marketplace');
     }
 
+    // Invoices aktiv, wenn /finance/invoices oder passende Unterrouten
+    if (item.value === 'invoices') {
+      return (
+        pathname?.includes('/finance/invoices') ||
+        pathname?.includes('/finance/invoices/create') ||
+        pathname?.includes('/finance/einvoices') ||
+        pathname?.includes('/finance/delivery-notes') ||
+        pathname?.includes('/finance/expenses') ||
+        pathname?.includes('/finance/reminders') ||
+        pathname?.includes('/finance/credits') ||
+        pathname?.includes('/finance/cashbook')
+      );
+    }
+
+    // Customers aktiv wenn Pfad /finance/customers
+    if (item.value === 'customers') {
+      return pathname?.includes('/finance/customers');
+    }
+    // Suppliers aktiv wenn Pfad /finance/suppliers
+    if (item.value === 'suppliers') {
+      return pathname?.includes('/finance/suppliers');
+    }
+
     // Finance aktiv nur wenn Finance ohne Banking und ohne Quotes und ohne Marketplace
     if (item.value === 'finance') {
-      return pathname?.includes('/finance') && 
-             !pathname?.includes('/banking') && 
-             !pathname?.includes('/marketplace') && 
-             !pathname?.includes('/quotes');
+      return (
+        pathname?.includes('/finance') &&
+        !pathname?.includes('/finance/invoices') &&
+        !pathname?.includes('/finance/einvoices') &&
+        !pathname?.includes('/finance/delivery-notes') &&
+        !pathname?.includes('/finance/expenses') &&
+        !pathname?.includes('/finance/reminders') &&
+        !pathname?.includes('/finance/credits') &&
+        !pathname?.includes('/finance/cashbook') &&
+        !pathname?.includes('/finance/customers') &&
+        !pathname?.includes('/finance/suppliers') &&
+        !pathname?.includes('/finance/payments') &&
+        !pathname?.includes('/finance/time-tracking') &&
+        !pathname?.includes('/finance/projects') &&
+        !pathname?.includes('/finance/inventory') &&
+        !pathname?.includes('/banking') &&
+        !pathname?.includes('/marketplace') &&
+        !pathname?.includes('/quotes')
+      );
     }
 
     // Banking aktiv wenn Banking-Pfad
     if (item.value === 'banking') {
-      return pathname?.includes('/banking');
+      return pathname?.includes('/banking') || pathname?.includes('/finance/payments');
     }
 
     // Quotes aktiv wenn Finance-Quotes-Pfad (aber nicht Marketplace-Quotes)
@@ -265,14 +322,31 @@ export default function CompanySidebar({
       return pathname?.includes('/personal');
     }
 
+    // Projekte aktiv wenn Projekte- oder Zeit-Erfassungs-Pfad
+    if (item.value === 'projects') {
+      return (
+        pathname?.includes('/finance/projects') || pathname?.includes('/finance/time-tracking')
+      );
+    }
+
+    // Lagerbestand aktiv wenn Pfad /finance/inventory
+    if (item.value === 'inventory') {
+      return pathname?.includes('/finance/inventory');
+    }
+
     // Taskilo Advertising aktiv wenn Taskilo Advertising-Pfad
     if (item.value === 'taskilo-advertising') {
       return pathname?.includes('/taskilo-advertising');
     }
 
-    // DATEV aktiv wenn DATEV-Pfad
-    if (item.value === 'datev-overview') {
-      return pathname?.includes('/datev');
+    // Steuerportal aktiv bei /steuerportal/*, /datev/* oder finance Steuern/Auswertung
+    if (item.value === 'steuerportal') {
+      return (
+        pathname?.includes('/steuerportal') ||
+        pathname?.includes('/datev') ||
+        pathname?.includes('/finance/taxes') ||
+        pathname?.includes('/finance/reports')
+      );
     }
 
     // Dashboard aktiv wenn Hauptseite oder keine anderen Pfade
@@ -307,7 +381,7 @@ export default function CompanySidebar({
 
   const isSubItemActive = (subItem: NavigationSubItem) => {
     if (!subItem.href || !pathname) return false;
-    
+
     // Spezielle Behandlung für Finance Dashboard - nur exakt /finance, nicht /finance/quotes
     if (subItem.href === 'finance') {
       const pathSegments = pathname.split('/');
@@ -318,7 +392,7 @@ export default function CompanySidebar({
       }
       return false;
     }
-    
+
     return pathname.includes(`/${subItem.href}`);
   };
 

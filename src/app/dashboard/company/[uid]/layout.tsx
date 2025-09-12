@@ -23,6 +23,9 @@ import {
   Banknote as FiBanknote,
   Users as FiUsers,
   HelpCircle as FiHelpCircle,
+  FileText as FiFileText,
+  Folder as FiFolder,
+  Shield as FiShield,
 } from 'lucide-react';
 
 const isNonEmptyString = (val: unknown): val is string =>
@@ -51,13 +54,40 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   useEffect(() => {
     if (
       pathname?.includes('/finance') &&
+      !pathname?.includes('/finance/einvoices') &&
+      !pathname?.includes('/finance/invoices') &&
+      !pathname?.includes('/finance/delivery-notes') &&
+      !pathname?.includes('/finance/expenses') &&
+      !pathname?.includes('/finance/payments') &&
       !pathname?.includes('/banking') &&
       !expandedItems.includes('finance')
     ) {
       setExpandedItems(prev => [...prev, 'finance']);
     }
-    if (pathname?.includes('/finance/banking') && !expandedItems.includes('banking')) {
+    if (
+      (pathname?.includes('/finance/invoices') ||
+        pathname?.includes('/finance/einvoices') ||
+        pathname?.includes('/finance/delivery-notes') ||
+        pathname?.includes('/finance/expenses') ||
+        pathname?.includes('/finance/invoices/create') ||
+        pathname?.includes('/finance/reminders') ||
+        pathname?.includes('/finance/credits') ||
+        pathname?.includes('/finance/cashbook')) &&
+      !expandedItems.includes('invoices')
+    ) {
+      setExpandedItems(prev => [...prev, 'invoices']);
+    }
+    if (
+      (pathname?.includes('/banking') || pathname?.includes('/finance/payments')) &&
+      !expandedItems.includes('banking')
+    ) {
       setExpandedItems(prev => [...prev, 'banking']);
+    }
+    if (
+      (pathname?.includes('/finance/projects') || pathname?.includes('/finance/time-tracking')) &&
+      !expandedItems.includes('projects')
+    ) {
+      setExpandedItems(prev => [...prev, 'projects']);
     }
     if (pathname?.includes('/personal') && !expandedItems.includes('personal')) {
       setExpandedItems(prev => [...prev, 'personal']);
@@ -68,6 +98,16 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     ) {
       setExpandedItems(prev => [...prev, 'taskilo-advertising']);
     }
+    // Steuerportal automatisch ausklappen bei /steuerportal/*, /datev/* oder finance Steuern/Auswertung
+    if (
+      (pathname?.includes('/steuerportal') ||
+        pathname?.includes('/datev') ||
+        pathname?.includes('/finance/taxes') ||
+        pathname?.includes('/finance/reports')) &&
+      !expandedItems.includes('steuerportal')
+    ) {
+      setExpandedItems(prev => [...prev, 'steuerportal']);
+    }
   }, [pathname, expandedItems]);
 
   // Den Hook verwenden, um Unternehmensdaten und -zustand abzurufen
@@ -76,8 +116,28 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
   // Bestimme den aktuellen Pfad für die Navigation
   const getCurrentView = useCallback(() => {
     if (pathname?.includes('/banking')) return 'banking';
+    if (
+      pathname?.includes('/finance/invoices') ||
+      pathname?.includes('/finance/einvoices') ||
+      pathname?.includes('/finance/delivery-notes') ||
+      pathname?.includes('/finance/expenses') ||
+      pathname?.includes('/finance/invoices/create') ||
+      pathname?.includes('/finance/reminders') ||
+      pathname?.includes('/finance/credits') ||
+      pathname?.includes('/finance/cashbook')
+    )
+      return 'invoices';
+    if (pathname?.includes('/finance/projects') || pathname?.includes('/finance/time-tracking'))
+      return 'projects';
     if (pathname?.includes('/finance')) return 'finance';
     if (pathname?.includes('/payouts')) return 'finance';
+    if (
+      pathname?.includes('/steuerportal') ||
+      pathname?.includes('/datev') ||
+      pathname?.includes('/finance/taxes') ||
+      pathname?.includes('/finance/reports')
+    )
+      return 'steuerportal';
     if (pathname?.includes('/orders')) return 'orders';
     if (pathname?.includes('/inbox')) return 'inbox';
     if (pathname?.includes('/profile')) return 'profile';
@@ -185,8 +245,12 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return FiCalendar;
       case 'banking':
         return FiBanknote;
+      case 'invoices':
+        return FiFileText;
       case 'finance':
         return FiDollarSign;
+      case 'projects':
+        return FiFolder;
       case 'reviews':
         return FiMessageSquare;
       case 'support':
@@ -197,6 +261,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return FiSettings;
       case 'taskilo-advertising':
         return FiUsers;
+      case 'steuerportal':
+        return FiShield;
       default:
         return FiGrid;
     }
@@ -213,8 +279,12 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return 'Kalender';
       case 'banking':
         return 'Banking';
+      case 'invoices':
+        return 'Rechnungen';
       case 'finance':
         return 'Finanzen';
+      case 'projects':
+        return 'Projekte';
       case 'reviews':
         return 'Bewertungen';
       case 'support':
@@ -225,6 +295,8 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
         return 'Einstellungen';
       case 'taskilo-advertising':
         return 'Taskilo Advertising';
+      case 'steuerportal':
+        return 'Steuerportal';
       default:
         return 'Übersicht';
     }
