@@ -200,7 +200,6 @@ export default function CategoryGrid() {
     const mapping = getTagMapping(tag);
 
     if (!mapping) {
-      console.warn(`Kein Mapping gefunden für Tag: ${tag}`);
       return;
     }
 

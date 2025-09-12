@@ -59,7 +59,6 @@ export class OrderNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Order Notifications');
         return;
       }
 

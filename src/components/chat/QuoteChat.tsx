@@ -97,7 +97,6 @@ export default function QuoteChat({
         }
       },
       error => {
-        console.error('❌ QuoteChat: Real-time listener error:', error);
         setIsConnected(false);
       }
     );
@@ -137,9 +136,7 @@ export default function QuoteChat({
       });
 
       await Promise.all(updatePromises);
-    } catch (error) {
-      console.error('❌ QuoteChat: Error marking messages as read:', error);
-    }
+    } catch (error) {}
   };
 
   // Nachricht senden - optimiert für Real-time
@@ -166,7 +163,6 @@ export default function QuoteChat({
 
       await addDoc(messagesRef, messageData);
     } catch (error) {
-      console.error('❌ QuoteChat: Error sending message:', error);
       // Nachricht wieder in Input setzen bei Fehler
       setNewMessage(messageText);
     } finally {

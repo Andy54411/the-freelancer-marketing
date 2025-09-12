@@ -72,7 +72,6 @@ export class QuoteNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Quote Notifications');
         return;
       }
 
@@ -182,7 +181,6 @@ export class QuoteNotificationService {
         return `/dashboard/user/${userId}/quotes/${linkType}/${quoteId}`;
       }
     } catch (error) {
-      console.error('Error determining smart link:', error);
       // Fallback auf user dashboard
       return `/dashboard/user/${userId}/quotes/${linkType}/${quoteId}`;
     }
@@ -205,7 +203,6 @@ export class QuoteNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Quote Notifications');
         return;
       }
 
@@ -263,7 +260,6 @@ export class QuoteNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Quote Notifications');
         return;
       }
 
@@ -346,7 +342,6 @@ export class QuoteNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Quote Notifications');
         return;
       }
 
@@ -392,7 +387,6 @@ export class QuoteNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Quote Notifications');
         return;
       }
 
@@ -446,7 +440,6 @@ export class QuoteNotificationService {
         db.collection('notifications').add(customerNotification),
       ]);
     } catch (error) {
-      console.error('Error creating contact exchange notifications:', error);
       throw error;
     }
   }

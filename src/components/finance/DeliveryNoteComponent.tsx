@@ -139,7 +139,6 @@ export function DeliveryNoteComponent({
         setShowTemplateSelect(true);
       }
     } catch (error) {
-      console.error('Fehler beim Laden des User Templates:', error);
       // Bei Fehler auch Template-Auswahl anzeigen
       setUserTemplate(null);
       setShowTemplateSelect(true);
@@ -167,7 +166,6 @@ export function DeliveryNoteComponent({
 
       toast.success(`Template &quot;${templateObject.name}&quot; ausgewählt und gespeichert`);
     } catch (error) {
-      console.error('Fehler beim Speichern des Templates:', error);
       toast.error('Fehler beim Speichern der Template-Auswahl');
     }
   };
@@ -239,7 +237,6 @@ export function DeliveryNoteComponent({
                 }
 
                 if (!inventoryItem) {
-                  console.warn(`⚠️ Item not found in inventory: ${item.description}`);
                   return {
                     item,
                     inventoryItem: null,
@@ -262,7 +259,6 @@ export function DeliveryNoteComponent({
                     : `Nicht genügend Bestand: ${available} verfügbar, ${item.quantity} benötigt`,
                 };
               } catch (itemError) {
-                console.warn(`⚠️ Could not check stock for item ${item.description}:`, itemError);
                 return {
                   item,
                   inventoryItem: null,
@@ -282,10 +278,6 @@ export function DeliveryNoteComponent({
             return;
           }
         } catch (inventoryError) {
-          console.warn(
-            '⚠️ Inventory integration failed, proceeding without stock check:',
-            inventoryError
-          );
           toast.warning(
             'Warnung: Lagerbestand konnte nicht geprüft werden. Lieferschein wird trotzdem erstellt.'
           );
@@ -336,13 +328,11 @@ export function DeliveryNoteComponent({
           if (stockResult.success) {
             toast.success('Lieferschein erfolgreich erstellt und Lagerbestand aktualisiert');
           } else {
-            console.warn('⚠️ Stock reduction failed:', stockResult.errors);
             toast.warning(
               `Lieferschein erstellt, aber Lagerbestand-Update fehlgeschlagen: ${stockResult.errors.join(', ')}`
             );
           }
         } catch (stockError) {
-          console.error('❌ Error reducing inventory stock:', stockError);
           toast.warning(
             'Lieferschein erstellt, aber Lagerbestand konnte nicht automatisch reduziert werden'
           );
@@ -356,7 +346,6 @@ export function DeliveryNoteComponent({
       await loadDeliveryNotes();
       await loadStats();
     } catch (error) {
-      console.error('Fehler beim Erstellen des Lieferscheins:', error);
       if (error instanceof Error) {
         if (error.message.includes('permissions')) {
           toast.error(

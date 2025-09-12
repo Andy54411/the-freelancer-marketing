@@ -544,7 +544,6 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
       currentStep,
     };
   } catch (error) {
-    console.error(`❌ Error checking onboarding status for ${companyUid}:`, error);
     return {
       needsOnboarding: true,
       completionPercentage: 0,

@@ -181,7 +181,6 @@ export async function POST(request: NextRequest) {
       }
       db = admin.default.firestore();
     } catch (error) {
-      console.error('Firebase Admin SDK Fehler:', error);
       return NextResponse.json({ error: 'Server-Konfigurationsfehler' }, { status: 500 });
     }
 

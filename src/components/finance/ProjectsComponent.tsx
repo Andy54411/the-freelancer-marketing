@@ -175,7 +175,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         }
       },
       error => {
-        console.error('❌ Projects realtime listener error:', error);
         setLoading(false);
       }
     );
@@ -198,9 +197,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         const currentProjectsData = [...projects];
         loadTrackedHoursForProjects(currentProjectsData);
       },
-      error => {
-        console.error('❌ Time entries realtime listener error:', error);
-      }
+      error => {}
     );
 
     setTimeEntriesUnsubscribe(() => timeEntriesUnsub);
@@ -227,9 +224,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       setProjects(updatedProjects);
       // Debug-Log entfernt
-    } catch (error) {
-      console.error('❌ Error loading tracked hours for projects:', error);
-    }
+    } catch (error) {}
   };
 
   const loadProjects = async () => {
@@ -318,7 +313,6 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       return data.totalHours || 0;
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Zeiteinträge für Projekt', projectId, ':', error);
       return 0;
     }
   };
@@ -561,22 +555,12 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
       toast.success('Projekt wurde erfolgreich erstellt');
     } catch (error) {
-      console.error('🚨 Error creating project:', error);
-
       // Detailed error logging
       if (error && typeof error === 'object') {
-        console.error('🔍 Error details:', {
-          code: (error as any).code,
-          message: (error as any).message,
-          name: (error as any).name,
-          stack: (error as any).stack,
-        });
       }
 
       // Check if it's a Firestore permission error
       if ((error as any)?.code === 'permission-denied') {
-        console.error('🚫 PERMISSION DENIED - Check Firestore rules!');
-        console.error('💡 Make sure user has role "firma" in custom claims');
         toast.error('Berechtigung verweigert. Bitte kontaktieren Sie den Support.');
       } else {
         toast.error('Projekt konnte nicht erstellt werden: ' + (error as Error).message);

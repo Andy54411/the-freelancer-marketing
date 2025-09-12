@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
       details: testResult.details,
     });
   } catch (error) {
-    console.error('Connection test error:', error);
     return NextResponse.json(
       {
         success: false,

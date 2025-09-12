@@ -886,14 +886,12 @@ export default function Step5CompanyPage() {
               cleanedCompanyData[key] = cleanCommon;
             }
           } catch (error) {
-            console.warn(`⚠️ Ungültiges Objekt für Feld ${key}, setze auf null:`, error);
             cleanedCompanyData[key] = null;
           }
         }
 
         // Validiere kritische String-Felder
         if (typeof value === 'string' && value.length > 10000) {
-          console.warn(`⚠️ String zu lang für Feld ${key}, kürze auf 10000 Zeichen`);
           cleanedCompanyData[key] = value.substring(0, 10000);
         }
       });
@@ -951,12 +949,6 @@ export default function Step5CompanyPage() {
 
         await updateDoc(doc(db, 'companies', currentAuthUserUID), extendedData);
       } catch (firestoreError) {
-        console.error('❌ Firestore Write Error Details:', {
-          error: firestoreError,
-          errorMessage: (firestoreError as any)?.message,
-          errorCode: (firestoreError as any)?.code,
-        });
-
         // Absoluter Fallback: Nur Minimum ohne serverTimestamp
         try {
           const ultraMinimalData = {
@@ -968,10 +960,7 @@ export default function Step5CompanyPage() {
           };
 
           await setDoc(doc(db, 'companies', currentAuthUserUID), ultraMinimalData);
-        } catch (finalError) {
-          console.error('❌ Final fallback also failed:', finalError);
-          // Wir werfen hier nicht, um den Registrierungsprozess nicht zu blockieren
-        }
+        } catch (finalError) {}
       }
 
       setCurrentStepMessage('Zahlungskonto wird bei Stripe eingerichtet...');

@@ -155,7 +155,6 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
             }
           }
         } catch (error) {
-          console.error('Error loading user profile:', error);
           // Set basic profile instead of showing error
           setLoggedInUserProfile({
             firstName: 'Benutzer',
@@ -207,13 +206,11 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
           setMessages(fetchedMessages);
           setChatLoading(false);
         } catch (error) {
-          console.error('Error processing chat messages:', error);
           setChatError('Fehler beim Laden der Nachrichten');
           setChatLoading(false);
         }
       },
       error => {
-        console.error('Error listening to chat messages:', error);
         setChatError('Fehler beim Laden der Nachrichten');
         setChatLoading(false);
       }
@@ -369,7 +366,6 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
 
       setNewMessageText(''); // Eingabefeld nach erfolgreichem Senden leeren
     } catch (error) {
-      console.error('Chat send error:', error);
       setChatError(
         `Fehler beim Senden der Nachricht: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );
@@ -455,6 +451,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ orderId, participants, or
             }
           }}
         />
+
         <button
           type="submit"
           className="bg-[#14ad9f] text-white p-3 rounded-full hover:bg-[#129a8f] transition-colors flex items-center justify-center"

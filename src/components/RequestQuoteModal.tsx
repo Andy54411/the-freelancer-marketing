@@ -199,9 +199,7 @@ export default function RequestQuoteModal({
           try {
             const token = await firebaseUser.getIdToken();
             headers['Authorization'] = `Bearer ${token}`;
-          } catch (error) {
-            console.error('Error getting auth token:', error);
-          }
+          } catch (error) {}
         } else {
         }
 
@@ -220,7 +218,6 @@ export default function RequestQuoteModal({
       setStep('success');
       toast.success('Angebot erfolgreich angefragt!');
     } catch (error) {
-      console.error('Error submitting quote request:', error);
       toast.error('Fehler beim Senden der Anfrage. Bitte versuchen Sie es erneut.');
     } finally {
       setLoading(false);

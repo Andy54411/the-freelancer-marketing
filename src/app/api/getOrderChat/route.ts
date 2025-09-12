@@ -38,7 +38,6 @@ async function getFirebaseServices() {
 
     return { auth, db };
   } catch (error: any) {
-    console.error('Firebase initialization failed:', error);
     throw error;
   }
 }
@@ -117,7 +116,6 @@ export async function POST(request: NextRequest) {
       messages,
     });
   } catch (error: any) {
-    console.error('getOrderChat API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

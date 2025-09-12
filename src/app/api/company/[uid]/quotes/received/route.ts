@@ -71,7 +71,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .orderBy('createdAt', 'desc')
         .get();
     } catch (error) {
-      console.warn('Could not query by customerUid, trying customerEmail:', error);
       // Fallback to customerEmail query
       quotesSnapshot = await db
         .collection('quotes')
@@ -92,9 +91,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         if (fallbackSnapshot.docs.length > 0) {
           quotesSnapshot = fallbackSnapshot;
         }
-      } catch (error) {
-        console.warn('Fallback query also failed:', error);
-      }
+      } catch (error) {}
     }
 
     // Define quote type
@@ -142,7 +139,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           hasProposals = !!quoteData.response;
         }
       } catch (error) {
-        console.error(`❌ Error loading proposals for quote ${doc.id}:`, error);
         // Fallback to legacy response check
         hasProposals = !!quoteData.response;
       }

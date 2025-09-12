@@ -169,7 +169,6 @@ export async function GET(request: NextRequest) {
       count: orders?.length || 0,
     });
   } catch (error) {
-    console.error('WooCommerce Orders API Error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der WooCommerce-Bestellungen' },
       { status: 500 }
@@ -293,7 +292,6 @@ export async function POST(request: NextRequest) {
       message: 'WooCommerce-Bestellung erfolgreich in Lieferschein konvertiert',
     });
   } catch (error) {
-    console.error('WooCommerce Order Import Error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Importieren der WooCommerce-Bestellung' },
       { status: 500 }

@@ -153,7 +153,6 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
 
         setUploadProgress('');
       } catch (error) {
-        console.error('Fehler beim Hochladen des Hauptbildes:', error);
         setUploadProgress('Fehler beim Hochladen');
       } finally {
         setIsUploading(false);
@@ -198,7 +197,6 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
 
       setUploadProgress('');
     } catch (error) {
-      console.error('Fehler beim Hochladen der zusätzlichen Bilder:', error);
       setUploadProgress('Fehler beim Hochladen');
     } finally {
       setIsUploading(false);
@@ -291,6 +289,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
                     fill
                     className="object-cover"
                   />
+
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
@@ -696,6 +695,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
                 placeholder="Eigene Fähigkeit hinzufügen"
               />
+
               <button
                 onClick={addCustomTechnology}
                 className="px-4 py-2 bg-[#14ad9f] text-white rounded-lg hover:bg-[#129488] transition-colors"
@@ -728,6 +728,7 @@ const PortfolioItemDetails: React.FC<PortfolioItemDetailsProps> = ({
                   onChange={e => handleInputChange('featured', e.target.checked)}
                   className="sr-only"
                 />
+
                 <div
                   className={`relative w-5 h-5 rounded border-2 transition-colors ${
                     editedItem.featured

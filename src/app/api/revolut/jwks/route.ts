@@ -34,8 +34,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('❌ JWKs Generation Error:', error);
-
     return NextResponse.json(
       {
         error: 'Failed to generate JWKs',

@@ -88,7 +88,6 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
-      console.error('❌ Error disconnecting bank:', error.message);
       return NextResponse.json(
         {
           success: false,
@@ -100,7 +99,6 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Bank disconnect API error:', error.message);
     return NextResponse.json(
       {
         success: false,
@@ -146,7 +144,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('❌ Error fetching disconnection history:', error.message);
     return NextResponse.json(
       {
         success: false,

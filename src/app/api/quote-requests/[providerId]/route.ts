@@ -19,7 +19,6 @@ export async function GET(
 
     // Check if Firebase is properly initialized
     if (!db) {
-      console.error('Firebase database not available');
       return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
@@ -41,13 +40,6 @@ export async function GET(
       count: quoteRequests.length,
     });
   } catch (error: any) {
-    console.error('Quote Requests API error:', {
-      error: error.message,
-      stack: error.stack,
-      providerId: providerId || 'unknown',
-      timestamp: new Date().toISOString(),
-    });
-
     // More specific error handling
     if (error.message?.includes('permission')) {
       return NextResponse.json(

@@ -8,7 +8,6 @@ async function getFirebaseDb(): Promise<any> {
 
     // Check if we have valid db service
     if (!firebaseModule.db) {
-      console.error('Firebase database not initialized properly');
       // Try to get from admin if needed
       const { admin } = firebaseModule;
       if (admin && admin.apps.length > 0) {
@@ -20,7 +19,6 @@ async function getFirebaseDb(): Promise<any> {
 
     return firebaseModule.db;
   } catch (error) {
-    console.error('Firebase initialization failed:', error);
     throw new Error('Firebase database unavailable');
   }
 }
@@ -60,7 +58,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
         return decoded;
       } catch (error) {
-        console.warn('Failed to decode URL:', url);
         return url;
       }
     };
@@ -98,7 +95,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (error) {
-    console.error('Fehler beim Laden der Company-Daten:', error);
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Laden der Company-Daten' },
       { status: 500 }
@@ -137,7 +133,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({ error: 'Keine gültigen Update-Daten' }, { status: 400 });
   } catch (error) {
-    console.error('Fehler beim Update der Company-Daten:', error);
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Update der Company-Daten' },
       { status: 500 }
@@ -196,7 +191,6 @@ export async function PATCH(
       data: updateData,
     });
   } catch (error) {
-    console.error('Fehler beim Update der Company-Daten:', error);
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Update der Company-Daten' },
       { status: 500 }

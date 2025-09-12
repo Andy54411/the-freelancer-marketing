@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
     const response = await fetch(directUrl);
 
     if (!response.ok) {
-      console.error('🖼️ Image Proxy - HTTP Error:', response.status, response.statusText);
       return NextResponse.json(
         {
           error: 'Image not found',
@@ -51,17 +50,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('🖼️ Image Proxy - Error:', error, {
-      errorInfo:
-        error instanceof Error
-          ? {
-              message: error.message,
-              stack: error.stack,
-              name: error.name,
-            }
-          : error,
-    });
-
     return NextResponse.json(
       {
         error: 'Failed to load image',

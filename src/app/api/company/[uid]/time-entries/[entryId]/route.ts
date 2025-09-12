@@ -53,8 +53,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams): Pro
       deletedEntryId: entryId,
     });
   } catch (error) {
-    console.error('❌ Fehler beim Löschen des Zeiteintrags:', error);
-
     return NextResponse.json(
       {
         success: false,
@@ -124,8 +122,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams): Promis
       },
     });
   } catch (error) {
-    console.error('❌ Fehler beim Aktualisieren des Zeiteintrags:', error);
-
     return NextResponse.json(
       {
         success: false,

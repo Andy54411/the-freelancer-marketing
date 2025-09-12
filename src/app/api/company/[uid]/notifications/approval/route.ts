@@ -53,7 +53,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       data: notificationData,
     });
   } catch (error) {
-    console.error('Error creating approval notification:', error);
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen der Benachrichtigung',

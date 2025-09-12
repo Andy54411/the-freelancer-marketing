@@ -155,7 +155,6 @@ export default function ProfilePage() {
 
       return completedCount;
     } catch (error) {
-      console.error('🚨 Error loading completed jobs:', error);
       return 0;
     }
   };
@@ -192,7 +191,6 @@ export default function ProfilePage() {
         totalReviews: reviews.length,
       };
     } catch (error) {
-      console.error('🚨 Error loading rating data:', error);
       return { averageRating: 0, totalReviews: 0 };
     }
   };
@@ -1110,12 +1108,12 @@ export default function ProfilePage() {
                     )}
 
                     {/* FAQ Section - Fiverr Style - ALWAYS SHOW FOR DEBUG```
-                             </button>
-                           </div>
-                         )}
-                       </div>
-                      )}
-                      {/* FAQ Section - Fiverr Style */}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                       )}
+                       {/* FAQ Section - Fiverr Style */}
                     <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-gray-900">

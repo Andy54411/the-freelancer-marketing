@@ -29,9 +29,6 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({
   // Vorerst immer Standard-Template verwenden
   // TODO: Mehrseitige Unterstützung später hinzufügen
   if (shouldUseMultiPage) {
-    console.warn(
-      'Mehrseitige Lieferscheine werden noch nicht unterstützt. Verwende Standard-Template.'
-    );
   }
 
   return (
@@ -51,7 +48,6 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({
             alt={`${data.companyName} Logo`}
             className="h-20 w-auto max-w-[120px] object-contain"
             onError={e => {
-              console.error('🖼️ Company Logo Error:', e);
               e.currentTarget.style.display = 'none';
               const fallback = e.currentTarget.nextElementSibling as HTMLElement;
               if (fallback) fallback.style.display = 'block';

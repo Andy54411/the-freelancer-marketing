@@ -116,7 +116,6 @@ export function ContactExchangeDisplay({
 
       return null;
     } catch (error) {
-      console.error(`❌ Error loading data for UID ${uid}:`, error);
       return null;
     }
   };
@@ -188,10 +187,6 @@ export function ContactExchangeDisplay({
         } else {
         }
       } catch (error) {
-        console.error(
-          '❌ ContactExchangeDisplay: Fehler beim Laden der Company-Kontaktdaten:',
-          error
-        );
       } finally {
         setLoading(false);
       }

@@ -124,7 +124,6 @@ export default function MarketplaceProposalModal({
       setEstimatedDuration('');
       setAvailableDate('');
     } catch (error) {
-      console.error('Fehler beim Abgeben des Angebots:', error);
       toast.error('Fehler beim Abgeben des Angebots');
     } finally {
       setIsSubmitting(false);

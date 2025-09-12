@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
       message: `Found ${results.length} proposals and ${existingOrders.length} existing orders`,
     });
   } catch (error) {
-    console.error('❌ Debug error:', error);
     return NextResponse.json(
       {
         error: 'Debug failed',

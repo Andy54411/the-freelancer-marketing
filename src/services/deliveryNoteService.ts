@@ -156,7 +156,6 @@ export class DeliveryNoteService {
         sequentialNumber = settings?.nextNumber || 1;
         deliveryNoteNumber = this.generateDeliveryNoteNumber(settings, sequentialNumber);
       } catch (settingsError) {
-        console.warn('⚠️ Could not load settings, using defaults:', settingsError);
         // Fallback: Einfache Nummerierung ohne Settings
         const timestamp = Date.now();
         deliveryNoteNumber = `LS-${timestamp}`;
@@ -193,14 +192,11 @@ export class DeliveryNoteService {
             ...settings,
             nextNumber: sequentialNumber + 1,
           });
-        } catch (updateError) {
-          console.warn('⚠️ Could not update settings, continuing anyway:', updateError);
-        }
+        } catch (updateError) {}
       } else {
       }
       return docRef.id;
     } catch (error) {
-      console.error('❌ Error creating delivery note:', error);
       if (error instanceof Error) {
         throw error; // Re-throw original error to preserve error details
       }
@@ -280,7 +276,6 @@ export class DeliveryNoteService {
         );
       }
     } catch (error) {
-      console.error('❌ Error loading delivery notes:', error);
       throw new Error('Lieferscheine konnten nicht geladen werden');
     }
   }
@@ -408,8 +403,7 @@ export class DeliveryNoteService {
           // Bestand reduzieren
           // await InventoryService.reduceStock(item.productId, item.quantity);
         }
-      }
-      // Als aktualisiert markieren
+      } // Als aktualisiert markieren
       await this.updateDeliveryNote(deliveryNoteId, {
         warehouseUpdated: true,
         items: deliveryNote.items.map(item => ({
@@ -469,12 +463,10 @@ export class DeliveryNoteService {
 
       return settings;
     } catch (error) {
-      console.error('📋 Error loading delivery note settings:', error);
       // Bei Berechtigungsfehlern oder anderen Problemen null zurückgeben
       if (error && typeof error === 'object' && 'code' in error) {
         const firebaseError = error as any;
         if (firebaseError.code === 'permission-denied') {
-          console.warn('📋 Permission denied for delivery note settings, using defaults');
         }
       }
       return null;

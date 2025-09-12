@@ -50,7 +50,6 @@ async function getFirebaseDb() {
 
         db = admin.firestore(app);
       } catch (adminError) {
-        console.error('Firebase Admin initialization failed:', adminError);
         throw adminError;
       }
 
@@ -60,7 +59,6 @@ async function getFirebaseDb() {
     }
     return db;
   } catch (error) {
-    console.error('Firebase initialization error:', error);
     throw new Error(
       `Firebase initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -189,7 +187,6 @@ export async function GET(request: NextRequest) {
         });
     }
   } catch (error) {
-    console.error('Steuerberater GET error:', error);
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -232,7 +229,6 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('Steuerberater POST error:', error);
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -337,8 +333,6 @@ async function handleInvite(database: any, companyId: string, data: any) {
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('Error in handleInvite:', error);
-
     // Fallback response even if Firebase fails
     return NextResponse.json({
       success: true,
@@ -401,7 +395,6 @@ async function handleShareDocument(database: any, companyId: string, data: any) 
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('Error in handleShareDocument:', error);
     throw error;
   }
 }

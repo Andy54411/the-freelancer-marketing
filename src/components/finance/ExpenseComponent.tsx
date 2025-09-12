@@ -244,7 +244,6 @@ export function ExpenseComponent({
 
       return downloadURL;
     } catch (error) {
-      console.error('Fehler beim PDF-Upload:', error);
       toast.error('Fehler beim Hochladen der PDF-Datei');
       throw error;
     }
@@ -318,7 +317,6 @@ export function ExpenseComponent({
         });
       }
     } catch (error) {
-      console.error('Upload error:', error);
       toast.error('Upload-Fehler');
     } finally {
       setUploadingFile(false);
@@ -335,7 +333,6 @@ export function ExpenseComponent({
     try {
       // Auth-Check
       if (user.uid !== companyId) {
-        console.error('Keine Berechtigung für diese Firma');
         return '';
       }
 
@@ -344,7 +341,6 @@ export function ExpenseComponent({
       const result = await response.json();
 
       if (!result.success) {
-        console.error('Fehler beim Laden der Lieferanten:', result.error);
         toast.error('Fehler beim Laden der Lieferanten');
         return '';
       }
@@ -429,12 +425,10 @@ export function ExpenseComponent({
         toast.success(`Lieferant "${companyName}" automatisch angelegt`);
         return createResult.customerId; // API gibt customerId zurück, wir verwenden es als supplierId
       } else {
-        console.error('Fehler bei Lieferanten-Erstellung:', createResult.error);
         toast.error('Fehler bei automatischer Lieferanten-Erstellung');
         return '';
       }
     } catch (error) {
-      console.error('Fehler bei Lieferanten-Erstellung:', error);
       toast.error('Fehler bei automatischer Lieferanten-Erstellung');
       return '';
     }
@@ -511,7 +505,6 @@ export function ExpenseComponent({
           pdfDownloadURL = await uploadPdfToStorage(currentReceipt);
           toast.success('PDF erfolgreich gespeichert!');
         } catch (error) {
-          console.error('PDF-Upload Fehler:', error);
           toast.error('PDF-Upload fehlgeschlagen, Ausgabe wird trotzdem gespeichert');
         }
       }
@@ -571,7 +564,6 @@ export function ExpenseComponent({
         await onRefresh?.();
       }
     } catch (error) {
-      console.error('Save error:', error);
       toast.error('Fehler beim Speichern');
     } finally {
       setIsLoading(false);
@@ -680,7 +672,6 @@ export function ExpenseComponent({
           pdfDownloadURL = await uploadPdfToStorage(currentReceipt, editingExpense.id);
           toast.success('PDF erfolgreich gespeichert!');
         } catch (error) {
-          console.error('PDF-Upload Fehler:', error);
           toast.error('PDF-Upload fehlgeschlagen, Änderungen werden trotzdem gespeichert');
         }
       }
@@ -723,7 +714,6 @@ export function ExpenseComponent({
         await onRefresh?.();
       }
     } catch (error) {
-      console.error('Update error:', error);
       toast.error('Fehler beim Aktualisieren');
     } finally {
       setIsLoading(false);
@@ -762,7 +752,6 @@ export function ExpenseComponent({
         await onRefresh?.();
       }
     } catch (error) {
-      console.error('Delete error:', error);
       toast.error('Fehler beim Löschen der Ausgabe');
     } finally {
       setIsLoading(false);
@@ -812,6 +801,7 @@ export function ExpenseComponent({
                 onChange={handleFileUpload}
                 className="hidden"
               />
+
               <div className="text-center">
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                 <div className="text-sm text-gray-600 mb-3">
@@ -1081,6 +1071,7 @@ export function ExpenseComponent({
                       setFormData(prev => ({ ...prev, taxDeductible: !!checked }))
                     }
                   />
+
                   <Label
                     htmlFor="taxDeductible"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

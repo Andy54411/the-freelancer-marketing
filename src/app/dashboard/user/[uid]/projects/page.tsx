@@ -240,7 +240,6 @@ const ProjectsPage: React.FC = () => {
           }
         },
         error => {
-          console.error('Project requests loading error:', error);
           loadedCollections = Math.max(loadedCollections, 1);
           if (loadedCollections >= totalCollections) {
             updateProjectsState();
@@ -305,7 +304,6 @@ const ProjectsPage: React.FC = () => {
           processQuotesData();
         },
         error => {
-          console.error('Quotes (new schema) loading error:', error);
           processQuotesData();
         }
       );
@@ -356,8 +354,6 @@ const ProjectsPage: React.FC = () => {
           processQuotesData();
         },
         error => {
-          console.error('💰 QUOTES (customerUid) error:', error);
-
           processQuotesData();
         }
       ); // Cleanup subscriptions on unmount
@@ -367,7 +363,6 @@ const ProjectsPage: React.FC = () => {
         unsubscribeQuotes2();
       };
     } catch (error) {
-      console.error('Firebase initialization error:', error);
       setLoading(false);
     }
   }, [uid, user]);
@@ -413,7 +408,6 @@ const ProjectsPage: React.FC = () => {
       });
     } catch (error) {
       toast.error('Fehler beim Löschen des Projekts');
-      console.error('Delete error:', error);
     }
   };
 

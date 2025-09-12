@@ -85,7 +85,6 @@ export class SteuerberaterDocumentService {
         filePath,
       };
     } catch (error) {
-      console.error('Error uploading document:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Upload fehlgeschlagen',
@@ -102,7 +101,6 @@ export class SteuerberaterDocumentService {
       await deleteObject(storageRef);
       return { success: true };
     } catch (error) {
-      console.error('Error deleting document:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Löschen fehlgeschlagen',
@@ -129,7 +127,6 @@ export class SteuerberaterDocumentService {
         downloadUrl,
       };
     } catch (error) {
-      console.error('Error generating download link:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Link-Generierung fehlgeschlagen',
@@ -148,11 +145,13 @@ export class SteuerberaterDocumentService {
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       ],
+
       cashbook: [
         'text/csv',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       ],
+
       invoice_data: ['application/pdf', 'text/csv', 'application/xml'],
       datev_export: ['text/csv', 'application/xml'],
     };

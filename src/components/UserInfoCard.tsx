@@ -176,7 +176,6 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
         // 3. Bestimme Profil-URL
         setProfileUrl(`/profile/${userId}`);
       } catch (error) {
-        console.error('Fehler beim Laden der UserInfoCard-Daten:', error);
       } finally {
         setLoading(false);
       }

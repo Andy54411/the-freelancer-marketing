@@ -159,14 +159,6 @@ export default function OrderDetailPage() {
 
     // Wenn die orderId fehlt, ist das ein Fehler.
     if (!orderId) {
-      console.error('❌ OrderId fehlt:', {
-        params,
-        orderId,
-        paramsType: typeof params,
-        paramsContent: JSON.stringify(params),
-        windowLocation: window.location.href,
-        pathSegments: window.location.pathname.split('/'),
-      });
       setError('Auftrags-ID in der URL fehlt.');
       setLoadingOrder(false);
       return;
@@ -221,7 +213,6 @@ export default function OrderDetailPage() {
         setOrder(mappedOrderData);
         setLoadingOrder(false);
       } catch (err: any) {
-        console.error('❌ Fehler beim Laden der Order:', err);
         if (err.message?.includes('Access denied') || err.message?.includes('403')) {
           setError('Keine Berechtigung für diesen Auftrag.');
         } else if (err.message?.includes('not found') || err.message?.includes('404')) {

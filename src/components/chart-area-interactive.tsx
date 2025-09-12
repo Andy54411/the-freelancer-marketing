@@ -159,7 +159,6 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
 
         return unsubscribe;
       } catch (err) {
-        console.error('Fehler beim Laden der Ausgaben:', err);
         return () => {};
       }
     };

@@ -50,7 +50,6 @@ async function getFirebaseServices() {
 
       return { db };
     } catch (error: any) {
-      console.error('Firebase initialization failed:', error);
       throw error;
     }
   }
@@ -131,9 +130,6 @@ export async function POST(request: NextRequest) {
       success: true,
     });
   } catch (error: any) {
-    console.error('❌ Payout History Error:', error);
-    console.error('❌ Payout History Stack:', error.stack);
-
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
         {

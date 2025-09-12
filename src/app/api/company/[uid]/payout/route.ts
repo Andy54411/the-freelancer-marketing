@@ -46,7 +46,6 @@ async function getFirebaseServices() {
 
       return { db };
     } catch (error: any) {
-      console.error('Firebase initialization failed:', error);
       throw error;
     }
   }
@@ -293,12 +292,7 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
             type: 'platform_fee_quote',
           },
         });
-      } catch (transferError: any) {
-        console.error(
-          `❌ Provision Transfer Fehler für Quote ${transfer.quoteId}:`,
-          transferError.message
-        );
-      }
+      } catch (transferError: any) {}
     }
 
     await batch.commit();
@@ -393,7 +387,6 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
         stripeAccount: stripeAccountId,
       });
     } catch (stripeError: any) {
-      console.error('Stripe Balance Error:', stripeError);
       return NextResponse.json(
         { error: 'Failed to get Stripe balance', details: stripeError.message },
         { status: 500 }
@@ -492,8 +485,6 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
       },
     });
   } catch (error: any) {
-    console.error('❌ Payout GET Error:', error);
-    console.error('❌ Payout GET Stack:', error.stack);
     return NextResponse.json(
       { error: 'Failed to get available payout amount', details: error.message },
       { status: 500 }

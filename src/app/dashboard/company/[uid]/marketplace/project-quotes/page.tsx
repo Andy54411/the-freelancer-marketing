@@ -70,7 +70,7 @@ export default function MarketplaceProjectQuotesPage() {
         // TODO: Implement Firebase query for project quotes
         // const projectQuotesRef = collection(db, 'projects');
         // Nested query for quotes within projects
-        
+
         // Mock data for now
         const mockProjectQuotes: ProjectQuoteRequest[] = [
           {
@@ -80,7 +80,8 @@ export default function MarketplaceProjectQuotesPage() {
             customerName: 'Sarah Weber',
             customerEmail: 'sarah@modehaus-weber.de',
             customerPhone: '+49 40 123456',
-            message: 'Wir interessieren uns für Ihr Angebot zur E-Commerce Entwicklung. Können Sie uns ein detailliertes Angebot für unseren Online-Shop erstellen?',
+            message:
+              'Wir interessieren uns für Ihr Angebot zur E-Commerce Entwicklung. Können Sie uns ein detailliertes Angebot für unseren Online-Shop erstellen?',
             category: 'Webentwicklung',
             subcategory: 'E-Commerce',
             budgetRange: '15000-25000',
@@ -91,7 +92,8 @@ export default function MarketplaceProjectQuotesPage() {
             companyId: uid,
             createdAt: new Date(),
             projectDetails: {
-              description: 'Entwicklung einer modernen E-Commerce Plattform für Modeunternehmen mit Inventar-Management.',
+              description:
+                'Entwicklung einer modernen E-Commerce Plattform für Modeunternehmen mit Inventar-Management.',
               requirements: ['React/Next.js', 'Payment Integration', 'Mobile Responsive'],
               deliverables: ['Frontend Development', 'Backend API', 'Admin Dashboard'],
             },
@@ -113,7 +115,8 @@ export default function MarketplaceProjectQuotesPage() {
             companyId: uid,
             createdAt: new Date(),
             projectDetails: {
-              description: 'Entwicklung und Umsetzung einer digitalen Marketing-Strategie für Produktlaunch.',
+              description:
+                'Entwicklung und Umsetzung einer digitalen Marketing-Strategie für Produktlaunch.',
               requirements: ['Social Media', 'Google Ads', 'Content Creation'],
               deliverables: ['Marketing Strategy', 'Ad Campaigns', 'Content Calendar'],
             },
@@ -135,16 +138,16 @@ export default function MarketplaceProjectQuotesPage() {
             companyId: uid,
             createdAt: new Date(),
             projectDetails: {
-              description: 'Native mobile App für Fitnessstudio mit Kursbuchung und Mitgliederverwaltung.',
+              description:
+                'Native mobile App für Fitnessstudio mit Kursbuchung und Mitgliederverwaltung.',
               requirements: ['React Native', 'Push Notifications', 'Payment System'],
               deliverables: ['iOS App', 'Android App', 'Backend System'],
             },
           },
         ];
-        
+
         setProjectQuotes(mockProjectQuotes);
       } catch (error) {
-        console.error('Error loading project quotes:', error);
         toast.error('Fehler beim Laden der Projekt-Anfragen');
       } finally {
         setLoading(false);
@@ -170,13 +173,14 @@ export default function MarketplaceProjectQuotesPage() {
 
   // Filter project quotes
   const filteredProjectQuotes = projectQuotes.filter(quote => {
-    const matchesSearch = quote.projectTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch =
+      quote.projectTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quote.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quote.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = statusFilter === 'all' || quote.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || quote.category === categoryFilter;
-    
+
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
@@ -187,7 +191,7 @@ export default function MarketplaceProjectQuotesPage() {
       accepted: { label: 'Angenommen', variant: 'default' as const },
       declined: { label: 'Abgelehnt', variant: 'destructive' as const },
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
@@ -309,15 +313,15 @@ export default function MarketplaceProjectQuotesPage() {
                 <Input
                   placeholder="Kategorie-Anfragen durchsuchen..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
-            
+
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={e => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="all">Alle Status</option>
@@ -329,7 +333,7 @@ export default function MarketplaceProjectQuotesPage() {
 
             <select
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              onChange={e => setCategoryFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="all">Alle Kategorien</option>
@@ -348,7 +352,9 @@ export default function MarketplaceProjectQuotesPage() {
           <Card>
             <CardContent className="p-8 text-center">
               <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Kategorie-Anfragen gefunden</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Keine Kategorie-Anfragen gefunden
+              </h3>
               <p className="text-gray-600">
                 {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
                   ? 'Versuchen Sie andere Suchkriterien.'
@@ -357,7 +363,7 @@ export default function MarketplaceProjectQuotesPage() {
             </CardContent>
           </Card>
         ) : (
-          filteredProjectQuotes.map((quote) => (
+          filteredProjectQuotes.map(quote => (
             <Card key={quote.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -367,14 +373,14 @@ export default function MarketplaceProjectQuotesPage() {
                       {getUrgencyIcon(quote.urgency)}
                       {getStatusBadge(quote.status)}
                     </div>
-                    
+
                     <div className="bg-gray-50 p-3 rounded-lg mb-3">
                       <p className="text-sm text-gray-600 mb-2">
                         <strong>Kundenanfrage:</strong>
                       </p>
                       <p className="text-gray-700">{quote.message}</p>
                     </div>
-                    
+
                     {quote.projectDetails && (
                       <div className="mb-3">
                         <p className="text-sm text-gray-600 mb-2">
@@ -383,7 +389,7 @@ export default function MarketplaceProjectQuotesPage() {
                         <p className="text-gray-700 text-sm">{quote.projectDetails.description}</p>
                       </div>
                     )}
-                    
+
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
                         <User className="h-4 w-4" />
@@ -417,7 +423,7 @@ export default function MarketplaceProjectQuotesPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2 ml-4">
                     <Button
                       variant="outline"
@@ -427,44 +433,43 @@ export default function MarketplaceProjectQuotesPage() {
                       <Eye className="h-4 w-4 mr-2" />
                       Projekt ansehen
                     </Button>
-                    
+
                     {quote.status === 'pending' && (
-                      <Button
-                        size="sm"
-                        className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                      >
+                      <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488] text-white">
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Antworten
                       </Button>
                     )}
                   </div>
                 </div>
-                
-                {quote.projectDetails?.requirements && quote.projectDetails.requirements.length > 0 && (
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-600 mb-2">Anforderungen:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {quote.projectDetails.requirements.map((req, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {req}
-                        </Badge>
-                      ))}
+
+                {quote.projectDetails?.requirements &&
+                  quote.projectDetails.requirements.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600 mb-2">Anforderungen:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {quote.projectDetails.requirements.map((req, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {req}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-                
-                {quote.projectDetails?.deliverables && quote.projectDetails.deliverables.length > 0 && (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-2">Lieferumfang:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {quote.projectDetails.deliverables.map((deliverable, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          {deliverable}
-                        </Badge>
-                      ))}
+                  )}
+
+                {quote.projectDetails?.deliverables &&
+                  quote.projectDetails.deliverables.length > 0 && (
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">Lieferumfang:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {quote.projectDetails.deliverables.map((deliverable, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {deliverable}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </CardContent>
             </Card>
           ))

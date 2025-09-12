@@ -92,7 +92,6 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
       const loadedCustomers = await CustomerService.getCustomers(companyId);
       setCustomers(loadedCustomers);
     } catch (error) {
-      console.error('❌ QuoteModal: Error loading customers:', error);
       toast.error('Kunden konnten nicht geladen werden');
     } finally {
       setLoadingCustomers(false);
@@ -213,7 +212,6 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
 
       onClose();
     } catch (error) {
-      console.error('Error saving quote:', error);
       toast.error('Fehler beim Speichern des Angebots');
     } finally {
       setLoading(false);
@@ -228,7 +226,6 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
       toast.success('Angebot wurde versendet');
       onClose();
     } catch (error) {
-      console.error('Error sending quote:', error);
       toast.error('Fehler beim Versenden des Angebots');
     }
   };

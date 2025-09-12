@@ -133,7 +133,6 @@ export class FinAPISDKService {
 
       return this.clientToken;
     } catch (error: any) {
-      console.error('❌ getClientToken failed:', error.message);
       throw error;
     }
   }
@@ -181,7 +180,6 @@ export class FinAPISDKService {
       const tokenData: FinAPITokenResponse = await response.json();
       return tokenData.access_token;
     } catch (error: any) {
-      console.error('❌ getAdminClientToken failed:', error.message);
       throw error;
     }
   }
@@ -216,7 +214,6 @@ export class FinAPISDKService {
       const tokenData: FinAPITokenResponse = await response.json();
       return tokenData.access_token;
     } catch (error: any) {
-      console.error('❌ getUserToken failed:', error.message);
       throw error;
     }
   }
@@ -406,7 +403,6 @@ export class FinAPISDKService {
       const userData = await response.json();
       return userData.users?.[0] || null;
     } catch (error: any) {
-      console.error('❌ getUser failed:', error.message);
       return null;
     }
   }
@@ -452,7 +448,6 @@ export class FinAPISDKService {
 
       return { user, userToken };
     } catch (error: any) {
-      console.error('❌ User creation failed:', error.message);
       throw error;
     }
   }
@@ -581,7 +576,6 @@ export class FinAPISDKService {
 
       return webFormData.url;
     } catch (error: any) {
-      console.error('❌ finAPI WebForm creation failed:', error.message);
       throw error;
     }
   }
@@ -657,8 +651,6 @@ export class FinAPISDKService {
         transactions,
       };
     } catch (error: any) {
-      console.error('❌ syncUserBankData failed, trying legacy fallback:', error.message);
-
       // FALLBACK: Use legacy finAPI system
       try {
         const legacyResult = await finApiService.syncAccountsAndTransactions(companyId);
@@ -673,7 +665,6 @@ export class FinAPISDKService {
           throw new Error(legacyResult.message);
         }
       } catch (fallbackError: any) {
-        console.error('❌ Legacy finAPI fallback also failed:', fallbackError.message);
         return {
           connections: [],
           accounts: [],
@@ -712,13 +703,10 @@ export class FinAPISDKService {
       const banksData = await response.json();
       return banksData.banks || [];
     } catch (error: any) {
-      console.error('❌ listBanks failed, trying legacy fallback:', error.message);
-
       // FALLBACK: Use legacy finAPI system
       try {
         return [];
       } catch (fallbackError: any) {
-        console.error('❌ Legacy finAPI fallback also failed:', fallbackError.message);
         return [];
       }
     }
@@ -784,8 +772,6 @@ export class FinAPISDKService {
         },
       };
     } catch (error: any) {
-      console.error('❌ getBanks failed:', error.message);
-
       // Return empty result instead of throwing
       return {
         banks: [],
@@ -856,10 +842,7 @@ export class FinAPISDKService {
         updatedAt: new Date().toISOString(),
         lastModifiedBy: 'finapi-service',
       });
-    } catch (error: any) {
-      console.error('❌ Error saving finAPI user to Firestore:', error.message);
-      // Don't throw - this is not critical for WebForm creation
-    }
+    } catch (error: any) {}
   }
 }
 

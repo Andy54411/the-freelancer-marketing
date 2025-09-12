@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error('Failed to fetch PDF:', response.status, response.statusText);
       return NextResponse.json(
         {
           error: `Failed to fetch PDF: ${response.status} ${response.statusText}`,
@@ -54,7 +53,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('PDF Proxy Error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error while fetching PDF',

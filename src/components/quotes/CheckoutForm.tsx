@@ -80,7 +80,6 @@ export default function CheckoutForm({
         onSuccess(paymentIntent.id);
       }
     } catch (error: any) {
-      console.error('❌ Payment error:', error);
       setErrorMessage(error.message || 'Zahlung fehlgeschlagen');
       onError(error.message || 'Zahlung fehlgeschlagen');
     } finally {

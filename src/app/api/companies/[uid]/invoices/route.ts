@@ -8,7 +8,6 @@ async function getFirebaseDb(): Promise<any> {
 
     // Check if we have valid db service
     if (!firebaseModule.db) {
-      console.error('Firebase database not initialized properly');
       // Try to get from admin if needed
       const { admin } = firebaseModule;
       if (admin && admin.apps.length > 0) {
@@ -20,7 +19,6 @@ async function getFirebaseDb(): Promise<any> {
 
     return firebaseModule.db;
   } catch (error) {
-    console.error('Firebase initialization failed:', error);
     throw new Error('Firebase database unavailable');
   }
 }
@@ -77,7 +75,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       invoices,
     });
   } catch (error) {
-    console.error('Fehler beim Laden der Rechnungen:', error);
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Laden der Rechnungen' },
       { status: 500 }
@@ -147,7 +144,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           'step3.lastInvoiceNumber': finalInvoiceNumber,
         });
       } catch (error) {
-        console.error('Fehler bei Rechnungsnummer-Generierung:', error);
         // Fallback: Zeitstempel-basierte Nummer
         const fallbackNumber = Date.now() % 10000;
         finalInvoiceNumber = `R-${new Date().getFullYear()}-${fallbackNumber.toString().padStart(3, '0')}`;
@@ -198,7 +194,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: 'Rechnung erfolgreich erstellt',
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen der Rechnung:', error);
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Erstellen der Rechnung' },
       { status: 500 }

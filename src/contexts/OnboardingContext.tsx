@@ -402,7 +402,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       setLastSaved(new Date());
     } catch (error) {
-      console.error(`❌ Fehler beim Speichern von Step ${currentStep}:`, error);
     } finally {
       setIsSaving(false);
     }
@@ -419,10 +418,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
   const submitOnboarding = useCallback(async (): Promise<void> => {
     if (!user || !companyId) {
-      console.error('❌ submitOnboarding failed: Missing user or companyId', {
-        user: !!user,
-        companyId,
-      });
       return;
     }
 
@@ -532,13 +527,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       // Update onboarding status
     } catch (error) {
-      console.error('❌ Fehler beim Abschließen des Onboardings:', error);
-      console.error('📊 Error details:', {
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        userUid: user?.uid,
-        companyId,
-        stepDataKeys: Object.keys(stepData),
-      });
       throw error;
     }
   }, [user, companyId, stepData]);

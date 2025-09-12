@@ -259,8 +259,6 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       // Lade die korrekten Statistiken für jeden Kunden
       loadCustomerStatsInBackground(filteredCustomers);
     } catch (error) {
-      console.error('❌ Error loading customers:', error);
-      console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
       toast.error('Fehler beim Laden der Kundendaten');
     } finally {
       setLoading(false);
@@ -275,13 +273,11 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       // Debug-Logs entfernt
 
       if (!user) {
-        console.error('❌ User not authenticated');
         throw new Error('Benutzer nicht authentifiziert');
       }
 
       // Verify user has permission to add customers to this company
       if (user.uid !== companyId) {
-        console.error('❌ Permission denied - user:', user.uid, 'companyId:', companyId);
         throw new Error('Keine Berechtigung für diese Firma');
       }
 
@@ -345,11 +341,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       toast.success(`Kunde ${customerData.name} erfolgreich hinzugefügt`);
     } catch (error) {
-      console.error('❌ Error in handleAddCustomer:', error);
-      console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
       // More detailed error logging
       if (error instanceof Error) {
-        console.error('📋 Error stack:', error.stack);
       }
 
       toast.error(
@@ -423,7 +416,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
             await new Promise(resolve => setTimeout(resolve, 100));
           } catch (error) {
             const errorMessage = `Failed to create customer ${customerName}: ${error instanceof Error ? error.message : String(error)}`;
-            console.error(`❌ ${errorMessage}`);
+
             creationErrors.push(errorMessage);
           }
         } else {
@@ -443,8 +436,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('❌ CRITICAL ERROR in createCustomersFromInvoices:', errorMessage);
-      console.error('🔍 Error details:', error);
+
       toast.error(`Kritischer Fehler: ${errorMessage}`);
     }
   };
@@ -534,7 +526,6 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
 
       toast.success('Kunde erfolgreich gelöscht');
     } catch (error) {
-      console.error('Fehler beim Löschen des Kunden:', error);
       toast.error('Fehler beim Löschen des Kunden');
       throw error;
     }

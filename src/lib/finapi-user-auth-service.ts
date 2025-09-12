@@ -154,15 +154,12 @@ export class FinAPIUserAuthService {
 
       return null;
     } catch (error) {
-      console.error('❌ getUserAccessToken failed, using legacy fallback:', error);
-
       // FALLBACK: Use legacy finAPI system for authentication if available
       try {
         // Legacy system doesn't maintain user-specific tokens
         // Return null to indicate authentication should be handled elsewhere
         return null;
       } catch (fallbackError) {
-        console.error('❌ Legacy finAPI authentication fallback also failed:', fallbackError);
         return null;
       }
     }
@@ -188,7 +185,6 @@ export class FinAPIUserAuthService {
 
       return false;
     } catch (error) {
-      console.error('❌ deactivateFinAPIUser failed:', error);
       return false;
     }
   }
@@ -207,7 +203,6 @@ export class FinAPIUserAuthService {
 
       return null;
     } catch (error) {
-      console.error('❌ getUserStatus failed:', error);
       return null;
     }
   }

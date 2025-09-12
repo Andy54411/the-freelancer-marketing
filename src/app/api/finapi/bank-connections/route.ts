@@ -102,7 +102,6 @@ export async function GET(request: NextRequest) {
             );
             finapiUser.userToken = refreshedUser.userToken;
           } catch (tokenError) {
-            console.error('❌ Failed to refresh token for saved user:', tokenError.message);
             throw tokenError;
           }
         } else {
@@ -142,9 +141,7 @@ export async function GET(request: NextRequest) {
             });
           }
         }
-      } catch (finapiError: any) {
-        console.error('❌ finAPI connection error:', finapiError.message);
-      }
+      } catch (finapiError: any) {}
 
       return NextResponse.json({
         success: true,
@@ -154,8 +151,6 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     } catch (finapiError: any) {
-      console.error('❌ finAPI connection error:', finapiError.message);
-
       // Return empty instead of error to keep UI functional
       return NextResponse.json({
         success: true,
@@ -166,7 +161,6 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('❌ Bank connections error:', error.message);
     return NextResponse.json(
       {
         success: false,
@@ -232,7 +226,6 @@ export async function DELETE(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
-      console.error('❌ Error removing bank connection:', error.message);
       return NextResponse.json(
         {
           success: false,
@@ -244,7 +237,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Bank connection delete error:', error.message);
     return NextResponse.json(
       {
         success: false,

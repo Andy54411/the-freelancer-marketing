@@ -40,7 +40,6 @@ export class TicketNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Ticket Notifications');
         return;
       }
 
@@ -75,7 +74,6 @@ export class TicketNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Ticket Notifications');
         return;
       }
 

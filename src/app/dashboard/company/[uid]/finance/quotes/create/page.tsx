@@ -54,7 +54,7 @@ export default function CreateQuotePage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -87,7 +87,6 @@ export default function CreateQuotePage() {
           setCustomers(response.customers);
         }
       } catch (error) {
-        console.error('Error loading customers:', error);
         toast.error('Fehler beim Laden der Kunden');
       } finally {
         setLoadingCustomers(false);
@@ -122,9 +121,10 @@ export default function CreateQuotePage() {
         ...prev,
         customerName: customer.name,
         customerEmail: customer.email || '',
-        customerAddress: customer.street && customer.city 
-          ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
-          : '',
+        customerAddress:
+          customer.street && customer.city
+            ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
+            : '',
       }));
     }
   };
@@ -147,16 +147,18 @@ export default function CreateQuotePage() {
   };
 
   const handleItemChange = (index: number, field: keyof QuoteItem, value: any) => {
-    setItems(items.map((item, i) => {
-      if (i === index) {
-        const updatedItem = { ...item, [field]: value };
-        if (field === 'quantity' || field === 'unitPrice') {
-          updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
+    setItems(
+      items.map((item, i) => {
+        if (i === index) {
+          const updatedItem = { ...item, [field]: value };
+          if (field === 'quantity' || field === 'unitPrice') {
+            updatedItem.total = updatedItem.quantity * updatedItem.unitPrice;
+          }
+          return updatedItem;
         }
-        return updatedItem;
-      }
-      return item;
-    }));
+        return item;
+      })
+    );
   };
 
   const handleSubmit = async (asDraft = true) => {
@@ -180,18 +182,20 @@ export default function CreateQuotePage() {
       }
 
       const validUntilDate = new Date(formData.validUntil);
-      
+
       const quoteData: Omit<QuoteType, 'id' | 'number' | 'createdAt' | 'updatedAt'> = {
         companyId: uid,
         customerName: formData.customerName,
         customerEmail: formData.customerEmail,
         customerPhone: '',
-        customerAddress: formData.customerAddress ? {
-          street: formData.customerAddress.split('\n')[0] || '',
-          city: formData.customerAddress.split('\n')[1] || '',
-          postalCode: '',
-          country: formData.customerAddress.split('\n')[2] || 'Deutschland',
-        } : undefined,
+        customerAddress: formData.customerAddress
+          ? {
+              street: formData.customerAddress.split('\n')[0] || '',
+              city: formData.customerAddress.split('\n')[1] || '',
+              postalCode: '',
+              country: formData.customerAddress.split('\n')[2] || 'Deutschland',
+            }
+          : undefined,
         date: new Date(),
         validUntil: validUntilDate,
         status: asDraft ? 'draft' : 'sent',
@@ -207,11 +211,10 @@ export default function CreateQuotePage() {
       };
 
       const quoteId = await QuoteService.createQuote(uid, quoteData);
-      
+
       toast.success(asDraft ? 'Angebot als Entwurf gespeichert' : 'Angebot erstellt und versendet');
       router.push(`/dashboard/company/${uid}/finance/quotes`);
     } catch (error) {
-      console.error('Error creating quote:', error);
       toast.error('Fehler beim Erstellen des Angebots');
     } finally {
       setLoading(false);
@@ -272,9 +275,7 @@ export default function CreateQuotePage() {
                       <SelectItem key={customer.id} value={customer.name}>
                         <div className="flex flex-col">
                           <span className="font-medium">{customer.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {customer.customerNumber}
-                          </span>
+                          <span className="text-xs text-gray-500">{customer.customerNumber}</span>
                         </div>
                       </SelectItem>
                     ))}
@@ -299,7 +300,9 @@ export default function CreateQuotePage() {
                     id="customerEmail"
                     type="email"
                     value={formData.customerEmail}
-                    onChange={e => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, customerEmail: e.target.value }))
+                    }
                     placeholder="info@mustermann.de"
                   />
                 </div>
@@ -310,7 +313,9 @@ export default function CreateQuotePage() {
                 <Textarea
                   id="customerAddress"
                   value={formData.customerAddress}
-                  onChange={e => setFormData(prev => ({ ...prev, customerAddress: e.target.value }))}
+                  onChange={e =>
+                    setFormData(prev => ({ ...prev, customerAddress: e.target.value }))
+                  }
                   placeholder="Musterstraße 123&#10;12345 Berlin&#10;Deutschland"
                   rows={3}
                 />
@@ -385,7 +390,10 @@ export default function CreateQuotePage() {
             <CardContent>
               <div className="space-y-4">
                 {items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border border-gray-200 rounded-lg">
+                  <div
+                    key={index}
+                    className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border border-gray-200 rounded-lg"
+                  >
                     <div className="md:col-span-5">
                       <Label>Beschreibung</Label>
                       <Input
@@ -399,7 +407,9 @@ export default function CreateQuotePage() {
                       <Input
                         type="number"
                         value={item.quantity}
-                        onChange={e => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+                        onChange={e =>
+                          handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                        }
                         min="0"
                         step="0.01"
                       />
@@ -409,7 +419,9 @@ export default function CreateQuotePage() {
                       <Input
                         type="number"
                         value={item.unitPrice}
-                        onChange={e => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                        onChange={e =>
+                          handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)
+                        }
                         min="0"
                         step="0.01"
                       />
@@ -460,7 +472,11 @@ export default function CreateQuotePage() {
               disabled={loading}
               className="bg-gray-600 hover:bg-gray-700 text-white"
             >
-              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
               Als Entwurf speichern
             </Button>
             <Button
@@ -468,7 +484,11 @@ export default function CreateQuotePage() {
               disabled={loading}
               className="bg-[#14ad9f] hover:bg-[#129488] text-white"
             >
-              {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+              {loading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4 mr-2" />
+              )}
               Erstellen und versenden
             </Button>
           </div>
@@ -496,9 +516,9 @@ export default function CreateQuotePage() {
                   <span className="text-[#14ad9f]">{formatCurrency(total)}</span>
                 </div>
               </div>
-              
+
               <Separator />
-              
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Positionen:</span>

@@ -2,7 +2,10 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceTemplate, AVAILABLE_TEMPLATES } from '@/components/finance/InvoiceTemplates';
-import { DeliveryNoteTemplate, AVAILABLE_DELIVERY_NOTE_TEMPLATES } from '@/components/finance/delivery-note-templates';
+import {
+  DeliveryNoteTemplate,
+  AVAILABLE_DELIVERY_NOTE_TEMPLATES,
+} from '@/components/finance/delivery-note-templates';
 
 export interface UserPreferences {
   preferredInvoiceTemplate: InvoiceTemplate | null; // null bedeutet: User muss auswählen
@@ -29,7 +32,6 @@ export async function getCompanyDefaultTemplate(
 
     return null; // User muss Template auswählen
   } catch (error) {
-    console.error('Fehler beim Laden des Company Default Templates:', error);
     return null; // User muss Template auswählen
   }
 }

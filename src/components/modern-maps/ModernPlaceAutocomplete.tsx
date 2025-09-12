@@ -90,9 +90,7 @@ export const ModernPlaceAutocomplete: React.FC<ModernPlaceAutocompleteProps> = (
         elementRef.current = element;
 
         return;
-      } catch (error) {
-        console.warn('⚠️ PlaceAutocompleteElement nicht verfügbar, verwende Autocomplete:', error);
-      }
+      } catch (error) {}
     }
 
     // Fallback auf traditionelles Autocomplete
@@ -107,9 +105,7 @@ export const ModernPlaceAutocomplete: React.FC<ModernPlaceAutocompleteProps> = (
           const place = autocomplete.getPlace();
           handlePlaceSelection(place);
         });
-      } catch (error) {
-        console.error('❌ Fehler bei Autocomplete-Initialisierung:', error);
-      }
+      } catch (error) {}
     }
 
     return () => {

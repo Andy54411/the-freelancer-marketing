@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
 
     // Check if Firebase is properly initialized
     if (!db || !admin) {
-      console.error('Firebase Admin SDK nicht initialisiert');
       return NextResponse.json(
         { success: false, error: 'Firebase Admin SDK nicht verfügbar' },
         { status: 500 }

@@ -188,8 +188,6 @@ const ProjectDetailPage: React.FC = () => {
             ...doc.data(),
           }));
         } catch (error) {
-          console.error('❌ Error loading proposals from subcollection:', error);
-
           // Fallback: Versuche aus dem Hauptdokument zu lesen
           if (Array.isArray(data.proposals)) {
             proposalsToProcess = data.proposals;

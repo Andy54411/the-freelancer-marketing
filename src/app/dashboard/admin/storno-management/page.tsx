@@ -81,7 +81,6 @@ export default function AdminStornoManagement() {
         setRequests(data.requests || []);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Storno-Anfragen:', error);
     } finally {
       setLoading(false);
     }
@@ -160,6 +159,7 @@ export default function AdminStornoManagement() {
             🟡 Hoch
           </Badge>
         );
+
       default:
         return <Badge variant="outline">⚪ Normal</Badge>;
     }
@@ -173,6 +173,7 @@ export default function AdminStornoManagement() {
             ✅ Genehmigt
           </Badge>
         );
+
       case 'rejected':
         return <Badge variant="destructive">❌ Abgelehnt</Badge>;
       default:

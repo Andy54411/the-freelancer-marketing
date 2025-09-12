@@ -178,10 +178,6 @@ export async function POST(request: NextRequest) {
         });
 
         if (emailResult.failedCount > 0) {
-          console.error(
-            '⚠️ SOME EMAILS FAILED:',
-            emailResult.details.filter(d => !d.success)
-          );
         }
 
         // 3. ÖFFENTLICHE FIRESTORE-NOTIFICATIONS: Erstelle Notifications für relevante Unternehmen (zusätzlich zu direkten)
@@ -220,7 +216,6 @@ export async function POST(request: NextRequest) {
 
               return { success: true, companyId: companyDoc.id };
             } catch (error) {
-              console.error('Error creating notification for company:', companyDoc.id, error);
               return { success: false, companyId: companyDoc.id, error };
             }
           });

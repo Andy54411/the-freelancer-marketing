@@ -55,7 +55,6 @@ export class CustomerService {
         } as Customer;
       });
     } catch (error) {
-      console.error('Error loading customers:', error);
       throw error;
     }
   }
@@ -97,7 +96,6 @@ export class CustomerService {
         companyId: data.companyId || companyId,
       };
     } catch (error) {
-      console.error('❌ Error loading customer:', error);
       throw error;
     }
   }
@@ -122,7 +120,6 @@ export class CustomerService {
 
       return docRef.id;
     } catch (error) {
-      console.error('❌ Error creating customer:', error);
       throw error;
     }
   }
@@ -142,7 +139,6 @@ export class CustomerService {
         updatedAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('❌ Error updating customer:', error);
       throw error;
     }
   }
@@ -154,7 +150,6 @@ export class CustomerService {
     try {
       await deleteDoc(doc(db, 'customers', customerId));
     } catch (error) {
-      console.error('❌ Error deleting customer:', error);
       throw error;
     }
   }
@@ -178,7 +173,6 @@ export class CustomerService {
           customer.customerNumber.toLowerCase().includes(term)
       );
     } catch (error) {
-      console.error('❌ Error searching customers:', error);
       throw error;
     }
   }
@@ -205,7 +199,6 @@ export class CustomerService {
       const nextNumber = maxNumber + 1;
       return `KD-${nextNumber.toString().padStart(4, '0')}`;
     } catch (error) {
-      console.error('❌ Error generating customer number:', error);
       return `KD-${Date.now().toString().slice(-4)}`;
     }
   }
@@ -299,7 +292,6 @@ export class CustomerService {
           customer.email.toLowerCase() === email.toLowerCase() && customer.id !== excludeCustomerId
       );
     } catch (error) {
-      console.error('❌ Error checking email:', error);
       return false;
     }
   }
@@ -352,7 +344,6 @@ export class CustomerService {
 
       return csvRows.join('\n');
     } catch (error) {
-      console.error('❌ Error exporting customers:', error);
       throw error;
     }
   }

@@ -137,9 +137,7 @@ export async function GET(request: NextRequest) {
             });
           }
         }
-      } catch (finapiError: any) {
-        console.error('❌ finAPI accounts error:', finapiError.message);
-      }
+      } catch (finapiError: any) {}
 
       return NextResponse.json({
         success: true,
@@ -153,8 +151,6 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     } catch (finapiError: any) {
-      console.error('❌ finAPI accounts error:', finapiError.message);
-
       // Return empty instead of error to keep UI functional
       return NextResponse.json({
         success: true,
@@ -169,7 +165,6 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('❌ Accounts error:', error.message);
     return NextResponse.json(
       {
         success: false,

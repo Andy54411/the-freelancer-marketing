@@ -434,9 +434,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
                 if (mappedCategory) {
                   return mappedCategory;
                 }
-              } catch (error) {
-                console.warn('Error mapping category:', error);
-              }
+              } catch (error) {}
             }
 
             const selectedCategory = get('selectedCategory', '') as string;
@@ -511,7 +509,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
       setForm(formData);
     } catch (error) {
-      console.error('❌ SettingsComponent: Error processing userData:', error);
       // Fallback: Setze ein minimales form object
       setForm({
         uid: userData.uid || '',
@@ -986,7 +983,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       try {
         await updateDoc(doc(db, 'companies', updatedForm.uid), cleanCompanyUpdateData);
       } catch (companyError) {
-        console.error('❌ Company update failed:', companyError);
         throw new Error(
           `Company update failed: ${companyError instanceof Error ? companyError.message : 'Unknown error'}`
         );

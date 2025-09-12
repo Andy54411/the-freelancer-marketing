@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
 
       if (response.ok) {
       } else {
-        console.error('❌ Failed to create global notification');
       }
     }
 
@@ -59,7 +58,6 @@ export async function POST(request: NextRequest) {
       updateData,
     });
   } catch (error) {
-    console.error('Error updating company:', error);
     return NextResponse.json(
       {
         error: 'Fehler beim Aktualisieren der Company',

@@ -86,11 +86,9 @@ export default function ExpensesPage() {
 
         setExpenses(formattedExpenses);
       } else {
-        console.error('API response error:', result);
         toast.error('Fehler beim Laden der Ausgaben: ' + (result.error || 'Unbekannter Fehler'));
       }
     } catch (error) {
-      console.error('Error loading expenses:', error);
       toast.error('Fehler beim Laden der Ausgaben');
     } finally {
       setLoading(false);
@@ -127,7 +125,6 @@ export default function ExpensesPage() {
         return false;
       }
     } catch (error) {
-      console.error('Error saving expense:', error);
       toast.error('Fehler beim Speichern der Ausgabe');
       return false;
     }
@@ -159,7 +156,6 @@ export default function ExpensesPage() {
         return false;
       }
     } catch (error) {
-      console.error('Error deleting expense:', error);
       toast.error('Fehler beim Löschen der Ausgabe');
       return false;
     }

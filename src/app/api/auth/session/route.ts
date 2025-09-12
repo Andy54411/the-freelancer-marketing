@@ -7,7 +7,6 @@ async function getFirebaseAuth(): Promise<any> {
     const firebaseModule = await import('@/firebase/server');
 
     if (!firebaseModule.auth) {
-      console.error('Firebase auth not initialized properly');
       const { admin } = firebaseModule;
       if (admin && admin.apps.length > 0) {
         const { getAuth } = await import('firebase-admin/auth');
@@ -18,7 +17,6 @@ async function getFirebaseAuth(): Promise<any> {
 
     return firebaseModule.auth;
   } catch (error) {
-    console.error('Firebase initialization failed:', error);
     throw new Error('Firebase auth unavailable');
   }
 }

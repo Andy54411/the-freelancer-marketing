@@ -69,7 +69,6 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
           }
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Daten:', error);
       } finally {
         setLoading(false);
       }
@@ -147,7 +146,6 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
       goToNextStep();
     } catch (error) {
-      console.error('❌ Fehler beim Speichern:', error);
       alert('Fehler beim Speichern der Daten. Bitte versuchen Sie es erneut.');
     } finally {
       // Sofort zurücksetzen - keine Verzögerung

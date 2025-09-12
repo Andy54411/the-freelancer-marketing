@@ -103,21 +103,9 @@ export function CustomerSelect({
         setCustomers([]);
       }
     } catch (error: any) {
-      console.error('❌ Error loading customers:', error);
-      console.error('🔍 Error details:', {
-        code: error.code,
-        message: error.message,
-        companyId,
-        stack: error.stack,
-      });
-
       if (error.code === 'permission-denied') {
-        console.error(
-          '🚫 Firestore permission denied - check security rules for customers collection'
-        );
         toast.error('Keine Berechtigung zum Laden der Kundendaten. Überprüfen Sie Ihre Anmeldung.');
       } else if (error.code === 'failed-precondition') {
-        console.error('🗂️ Missing Firestore index - check console for required index');
         toast.error('Firestore Index fehlt - siehe Konsole für Details');
       } else {
         toast.error('Fehler beim Laden der Kundendaten');

@@ -49,9 +49,7 @@ export async function GET(
 
         // Debug: Log welche profilePictureURL gefunden wurde
         const profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
-      } catch (error) {
-        console.warn('Could not load company data:', error);
-      }
+      } catch (error) {}
     }
 
     return NextResponse.json({
@@ -60,7 +58,6 @@ export async function GET(
       success: true,
     });
   } catch (error) {
-    console.error('❌ Error loading delivery note via API:', error);
     return NextResponse.json({ error: 'Fehler beim Laden des Lieferscheins' }, { status: 500 });
   }
 }

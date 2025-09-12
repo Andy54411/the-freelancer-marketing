@@ -118,7 +118,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
             createdAtDate = new Date();
           }
         } catch (error) {
-          console.warn('Error converting createdAt for supplier:', doc.id, error);
           createdAtDate = new Date();
         }
 
@@ -131,9 +130,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
           } else if (data.updatedAt && typeof data.updatedAt === 'string') {
             updatedAtDate = new Date(data.updatedAt);
           }
-        } catch (error) {
-          console.warn('Error converting updatedAt for supplier:', doc.id, error);
-        }
+        } catch (error) {}
 
         suppliersData.push({
           id: doc.id,
@@ -162,7 +159,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
       setSuppliers(suppliersData);
       setNextSupplierNumber(generateNextSupplierNumber(suppliersData));
     } catch (error) {
-      console.error('Fehler beim Laden der Lieferanten:', error);
       toast.error('Fehler beim Laden der Lieferanten');
     } finally {
       setLoading(false);
@@ -228,7 +224,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
 
       toast.success('Lieferant erfolgreich hinzugefügt');
     } catch (error) {
-      console.error('Fehler beim Hinzufügen des Lieferanten:', error);
       toast.error('Fehler beim Hinzufügen des Lieferanten');
       throw error;
     }
@@ -274,7 +269,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
 
       toast.success('Lieferant erfolgreich aktualisiert');
     } catch (error) {
-      console.error('Fehler beim Aktualisieren des Lieferanten:', error);
       toast.error('Fehler beim Aktualisieren des Lieferanten');
       throw error;
     }
@@ -305,8 +299,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
 
       toast.success('Lieferant erfolgreich gelöscht');
     } catch (error) {
-      console.error('Fehler beim Löschen des Lieferanten:', error);
-
       // More specific error handling
       if (error instanceof Error) {
         if (error.message.includes('permission')) {
@@ -360,7 +352,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
           dateObj = new Date(date._seconds * 1000);
         } else {
           // Fallback für unbekannte Objekte
-          console.warn('Unknown date object format:', date);
+
           return 'Unbekannt';
         }
       } else {
@@ -378,7 +370,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
         year: 'numeric',
       }).format(dateObj);
     } catch (error) {
-      console.error('Error formatting date:', error, 'Date value:', date);
       return 'Unbekannt';
     }
   };

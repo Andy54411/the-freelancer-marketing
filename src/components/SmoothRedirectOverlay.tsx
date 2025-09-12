@@ -77,7 +77,6 @@ export default function SmoothRedirectOverlay() {
 
         setUserName(name);
       } catch (error) {
-        console.error('Error loading user name:', error);
         // Fallback bei Fehlern
         setUserName(user.user_type === 'firma' ? 'Unternehmen' : 'liebe/r Nutzer/in');
       }

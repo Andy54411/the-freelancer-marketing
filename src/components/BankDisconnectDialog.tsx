@@ -33,7 +33,6 @@ export default function BankDisconnectDialog({
       await onConfirm();
       onClose();
     } catch (error) {
-      console.error('Error during disconnect:', error);
     } finally {
       setIsDisconnecting(false);
     }

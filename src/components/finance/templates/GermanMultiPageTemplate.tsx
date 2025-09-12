@@ -43,7 +43,6 @@ export const GermanMultiPageTemplate: React.FC<TemplateProps> = ({ data }) => {
             alt={`${data.companyName} Logo`}
             className="h-16 w-auto max-w-[100px] object-contain"
             onError={e => {
-              console.error('🖼️ Company Logo Error:', e);
               e.currentTarget.style.display = 'none';
             }}
           />

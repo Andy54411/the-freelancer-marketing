@@ -78,7 +78,6 @@ export class SteuerberaterAuthMiddleware {
         },
       };
     } catch (error) {
-      console.error('Authentication error:', error);
       return {
         success: false,
         error: 'Token-Verifizierung fehlgeschlagen',
@@ -141,7 +140,6 @@ export class SteuerberaterAuthMiddleware {
 
       return { success: true };
     } catch (error) {
-      console.error('Access check error:', error);
       return {
         success: false,
         error: 'Berechtigungsprüfung fehlgeschlagen',
@@ -183,7 +181,6 @@ export class SteuerberaterAuthMiddleware {
 
       return { success: true };
     } catch (error) {
-      console.error('Invitation access check error:', error);
       return {
         success: false,
         error: 'Einladungsprüfung fehlgeschlagen',
@@ -230,7 +227,6 @@ export class SteuerberaterAuthMiddleware {
 
       return { success: true };
     } catch (error) {
-      console.error('Rate limit check error:', error);
       // Don't block on rate limit errors
       return { success: true };
     }

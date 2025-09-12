@@ -84,7 +84,6 @@ export default function CompanyInboxPage() {
         avatarUrl: null,
       };
     } catch (error) {
-      console.error('Fehler beim Laden der Benutzerdaten:', error);
       return {
         name: UNKNOWN_USER_NAME,
         avatarUrl: null,

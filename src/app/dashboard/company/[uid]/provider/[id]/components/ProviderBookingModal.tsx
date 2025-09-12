@@ -123,9 +123,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
               provider.stripeAccountId = userData.stripeAccountId;
             }
           }
-        } catch (fallbackError) {
-          console.error('Fehler beim Laden der Provider Stripe Account ID:', fallbackError);
-        }
+        } catch (fallbackError) {}
       } else {
       }
 
@@ -253,6 +251,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                       (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
                     }}
                   />
+
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {getProviderName()}
@@ -291,6 +290,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] dark:bg-gray-700 dark:text-white min-h-[120px] resize-none"
                     required
                   />
+
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Geben Sie möglichst detaillierte Informationen zu Ihrem Auftrag an.
                   </p>
@@ -344,6 +344,7 @@ export const ProviderBookingModal: React.FC<ProviderBookingModalProps> = ({
                     alt={getProviderName()}
                     className="w-12 h-12 rounded-full object-cover"
                   />
+
                   <div>
                     <div className="font-medium text-gray-900 dark:text-white">
                       {getProviderName()}

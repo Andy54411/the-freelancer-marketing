@@ -70,7 +70,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // If not approved, still return the data but with appropriate status
     return NextResponse.json(response, { status: 200 }); // 200 because it's valid data, not an error
   } catch (error) {
-    console.error('Error checking approval status:', error);
     return NextResponse.json(
       {
         error: 'Fehler beim Überprüfen des Freigabe-Status',

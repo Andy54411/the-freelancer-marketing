@@ -47,7 +47,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       count: notifications.length,
     });
   } catch (error) {
-    console.error('Error loading notifications:', error);
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Benachrichtigungen',
@@ -98,7 +97,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     });
   } catch (error) {
-    console.error('Error creating notification:', error);
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen der Benachrichtigung',

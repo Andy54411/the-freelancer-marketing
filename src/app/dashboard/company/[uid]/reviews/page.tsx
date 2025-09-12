@@ -71,7 +71,6 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
       setShowReplyForm(false);
       onReplySubmitted();
     } catch (err) {
-      console.error('❌ Error saving provider response:', err);
       alert('Fehler beim Speichern der Antwort. Bitte versuchen Sie es erneut.');
     } finally {
       setSubmittingReply(false);
@@ -254,7 +253,6 @@ export default function ReviewsPage() {
           setLoading(false);
         },
         err => {
-          console.error('❌ Error loading reviews:', err);
           setError('Fehler beim Laden der Bewertungen');
           setLoading(false);
         }
@@ -262,7 +260,6 @@ export default function ReviewsPage() {
 
       return () => unsubscribe();
     } catch (err) {
-      console.error('❌ Error setting up reviews listener:', err);
       setError('Fehler beim Laden der Bewertungen');
       setLoading(false);
     }

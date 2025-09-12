@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
-      console.error('❌ Sync error:', error.message);
       return NextResponse.json(
         {
           success: false,
@@ -59,7 +58,6 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Sync transactions error:', error.message);
     return NextResponse.json(
       {
         success: false,

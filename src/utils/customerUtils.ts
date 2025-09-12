@@ -210,7 +210,6 @@ export const findOrCreateCustomer = async (
 
     return newCustomer;
   } catch (error) {
-    console.error('❌ Error in findOrCreateCustomer:', error);
     throw error;
   }
 };

@@ -38,8 +38,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('❌ Categorize transactions error:', error.message);
-
     return NextResponse.json(
       {
         error: 'Failed to categorize transactions',

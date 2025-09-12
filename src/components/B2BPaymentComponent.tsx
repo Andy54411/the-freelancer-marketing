@@ -364,7 +364,6 @@ export default function B2BPaymentComponent({
           setRealCustomerData(fallbackData);
         }
       } catch (error) {
-        console.error('Fehler beim Laden der Kundendaten:', error);
         // Fallback bei Fehler
         const fallbackData = {
           companyName: customerData.companyName || 'B2B Kunde',

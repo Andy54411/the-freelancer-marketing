@@ -50,7 +50,6 @@ export async function GET(
       project,
     });
   } catch (error) {
-    console.error('🚨 Error loading project:', error);
     return NextResponse.json({ error: 'Projekt konnte nicht geladen werden' }, { status: 500 });
   }
 }
@@ -104,7 +103,6 @@ export async function PUT(
       message: 'Projekt erfolgreich aktualisiert',
     });
   } catch (error) {
-    console.error('🚨 Error updating project:', error);
     return NextResponse.json(
       { error: 'Projekt konnte nicht aktualisiert werden' },
       { status: 500 }
@@ -135,7 +133,6 @@ export async function DELETE(
       message: 'Projekt erfolgreich gelöscht',
     });
   } catch (error) {
-    console.error('🚨 Error deleting project:', error);
     return NextResponse.json({ error: 'Projekt konnte nicht gelöscht werden' }, { status: 500 });
   }
 }

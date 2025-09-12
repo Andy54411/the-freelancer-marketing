@@ -325,8 +325,7 @@ export async function POST(req: NextRequest) {
 
                   if (!connectAccount.charges_enabled) {
                     // Trotzdem weitermachen, aber warnen
-                  }
-                  // ❌ ENTFERNT: Automatischer Transfer für Additional Hours
+                  } // ❌ ENTFERNT: Automatischer Transfer für Additional Hours
                   // const transfer = await stripe.transfers.create({
                   //   amount: transferAmount,
                   //   currency: 'eur',
@@ -757,7 +756,6 @@ export async function POST(req: NextRequest) {
               message: `Quote payment processed for quote ${quoteId}, order ${orderId} created`,
             });
           } catch (error) {
-            console.error('❌ Quote payment processing failed:', error);
             return NextResponse.json({
               received: true,
               message: 'Quote payment processing failed.',

@@ -183,7 +183,6 @@ export default function CompanyMarketplacePage() {
         setLoading(false);
       },
       error => {
-        console.error('Fehler beim Laden der Projekte:', error);
         toast.error('Fehler beim Laden der verfügbaren Projekte');
         setLoading(false);
       }

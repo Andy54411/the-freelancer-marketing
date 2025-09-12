@@ -86,7 +86,6 @@ export async function checkAdminApproval(companyId: string): Promise<AdminApprov
       errorCode: 'PENDING_ADMIN_APPROVAL',
     };
   } catch (error) {
-    console.error('Error checking admin approval:', error);
     return {
       isApproved: false,
       error: 'Fehler bei der Überprüfung der Admin-Freigabe',

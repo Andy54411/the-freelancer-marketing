@@ -59,7 +59,6 @@ export default function InvoiceTemplatesPage() {
           }
         }
       } catch (error) {
-        console.error('❌ Fehler beim Laden der Template-Präferenz:', error);
         toast.error('Fehler beim Laden der Template-Einstellungen');
       } finally {
         setLoading(false);
@@ -191,7 +190,6 @@ export default function InvoiceTemplatesPage() {
         throw new Error(response.error || 'Fehler beim Speichern');
       }
     } catch (error) {
-      console.error('❌ Fehler beim Speichern der Template-Einstellung:', error);
       handleApiError(error);
       toast.error('Fehler beim Speichern der Template-Einstellung');
     } finally {

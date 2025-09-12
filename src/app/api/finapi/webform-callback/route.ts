@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
         // Get company data
         const companyDoc = await db.collection('companies').doc(userId).get();
         if (!companyDoc.exists) {
-          console.error('❌ Company not found for userId:', userId);
           return NextResponse.json({ error: 'Company not found' }, { status: 404 });
         }
 
@@ -33,7 +32,6 @@ export async function POST(request: NextRequest) {
         const companyEmail = companyData?.email;
 
         if (!companyEmail) {
-          console.error('❌ Company email not found');
           return NextResponse.json({ error: 'Company email not found' }, { status: 400 });
         }
 
@@ -68,8 +66,6 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
         });
       } catch (syncError: any) {
-        console.error('❌ Sync error after WebForm completion:', syncError.message);
-
         // Store partial info even if sync fails
         await db
           .collection('finapi_connections')
@@ -107,7 +103,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('❌ WebForm callback error:', error.message);
     return NextResponse.json(
       {
         error: 'WebForm callback processing failed',
@@ -151,7 +146,6 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('❌ WebForm callback status error:', error.message);
     return NextResponse.json(
       {
         error: 'Failed to get WebForm callback status',

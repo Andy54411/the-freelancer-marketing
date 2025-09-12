@@ -194,7 +194,6 @@ export class ProjectEmailNotificationService {
       // Ensure Firebase is initialized
       const { admin, db } = await ensureFirebaseInitialized();
       if (!admin || !db) {
-        console.error('Firebase nicht verfügbar für Project Email Notifications');
         return {
           success: false,
           sentCount: 0,

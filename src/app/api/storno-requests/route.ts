@@ -119,7 +119,6 @@ export async function POST(request: NextRequest) {
       estimatedProcessingTime: '24-48 Stunden',
     });
   } catch (error: any) {
-    console.error('Fehler beim Erstellen der Storno-Anfrage:', error);
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Erstellen der Storno-Anfrage' },
       { status: 500 }
@@ -165,7 +164,6 @@ export async function GET(request: NextRequest) {
       total: stornoRequests.length,
     });
   } catch (error: any) {
-    console.error('Fehler beim Abrufen der Storno-Anfragen:', error);
     return NextResponse.json({ error: 'Fehler beim Abrufen der Storno-Anfragen' }, { status: 500 });
   }
 }
@@ -176,7 +174,6 @@ export async function GET(request: NextRequest) {
 async function updateProviderStornoStats(providerId: string, auftragId: string) {
   try {
     if (!adminDb) {
-      console.error('Firebase Admin not available for provider stats update');
       return;
     }
 
@@ -215,9 +212,7 @@ async function updateProviderStornoStats(providerId: string, auftragId: string) 
         }),
       });
     }
-  } catch (error) {
-    console.error('Fehler beim Update der Provider Storno-Stats:', error);
-  }
+  } catch (error) {}
 }
 
 /**
@@ -240,7 +235,5 @@ async function createAdminTicketForStornoRequest(stornoRequestId: string, storno
     };
 
     // TODO: Implementiere AWS Webhook Call
-  } catch (error) {
-    console.error('Fehler beim Erstellen des Admin-Tickets:', error);
-  }
+  } catch (error) {}
 }

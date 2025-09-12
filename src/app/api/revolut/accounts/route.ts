@@ -111,7 +111,6 @@ export async function GET(request: NextRequest) {
 
             connection.authData.accessToken = newTokenData.access_token;
           } catch (refreshError: any) {
-            console.error('❌ Failed to refresh Revolut token:', refreshError.message);
             return NextResponse.json(
               {
                 success: false,
@@ -215,8 +214,6 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     } catch (apiError: any) {
-      console.error('❌ Error fetching Revolut accounts:', apiError.message);
-
       // Try to return stored data as fallback
       const companyDoc = await db.collection('companies').doc(userId).get();
       const companyData = companyDoc.data();
@@ -261,7 +258,6 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Revolut accounts error:', error.message);
     return NextResponse.json(
       {
         success: false,

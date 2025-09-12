@@ -217,7 +217,6 @@ export function CustomerDetailModal({
       setInvoices(loadedInvoices);
       calculateCustomerStats(loadedInvoices);
     } catch (error) {
-      console.error('❌ Error loading invoice history:', error);
       toast.error('Fehler beim Laden der Rechnungshistorie');
     } finally {
       setLoading(false);
@@ -267,9 +266,7 @@ export function CustomerDetailModal({
         }
       } else {
       }
-    } catch (error) {
-      console.error('❌ Error reloading customer data:', error);
-    }
+    } catch (error) {}
   };
 
   if (!localCustomer) return null;

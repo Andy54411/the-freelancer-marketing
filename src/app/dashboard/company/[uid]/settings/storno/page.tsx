@@ -84,7 +84,6 @@ export default function CompanyStornoSettingsPage() {
         }
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Storno-Einstellungen:', error);
     } finally {
       setIsLoading(false);
     }
@@ -216,6 +215,7 @@ export default function CompanyStornoSettingsPage() {
                   onChange={e => updateSettings('allowCustomerCancellation', e.target.checked)}
                   className="h-4 w-4 text-[#14ad9f] rounded border-gray-300 focus:ring-[#14ad9f]"
                 />
+
                 <Label htmlFor="allowCancellation" className="text-sm font-medium">
                   Kundenstornierungen zulassen
                 </Label>
@@ -243,6 +243,7 @@ export default function CompanyStornoSettingsPage() {
                       }
                       className="mt-1 max-w-xs"
                     />
+
                     <p className="text-xs text-gray-500 mt-1">
                       0 = Stornierung bis zum Ausführungstag möglich, 24 = bis 24h vorher, etc.
                     </p>
@@ -260,6 +261,7 @@ export default function CompanyStornoSettingsPage() {
                         }
                         className="h-4 w-4 text-[#14ad9f] rounded border-gray-300 focus:ring-[#14ad9f]"
                       />
+
                       <Label htmlFor="autoApproval" className="text-sm font-medium">
                         Automatische Genehmigung aktivieren
                       </Label>
@@ -336,6 +338,7 @@ export default function CompanyStornoSettingsPage() {
                   onChange={e => updateSettings('stornoFee.enabled', e.target.checked)}
                   className="h-4 w-4 text-[#14ad9f] rounded border-gray-300 focus:ring-[#14ad9f]"
                 />
+
                 <Label htmlFor="enableFees" className="text-sm font-medium">
                   Storno-Gebühren erheben
                 </Label>
@@ -356,6 +359,7 @@ export default function CompanyStornoSettingsPage() {
                           onChange={() => updateSettings('stornoFee.type', 'fixed')}
                           className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f]"
                         />
+
                         <Label htmlFor="fixedFee" className="text-sm">
                           Fester Betrag
                         </Label>
@@ -369,6 +373,7 @@ export default function CompanyStornoSettingsPage() {
                           onChange={() => updateSettings('stornoFee.type', 'percentage')}
                           className="h-4 w-4 text-[#14ad9f] border-gray-300 focus:ring-[#14ad9f]"
                         />
+
                         <Label htmlFor="percentageFee" className="text-sm">
                           Prozentsatz
                         </Label>
@@ -397,6 +402,7 @@ export default function CompanyStornoSettingsPage() {
                         className="mt-1 max-w-xs"
                         placeholder="z.B. 15.00"
                       />
+
                       <p className="text-xs text-gray-500 mt-1">
                         Betrag in Euro, der bei jeder Stornierung abgezogen wird
                       </p>
@@ -419,6 +425,7 @@ export default function CompanyStornoSettingsPage() {
                         className="mt-1 max-w-xs"
                         placeholder="z.B. 5.0"
                       />
+
                       <p className="text-xs text-gray-500 mt-1">
                         Prozentsatz des Auftragswertes als Storno-Gebühr
                       </p>
@@ -485,6 +492,7 @@ export default function CompanyStornoSettingsPage() {
                   className="mt-1"
                   placeholder="z.B. Bei Materialbestellungen ist eine Stornierung nur bis 48h vor Ausführung möglich..."
                 />
+
                 <p className="text-xs text-gray-500 mt-1">
                   Diese Bedingungen werden Kunden zusätzlich zu den Standard-Storno-Informationen
                   angezeigt.

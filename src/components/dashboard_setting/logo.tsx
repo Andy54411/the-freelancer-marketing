@@ -72,9 +72,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
             setProjectImages(userData.projectImages || []);
           }
         }
-      } catch (error) {
-        console.error('Error loading project images:', error);
-      }
+      } catch (error) {}
     };
     fetchProjectImagesFromFirestore();
   }, [uid]);
@@ -162,7 +160,6 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           profileBannerImage: url,
         });
       } else {
-        console.warn('Banner-Upload ist nur für Firmen verfügbar');
         setUploadError('Banner-Upload ist nur für Firmen verfügbar');
         return;
       }
@@ -176,7 +173,7 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
       if (err instanceof Error) {
         errorMessage = `Fehler beim Hochladen des Banners: ${err.message}`;
       }
-      console.error('❌ Banner-Upload Fehler (Settings):', err);
+
       setUploadError(errorMessage);
     } finally {
       setUploadingBanner(false);
@@ -251,8 +248,6 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           projectImages: newProjectImagesUrls,
         });
       } else {
-        // Für normale Kunden: Projektbilder gehören eigentlich nicht zu Kunden
-        console.warn('Projektbilder sind nur für Firmen relevant');
       }
 
       setProjectImages(newProjectImagesUrls);
@@ -296,8 +291,6 @@ const LogoForm: React.FC<LogoFormProps> = ({ formData, handleChange }) => {
           projectImages: updatedProjectImages,
         });
       } else {
-        // Für normale Kunden: Projektbilder gehören eigentlich nicht zu Kunden
-        console.warn('Projektbilder sind nur für Firmen relevant');
       }
 
       setProjectImages(updatedProjectImages);

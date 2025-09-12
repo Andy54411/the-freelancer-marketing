@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
       message: 'Globale Benachrichtigung erfolgreich erstellt',
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen der globalen Benachrichtigung:', error);
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Erstellen der Benachrichtigung' },
       { status: 500 }
@@ -72,7 +71,6 @@ export async function GET(req: NextRequest) {
       count: notifications.length,
     });
   } catch (error) {
-    console.error('Fehler beim Abrufen der Benachrichtigungen:', error);
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Abrufen der Benachrichtigungen' },
       { status: 500 }

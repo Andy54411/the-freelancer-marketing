@@ -44,16 +44,13 @@ export async function POST(request: NextRequest) {
       if (ocrResult.success) {
         return NextResponse.json(ocrResult);
       }
-    } catch (ocrError) {
-      console.warn('⚠️ Advanced OCR failed, falling back to filename analysis:', ocrError);
-    }
+    } catch (ocrError) {}
 
     // Fallback to enhanced filename analysis
 
     const fallbackResult = await performEnhancedFilenameAnalysis(file, companyId, filename);
     return NextResponse.json(fallbackResult);
   } catch (error) {
-    console.error('Error processing receipt:', error);
     return NextResponse.json(
       {
         success: false,
@@ -111,7 +108,7 @@ async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('❌ Firebase Function error:', errorText);
+
     throw new Error(`Firebase Function call failed: ${response.status} - ${errorText}`);
   }
 
@@ -222,9 +219,7 @@ async function performEnhancedFilenameAnalysis(file: File, companyId: string, fi
         } else {
         }
       }
-    } catch (regexError) {
-      console.warn('Regex error with pattern:', pattern.source, regexError);
-    }
+    } catch (regexError) {}
   }
 
   // Smart vendor detection from filename

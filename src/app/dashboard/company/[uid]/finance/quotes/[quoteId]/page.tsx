@@ -38,18 +38,6 @@ export default function QuoteDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     loadQuote();
   }, [quoteId, uid]);
@@ -60,7 +48,6 @@ export default function QuoteDetailPage() {
       const quoteData = await QuoteService.getQuote(uid, quoteId);
       setQuote(quoteData);
     } catch (error) {
-      console.error('Error loading quote:', error);
       toast.error('Angebot konnte nicht geladen werden');
       router.push(`/dashboard/company/${uid}/finance/quotes`);
     } finally {
@@ -70,14 +57,13 @@ export default function QuoteDetailPage() {
 
   const handleSend = async () => {
     if (!quote) return;
-    
+
     try {
       setActionLoading(true);
       await QuoteService.sendQuote(uid, quote.id);
       toast.success('Angebot wurde versendet');
       await loadQuote(); // Reload to get updated status
     } catch (error) {
-      console.error('Error sending quote:', error);
       toast.error('Fehler beim Versenden des Angebots');
     } finally {
       setActionLoading(false);
@@ -108,6 +94,18 @@ export default function QuoteDetailPage() {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
+      </div>
+    );
+  }
+
+  // Autorisierung prüfen (nach Hooks platzieren, um React Hooks-Regeln einzuhalten)
+  if (!user || user.uid !== uid) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
+        </div>
       </div>
     );
   }
@@ -145,7 +143,7 @@ export default function QuoteDetailPage() {
             <p className="text-gray-600">Für {quote.customerName}</p>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Printer className="h-4 w-4 mr-2" />
@@ -211,7 +209,8 @@ export default function QuoteDetailPage() {
                 <div className="flex items-center space-x-2">
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <span>
-                    {quote.customerAddress.street}, {quote.customerAddress.postalCode} {quote.customerAddress.city}
+                    {quote.customerAddress.street}, {quote.customerAddress.postalCode}{' '}
+                    {quote.customerAddress.city}
                   </span>
                 </div>
               )}
@@ -334,33 +333,33 @@ export default function QuoteDetailPage() {
                 <span className="text-sm text-gray-600">Status:</span>
                 <div className="mt-1">{getStatusBadge(quote.status)}</div>
               </div>
-              
+
               <Separator />
-              
+
               <div>
                 <span className="text-sm text-gray-600">Angebotsnummer:</span>
                 <p className="font-mono">{quote.number}</p>
               </div>
-              
+
               <div>
                 <span className="text-sm text-gray-600">Gesamtbetrag:</span>
                 <p className="text-xl font-bold text-[#14ad9f]">{formatCurrency(quote.total)}</p>
               </div>
-              
+
               {quote.sentAt && (
                 <div>
                   <span className="text-sm text-gray-600">Versendet am:</span>
                   <p>{new Date(quote.sentAt).toLocaleDateString('de-DE')}</p>
                 </div>
               )}
-              
+
               {quote.acceptedAt && (
                 <div>
                   <span className="text-sm text-gray-600">Angenommen am:</span>
                   <p>{new Date(quote.acceptedAt).toLocaleDateString('de-DE')}</p>
                 </div>
               )}
-              
+
               {quote.rejectedAt && (
                 <div>
                   <span className="text-sm text-gray-600">Abgelehnt am:</span>

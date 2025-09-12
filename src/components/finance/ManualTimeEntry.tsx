@@ -211,7 +211,6 @@ export function ManualTimeEntry({
       setOpen(false);
       onTimeEntryCreated();
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen des Zeiteintrags:', error);
       toast.error(
         `Zeiteintrag konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );
@@ -416,6 +415,7 @@ export function ManualTimeEntry({
                     }
                     placeholder="z.B. 30 für Mittagspause"
                   />
+
                   <p className="text-xs text-gray-500 mt-1">Standard: 30 Min. Mittagspause</p>
                 </div>
               </>
@@ -510,6 +510,7 @@ export function ManualTimeEntry({
                   checked={formData.billable}
                   onCheckedChange={checked => setFormData({ ...formData, billable: !!checked })}
                 />
+
                 <Label htmlFor="billable">Abrechenbar</Label>
               </div>
             </div>

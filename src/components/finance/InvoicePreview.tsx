@@ -94,7 +94,6 @@ export function InvoicePreview({ invoiceData, companySettings }: InvoicePreviewP
     // Erstelle ein neues Fenster nur für das Template
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      console.error('Print-Fenster konnte nicht geöffnet werden');
       return;
     }
 

@@ -144,7 +144,6 @@ export async function POST(
       supportContact: 'Bei Fragen kontaktieren Sie unseren Support',
     });
   } catch (error: any) {
-    console.error('Fehler bei Customer Storno Request:', error);
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Erstellen der Storno-Anfrage' },
       { status: 500 }
@@ -215,7 +214,6 @@ export async function GET(
       },
     });
   } catch (error: any) {
-    console.error('Fehler beim Abrufen der Storno-Anfragen:', error);
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Storno-Informationen' },
       { status: 500 }
@@ -265,8 +263,5 @@ function getCanRequestStornoInfo(auftragData: any) {
  */
 async function notifyProviderAboutStornoRequest(auftragData: any, stornoData: any) {
   try {
-  } catch (error) {
-    console.error('Fehler beim Benachrichtigen des Providers:', error);
-    // Fehler beim Benachrichtigen sollte die Storno-Anfrage nicht blockieren
-  }
+  } catch (error) {}
 }

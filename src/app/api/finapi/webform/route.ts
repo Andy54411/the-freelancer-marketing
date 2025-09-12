@@ -88,8 +88,6 @@ export async function POST(request: NextRequest) {
         },
       });
     } catch (webFormError: any) {
-      console.error('finAPI WebForm creation error:', webFormError);
-
       // Fallback: Return error instead of Taskilo flow for live deployment
       return NextResponse.json(
         {
@@ -103,8 +101,6 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('Error creating finAPI WebForm:', error);
-
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen der WebForm',
@@ -138,8 +134,6 @@ export async function GET(request: NextRequest) {
       message: 'WebForm-Status abgerufen',
     });
   } catch (error: any) {
-    console.error('Error fetching WebForm status:', error);
-
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen des WebForm-Status',

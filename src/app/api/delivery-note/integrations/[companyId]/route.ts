@@ -71,7 +71,6 @@ export async function GET(request: NextRequest, { params }: { params: { companyI
       integrations,
     });
   } catch (error) {
-    console.error('Error loading integrations:', error);
     return NextResponse.json(
       { success: false, error: 'Integrationen konnten nicht geladen werden' },
       { status: 500 }
@@ -119,7 +118,6 @@ export async function POST(request: NextRequest, { params }: { params: { company
       integration: responseData,
     });
   } catch (error) {
-    console.error('Error creating integration:', error);
     return NextResponse.json(
       { success: false, error: 'Integration konnte nicht erstellt werden' },
       { status: 500 }
@@ -151,7 +149,6 @@ export async function PUT(request: NextRequest, { params }: { params: { companyI
       message: 'Integration erfolgreich aktualisiert',
     });
   } catch (error) {
-    console.error('Error updating integration:', error);
     return NextResponse.json(
       { success: false, error: 'Integration konnte nicht aktualisiert werden' },
       { status: 500 }
@@ -180,7 +177,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { compa
       message: 'Integration erfolgreich gelöscht',
     });
   } catch (error) {
-    console.error('Error deleting integration:', error);
     return NextResponse.json(
       { success: false, error: 'Integration konnte nicht gelöscht werden' },
       { status: 500 }

@@ -33,7 +33,6 @@ export function StripeCardCheckout({
     e.preventDefault();
 
     if (!stripe || !elements) {
-      console.error('[DEBUG] Stripe oder Elements nicht bereit');
       return;
     }
 
@@ -90,7 +89,6 @@ export function StripeCardCheckout({
             }}
             onLoadError={error => {
               alert(`❌ PaymentElement Fehler: ${JSON.stringify(error)}`);
-              console.error('❌ PaymentElement minimal test Fehler:', error);
             }}
           />
         </div>

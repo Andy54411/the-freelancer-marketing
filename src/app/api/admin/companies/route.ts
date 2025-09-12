@@ -40,7 +40,6 @@ export async function GET(_request: NextRequest) {
       ),
     });
   } catch (error) {
-    console.error('Error fetching companies from Firebase:', error);
     return NextResponse.json({ error: 'Fehler beim Laden der Unternehmen' }, { status: 500 });
   }
 }

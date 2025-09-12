@@ -8,7 +8,6 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-    console.error('❌ STRIPE_SECRET_KEY ist nicht in den Umgebungsvariablen definiert');
     return null;
   }
 
@@ -87,14 +86,12 @@ export async function POST(request: NextRequest) {
         if (fallbackStripeAccountId && fallbackStripeAccountId.startsWith('acct_')) {
           providerStripeAccountId = fallbackStripeAccountId;
         } else {
-          console.error('❌ Keine gültige Provider Stripe Account ID gefunden');
           return NextResponse.json(
             { error: 'Provider-Benutzer nicht gefunden oder Stripe Connect nicht eingerichtet.' },
             { status: 404 }
           );
         }
       } catch (fallbackError) {
-        console.error('❌ Fehler beim Laden der Provider-Daten:', fallbackError);
         return NextResponse.json(
           { error: 'Fehler beim Prüfen der Provider Stripe-Konfiguration.' },
           { status: 500 }
@@ -199,15 +196,12 @@ export async function POST(request: NextRequest) {
     let stripeErrorType: string | null = null;
 
     if (error instanceof Stripe.errors.StripeError) {
-      console.error('❌ Stripe Error:', error);
       errorMessage = `Stripe Fehler: ${error.message}`;
       stripeErrorCode = error.code || null;
       stripeErrorType = error.type;
     } else if (error instanceof Error) {
-      console.error('❌ General Error:', error);
       errorMessage = error.message;
     } else {
-      console.error('❌ Unknown Error:', error);
     }
 
     return NextResponse.json(

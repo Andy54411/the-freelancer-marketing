@@ -65,7 +65,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Get only quotes for this specific provider to improve performance
       quotesSnapshot = await db.collection('quotes').where('providerId', '==', uid).get();
     } catch (error) {
-      console.error('Error fetching quotes:', error);
       // Fallback: Get all quotes if the filtered query fails
       quotesSnapshot = await db.collection('quotes').get();
     }
@@ -113,9 +112,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               };
             }
           }
-        } catch (error) {
-          console.error('Error fetching customer info:', error);
-        }
+        } catch (error) {}
       }
 
       // If no customerUid or customer not found, try to find customer by email
@@ -152,9 +149,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               };
             }
           }
-        } catch (error) {
-          console.error('Error fetching customer by email:', error);
-        }
+        } catch (error) {}
       }
 
       // If no customerUid or customer not found, use the basic info from quote
@@ -201,9 +196,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             proposalStatus = (responseData as { status?: string })?.status || null;
           }
         }
-      } catch (error) {
-        console.error('Error checking proposals:', error);
-      }
+      } catch (error) {}
 
       // Determine actual status based on proposal status and payment
       let actualStatus = quoteData.status || 'pending';

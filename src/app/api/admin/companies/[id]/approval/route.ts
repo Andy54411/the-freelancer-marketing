@@ -22,13 +22,9 @@ async function verifyAdminAuth(
         if (decoded.role === 'admin') {
           return { isValid: true, userId: decoded.userId };
         }
-      } catch (error) {
-        console.error('JWT verification failed:', error);
-      }
+      } catch (error) {}
     }
-  } catch (error) {
-    console.error('Admin auth verification error:', error);
-  }
+  } catch (error) {}
 
   return { isValid: false, error: 'Keine gültige Admin-Authentifizierung gefunden' };
 }
@@ -186,12 +182,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const globalNotificationResponse = { ok: true }; // Dummy response für bestehende Logik
 
       if (!globalNotificationResponse.ok) {
-        console.error('Failed to send global notification to user');
       }
-    } catch (notificationError) {
-      console.error('Error sending notification:', notificationError);
-      // Don't fail the approval process if notification fails
-    }
+    } catch (notificationError) {}
 
     return NextResponse.json({
       success: true,
@@ -215,7 +207,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     });
   } catch (error) {
-    console.error('Error updating company approval status:', error);
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Aktualisieren des Freigabe-Status' },
       { status: 500 }

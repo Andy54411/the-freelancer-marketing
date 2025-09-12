@@ -31,9 +31,6 @@ async function updateSupplierStats(supplierId: string, companyId: string) {
     // Prüfen ob Supplier existiert
     const supplierDoc = await supplierRef.get();
     if (!supplierDoc.exists) {
-      console.error(
-        `🔗 updateSupplierStats: Supplier ${supplierId} not found in customers collection!`
-      );
       return;
     }
 
@@ -42,9 +39,7 @@ async function updateSupplierStats(supplierId: string, companyId: string) {
       totalInvoices,
       updatedAt: new Date(),
     });
-  } catch (error) {
-    console.error('🔗 updateSupplierStats: Error updating supplier stats:', error);
-  }
+  } catch (error) {}
 }
 
 export async function GET(request: NextRequest) {
@@ -105,7 +100,6 @@ export async function GET(request: NextRequest) {
       count: expenses.length,
     });
   } catch (error) {
-    console.error('Error fetching expenses:', error);
     return NextResponse.json(
       {
         success: false,
@@ -255,7 +249,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Error saving expense:', error);
     return NextResponse.json(
       {
         success: false,
@@ -321,7 +314,6 @@ export async function DELETE(request: NextRequest) {
       message: 'Ausgabe erfolgreich gelöscht',
     });
   } catch (error) {
-    console.error('Error deleting expense:', error);
     return NextResponse.json(
       {
         success: false,

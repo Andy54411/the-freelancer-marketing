@@ -104,8 +104,6 @@ export function AddTaskSlideOver({
 
       onClose();
     } catch (error) {
-      console.error('Failed to create task:', error);
-      // Don't close modal on error so user can retry
     } finally {
       setLoading(false);
     }
@@ -227,6 +225,7 @@ export function AddTaskSlideOver({
                       }
                     }}
                   />
+
                   <Button type="button" onClick={addTag} variant="outline" size="sm">
                     <Tag className="h-4 w-4" />
                   </Button>

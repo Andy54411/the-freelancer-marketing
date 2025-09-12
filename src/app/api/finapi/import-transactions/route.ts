@@ -119,7 +119,6 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
-      console.error('❌ Import error:', error.message);
       return NextResponse.json(
         {
           success: false,
@@ -130,7 +129,6 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Import transactions error:', error.message);
     return NextResponse.json(
       {
         success: false,

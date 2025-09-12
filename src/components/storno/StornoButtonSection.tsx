@@ -93,7 +93,6 @@ export default function StornoButtonSection({
         setStornoConditions(conditions);
       }
     } catch (error) {
-      console.error('Fehler beim Laden der Storno-Bedingungen:', error);
       // Fallback auf alte Methode
       const isOverdue = checkIfOverdue();
       setStornoConditions({
@@ -129,6 +128,7 @@ export default function StornoButtonSection({
       'accepted',
       'PROVIDER_COMPLETED',
     ];
+
     return cancellableStates.includes(order.status);
   };
 

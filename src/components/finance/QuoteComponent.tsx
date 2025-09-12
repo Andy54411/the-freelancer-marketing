@@ -73,7 +73,6 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
         setQuotes(quotesData);
         setStats(statsData);
       } catch (error) {
-        console.error('Error loading quotes:', error);
         toast.error('Angebote konnten nicht geladen werden');
       } finally {
         setLoading(false);
@@ -125,7 +124,6 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
       await QuoteService.convertToInvoice(companyId, quote.id);
       toast.success(`Angebot ${quote.number} wird in Rechnung umgewandelt`);
     } catch (error) {
-      console.error('Error converting quote:', error);
       toast.error('Fehler beim Umwandeln in Rechnung');
     }
   };
@@ -135,7 +133,6 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
       await QuoteService.sendQuote(companyId, quote.id);
       toast.success(`Angebot ${quote.number} wurde versendet`);
     } catch (error) {
-      console.error('Error sending quote:', error);
       toast.error('Fehler beim Versenden des Angebots');
     }
   };
@@ -145,7 +142,6 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
       await QuoteService.deleteQuote(companyId, quote.id);
       toast.success(`Angebot ${quote.number} wurde gelöscht`);
     } catch (error) {
-      console.error('Error deleting quote:', error);
       toast.error('Fehler beim Löschen des Angebots');
     }
   };

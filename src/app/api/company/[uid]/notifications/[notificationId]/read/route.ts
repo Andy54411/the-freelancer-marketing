@@ -36,7 +36,6 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
     return NextResponse.json(
       {
         error: 'Fehler beim Markieren der Benachrichtigung',

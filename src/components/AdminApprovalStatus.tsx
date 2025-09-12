@@ -99,7 +99,6 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
         });
       }
     } catch (error) {
-      console.error('Error checking approval status:', error);
       setStatus({
         isApproved: false,
         isLoading: false,
@@ -125,9 +124,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
           setShowNotifications(true);
         }
       }
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-    }
+    } catch (error) {}
   };
 
   const markNotificationAsRead = async (notificationId: string) => {
@@ -139,9 +136,7 @@ export function AdminApprovalStatus({ companyId, className = '' }: AdminApproval
       setNotifications(prev =>
         prev.map(n => (n.id === notificationId ? { ...n, readAt: new Date().toISOString() } : n))
       );
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
+    } catch (error) {}
   };
 
   const getStatusIcon = () => {

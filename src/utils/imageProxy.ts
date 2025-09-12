@@ -32,7 +32,6 @@ export function getProxiedImageUrl(firebaseStorageUrl: string): string {
 
     return proxyUrl;
   } catch (error) {
-    console.error('🖼️ Error creating proxy URL:', error);
     return firebaseStorageUrl; // Fallback zur originalen URL
   }
 }

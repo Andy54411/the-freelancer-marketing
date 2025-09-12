@@ -73,7 +73,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       projectBreakdown,
     });
   } catch (error) {
-    console.error('❌ Error loading time entries:', error);
     return NextResponse.json(
       {
         success: false,

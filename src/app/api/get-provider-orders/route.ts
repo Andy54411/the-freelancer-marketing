@@ -122,9 +122,7 @@ export async function GET(request: NextRequest) {
                   customerAvatarUrl = companyData?.logoUrl || companyData?.profilePictureURL;
                 }
               }
-            } catch (customerError) {
-              console.error('Error fetching customer data:', customerError);
-            }
+            } catch (customerError) {}
           }
 
           return {

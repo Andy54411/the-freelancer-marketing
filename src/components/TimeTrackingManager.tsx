@@ -110,7 +110,6 @@ export default function TimeTrackingManager({
 
       setProviderName('Unbekannter Nutzer');
     } catch (error) {
-      console.error('Fehler beim Laden der Provider-Daten:', error);
       setProviderName('Fehler beim Laden');
     }
   };
@@ -179,7 +178,6 @@ export default function TimeTrackingManager({
 
       return false; // Default: B2C
     } catch (error) {
-      console.error('❌ Fehler bei B2B/B2C-Check:', error);
       return false; // Fallback zu B2C bei Fehlern
     }
   };
@@ -205,7 +203,6 @@ export default function TimeTrackingManager({
         return null;
       }
     } catch (error) {
-      console.error('❌ Fehler bei Rolle-Bestimmung:', error);
       setUserRole(null);
       return null;
     }
@@ -269,10 +266,8 @@ export default function TimeTrackingManager({
 
         setTimeEntries(entries);
       } else {
-        console.error('❌ Auftrag nicht gefunden:', orderId);
       }
     } catch (error) {
-      console.error('❌ Fehler beim Laden der Zeiterfassung:', error);
     } finally {
       setLoading(false);
     }
@@ -334,7 +329,6 @@ export default function TimeTrackingManager({
         showSuccess('Kategorien überprüft', 'Alle Einträge sind bereits korrekt kategorisiert');
       }
     } catch (error) {
-      console.error('❌ Fehler beim Korrigieren der Zeiteinträge:', error);
       showError('Fehler beim Korrigieren', 'Kategorien konnten nicht aktualisiert werden');
     }
   };
@@ -515,7 +509,6 @@ export default function TimeTrackingManager({
       const orderSnap = await getDoc(orderDoc);
 
       if (!orderSnap.exists()) {
-        console.error('Auftrag nicht gefunden');
         return;
       }
 
@@ -550,9 +543,7 @@ export default function TimeTrackingManager({
       if (loadTimeTracking) {
         loadTimeTracking();
       }
-    } catch (error) {
-      console.error('❌ Fehler beim Löschen des Zeiteintrags:', error);
-    }
+    } catch (error) {}
   };
 
   // Berechne einfache Zusammenfassung

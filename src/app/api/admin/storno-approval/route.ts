@@ -110,7 +110,6 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('Fehler bei Admin Storno-Genehmigung:', error);
     return NextResponse.json(
       { error: 'Interner Server-Fehler bei Storno-Genehmigung' },
       { status: 500 }
@@ -152,7 +151,6 @@ export async function GET(request: NextRequest) {
       total: stornoRequests.length,
     });
   } catch (error: any) {
-    console.error('Fehler beim Abrufen der Admin Storno-Übersicht:', error);
     return NextResponse.json({ error: 'Fehler beim Abrufen der Admin-Daten' }, { status: 500 });
   }
 }
@@ -195,7 +193,6 @@ async function processStornoApproval(
       refundStatus: refund.status,
     };
   } catch (stripeError: any) {
-    console.error('Stripe Refund Fehler:', stripeError);
     throw new Error(`Stripe Refund fehlgeschlagen: ${stripeError.message}`);
   }
 }
@@ -206,7 +203,6 @@ async function processStornoApproval(
 async function updateProviderScoreForApprovedStorno(stornoData: any) {
   try {
     if (!adminDb) {
-      console.error('Firebase Admin not available for provider score update');
       return;
     }
 
@@ -261,9 +257,7 @@ async function updateProviderScoreForApprovedStorno(stornoData: any) {
         }),
       });
     }
-  } catch (error) {
-    console.error('Fehler beim Update des Provider Scores:', error);
-  }
+  } catch (error) {}
 }
 
 /**
@@ -272,7 +266,6 @@ async function updateProviderScoreForApprovedStorno(stornoData: any) {
 async function updateAuftragStatusAfterStorno(auftragId: string, newStatus: string) {
   try {
     if (!adminDb) {
-      console.error('Firebase Admin not available for auftrag status update');
       return;
     }
 
@@ -282,9 +275,7 @@ async function updateAuftragStatusAfterStorno(auftragId: string, newStatus: stri
       stornoCompletedAt: new Date(),
       lastUpdatedAt: new Date(),
     });
-  } catch (error) {
-    console.error('Fehler beim Update des Auftrag-Status:', error);
-  }
+  } catch (error) {}
 }
 
 /**
@@ -293,7 +284,6 @@ async function updateAuftragStatusAfterStorno(auftragId: string, newStatus: stri
 async function getStornoAdminStats() {
   try {
     if (!adminDb) {
-      console.error('Firebase Admin not available for admin stats');
       return {
         pendingRequests: 0,
         approvedRequests: 0,
@@ -323,7 +313,6 @@ async function getStornoAdminStats() {
           : '0.0',
     };
   } catch (error) {
-    console.error('Fehler beim Abrufen der Admin-Statistiken:', error);
     return {
       pendingRequests: 0,
       approvedRequests: 0,

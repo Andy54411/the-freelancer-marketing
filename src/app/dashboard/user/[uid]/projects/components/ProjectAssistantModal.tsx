@@ -147,7 +147,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         throw new Error(result.error || 'Fehler beim Generieren der Fragen');
       }
     } catch (error) {
-      console.error('❌ Error generating questions:', error);
       addMessage(
         'Entschuldigung, es gab einen Fehler beim Analysieren Ihres Projekts. Können Sie es noch einmal versuchen?',
         'bot'
@@ -218,7 +217,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         setStep('recommendations');
       }
     } catch (error) {
-      console.error('❌ Error finding providers:', error);
       addMessage(
         'Es gab einen Fehler beim Suchen nach Dienstleistern, aber wir können trotzdem Ihr Projekt erstellen.',
         'bot'
@@ -300,7 +298,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         throw new Error(result.error || 'Fehler beim Erstellen der Projektbeschreibung');
       }
     } catch (error) {
-      console.error('❌ Error creating project:', error);
       addMessage(
         'Es gab einen Fehler beim Erstellen Ihres Projekts. Bitte versuchen Sie es noch einmal.',
         'bot'
@@ -340,7 +337,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         handleNextQuestion();
       }
     } catch (error) {
-      console.error('❌ Error handling message:', error);
       addMessage('Es gab einen Fehler. Bitte versuchen Sie es noch einmal.', 'bot');
     } finally {
       setLoading(false);

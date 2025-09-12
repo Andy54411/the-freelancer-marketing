@@ -47,7 +47,6 @@ export default function BankingWebFormPage() {
         throw new Error(data.error || 'WebForm konnte nicht erstellt werden');
       }
     } catch (err: any) {
-      console.error('WebForm Error:', err);
       setError(err.message || 'Fehler beim Erstellen der WebForm');
     } finally {
       setLoading(false);

@@ -139,7 +139,6 @@ export default function ProjectDetailPage() {
           viewCount: increment(1),
         });
       } catch (error) {
-        console.error('Fehler beim Laden der Projektdetails:', error);
         toast.error('Fehler beim Laden der Projektdetails');
       } finally {
         setLoading(false);
@@ -167,9 +166,7 @@ export default function ProjectDetailPage() {
             reviewCount: data.reviewCount || 0,
           });
         }
-      } catch (error) {
-        console.error('Fehler beim Laden des Firmenprofils:', error);
-      }
+      } catch (error) {}
     };
 
     loadProjectDetails();
@@ -198,9 +195,7 @@ export default function ProjectDetailPage() {
           });
         }
       },
-      error => {
-        console.error('Fehler beim Realtime-Update:', error);
-      }
+      error => {}
     );
 
     return () => unsubscribe();

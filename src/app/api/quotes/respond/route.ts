@@ -44,7 +44,6 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
         companyUid = uid; // Bei companies ist die uid direkt die companyUid
         companyName = userData?.companyName || userData?.name || 'Unbekanntes Unternehmen';
       } else {
-        console.error('❌ User not found in users or companies collection:', uid);
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
     }
@@ -52,7 +51,6 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     // Quote-Daten abrufen für Notification
     const quoteDoc = await db.collection('quotes').doc(quoteId).get();
     if (!quoteDoc.exists) {
-      console.error('❌ Quote not found:', quoteId);
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
 
@@ -63,7 +61,6 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     // Prüfen ob bereits ein Angebot existiert
     const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid);
     if (hasExisting) {
-      console.error('❌ Proposal already exists for company:', companyUid);
       return NextResponse.json(
         { error: 'Sie haben bereits ein Angebot für diese Anfrage abgegeben' },
         { status: 409 }
@@ -91,11 +88,6 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     try {
       await ProposalSubcollectionService.createProposal(quoteId, proposalData, response);
     } catch (proposalError) {
-      console.error('❌ Error creating proposal:', proposalError);
-      console.error(
-        '❌ Proposal error stack:',
-        proposalError instanceof Error ? proposalError.stack : 'No stack trace'
-      );
       throw proposalError; // Re-throw to be caught by outer try-catch
     }
 
@@ -114,10 +106,7 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
             message: proposalData.message,
           }
         );
-      } catch (notificationError) {
-        console.error('❌ Error sending notification:', notificationError);
-        // Benachrichtigung-Fehler sollten die Hauptfunktion nicht blockieren
-      }
+      } catch (notificationError) {}
     } else {
     }
 
@@ -128,7 +117,6 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
       quoteId,
     });
   } catch (error) {
-    console.error('❌ Error in handleNewQuoteResponse:', error);
     return NextResponse.json(
       {
         error: 'Fehler beim Verarbeiten des Angebots',
@@ -231,10 +219,7 @@ export async function POST(request: NextRequest) {
             message: proposalData.message,
           }
         );
-      } catch (notificationError) {
-        console.error('Error sending notification:', notificationError);
-        // Benachrichtigung-Fehler sollten die Hauptfunktion nicht blockieren
-      }
+      } catch (notificationError) {}
     }
 
     return NextResponse.json({
@@ -243,8 +228,6 @@ export async function POST(request: NextRequest) {
       proposalId: companyUid,
     });
   } catch (error) {
-    console.error('Error submitting proposal:', error);
-
     return NextResponse.json(
       {
         error: 'Fehler beim Abgeben des Angebots',
@@ -294,8 +277,6 @@ export async function PUT(request: NextRequest) {
       message: `Angebot erfolgreich ${status === 'accepted' ? 'angenommen' : 'abgelehnt'}`,
     });
   } catch (error) {
-    console.error('Error updating proposal:', error);
-
     return NextResponse.json(
       {
         error: 'Fehler beim Aktualisieren des Angebots',
@@ -328,8 +309,6 @@ export async function GET(request: NextRequest) {
       count: proposals.length,
     });
   } catch (error) {
-    console.error('Error loading proposals:', error);
-
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Angebote',

@@ -62,7 +62,6 @@ export default function SettingsPage() {
           }
         }
       } catch (error) {
-        console.error('❌ Settings Page: Error loading user/company data:', error);
       } finally {
         setLoading(false);
       }
@@ -116,9 +115,7 @@ export default function SettingsPage() {
             setCompanyData(companyDoc.data());
           }
         }
-      } catch (error) {
-        console.error('Error reloading data:', error);
-      }
+      } catch (error) {}
     }
   };
 

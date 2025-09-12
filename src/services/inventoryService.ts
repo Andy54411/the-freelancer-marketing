@@ -277,7 +277,6 @@ export class InventoryService {
 
       return filteredItems;
     } catch (error) {
-      console.error('❌ Error searching inventory:', error);
       throw error;
     }
   }
@@ -295,7 +294,6 @@ export class InventoryService {
       const exactMatch = items.find(item => item.sku.toLowerCase() === sku.toLowerCase());
       return exactMatch || items[0] || null;
     } catch (error) {
-      console.error('❌ Error finding item by SKU:', error);
       return null;
     }
   }
@@ -313,7 +311,6 @@ export class InventoryService {
       const exactMatch = items.find(item => item.name.toLowerCase() === name.toLowerCase());
       return exactMatch || items[0] || null;
     } catch (error) {
-      console.error('❌ Error finding item by name:', error);
       return null;
     }
   }
@@ -787,9 +784,6 @@ export class InventoryService {
           }
 
           if (!inventoryItem) {
-            console.warn(
-              `⚠️ Item not found in inventory: ${deliveryItem.name} (SKU: ${deliveryItem.sku})`
-            );
             errors.push(`Artikel "${deliveryItem.name}" nicht im Lager gefunden`);
             continue;
           }
@@ -797,9 +791,6 @@ export class InventoryService {
           // Verfügbaren Bestand prüfen
           const availableStock = inventoryItem.availableStock;
           if (availableStock < deliveryItem.quantity) {
-            console.warn(
-              `⚠️ Insufficient stock for ${inventoryItem.name}: available ${availableStock}, needed ${deliveryItem.quantity}`
-            );
             errors.push(
               `Nicht genügend Bestand für "${inventoryItem.name}": Verfügbar ${availableStock}, benötigt ${deliveryItem.quantity}`
             );
@@ -838,7 +829,6 @@ export class InventoryService {
             companyId: companyId,
           });
         } catch (itemError) {
-          console.error(`❌ Error processing item ${deliveryItem.name}:`, itemError);
           errors.push(`Fehler bei Artikel "${deliveryItem.name}": ${itemError.message}`);
         }
       }
@@ -849,11 +839,9 @@ export class InventoryService {
 
         return { success: true, errors: [] };
       } else {
-        console.warn('⚠️ Stock reduction aborted due to errors:', errors);
         return { success: false, errors };
       }
     } catch (error) {
-      console.error('❌ Error reducing stock:', error);
       return { success: false, errors: [`Allgemeiner Fehler: ${error.message}`] };
     }
   }

@@ -45,7 +45,6 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data }) => {
             alt={`${data.companyName} Logo`}
             className="h-20 w-auto max-w-[120px] object-contain"
             onError={e => {
-              console.error('🖼️ Company Logo Error:', e);
               e.currentTarget.style.display = 'none';
               const fallback = e.currentTarget.nextElementSibling as HTMLElement;
               if (fallback) fallback.style.display = 'block';

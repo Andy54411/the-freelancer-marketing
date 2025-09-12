@@ -168,7 +168,6 @@ export async function POST(request: NextRequest) {
       message: 'DHL-Versandlabel erfolgreich erstellt',
     });
   } catch (error) {
-    console.error('DHL Label Creation Error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Erstellen des DHL-Versandlabels' },
       { status: 500 }
@@ -233,7 +232,6 @@ export async function GET(request: NextRequest) {
       trackingData,
     });
   } catch (error) {
-    console.error('DHL Tracking Error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Tracking-Informationen' },
       { status: 500 }

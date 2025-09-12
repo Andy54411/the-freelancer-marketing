@@ -48,7 +48,6 @@ async function getFirebaseServices() {
 
       db = firebaseAdmin.firestore(app);
     } catch (error) {
-      console.error('Firebase initialization error:', error);
       throw error;
     }
   }
@@ -174,8 +173,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ uid
       cached: false,
     });
   } catch (error) {
-    console.error('Fehler beim Abrufen des Stripe Balance:', error);
-
     // Return specific error information
     if (error instanceof Error) {
       if (error.message.includes('No such account')) {

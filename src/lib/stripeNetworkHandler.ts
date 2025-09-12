@@ -4,11 +4,7 @@
  */
 
 // Network Interception Setup - DEPRECATED
-export function setupStripeNetworkInterception() {
-  // Diese Funktion ist deprecated - alle Fetch-Interception wurde entfernt
-  // um Konflikte mit anderen Services (Google Analytics, etc.) zu vermeiden
-  console.warn('setupStripeNetworkInterception is deprecated and no longer active');
-}
+export function setupStripeNetworkInterception() {}
 
 // Error Event Handler für unbehandelte Promise Rejections
 export function setupStripeErrorHandler() {
@@ -24,7 +20,6 @@ export function setupStripeErrorHandler() {
         errorMessage.includes('errors.stripe.com') ||
         errorMessage.includes('sentry_key=')
       ) {
-        console.warn('Stripe error suppressed:', errorMessage);
         event.preventDefault();
       }
     });
@@ -40,7 +35,6 @@ export function setupStripeErrorHandler() {
         errorMessage.includes('errors.stripe.com') ||
         errorMessage.includes('sentry_key=')
       ) {
-        console.warn('Stripe error suppressed:', errorMessage);
         event.preventDefault();
       }
     });

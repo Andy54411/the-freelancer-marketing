@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('Fehler beim Abrufen der Provider Scores:', error);
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Provider-Bewertungen' },
       { status: 500 }
@@ -77,7 +76,6 @@ export async function POST(request: NextRequest) {
       updatedScore: result.updatedScore,
     });
   } catch (error: any) {
-    console.error('Fehler bei Provider Score Action:', error);
     return NextResponse.json({ error: 'Fehler bei der Provider-Aktion' }, { status: 500 });
   }
 }
@@ -137,7 +135,6 @@ async function getProviderScore(providerId: string) {
       },
     };
   } catch (error) {
-    console.error(`Fehler beim Abrufen des Provider Scores ${providerId}:`, error);
     throw error;
   }
 }
@@ -207,7 +204,6 @@ async function getAllProviderScores(limit: number, minScore: number, includeBloc
 
     return providers;
   } catch (error) {
-    console.error('Fehler beim Abrufen aller Provider Scores:', error);
     throw error;
   }
 }
@@ -287,7 +283,6 @@ async function getProviderOrderStats(providerId: string) {
       completionRate: totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0,
     };
   } catch (error) {
-    console.error(`Fehler beim Berechnen der Order-Stats für ${providerId}:`, error);
     return {
       totalOrders: 0,
       completedOrders: 0,
@@ -313,16 +308,13 @@ async function initializeProviderScore(providerId: string) {
 
   try {
     if (!adminDb) {
-      console.error('Firebase Admin not available for provider score initialization');
       return defaultScore;
     }
 
     await adminDb.collection('users').doc(providerId).update({
       providerScore: defaultScore,
     });
-  } catch (error) {
-    console.error(`Fehler beim Initialisieren des Provider Scores ${providerId}:`, error);
-  }
+  } catch (error) {}
 
   return defaultScore;
 }

@@ -55,7 +55,6 @@ export default function Step2CompanyPage() {
 
   // Debug Google Maps Loading
   if (loadError) {
-    console.error('❌ Google Maps Load Error:', loadError);
   }
   if (isLoaded) {
   }

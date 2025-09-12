@@ -187,7 +187,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     }
                   }, 2000);
                 } catch (error) {
-                  console.error('❌ Redirect Error:', error);
                   window.location.href = targetPath;
                 }
                 return;

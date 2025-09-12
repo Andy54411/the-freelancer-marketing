@@ -24,7 +24,6 @@ async function getCachedEmails(
   limit: number
 ): Promise<EmailResult | null> {
   try {
-
     const cacheResponse = await fetch(
       `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/admin/workmail/emails/cache?folder=${folder}&limit=${limit}`,
       {
@@ -38,7 +37,6 @@ async function getCachedEmails(
     if (cacheResponse.ok) {
       const cacheResult = await cacheResponse.json();
       if (cacheResult.success && cacheResult.data?.emails?.length > 0) {
-
         return {
           emails: cacheResult.data.emails,
           totalCount: cacheResult.data.totalCount,
@@ -52,7 +50,6 @@ async function getCachedEmails(
 
     return null;
   } catch (error) {
-
     return null;
   }
 }
@@ -60,7 +57,6 @@ async function getCachedEmails(
 // Cache-Sync-Funktion um neue E-Mails zu speichern
 async function syncEmailsToCache(emails: any[], folder: string, adminEmail: string): Promise<void> {
   try {
-
     const syncResponse = await fetch(
       `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/admin/workmail/emails/cache`,
       {
@@ -79,13 +75,9 @@ async function syncEmailsToCache(emails: any[], folder: string, adminEmail: stri
 
     if (syncResponse.ok) {
       const syncResult = await syncResponse.json();
-
     } else {
-
     }
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }
 
 // WorkMail Admin User Mapping mit IMAP-Zugangsdaten
@@ -126,14 +118,12 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
     const imap = new Imap(imapConfig);
 
     imap.once('ready', () => {
-
       // Versuche verschiedene Sent-Folder Namen
       const sentFolders = ['Sent', 'SENT', 'Sent Items', 'Gesendet', 'Sent Messages'];
 
       let folderIndex = 0;
       const tryFolder = () => {
         if (folderIndex >= sentFolders.length) {
-
           imap.end();
           return reject(new Error('Sent folder not found'));
         }
@@ -142,14 +132,12 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
 
         imap.openBox(currentFolder, true, (err: any, box: any) => {
           if (err) {
-
             folderIndex++;
             tryFolder();
             return;
           }
 
           if (box.messages.total === 0) {
-
             imap.end();
             return resolve({
               emails: [],
@@ -229,7 +217,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                     : new Date().toISOString();
 
                   email.receivedAt = email.timestamp; // Für Kompatibilität
-
                 } else if (info.which === 'TEXT') {
                   // Vollständige Text-Extraktion für Sent Emails
 
@@ -242,10 +229,8 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                     const htmlMatch = buffer.match(/<html[\s\S]*?<\/html>/i);
                     if (htmlMatch) {
                       email.htmlContent = htmlMatch[0];
-
                     }
                   }
-
                 } else if (info.which === '') {
                   // Vollständiger E-Mail-Body (falls TEXT nicht funktioniert)
 
@@ -257,7 +242,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                     const htmlMatch = buffer.match(/<html[\s\S]*?<\/html>/i);
                     if (htmlMatch) {
                       email.htmlContent = htmlMatch[0];
-
                     }
 
                     // Erweiterte Text-Extraktion
@@ -280,7 +264,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
                       if (textContent.length > 10) {
                         email.textContent = textContent;
                         email.body = textContent;
-
                       }
                     }
                   }
@@ -300,19 +283,16 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
               // Email hinzufügen wenn mindestens Subject vorhanden
               if (email.subject) {
                 emails.push(email);
-
               }
             });
           });
 
           fetch.once('error', (err: any) => {
-
             imap.end();
             reject(err);
           });
 
           fetch.once('end', () => {
-
             imap.end();
 
             // Sortiere E-Mails nach Datum (neueste zuerst)
@@ -338,7 +318,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
     });
 
     imap.once('error', (err: any) => {
-
       reject(err);
     });
 
@@ -349,7 +328,6 @@ async function fetchSentEmailsViaIMAP(credentials: any, limit = 50): Promise<Ema
 // GET - Gesendete E-Mails abrufen
 export async function GET(request: NextRequest) {
   try {
-
     // URL-Parameter
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -360,7 +338,6 @@ export async function GET(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -373,7 +350,6 @@ export async function GET(request: NextRequest) {
       // Find admin credentials
       const adminConfig = WORKMAIL_ADMIN_MAPPING[adminEmail];
       if (!adminConfig) {
-
         return NextResponse.json(
           { error: 'Admin not configured for WorkMail access' },
           { status: 403 }
@@ -381,7 +357,6 @@ export async function GET(request: NextRequest) {
       }
 
       if (!adminConfig.password) {
-
         return NextResponse.json(
           { error: 'IMAP credentials not configured for this admin' },
           { status: 403 }
@@ -394,7 +369,6 @@ export async function GET(request: NextRequest) {
       const cachedResult = await getCachedEmails(adminEmail, 'sent', limit);
 
       if (cachedResult && method !== 'force-imap') {
-
         result = cachedResult;
       } else {
         // 2. Falls kein Cache oder force-imap: IMAP verwenden
@@ -403,9 +377,7 @@ export async function GET(request: NextRequest) {
 
         // 3. Nach IMAP-Abruf: E-Mails im Cache speichern (async, blockiert Response nicht)
         if (result.emails.length > 0) {
-          syncEmailsToCache(result.emails, 'sent', adminEmail).catch(err =>
-            console.error('Cache sync error:', err)
-          );
+          syncEmailsToCache(result.emails, 'sent', adminEmail).catch(err => {});
         }
       }
 
@@ -421,11 +393,9 @@ export async function GET(request: NextRequest) {
         },
       });
     } catch (jwtError) {
-
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -440,7 +410,6 @@ export async function GET(request: NextRequest) {
 // DELETE - E-Mail endgültig aus Cache löschen
 export async function DELETE(request: NextRequest) {
   try {
-
     // URL-Parameter
     const { searchParams } = new URL(request.url);
     const emailId = searchParams.get('emailId');
@@ -455,7 +424,6 @@ export async function DELETE(request: NextRequest) {
     const tokenCookie = cookies?.split(';').find(c => c.trim().startsWith('taskilo-admin-token='));
 
     if (!tokenCookie) {
-
       return NextResponse.json({ error: 'Unauthorized - Missing admin token' }, { status: 401 });
     }
 
@@ -490,11 +458,9 @@ export async function DELETE(request: NextRequest) {
         throw new Error('Failed to delete email from cache');
       }
     } catch (jwtError) {
-
       return NextResponse.json({ error: 'Invalid JWT token' }, { status: 401 });
     }
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Internal server error',

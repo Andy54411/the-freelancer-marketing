@@ -153,7 +153,6 @@ export default function CreateInvoicePage() {
           }
         }
       } catch (error) {
-        console.error('❌ Fehler beim Laden der Firmendaten via API:', error);
         toast.error('Fehler beim Laden der Firmendaten');
       }
     };
@@ -251,7 +250,6 @@ export default function CreateInvoicePage() {
           setCustomers(response.customers);
         }
       } catch (error) {
-        console.error('❌ Fehler beim Laden der Kunden via API:', error);
         toast.error('Fehler beim Laden der Kunden');
       } finally {
         setLoadingCustomers(false);
@@ -320,7 +318,6 @@ export default function CreateInvoicePage() {
           setItems(projectItems);
         }
       } catch (error) {
-        console.error('❌ Fehler beim Parsen der Projektdaten:', error);
         toast.error('Fehler beim Laden der Projektdaten');
       }
     }
@@ -1175,8 +1172,7 @@ export default function CreateInvoicePage() {
       } else if (action === 'finalize' && finalInvoiceNumber) {
       } else {
         // Für Entwürfe keine Rechnungsnummer setzen
-      }
-      // Create invoice via API instead of direct Firebase
+      } // Create invoice via API instead of direct Firebase
       const invoiceData = {
         invoiceNumber: finalInvoiceNumber,
         customerName: formData.customerName,
@@ -1215,7 +1211,6 @@ export default function CreateInvoicePage() {
         throw new Error(response.error || 'Fehler beim Erstellen der Rechnung');
       }
     } catch (error) {
-      console.error('❌ Fehler beim Erstellen der Rechnung:', error);
       handleApiError(error);
 
       // User-friendly error messages
@@ -1376,17 +1371,9 @@ export default function CreateInvoicePage() {
           errorMessage = `Server Error: ${response.status} ${response.statusText}`;
         }
 
-        console.error('API Error Details:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-        });
-
         throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error('Fehler beim Speichern der Firmendaten:', error);
-
       // Zeige spezifische Fehlermeldung oder generische Nachricht
       const errorMessage =
         error instanceof Error ? error.message : 'Unbekannter Fehler beim Speichern';

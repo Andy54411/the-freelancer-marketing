@@ -8,7 +8,6 @@ async function getFirebaseDb(): Promise<any> {
 
     // Check if we have valid db service
     if (!firebaseModule.db) {
-      console.error('Firebase database not initialized properly');
       // Try to get from admin if needed
       const { admin } = firebaseModule;
       if (admin && admin.apps.length > 0) {
@@ -20,7 +19,6 @@ async function getFirebaseDb(): Promise<any> {
 
     return firebaseModule.db;
   } catch (error) {
-    console.error('Firebase initialization failed:', error);
     throw new Error('Firebase database unavailable');
   }
 }
@@ -91,7 +89,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       customers,
     });
   } catch (error) {
-    console.error('Fehler beim Laden der Kunden:', error);
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Laden der Kunden' },
       { status: 500 }
@@ -147,7 +144,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: 'Kunde erfolgreich erstellt',
     });
   } catch (error) {
-    console.error('Fehler beim Erstellen des Kunden:', error);
     return NextResponse.json(
       { error: 'Interner Serverfehler beim Erstellen des Kunden' },
       { status: 500 }

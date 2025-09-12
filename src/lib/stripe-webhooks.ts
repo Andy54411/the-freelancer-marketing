@@ -99,7 +99,6 @@ export async function setupStripeWebhooks(
       message: `Successfully configured ${results.length} webhooks`,
     };
   } catch (error: any) {
-    console.error('Webhook setup error:', error);
     throw new Error(`Webhook setup failed: ${error.message}`);
   }
 }
@@ -135,7 +134,6 @@ export async function testWebhookConnectivity(stripeSecretKey: string): Promise<
       message: 'Webhook test charge created successfully',
     };
   } catch (error: any) {
-    console.error('Webhook test error:', error);
     throw new Error(`Webhook test failed: ${error.message}`);
   }
 }

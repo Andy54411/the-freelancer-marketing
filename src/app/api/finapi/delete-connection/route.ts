@@ -84,7 +84,6 @@ export async function DELETE(request: NextRequest) {
         });
       } else {
         const errorText = await deleteResponse.text();
-        console.error('❌ finAPI delete failed:', deleteResponse.status, errorText);
 
         // If connection doesn't exist in finAPI, consider it successful
         if (deleteResponse.status === 404) {
@@ -97,8 +96,6 @@ export async function DELETE(request: NextRequest) {
         throw new Error(`finAPI delete failed: ${deleteResponse.status} ${errorText}`);
       }
     } catch (finapiError: any) {
-      console.error('❌ finAPI delete error:', finapiError.message);
-
       // Clean up stored data even if finAPI delete fails
       try {
         await db.collection('finapi_connections').doc(userId).delete();
@@ -110,7 +107,6 @@ export async function DELETE(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('❌ Delete connection error:', error.message);
     return NextResponse.json(
       {
         success: false,

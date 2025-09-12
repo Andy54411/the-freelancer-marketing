@@ -65,7 +65,7 @@ export default function MarketplaceQuotesPage() {
         // const quotesRef = collection(db, 'quotes');
         // const q = query(quotesRef, where('companyId', '==', uid));
         // const snapshot = await getDocs(q);
-        
+
         // Mock data for now
         const mockQuotes: DirectQuoteRequest[] = [
           {
@@ -74,7 +74,8 @@ export default function MarketplaceQuotesPage() {
             customerEmail: 'max@example.com',
             customerPhone: '+49 123 456789',
             title: 'Website-Entwicklung für Startup',
-            description: 'Wir benötigen eine moderne Website für unser Tech-Startup mit E-Commerce Funktionalität.',
+            description:
+              'Wir benötigen eine moderne Website für unser Tech-Startup mit E-Commerce Funktionalität.',
             category: 'Webentwicklung',
             subcategory: 'E-Commerce',
             budgetRange: '5000-10000',
@@ -104,10 +105,9 @@ export default function MarketplaceQuotesPage() {
             createdAt: new Date(),
           },
         ];
-        
+
         setQuotes(mockQuotes);
       } catch (error) {
-        console.error('Error loading quotes:', error);
         toast.error('Fehler beim Laden der Anfragen');
       } finally {
         setLoading(false);
@@ -133,13 +133,14 @@ export default function MarketplaceQuotesPage() {
 
   // Filter quotes
   const filteredQuotes = quotes.filter(quote => {
-    const matchesSearch = quote.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         quote.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch =
+      quote.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quote.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quote.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesStatus = statusFilter === 'all' || quote.status === statusFilter;
     const matchesCategory = categoryFilter === 'all' || quote.category === categoryFilter;
-    
+
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
@@ -150,7 +151,7 @@ export default function MarketplaceQuotesPage() {
       accepted: { label: 'Angenommen', variant: 'default' as const },
       declined: { label: 'Abgelehnt', variant: 'destructive' as const },
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
@@ -272,15 +273,15 @@ export default function MarketplaceQuotesPage() {
                 <Input
                   placeholder="Anfragen durchsuchen..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
-            
+
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={e => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="all">Alle Status</option>
@@ -292,7 +293,7 @@ export default function MarketplaceQuotesPage() {
 
             <select
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              onChange={e => setCategoryFilter(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="all">Alle Kategorien</option>
@@ -320,7 +321,7 @@ export default function MarketplaceQuotesPage() {
             </CardContent>
           </Card>
         ) : (
-          filteredQuotes.map((quote) => (
+          filteredQuotes.map(quote => (
             <Card key={quote.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
@@ -331,7 +332,7 @@ export default function MarketplaceQuotesPage() {
                       {getStatusBadge(quote.status)}
                     </div>
                     <p className="text-gray-600 mb-3 line-clamp-2">{quote.description}</p>
-                    
+
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                       <div className="flex items-center gap-1">
                         <User className="h-4 w-4" />
@@ -359,7 +360,7 @@ export default function MarketplaceQuotesPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2 ml-4">
                     <Button
                       variant="outline"
@@ -369,19 +370,16 @@ export default function MarketplaceQuotesPage() {
                       <Eye className="h-4 w-4 mr-2" />
                       Ansehen
                     </Button>
-                    
+
                     {quote.status === 'pending' && (
-                      <Button
-                        size="sm"
-                        className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                      >
+                      <Button size="sm" className="bg-[#14ad9f] hover:bg-[#129488] text-white">
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Antworten
                       </Button>
                     )}
                   </div>
                 </div>
-                
+
                 {quote.requirements && quote.requirements.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {quote.requirements.map((req, index) => (

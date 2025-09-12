@@ -11,7 +11,6 @@ async function getFirebaseServices(): Promise<{ auth: any; db: any }> {
     const firebaseModule = await import('@/firebase/server');
 
     if (!firebaseModule.db) {
-      console.error('Firebase services not initialized properly');
       const { admin } = firebaseModule;
       if (admin && admin.apps.length > 0) {
         const { getAuth } = await import('firebase-admin/auth');
@@ -29,7 +28,6 @@ async function getFirebaseServices(): Promise<{ auth: any; db: any }> {
       db: firebaseModule.db,
     };
   } catch (error) {
-    console.error('Firebase initialization failed:', error);
     throw new Error('Firebase services unavailable');
   }
 }

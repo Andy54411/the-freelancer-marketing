@@ -231,7 +231,6 @@ export default function EditInvoicePage() {
           toast.info('Rechnung nicht gefunden - Mock-Daten für Test geladen');
         }
       } catch (error) {
-        console.error('Error loading invoice:', error);
         toast.error('Fehler beim Laden der Rechnung');
       } finally {
         setLoadingInvoice(false);

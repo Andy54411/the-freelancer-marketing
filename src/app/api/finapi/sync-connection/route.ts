@@ -37,8 +37,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('❌ Sync connection error:', error.message);
-
     return NextResponse.json(
       {
         error: 'Failed to sync bank connection',

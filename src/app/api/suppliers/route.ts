@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
       count: customers.length,
     });
   } catch (error) {
-    console.error('Error fetching customers:', error);
     return NextResponse.json(
       {
         success: false,
@@ -117,7 +116,6 @@ export async function POST(request: NextRequest) {
       message: 'Kunde/Lieferant erfolgreich erstellt',
     });
   } catch (error) {
-    console.error('Error creating customer:', error);
     return NextResponse.json(
       {
         success: false,

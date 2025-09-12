@@ -162,10 +162,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
           const orderData = orderDoc.data();
           orderAnalysis = checkStornoEligibility(orderData, stornoSettings);
         }
-      } catch (orderError) {
-        console.error('Fehler beim Laden der Auftragsdaten:', orderError);
-        // Ignoriere Order-Fehler, gib trotzdem Einstellungen zurück
-      }
+      } catch (orderError) {}
     }
 
     return NextResponse.json({
@@ -179,8 +176,6 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
       orderAnalysis, // Null wenn keine orderId oder Auftrag nicht gefunden
     });
   } catch (error: any) {
-    console.error('Fehler beim Abrufen der Storno-Einstellungen:', error);
-    console.error('Error stack:', error.stack);
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Einstellungen',
@@ -316,7 +311,6 @@ export async function PUT(request: NextRequest, { params }: { params: { uid: str
       publicPreview: generatePublicStornoConditions(stornoSettings),
     });
   } catch (error: any) {
-    console.error('Fehler beim Aktualisieren der Storno-Einstellungen:', error);
     return NextResponse.json({ error: 'Fehler beim Speichern der Einstellungen' }, { status: 500 });
   }
 }

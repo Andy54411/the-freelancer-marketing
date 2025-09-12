@@ -182,9 +182,6 @@ export function PdfPreview({ file, fileUrl, className = '' }: PdfPreviewProps) {
             file={pdfSource}
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={error => {
-              console.error('PDF Load Error:', error);
-              console.error('PDF Source:', pdfSource);
-              console.error('File URL:', fileUrl);
               setLoadError(`Fehler beim Laden: ${error.message || 'Unbekannter Fehler'}`);
             }}
             options={documentOptions}

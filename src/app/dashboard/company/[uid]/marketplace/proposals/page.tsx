@@ -98,7 +98,6 @@ export default function MarketplaceProposalsPage() {
 
       setProposals(cleanedProposals);
     } catch (error) {
-      console.error('Fehler beim Laden der Proposals:', error);
       setError('Fehler beim Laden der Marketplace Proposals');
     } finally {
       setLoading(false);

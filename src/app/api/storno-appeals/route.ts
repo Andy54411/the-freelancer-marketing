@@ -153,7 +153,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Fehler beim Erstellen des Appeals:', error);
     return NextResponse.json(
       { error: 'Interner Server-Fehler beim Erstellen des Widerspruchs' },
       { status: 500 }
@@ -199,7 +198,6 @@ export async function GET(request: NextRequest) {
       total: appeals.length,
     });
   } catch (error: any) {
-    console.error('Fehler beim Abrufen der Appeals:', error);
     return NextResponse.json({ error: 'Fehler beim Abrufen der Widersprüche' }, { status: 500 });
   }
 }
@@ -318,8 +316,6 @@ async function createContactFormTicketForAppeal(appealData: any, stornoData: any
       ticketId: contactFormResult.ticketId || 'APPEAL-' + appealData.id.substring(0, 8),
     };
   } catch (error) {
-    console.error('Fehler beim Erstellen des Contact Form Tickets:', error);
-
     // Fallback: Generiere Ticket-ID auch bei Fehler
     return {
       success: false,

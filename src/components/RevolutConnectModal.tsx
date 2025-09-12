@@ -68,7 +68,6 @@ export default function RevolutConnectModal({
         }
         onClose();
       } else if (event.data.type === 'REVOLUT_OAUTH_ERROR') {
-        console.error('❌ Received OAuth error message:', event.data);
         setIsLoading(false);
         setError(event.data.error || 'OAuth-Verbindung fehlgeschlagen');
       }
@@ -145,7 +144,6 @@ export default function RevolutConnectModal({
         15 * 60 * 1000
       );
     } catch (error: any) {
-      console.error('❌ Revolut connection error:', error.message);
       setError(error.message);
       setIsLoading(false);
     }

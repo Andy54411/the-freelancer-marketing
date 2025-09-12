@@ -195,15 +195,12 @@ export default function CompanyServiceSubcategoryPage() {
 
       const [firmSnapshot, companiesSnapshot, userSnapshot] = await Promise.all([
         getDocs(firmQuery).catch(error => {
-          console.error('Fehler beim Laden der Firma-Collection:', error);
           return { docs: [] };
         }),
         getDocs(companiesQuery).catch(error => {
-          console.error('Fehler beim Laden der Companies-Collection:', error);
           return { docs: [] };
         }),
         getDocs(userQuery).catch(error => {
-          console.error('Fehler beim Laden der Users-Collection:', error);
           return { docs: [] };
         }),
       ]);
@@ -553,6 +550,7 @@ export default function CompanyServiceSubcategoryPage() {
                           (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
                         }}
                       />
+
                       {provider.isCompany && (
                         <div className="absolute -bottom-1 -right-1 bg-[#14ad9f] text-white text-xs px-2 py-0.5 rounded-full">
                           PRO

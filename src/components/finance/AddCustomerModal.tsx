@@ -138,7 +138,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       !formData.city.trim() ||
       !formData.postalCode.trim()
     ) {
-      console.error('❌ Required fields missing');
       toast.error('Bitte füllen Sie alle Pflichtfelder aus');
       return;
     }
@@ -146,7 +145,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      console.error('❌ Invalid email format:', formData.email);
       toast.error('Bitte geben Sie eine gültige E-Mail-Adresse ein');
       return;
     }
@@ -157,7 +155,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     );
 
     if (validContactPersons.length === 0) {
-      console.error('❌ No valid contact persons');
       toast.error('Mindestens ein Ansprechpartner mit Name und E-Mail ist erforderlich');
       return;
     }
@@ -165,7 +162,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     // Validate contact person emails
     for (const cp of validContactPersons) {
       if (!emailRegex.test(cp.email)) {
-        console.error('❌ Invalid contact person email:', cp.email);
         toast.error(`Ungültige E-Mail-Adresse für ${cp.firstName} ${cp.lastName}`);
         return;
       }
@@ -235,8 +231,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       setOpen(false);
       toast.success('Kunde erfolgreich hinzugefügt');
     } catch (error) {
-      console.error('❌ Error in handleSubmit:', error);
-      console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
       toast.error(
         `Fehler beim Hinzufügen des Kunden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );

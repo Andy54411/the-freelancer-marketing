@@ -63,7 +63,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       paymentTerms: paymentTermsSettings,
     });
   } catch (error) {
-    console.error('❌ Fehler beim Laden der Zahlungskonditionen:', error);
     return NextResponse.json(
       { error: 'Fehler beim Laden der Zahlungskonditionen' },
       { status: 500 }
@@ -128,7 +127,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       paymentTerms: paymentTermsSettings,
     });
   } catch (error) {
-    console.error('❌ Fehler beim Aktualisieren der Zahlungskonditionen:', error);
     return NextResponse.json(
       { error: 'Fehler beim Speichern der Zahlungskonditionen' },
       { status: 500 }

@@ -106,9 +106,7 @@ export const useModernMaps = (): UseModernMapsResult => {
         input.style.display = 'none';
 
         return;
-      } catch (error) {
-        console.warn('⚠️ PlaceAutocompleteElement-Fehler:', error);
-      }
+      } catch (error) {}
     }
 
     // Fallback auf traditionelles Autocomplete
@@ -123,9 +121,7 @@ export const useModernMaps = (): UseModernMapsResult => {
         const placeDetails = extractPlaceDetails(place);
         onPlaceSelected?.(placeDetails);
       });
-    } catch (error) {
-      console.error('❌ Autocomplete-Fehler:', error);
-    }
+    } catch (error) {}
   };
 
   const createAdvancedMarker = (options: {
@@ -145,9 +141,7 @@ export const useModernMaps = (): UseModernMapsResult => {
           map,
           title,
         });
-      } catch (error) {
-        console.warn('⚠️ AdvancedMarkerElement-Fehler:', error);
-      }
+      } catch (error) {}
     }
 
     // Fallback auf traditionellen Marker
@@ -158,7 +152,6 @@ export const useModernMaps = (): UseModernMapsResult => {
         title,
       });
     } catch (error) {
-      console.error('❌ Marker-Fehler:', error);
       return null;
     }
   };

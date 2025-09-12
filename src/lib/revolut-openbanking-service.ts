@@ -41,12 +41,10 @@ export class RevolutOpenBankingService {
           this.transportCert = fs.readFileSync(transportCertPath, 'utf8');
           this.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
         } else {
-          console.warn('🚨 Revolut certificates not found, using placeholder');
           this.transportCert = 'placeholder-cert';
           this.privateKey = 'placeholder-key';
         }
       } catch (error) {
-        console.warn('🚨 Error loading Revolut certificates:', error);
         this.transportCert = 'placeholder-cert';
         this.privateKey = 'placeholder-key';
       }
@@ -267,7 +265,7 @@ export class RevolutOpenBankingService {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('❌ Failed to refresh token:', error);
+
       throw new Error(`Failed to refresh token: ${response.status} - ${error}`);
     }
 

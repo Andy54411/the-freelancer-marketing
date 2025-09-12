@@ -25,10 +25,7 @@ export async function POST(request: NextRequest) {
           } else {
           }
         }
-      } catch (authError) {
-        console.error('Auth token verification failed:', authError);
-        // Continue without customerUid for anonymous quotes
-      }
+      } catch (authError) {}
     }
 
     const { providerId, quoteData } = await request.json();

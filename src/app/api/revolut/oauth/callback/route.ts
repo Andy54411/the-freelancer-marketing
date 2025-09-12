@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error');
 
     if (error) {
-      console.error('❌ Revolut OAuth error:', error);
       // Redirect to OAuth success page with error
       return NextResponse.redirect(
         `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent(error)}`
@@ -99,7 +98,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('❌ Token exchange failed:', tokenResponse.status, errorText);
+
       return NextResponse.redirect(
         `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent(`Token exchange failed: ${errorText}`)}`
       );
@@ -139,7 +138,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(finalRedirectUrl);
   } catch (error: any) {
-    console.error('❌ Revolut OAuth callback error:', error.message);
     return NextResponse.redirect(
       `https://taskilo.de/revolut/oauth-success?error=${encodeURIComponent(`Callback failed: ${error.message}`)}`
     );

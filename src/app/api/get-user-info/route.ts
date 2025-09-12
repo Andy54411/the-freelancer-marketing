@@ -6,7 +6,6 @@ async function getFirebaseDb(): Promise<any> {
     const firebaseModule = await import('@/firebase/server');
 
     if (!firebaseModule.db) {
-      console.error('Firebase database not initialized properly');
       const { admin } = firebaseModule;
       if (admin && admin.apps.length > 0) {
         const { getFirestore } = await import('firebase-admin/firestore');
@@ -17,7 +16,6 @@ async function getFirebaseDb(): Promise<any> {
 
     return firebaseModule.db;
   } catch (error) {
-    console.error('Firebase initialization failed:', error);
     throw new Error('Firebase database unavailable');
   }
 }

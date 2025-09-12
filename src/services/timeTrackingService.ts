@@ -369,7 +369,6 @@ export class TimeTrackingService {
 
       return docRef.id;
     } catch (error) {
-      console.error('❌ Firestore Error beim Erstellen des Zeiteintrags:', error);
       throw new Error(
         `Zeiteintrag konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );

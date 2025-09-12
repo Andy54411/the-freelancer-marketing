@@ -155,7 +155,6 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
               setInvoiceData(data);
             }
           } catch (error) {
-            console.error('Error loading company data:', error);
             setInvoiceData(data);
           }
         } else {

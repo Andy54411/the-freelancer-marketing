@@ -76,9 +76,7 @@ export async function GET(
             };
           }
         }
-      } catch (error) {
-        console.error('Error fetching customer info:', error);
-      }
+      } catch (error) {}
     }
 
     // If no customerUid or customer not found, use the basic info from quote data
@@ -115,9 +113,7 @@ export async function GET(
         finalStatus = 'responded';
       } else {
       }
-    } catch (error) {
-      console.error('Error checking subcollection proposals:', error);
-    }
+    } catch (error) {}
 
     // Fallback: Check main proposals collection (old structure)
     if (!hasResponse) {
@@ -133,9 +129,7 @@ export async function GET(
           responseData = proposalsSnapshot.docs[0].data();
           finalStatus = 'responded';
         }
-      } catch (error) {
-        console.error('Error checking main proposals collection:', error);
-      }
+      } catch (error) {}
     }
 
     // Use actual status from quote if available
@@ -190,7 +184,6 @@ export async function GET(
       quote,
     });
   } catch (error: any) {
-    console.error('Error in quote detail API:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }

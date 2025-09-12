@@ -1,19 +1,19 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  orderBy,
   limit,
   onSnapshot,
   serverTimestamp,
   increment,
-  Timestamp 
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
@@ -33,7 +33,7 @@ export interface Quote {
   id: string;
   companyId: string;
   number: string;
-  
+
   // Kunde
   customerId?: string;
   customerName: string;
@@ -45,30 +45,30 @@ export interface Quote {
     postalCode: string;
     country: string;
   };
-  
+
   // Datum & Gültigkeit
   date: Date;
   validUntil: Date;
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Status
   status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
-  
+
   // Inhalt
   title?: string;
   description?: string;
   notes?: string;
-  
+
   // Positionen
   items: QuoteItem[];
-  
+
   // Beträge
   subtotal: number;
   taxAmount: number;
   total: number;
   currency: string;
-  
+
   // Versand
   deliveryDate?: Date;
   deliveryMethod?: string;
@@ -78,18 +78,18 @@ export interface Quote {
     postalCode: string;
     country: string;
   };
-  
+
   // Metadaten
   createdBy: string;
   lastModifiedBy?: string;
   template?: string;
   language?: string;
-  
+
   // Konvertierung
   convertedToInvoice?: boolean;
   invoiceId?: string;
   convertedAt?: Date;
-  
+
   // Workflow
   sentAt?: Date;
   acceptedAt?: Date;
@@ -115,7 +115,6 @@ export interface QuoteSettings {
 }
 
 export class QuoteService {
-  
   /**
    * Alle Angebote für eine Company abrufen
    */
@@ -124,7 +123,7 @@ export class QuoteService {
       const quotesRef = collection(db, 'companies', companyId, 'quotes');
       const q = query(quotesRef, orderBy('date', 'desc'));
       const snapshot = await getDocs(q);
-      
+
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -139,7 +138,6 @@ export class QuoteService {
         convertedAt: doc.data().convertedAt?.toDate(),
       })) as Quote[];
     } catch (error) {
-      console.error('Error fetching quotes:', error);
       throw error;
     }
   }
@@ -151,7 +149,7 @@ export class QuoteService {
     try {
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
       const snapshot = await getDoc(quoteRef);
-      
+
       if (!snapshot.exists()) {
         return null;
       }
@@ -171,7 +169,6 @@ export class QuoteService {
         convertedAt: data.convertedAt?.toDate(),
       } as Quote;
     } catch (error) {
-      console.error('Error fetching quote:', error);
       throw error;
     }
   }
@@ -179,11 +176,14 @@ export class QuoteService {
   /**
    * Neues Angebot erstellen
    */
-  static async createQuote(companyId: string, quoteData: Omit<Quote, 'id' | 'number' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  static async createQuote(
+    companyId: string,
+    quoteData: Omit<Quote, 'id' | 'number' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
     try {
       // Angebotsnummer generieren
       const number = await this.generateQuoteNumber(companyId);
-      
+
       const quotesRef = collection(db, 'companies', companyId, 'quotes');
       const docRef = await addDoc(quotesRef, {
         ...quoteData,
@@ -198,7 +198,6 @@ export class QuoteService {
 
       return docRef.id;
     } catch (error) {
-      console.error('Error creating quote:', error);
       throw error;
     }
   }
@@ -206,10 +205,14 @@ export class QuoteService {
   /**
    * Angebot aktualisieren
    */
-  static async updateQuote(companyId: string, quoteId: string, updates: Partial<Quote>): Promise<void> {
+  static async updateQuote(
+    companyId: string,
+    quoteId: string,
+    updates: Partial<Quote>
+  ): Promise<void> {
     try {
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
-      
+
       const updateData: any = {
         ...updates,
         updatedAt: serverTimestamp(),
@@ -222,7 +225,6 @@ export class QuoteService {
 
       await updateDoc(quoteRef, updateData);
     } catch (error) {
-      console.error('Error updating quote:', error);
       throw error;
     }
   }
@@ -235,7 +237,6 @@ export class QuoteService {
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
       await deleteDoc(quoteRef);
     } catch (error) {
-      console.error('Error deleting quote:', error);
       throw error;
     }
   }
@@ -252,7 +253,6 @@ export class QuoteService {
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
-      console.error('Error sending quote:', error);
       throw error;
     }
   }
@@ -269,7 +269,6 @@ export class QuoteService {
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
-      console.error('Error accepting quote:', error);
       throw error;
     }
   }
@@ -287,7 +286,6 @@ export class QuoteService {
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
-      console.error('Error rejecting quote:', error);
       throw error;
     }
   }
@@ -320,7 +318,6 @@ export class QuoteService {
 
       return 'temp-invoice-id'; // TODO: Echte Invoice-ID zurückgeben
     } catch (error) {
-      console.error('Error converting quote to invoice:', error);
       throw error;
     }
   }
@@ -333,7 +330,7 @@ export class QuoteService {
       const settings = await this.getQuoteSettings(companyId);
       const year = new Date().getFullYear();
       const nextNumber = settings.currentNumber + 1;
-      
+
       // Format: A-2025-001
       const number = settings.numberFormat
         .replace('{PREFIX}', settings.numberPrefix)
@@ -345,7 +342,6 @@ export class QuoteService {
 
       return number;
     } catch (error) {
-      console.error('Error generating quote number:', error);
       // Fallback
       return `A-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 9)}`;
     }
@@ -358,7 +354,7 @@ export class QuoteService {
     try {
       const settingsRef = doc(db, 'companies', companyId, 'settings', 'quotes');
       const snapshot = await getDoc(settingsRef);
-      
+
       if (!snapshot.exists()) {
         // Standard-Einstellungen erstellen
         const defaultSettings: QuoteSettings = {
@@ -375,14 +371,13 @@ export class QuoteService {
           autoConvertToInvoice: false,
           reminderDays: [7, 3, 1],
         };
-        
+
         await this.updateQuoteSettings(companyId, defaultSettings);
         return defaultSettings;
       }
 
       return snapshot.data() as QuoteSettings;
     } catch (error) {
-      console.error('Error fetching quote settings:', error);
       throw error;
     }
   }
@@ -390,7 +385,10 @@ export class QuoteService {
   /**
    * Angebots-Einstellungen aktualisieren
    */
-  static async updateQuoteSettings(companyId: string, settings: Partial<QuoteSettings>): Promise<void> {
+  static async updateQuoteSettings(
+    companyId: string,
+    settings: Partial<QuoteSettings>
+  ): Promise<void> {
     try {
       const settingsRef = doc(db, 'companies', companyId, 'settings', 'quotes');
       await updateDoc(settingsRef, {
@@ -398,7 +396,6 @@ export class QuoteService {
         updatedAt: serverTimestamp(),
       });
     } catch (error) {
-      console.error('Error updating quote settings:', error);
       throw error;
     }
   }
@@ -418,7 +415,7 @@ export class QuoteService {
   }> {
     try {
       const quotes = await this.getQuotes(companyId);
-      
+
       const stats = {
         total: quotes.length,
         draft: quotes.filter(q => q.status === 'draft').length,
@@ -427,12 +424,13 @@ export class QuoteService {
         rejected: quotes.filter(q => q.status === 'rejected').length,
         expired: quotes.filter(q => q.status === 'expired').length,
         totalValue: quotes.reduce((sum, q) => sum + q.total, 0),
-        acceptedValue: quotes.filter(q => q.status === 'accepted').reduce((sum, q) => sum + q.total, 0),
+        acceptedValue: quotes
+          .filter(q => q.status === 'accepted')
+          .reduce((sum, q) => sum + q.total, 0),
       };
 
       return stats;
     } catch (error) {
-      console.error('Error fetching quote statistics:', error);
       throw error;
     }
   }
@@ -443,8 +441,8 @@ export class QuoteService {
   static subscribeToQuotes(companyId: string, callback: (quotes: Quote[]) => void): () => void {
     const quotesRef = collection(db, 'companies', companyId, 'quotes');
     const q = query(quotesRef, orderBy('date', 'desc'));
-    
-    return onSnapshot(q, (snapshot) => {
+
+    return onSnapshot(q, snapshot => {
       const quotes = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -458,7 +456,7 @@ export class QuoteService {
         rejectedAt: doc.data().rejectedAt?.toDate(),
         convertedAt: doc.data().convertedAt?.toDate(),
       })) as Quote[];
-      
+
       callback(quotes);
     });
   }

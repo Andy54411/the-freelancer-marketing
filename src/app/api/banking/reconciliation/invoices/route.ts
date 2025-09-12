@@ -76,8 +76,6 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error('❌ Banking reconciliation invoices error:', error.message);
-
     return NextResponse.json(
       {
         success: false,
@@ -146,8 +144,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('❌ Banking reconciliation update error:', error.message);
-
     return NextResponse.json(
       {
         success: false,

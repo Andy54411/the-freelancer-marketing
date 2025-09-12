@@ -180,10 +180,8 @@ export default function AdminCompanyDetailsPage() {
         const data = await response.json();
         setCompany(data.company);
       } else {
-        console.error('Failed to load company details');
       }
     } catch (error) {
-      console.error('Error loading company details:', error);
     } finally {
       setLoading(false);
     }
@@ -239,7 +237,6 @@ export default function AdminCompanyDetailsPage() {
         alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
       }
     } catch (error) {
-      console.error('Error updating approval status:', error);
       alert('Fehler beim Aktualisieren des Status');
     } finally {
       setIsUpdatingApproval(false);
@@ -264,6 +261,7 @@ export default function AdminCompanyDetailsPage() {
             Freigegeben
           </Badge>
         );
+
       case 'rejected':
         return (
           <Badge className="bg-red-100 text-red-800">
@@ -271,6 +269,7 @@ export default function AdminCompanyDetailsPage() {
             Abgelehnt
           </Badge>
         );
+
       case 'needs_review':
         return <Badge className="bg-yellow-100 text-yellow-800">Überprüfung erforderlich</Badge>;
       default:
@@ -300,6 +299,7 @@ export default function AdminCompanyDetailsPage() {
             Verifiziert
           </Badge>
         );
+
       case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">Ausstehend</Badge>;
       case 'rejected':
@@ -658,6 +658,7 @@ export default function AdminCompanyDetailsPage() {
                         alt="Profilbild"
                         className="h-16 w-16 rounded-lg object-cover border"
                       />
+
                       <div className="flex space-x-2">
                         <Button
                           variant="outline"
@@ -694,6 +695,7 @@ export default function AdminCompanyDetailsPage() {
                         alt="Banner-Bild"
                         className="h-16 w-24 rounded-lg object-cover border"
                       />
+
                       <div className="flex space-x-2">
                         <Button
                           variant="outline"

@@ -44,9 +44,6 @@ if (!admin.apps.length) {
         try {
           serviceAccount = JSON.parse(fixedKey);
         } catch (secondError) {
-          console.error('❌ Firebase service account parsing failed:');
-          console.error('First error:', firstError.message);
-          console.error('Second error:', secondError.message);
           throw firstError;
         }
       }
@@ -61,11 +58,9 @@ if (!admin.apps.length) {
         projectId: 'tilvo-f142f',
       });
     } else {
-      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_KEY not found');
       throw new Error('Firebase credentials missing');
     }
   } catch (error) {
-    console.error('❌ Firebase Admin SDK initialization failed:', error);
     throw error;
   }
 }

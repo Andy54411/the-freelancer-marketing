@@ -173,7 +173,6 @@ export default function BankingReconciliationPage() {
         setTransactions([]);
       }
     } catch (err: unknown) {
-      console.error('❌ Error loading transactions:', err);
       setTransactions([]);
     } finally {
       setLoadingTransactions(false);

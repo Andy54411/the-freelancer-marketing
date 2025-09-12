@@ -203,7 +203,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       // Debug-Log entfernt
       setProfilePictureURLFromStorage(null);
     } catch (error) {
-      console.error('❌ Error loading profile from Firestore:', error);
       setProfilePictureURLFromStorage(null);
     }
   }, []); // 🎯 NEUE FUNKTION: Lade Profilbild aus Firestore Company-Collection
@@ -234,7 +233,6 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         setProfilePictureFromFirestore(null);
       }
     } catch (error) {
-      console.error('❌ Error loading profile picture from Firestore:', error);
       setProfilePictureFromFirestore(null);
     }
   }, []);
@@ -397,10 +395,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         // Auch aus lokalem State entfernen
         setNotifications(prev => prev.filter(n => n.id !== notificationId));
       }
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      // Continue anyway - don't block navigation
-    }
+    } catch (error) {}
 
     // Navigate to the link
     if (link) {
@@ -481,6 +476,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                 onChange={e => setSearchTerm(e.target.value)}
                 value={searchTerm}
               />
+
               <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               {isSearchDropdownOpen && (
                 <div className="absolute top-full left-0 mt-1 w-full max-h-96 overflow-y-auto bg-white rounded-md shadow-lg z-30 ring-1 ring-black ring-opacity-5">

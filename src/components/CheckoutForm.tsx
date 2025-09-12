@@ -276,7 +276,6 @@ export const StripeCardCheckout = ({
                 alert('PaymentElement wurde geladen! Prüfe Konsole für Details.');
               }}
               onLoadError={error => {
-                console.error('🔴 PaymentElement Load Error:', error);
                 alert(`PaymentElement Fehler: ${JSON.stringify(error)}`);
               }}
               onFocus={() => {}}

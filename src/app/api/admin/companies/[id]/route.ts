@@ -230,7 +230,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error(`Error fetching company details for ${params}:`, error);
     return NextResponse.json(
       {
         error: 'Failed to fetch company details',

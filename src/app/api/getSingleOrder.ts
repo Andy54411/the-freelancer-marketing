@@ -20,7 +20,7 @@ export const getSingleOrder = async (orderId: string, idToken: string) => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error('❌ getSingleOrder API Error:', { status: response.status, errorData });
+
     throw new Error(errorData.error || `Request failed: ${response.status}`);
   }
 

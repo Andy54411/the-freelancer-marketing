@@ -81,7 +81,6 @@ export async function DELETE(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     } catch (error: any) {
-      console.error('❌ Error disconnecting Revolut:', error.message);
       return NextResponse.json(
         {
           success: false,
@@ -93,7 +92,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('❌ Revolut disconnect API error:', error.message);
     return NextResponse.json(
       {
         success: false,

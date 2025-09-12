@@ -114,12 +114,9 @@ export async function GET(request: NextRequest) {
           });
         } else {
           const errorText = await transactionsResponse.text();
-          console.error('❌ finAPI transactions error:', transactionsResponse.status, errorText);
         }
       }
-    } catch (finapiError: any) {
-      console.error('❌ finAPI transactions error:', finapiError.message);
-    }
+    } catch (finapiError: any) {}
 
     // For demo purposes, if we have accounts but no transactions,
     // show some sample transactions to demonstrate the UI
@@ -194,8 +191,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('❌ Transactions error:', error.message);
-
     return NextResponse.json(
       {
         error: 'Failed to fetch transactions',

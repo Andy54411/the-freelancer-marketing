@@ -47,7 +47,6 @@ export async function GET(request: NextRequest) {
       flow: 'oauth',
     });
   } catch (error: any) {
-    console.error('❌ Revolut OAuth authorize error:', error.message);
     return NextResponse.json(
       {
         success: false,

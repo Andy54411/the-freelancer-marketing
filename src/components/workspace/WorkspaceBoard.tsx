@@ -141,7 +141,6 @@ export function WorkspaceBoard({
       // This will trigger real-time updates for all connected users
       await onUpdateWorkspace(selectedWorkspace.id, updates);
     } catch (error) {
-      console.error('Failed to update workspace:', error);
       // Revert local state on error
       setSelectedWorkspace(selectedWorkspace);
     }
@@ -299,9 +298,7 @@ export function WorkspaceBoard({
         boardColumns: updatedColumns,
         updatedAt: new Date(),
       });
-    } catch (error) {
-      console.error('Failed to create task:', error);
-    }
+    } catch (error) {}
   };
 
   const handleEditTask = (task: WorkspaceTask) => {

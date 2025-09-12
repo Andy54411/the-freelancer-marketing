@@ -21,17 +21,20 @@ const CATEGORY_QUESTION_DATABASE = {
       'Ist der Arbeitsplatz gut zugänglich?',
       'Benötigen Sie eine Abnahme oder Gewährleistung?',
     ],
+
     subcategories: {
       Elektriker: [
         'Ist der Strom bereits abgeschaltet?',
         'Benötigen Sie eine Elektroinstallation oder Reparatur?',
         'Müssen Sicherheitsprüfungen durchgeführt werden?',
       ],
+
       Klempner: [
         'Handelt es sich um einen Notfall (Wasserschaden)?',
         'Welche Art von Rohrsystem ist betroffen?',
         'Ist das Wasser bereits abgestellt?',
       ],
+
       'Maler & Lackierer': [
         'Wie viele Räume/Quadratmeter sollen gestrichen werden?',
         'Welche Farben/Materialien sind gewünscht?',
@@ -47,12 +50,14 @@ const CATEGORY_QUESTION_DATABASE = {
       'Gibt es besondere Vorsichtsmaßnahmen zu beachten?',
       'Sind Sie während der Arbeit anwesend?',
     ],
+
     subcategories: {
       Reinigungskraft: [
         'Wie viele Zimmer hat Ihr Zuhause?',
         'Soll auch geputzt oder nur aufgeräumt werden?',
         'Haben Sie Haustiere?',
       ],
+
       Fensterputzer: [
         'Wie viele Fenster/Etagen?',
         'Benötigen Sie auch Rahmen- und Fensterbankreinigung?',
@@ -68,12 +73,14 @@ const CATEGORY_QUESTION_DATABASE = {
       'Benötigen Sie laufenden Support oder eine einmalige Lösung?',
       'Haben Sie ein technisches Team oder sind Sie Einzelnutzer?',
     ],
+
     subcategories: {
       Webentwicklung: [
         'Welche Art von Website benötigen Sie?',
         'Haben Sie bereits ein Design/Corporate Identity?',
         'Benötigen Sie auch Hosting und Domain?',
       ],
+
       'IT-Support': [
         'Welches Betriebssystem verwenden Sie?',
         'Ist es ein Hardware- oder Software-Problem?',
@@ -89,12 +96,14 @@ const CATEGORY_QUESTION_DATABASE = {
       'Gibt es zeitliche Beschränkungen?',
       'Ist eine Versicherung erforderlich?',
     ],
+
     subcategories: {
       Umzugshelfer: [
         'Wie viele Zimmer ziehen Sie um?',
         'In welche Etage geht es?',
         'Haben Sie bereits einen LKW organisiert?',
       ],
+
       Kurierdienst: [
         'Wie groß/schwer ist das Paket?',
         'Wie dringend ist die Zustellung?',
@@ -110,12 +119,14 @@ const CATEGORY_QUESTION_DATABASE = {
       'Wie oft möchten Sie den Service in Anspruch nehmen?',
       'Benötigen Sie eine Terminvereinbarung?',
     ],
+
     subcategories: {
       Massage: [
         'Welche Art von Massage bevorzugen Sie?',
         'Haben Sie Verspannungen oder Schmerzen?',
         'Benötigen Sie therapeutische oder entspannende Massage?',
       ],
+
       Physiotherapie: [
         'Haben Sie eine ärztliche Verordnung?',
         'Welche Beschwerden sollen behandelt werden?',
@@ -131,12 +142,14 @@ const CATEGORY_QUESTION_DATABASE = {
       'Wo soll der Service stattfinden?',
       'Benötigen Sie auch Geschirr und Besteck?',
     ],
+
     subcategories: {
       Mietkoch: [
         'Welche Küche bevorzugen Sie?',
         'Soll eingekauft oder mitgebracht werden?',
         'Wie viele Gänge wünschen Sie?',
       ],
+
       Catering: [
         'Welche Art von Catering (Buffet, Menü, Fingerfood)?',
         'Ist es ein privates oder geschäftliches Event?',
@@ -152,12 +165,14 @@ const CATEGORY_QUESTION_DATABASE = {
       'Benötigen Sie eine einmalige Kampagne oder laufende Betreuung?',
       'Haben Sie bereits Marketing-Materialien?',
     ],
+
     subcategories: {
       OnlineMarketing: [
         'Welche Online-Kanäle sollen genutzt werden?',
         'Haben Sie bereits eine Website/Social Media Präsenz?',
         'Welche Conversion-Ziele haben Sie?',
       ],
+
       'Social Media Marketing': [
         'Auf welchen Plattformen sind Sie aktiv?',
         'Wie oft sollen Inhalte veröffentlicht werden?',
@@ -173,12 +188,14 @@ const CATEGORY_QUESTION_DATABASE = {
       'Benötigen Sie laufende Betreuung oder einmalige Beratung?',
       'Haben Sie bereits relevante Unterlagen vorbereitet?',
     ],
+
     subcategories: {
       Buchhaltung: [
         'Welche Art von Unternehmen führen Sie?',
         'Benötigen Sie monatliche oder jährliche Buchhaltung?',
         'Welche Software verwenden Sie?',
       ],
+
       Steuerberatung: [
         'Geht es um private oder gewerbliche Steuern?',
         'Benötigen Sie Hilfe bei der Steuererklärung oder laufende Beratung?',
@@ -194,12 +211,14 @@ const CATEGORY_QUESTION_DATABASE = {
       'Bevorzugen Sie Einzel- oder Gruppenunterricht?',
       'Soll online oder vor Ort unterrichtet werden?',
     ],
+
     subcategories: {
       Nachhilfe: [
         'Welche Klassenstufe?',
         'In welchem Fach?',
         'Sind es Verständnisprobleme oder Prüfungsvorbereitung?',
       ],
+
       Sprachunterricht: [
         'Welche Sprache soll gelernt werden?',
         'Welches Sprachniveau haben Sie bereits?',
@@ -323,6 +342,7 @@ export async function POST(request: Request) {
                 parts: [{ text: `${systemContext}\n\n${prompt}` }],
               },
             ],
+
             generationConfig,
             safetySettings,
           });
@@ -436,6 +456,7 @@ export async function POST(request: Request) {
                 parts: [{ text: `${systemContext}\n\n${prompt}` }],
               },
             ],
+
             generationConfig,
             safetySettings,
           });
@@ -559,6 +580,7 @@ export async function POST(request: Request) {
                 parts: [{ text: `${systemContext}\n\n${prompt}` }],
               },
             ],
+
             generationConfig,
             safetySettings,
           });
@@ -671,6 +693,7 @@ export async function POST(request: Request) {
                 parts: [{ text: `${systemContext}\n\n${prompt}` }],
               },
             ],
+
             generationConfig,
             safetySettings,
           });
@@ -698,7 +721,6 @@ export async function POST(request: Request) {
             action: action,
           });
         } catch (error) {
-          console.error('Error in createDetailedProject:', error);
           const errorMessage =
             error instanceof Error ? error.message : 'Ein unbekannter Fehler ist aufgetreten.';
           return NextResponse.json(
@@ -799,6 +821,7 @@ export async function POST(request: Request) {
                 'Klempner',
                 'Maler',
               ],
+
               Haushalt: ['Haushalt', 'Reinigung', 'Haushaltsservice', 'Putzen', 'Fensterputzer'],
               'IT & Digital': ['IT', 'Digital', 'Software', 'Computer', 'Web', 'Webentwicklung'],
               Transport: ['Transport', 'Umzug', 'Logistik', 'Spedition', 'Kurierdienst'],
@@ -809,6 +832,7 @@ export async function POST(request: Request) {
                 'Fitness',
                 'Physiotherapie',
               ],
+
               'Hotel & Gastronomie': [
                 'Hotel & Gastronomie',
                 'Gastronomie',
@@ -818,6 +842,7 @@ export async function POST(request: Request) {
                 'Event',
                 'Mietkoch',
               ],
+
               'Marketing & Vertrieb': ['Marketing', 'Werbung', 'Vertrieb', 'PR'],
             };
 
@@ -1000,7 +1025,6 @@ export async function POST(request: Request) {
             message: `${providers.length} passende Dienstleister gefunden`,
           });
         } catch (error) {
-          console.error('Error finding providers:', error);
           return NextResponse.json(
             { error: 'Fehler beim Abrufen der Dienstleister aus der Datenbank' },
             { status: 500 }
@@ -1018,6 +1042,7 @@ export async function POST(request: Request) {
                 parts: [{ text: `${systemContext}\n\n${prompt}` }],
               },
             ],
+
             generationConfig,
             safetySettings,
           });

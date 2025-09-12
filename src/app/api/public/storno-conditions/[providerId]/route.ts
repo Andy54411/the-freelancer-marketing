@@ -8,9 +8,9 @@ import { db as adminDb } from '@/firebase/server';
  */
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { providerId: string } }
-) {
+request: NextRequest,
+{ params }: {params: {providerId: string;};})
+{
   try {
     // Check if Firebase is available
     if (!adminDb) {
@@ -25,7 +25,7 @@ export async function GET(
     // Hole Provider-Daten - erst in companies, dann in users suchen
     let providerRef = adminDb.collection('companies').doc(providerId);
     let providerDoc = await providerRef.get();
-    
+
     // Falls nicht in companies gefunden, versuche users collection
     if (!providerDoc.exists) {
       providerRef = adminDb.collection('users').doc(providerId);
@@ -74,7 +74,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    console.error('Fehler beim Abrufen der öffentlichen Storno-Bedingungen:', error);
+
     return NextResponse.json(
       { error: 'Fehler beim Laden der Storno-Bedingungen' },
       { status: 500 }
@@ -95,7 +95,7 @@ async function calculateAuftragSpecificStornoInfo(auftragId: string, stornoSetti
     if (!auftragDoc.exists) return null;
 
     const auftragData = auftragDoc.data();
-    
+
     // DEADLINE MANAGEMENT: Verwende jobDateTo als primäre Deadline, dann jobDateFrom
     const deadline = auftragData?.jobDateTo || auftragData?.jobDateFrom;
     if (!deadline) {
@@ -108,12 +108,12 @@ async function calculateAuftragSpecificStornoInfo(auftragId: string, stornoSetti
 
     const deadlineDate = new Date(deadline);
     deadlineDate.setHours(23, 59, 59, 999); // Ende des Tages
-    
+
     const now = new Date();
     const isOverdue = now > deadlineDate;
     const timeDiff = deadlineDate.getTime() - now.getTime();
     const hoursUntilDeadline = Math.ceil(timeDiff / (1000 * 60 * 60));
-    
+
     const totalAmount = auftragData?.totalAmountPaidByBuyer || auftragData?.jobCalculatedPriceInCents || 0;
 
     // LIEFERVERZUG CHECK: Wenn überfällig, Vollerstattung ohne Gebühren
@@ -136,40 +136,40 @@ async function calculateAuftragSpecificStornoInfo(auftragId: string, stornoSetti
 
     // NORMALE STORNO-BERECHNUNG basierend auf verbleibender Zeit
     let applicableFee: any = null;
-    
+
     if (hoursUntilDeadline <= 0) {
       // Deadline erreicht oder überschritten
       applicableFee = stornoSettings.timeBasedFees.afterStart;
     } else if (hoursUntilDeadline <= 24) {
       // Weniger als 24h bis Deadline
-      applicableFee = stornoSettings.timeBasedFees.before24Hours?.enabled 
-        ? stornoSettings.timeBasedFees.before24Hours 
-        : stornoSettings.timeBasedFees.afterStart;
+      applicableFee = stornoSettings.timeBasedFees.before24Hours?.enabled ?
+      stornoSettings.timeBasedFees.before24Hours :
+      stornoSettings.timeBasedFees.afterStart;
     } else if (hoursUntilDeadline <= 48) {
       // 24-48h bis Deadline
-      applicableFee = stornoSettings.timeBasedFees.before48Hours?.enabled 
-        ? stornoSettings.timeBasedFees.before48Hours 
-        : stornoSettings.timeBasedFees.before24Hours?.enabled
-          ? stornoSettings.timeBasedFees.before24Hours
-          : stornoSettings.timeBasedFees.afterStart;
-    } else if (hoursUntilDeadline <= 168) { // 7 Tage
+      applicableFee = stornoSettings.timeBasedFees.before48Hours?.enabled ?
+      stornoSettings.timeBasedFees.before48Hours :
+      stornoSettings.timeBasedFees.before24Hours?.enabled ?
+      stornoSettings.timeBasedFees.before24Hours :
+      stornoSettings.timeBasedFees.afterStart;
+    } else if (hoursUntilDeadline <= 168) {// 7 Tage
       // 2-7 Tage bis Deadline
-      applicableFee = stornoSettings.timeBasedFees.before7Days?.enabled 
-        ? stornoSettings.timeBasedFees.before7Days 
-        : stornoSettings.timeBasedFees.before48Hours?.enabled
-          ? stornoSettings.timeBasedFees.before48Hours
-          : stornoSettings.timeBasedFees.before24Hours?.enabled
-            ? stornoSettings.timeBasedFees.before24Hours
-            : stornoSettings.timeBasedFees.afterStart;
+      applicableFee = stornoSettings.timeBasedFees.before7Days?.enabled ?
+      stornoSettings.timeBasedFees.before7Days :
+      stornoSettings.timeBasedFees.before48Hours?.enabled ?
+      stornoSettings.timeBasedFees.before48Hours :
+      stornoSettings.timeBasedFees.before24Hours?.enabled ?
+      stornoSettings.timeBasedFees.before24Hours :
+      stornoSettings.timeBasedFees.afterStart;
     } else {
       // Mehr als 7 Tage bis Deadline
-      applicableFee = stornoSettings.timeBasedFees.before7Days?.enabled 
-        ? stornoSettings.timeBasedFees.before7Days 
-        : { enabled: true, percentage: 0, fixedAmount: 0, description: 'Kostenlose Stornierung' };
+      applicableFee = stornoSettings.timeBasedFees.before7Days?.enabled ?
+      stornoSettings.timeBasedFees.before7Days :
+      { enabled: true, percentage: 0, fixedAmount: 0, description: 'Kostenlose Stornierung' };
     }
 
     // Berechne konkrete Kosten
-    const percentageFee = Math.round((totalAmount * (applicableFee?.percentage || 0)) / 100);
+    const percentageFee = Math.round(totalAmount * (applicableFee?.percentage || 0) / 100);
     const fixedFee = Math.round((applicableFee?.fixedAmount || 0) * 100); // Convert to cents
     const totalStornoFee = percentageFee + fixedFee;
     const refundAmount = Math.max(0, totalAmount - totalStornoFee);
@@ -186,8 +186,8 @@ async function calculateAuftragSpecificStornoInfo(auftragId: string, stornoSetti
       applicableFee: {
         ...applicableFee,
         percentageFee: percentageFee / 100, // In EUR
-        fixedFee: (applicableFee?.fixedAmount || 0), // In EUR
-        totalFee: totalStornoFee / 100, // In EUR
+        fixedFee: applicableFee?.fixedAmount || 0, // In EUR
+        totalFee: totalStornoFee / 100 // In EUR
       },
       refundAmount: refundAmount / 100, // In EUR
       processingFee: totalStornoFee / 100, // In EUR
@@ -196,7 +196,7 @@ async function calculateAuftragSpecificStornoInfo(auftragId: string, stornoSetti
     };
 
   } catch (error) {
-    console.error('Fehler bei der Berechnung der auftragsspezifischen Storno-Info:', error);
+
     return null;
   }
 }
@@ -245,17 +245,17 @@ function generatePublicStornoDisplay(settings: any, format: string, auftragInfo:
   // Zeit-basierte Gebühren aufbereiten
   const timeBasedFees = settings.timeBasedFees || {};
   const sortedPeriods = [
-    { key: 'before7Days', label: 'Mehr als 7 Tage vor Termin', hours: 168 },
-    { key: 'before48Hours', label: '2-7 Tage vor Termin', hours: 48 },
-    { key: 'before24Hours', label: '1-2 Tage vor Termin', hours: 24 },
-    { key: 'afterStart', label: 'Weniger als 24h oder nach Beginn', hours: 0 }
-  ];
+  { key: 'before7Days', label: 'Mehr als 7 Tage vor Termin', hours: 168 },
+  { key: 'before48Hours', label: '2-7 Tage vor Termin', hours: 48 },
+  { key: 'before24Hours', label: '1-2 Tage vor Termin', hours: 24 },
+  { key: 'afterStart', label: 'Weniger als 24h oder nach Beginn', hours: 0 }];
+
 
   for (const period of sortedPeriods) {
     const fee = timeBasedFees[period.key];
-    if (fee?.enabled !== false) { // Default enabled für afterStart
+    if (fee?.enabled !== false) {// Default enabled für afterStart
       const feeInfo = formatFeeInfo(fee);
-      
+
       if (format === 'summary') {
         display.summary.push(`${period.label}: ${feeInfo.text}`);
       } else {
@@ -324,10 +324,10 @@ function formatFeeInfo(fee: any) {
   const fixedAmount = fee.fixedAmount || 0;
 
   if (percentage === 0 && fixedAmount === 0) {
-    return { 
-      text: 'Kostenlose Stornierung', 
-      percentage: 0, 
-      fixedAmount: 0, 
+    return {
+      text: 'Kostenlose Stornierung',
+      percentage: 0,
+      fixedAmount: 0,
       isFree: true,
       color: 'success'
     };
@@ -340,10 +340,10 @@ function formatFeeInfo(fee: any) {
   const text = parts.length > 0 ? parts.join(' + ') : 'Keine Rückerstattung';
   const color = percentage === 0 ? 'warning' : percentage >= 50 ? 'danger' : 'warning';
 
-  return { 
-    text, 
-    percentage, 
-    fixedAmount, 
+  return {
+    text,
+    percentage,
+    fixedAmount,
     isFree: false,
     color
   };
@@ -364,8 +364,8 @@ function isCurrentPeriod(hoursUntilJob: number, periodHours: number): boolean {
  * Prüfe ob kostenlose Stornierung verfügbar
  */
 function hasFreeCancellation(timeBasedFees: any): boolean {
-  return Object.values(timeBasedFees || {}).some((fee: any) => 
-    fee?.enabled && fee.percentage === 0 && fee.fixedAmount === 0
+  return Object.values(timeBasedFees || {}).some((fee: any) =>
+  fee?.enabled && fee.percentage === 0 && fee.fixedAmount === 0
   );
 }
 

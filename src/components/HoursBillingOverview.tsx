@@ -99,7 +99,6 @@ export default function HoursBillingOverview({
           return null;
         }
       } catch (error) {
-        console.error('❌ Fehler bei Rolle-Bestimmung:', error);
         setUserRole(null);
         return null;
       }

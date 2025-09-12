@@ -36,7 +36,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('❌ Banks API error:', error.message);
     return NextResponse.json(
       {
         success: false,

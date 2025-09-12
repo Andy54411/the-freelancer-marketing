@@ -51,7 +51,6 @@ async function getFirebaseServices() {
       db = firebaseAdmin.firestore(app);
       admin = firebaseAdmin;
     } catch (error) {
-      console.error('Firebase initialization error:', error);
       throw error;
     }
   }
@@ -73,7 +72,6 @@ export async function GET(
     const authHeader = request.headers.get('authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('❌ No valid auth header provided');
       return NextResponse.json({ error: 'Authentifizierung erforderlich' }, { status: 401 });
     }
 
@@ -86,14 +84,12 @@ export async function GET(
     try {
       decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
     } catch (authError) {
-      console.error('❌ Token verification failed:', authError);
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
     // Check if user is authorized to access this company's data
 
     if (decodedToken.uid !== uid) {
-      console.error(`❌ Authorization failed: token.uid=${decodedToken.uid}, requested.uid=${uid}`);
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
@@ -105,7 +101,6 @@ export async function GET(
     if (!companyDoc.exists) {
       companyDoc = await db.collection('users').doc(uid).get();
       if (!companyDoc.exists) {
-        console.error(`❌ Company not found in any collection: ${uid}`);
         return NextResponse.json({ error: 'Unternehmen nicht gefunden' }, { status: 404 });
       } else {
       }
@@ -125,7 +120,6 @@ export async function GET(
     const quoteDoc = await quoteRef.get();
 
     if (!quoteDoc.exists) {
-      console.error(`❌ Quote not found: ${quoteId}`);
       return NextResponse.json({ error: 'Angebot nicht gefunden' }, { status: 404 });
     }
 
@@ -224,9 +218,7 @@ export async function GET(
         responseDate = firstProposal.createdAt;
       } else {
       }
-    } catch (error) {
-      console.error('Error checking proposal subcollection:', error);
-    }
+    } catch (error) {}
 
     // Fallback: Check old response structure in quote document
     if (!hasResponse && quoteData?.response) {
@@ -283,7 +275,6 @@ export async function GET(
       quote,
     });
   } catch (error) {
-    console.error('Error fetching received quote details:', error);
     return NextResponse.json({ error: 'Fehler beim Laden des Angebots' }, { status: 500 });
   }
 }
@@ -302,7 +293,6 @@ export async function POST(
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('❌ No auth header provided');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -312,13 +302,11 @@ export async function POST(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (error) {
-      console.error('❌ Token verification failed:', error);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if the user is authorized to access this company's data
     if (decodedToken.uid !== uid) {
-      console.error(`❌ UID mismatch: token=${decodedToken.uid}, requested=${uid}`);
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -327,7 +315,6 @@ export async function POST(
     const { action } = body;
 
     if (!action || !['accept', 'decline'].includes(action)) {
-      console.error(`❌ Invalid action: ${action}`);
       return NextResponse.json(
         { error: 'Invalid action. Must be "accept" or "decline"' },
         { status: 400 }
@@ -349,7 +336,6 @@ export async function POST(
         quoteData = quoteDoc.data();
         isFromRequestsCollection = true;
       } else {
-        console.error(`❌ Quote ${quoteId} not found in any collection`);
         return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
       }
     }
@@ -375,12 +361,10 @@ export async function POST(
           proposalData = quoteData?.response;
         }
       } catch (error) {
-        console.error('❌ Error loading proposals:', error);
         proposalData = quoteData?.response;
       }
 
       if (!proposalData) {
-        console.error(`❌ No proposal or response data found for quote ${quoteId}`);
         return NextResponse.json(
           { error: 'Kein Angebot gefunden zum Akzeptieren' },
           { status: 400 }
@@ -392,7 +376,6 @@ export async function POST(
       const providerId = quoteData?.providerId || proposalData?.providerId;
 
       if (!providerId) {
-        console.error(`❌ No provider ID found for quote ${quoteId}`);
         return NextResponse.json(
           { error: 'Provider-Informationen nicht gefunden' },
           { status: 400 }
@@ -410,7 +393,6 @@ export async function POST(
         if (customerDoc.exists) {
           customerData = customerDoc.data();
         } else {
-          console.error(`❌ Customer ${companyId} not found in any collection`);
           return NextResponse.json(
             { error: 'Kunden-Informationen nicht gefunden' },
             { status: 400 }
@@ -429,7 +411,6 @@ export async function POST(
         if (providerDoc.exists) {
           providerData = providerDoc.data();
         } else {
-          console.error(`❌ Provider ${providerId} not found in any collection`);
           return NextResponse.json(
             { error: 'Anbieter-Informationen nicht gefunden' },
             { status: 400 }
@@ -472,10 +453,7 @@ export async function POST(
 
       // Send notification to provider about the acceptance
       try {
-      } catch (notificationError) {
-        console.error('⚠️ Failed to send notification:', notificationError);
-        // Don't fail the whole operation if notification fails
-      }
+      } catch (notificationError) {}
 
       return NextResponse.json({
         success: true,
@@ -503,7 +481,6 @@ export async function POST(
       });
     }
   } catch (error) {
-    console.error('❌ Error processing quote action:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

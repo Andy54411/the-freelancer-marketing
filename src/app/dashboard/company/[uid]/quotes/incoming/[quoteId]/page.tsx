@@ -315,7 +315,6 @@ export default function QuoteResponsePage({
         router.push(`/dashboard/company/${companyId}/quotes/incoming`);
       } else {
         const errorText = await apiResponse.text();
-        console.error('❌ Quote response failed:', errorText);
 
         try {
           const errorData = JSON.parse(errorText);
@@ -325,7 +324,6 @@ export default function QuoteResponsePage({
         }
       }
     } catch (error) {
-      console.error('❌ Quote response error:', error);
       alert(
         `Fehler beim Senden des Angebots: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
       );
@@ -1414,7 +1412,6 @@ export default function QuoteResponsePage({
 
                       await submitResponse(quoteData);
                     } catch (error) {
-                      console.error('❌ Error in quote submission:', error);
                       alert(
                         `Fehler beim Erstellen des Angebots: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
                       );

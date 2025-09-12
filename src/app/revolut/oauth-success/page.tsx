@@ -54,7 +54,6 @@ function RevolutOAuthSuccessContent() {
           window.close();
         }, 1000);
       } catch (err) {
-        console.error('Error communicating with parent window:', err);
         // Fallback: just close the window
         setTimeout(() => {
           window.close();

@@ -56,7 +56,6 @@ export function InventorySelector({
       setInventoryItems(activeItems);
       setFilteredItems(activeItems);
     } catch (error) {
-      console.error('Fehler beim Laden der Inventar-Artikel:', error);
       toast.error('Inventar-Artikel konnten nicht geladen werden');
     } finally {
       setLoading(false);
@@ -248,6 +247,7 @@ export function InventorySelector({
                             }
                             className="w-20"
                           />
+
                           <span className="text-sm text-gray-500">{item.unit}</span>
                         </div>
 

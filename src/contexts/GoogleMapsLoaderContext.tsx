@@ -48,9 +48,7 @@ export const GoogleMapsLoaderProvider: React.FC<GoogleMapsLoaderProviderProps> =
         setGoogle(loadedGoogle);
         setIsLoaded(true);
       })
-      .catch(e => {
-        console.error('❌ Fehler beim Laden von Google Maps:', e);
-      });
+      .catch(e => {});
   }, []); // Der leere Array sorgt dafür, dass dies nur einmal ausgeführt wird
 
   const value = { isLoaded, google };

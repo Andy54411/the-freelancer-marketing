@@ -146,7 +146,6 @@ export default function ReceivedQuoteDetailPage() {
   const fetchQuoteDetail = async () => {
     try {
       if (!firebaseUser) {
-        console.error('❌ No firebase user available');
         return;
       }
 
@@ -155,7 +154,6 @@ export default function ReceivedQuoteDetailPage() {
 
       const token = await firebaseUser.getIdToken();
       if (!token) {
-        console.error('❌ No token available');
         return;
       }
 
@@ -182,7 +180,6 @@ export default function ReceivedQuoteDetailPage() {
         setError(errorData.error || 'Fehler beim Laden des Angebots');
       }
     } catch (error) {
-      console.error('Error fetching quote detail:', error);
       setError('Fehler beim Laden des Angebots');
     } finally {
       setLoading(false);
@@ -195,12 +192,10 @@ export default function ReceivedQuoteDetailPage() {
 
     try {
       if (!firebaseUser) {
-        console.error('❌ PAYMENT: No firebase user available');
         return;
       }
 
       if (!quote) {
-        console.error('❌ PAYMENT: No quote available');
         return;
       }
 
@@ -247,16 +242,14 @@ export default function ReceivedQuoteDetailPage() {
         if (data.success && data.clientSecret) {
           setClientSecret(data.clientSecret);
         } else {
-          console.error('❌ PAYMENT: No success or clientSecret in response:', data);
           setError('Fehler beim Erstellen der Zahlung');
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ PAYMENT: API error:', errorData);
+
         setError(errorData.error || 'Fehler beim Erstellen der Zahlung');
       }
     } catch (error: any) {
-      console.error('💥 PAYMENT: Exception:', error);
       setError('Fehler beim Erstellen der Zahlung');
     } finally {
       setPaymentLoading(false);
@@ -295,7 +288,6 @@ export default function ReceivedQuoteDetailPage() {
         minute: '2-digit',
       }).format(dateObj);
     } catch (error) {
-      console.error('Date formatting error:', error);
       return 'Ungültiges Datum';
     }
   };
@@ -1020,7 +1012,6 @@ export default function ReceivedQuoteDetailPage() {
                       alert('✅ Zahlung erfolgreich abgeschlossen!');
                     }}
                     onError={error => {
-                      console.error('❌ Payment error:', error);
                       alert(`Fehler bei der Zahlung: ${error}`);
                     }}
                     onProcessing={isProcessing => {}}

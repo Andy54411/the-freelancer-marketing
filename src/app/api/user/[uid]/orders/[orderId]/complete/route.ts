@@ -23,9 +23,7 @@ try {
       }
     }
     adminDb = admin.firestore();
-  } catch (fallbackError) {
-    console.error('Firebase Admin initialization failed:', fallbackError);
-  }
+  } catch (fallbackError) {}
 }
 
 // Initialize Stripe

@@ -41,7 +41,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       count: projects.length,
     });
   } catch (error) {
-    console.error('🚨 Error loading projects:', error);
     return NextResponse.json({ error: 'Projekte konnten nicht geladen werden' }, { status: 500 });
   }
 }
@@ -107,7 +106,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: 'Projekt erfolgreich erstellt',
     });
   } catch (error) {
-    console.error('🚨 Error creating project:', error);
     return NextResponse.json({ error: 'Projekt konnte nicht erstellt werden' }, { status: 500 });
   }
 }

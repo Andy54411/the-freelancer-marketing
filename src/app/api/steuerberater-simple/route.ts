@@ -98,7 +98,6 @@ export async function GET(request: NextRequest) {
         });
     }
   } catch (error) {
-    console.error('Steuerberater GET error:', error);
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -136,7 +135,6 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('Steuerberater POST error:', error);
     return NextResponse.json(
       {
         error: 'internal_server_error',
@@ -210,7 +208,6 @@ async function handleInvite(database: any, companyId: string, data: any) {
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('Error in handleInvite:', error);
     throw error;
   }
 }
@@ -260,7 +257,6 @@ async function handleShareDocument(database: any, companyId: string, data: any) 
       timestamp: Date.now(),
     });
   } catch (error) {
-    console.error('Error in handleShareDocument:', error);
     throw error;
   }
 }

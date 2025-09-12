@@ -77,7 +77,6 @@ export function AbsenceApprovalModal({
       setNotes('');
       setSelectedAction(null);
     } catch (error) {
-      console.error('Error processing absence request:', error);
       toast.error('Fehler beim Verarbeiten des Antrags');
     } finally {
       setLoading(false);

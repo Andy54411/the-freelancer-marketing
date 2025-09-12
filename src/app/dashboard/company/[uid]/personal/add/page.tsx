@@ -251,7 +251,6 @@ export default function AddEmployeePage() {
 
       router.push(`/dashboard/company/${companyId}/personal/employees`);
     } catch (error) {
-      console.error('❌ Fehler beim Speichern:', error);
       toast.error('Fehler beim Speichern des Mitarbeiters');
     } finally {
       setLoading(false);

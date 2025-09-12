@@ -201,7 +201,6 @@ export async function POST(request: NextRequest) {
       message: 'UPS-Versandlabel erfolgreich erstellt',
     });
   } catch (error) {
-    console.error('UPS Label Creation Error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Erstellen des UPS-Versandlabels' },
       { status: 500 }
@@ -269,7 +268,6 @@ export async function GET(request: NextRequest) {
       trackingData,
     });
   } catch (error) {
-    console.error('UPS Tracking Error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Tracking-Informationen' },
       { status: 500 }

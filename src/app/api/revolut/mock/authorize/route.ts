@@ -107,7 +107,6 @@ export async function GET(request: NextRequest) {
       accounts: mockAccounts.length,
     });
   } catch (error: any) {
-    console.error('❌ Mock Revolut error:', error.message);
     return NextResponse.json(
       {
         success: false,

@@ -121,10 +121,7 @@ export async function POST(request: Request) {
 
       // Sende E-Mail-Benachrichtigungen an die ausgewählten Provider
       try {
-      } catch (emailError) {
-        console.error('❌ Error sending email notifications to providers:', emailError);
-        // Projekt trotzdem erstellen, auch wenn E-Mail fehlschlägt
-      }
+      } catch (emailError) {}
 
       return NextResponse.json({
         success: true,
@@ -279,9 +276,7 @@ export async function POST(request: Request) {
             urgency: projectData.priority || 'medium',
             createdAt: new Date(),
           });
-        } catch (emailError) {
-          console.error('❌ Error sending category-wide email notifications:', emailError);
-        }
+        } catch (emailError) {}
       }
 
       return NextResponse.json({
@@ -295,7 +290,6 @@ export async function POST(request: Request) {
       });
     }
   } catch (error) {
-    console.error('❌ Error creating project:', error);
     return NextResponse.json({ error: 'Fehler beim Erstellen des Projekts' }, { status: 500 });
   }
 }

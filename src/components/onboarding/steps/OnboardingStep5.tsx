@@ -110,8 +110,6 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
         window.location.href = `/dashboard/company/${user?.uid}?onboarding=completed`;
       }, 1500);
     } catch (error) {
-      console.error('Fehler beim Abschließen des Onboardings:', error);
-
       // Erweiterte Fehlerbehandlung für Netzwerkprobleme
       if (error instanceof Error && error.message.includes('network')) {
         setSubmitError(

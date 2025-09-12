@@ -37,7 +37,7 @@ export default function EditQuotePage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   // Form State
   const [formData, setFormData] = useState({
     title: '',
@@ -46,18 +46,6 @@ export default function EditQuotePage() {
     notes: '',
     items: [] as QuoteItem[],
   });
-
-  // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
-    );
-  }
 
   useEffect(() => {
     loadQuote();
@@ -68,18 +56,18 @@ export default function EditQuotePage() {
       setLoading(true);
       const quoteData = await QuoteService.getQuote(uid, quoteId);
       setQuote(quoteData);
-      
+
       // Formular mit Quote-Daten füllen
       setFormData({
         title: quoteData.title || '',
         description: quoteData.description || '',
-        validUntil: quoteData.validUntil ? new Date(quoteData.validUntil).toISOString().split('T')[0] : '',
+        validUntil: quoteData.validUntil
+          ? new Date(quoteData.validUntil).toISOString().split('T')[0]
+          : '',
         notes: quoteData.notes || '',
         items: quoteData.items || [],
       });
-      
     } catch (error) {
-      console.error('Error loading quote:', error);
       toast.error('Angebot konnte nicht geladen werden');
       router.push(`/dashboard/company/${uid}/finance/quotes`);
     } finally {
@@ -133,10 +121,10 @@ export default function EditQuotePage() {
 
   const handleSave = async () => {
     if (!quote) return;
-    
+
     try {
       setSaving(true);
-      
+
       if (!formData.validUntil) {
         toast.error('Bitte geben Sie ein Gültigkeitsdatum an');
         return;
@@ -148,7 +136,7 @@ export default function EditQuotePage() {
       }
 
       const validUntilDate = new Date(formData.validUntil);
-      
+
       const updates: Partial<QuoteType> = {
         title: formData.title,
         description: formData.description,
@@ -164,7 +152,6 @@ export default function EditQuotePage() {
       toast.success('Angebot erfolgreich aktualisiert');
       router.push(`/dashboard/company/${uid}/finance/quotes/${quote.id}`);
     } catch (error) {
-      console.error('Error saving quote:', error);
       toast.error('Fehler beim Speichern des Angebots');
     } finally {
       setSaving(false);
@@ -182,6 +169,18 @@ export default function EditQuotePage() {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-[#14ad9f]" />
+      </div>
+    );
+  }
+
+  // Autorisierung prüfen (nach Hooks platzieren, um React Hooks-Regeln einzuhalten)
+  if (!user || user.uid !== uid) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
+        </div>
       </div>
     );
   }
@@ -289,10 +288,7 @@ export default function EditQuotePage() {
                 <div className="text-center py-8">
                   <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-4">Fügen Sie Positionen zu Ihrem Angebot hinzu</p>
-                  <Button
-                    variant="outline"
-                    onClick={handleAddItem}
-                  >
+                  <Button variant="outline" onClick={handleAddItem}>
                     <Plus className="h-4 w-4 mr-2" />
                     Erste Position hinzufügen
                   </Button>
@@ -312,7 +308,7 @@ export default function EditQuotePage() {
                             rows={2}
                           />
                         </div>
-                        
+
                         <div className="md:col-span-2">
                           <Label htmlFor={`qty-${index}`}>Menge</Label>
                           <Input
@@ -320,7 +316,9 @@ export default function EditQuotePage() {
                             type="number"
                             min="1"
                             value={item.quantity}
-                            onChange={e => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+                            onChange={e =>
+                              handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                            }
                           />
                         </div>
 
@@ -332,7 +330,9 @@ export default function EditQuotePage() {
                             min="0"
                             step="0.01"
                             value={item.unitPrice}
-                            onChange={e => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            onChange={e =>
+                              handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)
+                            }
                           />
                         </div>
 
@@ -389,9 +389,7 @@ export default function EditQuotePage() {
                 <div className="text-sm space-y-1">
                   <p className="font-medium">{quote.customerName}</p>
                   <p className="text-gray-600">{quote.customerEmail}</p>
-                  {quote.customerPhone && (
-                    <p className="text-gray-600">{quote.customerPhone}</p>
-                  )}
+                  {quote.customerPhone && <p className="text-gray-600">{quote.customerPhone}</p>}
                 </div>
               </div>
 
@@ -437,9 +435,11 @@ export default function EditQuotePage() {
                   )}
                   Änderungen speichern
                 </Button>
-                
+
                 <Button
-                  onClick={() => router.push(`/dashboard/company/${uid}/finance/quotes/${quote.id}`)}
+                  onClick={() =>
+                    router.push(`/dashboard/company/${uid}/finance/quotes/${quote.id}`)
+                  }
                   variant="outline"
                   className="w-full"
                 >

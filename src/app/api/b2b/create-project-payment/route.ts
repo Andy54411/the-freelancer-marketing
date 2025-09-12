@@ -185,12 +185,8 @@ export async function POST(request: NextRequest) {
 
           // Update users collection (fallback)
           await setDoc(doc(db, 'users', customerFirebaseId), updateData, { merge: true });
-        } catch (firebaseError) {
-          console.error('Fehler beim Speichern der Stripe Customer ID:', firebaseError);
-          // Continue without failing - not critical for payment
-        }
+        } catch (firebaseError) {}
       } catch (customerError) {
-        console.error('Fehler beim Laden der Kundendaten:', customerError);
         // Create customer with fallback data
         const customer = await stripe.customers.create({
           email: billingDetails?.email || 'b2b-customer@taskilo.de',
@@ -301,7 +297,6 @@ export async function POST(request: NextRequest) {
     } catch (firebaseError) {
       // Continue without failing - payment intent is created, record can be recreated later
     }
-
     return NextResponse.json({
       success: true,
       clientSecret: paymentIntent.client_secret,

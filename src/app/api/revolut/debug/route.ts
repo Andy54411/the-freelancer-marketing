@@ -83,8 +83,6 @@ export async function GET(request: NextRequest) {
       businessProfile,
     });
   } catch (error: any) {
-    console.error('❌ Revolut Debug Error:', error);
-
     return NextResponse.json(
       {
         success: false,

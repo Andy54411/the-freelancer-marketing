@@ -107,7 +107,6 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
         }
       }
     } catch (error) {
-      console.error('Fehler beim Laden des Portfolios:', error);
       toast.error('Fehler beim Laden des Portfolios.');
     } finally {
       setIsLoading(false);
@@ -248,7 +247,6 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
               const uploadedUrl = await uploadImageToStorage(imageFile, 'portfolio', userId);
               itemWithoutFiles.imageUrl = uploadedUrl;
             } catch (error) {
-              console.error('Fehler beim Upload des Hauptbildes:', error);
               // Fallback: Object-URL entfernen, da sie nicht persistent ist
               if (itemWithoutFiles.imageUrl?.startsWith('blob:')) {
                 // Setze leeren String anstatt undefined
@@ -268,9 +266,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
                 )
               );
               itemWithoutFiles.additionalImages = uploadedImages;
-            } catch (error) {
-              console.error('Fehler beim Upload der zusätzlichen Bilder:', error);
-            }
+            } catch (error) {}
           }
 
           return itemWithoutFiles;
@@ -311,7 +307,6 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
       toast.success('Portfolio gespeichert!');
       return true;
     } catch (error) {
-      console.error('Fehler beim Speichern des Portfolios:', error);
       toast.error('Fehler beim Speichern des Portfolios.');
       return false;
     }

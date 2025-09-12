@@ -9,7 +9,6 @@ async function getFirebaseDb(): Promise<any> {
 
     // Check if we have valid db service
     if (!firebaseModule.db) {
-      console.error('Firebase database not initialized properly');
       // Try to get from admin if needed
       const { admin } = firebaseModule;
       if (admin && admin.apps.length > 0) {
@@ -21,7 +20,6 @@ async function getFirebaseDb(): Promise<any> {
 
     return firebaseModule.db;
   } catch (error) {
-    console.error('Firebase initialization failed:', error);
     throw new Error('Firebase database unavailable');
   }
 }

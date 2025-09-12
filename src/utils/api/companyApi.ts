@@ -20,7 +20,6 @@ export async function getCompanyData(uid: string) {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Fehler beim Laden der Company-Daten:', error);
     throw error;
   }
 }
@@ -44,7 +43,6 @@ export async function updateCompanyTemplate(uid: string, template: string) {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Fehler beim Update des Company-Templates:', error);
     throw error;
   }
 }
@@ -66,7 +64,6 @@ export async function getCustomers(uid: string) {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Fehler beim Laden der Kunden:', error);
     throw error;
   }
 }
@@ -88,7 +85,6 @@ export async function createCustomer(uid: string, customerData: any) {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Fehler beim Erstellen des Kunden:', error);
     throw error;
   }
 }
@@ -110,7 +106,6 @@ export async function getInvoices(uid: string) {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Fehler beim Laden der Rechnungen:', error);
     throw error;
   }
 }
@@ -132,7 +127,6 @@ export async function createInvoice(uid: string, invoiceData: any) {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Fehler beim Erstellen der Rechnung:', error);
     throw error;
   }
 }

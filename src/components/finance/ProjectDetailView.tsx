@@ -183,7 +183,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         setLoading(false);
       },
       error => {
-        console.error('❌ Time entries realtime listener error:', error);
         setLoading(false);
         // Fallback: Lade Daten über API
         loadTimeEntries();
@@ -241,7 +240,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       // Lade Zeiteinträge neu
       await loadTimeEntries();
     } catch (error) {
-      console.error('❌ Fehler beim Aktualisieren der Projektdaten:', error);
     } finally {
       setRefreshing(false);
     }
@@ -347,7 +345,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       setEditModalOpen(false);
       setEditingEntry(null);
     } catch (error) {
-      console.error('❌ Fehler beim Aktualisieren des Zeiteintrags:', error);
       alert('Fehler beim Aktualisieren des Zeiteintrags. Bitte versuchen Sie es erneut.');
     } finally {
       setSavingEdit(false);
@@ -380,7 +377,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       // Entferne den Eintrag aus der lokalen Liste
       setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
     } catch (error) {
-      console.error('❌ Fehler beim Löschen des Zeiteintrags:', error);
       alert('Fehler beim Löschen des Zeiteintrags. Bitte versuchen Sie es erneut.');
     } finally {
       setDeletingEntry(null);

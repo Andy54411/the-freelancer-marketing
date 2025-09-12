@@ -7,11 +7,7 @@
  * Unterdrückt Stripe Analytics-Fehler in der Konsole (nur in Development)
  * Diese Fehler entstehen durch Stripe's interne Analytics-Aufrufe und sind meist harmlos
  */
-export function suppressStripeAnalyticsErrors() {
-  // Diese Funktion ist deprecated - alle Fetch-Interception wurde entfernt
-  // um Konflikte mit anderen Services (Google Analytics, etc.) zu vermeiden
-  console.warn('suppressStripeAnalyticsErrors is deprecated and no longer active');
-}
+export function suppressStripeAnalyticsErrors() {}
 
 /**
  * Konfiguriert Stripe Elements mit optimierten Einstellungen
@@ -41,6 +37,5 @@ export const getOptimizedStripeElementsOptions = () => {
  */
 export function handleApplePayDomainWarning() {
   if (process.env.NODE_ENV === 'development') {
-    console.warn('Apple Pay Domain Warning: This is expected in development mode');
   }
 }

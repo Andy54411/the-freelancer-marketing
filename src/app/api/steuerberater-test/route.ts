@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Test API error:', error);
     return NextResponse.json(
       {
         success: false,
@@ -31,7 +30,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Test POST API error:', error);
     return NextResponse.json(
       {
         success: false,

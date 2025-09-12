@@ -78,7 +78,6 @@ export async function POST(
     const projectDoc = await projectRef.get();
 
     if (!projectDoc.exists) {
-      console.error('❌ Quote not found:', quoteId);
       return NextResponse.json({ error: 'Quote nicht gefunden' }, { status: 404 });
     }
 
@@ -86,7 +85,6 @@ export async function POST(
 
     // Check if user owns this quote
     if (projectData?.customerUid !== uid) {
-      console.error('❌ User does not own quote:', { customerUid: projectData?.customerUid, uid });
       return NextResponse.json({ error: 'Keine Berechtigung für diese Quote' }, { status: 403 });
     }
 
@@ -95,13 +93,11 @@ export async function POST(
     const proposal = await ProposalSubcollectionService.getProposal(quoteId, proposalId);
 
     if (!proposal) {
-      console.error('❌ Proposal not found:', proposalId);
       return NextResponse.json({ error: 'Angebot nicht gefunden' }, { status: 404 });
     }
 
     // Check if proposal is still pending
     if (proposal.status !== 'pending') {
-      console.error('❌ Proposal not pending:', proposal.status);
       return NextResponse.json({ error: 'Angebot wurde bereits bearbeitet' }, { status: 400 });
     }
 
@@ -109,7 +105,6 @@ export async function POST(
     const providerCompanyUid = proposal.companyUid;
 
     if (!providerCompanyUid) {
-      console.error('❌ No companyUid in proposal');
       return NextResponse.json({ error: 'Anbieter-ID nicht im Angebot gefunden' }, { status: 400 });
     }
 
@@ -119,7 +114,6 @@ export async function POST(
     const companyDoc = await companyRef.get();
 
     if (!companyDoc.exists) {
-      console.error('❌ Company not found:', providerCompanyUid);
       return NextResponse.json({ error: 'Unternehmenskonto nicht gefunden' }, { status: 404 });
     }
 
@@ -128,7 +122,6 @@ export async function POST(
     const finalCompanyStripeAccountId = companyData?.stripeAccountId;
 
     if (!finalCompanyStripeAccountId) {
-      console.error('❌ No Stripe Account ID for company:', providerCompanyUid);
       return NextResponse.json(
         { error: 'Stripe Account ID für Unternehmen nicht gefunden' },
         { status: 400 }
@@ -226,13 +219,6 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('❌ QUOTE PAYMENT ERROR:', error);
-    console.error('❌ Error details:', {
-      message: error.message,
-      stack: error.stack,
-      uid,
-      quoteId,
-    });
     return NextResponse.json(
       {
         error: 'Fehler beim Erstellen der Quote-Zahlung',
@@ -257,7 +243,6 @@ export async function PATCH(
     // Auth-Check
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('❌ PATCH: No auth header');
       return NextResponse.json({ error: 'Authentifizierung erforderlich' }, { status: 401 });
     }
 
@@ -266,16 +251,11 @@ export async function PATCH(
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
     } catch (authError) {
-      console.error('❌ PATCH: Auth error:', authError);
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
     // Check if user is authorized
     if (decodedToken.uid !== uid) {
-      console.error('❌ PATCH: User not authorized:', {
-        tokenUid: decodedToken.uid,
-        requestUid: uid,
-      });
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
@@ -300,7 +280,6 @@ export async function PATCH(
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status !== 'succeeded') {
-      console.error('❌ PATCH: Payment not succeeded, status:', paymentIntent.status);
       return NextResponse.json(
         { error: 'Zahlung wurde nicht erfolgreich abgeschlossen' },
         { status: 400 }
@@ -320,7 +299,6 @@ export async function PATCH(
     }
 
     if (!projectDoc.exists) {
-      console.error('❌ PATCH: Quote not found in either collection:', quoteId);
       return NextResponse.json({ error: 'Quote nicht gefunden' }, { status: 404 });
     }
 
@@ -344,11 +322,6 @@ export async function PATCH(
     // Additional validation: Check if payment amount matches proposal amount
     const proposalAmount = Math.round(acceptedProposal.totalAmount * 100); // Convert to cents
     if (paymentIntent.amount !== proposalAmount) {
-      console.error('❌ PATCH: Payment amount mismatch:', {
-        paymentIntentAmount: paymentIntent.amount,
-        proposalAmount: proposalAmount,
-        proposalTotalAmount: acceptedProposal.totalAmount,
-      });
       return NextResponse.json(
         { error: 'Zahlungsbetrag stimmt nicht mit Angebotsbetrag überein' },
         { status: 400 }
@@ -372,9 +345,7 @@ export async function PATCH(
         providerName = providerData?.companyName || providerName;
         providerStripeAccountId = providerData?.stripeAccountId || '';
       }
-    } catch (error) {
-      console.error('Error fetching provider data:', error);
-    }
+    } catch (error) {}
 
     // Create order in auftraege collection
     const orderData = {
@@ -481,7 +452,6 @@ export async function PATCH(
       paymentIntentId: paymentIntentId,
     });
   } catch (error) {
-    console.error('Payment processing error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Verarbeiten der Quote-Zahlung' },
       { status: 500 }

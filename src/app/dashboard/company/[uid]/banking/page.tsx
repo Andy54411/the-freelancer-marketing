@@ -181,9 +181,7 @@ export default function BankingDashboardPage() {
             allConnections.push(...enhancedConnections);
           }
         }
-      } catch (finapiError) {
-        console.warn('⚠️ FinAPI connections failed:', finapiError);
-      }
+      } catch (finapiError) {}
 
       // Load Revolut connections
       try {
@@ -208,9 +206,7 @@ export default function BankingDashboardPage() {
             allConnections.push(...revolutConnections);
           }
         }
-      } catch (revolutError) {
-        console.warn('⚠️ Revolut connections failed:', revolutError);
-      }
+      } catch (revolutError) {}
 
       // If we have any connections, use them
       if (allConnections.length > 0) {
@@ -261,7 +257,6 @@ export default function BankingDashboardPage() {
       // No connections found
       setConnections([]);
     } catch (error) {
-      console.error('❌ Failed to load bank connections:', error);
       setConnections([]);
     } finally {
       setLoading(false);
@@ -307,9 +302,7 @@ export default function BankingDashboardPage() {
 
             if (updateResponse.ok) {
             }
-          } catch (updateError) {
-            console.error('❌ Failed to update Firestore:', updateError);
-          }
+          } catch (updateError) {}
         }
 
         // Merge finAPI and Firestore data
@@ -396,10 +389,7 @@ export default function BankingDashboardPage() {
           }, 2000);
         }
       }
-    } catch (error) {
-      console.error('❌ Auto-sync error:', error);
-      // Don't show error to user since the connection itself was successful
-    }
+    } catch (error) {}
   };
 
   const loadAvailableBanks = async () => {
@@ -422,7 +412,6 @@ export default function BankingDashboardPage() {
         throw new Error('Invalid response format - no banks data received');
       }
     } catch (error) {
-      console.error('🔍 loadAvailableBanks error:', error);
       setError(
         'Die Bankliste konnte nicht geladen werden. Bitte prüfen Sie die finAPI Sandbox-Konfiguration.'
       );
@@ -554,7 +543,6 @@ export default function BankingDashboardPage() {
         throw new Error(data.error || 'Unbekannter Fehler');
       }
     } catch (error: any) {
-      console.error('Bank disconnect error:', error);
       setError(error.message || 'Fehler beim Trennen der Bankverbindung');
     }
   };
@@ -1108,7 +1096,6 @@ export default function BankingDashboardPage() {
           }, 1000);
         }}
         onError={error => {
-          console.error('❌ Revolut connection error:', error);
           setError(`Revolut Verbindung fehlgeschlagen: ${error}`);
           setIsRevolutModalOpen(false);
         }}

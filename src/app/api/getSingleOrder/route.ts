@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
 
     // Check if Firebase is properly initialized
     if (!auth || !db) {
-      console.error('Firebase services not available:', { auth: !!auth, db: !!db });
       return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
@@ -31,7 +30,6 @@ export async function POST(request: NextRequest) {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
     } catch (authError) {
-      console.error('Token verification failed:', authError);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
@@ -63,14 +61,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('getSingleOrder API error:', {
-      error: error.message,
-      stack: error.stack,
-      orderId: orderId || 'unknown',
-      userId: userId || 'unknown',
-      timestamp: new Date().toISOString(),
-    });
-
     // More specific error handling
     if (error.message?.includes('permission') || error.message?.includes('Access denied')) {
       return NextResponse.json(

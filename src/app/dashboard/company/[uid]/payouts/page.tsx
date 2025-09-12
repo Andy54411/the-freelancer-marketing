@@ -273,11 +273,9 @@ export default function PayoutOverviewPage() {
             }
           }
         } else {
-          console.error('Balance API error');
           setStripeBalance(null);
         }
       } catch (err) {
-        console.error('Fehler beim Laden der Stripe Balance:', err);
         setStripeBalance(null);
       } finally {
         setBalanceLoading(false);
@@ -306,9 +304,7 @@ export default function PayoutOverviewPage() {
         loadAvailablePayouts();
         loadStripeBalance();
       },
-      error => {
-        console.error('Fehler beim Aufträge-Listener:', error);
-      }
+      error => {}
     );
   }, [uid, loadAvailablePayouts, loadStripeBalance]);
 
@@ -331,9 +327,7 @@ export default function PayoutOverviewPage() {
         loadAvailablePayouts();
         loadStripeBalance();
       },
-      error => {
-        console.error('Fehler beim Quotes-Listener:', error);
-      }
+      error => {}
     );
   }, [uid, loadAvailablePayouts, loadStripeBalance]);
 
@@ -365,20 +359,14 @@ export default function PayoutOverviewPage() {
                 // Mark as processed (mit try-catch)
                 try {
                   updateDoc(change.doc.ref, { processed: true });
-                } catch (updateError) {
-                  console.warn('Could not mark webhook event as processed:', updateError);
-                }
+                } catch (updateError) {}
               }
             }
           });
         },
-        error => {
-          console.warn('Webhook listener not available - permissions missing:', error.message);
-          // Webhook-Listener ist optional, die App funktioniert auch ohne
-        }
+        error => {}
       );
     } catch (error) {
-      console.warn('Could not setup webhook listener - permissions missing:', error);
       // Return empty function if setup fails
       return () => {};
     }
@@ -400,7 +388,6 @@ export default function PayoutOverviewPage() {
       setSuccess('Daten erfolgreich aktualisiert');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      console.error('Manual refresh failed:', err);
       setError('Fehler beim Aktualisieren der Daten');
     } finally {
       setIsRefreshing(false);
@@ -423,7 +410,6 @@ export default function PayoutOverviewPage() {
     try {
       webhookUnsubscribeRef.current = setupWebhookListener();
     } catch (error) {
-      console.warn('Webhook listener setup failed - continuing without it:', error);
       webhookUnsubscribeRef.current = null;
     }
 

@@ -129,7 +129,6 @@ export async function GET(request: NextRequest) {
       count: data.orders?.length || 0,
     });
   } catch (error) {
-    console.error('Shopify Orders API Error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Abrufen der Shopify-Bestellungen' },
       { status: 500 }
@@ -236,7 +235,6 @@ export async function POST(request: NextRequest) {
       message: 'Shopify-Bestellung erfolgreich in Lieferschein konvertiert',
     });
   } catch (error) {
-    console.error('Shopify Order Import Error:', error);
     return NextResponse.json(
       { error: 'Fehler beim Importieren der Shopify-Bestellung' },
       { status: 500 }

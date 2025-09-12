@@ -267,7 +267,6 @@ export default function QuotePaymentModal({
 
     try {
       if (!firebaseUser) {
-        console.error('❌ QUOTE PAYMENT: No firebase user');
         throw new Error('Benutzer nicht authentifiziert');
       }
 
@@ -300,7 +299,7 @@ export default function QuotePaymentModal({
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ QUOTE PAYMENT: Response not ok:', errorData);
+
         throw new Error(errorData.error || 'Fehler beim Erstellen der Quote-Zahlung');
       }
 
@@ -310,11 +309,9 @@ export default function QuotePaymentModal({
         setClientSecret(data.clientSecret);
         setPaymentDetails(data.paymentDetails);
       } else {
-        console.error('❌ QUOTE PAYMENT: No success or clientSecret in response:', data);
         throw new Error(data.error || 'Fehler beim Erstellen der Quote-Zahlung');
       }
     } catch (error: any) {
-      console.error('💥 QUOTE PAYMENT: Caught error:', error);
       setError(error.message || 'Fehler beim Erstellen der Quote-Zahlung');
     } finally {
       setIsCreatingPayment(false);

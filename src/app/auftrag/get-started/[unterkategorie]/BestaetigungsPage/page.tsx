@@ -282,7 +282,6 @@ export default function BestaetigungsPage() {
       const paymentData = await paymentResponse.json();
 
       if (!paymentResponse.ok || !paymentData.clientSecret) {
-        console.error('[DEBUG] Payment API Fehler:', paymentData);
         throw new Error(paymentData.error || 'Fehler beim Erstellen der Zahlung');
       }
 
@@ -291,7 +290,6 @@ export default function BestaetigungsPage() {
       // Force re-render durch State-Update
       setForceRerender(prev => prev + 1);
     } catch (err) {
-      console.error('[DEBUG] Fehler bei automatischer PaymentIntent-Erstellung:', err);
       setError(
         err instanceof Error ? err.message : 'Unbekannter Fehler bei der Zahlungsvorbereitung'
       );
@@ -465,7 +463,6 @@ export default function BestaetigungsPage() {
       const paymentData = await paymentResponse.json();
 
       if (!paymentResponse.ok || !paymentData.clientSecret) {
-        console.error('[DEBUG] Payment API Fehler:', paymentData);
         throw new Error(paymentData.error || 'Fehler beim Erstellen der Zahlung');
       }
 
@@ -475,16 +472,9 @@ export default function BestaetigungsPage() {
       setForceRerender(prev => prev + 1);
       setTimeout(() => {}, 100);
     } catch (err) {
-      console.error('[DEBUG] Fehler beim Vorbereiten der Zahlung:', err);
-
       // Detaillierte Fehlerbehandlung für Firebase Functions
       if (err && typeof err === 'object' && 'code' in err) {
         const firebaseError = err as { code: string; message: string; details?: unknown };
-        console.error('[DEBUG] Firebase Error Details:', {
-          code: firebaseError.code,
-          message: firebaseError.message,
-          details: firebaseError.details,
-        });
 
         if (firebaseError.code === 'functions/invalid-argument') {
           setError(`Ungültige Auftragsdaten: ${firebaseError.message}`);

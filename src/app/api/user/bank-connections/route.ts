@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
 
     // Check if Firebase is properly initialized
     if (!db) {
-      console.error('Firebase database not available');
       return NextResponse.json({ error: 'Database nicht verfügbar' }, { status: 500 });
     }
 
@@ -55,12 +54,6 @@ export async function GET(request: NextRequest) {
       syncStatus: userData?.bankSyncStatus || 'pending',
     });
   } catch (error: any) {
-    console.error('Error loading user bank connections:', {
-      error: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString(),
-    });
-
     return NextResponse.json(
       {
         error: 'Fehler beim Laden der Bank-Verbindungen',
@@ -126,8 +119,6 @@ export async function POST(request: NextRequest) {
       message: 'Bank-Verbindungsdaten erfolgreich aktualisiert',
     });
   } catch (error: any) {
-    console.error('Error updating user bank connections:', error);
-
     return NextResponse.json(
       {
         error: 'Fehler beim Aktualisieren der Bank-Verbindungen',

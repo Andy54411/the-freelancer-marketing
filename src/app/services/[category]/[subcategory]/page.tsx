@@ -152,7 +152,6 @@ export default function SubcategoryPage() {
 
       return enrichedProviders;
     } catch (error) {
-      console.error('🚨 DEBUG: Error in enrichProvidersWithReviews:', error);
       return providers.map(provider => ({
         ...provider,
         rating: provider.rating || 0,

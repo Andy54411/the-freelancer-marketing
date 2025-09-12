@@ -20,23 +20,9 @@ if (typeof window !== 'undefined' && stripePromise) {
     .then(stripe => {
       // Debug-Log entfernt
       if (!stripe) {
-        console.error('❌ Stripe ist null! Details:');
-        console.error('  - Key verwendet:', STRIPE_PUBLISHABLE_KEY);
-        console.error('  - Key länge:', STRIPE_PUBLISHABLE_KEY?.length);
-        console.error('  - Key startet mit pk_:', STRIPE_PUBLISHABLE_KEY?.startsWith('pk_'));
-        console.error('  - Browser:', navigator.userAgent);
-        console.error('  - Protocol:', window.location.protocol);
-        console.error('  - Domain:', window.location.hostname);
       }
     })
-    .catch(error => {
-      console.error('❌ Stripe Promise Error:', error);
-      console.error('❌ Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      });
-    });
+    .catch(error => {});
 }
 
 interface MinimalTestProps {
@@ -88,7 +74,6 @@ const TestPaymentForm = ({ clientSecret }: { clientSecret: string }) => {
     });
 
     if (error) {
-      console.error('❌ Payment Error:', error);
     }
 
     setIsLoading(false);
@@ -123,7 +108,6 @@ const TestPaymentForm = ({ clientSecret }: { clientSecret: string }) => {
             }, 500);
           }}
           onLoadError={error => {
-            console.error('❌ PaymentElement Fehler:', error);
             alert('❌ PaymentElement Fehler: ' + JSON.stringify(error));
           }}
           onChange={event => {
