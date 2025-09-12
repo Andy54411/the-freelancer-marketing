@@ -23,6 +23,8 @@ import {
   Clock,
   Euro,
   Loader2,
+  Check,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QuoteService, Quote as QuoteType } from '@/services/quoteService';
@@ -70,6 +72,50 @@ export default function QuoteDetailPage() {
       await loadQuote(); // Reload to get updated status
     } catch (error) {
       toast.error('Fehler beim Versenden des Angebots');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAccept = async () => {
+    if (!quote) return;
+    try {
+      setActionLoading(true);
+      await QuoteService.acceptQuote(uid, quote.id);
+      toast.success('Angebot wurde angenommen');
+      await loadQuote();
+    } catch (error) {
+      toast.error('Fehler beim Annehmen des Angebots');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!quote) return;
+    try {
+      const reason = window.prompt('Bitte optionalen Ablehnungsgrund eingeben:', '') || undefined;
+      setActionLoading(true);
+      await QuoteService.rejectQuote(uid, quote.id, reason);
+      toast.success('Angebot wurde abgelehnt');
+      await loadQuote();
+    } catch (error) {
+      toast.error('Fehler beim Ablehnen des Angebots');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!quote) return;
+    try {
+      if (!confirm('Angebot wirklich stornieren? Reservierte Artikel werden freigegeben.')) return;
+      setActionLoading(true);
+      await QuoteService.cancelQuote(uid, quote.id);
+      toast.success('Angebot wurde storniert');
+      await loadQuote();
+    } catch (error) {
+      toast.error('Fehler beim Stornieren des Angebots');
     } finally {
       setActionLoading(false);
     }
@@ -150,11 +196,21 @@ export default function QuoteDetailPage() {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              window.open(`/print/quote/${uid}/${quote.id}?auto=1`, '_blank', 'noopener')
+            }
+          >
             <Printer className="h-4 w-4 mr-2" />
             Drucken
           </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open(`/print/quote/${uid}/${quote.id}`, '_blank', 'noopener')}
+          >
             <Download className="h-4 w-4 mr-2" />
             PDF Download
           </Button>
@@ -180,6 +236,54 @@ export default function QuoteDetailPage() {
               )}
               Versenden
             </Button>
+          )}
+          {(quote.status === 'draft' || quote.status === 'sent') && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={actionLoading}
+              className="text-zinc-700 border-zinc-300 hover:bg-zinc-50"
+            >
+              {actionLoading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <X className="h-4 w-4 mr-2" />
+              )}
+              Stornieren
+            </Button>
+          )}
+          {quote.status === 'sent' && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleAccept}
+                disabled={actionLoading}
+                className="text-green-600 border-green-200 hover:bg-green-50"
+              >
+                {actionLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Annehmen
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleReject}
+                disabled={actionLoading}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                {actionLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4 mr-2" />
+                )}
+                Ablehnen
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -324,6 +428,19 @@ export default function QuoteDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Fuß-Text */}
+          {quote.footerText && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Fuß-Text</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {/* Sichere HTML-Ausgabe: DOMPurify + Platzhalter ersetzen */}
+                <SafeFooterHtml html={quote.footerText} />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -380,4 +497,19 @@ export default function QuoteDetailPage() {
       </div>
     </div>
   );
+}
+
+// Hilfskomponente für sichere Footer-HTML-Ausgabe mit Platzhalterersetzung
+import DOMPurify from 'dompurify';
+function SafeFooterHtml({ html }: { html: string }) {
+  // Einfache Erkennung, ob bereits HTML-Tags enthalten sind
+  const looksLikeHtml = /<([a-z][\w-]*)(?:\s[^>]*)?>/i.test(html);
+  // Platzhalter-Substitution (nur KONTAKTPERSON aktuell)
+  // Hinweis: In der Detailansicht kennen wir die Kontaktperson hier nicht direkt;
+  // wir lassen den Platzhalter sichtbar oder ersetzen ihn leer.
+  const substituted = html.replaceAll('[%KONTAKTPERSON%]', '');
+  const safe = looksLikeHtml
+    ? DOMPurify.sanitize(substituted, { USE_PROFILES: { html: true } })
+    : DOMPurify.sanitize(substituted).replaceAll('\n', '<br />');
+  return <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: safe }} />;
 }

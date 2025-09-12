@@ -103,6 +103,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
       accepted: { label: 'Angenommen', className: 'bg-green-100 text-green-800' },
       rejected: { label: 'Abgelehnt', className: 'bg-red-100 text-red-800' },
       expired: { label: 'Abgelaufen', className: 'bg-orange-100 text-orange-800' },
+      cancelled: { label: 'Storniert', className: 'bg-zinc-200 text-zinc-800' },
     };
 
     const config = statusConfig[status];

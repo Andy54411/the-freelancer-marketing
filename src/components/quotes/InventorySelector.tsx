@@ -26,12 +26,14 @@ interface InventorySelectorProps {
   companyId: string;
   onSelectItem: (item: InventoryItem, quantity: number) => void;
   selectedItems?: string[]; // IDs bereits ausgewählter Items
+  quickAddOnClick?: boolean; // optional: beim Klick sofort ersten verfügbaren Artikel hinzufügen
 }
 
 export default function InventorySelector({
   companyId,
   onSelectItem,
   selectedItems = [],
+  quickAddOnClick = false,
 }: InventorySelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
@@ -47,14 +49,13 @@ export default function InventorySelector({
     setLoading(true);
     try {
       const items = await InventoryService.getInventoryItems(companyId);
-       // Debug-Log
+      // Debug-Log
       // Alle Items anzeigen, nur discontinued ausschließen
       const availableItems = items.filter(item => item.status !== 'discontinued');
-       // Debug-Log
+      // Debug-Log
       setInventoryItems(availableItems);
       setFilteredItems(availableItems);
     } catch (error) {
-
     } finally {
       setLoading(false);
     }
@@ -105,12 +106,40 @@ export default function InventorySelector({
     }));
   };
 
+  // Quick-Add-Logik: beim Klick auf den Trigger direkt ersten verfügbaren Artikel hinzufügen
+  const handleTriggerClick = async () => {
+    if (!quickAddOnClick) {
+      setIsOpen(true);
+      return;
+    }
+    // Quick-Add: optional, nur wenn explizit gesetzt
+    let items: InventoryItem[] = inventoryItems;
+    if (items.length === 0) {
+      try {
+        items = await InventoryService.getInventoryItems(companyId);
+      } catch {
+        setIsOpen(true);
+        return;
+      }
+    }
+    const candidate = items.find(it => {
+      const availableStock = it.currentStock - (it.reservedStock || 0);
+      return it.status !== 'discontinued' && availableStock > 0;
+    });
+    if (candidate) {
+      onSelectItem(candidate, 1);
+      return;
+    }
+    setIsOpen(true);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
           type="button"
           variant="outline"
+          onClick={handleTriggerClick}
           className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
         >
           <Package className="w-4 h-4 mr-2" />

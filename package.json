@@ -5,15 +5,15 @@
   "pnpm": {
     "peerDependencyRules": {
       "allowedVersions": {
-        "react": "19",
-        "react-dom": "19"
+        "react": "18",
+        "react-dom": "18"
       }
     }
   },
   "scripts": {
     "dev": "next dev",
-    "build": "NODE_OPTIONS='--max-old-space-size=8192' next build",
-    "build:fast": "NODE_OPTIONS='--max-old-space-size=8192' SKIP_TYPE_CHECK=true next build",
+    "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
+    "build:fast": "NODE_OPTIONS=\"--max-old-space-size=8192\" SKIP_TYPE_CHECK=true next build",
     "build:analyze": "ANALYZE=true next build",
     "start": "next start",
     "lint": "next lint --max-warnings=100",
@@ -158,6 +158,7 @@
     "html-entities": "^2.6.0",
     "html-to-text": "^9.0.5",
     "html2pdf.js": "^0.10.3",
+    "puppeteer": "^22.13.1",
     "imap": "^0.8.19",
     "jose": "^6.0.12",
     "jsonwebtoken": "^9.0.2",

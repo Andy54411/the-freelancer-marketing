@@ -1,3 +1,5 @@
+'use client';
+
 import {
   collection,
   doc,
@@ -16,6 +18,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
+import { InventoryService } from './inventoryService';
 
 export interface QuoteItem {
   id: string;
@@ -27,6 +30,7 @@ export interface QuoteItem {
   unit?: string;
   category?: string;
   inventoryItemId?: string; // Verknüpfung zu Inventar-Artikel
+  discountPercent?: number; // Optionaler prozentualer Rabatt je Position
 }
 
 export interface Quote {
@@ -53,12 +57,27 @@ export interface Quote {
   updatedAt: Date;
 
   // Status
-  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'cancelled';
 
   // Inhalt
   title?: string;
   description?: string;
   notes?: string;
+  footerText?: string;
+  customerOrderNumber?: string; // Referenz / Bestellnummer des Kunden
+  // Zusätzliche optionale Felder (Mehr Optionen)
+  taxRule?:
+    | 'DE_TAXABLE'
+    | 'DE_EXEMPT_4_USTG'
+    | 'DE_REVERSE_13B'
+    | 'EU_REVERSE_18B'
+    | 'EU_INTRACOMMUNITY_SUPPLY'
+    | 'EU_OSS'
+    | 'NON_EU_EXPORT'
+    | 'NON_EU_OUT_OF_SCOPE';
+  internalContactPerson?: string;
+  deliveryTerms?: string;
+  paymentTerms?: string;
 
   // Positionen
   items: QuoteItem[];
@@ -95,6 +114,7 @@ export interface Quote {
   acceptedAt?: Date;
   rejectedAt?: Date;
   rejectionReason?: string;
+  cancelledAt?: Date;
 }
 
 export interface QuoteSettings {
@@ -136,6 +156,7 @@ export class QuoteService {
         acceptedAt: doc.data().acceptedAt?.toDate(),
         rejectedAt: doc.data().rejectedAt?.toDate(),
         convertedAt: doc.data().convertedAt?.toDate(),
+        cancelledAt: doc.data().cancelledAt?.toDate(),
       })) as Quote[];
     } catch (error) {
       throw error;
@@ -167,6 +188,7 @@ export class QuoteService {
         acceptedAt: data.acceptedAt?.toDate(),
         rejectedAt: data.rejectedAt?.toDate(),
         convertedAt: data.convertedAt?.toDate(),
+        cancelledAt: data.cancelledAt?.toDate(),
       } as Quote;
     } catch (error) {
       throw error;
@@ -185,7 +207,7 @@ export class QuoteService {
       const number = await this.generateQuoteNumber(companyId);
 
       const quotesRef = collection(db, 'companies', companyId, 'quotes');
-      const docRef = await addDoc(quotesRef, {
+      const payload: Record<string, any> = {
         ...quoteData,
         number,
         companyId,
@@ -194,7 +216,11 @@ export class QuoteService {
         date: Timestamp.fromDate(quoteData.date),
         validUntil: Timestamp.fromDate(quoteData.validUntil),
         deliveryDate: quoteData.deliveryDate ? Timestamp.fromDate(quoteData.deliveryDate) : null,
-      });
+      };
+      const cleanedPayload = Object.fromEntries(
+        Object.entries(payload).filter(([, v]) => v !== undefined)
+      );
+      const docRef = await addDoc(quotesRef, cleanedPayload);
 
       return docRef.id;
     } catch (error) {
@@ -223,7 +249,10 @@ export class QuoteService {
       if (updates.validUntil) updateData.validUntil = Timestamp.fromDate(updates.validUntil);
       if (updates.deliveryDate) updateData.deliveryDate = Timestamp.fromDate(updates.deliveryDate);
 
-      await updateDoc(quoteRef, updateData);
+      const cleaned = Object.fromEntries(
+        Object.entries(updateData).filter(([, v]) => v !== undefined)
+      );
+      await updateDoc(quoteRef, cleaned);
     } catch (error) {
       throw error;
     }
@@ -234,6 +263,16 @@ export class QuoteService {
    */
   static async deleteQuote(companyId: string, quoteId: string): Promise<void> {
     try {
+      // Vor dem Löschen: evtl. bestehende Reservierungen freigeben
+      const quote = await this.getQuote(companyId, quoteId);
+      if (quote && (quote.status === 'draft' || quote.status === 'sent')) {
+        const inventoryItems = (quote.items || [])
+          .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+          .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+        if (inventoryItems.length > 0) {
+          await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
+        }
+      }
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
       await deleteDoc(quoteRef);
     } catch (error) {
@@ -262,12 +301,21 @@ export class QuoteService {
    */
   static async acceptQuote(companyId: string, quoteId: string): Promise<void> {
     try {
+      const quote = await this.getQuote(companyId, quoteId);
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
       await updateDoc(quoteRef, {
         status: 'accepted',
         acceptedAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      // Reservierte Artikel als verkauft markieren
+      const inventoryItems = (quote?.items || [])
+        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      if (inventoryItems.length > 0) {
+        await InventoryService.sellReservedItems(companyId, quoteId, inventoryItems);
+      }
     } catch (error) {
       throw error;
     }
@@ -278,6 +326,7 @@ export class QuoteService {
    */
   static async rejectQuote(companyId: string, quoteId: string, reason?: string): Promise<void> {
     try {
+      const quote = await this.getQuote(companyId, quoteId);
       const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
       await updateDoc(quoteRef, {
         status: 'rejected',
@@ -285,6 +334,39 @@ export class QuoteService {
         rejectionReason: reason || '',
         updatedAt: serverTimestamp(),
       });
+
+      // Reservierungen freigeben
+      const inventoryItems = (quote?.items || [])
+        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      if (inventoryItems.length > 0) {
+        await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Angebot stornieren
+   */
+  static async cancelQuote(companyId: string, quoteId: string): Promise<void> {
+    try {
+      const quote = await this.getQuote(companyId, quoteId);
+      const quoteRef = doc(db, 'companies', companyId, 'quotes', quoteId);
+      await updateDoc(quoteRef, {
+        status: 'cancelled',
+        cancelledAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      // Reservierungen freigeben (falls vorhanden)
+      const inventoryItems = (quote?.items || [])
+        .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+        .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+      if (inventoryItems.length > 0) {
+        await InventoryService.releaseReservationForQuote(companyId, quoteId, inventoryItems);
+      }
     } catch (error) {
       throw error;
     }

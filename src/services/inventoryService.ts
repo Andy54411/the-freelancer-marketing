@@ -365,9 +365,14 @@ export class InventoryService {
         isOutOfStock,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      };
+      } as Record<string, any>;
 
-      const docRef = await addDoc(collection(db, 'inventory'), newItem);
+      // Entferne undefined-Felder (Firestore erlaubt kein undefined)
+      const cleanedNewItem = Object.fromEntries(
+        Object.entries(newItem).filter(([, v]) => v !== undefined)
+      );
+
+      const docRef = await addDoc(collection(db, 'inventory'), cleanedNewItem);
 
       // Stock-Movement für Initial-Bestand hinzufügen
       if (itemData.currentStock > 0) {
@@ -399,10 +404,11 @@ export class InventoryService {
   ): Promise<void> {
     try {
       const itemRef = doc(db, 'inventory', itemId);
-      await updateDoc(itemRef, {
-        ...updates,
-        updatedAt: serverTimestamp(),
-      });
+      const payload: Record<string, any> = { ...updates, updatedAt: serverTimestamp() };
+      const cleanedUpdates = Object.fromEntries(
+        Object.entries(payload).filter(([, v]) => v !== undefined)
+      );
+      await updateDoc(itemRef, cleanedUpdates);
     } catch (error) {
       throw error;
     }

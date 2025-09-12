@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
+import { InventoryService } from '@/services/inventoryService';
 import { CustomerSelect } from '@/components/finance/CustomerSelect';
 import { Customer } from '@/components/finance/AddCustomerModal';
 
@@ -37,6 +38,7 @@ export default function EditQuotePage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [originalItems, setOriginalItems] = useState<QuoteItem[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -63,6 +65,7 @@ export default function EditQuotePage() {
       setQuote(quoteData);
 
       // Formular mit Quote-Daten füllen
+      const initialItems = quoteData.items || [];
       setFormData({
         title: quoteData.title || '',
         description: quoteData.description || '',
@@ -70,8 +73,9 @@ export default function EditQuotePage() {
           ? new Date(quoteData.validUntil).toISOString().split('T')[0]
           : '',
         notes: quoteData.notes || '',
-        items: quoteData.items || [],
+        items: initialItems,
       });
+      setOriginalItems(initialItems);
     } catch (error) {
       toast.error('Angebot konnte nicht geladen werden');
       router.push(`/dashboard/company/${uid}/finance/quotes`);
@@ -152,8 +156,65 @@ export default function EditQuotePage() {
         taxAmount,
         total,
       };
+      // Delta-Reservierungen nur für draft/sent bearbeiten
+      const allowInventoryAdjust = quote.status === 'draft' || quote.status === 'sent';
 
-      await QuoteService.updateQuote(uid, quote.id, updates);
+      if (allowInventoryAdjust) {
+        // Aggregiere Mengen nach inventoryItemId
+        const sumByItem = (items: QuoteItem[]) => {
+          const map = new Map<string, number>();
+          for (const it of items) {
+            if (!it.inventoryItemId || !it.quantity || it.category === 'discount') continue;
+            const key = it.inventoryItemId as string;
+            map.set(key, (map.get(key) || 0) + (it.quantity || 0));
+          }
+          return map;
+        };
+
+        const prevMap = sumByItem(originalItems);
+        const nextMap = sumByItem(formData.items);
+
+        const toReserve: { itemId: string; quantity: number }[] = [];
+        const toRelease: { itemId: string; quantity: number }[] = [];
+
+        const allKeys = new Set<string>([...prevMap.keys(), ...nextMap.keys()]);
+        for (const k of allKeys) {
+          const prev = prevMap.get(k) || 0;
+          const next = nextMap.get(k) || 0;
+          const delta = next - prev;
+          if (delta > 0) toReserve.push({ itemId: k, quantity: delta });
+          if (delta < 0) toRelease.push({ itemId: k, quantity: Math.abs(delta) });
+        }
+
+        // 1) Zusätzliche Mengen reservieren (fail-fast, kein Seiteneffekt bei Fehler)
+        if (toReserve.length > 0) {
+          await InventoryService.reserveItemsForQuote(uid, quote.id, toReserve);
+        }
+
+        try {
+          // 2) Quote speichern
+          await QuoteService.updateQuote(uid, quote.id, updates);
+        } catch (err) {
+          // Rollback für vorgenommene Reservierungen
+          if (toReserve.length > 0) {
+            try {
+              await InventoryService.releaseReservationForQuote(uid, quote.id, toReserve);
+            } catch {}
+          }
+          throw err;
+        }
+
+        // 3) Nicht mehr benötigte Reservierungen freigeben (best effort)
+        if (toRelease.length > 0) {
+          try {
+            await InventoryService.releaseReservationForQuote(uid, quote.id, toRelease);
+          } catch {}
+        }
+      } else {
+        // Keine Bestandsanpassung nötig
+        await QuoteService.updateQuote(uid, quote.id, updates);
+      }
+
       toast.success('Angebot erfolgreich aktualisiert');
       router.push(`/dashboard/company/${uid}/finance/quotes/${quote.id}`);
     } catch (error) {
