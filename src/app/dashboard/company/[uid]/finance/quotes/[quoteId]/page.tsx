@@ -46,6 +46,11 @@ export default function QuoteDetailPage() {
     try {
       setLoading(true);
       const quoteData = await QuoteService.getQuote(uid, quoteId);
+      if (!quoteData) {
+        toast.error('Angebot nicht gefunden');
+        router.push(`/dashboard/company/${uid}/finance/quotes`);
+        return;
+      }
       setQuote(quoteData);
     } catch (error) {
       toast.error('Angebot konnte nicht geladen werden');
