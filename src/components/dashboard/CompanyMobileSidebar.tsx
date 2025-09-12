@@ -125,18 +125,7 @@ const navigationItems: NavigationItem[] = [
     value: 'calendar',
     href: 'calendar',
   },
-  {
-    label: 'Finanzen',
-    icon: FiDollarSign,
-    value: 'finance',
-    subItems: [
-      { label: 'Dashboard', value: 'finance-overview', href: 'finance' },
-      { label: 'Angebote', value: 'finance-quotes', href: 'finance/quotes' },
-      { label: 'Steuern & Berichte', value: 'finance-taxes', href: 'finance/taxes' },
-      { label: 'Lagerbestand', value: 'finance-inventory', href: 'finance/inventory' },
-      { label: 'Auswertungen', value: 'finance-reports', href: 'finance/reports' },
-    ],
-  },
+
   {
     label: 'Projekte',
     icon: FiFolderTree,
@@ -144,6 +133,12 @@ const navigationItems: NavigationItem[] = [
     subItems: [
       { label: 'Zeiterfassung', value: 'projects-time-tracking', href: 'finance/time-tracking' },
     ],
+  },
+  {
+    label: 'Lagerbestand',
+    icon: FiBoxes,
+    value: 'inventory',
+    href: 'finance/inventory',
   },
   {
     label: 'Banking',
@@ -311,6 +306,9 @@ export default function CompanyMobileSidebar({
                     pathname?.includes('/finance/projects') ||
                     pathname?.includes('/finance/time-tracking')
                   );
+                }
+                if (item.value === 'inventory') {
+                  return pathname?.includes('/finance/inventory');
                 }
                 if (item.value === 'banking') {
                   return pathname?.includes('/banking') || pathname?.includes('/finance/payments');
