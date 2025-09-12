@@ -2357,18 +2357,27 @@ export default function CreateInvoicePage() {
       </div>
 
       {/* E-Rechnung Profil-Vervollständigung Modal */}
-      <Sheet open={showEInvoiceModal} onOpenChange={setShowEInvoiceModal}>
-        <SheetContent
-          side="right"
-          className="!w-[90vw] !max-w-[900px] overflow-y-auto p-0 bg-transparent border-none"
-          style={{ width: '90vw', maxWidth: '900px' }}
+      <div className={showEInvoiceModal ? 'fixed inset-0 z-50' : 'hidden'}>
+        {/* Custom overlay without blur */}
+        <div className="fixed inset-0 bg-black/30" onClick={() => setShowEInvoiceModal(false)} />
+        {/* Custom sheet content */}
+        <div
+          className="fixed right-0 top-0 h-full w-[90vw] max-w-[900px] bg-transparent z-10 overflow-y-auto p-0"
+          style={{
+            transform: showEInvoiceModal ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 300ms ease-in-out',
+          }}
         >
-          <SheetHeader className="sr-only">
-            <SheetTitle>E-Rechnung einrichten</SheetTitle>
-          </SheetHeader>
-
-          <div className="p-6 min-h-full">
-            <ModalCard variant="elevated" className="w-full shadow-2xl">
+          <div className="p-6 min-h-full !border-0" style={{ border: 'none', outline: 'none' }}>
+            <ModalCard
+              variant="elevated"
+              className="w-full shadow-2xl !border-0 !outline-none !ring-0"
+              style={{
+                border: 'none',
+                outline: 'none',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              }}
+            >
               <ModalCardHeader icon={<AlertCircle className="h-5 w-5 text-amber-600" />}>
                 <ModalCardTitle>E-Rechnung einrichten</ModalCardTitle>
                 <ModalCardDescription>
@@ -2664,8 +2673,8 @@ export default function CreateInvoicePage() {
               </ModalCardContent>
             </ModalCard>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      </div>
     </div>
   );
 }
