@@ -469,7 +469,8 @@ export default function BlogPage() {
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Checkliste für den Umzug</h3>
                       <p className="text-sm text-white/90 mb-3">
-                        Kompletter 8-Wochen-Leitfaden mit Zeitplan, Kostenübersicht und Profi-Tipps für einen stressfreien Umzug.
+                        Kompletter 8-Wochen-Leitfaden mit Zeitplan, Kostenübersicht und Profi-Tipps
+                        für einen stressfreien Umzug.
                       </p>
                       <div className="flex items-center gap-2 text-xs text-white/80">
                         <FiClock className="w-3 h-3" />
@@ -488,9 +489,12 @@ export default function BlogPage() {
                   <div className="flex items-start gap-4">
                     <FiTool className="text-2xl mt-1" />
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">Die 5 häufigsten Fehler bei der Renovierung</h3>
+                      <h3 className="font-semibold text-lg mb-2">
+                        Die 5 häufigsten Fehler bei der Renovierung
+                      </h3>
                       <p className="text-sm text-white/90 mb-3">
-                        Vermeiden Sie teure Renovierungsfehler! Expertenratschläge für Planung, Budget und Umsetzung.
+                        Vermeiden Sie teure Renovierungsfehler! Expertenratschläge für Planung,
+                        Budget und Umsetzung.
                       </p>
                       <div className="flex items-center gap-2 text-xs text-white/80">
                         <FiClock className="w-3 h-3" />
@@ -511,9 +515,12 @@ export default function BlogPage() {
                   <div className="flex items-start gap-4">
                     <FiZap className="text-2xl mt-1" />
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">Wann brauche ich einen professionellen Elektriker?</h3>
+                      <h3 className="font-semibold text-lg mb-2">
+                        Wann brauche ich einen professionellen Elektriker?
+                      </h3>
                       <p className="text-sm text-white/90 mb-3">
-                        Sicherheits-Leitfaden: Welche Elektroarbeiten Sie selbst machen dürfen und wann der Profi ran muss.
+                        Sicherheits-Leitfaden: Welche Elektroarbeiten Sie selbst machen dürfen und
+                        wann der Profi ran muss.
                       </p>
                       <div className="flex items-center gap-2 text-xs text-white/80">
                         <FiClock className="w-3 h-3" />
@@ -529,7 +536,9 @@ export default function BlogPage() {
                   <div className="flex items-start gap-4">
                     <FiBookOpen className="text-2xl text-gray-500 mt-1" />
                     <div>
-                      <h3 className="font-semibold text-lg mb-2 text-gray-700">Weitere Kunden-Ratgeber</h3>
+                      <h3 className="font-semibold text-lg mb-2 text-gray-700">
+                        Weitere Kunden-Ratgeber
+                      </h3>
                       <p className="text-sm text-gray-600 mb-3">
                         Mehr praktische Tipps und Anleitungen für Hausbesitzer sind in Vorbereitung.
                       </p>
@@ -557,9 +566,12 @@ export default function BlogPage() {
                   <div className="flex items-start gap-4">
                     <FiBriefcase className="text-2xl mt-1" />
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">So schreibst du das perfekte Angebot</h3>
+                      <h3 className="font-semibold text-lg mb-2">
+                        So schreibst du das perfekte Angebot
+                      </h3>
                       <p className="text-sm text-white/90 mb-3">
-                        7-Elemente-Framework für überzeugende Angebote: Von der Kostenaufstellung bis zum professionellen Abschluss.
+                        7-Elemente-Framework für überzeugende Angebote: Von der Kostenaufstellung
+                        bis zum professionellen Abschluss.
                       </p>
                       <div className="flex items-center gap-2 text-xs text-white/80">
                         <FiClock className="w-3 h-3" />
@@ -578,9 +590,12 @@ export default function BlogPage() {
                   <div className="flex items-start gap-4">
                     <FiMessageSquare className="text-2xl mt-1" />
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">Tipps zur Kundenkommunikation auf Taskilo</h3>
+                      <h3 className="font-semibold text-lg mb-2">
+                        Tipps zur Kundenkommunikation auf Taskilo
+                      </h3>
                       <p className="text-sm text-white/90 mb-3">
-                        5-Phasen-Kommunikationsstrategie: Vom ersten Kontakt bis zur perfekten Bewertung.
+                        5-Phasen-Kommunikationsstrategie: Vom ersten Kontakt bis zur perfekten
+                        Bewertung.
                       </p>
                       <div className="flex items-center gap-2 text-xs text-white/80">
                         <FiClock className="w-3 h-3" />
@@ -601,9 +616,12 @@ export default function BlogPage() {
                   <div className="flex items-start gap-4">
                     <FiDollarSign className="text-2xl mt-1" />
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">Steuer-Grundlagen für Selbstständige</h3>
+                      <h3 className="font-semibold text-lg mb-2">
+                        Steuer-Grundlagen für Selbstständige
+                      </h3>
                       <p className="text-sm text-white/90 mb-3">
-                        Kompletter Steuer-Leitfaden: Gewerbeanmeldung, Umsatzsteuer, Buchhaltung und Steuererklärung verständlich erklärt.
+                        Kompletter Steuer-Leitfaden: Gewerbeanmeldung, Umsatzsteuer, Buchhaltung und
+                        Steuererklärung verständlich erklärt.
                       </p>
                       <div className="flex items-center gap-2 text-xs text-white/80">
                         <FiClock className="w-3 h-3" />
@@ -615,21 +633,29 @@ export default function BlogPage() {
                   </div>
                 </a>
 
-                <div className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg p-6 border-2 border-dashed border-gray-300">
+                <a
+                  href="/blog/e-rechnung-leitfaden"
+                  className="block bg-gradient-to-r from-[#14ad9f] to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-lg p-6 transition-all duration-200 transform hover:scale-105 shadow-md"
+                >
                   <div className="flex items-start gap-4">
-                    <FiStar className="text-2xl text-gray-500 mt-1" />
+                    <FiBriefcase className="text-2xl mt-1" />
                     <div>
-                      <h3 className="font-semibold text-lg mb-2 text-gray-700">Weitere Anbieter-Guides</h3>
-                      <p className="text-sm text-gray-600 mb-3">
-                        Mehr Business-Tipps und Erfolgsstrategien für Dienstleister folgen bald.
+                      <h3 className="font-semibold text-lg mb-2">
+                        E-Rechnung 2025: Kompletter Leitfaden
+                      </h3>
+                      <p className="text-sm text-white/90 mb-3">
+                        Alles zur E-Rechnung-Pflicht: Übergangszeiten, Mindestbeträge, XRechnung &
+                        ZUGFeRD Standards für Unternehmen.
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <FiStar className="w-3 h-3" />
-                        <span>In Entwicklung</span>
+                      <div className="flex items-center gap-2 text-xs text-white/80">
+                        <FiClock className="w-3 h-3" />
+                        <span>15 Min. Lesezeit</span>
+                        <span>•</span>
+                        <span>E-Rechnung & Digitalisierung</span>
                       </div>
                     </div>
                   </div>
-                </div>
+                </a>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">

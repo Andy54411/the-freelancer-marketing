@@ -2159,7 +2159,14 @@ export default function CreateInvoicePage() {
                           E-Rechnung aktivieren
                         </Label>
                         <p className="text-xs text-blue-600 mt-1">
-                          Für B2B-Rechnungen ab 01.01.2025 verpflichtend
+                          Für B2B-Rechnungen ab 250€ ab 01.01.2025 (Übergangszeit bis 31.12.2026)
+                          <a
+                            href="/blog/e-rechnung-leitfaden"
+                            target="_blank"
+                            className="block text-[#14ad9f] hover:underline mt-1 font-medium"
+                          >
+                            → Kompletter E-Rechnung Leitfaden
+                          </a>
                         </p>
                       </div>
                     </div>
