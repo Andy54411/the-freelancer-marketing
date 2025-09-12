@@ -116,8 +116,6 @@ export function CustomerDetailModal({
 
       // Für Supplier: Statistiken aus expenses berechnen
       if (customer.isSupplier) {
-        console.log('🔍 Syncing supplier stats for:', customer.id);
-
         // Expenses für diesen Supplier laden
         const expensesQuery = query(
           collection(db, 'expenses'),
@@ -134,8 +132,6 @@ export function CustomerDetailModal({
           totalAmount += data.amount || 0;
           totalInvoices += 1;
         });
-
-        console.log('🔍 Calculated supplier stats:', { totalAmount, totalInvoices });
 
         // Supplier-Dokument direkt aktualisieren
         const supplierRef = doc(db, 'customers', customer.id);
@@ -169,12 +165,6 @@ export function CustomerDetailModal({
       setLoading(true);
       const loadedInvoices: InvoiceData[] = [];
 
-      console.log('🔍 Loading data for customer:', {
-        customerName: localCustomer.name,
-        isSupplier: localCustomer.isSupplier,
-        companyId: localCustomer.companyId,
-      });
-
       // 1. IMMER Rechnungen laden (für alle Kunden/Supplier)
       const invoicesQuery = query(
         collection(db, 'invoices'),
@@ -184,7 +174,6 @@ export function CustomerDetailModal({
       );
 
       const invoicesSnapshot = await getDocs(invoicesQuery);
-      console.log(`🔍 Found ${invoicesSnapshot.size} invoices`);
 
       invoicesSnapshot.forEach(doc => {
         const data = doc.data();
@@ -205,7 +194,6 @@ export function CustomerDetailModal({
         );
 
         const expensesSnapshot = await getDocs(expensesQuery);
-        console.log(`🔍 Found ${expensesSnapshot.size} expenses for supplier`);
 
         // Expenses als "Rechnungen" formatieren
         expensesSnapshot.forEach(doc => {
@@ -226,7 +214,6 @@ export function CustomerDetailModal({
         });
       }
 
-      console.log(`🔍 Total loaded items: ${loadedInvoices.length}`);
       setInvoices(loadedInvoices);
       calculateCustomerStats(loadedInvoices);
     } catch (error) {
@@ -250,7 +237,6 @@ export function CustomerDetailModal({
     if (!localCustomer?.id) return;
 
     try {
-      console.log('🔄 Reloading customer data for:', localCustomer.name);
       const customerDocRef = doc(db, 'customers', localCustomer.id);
       const customerDocSnapshot = await getDocs(
         query(collection(db, 'customers'), where('__name__', '==', localCustomer.id))
@@ -258,18 +244,12 @@ export function CustomerDetailModal({
 
       if (!customerDocSnapshot.empty) {
         const freshData = customerDocSnapshot.docs[0].data();
-        console.log('✅ Fresh customer data from DB:', {
-          name: freshData.name,
-          contactPersons: freshData.contactPersons,
-          contactPersonsLength: freshData.contactPersons?.length || 0,
-        });
 
         // Nur aktualisieren wenn sich contactPersons wirklich geändert haben
         const currentContactPersonsLength = localCustomer.contactPersons?.length || 0;
         const freshContactPersonsLength = freshData.contactPersons?.length || 0;
 
         if (currentContactPersonsLength !== freshContactPersonsLength) {
-          console.log('🔄 Contact persons changed, updating local state');
           setLocalCustomer(prev => {
             if (!prev) return prev;
             return {
@@ -284,10 +264,8 @@ export function CustomerDetailModal({
             };
           });
         } else {
-          console.log('📄 Contact persons unchanged, skipping update');
         }
       } else {
-        console.log('❌ Customer document not found in DB');
       }
     } catch (error) {
       console.error('❌ Error reloading customer data:', error);
@@ -300,12 +278,6 @@ export function CustomerDetailModal({
   const otherContacts = localCustomer.contactPersons?.filter(cp => !cp.isPrimary) || [];
 
   // Debug: Ansprechpartner-Daten loggen (reduziert)
-  console.log(
-    '💼 Customer:',
-    localCustomer.name,
-    'Contact persons:',
-    localCustomer.contactPersons?.length || 0
-  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

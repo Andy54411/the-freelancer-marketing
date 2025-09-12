@@ -66,8 +66,6 @@ export function OrderSummary({
 
   // Nur in Development-Modus loggen
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    console.log('OrderSummary anbieterDetails:', anbieterDetails);
-    console.log('OrderSummary imageUrl:', imageUrl);
   }
 
   return (

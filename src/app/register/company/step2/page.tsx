@@ -46,8 +46,6 @@ export default function Step2CompanyPage() {
 
   // Debug Google Maps API Key
   const googleMapsApiKey = process.env.NEXT_PUBLIC_Maps_API_KEY;
-  console.log('🗺️ Google Maps API Key exists:', !!googleMapsApiKey);
-  console.log('🗺️ Google Maps API Key length:', googleMapsApiKey?.length || 0);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: googleMapsApiKey!,
@@ -60,13 +58,11 @@ export default function Step2CompanyPage() {
     console.error('❌ Google Maps Load Error:', loadError);
   }
   if (isLoaded) {
-    console.log('✅ Google Maps loaded successfully');
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   useEffect(() => {
     setLocalCompanyName(registration.companyName || '');
     setLocalFullStreetDisplay(
@@ -151,7 +147,7 @@ export default function Step2CompanyPage() {
   const handleAutofillSync = (
     event: AnimationEvent<HTMLInputElement>,
     contextSetter: (value: string) => void,
-    localSetter?: React.Dispatch<React.SetStateAction<string>> // Optional für lokalen State
+    localSetter?: React.Dispatch<React.SetStateAction<string>>
   ) => {
     if (event.animationName === 'onAutofillStart' || event.animationName.includes('AutoFill')) {
       const inputElement = event.target as HTMLInputElement;

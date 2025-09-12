@@ -5,7 +5,6 @@ import { db } from '@/firebase/server';
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log(`Fetching company details for ID: ${id}`);
 
     // Hole das spezifische Unternehmen aus der Firebase companies Collection
     const companyDoc = await db.collection('companies').doc(id).get();
@@ -17,7 +16,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const data = companyDoc.data();
 
     // Lade echte Statistiken aus auftraege und quotes Collections
-    console.log(`Loading statistics for company ${id}...`);
 
     // Hole alle Aufträge wo diese Company der Anbieter ist
     const auftraegeSnapshot = await db
@@ -27,10 +25,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Hole alle Quotes wo diese Company der Provider ist
     const quotesSnapshot = await db.collection('quotes').where('providerId', '==', id).get();
-
-    console.log(
-      `Found ${auftraegeSnapshot.size} auftraege and ${quotesSnapshot.size} quotes for company ${id}`
-    );
 
     // Berechne Statistiken aus Aufträgen
     let totalRevenue = 0;
@@ -69,10 +63,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Placeholder für Bewertungen (könnte aus einer reviews Collection kommen)
     const avgRating = 0; // TODO: Implementiere echte Bewertungslogik
     const reviewCount = 0;
-
-    console.log(
-      `Statistics calculated: Revenue: €${combinedTotalRevenue}, Orders: ${combinedTotalOrders}`
-    );
 
     // Bestimme Status basierend auf verschiedenen Status-Feldern
     let status = 'inactive';
@@ -233,8 +223,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       privacySettings: data?.privacySettings,
       paymentSettings: data?.paymentSettings,
     };
-
-    console.log(`Successfully fetched company details for ${id}`);
 
     return NextResponse.json({
       company,

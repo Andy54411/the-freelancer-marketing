@@ -15,8 +15,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🗑️ Disconnecting Revolut for user:', userId, 'connectionId:', connectionId);
-
     try {
       // Get company data
       const companyDoc = await db.collection('companies').doc(userId).get();
@@ -61,19 +59,15 @@ export async function DELETE(request: NextRequest) {
       if (connectionId && revolutConnections[connectionId]) {
         // Remove specific connection
         updateData[`revolut_connections.${connectionId}`] = null;
-        console.log('✅ Removing specific Revolut connection:', connectionId);
       } else {
         // Remove all Revolut connections and accounts
         updateData['revolut_connections'] = null;
         updateData['revolut_accounts'] = null;
-        console.log('✅ Removing all Revolut connections and accounts');
       }
 
       updateData['updatedAt'] = new Date().toISOString();
 
       await db.collection('companies').doc(userId).update(updateData);
-
-      console.log('✅ Revolut connection(s) removed from Firestore');
 
       return NextResponse.json({
         success: true,

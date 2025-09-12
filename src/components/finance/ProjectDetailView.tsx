@@ -119,10 +119,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
   useEffect(() => {
     if (project?.id && companyId) {
-      console.log('🔄 ProjectDetailView useEffect triggered:', {
-        projectId: project.id,
-        companyId,
-      });
       setupRealtimeTimeEntriesListener();
     }
 
@@ -142,8 +138,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
     if (!project?.id || !companyId) return;
 
-    console.log('🔄 Setting up realtime time entries listener for project:', project.id);
-
     // Realtime Listener für Zeiteinträge
     const timeEntriesQuery = query(
       collection(db, 'timeEntries'),
@@ -155,13 +149,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     const unsubscribe = onSnapshot(
       timeEntriesQuery,
       snapshot => {
-        console.log(
-          '⏱️ Time entries realtime update for project:',
-          project.id,
-          snapshot.docs.length,
-          'entries'
-        );
-
         // Sichere Funktion zur Konvertierung von Firestore Timestamps oder Date-Objekten
         const safeToDate = (value: any): Date => {
           if (!value) return new Date();
@@ -194,8 +181,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
         setTimeEntries(entries);
         setLoading(false);
-
-        console.log('✅ Time entries updated via realtime listener:', entries.length, 'entries');
       },
       error => {
         console.error('❌ Time entries realtime listener error:', error);
@@ -213,7 +198,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
     try {
       setLoading(true);
-      console.log('🔍 ProjectDetailView: Lade Zeiteinträge für Projekt:', project.id);
 
       // Verwende die neue API anstatt direkter Firestore-Abfrage
       const response = await fetch(
@@ -230,8 +214,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         throw new Error(data.error || 'Failed to load time entries');
       }
 
-      console.log('📊 ProjectDetailView API response:', data);
-
       // Konvertiere API-Daten zu TimeEntry Format
       const entries: TimeEntry[] = data.timeEntries.map((entry: any) => ({
         id: entry.id,
@@ -245,8 +227,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         companyId: entry.companyId || '',
         createdAt: new Date(entry.createdAt || Date.now()),
       }));
-
-      console.log('✅ ProjectDetailView: Konvertierte Zeiteinträge:', entries.length, 'Einträge');
       setTimeEntries(entries);
     } catch (error) {
     } finally {
@@ -260,8 +240,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     try {
       // Lade Zeiteinträge neu
       await loadTimeEntries();
-
-      console.log('🔄 Project data refreshed');
     } catch (error) {
       console.error('❌ Fehler beim Aktualisieren der Projektdaten:', error);
     } finally {
@@ -368,8 +346,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       // Schließe das Modal
       setEditModalOpen(false);
       setEditingEntry(null);
-
-      console.log('✅ Zeiteintrag erfolgreich aktualisiert:', editingEntry);
     } catch (error) {
       console.error('❌ Fehler beim Aktualisieren des Zeiteintrags:', error);
       alert('Fehler beim Aktualisieren des Zeiteintrags. Bitte versuchen Sie es erneut.');
@@ -403,8 +379,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
       // Entferne den Eintrag aus der lokalen Liste
       setTimeEntries(prev => prev.filter(entry => entry.id !== entryId));
-
-      console.log('✅ Zeiteintrag erfolgreich gelöscht:', entryId);
     } catch (error) {
       console.error('❌ Fehler beim Löschen des Zeiteintrags:', error);
       alert('Fehler beim Löschen des Zeiteintrags. Bitte versuchen Sie es erneut.');

@@ -64,8 +64,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     try {
       // Get only quotes for this specific provider to improve performance
       quotesSnapshot = await db.collection('quotes').where('providerId', '==', uid).get();
-
-      console.log(`🔍 Found ${quotesSnapshot.docs.length} quotes for provider ${uid}`);
     } catch (error) {
       console.error('Error fetching quotes:', error);
       // Fallback: Get all quotes if the filtered query fails
@@ -189,7 +187,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           hasResponse = true;
           responseData = proposalsSnapshot.docs[0].data();
           proposalStatus = (responseData as { status?: string })?.status || null; // Get proposal status
-          console.log(`📋 Found subcollection proposal with status: ${proposalStatus}`);
         } else {
           // Fallback: Check old proposals collection
           const oldProposalsSnapshot = await db
@@ -202,7 +199,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             hasResponse = true;
             responseData = oldProposalsSnapshot.docs[0].data();
             proposalStatus = (responseData as { status?: string })?.status || null;
-            console.log(`📋 Found old collection proposal with status: ${proposalStatus}`);
           }
         }
       } catch (error) {

@@ -111,8 +111,6 @@ export default function QuoteFormToggle({
               : undefined;
 
             // Debug: Log quoteDetails
-            console.log('QuoteResponseForm - quoteDetails:', quoteDetails);
-            console.log('QuoteResponseForm - budget:', quoteDetails?.budget);
 
             return (
               <QuoteResponseForm

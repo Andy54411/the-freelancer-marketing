@@ -214,10 +214,6 @@ async function updateProviderStornoStats(providerId: string, auftragId: string) 
           'account.blockType': 'auto_storno_rate',
         }),
       });
-
-      console.log(
-        `Provider ${providerId} Storno-Rate aktualisiert: ${newStornoRate.toFixed(2)}%${shouldBlock ? ' - BLOCKIERT' : ''}`
-      );
     }
   } catch (error) {
     console.error('Fehler beim Update der Provider Storno-Stats:', error);
@@ -243,7 +239,6 @@ async function createAdminTicketForStornoRequest(stornoRequestId: string, storno
       createdAt: stornoData.requestedAt,
     };
 
-    console.log('AWS Admin Ticket würde erstellt für:', webhookData);
     // TODO: Implementiere AWS Webhook Call
   } catch (error) {
     console.error('Fehler beim Erstellen des Admin-Tickets:', error);

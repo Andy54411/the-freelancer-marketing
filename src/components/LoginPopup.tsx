@@ -118,7 +118,6 @@ export default function LoginPopup({
       provider.addScope('email');
       provider.addScope('name');
       const result = await signInWithPopup(auth, provider);
-      console.log('Apple Sign-In erfolgreich:', result);
 
       // Das Popup schließen und die Weiterleitung wird vom AuthContext gehandhabt
       onClose();
@@ -158,9 +157,9 @@ export default function LoginPopup({
         onClick={handleDialogClick} // Verhindert Schließen bei Klick auf Dialog selbst
       >
         {/* Der Schließen-Button ist jetzt Teil der LoginForm-Card in deiner originalen UI,
-          oder du kannst ihn hier explizit hinzufügen, wenn die LoginForm ihn nicht hat.
-          Für eine saubere Trennung ist es oft besser, den Schließen-Button hier im Popup-Wrapper zu haben.
-        */}
+           oder du kannst ihn hier explizit hinzufügen, wenn die LoginForm ihn nicht hat.
+           Für eine saubere Trennung ist es oft besser, den Schließen-Button hier im Popup-Wrapper zu haben.
+          */}
         <button
           onClick={onClose}
           className="absolute -top-3 -right-3 z-[60] bg-gray-200 text-gray-800 hover:bg-teal-100 hover:text-teal-800 rounded-full p-1.5 shadow-lg transition-all hover:scale-110"

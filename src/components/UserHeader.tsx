@@ -171,7 +171,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   // Lade Profil aus Firestore (Company oder User Collection)
   const loadProfileFromFirestore = useCallback(async (uid: string) => {
     try {
-      console.log('� Loading profile from Firestore for UID:', uid);
+      // Debug-Log entfernt
 
       // Versuche zuerst companies Collection
       const companyDoc = await getDoc(doc(db, 'companies', uid));
@@ -183,7 +183,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
           companyData.profileImage ||
           null;
 
-        console.log('✅ Company profile found:', profileUrl);
+        // Debug-Log entfernt
         setProfilePictureURLFromStorage(profileUrl);
         return;
       }
@@ -195,12 +195,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
         const profileUrl =
           userData.profilePictureURL || userData.profileImage || userData.photoURL || null;
 
-        console.log('✅ User profile found:', profileUrl);
+        // Debug-Log entfernt
         setProfilePictureURLFromStorage(profileUrl);
         return;
       }
 
-      console.log('⚠️ No profile found in Firestore');
+      // Debug-Log entfernt
       setProfilePictureURLFromStorage(null);
     } catch (error) {
       console.error('❌ Error loading profile from Firestore:', error);
@@ -209,12 +209,12 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
   }, []); // 🎯 NEUE FUNKTION: Lade Profilbild aus Firestore Company-Collection
   const loadProfilePictureFromFirestore = useCallback(async (uid: string) => {
     if (!uid) {
-      console.log('🖼️ No UID provided for Firestore profile picture loading');
+      // Debug-Log entfernt
       setProfilePictureFromFirestore(null);
       return;
     }
     try {
-      console.log('🔍 Loading profile picture from Firestore for UID:', uid);
+      // Debug-Log entfernt
       const companyDoc = await getDoc(doc(db, 'companies', uid));
 
       if (companyDoc.exists()) {
@@ -223,14 +223,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
           companyData.profileImage || companyData.profileImageUrl || companyData.avatar;
 
         if (profileImage) {
-          console.log('✅ Profile picture URL from Firestore:', profileImage);
+          // Debug-Log entfernt
           setProfilePictureFromFirestore(profileImage);
         } else {
-          console.log('⚠️ No profile picture field found in Firestore');
+          // Debug-Log entfernt
           setProfilePictureFromFirestore(null);
         }
       } else {
-        console.log('❌ Company document not found in Firestore');
+        // Debug-Log entfernt
         setProfilePictureFromFirestore(null);
       }
     } catch (error) {
@@ -269,14 +269,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       const user_type = authUser.user_type;
       const currentPath = window.location.pathname;
 
-      console.log('� UserHeader Monitor (NO REDIRECT):', {
-        currentUser: currentUser?.uid,
-        currentUid,
-        authUser: !!authUser,
-        user_type,
-        currentPath,
-        message: 'Redirect wird zentral im AuthContext behandelt',
-      });
+      // Debug-Log entfernt
     }
   }, [currentUser?.uid, currentUid, authUser]);
 
@@ -399,7 +392,7 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
       if (notificationId) {
         const notificationRef = doc(db, 'notifications', notificationId);
         await deleteDoc(notificationRef);
-        console.log(`✅ Notification ${notificationId} deleted from database`);
+        // Debug-Log entfernt
 
         // Auch aus lokalem State entfernen
         setNotifications(prev => prev.filter(n => n.id !== notificationId));

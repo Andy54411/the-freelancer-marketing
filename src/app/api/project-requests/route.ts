@@ -153,12 +153,6 @@ export async function POST(request: NextRequest) {
     // 2. Standard E-Mail und Public Notifications (immer ausführen für öffentliche Subcategory)
     if (subcategory) {
       try {
-        console.log('🚀 STARTING EMAIL NOTIFICATION PROCESS:', {
-          subcategory,
-          category: projectRequestData.category,
-          projectId: docRef.id,
-        });
-
         const emailService = ProjectEmailNotificationService.getInstance();
         const emailResult = await emailService.notifyCompaniesAboutNewProject({
           projectId: docRef.id,
@@ -181,13 +175,6 @@ export async function POST(request: NextRequest) {
           endDate: projectRequestData.endDate,
           urgency: projectRequestData.urgency,
           createdAt: new Date(),
-        });
-
-        console.log('📊 EMAIL NOTIFICATION RESULT:', {
-          success: emailResult.success,
-          sentCount: emailResult.sentCount,
-          failedCount: emailResult.failedCount,
-          details: emailResult.details,
         });
 
         if (emailResult.failedCount > 0) {

@@ -160,19 +160,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="https://va.vercel-scripts.com" />
 
         {/* Google Tag Manager - Only in Production */}
-        {process.env.NODE_ENV === 'development' && (
-          <Script
-            id="gtm-dev-notice"
-            strategy="beforeInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                console.log('%c[DEV] Google Tag Manager deaktiviert', 'color: orange; font-weight: bold;');
-                console.log('%cGoogle Analytics/GTM wird nur in der Produktion geladen, um postMessage-Fehler zu vermeiden.', 'color: gray;');
-                console.log('%cTeste GTM-Funktionalität auf: https://taskilo.de', 'color: blue;');
-              `,
-            }}
-          />
-        )}
 
         {/* Google Consent Mode V2 - Initialize before any tracking */}
         {process.env.NODE_ENV === 'production' && (

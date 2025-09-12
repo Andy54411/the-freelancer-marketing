@@ -711,10 +711,6 @@ export default function CompanyOrderDetailPage() {
                         order.timeTracking?.originalPlannedHours &&
                         order.timeTracking.originalPlannedHours > 0
                       ) {
-                        console.log(
-                          '🎯 Verwende Firebase timeTracking.originalPlannedHours:',
-                          order.timeTracking.originalPlannedHours
-                        );
                         return order.timeTracking.originalPlannedHours;
                       }
 
@@ -732,26 +728,17 @@ export default function CompanyOrderDetailPage() {
                           ) + 1;
                         const hoursPerDay = parseFloat(String(order.jobDurationString || 8));
                         const calculatedHours = totalDays * hoursPerDay;
-                        console.log(
-                          '📅 Mehrtägiger Auftrag:',
-                          totalDays,
-                          'Tage x',
-                          hoursPerDay,
-                          'h =',
-                          calculatedHours,
-                          'h'
-                        );
+
                         return calculatedHours;
                       } else {
                         // 3. Versuche jobDurationString zu parsen (nur wenn es eine gültige Zahl ist)
                         const durationNumber = parseFloat(String(order.jobDurationString || '0'));
                         if (!isNaN(durationNumber) && durationNumber > 0) {
-                          console.log('⏰ Verwende jobDurationString:', durationNumber, 'h');
                           return durationNumber;
                         }
 
                         // 4. Fallback: 8h für Festangebote (Standard)
-                        console.log('🔄 Fallback: 8h Festangebot Standard');
+
                         return 8;
                       }
                     })()}
@@ -795,15 +782,7 @@ export default function CompanyOrderDetailPage() {
                       // Echter Stundensatz: Gesamtpreis ÷ geplante Stunden
                       const calculatedRate =
                         plannedHours > 0 ? order.priceInCents / 100 / plannedHours : 50;
-                      console.log(
-                        '💰 Stundensatz berechnet:',
-                        order.priceInCents / 100,
-                        '€ ÷',
-                        plannedHours,
-                        'h =',
-                        calculatedRate.toFixed(2),
-                        '€/h'
-                      );
+
                       return calculatedRate;
                     })()}
                     onTimeSubmitted={() => {

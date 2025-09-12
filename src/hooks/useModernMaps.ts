@@ -104,7 +104,7 @@ export const useModernMaps = (): UseModernMapsResult => {
 
         input.parentElement?.appendChild(element);
         input.style.display = 'none';
-        console.log('✅ PlaceAutocompleteElement verwendet');
+
         return;
       } catch (error) {
         console.warn('⚠️ PlaceAutocompleteElement-Fehler:', error);
@@ -123,8 +123,6 @@ export const useModernMaps = (): UseModernMapsResult => {
         const placeDetails = extractPlaceDetails(place);
         onPlaceSelected?.(placeDetails);
       });
-
-      console.log('✅ Autocomplete-Fallback verwendet');
     } catch (error) {
       console.error('❌ Autocomplete-Fehler:', error);
     }

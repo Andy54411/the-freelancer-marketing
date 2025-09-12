@@ -226,8 +226,7 @@ export class TimeTrackingService {
         return true;
       })
     );
-    
-    console.log('🧹 Cleaned data for Firestore:', cleaned);
+
     return cleaned;
   }
 
@@ -253,7 +252,6 @@ export class TimeTrackingService {
 
       return docRef.id;
     } catch (error) {
-
       throw error;
     }
   } /**
@@ -286,7 +284,6 @@ export class TimeTrackingService {
 
       await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
-
       throw new Error('Zeiterfassung konnte nicht gestoppt werden');
     }
   }
@@ -303,7 +300,6 @@ export class TimeTrackingService {
 
       await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
-
       throw new Error('Zeiterfassung konnte nicht pausiert werden');
     }
   }
@@ -320,7 +316,6 @@ export class TimeTrackingService {
 
       await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, entryId), updateData);
     } catch (error) {
-
       throw new Error('Zeiterfassung konnte nicht fortgesetzt werden');
     }
   }
@@ -340,9 +335,7 @@ export class TimeTrackingService {
       const querySnapshot = await getDocs(q);
       const promises = querySnapshot.docs.map(doc => this.stopTimeEntry(doc.id));
       await Promise.all(promises);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   /**
@@ -372,13 +365,14 @@ export class TimeTrackingService {
         updatedAt: new Date(),
       });
 
-      console.log('🔍 Versuche Zeiteintrag zu speichern:', cleanedData);
       const docRef = await addDoc(collection(db, this.TIME_ENTRIES_COLLECTION), cleanedData);
 
       return docRef.id;
     } catch (error) {
       console.error('❌ Firestore Error beim Erstellen des Zeiteintrags:', error);
-      throw new Error(`Zeiteintrag konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
+      throw new Error(
+        `Zeiteintrag konnte nicht erstellt werden: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`
+      );
     }
   }
 
@@ -440,7 +434,6 @@ export class TimeTrackingService {
 
       return entries;
     } catch (error) {
-
       throw new Error('Zeiteinträge konnten nicht geladen werden');
     }
   }
@@ -468,7 +461,6 @@ export class TimeTrackingService {
 
       return null;
     } catch (error) {
-
       throw new Error('Zeiteintrag konnte nicht geladen werden');
     }
   }
@@ -485,7 +477,6 @@ export class TimeTrackingService {
 
       await updateDoc(doc(db, this.TIME_ENTRIES_COLLECTION, id), updateData);
     } catch (error) {
-
       throw new Error('Zeiteintrag konnte nicht aktualisiert werden');
     }
   }
@@ -497,7 +488,6 @@ export class TimeTrackingService {
     try {
       await deleteDoc(doc(db, this.TIME_ENTRIES_COLLECTION, id));
     } catch (error) {
-
       throw new Error('Zeiteintrag konnte nicht gelöscht werden');
     }
   }
@@ -520,7 +510,6 @@ export class TimeTrackingService {
 
       return docRef.id;
     } catch (error) {
-
       throw new Error('Projekt konnte nicht erstellt werden');
     }
   }
@@ -562,7 +551,6 @@ export class TimeTrackingService {
         } as Project;
       });
     } catch (error) {
-
       throw new Error('Projekte konnten nicht geladen werden');
     }
   }
@@ -684,7 +672,6 @@ export class TimeTrackingService {
         byDay: Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
       };
     } catch (error) {
-
       throw new Error('Report konnte nicht generiert werden');
     }
   }
@@ -720,7 +707,6 @@ export class TimeTrackingService {
         updatedAt: data.updatedAt?.toDate() || new Date(),
       } as TimeEntry;
     } catch (error) {
-
       return null;
     }
   }
@@ -773,7 +759,6 @@ export class TimeTrackingService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       } as TimeTrackingSettings;
     } catch (error) {
-
       return null;
     }
   }
@@ -817,7 +802,6 @@ export class TimeTrackingService {
         runningTimers: runningEntries.length,
       };
     } catch (error) {
-
       return {
         todayHours: 0,
         weekHours: 0,

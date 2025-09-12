@@ -242,7 +242,6 @@ export function ExpenseComponent({
       // Download-URL abrufen
       const downloadURL = await getDownloadURL(uploadResult.ref);
 
-      console.log('PDF erfolgreich hochgeladen:', downloadURL);
       return downloadURL;
     } catch (error) {
       console.error('Fehler beim PDF-Upload:', error);
@@ -385,12 +384,10 @@ export function ExpenseComponent({
       });
 
       if (existingSupplier) {
-        console.log(`🔗 Gefundener Lieferant: ${existingSupplier.name} (${existingSupplier.id})`);
         return existingSupplier.id;
       }
 
       // 2. Neuen Lieferanten automatisch anlegen über API
-      console.log(`✨ Erstelle neuen Lieferanten: ${companyName}`);
 
       // Generiere Lieferanten-Nummer
       const supplierNumbers = existingCustomers
@@ -430,7 +427,6 @@ export function ExpenseComponent({
 
       if (createResult.success) {
         toast.success(`Lieferant "${companyName}" automatisch angelegt`);
-        console.log(`✅ Neuer Lieferant erstellt: ${companyName} (${createResult.customerId})`);
         return createResult.customerId; // API gibt customerId zurück, wir verwenden es als supplierId
       } else {
         console.error('Fehler bei Lieferanten-Erstellung:', createResult.error);
@@ -546,12 +542,6 @@ export function ExpenseComponent({
             }
           : null,
       };
-
-      console.log(
-        '🔍 ExpenseComponent: About to save expense data:',
-        JSON.stringify(expenseData, null, 2)
-      );
-      console.log('🔍 ExpenseComponent: supplierId value:', supplierId || 'MISSING!');
 
       const success = await onSave?.(expenseData);
 

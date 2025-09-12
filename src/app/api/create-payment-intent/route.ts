@@ -196,8 +196,6 @@ export async function POST(request: NextRequest) {
     const isB2B = customerType === 'business';
     const isB2C = customerType === 'private';
 
-    console.log(`[Payment] Erstelle ${isB2B ? 'B2B' : 'B2C'} Payment Intent für ${taskId}`);
-
     // ANPASSUNG: Neue B2B/B2C spezifische Gebührenlogik
     const SELLER_SERVICE_FEE_RATE = isB2B ? 0.035 : 0.045; // B2B: 3.5%, B2C: 4.5%
 

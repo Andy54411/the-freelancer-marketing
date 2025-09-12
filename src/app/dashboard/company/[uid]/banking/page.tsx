@@ -121,7 +121,6 @@ export default function BankingDashboardPage() {
         loadBankConnections();
         // Show success message
         setError(null);
-        console.log(`✅ Revolut successfully connected with ${revolutAccounts} accounts`);
       }, 1000);
 
       // Clean URL
@@ -180,7 +179,6 @@ export default function BankingDashboardPage() {
               finapiData.connections
             );
             allConnections.push(...enhancedConnections);
-            console.log('✅ Loaded FinAPI bank connections:', enhancedConnections.length);
           }
         }
       } catch (finapiError) {
@@ -208,7 +206,6 @@ export default function BankingDashboardPage() {
             ];
 
             allConnections.push(...revolutConnections);
-            console.log('✅ Loaded Revolut connections:', revolutConnections.length);
           }
         }
       } catch (revolutError) {
@@ -256,10 +253,7 @@ export default function BankingDashboardPage() {
           const enhancedConnections =
             await enhanceConnectionsWithFirestoreData(transformedConnections);
           setConnections(enhancedConnections);
-          console.log(
-            '✅ Loaded connections from accounts data with Firestore data:',
-            enhancedConnections
-          );
+
           return;
         }
       }
@@ -277,29 +271,18 @@ export default function BankingDashboardPage() {
   // Helper function to enhance connections with Firestore data
   const enhanceConnectionsWithFirestoreData = async (connections: BankConnection[]) => {
     try {
-      console.log('🔗 Enhancing connections with Firestore data...');
-
       // Get Firestore bank connection data
       const firestoreResponse = await fetch(`/api/user/bank-connections?userId=${uid}`);
       if (firestoreResponse.ok) {
         const firestoreData = await firestoreResponse.json();
-        console.log('📁 Firestore data:', firestoreData);
 
         // Correct property name: bankConnections (not connections)
         const firestoreConnections = firestoreData.bankConnections || [];
         const lastSync = firestoreData.lastSync;
         const syncStatus = firestoreData.syncStatus;
 
-        console.log(`📊 Found ${firestoreConnections.length} Firestore bank connections`);
-        console.log(`🕒 Last sync: ${lastSync}`);
-        console.log(`📈 Sync status: ${syncStatus}`);
-
         // If we have finAPI connections but no Firestore data, update status to "connected"
         if (connections.length > 0 && firestoreConnections.length === 0) {
-          console.log(
-            '🔄 finAPI connections exist but no Firestore data - updating status to connected'
-          );
-
           // Update Firestore with current connection data
           try {
             const updateResponse = await fetch('/api/user/bank-connections', {
@@ -323,7 +306,6 @@ export default function BankingDashboardPage() {
             });
 
             if (updateResponse.ok) {
-              console.log('✅ Successfully updated Firestore with current connection data');
             }
           } catch (updateError) {
             console.error('❌ Failed to update Firestore:', updateError);
@@ -349,25 +331,13 @@ export default function BankingDashboardPage() {
             firestoreData: firestoreConnection || null,
           };
 
-          console.log(`🔗 Enhanced connection "${connection.bankName}":`, {
-            originalStatus: connection.status,
-            firestoreStatus: firestoreConnection?.status,
-            finalStatus: enhancedConnection.status,
-            lastSync: enhancedConnection.lastSync,
-          });
-
           return enhancedConnection;
         });
       }
-    } catch (error) {
-      console.log('Could not load Firestore bank connection data:', error);
-    }
+    } catch (error) {}
 
     // If Firestore data is unavailable, default to "connected" if we have finAPI connections
     if (connections.length > 0) {
-      console.log(
-        '🔄 Firestore unavailable - defaulting to connected status for existing connections'
-      );
       return connections.map(connection => ({
         ...connection,
         status: 'connected' as const,
@@ -381,8 +351,6 @@ export default function BankingDashboardPage() {
   // Auto-sync function to trigger after successful bank connection
   const triggerAutoSyncAfterConnection = async () => {
     try {
-      console.log('🔄 Triggering automatic sync after bank connection...');
-
       // Wait a moment for the connection to be fully established
       await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -401,7 +369,6 @@ export default function BankingDashboardPage() {
 
       if (importResponse.ok) {
         const importData = await importResponse.json();
-        console.log('✅ Auto-import successful:', importData);
 
         // Reload connections to show updated status
         setTimeout(() => {
@@ -409,12 +376,8 @@ export default function BankingDashboardPage() {
         }, 2000);
 
         // Show success message to user
-        setTimeout(() => {
-          console.log('🎉 Bank connection and initial sync completed successfully!');
-        }, 1000);
+        setTimeout(() => {}, 1000);
       } else {
-        console.log('⚠️ Auto-import failed, trying sync-transactions as fallback');
-
         // Fallback to sync-transactions
         const syncResponse = await fetch('/api/finapi/sync-transactions', {
           method: 'POST',
@@ -428,7 +391,6 @@ export default function BankingDashboardPage() {
         });
 
         if (syncResponse.ok) {
-          console.log('✅ Fallback sync successful');
           setTimeout(() => {
             loadBankConnections();
           }, 2000);
@@ -443,25 +405,20 @@ export default function BankingDashboardPage() {
   const loadAvailableBanks = async () => {
     try {
       setError(null);
-      console.log('🔍 Loading available banks from API...');
+
       const response = await fetch('/api/finapi/banks?includeTestBanks=true&perPage=50');
 
-      console.log('🔍 API response status:', response.status);
       if (!response.ok) {
         throw new Error(`Failed to load banks: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('🔍 API response data:', data);
 
       if (data.success && data.data && Array.isArray(data.data.banks)) {
-        console.log('🔍 Setting banks from data.data.banks:', data.data.banks.length);
         setAvailableBanks(data.data.banks);
       } else if (data.banks && Array.isArray(data.banks)) {
-        console.log('🔍 Setting banks from data.banks:', data.banks.length);
         setAvailableBanks(data.banks);
       } else {
-        console.log('🔍 No valid banks data found in response');
         throw new Error('Invalid response format - no banks data received');
       }
     } catch (error) {
@@ -542,8 +499,6 @@ export default function BankingDashboardPage() {
   };
 
   const handleWebFormSuccess = async (bankConnectionId?: string) => {
-    console.log('🎉 WebForm success, triggering auto-sync...');
-
     setIsConnecting(false);
     setSelectedBank(null);
     setIsWebFormModalOpen(false);
@@ -595,7 +550,6 @@ export default function BankingDashboardPage() {
         setIsDisconnectDialogOpen(false);
 
         // Zeige Erfolg-Nachricht (optional)
-        console.log('Bank disconnect successful:', data.message);
       } else {
         throw new Error(data.error || 'Unbekannter Fehler');
       }
@@ -719,6 +673,7 @@ export default function BankingDashboardPage() {
               "url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=400&fit=crop&auto=format&q=80')",
           }}
         />
+
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#14ad9f]/80 to-[#0f9d84]/80" />
 
@@ -1146,7 +1101,6 @@ export default function BankingDashboardPage() {
         isOpen={isRevolutModalOpen}
         onClose={() => setIsRevolutModalOpen(false)}
         onSuccess={connectionId => {
-          console.log('✅ Revolut connected successfully:', connectionId);
           setIsRevolutModalOpen(false);
           // Reload connections after successful connection
           setTimeout(() => {

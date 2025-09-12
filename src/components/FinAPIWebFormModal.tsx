@@ -59,10 +59,10 @@ export default function FinAPIWebFormModal({
         return;
       }
 
-      console.log('📨 WebForm message received:', event.data);
+      // Debug-Log entfernt
 
       if (event.data.type === 'BANK_CONNECTION_SUCCESS') {
-        console.log('✅ Bank connection success - closing modal and refreshing');
+        // Debug-Log entfernt
         // Mark that we received a success message
         (window as any).finapiSuccessReceived = true;
         onSuccess(event.data.bankConnectionId);
@@ -72,11 +72,11 @@ export default function FinAPIWebFormModal({
           window.location.reload();
         }, 500);
       } else if (event.data.type === 'BANK_CONNECTION_ERROR') {
-        console.log('❌ Bank connection error:', event.data.error);
+        // Debug-Log entfernt
         (window as any).finapiSuccessReceived = false;
         onError(event.data.error || 'Bank-Verbindung fehlgeschlagen');
       } else if (event.data.type === 'WEBFORM_CANCELLED') {
-        console.log('🚫 WebForm cancelled');
+        // Debug-Log entfernt
         (window as any).finapiSuccessReceived = false;
         onClose();
       }
@@ -117,7 +117,7 @@ export default function FinAPIWebFormModal({
     // Listen for focus event when user returns to main window
     const handleWindowFocus = () => {
       if (popup.closed && !hasReceivedMessage) {
-        console.log('🔄 Window regained focus and popup is closed - checking for bank connections');
+        // Debug-Log entfernt
 
         // Wait a moment then check if we should refresh
         setTimeout(() => {
@@ -125,25 +125,25 @@ export default function FinAPIWebFormModal({
           const successReceived = (window as any).finapiSuccessReceived;
 
           if (successReceived === true) {
-            console.log('✅ Success message was received - refreshing page');
+            // Debug-Log entfernt
             onSuccess('success-confirmed');
             onClose();
             window.location.reload();
           } else if (successReceived === false) {
-            console.log('❌ Error or cancel message was received - not refreshing');
+            // Debug-Log entfernt
             // Don't refresh, user cancelled or error occurred
           } else {
             // No message received - assume success if popup was open long enough
-            console.log('⚠️ No message received - checking time spent in popup');
+            // Debug-Log entfernt
             // Only refresh if user was in popup for more than 30 seconds (likely completed flow)
             const timeInPopup = Date.now() - popupOpenTime;
             if (timeInPopup > 30000) {
-              console.log('✅ User was in popup long enough - assuming success and refreshing');
+              // Debug-Log entfernt
               onSuccess('time-based-success');
               onClose();
               window.location.reload();
             } else {
-              console.log('⏭️ User closed popup quickly - assuming cancellation');
+              // Debug-Log entfernt
             }
           }
         }, 1000);
@@ -163,7 +163,7 @@ export default function FinAPIWebFormModal({
 
         // Don't automatically refresh here - wait for focus event
         if (!hasReceivedMessage) {
-          console.log('⏳ Popup closed - waiting for window focus to determine action');
+          // Debug-Log entfernt
         }
       }
     }, 1000);

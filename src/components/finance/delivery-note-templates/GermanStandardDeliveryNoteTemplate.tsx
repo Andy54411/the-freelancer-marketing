@@ -17,7 +17,10 @@ interface TemplateProps {
  * - A4-Format (595px × 842px)
  * - Automatische Mehrseitigkeit bei vielen Positionen
  */
-export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ data, preview = false }) => {
+export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({
+  data,
+  preview = false,
+}) => {
   // Automatische Erkennung: Ab 15 Positionen mehrseitig
   const maxItemsPerPage = 15;
   const totalItems = data.items?.length || 0;
@@ -26,7 +29,9 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ da
   // Vorerst immer Standard-Template verwenden
   // TODO: Mehrseitige Unterstützung später hinzufügen
   if (shouldUseMultiPage) {
-    console.warn('Mehrseitige Lieferscheine werden noch nicht unterstützt. Verwende Standard-Template.');
+    console.warn(
+      'Mehrseitige Lieferscheine werden noch nicht unterstützt. Verwende Standard-Template.'
+    );
   }
 
   return (
@@ -51,9 +56,7 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ da
               const fallback = e.currentTarget.nextElementSibling as HTMLElement;
               if (fallback) fallback.style.display = 'block';
             }}
-            onLoad={() => {
-              console.log('🖼️ Company Logo erfolgreich geladen für:', data.companyName);
-            }}
+            onLoad={() => {}}
           />
         ) : (
           <div className="h-20 w-16 p-2 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center flex flex-col justify-center">
@@ -135,7 +138,9 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ da
               <th className="border border-gray-300 p-3 text-center font-semibold">Einheit</th>
               {data.showPrices && (
                 <>
-                  <th className="border border-gray-300 p-3 text-right font-semibold">Einzelpreis</th>
+                  <th className="border border-gray-300 p-3 text-right font-semibold">
+                    Einzelpreis
+                  </th>
                   <th className="border border-gray-300 p-3 text-right font-semibold">Gesamt</th>
                 </>
               )}
@@ -144,38 +149,29 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ da
           <tbody>
             {data.items?.map((item, index) => (
               <tr key={item.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border border-gray-300 p-3 text-center font-medium">
-                  {index + 1}
-                </td>
+                <td className="border border-gray-300 p-3 text-center font-medium">{index + 1}</td>
                 <td className="border border-gray-300 p-3">
                   <div className="font-medium text-gray-900">{item.description}</div>
-                  {item.notes && (
-                    <div className="text-xs text-gray-600 mt-1">{item.notes}</div>
-                  )}
+                  {item.notes && <div className="text-xs text-gray-600 mt-1">{item.notes}</div>}
                   {item.serialNumbers && item.serialNumbers.length > 0 && (
                     <div className="text-xs text-gray-600 mt-1">
                       SN: {item.serialNumbers.join(', ')}
                     </div>
                   )}
                 </td>
-                <td className="border border-gray-300 p-3 text-center">
-                  {item.quantity}
-                </td>
-                <td className="border border-gray-300 p-3 text-center">
-                  {item.unit}
-                </td>
+                <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                <td className="border border-gray-300 p-3 text-center">{item.unit}</td>
                 {data.showPrices && (
                   <>
                     <td className="border border-gray-300 p-3 text-right">
                       {item.unitPrice ? `${item.unitPrice.toFixed(2)} €` : '-'}
                     </td>
                     <td className="border border-gray-300 p-3 text-right font-medium">
-                      {item.total 
+                      {item.total
                         ? `${item.total.toFixed(2)} €`
-                        : item.unitPrice 
+                        : item.unitPrice
                           ? `${(item.quantity * item.unitPrice).toFixed(2)} €`
-                          : '-'
-                      }
+                          : '-'}
                     </td>
                   </>
                 )}
@@ -196,20 +192,20 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ da
                   <span className="font-medium">{data.subtotal.toFixed(2)} €</span>
                 </div>
               )}
-              
+
               {data.tax && data.vatRate && (
                 <div className="flex justify-between p-3 border-b border-gray-200">
                   <span className="text-gray-700">MwSt. ({data.vatRate}%):</span>
                   <span className="font-medium">{data.tax.toFixed(2)} €</span>
                 </div>
               )}
-              
+
               <div className="flex justify-between p-3 bg-[#14ad9f] text-white rounded-b">
                 <span className="font-semibold">Gesamtwert:</span>
                 <span className="font-bold text-lg">{data.total.toFixed(2)} €</span>
               </div>
             </div>
-            
+
             {data.isSmallBusiness && (
               <div className="text-xs text-gray-600 mt-2 text-right">
                 Kleinunternehmerregelung nach §19 UStG - Keine Umsatzsteuer ausgewiesen
@@ -228,14 +224,16 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ da
               <div className="text-sm text-gray-600 leading-relaxed">{data.notes}</div>
             </div>
           )}
-          
+
           {data.specialInstructions && (
             <div>
               <div className="text-sm font-semibold text-gray-700 mb-1">Besondere Anweisungen:</div>
-              <div className="text-sm text-gray-600 leading-relaxed">{data.specialInstructions}</div>
+              <div className="text-sm text-gray-600 leading-relaxed">
+                {data.specialInstructions}
+              </div>
             </div>
           )}
-          
+
           {data.deliveryTerms && (
             <div>
               <div className="text-sm font-semibold text-gray-700 mb-1">Lieferbedingungen:</div>
@@ -250,12 +248,8 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ da
         <div className="mb-6">
           <div className="text-sm font-semibold text-gray-700 mb-2">Versandinformationen:</div>
           <div className="bg-gray-50 p-3 rounded border text-sm text-gray-700">
-            {data.shippingMethod && (
-              <div>Versandart: {data.shippingMethod}</div>
-            )}
-            {data.trackingNumber && (
-              <div>Sendungsnummer: {data.trackingNumber}</div>
-            )}
+            {data.shippingMethod && <div>Versandart: {data.shippingMethod}</div>}
+            {data.trackingNumber && <div>Sendungsnummer: {data.trackingNumber}</div>}
           </div>
         </div>
       )}
@@ -267,20 +261,18 @@ export const GermanStandardDeliveryNoteTemplate: React.FC<TemplateProps> = ({ da
             <div className="font-semibold text-gray-700 mb-1">Vielen Dank für Ihr Vertrauen!</div>
             <div>Bei Fragen stehen wir Ihnen gerne zur Verfügung.</div>
           </div>
-          
+
           <div className="text-right">
-            {data.companyVatId && (
-              <div>USt-IdNr.: {data.companyVatId}</div>
-            )}
-            {data.companyTaxNumber && (
-              <div>Steuernr.: {data.companyTaxNumber}</div>
-            )}
+            {data.companyVatId && <div>USt-IdNr.: {data.companyVatId}</div>}
+            {data.companyTaxNumber && <div>Steuernr.: {data.companyTaxNumber}</div>}
             {data.companyRegister && data.districtCourt && (
-              <div>{data.companyRegister}, {data.districtCourt}</div>
+              <div>
+                {data.companyRegister}, {data.districtCourt}
+              </div>
             )}
           </div>
         </div>
-        
+
         <div className="text-center mt-4 text-xs text-gray-500 italic">
           Dieser Lieferschein wurde automatisch erstellt und ist ohne Unterschrift gültig.
         </div>

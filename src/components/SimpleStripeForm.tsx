@@ -215,7 +215,7 @@ export default function SimpleStripeForm({
   anbieterDetails,
   jobDetails,
 }: SimpleStripeFormProps) {
-  console.log('🎯 SimpleStripeForm lädt mit clientSecret:', clientSecret ? 'VORHANDEN' : 'FEHLT');
+  // Debug-Log entfernt
 
   if (!clientSecret) {
     return (

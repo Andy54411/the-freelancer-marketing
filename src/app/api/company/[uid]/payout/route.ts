@@ -12,8 +12,6 @@ let db: any;
 async function getFirebaseServices() {
   if (!db) {
     try {
-      console.log('Initializing Firebase for Payout API - NO JSON FILES...');
-
       // DIRECT Firebase initialization without JSON imports
       const firebaseAdmin = await import('firebase-admin');
 
@@ -21,10 +19,7 @@ async function getFirebaseServices() {
       let app;
       try {
         app = firebaseAdmin.app();
-        console.log('Using existing Firebase app');
       } catch (appError) {
-        console.log('Initializing new Firebase app for Payout...');
-
         if (
           process.env.FIREBASE_PROJECT_ID &&
           process.env.FIREBASE_PRIVATE_KEY &&
@@ -37,20 +32,18 @@ async function getFirebaseServices() {
               privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             }),
           });
-          console.log('Initialized with service account credentials');
         } else if (process.env.FIREBASE_PROJECT_ID) {
           app = firebaseAdmin.initializeApp({
             credential: firebaseAdmin.credential.applicationDefault(),
             projectId: process.env.FIREBASE_PROJECT_ID,
           });
-          console.log('Initialized with application default credentials');
         } else {
           throw new Error('No Firebase configuration available');
         }
       }
 
       db = firebaseAdmin.firestore();
-      console.log('Firebase Firestore initialized successfully for Payout API');
+
       return { db };
     } catch (error: any) {
       console.error('Firebase initialization failed:', error);
@@ -93,7 +86,6 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
     // Admin Approval Check - Blockiere Auszahlungen für nicht freigegebene Firmen
     const approvalResult = await checkAdminApproval(uid);
     if (!approvalResult.isApproved) {
-      console.log(`Payout blocked for company ${uid}: ${approvalResult.errorCode}`);
       return NextResponse.json(
         {
           ...createApprovalErrorResponse(approvalResult),
@@ -301,10 +293,6 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
             type: 'platform_fee_quote',
           },
         });
-
-        console.log(
-          `✅ Provision übertragen für Quote ${transfer.quoteId}: €${transfer.provisionAmount / 100}`
-        );
       } catch (transferError: any) {
         console.error(
           `❌ Provision Transfer Fehler für Quote ${transfer.quoteId}:`,
@@ -371,38 +359,30 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
   try {
     // Fix Next.js warning
     const resolvedParams = await params;
-    console.log('🔍 Payout GET: Starting for uid:', resolvedParams?.uid);
 
     // Use improved Firebase initialization
     const { db: adminDb } = await getFirebaseServices();
-    console.log('🔍 Payout GET: Firebase services obtained, db available:', !!adminDb);
 
     // Check if Firebase is properly initialized
     if (!adminDb) {
-      console.log('❌ Payout GET: Firebase not available');
       return NextResponse.json({ error: 'Firebase nicht verfügbar' }, { status: 500 });
     }
 
     const { uid } = resolvedParams;
-    console.log('🔍 Payout GET: Processing for uid:', uid);
 
     // 1. Hole Company Stripe Account Info
-    console.log('🔍 Payout GET: Fetching company data...');
+
     const companyRef = adminDb.collection('companies').doc(uid);
     const companySnap = await companyRef.get();
-    console.log('🔍 Payout GET: Company exists:', companySnap.exists);
 
     if (!companySnap.exists) {
-      console.log('❌ Payout GET: Company not found');
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
     const companyData = companySnap.data();
     const stripeAccountId = companyData?.stripeAccountId;
-    console.log('🔍 Payout GET: Stripe Account ID:', stripeAccountId);
 
     if (!stripeAccountId) {
-      console.log('❌ Payout GET: No Stripe account configured');
       return NextResponse.json({ error: 'No Stripe account configured' }, { status: 400 });
     }
 
@@ -457,9 +437,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
           status: orderData.payoutStatus || 'completed',
         });
       });
-    } catch (error) {
-      console.log('Error fetching orders for display:', error);
-    }
+    } catch (error) {}
 
     // Quote Payments für Info
     try {
@@ -494,9 +472,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
           });
         });
       }
-    } catch (error) {
-      console.log('Error fetching quotes for display:', error);
-    }
+    } catch (error) {}
 
     return NextResponse.json({
       availableAmount: availableAmount, // Tatsächliches Stripe-Guthaben

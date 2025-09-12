@@ -47,7 +47,6 @@ export const GoogleMapsLoaderProvider: React.FC<GoogleMapsLoaderProviderProps> =
       .then(loadedGoogle => {
         setGoogle(loadedGoogle);
         setIsLoaded(true);
-        console.log('✅ Google Maps erfolgreich mit @googlemaps/js-api-loader geladen');
       })
       .catch(e => {
         console.error('❌ Fehler beim Laden von Google Maps:', e);

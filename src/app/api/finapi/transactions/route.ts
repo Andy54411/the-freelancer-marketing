@@ -19,8 +19,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('💰 Getting transactions for user:', userId, 'page:', page);
-
     let companyEmail: string | null = null;
 
     try {
@@ -28,7 +26,6 @@ export async function GET(request: NextRequest) {
       const companyDoc = await db.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
-        console.log('📭 No company found, returning empty transactions');
         return NextResponse.json({
           success: true,
           data: {
@@ -48,7 +45,6 @@ export async function GET(request: NextRequest) {
       companyEmail = companyData?.email;
 
       if (!companyEmail) {
-        console.log('📭 No company email found, returning empty transactions');
         return NextResponse.json({
           success: true,
           data: {
@@ -63,8 +59,6 @@ export async function GET(request: NextRequest) {
           timestamp: new Date().toISOString(),
         });
       }
-
-      console.log('✅ Using company email for transactions:', companyEmail);
 
       // Create finAPI service instance
       const finapiService = createFinAPIService();
@@ -81,8 +75,6 @@ export async function GET(request: NextRequest) {
       const userToken = userData.userToken;
 
       if (userToken) {
-        console.log('✅ Got user token, fetching transactions...');
-
         // Build the URL for transactions API
         const url = new URL('https://sandbox.finapi.io/api/v2/transactions');
         url.searchParams.set('view', 'userView'); // Required parameter
@@ -104,7 +96,6 @@ export async function GET(request: NextRequest) {
 
         if (transactionsResponse.ok) {
           const transactionsData = await transactionsResponse.json();
-          console.log('✅ Found finAPI transactions:', transactionsData.transactions?.length || 0);
 
           return NextResponse.json({
             success: true,
@@ -130,15 +121,11 @@ export async function GET(request: NextRequest) {
       console.error('❌ finAPI transactions error:', finapiError.message);
     }
 
-    console.log('📭 No finAPI transactions found');
-
     // For demo purposes, if we have accounts but no transactions,
     // show some sample transactions to demonstrate the UI
     const shouldShowDemoTransactions = false; // Set to true for demo purposes
 
     if (shouldShowDemoTransactions && companyEmail) {
-      console.log('🎭 Providing demo transactions for UI demonstration');
-
       const demoTransactions = [
         {
           id: 'demo_tx_1',

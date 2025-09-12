@@ -115,8 +115,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
 
   const generateQuestions = async (description: string) => {
     try {
-      console.log('🚀 Generating questions for:', description);
-
       const response = await fetch('/api/project-ai', {
         method: 'POST',
         headers: {
@@ -131,11 +129,9 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
       });
 
       const result = await response.json();
-      console.log('📊 API Response:', result);
 
       if (result.success && result.data) {
         const questions = result.data.questions || [];
-        console.log('✅ Setting questions:', questions);
 
         setSmartQuestions(questions);
         setDetectedCategory(result.data.detectedCategory || '');
@@ -178,8 +174,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
   const findRecommendedProviders = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Finding providers for category:', detectedCategory);
-
       const response = await fetch('/api/project-ai', {
         method: 'POST',
         headers: {
@@ -196,15 +190,10 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
       });
 
       const result = await response.json();
-      console.log('📊 Provider recommendations:', result);
-      console.log('📊 Provider data structure:', result.data?.[0]);
 
       if (result.success && result.data) {
-        console.log('✅ Setting recommended providers:', result.data.length);
         // Debug: Log first provider's profile picture
         if (result.data[0]) {
-          console.log('🖼️ First provider profilePictureURL:', result.data[0].profilePictureURL);
-          console.log('🖼️ First provider data:', result.data[0]);
         }
         setRecommendedProviders(result.data);
         setStep('recommendations');
@@ -244,8 +233,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
     setStep('creating');
 
     try {
-      console.log('🚀 Creating detailed project with answers:', questionAnswers);
-
       // Erstelle detaillierte Projektbeschreibung
       const response = await fetch('/api/project-ai', {
         method: 'POST',
@@ -263,7 +250,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
       });
 
       const result = await response.json();
-      console.log('📊 Detailed project result:', result);
 
       if (result.success && result.data) {
         // Erstelle das Projekt in der Datenbank
@@ -294,7 +280,6 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
         });
 
         const projectResult = await projectCreationResponse.json();
-        console.log('📊 Project creation result:', projectResult);
 
         if (projectResult.success) {
           addMessage(
@@ -458,6 +443,7 @@ const ProjectAssistantModal: React.FC<ProjectAssistantModalProps> = ({
                 rows={2}
                 disabled={loading}
               />
+
               <Button
                 onClick={handleSendMessage}
                 disabled={loading || !currentInput.trim()}

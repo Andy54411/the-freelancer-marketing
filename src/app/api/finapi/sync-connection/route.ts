@@ -14,8 +14,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🔄 Syncing connection for user:', userId, 'connection:', connectionId);
-
     // For now, we'll simulate sync operation
     // This will be replaced with actual finAPI calls once the integration is complete
 

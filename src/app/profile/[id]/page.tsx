@@ -141,8 +141,6 @@ export default function ProfilePage() {
   // Da Reviews nur für abgeschlossene Aufträge erstellt werden, können wir sie als Proxy verwenden
   const loadRealCompletedJobs = async (providerId: string): Promise<number> => {
     try {
-      console.log('🔄 Loading real completed jobs for provider:', providerId);
-
       // Query für Reviews dieses Providers (öffentlich lesbar)
       const reviewsQuery = query(
         collection(db, 'reviews'),
@@ -151,12 +149,10 @@ export default function ProfilePage() {
       );
 
       const reviewsSnapshot = await getDocs(reviewsQuery);
-      console.log('📊 Total reviews loaded for provider', providerId, ':', reviewsSnapshot.size);
 
       // Jede Review entspricht einem abgeschlossenen Auftrag
       const completedCount = reviewsSnapshot.size;
 
-      console.log('🎯 Real completed jobs count for', providerId, ':', completedCount);
       return completedCount;
     } catch (error) {
       console.error('🚨 Error loading completed jobs:', error);
@@ -169,8 +165,6 @@ export default function ProfilePage() {
     providerId: string
   ): Promise<{ averageRating: number; totalReviews: number }> => {
     try {
-      console.log('🔄 Loading real rating data for provider:', providerId);
-
       const reviewsQuery = query(
         collection(db, 'reviews'),
         where('providerId', '==', providerId),
@@ -181,28 +175,17 @@ export default function ProfilePage() {
       const reviews = reviewsSnapshot.docs.map(doc => doc.data());
 
       if (reviews.length === 0) {
-        console.log('📭 No reviews found for provider:', providerId);
         return { averageRating: 0, totalReviews: 0 };
       }
 
       // Berechne durchschnittliche Bewertung
       const totalRating = reviews.reduce((sum, review) => {
         const rating = Number(review.rating) || 0;
-        console.log('📊 Review rating:', rating);
+
         return sum + rating;
       }, 0);
 
       const averageRating = totalRating / reviews.length;
-
-      console.log(
-        '⭐ Calculated rating for',
-        providerId,
-        ':',
-        averageRating,
-        'from',
-        reviews.length,
-        'reviews'
-      );
 
       return {
         averageRating: parseFloat(averageRating.toFixed(1)),
@@ -399,19 +382,6 @@ export default function ProfilePage() {
           // Lade echte Bewertungsdaten und abgeschlossene Aufträge
           const realRatingData = await loadRealRatingData(companyId);
           const realCompletedJobs = await loadRealCompletedJobs(companyId);
-
-          console.log(
-            '📈 Profile Page: Real rating data for',
-            userData.companyName,
-            ':',
-            realRatingData
-          );
-          console.log(
-            '📈 Profile Page: Real completed jobs for',
-            userData.companyName,
-            ':',
-            realCompletedJobs
-          );
 
           // Verarbeite Skills aus verschiedenen Quellen
           const skills = userData.skills || [];
@@ -930,6 +900,7 @@ export default function ProfilePage() {
                                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                                           />
+
                                           {item.featured && (
                                             <div className="absolute top-3 left-3 bg-[#14ad9f] text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
                                               Top Projekt
@@ -1021,6 +992,7 @@ export default function ProfilePage() {
                                                 strokeWidth={2}
                                                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                                               />
+
                                               <path
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
@@ -1083,6 +1055,7 @@ export default function ProfilePage() {
                                                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                                 className="object-cover group-hover:scale-110 transition-transform duration-300"
                                               />
+
                                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200 pointer-events-none" />
                                               {/* Optional: Click to enlarge functionality */}
                                               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -1137,13 +1110,12 @@ export default function ProfilePage() {
                     )}
 
                     {/* FAQ Section - Fiverr Style - ALWAYS SHOW FOR DEBUG```
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* FAQ Section - Fiverr Style */}
+                             </button>
+                           </div>
+                         )}
+                       </div>
+                      )}
+                      {/* FAQ Section - Fiverr Style */}
                     <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-8">
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-gray-900">
@@ -1264,10 +1236,10 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Reviews Section - Using ProviderReviews Component */}
-                    <ProviderReviews 
-                      providerId={companyId} 
-                      reviewCount={profile.totalReviews} 
-                      averageRating={profile.averageRating} 
+                    <ProviderReviews
+                      providerId={companyId}
+                      reviewCount={profile.totalReviews}
+                      averageRating={profile.averageRating}
                     />
                   </div>
 
@@ -1411,6 +1383,7 @@ export default function ProfilePage() {
                               }`}
                               size={20}
                             />
+
                             <span className="text-gray-700">
                               {profile.stripeVerificationStatus === 'verified'
                                 ? 'Identität verifiziert'

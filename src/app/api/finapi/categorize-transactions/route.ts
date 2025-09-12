@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🏷️ Categorizing transactions:', transactionIds, 'for user:', userId);
-
     // For now, we'll simulate categorization
     // This will be replaced with actual finAPI calls once the integration is complete
 

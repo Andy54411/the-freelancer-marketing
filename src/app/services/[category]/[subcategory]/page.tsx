@@ -91,12 +91,6 @@ export default function SubcategoryPage() {
 
   // Lade echte Bewertungen und abgeschlossene Aufträge für Provider
   const enrichProvidersWithReviews = async (providers: Provider[]): Promise<Provider[]> => {
-    console.log(
-      '🔄 DEBUG: Starting to enrich',
-      providers.length,
-      'providers with reviews and completed jobs'
-    );
-
     try {
       // Get all reviews from collection with improved query and limit
       const reviewsQuery = query(
@@ -104,7 +98,6 @@ export default function SubcategoryPage() {
         limit(500) // Reasonable limit for performance
       );
       const allReviewsSnapshot = await getDocs(reviewsQuery);
-      console.log('📊 DEBUG: Total reviews loaded:', allReviewsSnapshot.size);
 
       // Create a map of providerId to reviews for efficient lookup
       const reviewsMap = new Map<string, any[]>();
@@ -127,23 +120,7 @@ export default function SubcategoryPage() {
         // Jede Review entspricht einem abgeschlossenen Auftrag
         const currentCompletedJobs = completedJobsMap.get(providerId) || 0;
         completedJobsMap.set(providerId, currentCompletedJobs + 1);
-
-        console.log(
-          '🔍 DEBUG: Review doc:',
-          doc.id,
-          'providerId:',
-          providerId,
-          'rating:',
-          data.rating
-        );
       });
-
-      console.log('🗺️ DEBUG: Created reviews map for', reviewsMap.size, 'providers having reviews');
-      console.log(
-        '🗺️ DEBUG: Created completed jobs map for',
-        completedJobsMap.size,
-        'providers having completed jobs (based on reviews)'
-      );
 
       // Enrich each provider with their reviews and completed jobs
       const enrichedProviders = providers.map(provider => {
@@ -157,31 +134,13 @@ export default function SubcategoryPage() {
         if (providerReviews.length > 0) {
           totalRating = providerReviews.reduce((sum, review) => {
             const rating = Number(review.rating) || 0;
-            console.log('📊 DEBUG: Review rating for', provider.companyName, ':', rating);
+
             return sum + rating;
           }, 0);
 
           averageRating = totalRating / providerReviews.length;
-          console.log(
-            '⭐ DEBUG: Calculated average rating for',
-            provider.companyName,
-            ':',
-            averageRating,
-            'from',
-            providerReviews.length,
-            'reviews'
-          );
         } else {
-          console.log(
-            '📭 DEBUG: No reviews found for',
-            provider.companyName,
-            '(ID:',
-            provider.id,
-            ')'
-          );
         }
-
-        console.log('🔢 DEBUG: Completed jobs for', provider.companyName, ':', completedJobs);
 
         return {
           ...provider,
@@ -190,17 +149,6 @@ export default function SubcategoryPage() {
           completedJobs: completedJobs,
         };
       });
-
-      console.log(
-        '✅ DEBUG: Enrichment complete. Providers with ratings and completed jobs:',
-        enrichedProviders.map(p => ({
-          name: p.companyName,
-          id: p.id,
-          rating: p.rating,
-          reviewCount: p.reviewCount,
-          completedJobs: p.completedJobs,
-        }))
-      );
 
       return enrichedProviders;
     } catch (error) {
@@ -232,15 +180,6 @@ export default function SubcategoryPage() {
       const companyProviders: Provider[] = companiesSnapshot.docs
         .map(doc => {
           const data = doc.data();
-          console.log('🏢 DEBUG: Company Data for', doc.id, ':', {
-            companyName: data.companyName,
-            description: data.description,
-            skills: data.skills,
-            serviceAreas: data.serviceAreas,
-            profilePictureURL: data.step3?.profilePictureURL,
-            maxTravelDistance: data.maxTravelDistance,
-            isActive: data.status !== 'inactive',
-          });
 
           return {
             id: doc.id,
@@ -299,33 +238,20 @@ export default function SubcategoryPage() {
 
       // Filter nach Subcategory - erweiterte und allgemeine Prüfung
       let filteredProviders = enrichedProviders.filter(provider => {
-        console.log(
-          '🎯 DEBUG: Filtering provider',
-          provider.companyName,
-          'for subcategory:',
-          subcategoryName
-        );
-        console.log('🎯 DEBUG: Provider selectedCategory:', provider.selectedCategory);
-        console.log('🎯 DEBUG: Provider selectedSubcategory:', provider.selectedSubcategory);
-        console.log('🎯 DEBUG: Provider skills:', provider.skills);
-
         // 🔧 PRIORITÄT 1: Exakte Kategorie/Unterkategorie Übereinstimmung
         if (provider.isCompany && provider.selectedSubcategory) {
           // Exakte Übereinstimmung
           if (provider.selectedSubcategory === subcategoryName) {
-            console.log('✅ DEBUG: Exact subcategory match for', provider.companyName);
             return true;
           }
 
           // Case-insensitive Übereinstimmung
           if (provider.selectedSubcategory.toLowerCase() === subcategoryName?.toLowerCase()) {
-            console.log('✅ DEBUG: Case-insensitive subcategory match for', provider.companyName);
             return true;
           }
 
           // URL-Parameter Übereinstimmung
           if (provider.selectedSubcategory.toLowerCase() === subcategory.toLowerCase()) {
-            console.log('✅ DEBUG: URL parameter subcategory match for', provider.companyName);
             return true;
           }
         }
@@ -338,7 +264,6 @@ export default function SubcategoryPage() {
         );
 
         if (skillsMatch) {
-          console.log('✅ DEBUG: Skills match for', provider.companyName);
           return true;
         }
 
@@ -381,14 +306,6 @@ export default function SubcategoryPage() {
 
           // Wenn Provider aus völlig anderer Kategorie kommt, ausschließen
           if (providerCategory !== targetCategory && !specialMietkochMatch && !skillsMatch) {
-            console.log(
-              '❌ DEBUG: Category mismatch for',
-              provider.companyName,
-              'Provider:',
-              providerCategory,
-              'Target:',
-              targetCategory
-            );
             return false;
           }
         }
@@ -423,16 +340,6 @@ export default function SubcategoryPage() {
           specialMietkochMatch ||
           (filteredByTag ? tagMatch : true);
 
-        console.log('🎯 DEBUG: Match results for', provider.companyName, ':', {
-          skillsMatch,
-          nameMatch,
-          bioMatch,
-          specialMietkochMatch,
-          tagMatch,
-          filteredByTag,
-          finalMatch,
-        });
-
         return finalMatch;
       });
 
@@ -463,17 +370,6 @@ export default function SubcategoryPage() {
             return 0;
         }
       });
-
-      console.log('📊 DEBUG: Final filtered providers count:', filteredProviders.length);
-      console.log(
-        '📊 DEBUG: Final providers:',
-        filteredProviders.map(p => ({
-          id: p.id,
-          name: p.companyName,
-          subcategory: p.selectedSubcategory,
-          skills: p.skills,
-        }))
-      );
 
       setProviders(filteredProviders);
     } catch (_error) {
@@ -756,6 +652,7 @@ export default function SubcategoryPage() {
                             (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
                           }}
                         />
+
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-gray-900 text-base truncate group-hover:text-[#14ad9f] transition-colors">
                             {getProviderName(provider)}

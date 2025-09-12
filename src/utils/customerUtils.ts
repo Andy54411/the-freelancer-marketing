@@ -149,8 +149,6 @@ export const findOrCreateCustomer = async (
   companyId: string,
   userUid: string
 ): Promise<Customer> => {
-  console.log(`🔍 Finding or creating customer: ${customerName}`);
-
   try {
     // Load all existing customers
     const existingCustomers = await loadCustomers(companyId);
@@ -159,14 +157,10 @@ export const findOrCreateCustomer = async (
     const existingCustomer = fuzzyMatchCustomer(customerName, existingCustomers);
 
     if (existingCustomer) {
-      console.log(
-        `✅ Found existing customer: ${existingCustomer.name} (${existingCustomer.customerNumber})`
-      );
       return existingCustomer;
     }
 
     // Customer doesn't exist, create new one
-    console.log(`👤 Creating new customer: ${customerName}`);
 
     const newCustomerData = {
       customerNumber: generateNextCustomerNumber(existingCustomers),
@@ -214,9 +208,6 @@ export const findOrCreateCustomer = async (
       createdAt: new Date().toISOString(),
     };
 
-    console.log(
-      `✅ Successfully created customer: ${newCustomer.name} (${newCustomer.customerNumber})`
-    );
     return newCustomer;
   } catch (error) {
     console.error('❌ Error in findOrCreateCustomer:', error);

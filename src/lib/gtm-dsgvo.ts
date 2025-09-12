@@ -20,7 +20,6 @@ export const sendConsentToGTM = (consent: {
 
   // Skip GTM in development to avoid postMessage errors
   if (process.env.NODE_ENV === 'development' && window.location.hostname === 'localhost') {
-    console.log('GTM disabled in development environment to prevent postMessage errors');
     return;
   }
 

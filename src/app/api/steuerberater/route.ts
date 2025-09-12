@@ -6,19 +6,14 @@ let db: any;
 async function getFirebaseDb() {
   try {
     if (!db) {
-      console.log('Initializing Firebase Admin for Steuerberater API...');
-
       // First try: Use existing Firebase server configuration
       try {
         const firebaseServer = await import('@/firebase/server');
         db = firebaseServer.db;
         if (db) {
-          console.log('Using existing Firebase server configuration');
           return db;
         }
-      } catch (importError) {
-        console.log('Existing config not available:', importError.message);
-      }
+      } catch (importError) {}
 
       // Second try: Direct Firebase Admin initialization
       try {
@@ -28,10 +23,7 @@ async function getFirebaseDb() {
         let app;
         try {
           app = admin.app();
-          console.log('Using existing Firebase app');
         } catch (appError) {
-          console.log('Initializing new Firebase app...');
-
           // Use environment variables for initialization
           if (
             process.env.FIREBASE_PROJECT_ID &&
@@ -45,21 +37,18 @@ async function getFirebaseDb() {
                 privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
               }),
             });
-            console.log('Initialized with service account credentials');
           } else if (process.env.FIREBASE_PROJECT_ID) {
             // Try with application default credentials
             app = admin.initializeApp({
               credential: admin.credential.applicationDefault(),
               projectId: process.env.FIREBASE_PROJECT_ID,
             });
-            console.log('Initialized with application default credentials');
           } else {
             throw new Error('No Firebase configuration found');
           }
         }
 
         db = admin.firestore(app);
-        console.log('Firebase Firestore initialized successfully');
       } catch (adminError) {
         console.error('Firebase Admin initialization failed:', adminError);
         throw adminError;
@@ -98,9 +87,7 @@ export async function GET(request: NextRequest) {
     let database = null;
     try {
       database = await getFirebaseDb();
-    } catch (error) {
-      console.log('Firebase nicht verfügbar, verwende Mock-Daten:', error);
-    }
+    } catch (error) {}
 
     switch (action) {
       case 'invites':
@@ -125,10 +112,7 @@ export async function GET(request: NextRequest) {
               data: invites,
               timestamp: Date.now(),
             });
-          } catch (firebaseError) {
-            console.log('Firebase query failed:', firebaseError);
-            // Fall through to mock data
-          }
+          } catch (firebaseError) {}
         }
 
         // Mock data if Firebase not available or query failed
@@ -167,10 +151,7 @@ export async function GET(request: NextRequest) {
               data: documents,
               timestamp: Date.now(),
             });
-          } catch (firebaseError) {
-            console.log('Firebase documents query failed:', firebaseError);
-            // Fall through to fallback
-          }
+          } catch (firebaseError) {}
         }
 
         // Fallback if Firebase not available
@@ -233,15 +214,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Steuerberater POST request:', { action, companyId: finalCompanyId, data });
-
     // Try to get Firebase database, but provide fallback if it fails
     let database = null;
     try {
       database = await getFirebaseDb();
-    } catch (error) {
-      console.log('Firebase nicht verfügbar für POST, verwende Mock-Response:', error);
-    }
+    } catch (error) {}
 
     switch (action) {
       case 'invite':
@@ -280,7 +257,7 @@ async function handleInvite(database: any, companyId: string, data: any) {
 
     if (!database) {
       // Mock response if Firebase not available
-      console.log('Firebase not available, returning mock response');
+
       return NextResponse.json({
         success: true,
         data: {
@@ -311,11 +288,6 @@ async function handleInvite(database: any, companyId: string, data: any) {
 
       if (!existingSnapshot.empty) {
         const existingInvite = existingSnapshot.docs[0].data();
-        console.log('Duplicate invitation attempt blocked:', {
-          email,
-          companyId,
-          existingStatus: existingInvite.status,
-        });
 
         return NextResponse.json(
           {
@@ -326,10 +298,7 @@ async function handleInvite(database: any, companyId: string, data: any) {
           { status: 409 } // Conflict status code
         );
       }
-    } catch (duplicateCheckError) {
-      console.log('Could not check for duplicates:', duplicateCheckError);
-      // Continue with invitation creation
-    }
+    } catch (duplicateCheckError) {}
 
     // Create invitation
     const inviteData = {
@@ -360,8 +329,6 @@ async function handleInvite(database: any, companyId: string, data: any) {
       timestamp: new Date(),
       performedBy: invitedBy,
     });
-
-    console.log('Invitation created successfully:', docRef.id);
 
     return NextResponse.json({
       success: true,

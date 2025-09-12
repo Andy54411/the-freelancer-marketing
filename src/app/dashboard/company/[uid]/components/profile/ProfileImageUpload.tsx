@@ -95,10 +95,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
               updateDoc(userRef, {
                 profilePictureURL: downloadURL,
                 photoURL: downloadURL,
-              }).catch(() => {
-                // Ignore if users doc doesn't exist for companies
-                console.log('Users doc not found for company, continuing...');
-              }),
+              }).catch(() => {}),
             ]);
 
             toast.success('Profilbild erfolgreich hochgeladen!');
@@ -144,10 +141,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({ profile, setPro
         updateDoc(userRef, {
           profilePictureURL: '/default-avatar.png',
           photoURL: '/default-avatar.png',
-        }).catch(() => {
-          // Ignore if users doc doesn't exist for companies
-          console.log('Users doc not found for company, continuing...');
-        }),
+        }).catch(() => {}),
       ]);
 
       toast.success('Profilbild entfernt');

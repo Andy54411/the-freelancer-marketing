@@ -46,6 +46,7 @@ export default function CompanyAIAssistantPage() {
         'Professionelle Formulierungen',
         'Branchenspezifische Anpassungen',
       ],
+
       stats: {
         'Profil-Aufrufe': '+67%',
         Anfragen: '+45%',
@@ -64,6 +65,7 @@ export default function CompanyAIAssistantPage() {
         'Terminkoordination',
         'Nachfass-Management',
       ],
+
       stats: {
         'Aufträge/Monat': '47',
         Abschlussrate: '89%',
@@ -82,6 +84,7 @@ export default function CompanyAIAssistantPage() {
         'Konfliktprävention',
         'Follow-up Erinnerungen',
       ],
+
       stats: {
         Antwortzeit: '< 1h',
         Kundenzufriedenheit: '4.9/5',
@@ -100,6 +103,7 @@ export default function CompanyAIAssistantPage() {
         'Preisoptimierung',
         'Wachstumsprognosen',
       ],
+
       stats: {
         Umsatzsteigerung: '+34%',
         Kostenersparnis: '€3.2k',
@@ -118,6 +122,7 @@ export default function CompanyAIAssistantPage() {
         'Marketing-Texte',
         'SEO-optimierte Inhalte',
       ],
+
       stats: {
         'Content-Stücke': '156',
         Engagement: '+78%',
@@ -136,6 +141,7 @@ export default function CompanyAIAssistantPage() {
         'Konfliktprävention',
         'Automatische Erinnerungen',
       ],
+
       stats: {
         Terminfindung: '3x schneller',
         'No-Shows': '-78%',
@@ -188,7 +194,7 @@ export default function CompanyAIAssistantPage() {
       description: 'Donnerstag 14-16 Uhr: 2.3x mehr Kundenanfragen',
       type: 'insight',
       action: 'Verfügbarkeit anpassen',
-      actionFunction: () => console.log('Verfügbarkeit anpassen'),
+      actionFunction: () => {},
     },
   ];
 
@@ -378,6 +384,7 @@ export default function CompanyAIAssistantPage() {
                           : 'bg-orange-500'
                     }`}
                   />
+
                   <div>
                     <h4 className="font-medium text-gray-900">{insight.title}</h4>
                     <p className="text-sm text-gray-600">{insight.description}</p>

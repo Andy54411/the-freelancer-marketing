@@ -313,16 +313,8 @@ const ProjectsPage: React.FC = () => {
       const unsubscribeQuotes2 = onSnapshot(
         quotesQuery2,
         snapshot => {
-          console.log('💰 QUOTES (customerUid) loaded:', snapshot.docs.length, 'documents');
           snapshot.docs.forEach(doc => {
             const data = doc.data();
-            console.log('📄 Quote document:', {
-              id: doc.id,
-              title: data.title,
-              customerUid: data.customerUid,
-              customerData: data.customerData,
-              requestAuthUid: uid,
-            });
           });
 
           const quoteProjects: Project[] = snapshot.docs.map(doc => {
@@ -365,11 +357,7 @@ const ProjectsPage: React.FC = () => {
         },
         error => {
           console.error('💰 QUOTES (customerUid) error:', error);
-          console.log('🔍 Error details:', {
-            code: error.code,
-            message: error.message,
-            currentUid: uid,
-          });
+
           processQuotesData();
         }
       ); // Cleanup subscriptions on unmount

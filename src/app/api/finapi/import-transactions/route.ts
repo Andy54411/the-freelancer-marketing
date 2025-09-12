@@ -15,8 +15,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('� Importing transactions for user:', userId, 'forceSync:', forceSync);
-
     try {
       // Get company data to retrieve email
       const companyDoc = await db.collection('companies').doc(userId).get();
@@ -31,8 +29,6 @@ export async function POST(request: NextRequest) {
       if (!companyEmail) {
         return NextResponse.json({ error: 'Company email not found' }, { status: 400 });
       }
-
-      console.log('✅ Using company email for import:', companyEmail);
 
       // Create finAPI service instance
       const finapiService = createFinAPIService();
@@ -57,8 +53,6 @@ export async function POST(request: NextRequest) {
       const connectionsData = await connectionsResponse.json();
       const connections = connectionsData.connections || [];
 
-      console.log('🔍 Found connections:', connections.length);
-
       if (connections.length === 0) {
         return NextResponse.json({
           success: false,
@@ -72,8 +66,6 @@ export async function POST(request: NextRequest) {
 
       for (const connection of connections) {
         try {
-          console.log('🔄 Triggering update for connection:', connection.id);
-
           // Trigger bank connection update (this should import new transactions)
           const updateResponse = await fetch(
             `https://sandbox.finapi.io/api/v2/bankConnections/${connection.id}/update`,
@@ -92,15 +84,11 @@ export async function POST(request: NextRequest) {
           );
 
           if (updateResponse.ok) {
-            console.log('✅ Update triggered for connection:', connection.id);
             updatedConnections++;
           } else {
             const errorText = await updateResponse.text();
-            console.log('⚠️ Update failed for connection:', connection.id, errorText);
           }
-        } catch (updateError: any) {
-          console.log('⚠️ Update error for connection:', connection.id, updateError.message);
-        }
+        } catch (updateError: any) {}
       }
 
       // After updates, get fresh transaction data
@@ -118,7 +106,6 @@ export async function POST(request: NextRequest) {
       if (transactionsResponse.ok) {
         const transactionsData = await transactionsResponse.json();
         totalTransactions = transactionsData.transactions?.length || 0;
-        console.log('✅ Found transactions after import:', totalTransactions);
       }
 
       return NextResponse.json({

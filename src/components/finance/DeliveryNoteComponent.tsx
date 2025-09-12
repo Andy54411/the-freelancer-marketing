@@ -214,13 +214,9 @@ export function DeliveryNoteComponent({
       const effectiveCompanyId = companyId || user?.uid;
       if (!effectiveCompanyId) throw new Error('Keine Firma gefunden');
 
-      console.log('🏢 Creating delivery note for company:', effectiveCompanyId);
-
       // Lagerbestand-Integration - Prüfung vor Erstellung
       if (formData.items && formData.items.length > 0) {
         try {
-          console.log('📦 Checking inventory stock for delivery note items...');
-
           const stockCheckResults = await Promise.all(
             formData.items.map(async item => {
               try {
@@ -256,10 +252,6 @@ export function DeliveryNoteComponent({
                 const available = inventoryItem.availableStock;
                 const sufficient = available >= item.quantity;
 
-                console.log(
-                  `📦 Stock check for ${item.description}: ${available} verfügbar, ${item.quantity} benötigt`
-                );
-
                 return {
                   item,
                   inventoryItem,
@@ -289,8 +281,6 @@ export function DeliveryNoteComponent({
             toast.error(`Lagerbestand-Probleme:\n${errorMessages}`);
             return;
           }
-
-          console.log('✅ Inventory stock check completed successfully - all items available');
         } catch (inventoryError) {
           console.warn(
             '⚠️ Inventory integration failed, proceeding without stock check:',
@@ -324,13 +314,9 @@ export function DeliveryNoteComponent({
         createdBy: effectiveCompanyId,
       });
 
-      console.log('✅ Delivery note created successfully with ID:', deliveryNoteId);
-
       // Automatische Lagerbestand-Reduzierung
       if (formData.items && formData.items.length > 0) {
         try {
-          console.log('📦 Reducing inventory stock after delivery note creation...');
-
           const inventoryItems = formData.items.map(item => ({
             name: item.description,
             sku:
@@ -348,7 +334,6 @@ export function DeliveryNoteComponent({
           );
 
           if (stockResult.success) {
-            console.log('✅ Inventory stock reduced successfully');
             toast.success('Lieferschein erfolgreich erstellt und Lagerbestand aktualisiert');
           } else {
             console.warn('⚠️ Stock reduction failed:', stockResult.errors);
@@ -611,6 +596,7 @@ export function DeliveryNoteComponent({
             Entwurf
           </Badge>
         );
+
       case 'sent':
         return (
           <Badge className="bg-blue-100 text-blue-800 border-blue-200">
@@ -618,6 +604,7 @@ export function DeliveryNoteComponent({
             Versendet
           </Badge>
         );
+
       case 'delivered':
         return (
           <Badge className="bg-green-100 text-green-800 border-green-200">
@@ -625,6 +612,7 @@ export function DeliveryNoteComponent({
             Zugestellt
           </Badge>
         );
+
       case 'invoiced':
         return (
           <Badge className="bg-purple-100 text-purple-800 border-purple-200">
@@ -632,6 +620,7 @@ export function DeliveryNoteComponent({
             Fakturiert
           </Badge>
         );
+
       case 'cancelled':
         return <Badge variant="destructive">Storniert</Badge>;
       default:

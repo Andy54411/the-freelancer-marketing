@@ -190,15 +190,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
       companyName = user.email.split('@')[0]; // Nutze Teil vor @
     }
 
-    console.log('🏢 Company Name Resolution:', {
-      step2CompanyName: userData?.step2?.companyName,
-      directCompanyName: userData?.companyName,
-      step1CompanyName: userData?.step1?.companyName,
-      userFirstName: user?.firstName,
-      userLastName: user?.lastName,
-      userEmail: user?.email,
-      finalCompanyName: companyName,
-    });
+    // Debug-Log entfernt: Company Name Resolution
 
     return {
       uid: uid,

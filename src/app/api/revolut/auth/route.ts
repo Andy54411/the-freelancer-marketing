@@ -23,11 +23,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔧 Testing Revolut Open Banking connection for:', { userId, companyEmail });
-
     // Test Open Banking connection
     const connectionResult = await revolutOpenBankingService.testConnection();
-    console.log('✅ Revolut Open Banking connection successful!');
 
     // Store connection in Firebase
     const connectionData = {
@@ -49,8 +46,6 @@ export async function GET(request: NextRequest) {
       .collection('banking_connections')
       .doc('revolut')
       .set(connectionData);
-
-    console.log('✅ Revolut connection saved to Firebase');
 
     return NextResponse.json({
       success: true,

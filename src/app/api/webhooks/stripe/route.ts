@@ -48,7 +48,6 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
@@ -59,8 +58,6 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleBalanceUpdate(balance: Stripe.Balance) {
-  console.log('🔄 Balance update received:', balance);
-
   // Update cached balance in Firestore
   const balanceDoc = adminDb.collection('stripe_cache').doc('platform_balance');
   await balanceDoc.set(
@@ -77,8 +74,6 @@ async function handleBalanceUpdate(balance: Stripe.Balance) {
 }
 
 async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
-  console.log(`💰 Payout event: ${eventType}`, payout.id);
-
   // Update payout in Firestore
   const payoutDoc = adminDb.collection('stripe_payouts').doc(payout.id);
   await payoutDoc.set(
@@ -104,8 +99,6 @@ async function handlePayoutEvent(payout: Stripe.Payout, eventType: string) {
 }
 
 async function handleTransferEvent(transfer: Stripe.Transfer, eventType: string) {
-  console.log(`🔄 Transfer event: ${eventType}`, transfer.id);
-
   // Update transfer in Firestore
   const transferDoc = adminDb.collection('stripe_transfers').doc(transfer.id);
   await transferDoc.set(
@@ -125,8 +118,6 @@ async function handleTransferEvent(transfer: Stripe.Transfer, eventType: string)
 }
 
 async function handleApplicationFeeEvent(fee: Stripe.ApplicationFee) {
-  console.log('💼 Application fee created:', fee.id);
-
   // Update fee in Firestore
   const feeDoc = adminDb.collection('stripe_fees').doc(fee.id);
   await feeDoc.set(

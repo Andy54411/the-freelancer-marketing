@@ -88,13 +88,6 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
   const canComplete = missingFields.length === 0 && step5Data.documentsCompleted;
 
   // Debugging für Completion-Berechnung
-  console.log('📊 Step 5 Completion Debug:', {
-    missingFields,
-    completionPercentage,
-    canComplete,
-    documentsCompleted: step5Data.documentsCompleted,
-    stepData: stepData,
-  });
 
   const handleSubmit = async () => {
     if (!canComplete || isOffline) return;
@@ -109,7 +102,7 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
       await submitOnboarding();
 
       // CRITICAL FIX: Erfolgreiche Weiterleitung zum Company Dashboard
-      console.log('✅ Onboarding erfolgreich abgeschlossen - alle Daten gespeichert');
+
       setIsCompleted(true);
 
       // Kurze Verzögerung für UI-Feedback
@@ -379,6 +372,7 @@ export default function OnboardingStep5({ companyUid }: OnboardingStep5Props) {
                       checked={step5Data.documentsCompleted}
                       onCheckedChange={checked => updateField('documentsCompleted', checked)}
                     />
+
                     <Label
                       htmlFor="documentsCompleted"
                       className="text-sm font-medium text-blue-900"

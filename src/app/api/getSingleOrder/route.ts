@@ -36,20 +36,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the order from Firestore
-    console.log(`Fetching order: ${orderId} for user: ${userId}`);
 
     const orderDoc = await db.collection('auftraege').doc(orderId).get();
 
     if (!orderDoc.exists) {
-      console.log(`Order not found: ${orderId}`);
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
     const orderData = orderDoc.data();
-    console.log(`Order data retrieved for: ${orderId}`, {
-      hasCustomerId: !!orderData?.kundeId || !!orderData?.customerFirebaseUid,
-      hasProviderId: !!orderData?.selectedAnbieterId || !!orderData?.providerFirebaseUid,
-    });
 
     // Check if user has permission to view this order (support multiple field names)
     const isCustomer = orderData?.kundeId === userId || orderData?.customerFirebaseUid === userId;
@@ -57,7 +51,6 @@ export async function POST(request: NextRequest) {
       orderData?.selectedAnbieterId === userId || orderData?.providerFirebaseUid === userId;
 
     if (!isCustomer && !isProvider) {
-      console.log('Access denied - user not authorized for this order');
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

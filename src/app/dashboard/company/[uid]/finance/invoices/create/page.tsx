@@ -143,9 +143,6 @@ export default function CreateInvoicePage() {
               taxNote: 'kleinunternehmer',
               taxRate: '0',
             }));
-            console.log(
-              '✅ Kleinunternehmer-Status erkannt - Steuerhinweis und Steuersatz automatisch gesetzt'
-            );
           } else if (!isGermanCompany) {
             // Ausländische Company stellt Rechnung an deutsche Kunden
             setFormData(prev => ({
@@ -153,34 +150,7 @@ export default function CreateInvoicePage() {
               taxNote: 'reverse-charge',
               taxRate: '0',
             }));
-            console.log('✅ Ausländische Company erkannt - Reverse-Charge automatisch aktiviert:', {
-              companyCountry: companyCountry,
-              isGermanCompany: isGermanCompany,
-            });
           }
-
-          console.log('✅ Vollständige Firmendaten via API geladen:', {
-            logo:
-              companyData.companyLogo ||
-              companyData.profilePictureURL ||
-              companyData.step3?.profilePictureURL,
-            logoDebug: {
-              companyLogo: companyData.companyLogo,
-              profilePictureURL: companyData.profilePictureURL,
-              step3ProfilePictureURL: companyData.step3?.profilePictureURL,
-              step3Full: companyData.step3,
-            },
-            name: companyData.companyName,
-            kleinunternehmer: isKleinunternehmer,
-            kleinunternehmerField: companyData.kleinunternehmer,
-            step2Kleinunternehmer: companyData.step2?.kleinunternehmer,
-            companyCountry: companyCountry,
-            isGermanCompany: isGermanCompany,
-            companyLocation: {
-              companyCountry: companyData.companyCountry,
-              step1PersonalCountry: companyData.step1?.personalCountry,
-            },
-          });
         }
       } catch (error) {
         console.error('❌ Fehler beim Laden der Firmendaten via API:', error);
@@ -279,7 +249,6 @@ export default function CreateInvoicePage() {
         const response = await getCustomers(uid);
         if (response.success && response.customers) {
           setCustomers(response.customers);
-          console.log('✅ Kunden via API geladen:', response.customers.length);
         }
       } catch (error) {
         console.error('❌ Fehler beim Laden der Kunden via API:', error);
@@ -350,8 +319,6 @@ export default function CreateInvoicePage() {
 
           setItems(projectItems);
         }
-
-        console.log('✅ Projektdaten erfolgreich in Rechnung übertragen:', projectData);
       } catch (error) {
         console.error('❌ Fehler beim Parsen der Projektdaten:', error);
         toast.error('Fehler beim Laden der Projektdaten');
@@ -361,13 +328,6 @@ export default function CreateInvoicePage() {
 
   // Initialize payment terms from company settings when component loads
   React.useEffect(() => {
-    console.log('🔍 Debug Company Settings loaded:', {
-      companySettings,
-      defaultPaymentTerms: companySettings?.defaultPaymentTerms,
-      hasSettings: !!companySettings,
-      currentPaymentTerms: formData.paymentTerms,
-    });
-
     if (companySettings && companySettings.defaultPaymentTerms && !formData.paymentTerms) {
       const paymentDays = companySettings.defaultPaymentTerms.days || 14;
       const paymentText =
@@ -387,15 +347,6 @@ export default function CreateInvoicePage() {
           ? `${skontoPercentage}% Skonto bei Zahlung binnen ${skontoDays} Tagen`
           : '',
       }));
-
-      console.log('✅ Initial Payment Terms from Company Settings:', {
-        days: paymentDays,
-        text: paymentText,
-        skontoEnabled: skontoEnabled,
-        skontoDays: skontoDays,
-        skontoPercentage: skontoPercentage,
-        defaultPaymentTerms: companySettings.defaultPaymentTerms,
-      });
     }
   }, [companySettings]);
 
@@ -404,7 +355,6 @@ export default function CreateInvoicePage() {
     // Keine automatische Generierung der Rechnungsnummer für Entwürfe
     // Die Nummer wird erst beim Finalisieren erstellt
   }, [uid]); // Entferne die automatische Generierung komplett
-
   // Auto-set due date und payment terms basierend auf Company Settings
   React.useEffect(() => {
     if (companySettings && formData.issueDate) {
@@ -444,16 +394,6 @@ export default function CreateInvoicePage() {
               .toISOString()
               .split('T')[0],
         }));
-
-        console.log('✅ Payment Terms from Company Settings applied:', {
-          days: paymentDays,
-          text: paymentText,
-          skontoEnabled: skontoEnabled,
-          skontoDays: skontoDays,
-          skontoPercentage: skontoPercentage,
-          companySettings: companySettings.defaultPaymentTerms,
-          previousTerms: formData.paymentTerms,
-        });
       }
     }
   }, [formData.issueDate, companySettings]);
@@ -489,7 +429,6 @@ export default function CreateInvoicePage() {
 
       // Wenn ausländische Company, immer Reverse-Charge für deutsche Kunden
       if (!isGermanCompany) {
-        console.log('🌍 Ausländische Company erkannt - Reverse-Charge für alle Kunden');
         return true;
       }
     }
@@ -1085,12 +1024,6 @@ export default function CreateInvoicePage() {
         toast.info(
           'Reverse-Charge-Verfahren erkannt: EU-Auslandsgeschäft mit Unternehmen. Steuersatz automatisch auf 0% gesetzt.'
         );
-        console.log('✅ Reverse-Charge automatisch gesetzt für:', {
-          customer: customer.name,
-          country: customer.country,
-          vatId: customerVatId,
-          reason: customerVatId ? 'EU-VAT-ID erkannt' : 'EU-Land in Adresse erkannt',
-        });
       }
     }
   };
@@ -1243,7 +1176,6 @@ export default function CreateInvoicePage() {
       } else {
         // Für Entwürfe keine Rechnungsnummer setzen
       }
-
       // Create invoice via API instead of direct Firebase
       const invoiceData = {
         invoiceNumber: finalInvoiceNumber,
@@ -1684,11 +1616,11 @@ export default function CreateInvoicePage() {
                           toast.info(
                             'EU-VAT-ID erkannt: Reverse-Charge-Verfahren wurde automatisch aktiviert.'
                           );
-                          console.log('✅ Reverse-Charge durch VAT-ID-Eingabe aktiviert:', vatId);
                         }
                       }}
                       placeholder="DE123456789"
                     />
+
                     <p className="text-xs text-gray-500">
                       Umsatzsteuer-Identifikationsnummer des Kunden (optional)
                     </p>
@@ -1826,6 +1758,7 @@ export default function CreateInvoicePage() {
                                 className="text-right pr-6 w-24"
                                 placeholder="0,00"
                               />
+
                               <span className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
                                 €
                               </span>
@@ -1845,6 +1778,7 @@ export default function CreateInvoicePage() {
                                 className="w-16 text-center pr-5 mx-auto"
                                 placeholder="0"
                               />
+
                               <span className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
                                 %
                               </span>
@@ -1998,6 +1932,7 @@ export default function CreateInvoicePage() {
                     placeholder="z.B. Zahlbar binnen 14 Tagen ohne Abzug"
                     rows={2}
                   />
+
                   <p className="text-xs text-gray-500">
                     Automatisch basierend auf Ihren Firmeneinstellungen gesetzt. Sie können diese
                     für diese Rechnung anpassen.
@@ -2081,6 +2016,7 @@ export default function CreateInvoicePage() {
                       }}
                       className="rounded border-gray-300 text-[#14ad9f] focus:ring-[#14ad9f]"
                     />
+
                     <Label htmlFor="skontoEnabled" className="text-sm font-medium">
                       Skonto gewähren
                     </Label>
@@ -2291,6 +2227,7 @@ export default function CreateInvoicePage() {
                                     total: 100.0,
                                   },
                                 ],
+
                           amount: subtotal,
                           tax: tax,
                           total: total,

@@ -94,12 +94,6 @@ export async function GET(
     }
 
     // Debug: Log customer info to see what type is being set
-    console.log('🔍 Customer Info Debug:', {
-      quoteId,
-      customerType: projectData?.customerType,
-      customerInfoType: customerInfo.type,
-      isB2B: projectData?.isB2B,
-    });
 
     // Handle different collection structures
     let finalStatus = 'pending';
@@ -119,9 +113,7 @@ export async function GET(
         hasResponse = true;
         responseData = subcollectionSnapshot.docs[0].data();
         finalStatus = 'responded';
-        console.log('✅ Found proposal in subcollection:', responseData);
       } else {
-        console.log('❌ No proposal found in subcollection for provider:', uid);
       }
     } catch (error) {
       console.error('Error checking subcollection proposals:', error);
@@ -140,7 +132,6 @@ export async function GET(
           hasResponse = true;
           responseData = proposalsSnapshot.docs[0].data();
           finalStatus = 'responded';
-          console.log('✅ Found proposal in main collection:', responseData);
         }
       } catch (error) {
         console.error('Error checking main proposals collection:', error);

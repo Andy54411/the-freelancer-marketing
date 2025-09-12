@@ -312,7 +312,7 @@ export default function Step5CompanyPage() {
   const handleFileChangeAndPreview = useCallback(
     async (
       e: ChangeEvent<HTMLInputElement>,
-      fileContextSetter: Dispatch<SetStateAction<File | null | undefined>>, // Allow undefined
+      fileContextSetter: Dispatch<SetStateAction<File | null | undefined>>,
       localPreviewSetter: Dispatch<SetStateAction<string | null>>,
       maxSizeBytes?: number,
       fileTypeForAlert?: string,
@@ -792,7 +792,7 @@ export default function Step5CompanyPage() {
         // 🔧 DEBUG: hourlyRate prüfen
         hourlyRate: (() => {
           const rate = Number(hourlyRate) || 0;
-          console.log('🔧 DEBUG hourlyRate in companyData:', { hourlyRate, parsedRate: rate });
+
           return rate;
         })(),
         selectedCategory: selectedCategory || '',
@@ -897,12 +897,6 @@ export default function Step5CompanyPage() {
           cleanedCompanyData[key] = value.substring(0, 10000);
         }
       });
-      console.log('📝 Creating companies document with validated data...', {
-        uid: currentAuthUserUID,
-        email: email!,
-        companyName: cleanedCompanyData.companyName,
-        hasRequiredFields: !!(cleanedCompanyData.companyName && cleanedCompanyData.legalForm),
-      });
 
       // ENTFERNT: Kein Update der users Collection mehr!
 
@@ -919,7 +913,6 @@ export default function Step5CompanyPage() {
         };
 
         await setDoc(doc(db, 'companies', currentAuthUserUID), coreData);
-        console.log('✅ Core company document created');
 
         // Schritt 2: Erweiterte Daten hinzufügen (nur sichere primitive Werte)
         const extendedData = {
@@ -942,11 +935,7 @@ export default function Step5CompanyPage() {
           // 🔧 DEBUG: hourlyRate in extendedData prüfen
           hourlyRate: (() => {
             const rate = Number(cleanedCompanyData.hourlyRate) || Number(hourlyRate) || 0;
-            console.log('🔧 DEBUG hourlyRate in extendedData:', {
-              cleanedRate: cleanedCompanyData.hourlyRate,
-              contextRate: hourlyRate,
-              finalRate: rate,
-            });
+
             return rate;
           })(),
           lat: cleanedCompanyData.lat || null,
@@ -961,7 +950,6 @@ export default function Step5CompanyPage() {
         };
 
         await updateDoc(doc(db, 'companies', currentAuthUserUID), extendedData);
-        console.log('✅ Extended company data added successfully');
       } catch (firestoreError) {
         console.error('❌ Firestore Write Error Details:', {
           error: firestoreError,
@@ -980,7 +968,6 @@ export default function Step5CompanyPage() {
           };
 
           await setDoc(doc(db, 'companies', currentAuthUserUID), ultraMinimalData);
-          console.log('✅ Ultra-minimal companies document created as final fallback');
         } catch (finalError) {
           console.error('❌ Final fallback also failed:', finalError);
           // Wir werfen hier nicht, um den Registrierungsprozess nicht zu blockieren
@@ -1064,7 +1051,6 @@ export default function Step5CompanyPage() {
       }
 
       if (result.data.success) {
-        console.log('🔧 Updating companies document with Stripe data...');
         const companyStripeUpdate: UserStripeUpdateData = {
           stripeAccountId: result.data.accountId,
           stripeRepresentativePersonId: result.data.personId || deleteField(),
@@ -1078,14 +1064,13 @@ export default function Step5CompanyPage() {
         };
         // Update companies collection (wo alle Firmendaten liegen)
         await updateDoc(doc(db, 'companies', currentAuthUserUID), { ...companyStripeUpdate });
-        console.log('✅ Companies document updated with Stripe data');
 
         setCurrentStepMessage('Onboarding-System wird vorbereitet...');
 
         // 🔧 NUR COMPANIES COLLECTION - KEINE users Updates!
 
         // COMPANIES COLLECTION: Vollständige Onboarding-Daten
-        console.log('🔧 Setting complete onboarding data in companies collection...');
+
         await updateDoc(doc(db, 'companies', currentAuthUserUID), {
           onboardingStartedAt: serverTimestamp(),
           onboardingCurrentStep: '1',
@@ -1095,31 +1080,20 @@ export default function Step5CompanyPage() {
           profileComplete: false,
           profileStatus: 'pending_onboarding',
         });
-        console.log('✅ Companies collection: Complete onboarding data set');
 
         // SUCCESS: Registration abgeschlossen - harmonisiertes System ist bereits konfiguriert
-        console.log('✅ Registration abgeschlossen (harmonisiertes System)');
 
         setCurrentStepMessage('Weiterleitung zum Onboarding...');
         setIsRedirecting(true);
 
         // Kurze Verzögerung bevor Weiterleitung für bessere UX
         setTimeout(() => {
-          console.log('🔄 Registration Step 5 - Weiterleitung wird ausgeführt');
-          console.log(
-            '📍 Target URL:',
-            `/dashboard/company/${currentAuthUserUID}/onboarding/welcome`
-          );
-          console.log('👤 Current User UID:', currentAuthUserUID);
-
           alert(
             'Registrierung abgeschlossen! Sie werden nun durch unser Onboarding-System geführt, um Ihr Firmenprofil zu vervollständigen.'
           );
           if (resetRegistrationData) resetRegistrationData();
           // NEU: Redirect zum Onboarding anstatt Dashboard (nach Dokumentation)
           router.push(`/dashboard/company/${currentAuthUserUID}/onboarding/welcome`);
-
-          console.log('✅ router.push executed for company onboarding');
         }, 1500);
       } else {
         setFormError(
@@ -1275,6 +1249,7 @@ export default function Step5CompanyPage() {
                 }
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
               />
+
               {identityFrontFile && (
                 <p className="mt-1 text-xs text-gray-600">
                   {identityFrontFile.name} ({(identityFrontFile.size / (1024 * 1024)).toFixed(2)}MB)
@@ -1318,6 +1293,7 @@ export default function Step5CompanyPage() {
                 }
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
               />
+
               {identityBackFile && (
                 <p className="mt-1 text-xs text-gray-600">
                   {identityBackFile.name} ({(identityBackFile.size / (1024 * 1024)).toFixed(2)}MB)

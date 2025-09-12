@@ -18,12 +18,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    console.log('🗑️ Deleting bank connection:', {
-      connectionId,
-      userId: userId.substring(0, 10) + '...',
-      credentialType,
-    });
-
     try {
       // Get company data to retrieve email
       const companyDoc = await db.collection('companies').doc(userId).get();
@@ -50,7 +44,6 @@ export async function DELETE(request: NextRequest) {
       let numericConnectionId = connectionId;
       if (typeof connectionId === 'string' && connectionId.startsWith('bank_')) {
         // For transformed connections, we need to find the actual finAPI connection ID
-        console.log('🔍 Finding actual finAPI connection for:', connectionId);
 
         // Get all connections to find the correct one
         const bankData = await finapiService.syncUserBankData(companyEmail, userId);
@@ -58,9 +51,7 @@ export async function DELETE(request: NextRequest) {
         if (bankData.connections && bankData.connections.length > 0) {
           // Use the first (and likely only) connection ID
           numericConnectionId = bankData.connections[0].id;
-          console.log('✅ Found finAPI connection ID:', numericConnectionId);
         } else {
-          console.log('⚠️ No finAPI connections found, connection may already be deleted');
           return NextResponse.json({
             success: true,
             message: 'Connection was already deleted or not found in finAPI',
@@ -81,15 +72,10 @@ export async function DELETE(request: NextRequest) {
       );
 
       if (deleteResponse.ok) {
-        console.log('✅ Bank connection deleted successfully from finAPI');
-
         // Also clean up any stored connection data in Firestore
         try {
           await db.collection('finapi_connections').doc(userId).delete();
-          console.log('✅ Cleaned up stored connection data');
-        } catch (cleanupError) {
-          console.log('⚠️ No stored connection data to cleanup');
-        }
+        } catch (cleanupError) {}
 
         return NextResponse.json({
           success: true,
@@ -102,7 +88,6 @@ export async function DELETE(request: NextRequest) {
 
         // If connection doesn't exist in finAPI, consider it successful
         if (deleteResponse.status === 404) {
-          console.log('✅ Connection not found in finAPI (already deleted)');
           return NextResponse.json({
             success: true,
             message: 'Connection was already deleted from finAPI',
@@ -117,10 +102,7 @@ export async function DELETE(request: NextRequest) {
       // Clean up stored data even if finAPI delete fails
       try {
         await db.collection('finapi_connections').doc(userId).delete();
-        console.log('✅ Cleaned up stored connection data despite finAPI error');
-      } catch (cleanupError) {
-        console.log('⚠️ No stored connection data to cleanup');
-      }
+      } catch (cleanupError) {}
 
       return NextResponse.json({
         success: true,

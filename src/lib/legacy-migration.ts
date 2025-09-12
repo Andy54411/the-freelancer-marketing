@@ -323,6 +323,7 @@ function calculateRealCompletion(companyData: ExistingCompanyUser): OnboardingPr
         documentsUploaded: !!(
           companyData.identityFrontFirebaseUrl && companyData.identityBackFirebaseUrl
         ),
+
         stripeAccountCreated: !!companyData.step4?.stripeAccountId,
         verificationSubmitted: !!companyData.stripeVerificationStatus,
         readyForApproval: completionPercentage >= 80,
@@ -498,14 +499,11 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
   onboardingProgress?: OnboardingProgress;
 }> {
   try {
-    console.log(`🔍 Checking onboarding status for company: ${companyUid}`);
-
     // 🔧 HARMONISIERT: Check companies collection (not users!)
     const companyRef = doc(db, 'companies', companyUid);
     const companySnap = await getDoc(companyRef);
 
     if (!companySnap.exists()) {
-      console.log(`❌ Company document not found for: ${companyUid}`);
       return {
         needsOnboarding: true,
         completionPercentage: 0,
@@ -514,16 +512,9 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
     }
 
     const companyData = companySnap.data();
-    console.log(`📊 Company data found:`, {
-      onboardingCompleted: companyData.onboardingCompleted,
-      onboardingCurrentStep: companyData.onboardingCurrentStep,
-      profileStatus: companyData.profileStatus,
-      profileComplete: companyData.profileComplete,
-    });
 
     // Check if onboarding is completed using companies collection
     if (companyData.onboardingCompleted === true) {
-      console.log(`✅ Onboarding completed for company: ${companyUid}`);
       return {
         needsOnboarding: false,
         completionPercentage: 100,
@@ -546,13 +537,6 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
 
     completionPercentage = Math.round((filledSteps / totalSteps) * 100);
     const currentStep = parseInt(companyData.onboardingCurrentStep) || 1;
-
-    console.log(`📈 Completion calculated from companies collection:`, {
-      filledSteps,
-      totalSteps,
-      completionPercentage,
-      currentStep,
-    });
 
     return {
       needsOnboarding: !companyData.onboardingCompleted,

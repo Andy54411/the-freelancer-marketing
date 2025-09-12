@@ -146,19 +146,15 @@ export class DeliveryNoteService {
     noteData: Omit<DeliveryNote, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<string> {
     try {
-      console.log('📋 Creating delivery note for company:', noteData.companyId);
-
       // Sequenznummer generieren - Mit robuster Fehlerbehandlung für Settings
       let settings: DeliveryNoteSettings | null = null;
       let sequentialNumber = 1;
       let deliveryNoteNumber = '';
 
       try {
-        console.log('⚙️ Loading delivery note settings...');
         settings = await this.getSettings(noteData.companyId || '');
         sequentialNumber = settings?.nextNumber || 1;
         deliveryNoteNumber = this.generateDeliveryNoteNumber(settings, sequentialNumber);
-        console.log('✅ Settings loaded successfully');
       } catch (settingsError) {
         console.warn('⚠️ Could not load settings, using defaults:', settingsError);
         // Fallback: Einfache Nummerierung ohne Settings
@@ -166,8 +162,6 @@ export class DeliveryNoteService {
         deliveryNoteNumber = `LS-${timestamp}`;
         sequentialNumber = 1;
       }
-
-      console.log('📋 Generated delivery note number:', deliveryNoteNumber);
 
       const collectionRef = collection(db, this.COLLECTION);
 
@@ -192,22 +186,17 @@ export class DeliveryNoteService {
 
       const docRef = await addDoc(collectionRef, docData);
 
-      console.log('✅ Delivery note created successfully with ID:', docRef.id);
-
       // Nächste Nummer aktualisieren - Mit Fehlerbehandlung
       if (settings && noteData.companyId) {
         try {
-          console.log('⚙️ Updating settings with next number...');
           await this.updateSettings(noteData.companyId, {
             ...settings,
             nextNumber: sequentialNumber + 1,
           });
-          console.log('✅ Settings updated successfully');
         } catch (updateError) {
           console.warn('⚠️ Could not update settings, continuing anyway:', updateError);
         }
       } else {
-        console.log('⚙️ No settings to update or missing companyId');
       }
       return docRef.id;
     } catch (error) {
@@ -250,8 +239,6 @@ export class DeliveryNoteService {
    */
   static async getDeliveryNotesByCompany(companyId: string): Promise<DeliveryNote[]> {
     try {
-      console.log('📋 Loading delivery notes for company:', companyId);
-
       // Erste Variante: Mit orderBy - falls Index vorhanden
       try {
         const q = query(
@@ -261,7 +248,6 @@ export class DeliveryNoteService {
         );
 
         const querySnapshot = await getDocs(q);
-        console.log('📋 Delivery notes found (with orderBy):', querySnapshot.docs.length);
 
         return querySnapshot.docs.map(doc => ({
           id: doc.id,
@@ -273,13 +259,10 @@ export class DeliveryNoteService {
           invoicedAt: doc.data().invoicedAt?.toDate(),
         })) as DeliveryNote[];
       } catch (indexError) {
-        console.log('📋 OrderBy failed, trying without index:', indexError);
-
         // Fallback: Ohne orderBy
         const q = query(collection(db, this.COLLECTION), where('companyId', '==', companyId));
 
         const querySnapshot = await getDocs(q);
-        console.log('📋 Delivery notes found (without orderBy):', querySnapshot.docs.length);
 
         const deliveryNotes = querySnapshot.docs.map(doc => ({
           id: doc.id,
@@ -426,7 +409,6 @@ export class DeliveryNoteService {
           // await InventoryService.reduceStock(item.productId, item.quantity);
         }
       }
-
       // Als aktualisiert markieren
       await this.updateDeliveryNote(deliveryNoteId, {
         warehouseUpdated: true,
@@ -467,19 +449,14 @@ export class DeliveryNoteService {
    */
   static async getSettings(companyId: string): Promise<DeliveryNoteSettings | null> {
     try {
-      console.log('⚙️ Loading delivery note settings for company:', companyId);
-
       const q = query(
         collection(db, this.SETTINGS_COLLECTION),
         where('companyId', '==', companyId)
       );
 
-      console.log('⚙️ Executing settings query...');
       const querySnapshot = await getDocs(q);
-      console.log('⚙️ Settings query completed, found docs:', querySnapshot.size);
 
       if (querySnapshot.empty) {
-        console.log('📋 No delivery note settings found, using defaults for company:', companyId);
         return null;
       }
 
@@ -490,7 +467,6 @@ export class DeliveryNoteService {
         updatedAt: doc.data().updatedAt?.toDate() || new Date(),
       } as DeliveryNoteSettings;
 
-      console.log('📋 Delivery note settings loaded successfully for company:', companyId);
       return settings;
     } catch (error) {
       console.error('📋 Error loading delivery note settings:', error);

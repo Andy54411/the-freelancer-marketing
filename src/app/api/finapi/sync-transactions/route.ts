@@ -15,8 +15,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🔄 Force syncing transactions for user:', userId);
-
     try {
       // Get company data to retrieve email
       const companyDoc = await db.collection('companies').doc(userId).get();
@@ -32,19 +30,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Company email not found' }, { status: 400 });
       }
 
-      console.log('✅ Using company email for sync:', companyEmail);
-
       // Create finAPI service instance
       const finapiService = createFinAPIService();
 
       // Sync all bank data including transactions
       const bankData = await finapiService.syncUserBankData(companyEmail, userId);
-
-      console.log('✅ Sync completed:', {
-        connections: bankData.connections.length,
-        accounts: bankData.accounts.length,
-        transactions: bankData.transactions.length,
-      });
 
       return NextResponse.json({
         success: true,

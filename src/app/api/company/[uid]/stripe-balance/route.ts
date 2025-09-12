@@ -7,19 +7,14 @@ let db: any;
 async function getFirebaseServices() {
   if (!db) {
     try {
-      console.log('Initializing Firebase for Stripe Balance API...');
-
       // Try existing server config first
       try {
         const firebaseServer = await import('@/firebase/server');
         db = firebaseServer.db;
         if (db) {
-          console.log('Using existing Firebase server configuration');
           return { db };
         }
-      } catch (importError) {
-        console.log('Existing config not available:', importError.message);
-      }
+      } catch (importError) {}
 
       // Fallback to direct initialization
       const firebaseAdmin = await import('firebase-admin');
@@ -28,10 +23,7 @@ async function getFirebaseServices() {
       let app;
       try {
         app = firebaseAdmin.app();
-        console.log('Using existing Firebase app');
       } catch (appError) {
-        console.log('Initializing new Firebase app...');
-
         if (
           process.env.FIREBASE_PROJECT_ID &&
           process.env.FIREBASE_PRIVATE_KEY &&
@@ -44,20 +36,17 @@ async function getFirebaseServices() {
               privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             }),
           });
-          console.log('Initialized with service account credentials');
         } else if (process.env.FIREBASE_PROJECT_ID) {
           app = firebaseAdmin.initializeApp({
             credential: firebaseAdmin.credential.applicationDefault(),
             projectId: process.env.FIREBASE_PROJECT_ID,
           });
-          console.log('Initialized with application default credentials');
         } else {
           throw new Error('No Firebase configuration found');
         }
       }
 
       db = firebaseAdmin.firestore(app);
-      console.log('Firebase Firestore initialized successfully for Stripe Balance API');
     } catch (error) {
       console.error('Firebase initialization error:', error);
       throw error;
@@ -83,8 +72,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ uid
       return NextResponse.json({ error: 'Fehlende Company UID' }, { status: 400 });
     }
 
-    console.log(`Processing stripe balance request for company ${uid}`);
-
     // Get Firebase services with robust error handling
     const { db } = await getFirebaseServices();
 
@@ -103,15 +90,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ uid
       companyData?.stripeAccountId ||
       companyData?.connectedAccountId ||
       companyData?.stripe?.accountId;
-
-    console.log('🔍 Debug Stripe Account:', {
-      uid,
-      hasCompanyData: !!companyData,
-      stripeObject: companyData?.stripe,
-      stripeAccountId: companyData?.stripeAccountId,
-      connectedAccountId: companyData?.connectedAccountId,
-      finalAccountId: connectedAccountId,
-    });
 
     if (!connectedAccountId) {
       return NextResponse.json(
@@ -139,7 +117,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ uid
           const cacheAge = Date.now() - cachedData.updated_at.toMillis();
 
           if (cacheAge < CACHE_DURATION) {
-            console.log('🎯 Returning cached balance for', connectedAccountId);
             return NextResponse.json({
               success: true,
               balance: cachedData.balance,
@@ -150,8 +127,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ uid
         }
       }
     }
-
-    console.log('🔄 Fetching fresh balance from Stripe for', connectedAccountId);
 
     // Hole aktuellen Stripe Balance
     const balance = await stripe.balance.retrieve({

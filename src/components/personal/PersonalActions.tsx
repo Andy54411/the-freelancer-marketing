@@ -88,7 +88,6 @@ export function PersonalActions({
   const handleViewEmployee = (employee: Employee) => {
     // Hier könnte eine Detailansicht geöffnet werden
   };
-
   // Absence Actions
   const handleCreateAbsenceRequest = () => {
     setShowCreateAbsenceRequest(true);
@@ -344,7 +343,5 @@ export function PersonalActions({
 
 // Export individual action functions
 export const PersonalActionHandlers = {
-  handleAddEmployee: () => {
-    console.log('Add employee action');
-  },
+  handleAddEmployee: () => {},
 };

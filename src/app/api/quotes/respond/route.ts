@@ -11,8 +11,6 @@ import admin from 'firebase-admin';
  * Neue Angebot-Response Struktur verarbeiten
  */
 async function handleNewQuoteResponse(request: NextRequest, quoteId: string, response: any) {
-  console.log('🔄 Processing new quote response structure');
-
   // Token aus Authorization Header extrahieren
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -26,8 +24,6 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     const decodedToken = await admin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
 
-    console.log('✅ User authenticated:', uid);
-
     // B2B/B2C: Prüfe sowohl users als auch companies Collection
     let userData: any = null;
     let companyUid = uid; // Default fallback
@@ -39,23 +35,19 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
       userData = userDoc.data();
       companyUid = userData?.companyUid || uid;
       companyName = userData?.companyName || userData?.displayName || 'Unbekanntes Unternehmen';
-      console.log('👤 Found user in users collection:', { uid, companyUid, companyName });
     } else {
       // Dann in companies Collection suchen (B2B)
-      console.log('🔍 User not found in users collection, checking companies collection...');
+
       const companyDoc = await db.collection('companies').doc(uid).get();
       if (companyDoc.exists) {
         userData = companyDoc.data();
         companyUid = uid; // Bei companies ist die uid direkt die companyUid
         companyName = userData?.companyName || userData?.name || 'Unbekanntes Unternehmen';
-        console.log('🏢 Found user in companies collection:', { uid, companyUid, companyName });
       } else {
         console.error('❌ User not found in users or companies collection:', uid);
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
     }
-
-    console.log('🏢 Company info:', { companyUid, companyName });
 
     // Quote-Daten abrufen für Notification
     const quoteDoc = await db.collection('quotes').doc(quoteId).get();
@@ -67,8 +59,6 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     const quoteData = quoteDoc.data();
     const customerUid = quoteData?.customerUid;
     const subcategory = quoteData?.serviceSubcategory || quoteData?.title || 'Service';
-
-    console.log('📋 Quote info:', { customerUid, subcategory, quoteStatus: quoteData?.status });
 
     // Prüfen ob bereits ein Angebot existiert
     const hasExisting = await ProposalSubcollectionService.hasExistingProposal(quoteId, companyUid);
@@ -97,13 +87,9 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
       additionalNotes: response.notes || '',
     };
 
-    console.log('💾 Creating proposal with data:', proposalData);
-
     // Erstelle Proposal in Subcollection
     try {
-      console.log('📡 About to create proposal with service...');
       await ProposalSubcollectionService.createProposal(quoteId, proposalData, response);
-      console.log('✅ Proposal created successfully');
     } catch (proposalError) {
       console.error('❌ Error creating proposal:', proposalError);
       console.error(
@@ -113,12 +99,9 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
       throw proposalError; // Re-throw to be caught by outer try-catch
     }
 
-    console.log('✅ Quote status updated to responded');
-
     // Benachrichtigung an Kunden senden
     if (customerUid) {
       try {
-        console.log('📧 Sending notification to customer:', customerUid);
         await ProjectNotificationService.createNewProposalNotification(
           quoteId,
           customerUid,
@@ -131,16 +114,13 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
             message: proposalData.message,
           }
         );
-        console.log('📧 Notification sent to customer');
       } catch (notificationError) {
         console.error('❌ Error sending notification:', notificationError);
         // Benachrichtigung-Fehler sollten die Hauptfunktion nicht blockieren
       }
     } else {
-      console.log('⚠️ No customerUid found, skipping notification');
     }
 
-    console.log('🎉 About to return success response');
     return NextResponse.json({
       success: true,
       message: 'Angebot erfolgreich abgegeben',
@@ -165,7 +145,6 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
 async function handleQuoteDecline(request: NextRequest, quoteId: string) {
   // TODO: Implement quote decline logic
   // This could involve creating a decline record, updating quote status, etc.
-  console.log('📝 Quote declined for quoteId:', quoteId);
 
   return NextResponse.json({
     success: true,
@@ -180,7 +159,6 @@ async function handleQuoteDecline(request: NextRequest, quoteId: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('📝 Quote Respond API called with body:', JSON.stringify(body, null, 2));
 
     // Neue Struktur: { quoteId, action, response: { serviceItems, totalAmount, message, ... } }
     const { quoteId, action, response } = body;

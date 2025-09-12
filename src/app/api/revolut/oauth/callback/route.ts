@@ -41,12 +41,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔄 Processing Revolut OAuth callback for:', {
-      userId,
-      companyEmail,
-      code: code.substring(0, 10) + '...',
-    });
-
     // Exchange code for access token
     const tokenUrl =
       process.env.REVOLUT_ENVIRONMENT === 'production'
@@ -63,13 +57,11 @@ export async function GET(request: NextRequest) {
     let privateKey: string;
     if (process.env.REVOLUT_PRIVATE_KEY) {
       privateKey = process.env.REVOLUT_PRIVATE_KEY;
-      console.log('🔐 Using Revolut private key from environment variable');
     } else {
       // Fallback to file system (local development)
       const fs = await import('fs');
       const privateKeyPath = process.env.REVOLUT_PRIVATE_KEY_PATH || './certs/revolut/private.key';
       privateKey = fs.readFileSync(privateKeyPath, 'utf8');
-      console.log('🔐 Using Revolut private key from file system');
     }
 
     const now = Math.floor(Date.now() / 1000);
@@ -114,7 +106,6 @@ export async function GET(request: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log('✅ Revolut access token obtained:', tokenData.token_type);
 
     // Store connection in Firestore
     const connectionId = `revolut_${Date.now()}`;
@@ -140,8 +131,6 @@ export async function GET(request: NextRequest) {
       .update({
         [`revolut_connections.${connectionId}`]: connectionData,
       });
-
-    console.log('✅ Revolut connection stored:', connectionId);
 
     // Redirect to OAuth success page that will communicate with parent window
     const finalRedirectUrl = returnBaseUrl.includes('localhost')

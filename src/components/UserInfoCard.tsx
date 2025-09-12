@@ -107,9 +107,6 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
         }
 
         if (userData) {
-          console.log('UserInfoCard - Geladene userData:', userData);
-          console.log('UserInfoCard - userRole:', userRole);
-
           // Prioritäre Namens-Auswahl basierend auf userRole
           let displayName = fallbackUserName;
 
@@ -136,7 +133,6 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
           }
 
           setRealUserName(displayName);
-          console.log('UserInfoCard - Gefundener displayName:', displayName);
 
           // Avatar URL setzen - verschiedene Felder prüfen
           const avatarUrl =
@@ -149,17 +145,6 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
             userData.bannerUrl || // Für companies kann bannerUrl als Profilbild verwendet werden
             fallbackAvatarUrl;
 
-          console.log('UserInfoCard - Profilbild URLs:', {
-            profileImageUrl: userData.profileImageUrl,
-            profilePictureURL: userData.profilePictureURL,
-            step3ProfilePictureURL: userData.step3?.profilePictureURL,
-            photoURL: userData.photoURL,
-            avatarUrl: userData.avatarUrl,
-            profileBannerImage: userData.profileBannerImage,
-            bannerUrl: userData.bannerUrl,
-            finalAvatarUrl: avatarUrl,
-          });
-
           setRealAvatarUrl(avatarUrl || null);
 
           // Skills und Sprachen extrahieren
@@ -171,7 +156,6 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
             setLanguages(userData.languages);
           }
         } else {
-          console.log(`Benutzer ${userId} nicht in users oder companies collection gefunden`);
         }
 
         // 2. Lade Review-Daten für Provider

@@ -16,55 +16,41 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔧 Settings Page: useEffect triggered', { uid, user: user?.uid, hasUser: !!user });
-
     const loadUserData = async () => {
-      console.log('🔄 Settings Page: Starting loadUserData', { uid, userUid: user?.uid });
-
       if (!uid) {
-        console.log('❌ Settings Page: No UID provided');
         setLoading(false);
         return;
       }
 
       if (!user) {
-        console.log('⏳ Settings Page: No user yet, waiting...');
         return; // Don't set loading to false yet, wait for user
       }
 
       if (user.uid !== uid) {
-        console.log('❌ Settings Page: User UID mismatch', { userUid: user.uid, paramUid: uid });
         setLoading(false);
         return;
       }
 
       try {
-        console.log(
-          '📄 Settings Page: Loading company document first (since this is company dashboard)...'
-        );
         // Für Company-Dashboard: Lade zuerst companies collection
         const companyDoc = await getDoc(doc(db, 'companies', uid));
         if (companyDoc.exists()) {
           const companyDocData = companyDoc.data();
-          console.log('✅ Settings Page: Company document loaded', companyDocData);
+
           setCompanyData(companyDocData);
 
           // Setze Company-Daten auch als userData für Kompatibilität
           setUserData(companyDocData);
         } else {
-          console.log('❌ Settings Page: No company document found, trying users collection...');
-
           // Fallback: Versuche users collection
           const userDoc = await getDoc(doc(db, 'users', uid));
           if (userDoc.exists()) {
             const userDocData = userDoc.data();
-            console.log('✅ Settings Page: User document loaded as fallback', userDocData);
+
             setUserData(userDocData);
           } else {
-            console.log('❌ Settings Page: Neither company nor user document exists');
             // Erstelle ein minimales userData Objekt basierend auf dem Auth-User
             if (user) {
-              console.log('🔧 Settings Page: Creating minimal userData from auth user');
               setUserData({
                 uid: user.uid,
                 email: user.email || '',
@@ -78,7 +64,6 @@ export default function SettingsPage() {
       } catch (error) {
         console.error('❌ Settings Page: Error loading user/company data:', error);
       } finally {
-        console.log('✅ Settings Page: Loading complete, setting loading to false');
         setLoading(false);
       }
     };
@@ -90,17 +75,6 @@ export default function SettingsPage() {
   useEffect(() => {
     if (userData || companyData) {
       const combinedForDebug = companyData ? { ...userData, ...companyData } : userData;
-      console.log('🔍 Settings Data Debug:', {
-        userData: userData,
-        companyData: companyData,
-        combinedData: combinedForDebug,
-        user_type: userData?.user_type,
-        languages: {
-          inUserData: userData?.languages || userData?.['step2.languages'],
-          inCompanyData: companyData?.languages || companyData?.['step2.languages'],
-          inCombined: combinedForDebug?.languages || combinedForDebug?.['step2.languages'],
-        },
-      });
     }
   }, [userData, companyData]);
 
@@ -156,7 +130,6 @@ export default function SettingsPage() {
 
   // Fallback: Wenn keine Daten vorhanden sind, aber wir einen eingeloggten User haben, erstelle Basis-Daten
   if (!finalData && user && !loading) {
-    console.log('🔧 Settings Page: Creating fallback userData for user:', user);
     finalData = {
       uid: user.uid,
       email: user.email || '',

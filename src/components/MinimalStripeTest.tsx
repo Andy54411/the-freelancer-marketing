@@ -9,12 +9,7 @@ import { createPortal } from 'react-dom';
 const STRIPE_PUBLISHABLE_KEY =
   'pk_test_51RXvRUD5Lvjon30aMzieGY1n513cwTd8wUGf6cmYphSWfdTpsbKAHLFs5C17xubatZkLdMYRgBPRlWUMXMQZPrJK00N3Rtf7Dk';
 
-console.log(
-  '🔑 Environment Variable:',
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? 'Vorhanden' : 'FEHLT'
-);
-console.log('🔑 Hard-coded Key:', STRIPE_PUBLISHABLE_KEY ? 'Vorhanden' : 'FEHLT');
-console.log('🔑 Using Key:', STRIPE_PUBLISHABLE_KEY);
+// Debug-Logs entfernt
 
 // Nur im Browser ausführen
 const stripePromise = typeof window !== 'undefined' ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null;
@@ -23,7 +18,7 @@ const stripePromise = typeof window !== 'undefined' ? loadStripe(STRIPE_PUBLISHA
 if (typeof window !== 'undefined' && stripePromise) {
   stripePromise
     .then(stripe => {
-      console.log('✅ Stripe Promise resolved:', stripe ? 'SUCCESS' : 'FAILED');
+      // Debug-Log entfernt
       if (!stripe) {
         console.error('❌ Stripe ist null! Details:');
         console.error('  - Key verwendet:', STRIPE_PUBLISHABLE_KEY);
@@ -32,9 +27,6 @@ if (typeof window !== 'undefined' && stripePromise) {
         console.error('  - Browser:', navigator.userAgent);
         console.error('  - Protocol:', window.location.protocol);
         console.error('  - Domain:', window.location.hostname);
-      } else {
-        console.log('✅ Stripe Object:', stripe);
-        console.log('✅ Stripe loaded successfully');
       }
     })
     .catch(error => {
@@ -65,9 +57,7 @@ const TestPaymentForm = ({ clientSecret }: { clientSecret: string }) => {
       clientSecret.includes('pi_') &&
       clientSecret.includes('_secret_');
 
-    console.log('🔍 PaymentForm mounted, checking DOM...');
-    console.log('🔍 ClientSecret Valid:', isValidClientSecret);
-    console.log('🔍 ClientSecret Preview:', clientSecret?.substring(0, 20) + '...');
+    // Debug-Logs entfernt
 
     const timer = setTimeout(() => {
       const paymentElements = document.querySelectorAll('[data-elements-stable-field-name]');
@@ -75,13 +65,7 @@ const TestPaymentForm = ({ clientSecret }: { clientSecret: string }) => {
       const cardInputs = document.querySelectorAll(
         'input[placeholder*="card"], input[placeholder*="Card"]'
       );
-      console.log('🔍 PaymentElements found:', paymentElements.length);
-      console.log('🔍 StripeElements found:', stripeElements.length);
-      console.log('🔍 Card inputs found:', cardInputs.length);
-      console.log(
-        '🔍 All elements with "stripe":',
-        document.querySelectorAll('[class*="stripe"]').length
-      );
+      // Debug-Logs entfernt
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
@@ -90,7 +74,7 @@ const TestPaymentForm = ({ clientSecret }: { clientSecret: string }) => {
     event.preventDefault();
 
     if (!stripe || !elements) {
-      console.log('❌ Stripe oder Elements nicht geladen');
+      // Debug-Log entfernt
       return;
     }
 
@@ -128,19 +112,14 @@ const TestPaymentForm = ({ clientSecret }: { clientSecret: string }) => {
       >
         <PaymentElement
           onReady={() => {
-            console.log('✅ PaymentElement ist bereit!');
+            // Debug-Log entfernt
             // Sofort nach dem Laden nach Inputs suchen
             setTimeout(() => {
               const inputs = document.querySelectorAll(
                 '#payment-element input, #payment-element iframe'
               );
               const paymentElement = document.getElementById('payment-element');
-              console.log('🔍 Nach onReady - Inputs gefunden:', inputs.length);
-              console.log('� Nach onReady - PaymentElement HTML:', paymentElement?.innerHTML);
-              console.log(
-                '🔍 Nach onReady - PaymentElement children:',
-                paymentElement?.children.length
-              );
+              // Debug-Logs entfernt
             }, 500);
           }}
           onLoadError={error => {
@@ -148,7 +127,7 @@ const TestPaymentForm = ({ clientSecret }: { clientSecret: string }) => {
             alert('❌ PaymentElement Fehler: ' + JSON.stringify(error));
           }}
           onChange={event => {
-            console.log('🔄 PaymentElement changed:', event);
+            // Debug-Log entfernt
           }}
           options={{
             layout: 'tabs',
@@ -180,7 +159,6 @@ export default function MinimalStripeTest({ clientSecret }: MinimalTestProps) {
 
   useEffect(() => {
     setMounted(true);
-    console.log('🚀 MinimalStripeTest mounted in browser');
   }, []);
 
   // Debug fallback clientSecret
@@ -209,13 +187,7 @@ export default function MinimalStripeTest({ clientSecret }: MinimalTestProps) {
           currency: 'eur',
         };
 
-  console.log(
-    '🧪 MinimalStripeTest - clientSecret:',
-    clientSecret ? 'Vorhanden (' + (clientSecret?.length || 0) + ' chars)' : 'Fehlt'
-  );
-  console.log('🧪 MinimalStripeTest - clientSecret REAL:', clientSecret);
-  console.log('🧪 MinimalStripeTest - stripePromise:', stripePromise ? 'Geladen' : 'Nicht geladen');
-  console.log('🧪 MinimalStripeTest - mounted:', mounted);
+  // Debug-Logs entfernt
 
   if (!mounted) {
     return (

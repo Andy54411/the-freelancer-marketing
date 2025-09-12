@@ -199,12 +199,10 @@ export default function RequestQuoteModal({
           try {
             const token = await firebaseUser.getIdToken();
             headers['Authorization'] = `Bearer ${token}`;
-            console.log('🔐 Sending quote request with auth token for user:', firebaseUser.uid);
           } catch (error) {
             console.error('Error getting auth token:', error);
           }
         } else {
-          console.log('📝 Sending quote request without auth (anonymous)');
         }
 
         const response = await fetch('/api/quotes/create', {
@@ -352,6 +350,7 @@ export default function RequestQuoteModal({
                   placeholder="z.B. Badezimmer renovieren"
                   className={errors.projectTitle ? 'border-red-500' : ''}
                 />
+
                 {errors.projectTitle && (
                   <p className="text-red-500 text-sm mt-1">{errors.projectTitle}</p>
                 )}
@@ -367,6 +366,7 @@ export default function RequestQuoteModal({
                   rows={4}
                   className={errors.projectDescription ? 'border-red-500' : ''}
                 />
+
                 {errors.projectDescription && (
                   <p className="text-red-500 text-sm mt-1">{errors.projectDescription}</p>
                 )}
@@ -381,6 +381,7 @@ export default function RequestQuoteModal({
                   placeholder="Stadt oder Adresse"
                   className={errors.location ? 'border-red-500' : ''}
                 />
+
                 {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
               </div>
 
@@ -393,6 +394,7 @@ export default function RequestQuoteModal({
                   placeholder="12345"
                   className={errors.postalCode ? 'border-red-500' : ''}
                 />
+
                 {errors.postalCode && (
                   <p className="text-red-500 text-sm mt-1">{errors.postalCode}</p>
                 )}
@@ -482,6 +484,7 @@ export default function RequestQuoteModal({
                   placeholder="Vor- und Nachname"
                   className={errors.customerName ? 'border-red-500' : ''}
                 />
+
                 {errors.customerName && (
                   <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>
                 )}
@@ -497,6 +500,7 @@ export default function RequestQuoteModal({
                   placeholder="ihre@email.de"
                   className={errors.customerEmail ? 'border-red-500' : ''}
                 />
+
                 {errors.customerEmail && (
                   <p className="text-red-500 text-sm mt-1">{errors.customerEmail}</p>
                 )}
@@ -512,6 +516,7 @@ export default function RequestQuoteModal({
                   placeholder="+49 123 456 789"
                   className={errors.customerPhone ? 'border-red-500' : ''}
                 />
+
                 {errors.customerPhone && (
                   <p className="text-red-500 text-sm mt-1">{errors.customerPhone}</p>
                 )}

@@ -133,9 +133,6 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
 
-    console.log('GET: Company storno fees settings:', { uid });
-    console.log('Looking for company with uid:', uid);
-
     // Prüfe Firebase-Verbindung
     if (!db) {
       return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
@@ -145,32 +142,25 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
     const companyRef = db.collection('companies').doc(uid);
     const companyDoc = await companyRef.get();
 
-    console.log('Company document exists:', companyDoc.exists);
-
     if (!companyDoc.exists) {
-      console.log('Company not found, returning 404');
       return NextResponse.json({ error: 'Unternehmen nicht gefunden' }, { status: 404 });
     }
 
     const companyData = companyDoc.data();
-    console.log('Company data retrieved successfully');
 
     // Hole Storno-Einstellungen (mit Defaults falls nicht vorhanden)
     const stornoSettings = companyData?.settings?.stornoFees || getDefaultStornoSettings();
-    console.log('Storno settings:', stornoSettings);
 
     // Wenn orderId gegeben, hole Auftragsdaten für Deadline-Check
     let orderAnalysis: any = null;
     if (orderId) {
       try {
-        console.log('Loading order data for orderId:', orderId);
         const orderRef = db.collection('auftraege').doc(orderId);
         const orderDoc = await orderRef.get();
 
         if (orderDoc.exists) {
           const orderData = orderDoc.data();
           orderAnalysis = checkStornoEligibility(orderData, stornoSettings);
-          console.log('Order analysis completed');
         }
       } catch (orderError) {
         console.error('Fehler beim Laden der Auftragsdaten:', orderError);
@@ -178,7 +168,6 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
       }
     }
 
-    console.log('Returning successful response');
     return NextResponse.json({
       success: true,
       stornoSettings,
@@ -319,13 +308,6 @@ export async function PUT(request: NextRequest, { params }: { params: { uid: str
     });
 
     // Log für Admin-Überwachung
-    console.log(`Unternehmen ${uid} hat Storno-Einstellungen aktualisiert:`, {
-      enabled: stornoSettings.enabled,
-      hasTimeBasedFees: Object.values(stornoSettings.timeBasedFees).some((fee: any) => fee.enabled),
-      hasSpecialConditions: Object.values(stornoSettings.specialConditions).some(
-        condition => condition === true
-      ),
-    });
 
     return NextResponse.json({
       success: true,

@@ -9,15 +9,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'PaymentIntent ID required' }, { status: 400 });
     }
 
-    console.log('🔍 Debugging PaymentIntent:', paymentIntentId);
-
     // Search for this PaymentIntent in proposals
     const quotesSnapshot = await db.collection('quotes').get();
     const results: any[] = [];
 
     for (const quoteDoc of quotesSnapshot.docs) {
       const quoteData = quoteDoc.data();
-      console.log('📋 Checking quote:', quoteDoc.id);
 
       // Check subcollection
       const proposalsSnapshot = await quoteDoc.ref.collection('proposals').get();

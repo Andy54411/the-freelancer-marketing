@@ -70,10 +70,6 @@ const functions = getFunctions(app, functionsRegion);
 if (!(global as any)._firebaseEmulatorsConnected) {
   // Auth Emulator
   if (process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST) {
-    console.log(
-      '🔧 Verbinde mit Auth Emulator:',
-      process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST
-    );
     connectAuthEmulator(auth, `http://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST}`, {
       disableWarnings: true,
     });
@@ -81,42 +77,25 @@ if (!(global as any)._firebaseEmulatorsConnected) {
 
   // Firestore Emulator
   if (process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST) {
-    console.log(
-      '🔧 Verbinde mit Firestore Emulator:',
-      process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST
-    );
     const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST.split(':');
     connectFirestoreEmulator(db, host, parseInt(portStr, 10));
   }
 
   // Storage Emulator
   if (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST) {
-    console.log(
-      '🔧 Verbinde mit Storage Emulator:',
-      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST
-    );
     const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST.split(':');
     connectStorageEmulator(storage, host, parseInt(portStr, 10));
   }
 
   // Functions Emulator - nur wenn explizit gesetzt
   if (process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST) {
-    console.log(
-      '🔧 Verbinde mit Functions Emulator:',
-      process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST
-    );
     const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_FUNCTIONS_EMULATOR_HOST.split(':');
     connectFunctionsEmulator(functions, host, parseInt(portStr, 10));
   } else {
-    console.log('🌐 Verwende Production Firebase Functions (europe-west1)');
   }
 
   // Realtime Database Emulator
   if (process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST) {
-    console.log(
-      '🔧 Verbinde mit Database Emulator:',
-      process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST
-    );
     const [host, portStr] = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST.split(':');
     connectDatabaseEmulator(realtimeDb, host, parseInt(portStr, 10));
   }

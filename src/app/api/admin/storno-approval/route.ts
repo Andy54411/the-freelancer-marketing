@@ -189,8 +189,6 @@ async function processStornoApproval(
       },
     });
 
-    console.log(`Stripe Refund erstellt: ${refund.id} für ${refundAmount / 100} EUR`);
-
     return {
       stripeRefundId: refund.id,
       refundAmount: refundAmount,
@@ -262,10 +260,6 @@ async function updateProviderScoreForApprovedStorno(stornoData: any) {
           'account.blockType': 'auto_score_critical',
         }),
       });
-
-      console.log(
-        `Provider ${providerId} Score aktualisiert: ${newOverallScore.toFixed(1)}%${shouldBlock ? ' - BLOCKIERT' : ''}`
-      );
     }
   } catch (error) {
     console.error('Fehler beim Update des Provider Scores:', error);
@@ -288,8 +282,6 @@ async function updateAuftragStatusAfterStorno(auftragId: string, newStatus: stri
       stornoCompletedAt: new Date(),
       lastUpdatedAt: new Date(),
     });
-
-    console.log(`Auftrag ${auftragId} Status zu ${newStatus} aktualisiert`);
   } catch (error) {
     console.error('Fehler beim Update des Auftrag-Status:', error);
   }

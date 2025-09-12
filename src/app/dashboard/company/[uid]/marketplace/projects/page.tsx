@@ -116,17 +116,13 @@ export default function CompanyMarketplacePage() {
     if (!uid || !user || !companyData) return;
 
     // Debug: Zeige Unternehmensdaten
-    console.log('🏢 Company Data:', companyData);
 
     // Extrahiere die Kategorien des Unternehmens
     const companyMainCategory = companyData.selectedCategory;
     const companySubcategory = companyData.selectedSubcategory;
 
-    console.log('🎯 Company Categories:', { companyMainCategory, companySubcategory });
-
     // Wenn das Unternehmen keine Hauptkategorie hat, zeige keine Projekte
     if (!companyMainCategory) {
-      console.log('❌ No main category found for company');
       setProjects([]);
       setLoading(false);
       return;
@@ -143,11 +139,6 @@ export default function CompanyMarketplacePage() {
       where('category', '==', companyMainCategory),
       orderBy('createdAt', 'desc'),
       limit(50)
-    );
-
-    console.log(
-      '🔍 Filtering by main category only for better compatibility:',
-      companyMainCategory
     );
 
     const unsubscribe = onSnapshot(
@@ -184,16 +175,10 @@ export default function CompanyMarketplacePage() {
           };
         });
 
-        console.log('📊 Total projects found by main category:', availableProjects.length);
-
         // TEMPORÄR: Zeige ALLE Projekte der Hauptkategorie (ignoriere Subkategorie-Filter)
         // Dies hilft bei Dateninkonsistenzen wo Projekte falsche Subkategorien haben
         const filteredProjects = availableProjects;
-        console.log(
-          '🎯 Showing ALL projects from main category (ignoring subcategory filter for now)'
-        );
 
-        console.log('✅ Final filtered projects:', filteredProjects.length);
         setProjects(filteredProjects);
         setLoading(false);
       },
@@ -228,9 +213,6 @@ export default function CompanyMarketplacePage() {
     const matchesCategory = !selectedCategory || project.category === selectedCategory;
 
     // Debug: Zeige Urgency-Werte
-    console.log(
-      `🔍 Project "${project.title}": urgency="${project.urgency}", selectedUrgency="${selectedUrgency}"`
-    );
 
     // Flexibles Urgency-Matching (mit Type-Casting für Legacy-Werte)
     const matchesUrgency =
@@ -246,9 +228,6 @@ export default function CompanyMarketplacePage() {
       })();
 
     const matches = matchesSearch && matchesCategory && matchesUrgency;
-    console.log(
-      `✅ Project "${project.title}" matches: ${matches} (search: ${matchesSearch}, category: ${matchesCategory}, urgency: ${matchesUrgency})`
-    );
 
     return matches;
   });

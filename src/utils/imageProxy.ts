@@ -30,12 +30,6 @@ export function getProxiedImageUrl(firebaseStorageUrl: string): string {
     // Erstelle die Proxy-URL
     const proxyUrl = `/api/image-proxy?path=${encodeURIComponent(imagePath)}`;
 
-    console.log('🖼️ Image URL Proxy:', {
-      original: firebaseStorageUrl,
-      proxied: proxyUrl,
-      imagePath,
-    });
-
     return proxyUrl;
   } catch (error) {
     console.error('🖼️ Error creating proxy URL:', error);

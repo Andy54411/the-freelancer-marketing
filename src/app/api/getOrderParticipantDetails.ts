@@ -4,12 +4,6 @@ export const getOrderParticipantDetails = async (orderId: string, idToken: strin
   // KORRIGIERT: Verwende immer absolute URLs
   const apiUrl = '/api/getOrderParticipantDetails'; // Absolute path from domain root
 
-  console.log('🔍 getOrderParticipantDetails API Call:', {
-    orderId,
-    apiUrl,
-    orderIdType: typeof orderId,
-  });
-
   // CRITICAL: Validate orderId before making API call
   if (!orderId || orderId === 'undefined' || orderId === 'null') {
     throw new Error(`Invalid orderId: ${orderId}`);

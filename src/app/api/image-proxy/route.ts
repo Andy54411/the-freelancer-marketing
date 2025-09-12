@@ -17,12 +17,8 @@ export async function GET(request: NextRequest) {
       .replace('https://storage.googleapis.com/tilvo-f142f-storage/', '')
       .replace('gs://tilvo-f142f-storage/', '');
 
-    console.log('🖼️ Image Proxy - Loading:', { originalPath: imagePath, cleanPath });
-
     // Verwende direkte Google Cloud Storage URL anstatt Firebase Admin
     const directUrl = `https://storage.googleapis.com/tilvo-f142f-storage/${cleanPath}`;
-
-    console.log('🖼️ Image Proxy - Direct URL:', directUrl);
 
     // Lade das Bild direkt von der Google Cloud Storage URL
     const response = await fetch(directUrl);
@@ -42,12 +38,6 @@ export async function GET(request: NextRequest) {
 
     const imageData = await response.arrayBuffer();
     const contentType = response.headers.get('content-type') || 'image/jpeg';
-
-    console.log('🖼️ Image Proxy - Success:', {
-      cleanPath,
-      contentType,
-      size: imageData.byteLength,
-    });
 
     // Gebe das Bild zurück
     return new NextResponse(new Uint8Array(imageData), {

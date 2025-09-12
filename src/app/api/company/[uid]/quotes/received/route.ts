@@ -12,15 +12,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // If there's a segment after 'received', this is for a specific quote - return 404 to let the specific route handle it
     if (receivedIndex !== -1 && pathSegments[receivedIndex + 1]) {
-      console.log(
-        `🔄 PARENT ROUTE: Delegating to specific quote route for: ${pathSegments[receivedIndex + 1]}`
-      );
       return new NextResponse(null, { status: 404 });
     }
-
-    console.log(
-      `🎯 PARENT ROUTE CALLED: /api/company/${uid}/quotes/received - URL: ${request.url}`
-    );
 
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
@@ -51,14 +44,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (companyDoc.exists) {
       const companyData = companyDoc.data();
       customerEmail = companyData?.email || companyData?.ownerEmail;
-      console.log(`Found company in 'companies' collection with email: ${customerEmail}`);
     } else {
       // Fallback to users collection (for B2C)
       const userDoc = await db.collection('users').doc(uid).get();
       if (userDoc.exists) {
         const userData = userDoc.data();
         customerEmail = userData?.email;
-        console.log(`Found company in 'users' collection with email: ${customerEmail}`);
       } else {
         return NextResponse.json({ error: 'Company not found in any collection' }, { status: 404 });
       }
@@ -67,8 +58,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!customerEmail) {
       return NextResponse.json({ error: 'No email found for company' }, { status: 400 });
     }
-
-    console.log(`Searching quotes for company ${uid} with email ${customerEmail}`);
 
     // Query for quotes where this company is the customer (received quotes)
     // Use both customerEmail and customerUid for comprehensive search
@@ -91,8 +80,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .get();
     }
 
-    console.log(`Found ${quotesSnapshot.docs.length} quotes for company ${uid} as customer`);
-
     // If no results with first query, try the other field
     if (quotesSnapshot.docs.length === 0) {
       try {
@@ -101,8 +88,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           .where('customerEmail', '==', customerEmail)
           .orderBy('createdAt', 'desc')
           .get();
-
-        console.log(`Fallback query found ${fallbackSnapshot.docs.length} quotes by email`);
 
         if (fallbackSnapshot.docs.length > 0) {
           quotesSnapshot = fallbackSnapshot;
@@ -130,21 +115,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     for (const doc of quotesSnapshot.docs) {
       const quoteData = doc.data();
 
-      console.log(`🔍 Processing quote ${doc.id}:`);
-      console.log(
-        `  - Title: ${quoteData.projectTitle || quoteData.projectDescription || 'No title'}`
-      );
-      console.log(`  - Status: ${quoteData.status}`);
-      console.log(`  - ProposalsInSubcollection: ${quoteData.proposalsInSubcollection}`);
-      console.log(`  - Has legacy response: ${!!quoteData.response}`);
-
       // Load proposals from subcollection if they exist
       let proposals: any[] = [];
       let hasProposals = false;
 
       try {
         // ALWAYS check subcollection for proposals, regardless of proposalsInSubcollection flag
-        console.log(`🔍 Checking proposals subcollection for quote ${doc.id}`);
+
         const proposalsSnapshot = await db
           .collection('quotes')
           .doc(doc.id)
@@ -159,14 +136,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }));
 
         hasProposals = proposals.length > 0;
-        console.log(`📋 Found ${proposals.length} proposals in subcollection for quote ${doc.id}`);
 
         // If no proposals in subcollection, check legacy response field as fallback
         if (!hasProposals) {
           hasProposals = !!quoteData.response;
-          console.log(
-            `📜 Legacy response check: ${hasProposals ? 'found' : 'not found'} for quote ${doc.id}`
-          );
         }
       } catch (error) {
         console.error(`❌ Error loading proposals for quote ${doc.id}:`, error);

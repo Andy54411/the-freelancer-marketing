@@ -77,7 +77,6 @@ export default function CheckoutForm({
       }
 
       if (paymentIntent && paymentIntent.status === 'succeeded') {
-        console.log('✅ Payment succeeded:', paymentIntent.id);
         onSuccess(paymentIntent.id);
       }
     } catch (error: any) {

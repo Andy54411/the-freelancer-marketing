@@ -131,10 +131,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('🔍 AddCustomerModal - Starting form submission...');
-    console.log('📋 Form Data:', formData);
-    console.log('👥 Contact Persons:', contactPersons);
-
     if (
       !formData.name.trim() ||
       !formData.email.trim() ||
@@ -160,8 +156,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
       cp => cp.firstName.trim() && cp.lastName.trim() && cp.email.trim()
     );
 
-    console.log('👥 Valid contact persons:', validContactPersons.length);
-
     if (validContactPersons.length === 0) {
       console.error('❌ No valid contact persons');
       toast.error('Mindestens ein Ansprechpartner mit Name und E-Mail ist erforderlich');
@@ -178,7 +172,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
     }
 
     try {
-      console.log('💾 Calling onAddCustomer function...');
       setLoading(true);
 
       const customerDataToSave = {
@@ -208,11 +201,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
         })),
       };
 
-      console.log('📋 Final customer data to save:', customerDataToSave);
-
       await onAddCustomer(customerDataToSave);
-
-      console.log('✅ Customer successfully added via onAddCustomer');
 
       // Reset form
       setFormData({
@@ -245,7 +234,6 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
 
       setOpen(false);
       toast.success('Kunde erfolgreich hinzugefügt');
-      console.log('✅ Form reset and modal closed');
     } catch (error) {
       console.error('❌ Error in handleSubmit:', error);
       console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
@@ -464,6 +452,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
                     autoComplete="off"
                     disabled={!!formData.vatId}
                   />
+
                   <div className="text-xs text-gray-500 mt-1">
                     {formData.vatId
                       ? 'Deaktiviert - VAT-Nummer ist gesetzt'
@@ -490,6 +479,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
                               : ''
                         }
                       />
+
                       {formData.vatId && (
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                           {formData.vatValidated ? (
@@ -542,6 +532,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
                               : ''
                         }
                       />
+
                       {formData.vatId && (
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                           {formData.vatValidated ? (
@@ -569,6 +560,7 @@ export function AddCustomerModal({ onAddCustomer, nextCustomerNumber }: AddCusto
                     placeholder="Lokale Steuernummer"
                     autoComplete="off"
                   />
+
                   <div className="text-xs text-gray-500 mt-1">Zusätzliche lokale Steuernummer</div>
                 </div>
               </>

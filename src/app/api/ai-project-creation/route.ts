@@ -18,14 +18,8 @@ export async function POST(request: Request) {
     const selectedProviders = projectData.recommendedProviders || [];
     const hasSelectedProviders = selectedProviders.length > 0;
 
-    console.log(
-      `🎯 Creating project for ${hasSelectedProviders ? 'selected providers' : 'all providers'}`
-    );
-    console.log(`📋 Selected providers:`, selectedProviders);
-
     if (hasSelectedProviders) {
       // QUOTES SYSTEM: Erstelle separate Quotes für jeden ausgewählten Provider
-      console.log(`🎯 Creating ${selectedProviders.length} individual quotes`);
 
       const questResults: Array<{ questId: string; providerId: string }> = [];
 
@@ -123,16 +117,10 @@ export async function POST(request: Request) {
           questId: questRef.id,
           providerId: providerId,
         });
-
-        console.log(`✅ Quote created for provider ${providerId}: ${questRef.id}`);
       }
 
       // Sende E-Mail-Benachrichtigungen an die ausgewählten Provider
       try {
-        console.log(`📧 Sending emails to ${selectedProviders.length} selected providers`);
-        // TODO: Implementiere spezielle E-Mail-Benachrichtigungen für ausgewählte Provider
-        // Verwende erstmal die bestehende Kategorie-Benachrichtigung
-        console.log(`✅ Email notifications would be sent to selected providers`);
       } catch (emailError) {
         console.error('❌ Error sending email notifications to providers:', emailError);
         // Projekt trotzdem erstellen, auch wenn E-Mail fehlschlägt
@@ -150,7 +138,6 @@ export async function POST(request: Request) {
     } else {
       // Project Request Path: Öffentliches Projekt ohne spezifische Anbieter
       // PROJECT REQUEST SYSTEM: Erstelle öffentliches Projekt für alle in der Kategorie
-      console.log(`📢 Creating public project request for category: ${projectData.category}`);
 
       // Erstelle neues Projekt in der project_requests Collection
       const projectDoc = {
@@ -292,7 +279,6 @@ export async function POST(request: Request) {
             urgency: projectData.priority || 'medium',
             createdAt: new Date(),
           });
-          console.log(`✅ Category-wide email notifications sent`);
         } catch (emailError) {
           console.error('❌ Error sending category-wide email notifications:', emailError);
         }

@@ -47,13 +47,10 @@ export async function POST(request: NextRequest) {
       });
 
       if (response.ok) {
-        console.log(`✅ Automatic global notification created for company ${companyId}`);
       } else {
         console.error('❌ Failed to create global notification');
       }
     }
-
-    console.log(`✅ Company ${companyId} adminApproved updated to:`, adminApproved);
 
     return NextResponse.json({
       success: true,

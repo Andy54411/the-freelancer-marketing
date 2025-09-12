@@ -139,6 +139,7 @@ export async function POST(
         'Bearbeitungszeit: 24-48 Stunden',
         'Bei Genehmigung erfolgt die Rückerstattung automatisch',
       ],
+
       estimatedProcessingTime: '24-48 Stunden',
       supportContact: 'Bei Fragen kontaktieren Sie unseren Support',
     });
@@ -264,19 +265,6 @@ function getCanRequestStornoInfo(auftragData: any) {
  */
 async function notifyProviderAboutStornoRequest(auftragData: any, stornoData: any) {
   try {
-    // Diese Funktion kann später erweitert werden für:
-    // - E-Mail-Benachrichtigung an Provider
-    // - In-App-Notification
-    // - Dashboard-Update
-
-    console.log(
-      `Provider ${auftragData.selectedAnbieterId} über Storno-Anfrage für Auftrag ${auftragData.id} benachrichtigt`
-    );
-
-    // TODO: Implementiere Provider-Benachrichtigung
-    // - E-Mail senden
-    // - Dashboard-Notification erstellen
-    // - Eventuell Provider die Möglichkeit geben, zu der Storno-Anfrage Stellung zu nehmen
   } catch (error) {
     console.error('Fehler beim Benachrichtigen des Providers:', error);
     // Fehler beim Benachrichtigen sollte die Storno-Anfrage nicht blockieren

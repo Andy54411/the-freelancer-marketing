@@ -23,8 +23,6 @@ export default function PrintDeliveryNotePage() {
     try {
       setLoading(true);
 
-      console.log('🔍 Loading delivery note via API:', deliveryNoteId);
-
       // Verwende API-Route anstatt direkten Firestore-Zugriff
       const response = await fetch(`/api/delivery-note/${deliveryNoteId}`, {
         method: 'GET',
@@ -162,10 +160,6 @@ export default function PrintDeliveryNotePage() {
     if (deliveryNoteData && !loading && !error) {
       // Warte kurz bis alle Bilder geladen sind, dann öffne Print-Dialog
       const timer = setTimeout(() => {
-        console.log(
-          '🖨️ Auto-triggering print dialog for delivery note:',
-          deliveryNoteData.deliveryNoteNumber
-        );
         window.print();
       }, 1500); // 1.5 Sekunden warten für Bilder/Layout
 

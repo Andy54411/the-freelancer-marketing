@@ -250,7 +250,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!form && userData) {
-        console.log('⚠️ Settings: Loading timeout reached, creating fallback form');
         setLoadingTimeout(true);
 
         // Erstelle minimales Fallback-Formular mit type assertion für dynamische Eigenschaften
@@ -340,16 +339,11 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
   }, [userData, form]);
 
   useEffect(() => {
-    console.log('🔧 SettingsComponent: useEffect triggered with userData:', userData);
-
     if (!userData) {
-      console.log('❌ SettingsComponent: No userData provided');
       return;
     }
 
     try {
-      console.log('🔄 SettingsComponent: Processing userData...');
-
       const get = <T,>(path: string, fallback: T): T => {
         const keys = path.split('.');
         let current: unknown = userData;
@@ -367,12 +361,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
       };
 
       // DEBUG: Check languages specifically
-      console.log('🗣️ Languages Debug:', {
-        'step2.languages': get('step2.languages', 'NOT_FOUND'),
-        languages: get('languages', 'NOT_FOUND'),
-        combined: get('step2.languages', get('languages', 'BOTH_NOT_FOUND')),
-        userData: userData,
-      });
 
       const formData: UserDataForSettings = {
         uid: userData.uid,
@@ -521,7 +509,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         defaultPaymentTerms: get('defaultPaymentTerms', undefined),
       };
 
-      console.log('✅ SettingsComponent: Form data created successfully:', formData);
       setForm(formData);
     } catch (error) {
       console.error('❌ SettingsComponent: Error processing userData:', error);
@@ -612,6 +599,7 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
           string,
           unknown
         >;
+
         const keys = path.split('.');
         keys.forEach((key, index) => {
           if (index === keys.length - 1) {
@@ -984,9 +972,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
         Object.entries(companyUpdateData).filter(([key, value]) => value !== undefined)
       );
 
-      console.log('User update data:', cleanUserUpdateData);
-      console.log('Company update data:', cleanCompanyUpdateData);
-
       // DISABLED: users collection update (data moved to companies collection)
       // try {
       //   await updateDoc(doc(db, 'users', updatedForm.uid), cleanUserUpdateData);
@@ -1000,7 +985,6 @@ const SettingsPage = ({ userData, onDataSaved }: SettingsPageProps) => {
 
       try {
         await updateDoc(doc(db, 'companies', updatedForm.uid), cleanCompanyUpdateData);
-        console.log('✅ Company update successful');
       } catch (companyError) {
         console.error('❌ Company update failed:', companyError);
         throw new Error(

@@ -4,8 +4,6 @@ export const getSingleOrder = async (orderId: string, idToken: string) => {
   // KORRIGIERT: Verwende immer absolute URLs
   const apiUrl = '/api/getSingleOrder'; // Absolute path from domain root
 
-  console.log('🔍 getSingleOrder API Call:', { orderId, apiUrl, orderIdType: typeof orderId });
-
   // CRITICAL: Validate orderId before making API call
   if (!orderId || orderId === 'undefined' || orderId === 'null') {
     throw new Error(`Invalid orderId: ${orderId}`);

@@ -43,34 +43,18 @@ export const StripeCardCheckout = ({
 
   // Debug-Log für die Initialisierung und readiness der Stripe Elemente
   useEffect(() => {
-    console.log('[DEBUG] CheckoutForm - useEffect gestartet');
     if (!stripe || !elements) {
-      console.log('[DEBUG] CheckoutForm - Stripe oder Elements nicht bereit:', {
-        stripe: !!stripe,
-        elements: !!elements,
-      });
     } else {
-      console.log('[DEBUG] CheckoutForm - Stripe und Elements sind bereit!');
     }
-    console.log('[DEBUG] CheckoutForm - clientSecret erhalten:', {
-      clientSecret: !!clientSecret,
-      length: clientSecret?.length,
-    });
 
     // Zusätzliche Stripe-Diagnose
     if (stripe && clientSecret) {
-      console.log('[DEBUG] CheckoutForm - Versuche PaymentElement zu laden...');
       // Stripe PaymentElement sollte automatisch laden
 
       // Check if PaymentElement exists in DOM after short delay
       setTimeout(() => {
         const paymentElement = document.getElementById('payment-element');
         const stripeElements = document.querySelectorAll('[data-testid*="payment"]');
-        console.log('[DEBUG] PaymentElement DOM Check:', {
-          paymentElement: !!paymentElement,
-          stripeElementsCount: stripeElements.length,
-          paymentElementHTML: paymentElement?.innerHTML || 'nicht gefunden',
-        });
       }, 1000);
     }
 
@@ -201,23 +185,7 @@ export const StripeCardCheckout = ({
   const isButtonDisabled = !stripe || !elements || !clientSecret || isLoading;
 
   // Debug-Log für den Button-Status
-  useEffect(() => {
-    console.log('[DEBUG] CheckoutForm - Button Status:', {
-      isButtonDisabled,
-      stripe: !!stripe,
-      elements: !!elements,
-      clientSecret: !!clientSecret,
-      isLoading,
-    });
-  }, [isButtonDisabled, stripe, elements, clientSecret, isLoading]);
-
-  console.log('[DEBUG] CheckoutForm - Render:', {
-    stripe: !!stripe,
-    elements: !!elements,
-    clientSecret: !!clientSecret,
-    taskAmount,
-    taskId,
-  });
+  useEffect(() => {}, [isButtonDisabled, stripe, elements, clientSecret, isLoading]);
 
   return (
     <div className="w-full max-w-lg mx-auto">
@@ -293,14 +261,6 @@ export const StripeCardCheckout = ({
                 },
               }}
               onReady={() => {
-                console.log('🟢 PaymentElement onReady - ELEMENT IST GELADEN!');
-                console.log('🟢 Stripe Environment:', {
-                  publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.substring(0, 20),
-                  environment: process.env.NODE_ENV,
-                  clientSecret: clientSecret?.substring(0, 20),
-                  stripeInstance: !!stripe,
-                });
-
                 // Prüfe DOM nach 1 Sekunde
                 setTimeout(() => {
                   const allIframes = document.querySelectorAll('iframe');
@@ -308,22 +268,8 @@ export const StripeCardCheckout = ({
                     iframe => iframe.src.includes('stripe') || iframe.src.includes('js.stripe.com')
                   );
 
-                  console.log('🔍 DOM-Analyse nach onReady:', {
-                    totalIframes: allIframes.length,
-                    stripeIframes: stripeIframes.length,
-                    stripeIframeSources: stripeIframes.map(iframe => iframe.src.substring(0, 50)),
-                  });
-
                   stripeIframes.forEach((iframe, index) => {
                     const style = window.getComputedStyle(iframe);
-                    console.log(`🔍 Stripe Iframe ${index} CSS:`, {
-                      display: style.display,
-                      visibility: style.visibility,
-                      opacity: style.opacity,
-                      width: style.width,
-                      height: style.height,
-                      position: style.position,
-                    });
                   });
                 }, 1000);
 
@@ -333,15 +279,9 @@ export const StripeCardCheckout = ({
                 console.error('🔴 PaymentElement Load Error:', error);
                 alert(`PaymentElement Fehler: ${JSON.stringify(error)}`);
               }}
-              onFocus={() => {
-                console.log('🟡 PaymentElement onFocus - User hat Element fokussiert');
-              }}
-              onBlur={() => {
-                console.log('🟡 PaymentElement onBlur - User hat Element verlassen');
-              }}
-              onChange={event => {
-                console.log('🟡 PaymentElement onChange:', event);
-              }}
+              onFocus={() => {}}
+              onBlur={() => {}}
+              onChange={event => {}}
             />
           </div>
           <p style={{ color: 'red', fontWeight: 'bold', marginTop: '10px' }}>

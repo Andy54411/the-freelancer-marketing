@@ -30,9 +30,7 @@ export async function POST(request: NextRequest) {
           const companyData = companyDoc.data();
           companyEmail = companyData?.email || userId;
         }
-      } catch (error) {
-        console.log('Company lookup failed, using userId as email:', error);
-      }
+      } catch (error) {}
     }
 
     if (!companyEmail) {
@@ -44,13 +42,11 @@ export async function POST(request: NextRequest) {
 
     // Verwende echte finAPI WebForm - für Live-Umstellung erforderlich
     try {
-      console.log('Creating real finAPI WebForm with company email:', companyEmail);
-
       // Erstelle finAPI Service-Instanz mit automatischer Umgebungsdetection
       const finapiService = createFinAPIService();
 
       // WICHTIG: Erstelle und speichere zuerst den finAPI User
-      console.log('🔄 Creating finAPI user before WebForm...');
+
       const consistentPassword = `Taskilo_${actualCompanyId}_2024!`;
       const finapiUser = await finapiService.getOrCreateUser(
         companyEmail,
@@ -59,16 +55,8 @@ export async function POST(request: NextRequest) {
         true // forceCreate: true für eindeutige User
       );
 
-      console.log('✅ finAPI User created and saved:', {
-        userId: finapiUser.user.id,
-        hasPassword: !!consistentPassword,
-        hasToken: !!finapiUser.userToken,
-      });
-
       // Verwende die neue, offizielle finAPI WebForm 2.0 API
       const webFormUrl = await finapiService.createWebForm(companyEmail, actualCompanyId, bankId);
-
-      console.log('✅ finAPI WebForm created successfully:', webFormUrl);
 
       if (!webFormUrl) {
         throw new Error('finAPI WebForm creation failed');

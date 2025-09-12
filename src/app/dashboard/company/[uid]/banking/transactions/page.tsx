@@ -269,7 +269,6 @@ export default function TransactionsPage() {
                   return !isNaN(td.getTime()) && !isNaN(cutoffDate.getTime()) && td >= cutoffDate;
                 }).length,
               };
-              console.log('🗓️ Date Range Debug (365 days):', debugData);
             }
 
             matchesDateRange =

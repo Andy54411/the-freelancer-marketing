@@ -55,7 +55,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
-  
+
   // Form State
   const [formData, setFormData] = useState({
     customerName: quote?.customerName || '',
@@ -65,7 +65,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
     description: quote?.description || '',
     validUntil: quote?.validUntil ? new Date(quote.validUntil).toISOString().split('T')[0] : '',
     notes: quote?.notes || '',
-    items: quote?.items || [] as QuoteItem[],
+    items: quote?.items || ([] as QuoteItem[]),
   });
 
   // Lade Kunden beim Öffnen der Modal
@@ -88,10 +88,9 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
   const loadCustomers = async () => {
     try {
       setLoadingCustomers(true);
-      console.log('🔍 QuoteModal: Loading customers for companyId:', companyId);
+
       const loadedCustomers = await CustomerService.getCustomers(companyId);
       setCustomers(loadedCustomers);
-      console.log('✅ QuoteModal: Loaded customers:', loadedCustomers.length, loadedCustomers);
     } catch (error) {
       console.error('❌ QuoteModal: Error loading customers:', error);
       toast.error('Kunden konnten nicht geladen werden');
@@ -147,7 +146,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
   const handleSave = async () => {
     try {
       setLoading(true);
-      
+
       if (!selectedCustomer && mode === 'create') {
         toast.error('Bitte wählen Sie einen Kunden aus');
         return;
@@ -164,19 +163,22 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
       }
 
       const validUntilDate = new Date(formData.validUntil);
-      
+
       if (mode === 'create') {
         const quoteData: Omit<QuoteType, 'id' | 'number' | 'createdAt' | 'updatedAt'> = {
           companyId,
           customerName: selectedCustomer!.name,
           customerEmail: selectedCustomer!.email,
           customerPhone: selectedCustomer!.phone,
-          customerAddress: selectedCustomer!.street && selectedCustomer!.city ? {
-            street: selectedCustomer!.street,
-            city: selectedCustomer!.city,
-            postalCode: selectedCustomer!.postalCode || '',
-            country: selectedCustomer!.country || 'Deutschland',
-          } : undefined,
+          customerAddress:
+            selectedCustomer!.street && selectedCustomer!.city
+              ? {
+                  street: selectedCustomer!.street,
+                  city: selectedCustomer!.city,
+                  postalCode: selectedCustomer!.postalCode || '',
+                  country: selectedCustomer!.country || 'Deutschland',
+                }
+              : undefined,
           date: new Date(),
           validUntil: validUntilDate,
           status: 'draft',
@@ -220,7 +222,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
 
   const handleSend = async () => {
     if (!quote) return;
-    
+
     try {
       await QuoteService.sendQuote(companyId, quote.id);
       toast.success('Angebot wurde versendet');
@@ -269,7 +271,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                 {mode === 'view' && `Detailansicht für ${quote?.customerName}`}
               </DialogDescription>
             </div>
-            
+
             {mode === 'view' && quote && (
               <div className="flex gap-2">
                 <Button variant="outline" size="sm">
@@ -342,7 +344,9 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                         id="validUntil"
                         type="date"
                         value={formData.validUntil}
-                        onChange={e => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
+                        onChange={e =>
+                          setFormData(prev => ({ ...prev, validUntil: e.target.value }))
+                        }
                         min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
@@ -353,7 +357,9 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                     <Textarea
                       id="description"
                       value={formData.description}
-                      onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, description: e.target.value }))
+                      }
                       placeholder="Beschreibung des Angebots..."
                       rows={3}
                     />
@@ -391,7 +397,8 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-500" />
                     <span>
-                      {quote.customerAddress.street}, {quote.customerAddress.postalCode} {quote.customerAddress.city}
+                      {quote.customerAddress.street}, {quote.customerAddress.postalCode}{' '}
+                      {quote.customerAddress.city}
                     </span>
                   </div>
                 )}
@@ -463,14 +470,12 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                 <div className="text-center py-8">
                   <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600">
-                    {mode === 'view' ? 'Keine Positionen vorhanden' : 'Fügen Sie Positionen zu Ihrem Angebot hinzu'}
+                    {mode === 'view'
+                      ? 'Keine Positionen vorhanden'
+                      : 'Fügen Sie Positionen zu Ihrem Angebot hinzu'}
                   </p>
                   {mode !== 'view' && (
-                    <Button
-                      variant="outline"
-                      className="mt-4"
-                      onClick={handleAddItem}
-                    >
+                    <Button variant="outline" className="mt-4" onClick={handleAddItem}>
                       <Plus className="h-4 w-4 mr-2" />
                       Erste Position hinzufügen
                     </Button>
@@ -495,7 +500,7 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                             />
                           )}
                         </div>
-                        
+
                         <div className="md:col-span-2">
                           <Label htmlFor={`qty-${index}`}>Menge</Label>
                           {mode === 'view' ? (
@@ -506,7 +511,9 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                               type="number"
                               min="1"
                               value={item.quantity}
-                              onChange={e => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)}
+                              onChange={e =>
+                                handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                              }
                             />
                           )}
                         </div>
@@ -522,7 +529,13 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
                               min="0"
                               step="0.01"
                               value={item.unitPrice}
-                              onChange={e => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                              onChange={e =>
+                                handleItemChange(
+                                  index,
+                                  'unitPrice',
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
                             />
                           )}
                         </div>
@@ -610,7 +623,12 @@ export function QuoteModal({ isOpen, onClose, companyId, quote, mode }: QuoteMod
             </Button>
             <Button
               onClick={handleSave}
-              disabled={loading || !formData.validUntil || formData.items.length === 0 || (mode === 'create' && !selectedCustomer)}
+              disabled={
+                loading ||
+                !formData.validUntil ||
+                formData.items.length === 0 ||
+                (mode === 'create' && !selectedCustomer)
+              }
               className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
             >
               {loading ? (

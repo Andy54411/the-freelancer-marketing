@@ -96,18 +96,9 @@ const CompanyOrdersOverviewPage = () => {
             (order: any) => order.status !== 'abgelehnt_vom_anbieter'
           );
           // Debug: Log order data to see actual totalAmountPaidByBuyer values
-          console.log(
-            'Orders with totalAmountPaidByBuyer:',
-            visibleIncomingOrders.map(o => ({
-              id: o.id,
-              totalAmountPaidByBuyer: o.totalAmountPaidByBuyer,
-            }))
-          );
 
           // Debug: Log each order individually
-          visibleIncomingOrders.forEach(order => {
-            console.log(`Order ${order.id}: ${order.totalAmountPaidByBuyer} cents`);
-          });
+          visibleIncomingOrders.forEach(order => {});
           setOrders(visibleIncomingOrders);
         } else {
           setOrders([]);
@@ -175,6 +166,7 @@ const CompanyOrdersOverviewPage = () => {
           order.status === 'ZAHLUNG_ERHALTEN_CLEARING' ||
           order.status === 'zahlung_erhalten_clearing'
         );
+
       return order.status === activeTab;
     });
   }, [orders, createdOrders, quoteRequests, activeTab, orderType]);
@@ -336,6 +328,7 @@ const CompanyOrdersOverviewPage = () => {
                         o.status === 'ZAHLUNG_ERHALTEN_CLEARING' ||
                         o.status === 'zahlung_erhalten_clearing'
                       );
+
                     return o.status === tab;
                   }).length;
                 })()}
@@ -354,6 +347,7 @@ const CompanyOrdersOverviewPage = () => {
             onChange={e => setSearchTerm(e.target.value)}
             className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
           />
+
           <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
         </div>
         <Button variant="outline" className="flex items-center gap-2">

@@ -50,9 +50,7 @@ export const GermanStandardTemplate: React.FC<TemplateProps> = ({ data }) => {
               const fallback = e.currentTarget.nextElementSibling as HTMLElement;
               if (fallback) fallback.style.display = 'block';
             }}
-            onLoad={() => {
-              console.log('🖼️ Company Logo erfolgreich geladen für:', data.companyName);
-            }}
+            onLoad={() => {}}
           />
         ) : (
           <div className="h-20 w-16 p-2 border-2 border-dashed border-gray-300 rounded bg-gray-50 text-center flex flex-col justify-center">

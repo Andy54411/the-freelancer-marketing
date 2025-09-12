@@ -72,6 +72,7 @@ interface ProjectRequest {
     | string
     | { companyName?: string; name?: string; id: string; priceRange?: string; rating?: number }
   )[];
+
   hasSelectedProviders?: boolean;
   isDirectAssignment?: boolean;
   isPublic?: boolean;
@@ -182,18 +183,10 @@ const ProjectDetailPage: React.FC = () => {
           const proposalsCollectionRef = collection(db, 'quotes', projectId, 'proposals');
           const proposalsSnapshot = await getDocs(proposalsCollectionRef);
 
-          console.log(
-            '🔍 Loading proposals from subcollection:',
-            proposalsSnapshot.size,
-            'documents found'
-          );
-
           proposalsToProcess = proposalsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
           }));
-
-          console.log('📋 Loaded proposals:', proposalsToProcess);
         } catch (error) {
           console.error('❌ Error loading proposals from subcollection:', error);
 
@@ -312,7 +305,6 @@ const ProjectDetailPage: React.FC = () => {
               }
 
               // Lade Company-Daten direkt aus der companies collection (wo die Daten tatsächlich sind!)
-              console.log('🔍 Loading company data for providerId:', providerId);
 
               let companyData: any = {};
 
@@ -322,16 +314,12 @@ const ProjectDetailPage: React.FC = () => {
 
               if (companiesDoc.exists()) {
                 companyData = companiesDoc.data();
-                console.log('✅ Found company data in companies collection:', companyData);
-                console.log('🖼️ ProfilePictureURL:', companyData.profilePictureURL);
               } else {
-                console.log('❌ No company data found in companies collection for:', providerId);
                 // Nur als Fallback users collection
                 const companyDocRef = doc(db, 'users', providerId);
                 const companyDoc = await getDoc(companyDocRef);
                 if (companyDoc.exists()) {
                   companyData = companyDoc.data();
-                  console.log('✅ Fallback: Found data in users collection:', companyData);
                 }
               }
 

@@ -151,7 +151,6 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
               };
 
               setInvoiceData(enrichedData);
-              console.log('✅ Rechnung mit vollständigen Firmendaten geladen');
             } else {
               setInvoiceData(data);
             }

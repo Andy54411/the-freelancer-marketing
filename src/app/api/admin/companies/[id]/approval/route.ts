@@ -146,7 +146,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         .doc(companyId)
         .collection('notifications')
         .add(companyNotificationData);
-      console.log(`✅ Company notification created directly for ${companyId}`);
 
       // ZUSÄTZLICH: Erstelle globale User-Benachrichtigung für Header-Bell
       let globalTitle = 'Status-Update';
@@ -183,7 +182,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       // Direkt in Firestore schreiben statt fetch
       await db.collection('notifications').add(notificationData);
-      console.log(`✅ Global notification created directly for company ${companyId}`);
 
       const globalNotificationResponse = { ok: true }; // Dummy response für bestehende Logik
 
@@ -208,6 +206,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
                 ? 'entsperrt'
                 : 'bearbeitet'
       }`,
+
       data: {
         companyId,
         action,

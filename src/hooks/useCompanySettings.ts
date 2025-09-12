@@ -76,15 +76,6 @@ export function useCompanySettings(userId?: string) {
         }
 
         if (userData) {
-          console.log('🔍 useCompanySettings: Raw userData from Firestore:', {
-            defaultPaymentTerms: userData.defaultPaymentTerms,
-            settingsPaymentTerms: userData.settings?.paymentTerms?.defaultPaymentTerms,
-            allSettings: userData.settings,
-            profilePictureURL: userData.profilePictureURL,
-            companyLogo: userData.companyLogo,
-            logoUrl: userData.logoUrl,
-          });
-
           const companySettings: CompanySettings = {
             // Firmendaten
             companyName: userData.companyName || userData.step2?.companyName || '',

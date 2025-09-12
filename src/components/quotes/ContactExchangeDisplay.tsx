@@ -51,8 +51,6 @@ export function ContactExchangeDisplay({
   // Hilfsfunktion für hybride UID-Erkennung
   const loadUserOrCompanyData = async (uid: string, _token: string) => {
     try {
-      console.log(`🔄 ContactExchangeDisplay: Loading data for UID ${uid}`);
-
       // Direkte Firebase-Zugriffe verwenden, da API-Endpoints nicht zuverlässig sind
       const { doc, getDoc } = await import('firebase/firestore');
       const { db } = await import('@/firebase/clients');
@@ -64,7 +62,7 @@ export function ContactExchangeDisplay({
 
         if (companyDoc.exists()) {
           const companyData = companyDoc.data();
-          console.log(`✅ Found company data for UID ${uid}`);
+
           return {
             company: {
               companyName: companyData.companyName || 'Unbekanntes Unternehmen',
@@ -79,9 +77,7 @@ export function ContactExchangeDisplay({
             source: 'company',
           };
         }
-      } catch (companyError) {
-        console.log(`⚠️ Company lookup failed for ${uid}:`, companyError);
-      }
+      } catch (companyError) {}
 
       // Fallback: Versuche Users Collection
       try {
@@ -90,7 +86,7 @@ export function ContactExchangeDisplay({
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          console.log(`✅ Found user data for UID ${uid}`);
+
           return {
             company: {
               companyName:
@@ -116,11 +112,8 @@ export function ContactExchangeDisplay({
             source: 'user',
           };
         }
-      } catch (userError) {
-        console.log(`⚠️ User lookup failed for ${uid}:`, userError);
-      }
+      } catch (userError) {}
 
-      console.log(`❌ No data found for UID ${uid} in either companies or users`);
       return null;
     } catch (error) {
       console.error(`❌ Error loading data for UID ${uid}:`, error);
@@ -132,16 +125,10 @@ export function ContactExchangeDisplay({
   useEffect(() => {
     async function loadContactsFromCompanies() {
       if (contactExchange?.customerContact && contactExchange?.providerContact) {
-        console.log('✅ ContactExchangeDisplay: Kontakte bereits vorhanden');
         return; // Kontakte bereits vorhanden
       }
 
       if (!customerUid || !providerUid) {
-        console.log('❌ ContactExchangeDisplay: Missing UIDs', {
-          customerUid,
-          providerUid,
-          status,
-        });
         return; // Benötigte UIDs fehlen
       }
 
@@ -152,42 +139,22 @@ export function ContactExchangeDisplay({
         (contactExchange && contactExchange.status === 'completed');
 
       if (!isContactExchangeStatus) {
-        console.log('❌ ContactExchangeDisplay: Status not suitable for contact exchange', {
-          status,
-          contactExchange,
-        });
         return; // Status nicht geeignet
       }
 
       if (!firebaseUser) {
-        console.log('❌ ContactExchangeDisplay: No firebase user');
         return;
       }
-
-      console.log('🔄 ContactExchangeDisplay: Loading company contacts', {
-        customerUid,
-        providerUid,
-        status,
-        currentUser: currentUserUid,
-      });
 
       setLoading(true);
       try {
         const token = await firebaseUser.getIdToken();
-        console.log('🔑 Token obtained, starting data load...');
 
         // Intelligente Datenabfrage für hybrides System
-        console.log('📞 Loading customer data for UID:', customerUid);
-        const customerData = await loadUserOrCompanyData(customerUid, token);
-        console.log('📞 Loading provider data for UID:', providerUid);
-        const providerData = await loadUserOrCompanyData(providerUid, token);
 
-        console.log('📦 Company data loaded:', {
-          customerData: !!customerData?.company,
-          customerSource: customerData?.source,
-          providerData: !!providerData?.company,
-          providerSource: providerData?.source,
-        });
+        const customerData = await loadUserOrCompanyData(customerUid, token);
+
+        const providerData = await loadUserOrCompanyData(providerUid, token);
 
         if (customerData?.company && providerData?.company) {
           setContactsFromCompanies({
@@ -218,9 +185,7 @@ export function ContactExchangeDisplay({
               uid: providerUid,
             },
           });
-          console.log('✅ ContactExchangeDisplay: Company contacts loaded successfully');
         } else {
-          console.log('❌ ContactExchangeDisplay: Failed to load company data');
         }
       } catch (error) {
         console.error(
@@ -243,10 +208,6 @@ export function ContactExchangeDisplay({
   const effectiveContacts = hasValidContactExchange ? contactExchange : contactsFromCompanies;
 
   // Debug: Zeige effectiveContacts
-  console.log('🔍 ContactExchangeDisplay: effectiveContacts', effectiveContacts);
-  console.log('🔍 ContactExchangeDisplay: hasValidContactExchange', hasValidContactExchange);
-  console.log('🔍 ContactExchangeDisplay: contactExchange', contactExchange);
-  console.log('🔍 ContactExchangeDisplay: contactsFromCompanies', contactsFromCompanies);
 
   // Zeige Loading wenn Status geeignet ist aber noch keine Daten da sind
   if (!effectiveContacts && (status === 'contacts_exchanged' || status === 'paid')) {
@@ -281,12 +242,6 @@ export function ContactExchangeDisplay({
     !effectiveContacts ||
     (!effectiveContacts.customerContact && !effectiveContacts.providerContact)
   ) {
-    console.log('❌ ContactExchangeDisplay: Returning null because:', {
-      hasEffectiveContacts: !!effectiveContacts,
-      hasCustomerContact: !!effectiveContacts?.customerContact,
-      hasProviderContact: !!effectiveContacts?.providerContact,
-      effectiveContacts,
-    });
     return null;
   }
 
@@ -296,7 +251,6 @@ export function ContactExchangeDisplay({
   const myContact = isCustomer ? customerContact : providerContact;
 
   // Debug: Zeige aktuellen Status
-  console.log('🔍 ContactExchangeDisplay: Current status for order notice:', status);
 
   return (
     <div className="bg-green-50 border border-green-200 rounded-lg p-6 mt-6">

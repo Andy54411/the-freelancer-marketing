@@ -307,7 +307,6 @@ export default function QuoteResponsePage({
 
       if (apiResponse.ok) {
         const responseData = await apiResponse.json();
-        console.log('✅ Quote response submitted successfully:', responseData);
 
         // Modal schließen
         setShowResponseForm(false);
@@ -1046,6 +1045,7 @@ export default function QuoteResponsePage({
                                   : 'bg-red-400'
                       }`}
                     />
+
                     <span
                       className={`ml-3 text-sm font-medium ${
                         quote.status === 'pending'
@@ -1400,6 +1400,7 @@ export default function QuoteResponsePage({
                               total: data.estimatedPrice || 0,
                             },
                           ],
+
                           totalAmount: data.estimatedPrice || 0,
                           currency: 'EUR',
                           timeline: data.estimatedDuration || data.timeline || '',
@@ -1410,7 +1411,7 @@ export default function QuoteResponsePage({
                       }
 
                       // Direkt mit den konvertierten Daten senden
-                      console.log('📝 Submitting quote response:', quoteData);
+
                       await submitResponse(quoteData);
                     } catch (error) {
                       console.error('❌ Error in quote submission:', error);

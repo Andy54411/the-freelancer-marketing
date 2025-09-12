@@ -17,14 +17,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🔗 Getting bank connections for user:', userId, 'credentialType:', credentialType);
-
     try {
       // Get company data to retrieve email
       const companyDoc = await db.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
-        console.log('📭 No company found, returning empty connections');
         return NextResponse.json({
           success: true,
           connections: [],
@@ -38,7 +35,6 @@ export async function GET(request: NextRequest) {
       const companyEmail = companyData?.email;
 
       if (!companyEmail) {
-        console.log('📭 No company email found, returning empty connections');
         return NextResponse.json({
           success: true,
           connections: [],
@@ -48,13 +44,10 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      console.log('✅ Using company email for connections:', companyEmail);
-
       // First check if we have stored connection info from WebForm
       const connectionDoc = await db.collection('finapi_connections').doc(userId).get();
       if (connectionDoc.exists) {
         const connectionData = connectionDoc.data();
-        console.log('📄 Found stored connection data:', connectionData);
 
         if (connectionData?.status === 'active') {
           // Return stored connection info
@@ -73,6 +66,7 @@ export async function GET(request: NextRequest) {
                 accountsCount: connectionData.accountsCount || 1,
               },
             ],
+
             source: 'stored_webform',
             message: 'Bank connected via WebForm',
             timestamp: new Date().toISOString(),
@@ -91,8 +85,6 @@ export async function GET(request: NextRequest) {
         let finapiUser;
 
         if (userData?.finapiUser?.userId && userData?.finapiUser?.password) {
-          console.log('🔍 Found existing finAPI user in Firestore:', userData.finapiUser.userId);
-
           // Use the saved finAPI user credentials
           finapiUser = {
             userId: userData.finapiUser.userId,
@@ -109,13 +101,11 @@ export async function GET(request: NextRequest) {
               false // Don't force create - use existing
             );
             finapiUser.userToken = refreshedUser.userToken;
-            console.log('✅ Refreshed token for existing finAPI user');
           } catch (tokenError) {
             console.error('❌ Failed to refresh token for saved user:', tokenError.message);
             throw tokenError;
           }
         } else {
-          console.log('❌ No finAPI user found in Firestore, cannot get connections');
           return NextResponse.json({
             success: true,
             connections: [],
@@ -126,14 +116,10 @@ export async function GET(request: NextRequest) {
         }
 
         if (finapiUser.userToken) {
-          console.log('✅ Got user token for saved user, fetching connections...');
-
           // Get bank connections from finAPI using the saved user
           const bankData = await finapiService.syncUserBankData(companyEmail, userId);
 
           if (bankData.connections && bankData.connections.length > 0) {
-            console.log('✅ Found finAPI bank connections:', bankData.connections.length);
-
             // Transform connections to expected format
             const transformedConnections = bankData.connections.map((conn: any) => ({
               id: conn.id,
@@ -160,7 +146,6 @@ export async function GET(request: NextRequest) {
         console.error('❌ finAPI connection error:', finapiError.message);
       }
 
-      console.log('📭 No finAPI connections found');
       return NextResponse.json({
         success: true,
         connections: [],
@@ -208,8 +193,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🗑️ Disconnecting bank for user:', userId, 'connectionId:', connectionId);
-
     try {
       // Get company data to retrieve email
       const companyDoc = await db.collection('companies').doc(userId).get();
@@ -227,7 +210,6 @@ export async function DELETE(request: NextRequest) {
 
       // Remove from Firestore
       await db.collection('finapi_connections').doc(userId).delete();
-      console.log('✅ Removed stored connection data from Firestore');
 
       // Try to remove from finAPI as well (if possible)
       try {
@@ -238,17 +220,9 @@ export async function DELETE(request: NextRequest) {
           const userToken = await finapiService.getUserToken(companyEmail, userId);
 
           if (userToken) {
-            console.log('🔗 Attempting to remove finAPI connection:', connectionId);
-            // Note: This would need actual finAPI delete connection API call
-            // For now, we just log it since we're using demo data
           }
         }
-      } catch (finapiError: any) {
-        console.log(
-          '⚠️ Could not remove from finAPI (expected for demo data):',
-          finapiError.message
-        );
-      }
+      } catch (finapiError: any) {}
 
       return NextResponse.json({
         success: true,

@@ -50,20 +50,20 @@ export default function RevolutConnectModal({
   // Listen for OAuth success messages from popup
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      console.log('🔍 Received message in RevolutConnectModal:', event);
+      // Debug-Log entfernt
 
       // Ensure message is from trusted domain
       const trustedOrigins = ['https://taskilo.de', 'http://localhost:3000'];
       if (!trustedOrigins.includes(event.origin)) {
-        console.log('⚠️ Message from untrusted origin, ignoring:', event.origin);
+        // Debug-Log entfernt
         return;
       }
 
       if (event.data.type === 'REVOLUT_OAUTH_SUCCESS') {
-        console.log('✅ Received OAuth success message:', event.data);
+        // Debug-Log entfernt
         setIsLoading(false);
         if (onSuccess) {
-          console.log('🔄 Calling onSuccess callback with connectionId:', event.data.connectionId);
+          // Debug-Log entfernt
           onSuccess(event.data.connectionId);
         }
         onClose();
@@ -75,10 +75,10 @@ export default function RevolutConnectModal({
     };
 
     if (isOpen) {
-      console.log('👂 Adding message event listener');
+      // Debug-Log entfernt
       window.addEventListener('message', handleMessage);
       return () => {
-        console.log('🧹 Removing message event listener');
+        // Debug-Log entfernt
         window.removeEventListener('message', handleMessage);
       };
     }
@@ -90,7 +90,7 @@ export default function RevolutConnectModal({
     setError(null);
 
     try {
-      console.log('🏦 Starting Revolut connection for user:', userId);
+      // Debug-Log entfernt
 
       // Call our OAuth authorize endpoint
       const response = await fetch(
@@ -102,7 +102,7 @@ export default function RevolutConnectModal({
         throw new Error(data.error || 'Failed to initialize Revolut OAuth');
       }
 
-      console.log('✅ Got Revolut OAuth URL, opening in new tab...');
+      // Debug-Log entfernt
 
       // Open OAuth in new tab/window instead of redirecting
       const authWindow = window.open(

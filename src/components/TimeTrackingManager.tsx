@@ -120,38 +120,31 @@ export default function TimeTrackingManager({
     try {
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
       if (!orderDoc.exists()) {
-        console.log('❌ Auftrag nicht gefunden für B2B/B2C-Check');
         return false; // Fallback zu B2C
       }
 
       const orderData = orderDoc.data();
-      console.log('📊 Analysiere Auftrag für B2B/B2C:', orderData);
 
       // 1. EXPLICIT PAYMENT TYPE CHECK
       const paymentType = orderData.paymentType || '';
       if (paymentType === 'b2c_fixed_price') {
-        console.log('🛍️ B2C erkannt durch paymentType: b2c_fixed_price');
         return false;
       }
       if (paymentType === 'b2b_hourly' || paymentType === 'b2b_project') {
-        console.log('🏢 B2B erkannt durch paymentType:', paymentType);
         return true;
       }
 
       // 2. CUSTOMER TYPE CHECK
       const customerType = orderData.customerType || '';
       if (customerType === 'privat' || customerType === 'private') {
-        console.log('🛍️ B2C erkannt durch customerType: privat');
         return false;
       }
       if (customerType === 'business' || customerType === 'unternehmen') {
-        console.log('🏢 B2B erkannt durch customerType: business');
         return true;
       }
 
       // 3. COMPANY NAME CHECK
       if (orderData.customerCompanyName && orderData.customerCompanyName.trim() !== '') {
-        console.log('🏢 B2B erkannt durch customerCompanyName');
         return true;
       }
 
@@ -159,7 +152,7 @@ export default function TimeTrackingManager({
       const totalAmount = orderData.totalAmountPaidByBuyerInCents || 0;
       if (totalAmount > 50000) {
         // > 500€
-        console.log('🏢 B2B erkannt durch hohen Bestellwert:', totalAmount / 100, '€');
+
         return true;
       }
 
@@ -176,17 +169,14 @@ export default function TimeTrackingManager({
       ];
 
       if (b2bCategories.some(b2bCat => category.toLowerCase().includes(b2bCat.toLowerCase()))) {
-        console.log('🏢 B2B erkannt durch Service-Kategorie:', category);
         return true;
       }
 
       // 6. EXPLICIT B2B MARKERS
       if (orderData.businessType === 'B2B' || orderData.isBusinessOrder === true) {
-        console.log('🏢 B2B erkannt durch businessType/isBusinessOrder');
         return true;
       }
 
-      console.log('🛍️ B2C als Fallback - keine B2B-Indikatoren gefunden');
       return false; // Default: B2C
     } catch (error) {
       console.error('❌ Fehler bei B2B/B2C-Check:', error);
@@ -198,29 +188,19 @@ export default function TimeTrackingManager({
     try {
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
       if (!orderDoc.exists()) {
-        console.log('❌ Auftrag nicht gefunden für Rolle-Bestimmung');
         return null;
       }
 
       const orderData = orderDoc.data();
       setOrderData(orderData);
 
-      console.log('👤 Bestimme Benutzerrolle:', {
-        currentUserId: userId,
-        customerFirebaseUid: orderData.customerFirebaseUid,
-        selectedAnbieterId: orderData.selectedAnbieterId,
-      });
-
       if (userId === orderData.customerFirebaseUid) {
-        console.log('🛒 Benutzer ist KUNDE');
         setUserRole('customer');
         return 'customer';
       } else if (userId === orderData.selectedAnbieterId) {
-        console.log('🏢 Benutzer ist ANBIETER');
         setUserRole('provider');
         return 'provider';
       } else {
-        console.log('❓ Benutzer-Rolle unbekannt');
         setUserRole(null);
         return null;
       }
@@ -234,25 +214,17 @@ export default function TimeTrackingManager({
   const loadTimeTracking = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Lade Zeiterfassung für Auftrag:', orderId);
 
       // Lade Auftragsdaten direkt aus Firebase
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
       if (orderDoc.exists()) {
         const orderData = orderDoc.data();
-        console.log('📋 Auftragsdaten geladen:', orderData);
+
         const entries: TimeEntry[] = [];
 
         // Lade TimeTracking-Einträge aus dem Auftrag
         if (orderData.timeTracking?.timeEntries) {
-          console.log(
-            '⏰ TimeTracking-Einträge gefunden:',
-            orderData.timeTracking.timeEntries.length
-          );
-
           orderData.timeTracking.timeEntries.forEach((entry: any, index: number) => {
-            console.log(`📝 Verarbeite Eintrag ${index}:`, entry);
-
             // Erweiterte Status-Mapping-Logik
             let mappedStatus: 'logged' | 'submitted' | 'approved' | 'rejected' | 'paid' = 'logged';
 
@@ -277,8 +249,6 @@ export default function TimeTrackingManager({
               mappedStatus = 'logged';
             }
 
-            console.log(`✅ Status gemappt: ${entry.status} → ${mappedStatus}`);
-
             entries.push({
               id: entry.id || `entry-${index}`,
               date: entry.date || '',
@@ -295,10 +265,8 @@ export default function TimeTrackingManager({
             });
           });
         } else {
-          console.log('⚠️ Keine TimeTracking-Einträge im Auftrag gefunden');
         }
 
-        console.log(`✅ ${entries.length} Zeiteinträge geladen:`, entries);
         setTimeEntries(entries);
       } else {
         console.error('❌ Auftrag nicht gefunden:', orderId);
@@ -312,18 +280,12 @@ export default function TimeTrackingManager({
 
   const fixExistingTimeEntries = async () => {
     try {
-      console.log('🔧 Korrigiere bestehende Zeiteinträge-Kategorien...');
-
       const orderDoc = await getDoc(doc(db, 'auftraege', orderId));
       if (!orderDoc.exists()) return;
 
       const orderData = orderDoc.data();
       const timeEntries = orderData.timeTracking?.timeEntries || [];
       const originalPlannedHours = orderData.timeTracking?.originalPlannedHours || 8;
-
-      console.log(
-        `📊 Korrektur für ${timeEntries.length} Einträge. Geplant: ${originalPlannedHours}h`
-      );
 
       let cumulativeHours = 0;
       let hasChanges = false;
@@ -352,9 +314,6 @@ export default function TimeTrackingManager({
 
         if (previousCategory !== entry.category) {
           hasChanges = true;
-          console.log(
-            `🔄 Eintrag ${index}: "${entry.description}" ${previousCategory} → ${entry.category} (${entryHours}h, kumulativ: ${cumulativeHours + entryHours}h)`
-          );
         }
 
         cumulativeHours += entryHours;
@@ -367,13 +326,11 @@ export default function TimeTrackingManager({
           'timeTracking.lastUpdated': new Date(),
         });
 
-        console.log('✅ Zeiteinträge-Kategorien korrigiert und gespeichert');
         showSuccess('Kategorien korrigiert', `${timeEntries.length} Einträge aktualisiert`);
 
         // Lade TimeTracking neu
         await loadTimeTracking();
       } else {
-        console.log('✅ Alle Kategorien bereits korrekt');
         showSuccess('Kategorien überprüft', 'Alle Einträge sind bereits korrekt kategorisiert');
       }
     } catch (error) {
@@ -426,38 +383,22 @@ export default function TimeTrackingManager({
       // B2C: Grundauftrag (8h) bereits bezahlt → zusätzliche Stunden brauchen Freigabe
       // B2B: Geplante Stunden (8h) vereinbart → zusätzliche Stunden brauchen Freigabe
 
-      console.log(
-        `📊 Kategorisierung: ${isB2BOrder ? 'B2B' : 'B2C'} - Geplant: ${originalPlannedHours}h, Bereits erfasst: ${originalPlannedHours - remainingOriginalHours}h, Übrig: ${remainingOriginalHours}h`
-      );
-
       if (remainingOriginalHours >= formData.hours) {
         // Alle Stunden sind noch als "original" verfügbar
         category = 'original';
         originalHours = formData.hours;
-        console.log(
-          `✅ ${formData.hours}h als "original" kategorisiert (${remainingOriginalHours}h übrig)`
-        );
       } else if (remainingOriginalHours > 0) {
         // Split zwischen original und additional
         originalHours = remainingOriginalHours;
         additionalHours = formData.hours - remainingOriginalHours;
         category = 'additional'; // Hauptkategorie ist additional, da mehr zusätzlich
-        console.log(
-          `🔄 Split: ${originalHours}h original + ${additionalHours}h additional → Kategorie: additional`
-        );
       } else {
         // Alle Stunden sind additional
         category = 'additional';
         additionalHours = formData.hours;
-        console.log(
-          `⚡ ${formData.hours}h als "additional" kategorisiert (alle geplanten Stunden bereits überschritten)`
-        );
       }
 
       const orderType = isB2BOrder ? 'B2B' : 'B2C';
-      console.log(
-        `📊 ${orderType} Auftrag: ${originalHours}h original + ${additionalHours}h additional`
-      );
 
       // Erstelle Zeiteintrag-Objekt
       const timeEntry = {
@@ -604,8 +545,6 @@ export default function TimeTrackingManager({
         'timeTracking.totalApprovedHours': newTotalApprovedHours,
         'timeTracking.lastUpdated': serverTimestamp(),
       });
-
-      console.log('✅ Zeiteintrag erfolgreich gelöscht und Summen aktualisiert');
 
       // Reload data
       if (loadTimeTracking) {
@@ -992,6 +931,7 @@ export default function TimeTrackingManager({
                       }
                       className="rounded border-gray-300 text-[#14ad9f] focus:ring-[#14ad9f]"
                     />
+
                     <span className="text-sm font-medium text-gray-700">Pausenzeit abziehen</span>
                   </label>
                   {formData.isBreakTime && (
@@ -1025,6 +965,7 @@ export default function TimeTrackingManager({
                       }
                       className="rounded border-gray-300 text-[#14ad9f] focus:ring-[#14ad9f]"
                     />
+
                     <span className="text-sm font-medium text-gray-700">
                       Anfahrtskosten hinzufügen
                     </span>
@@ -1046,6 +987,7 @@ export default function TimeTrackingManager({
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] transition-colors pr-12"
                           placeholder="Anfahrtskosten"
                         />
+
                         <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
                           €
                         </span>

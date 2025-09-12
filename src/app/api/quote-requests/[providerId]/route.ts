@@ -24,16 +24,11 @@ export async function GET(
     }
 
     // Abrufen aller Angebotsanfragen für diesen Anbieter
-    console.log(`Fetching quote requests for provider: ${providerId}`);
 
     const quoteRequestsSnapshot = await db
       .collection('quotes')
       .where('providerId', '==', providerId)
       .get();
-
-    console.log(
-      `Found ${quoteRequestsSnapshot.docs.length} quote requests for provider ${providerId}`
-    );
 
     const quoteRequests = quoteRequestsSnapshot.docs.map(doc => ({
       id: doc.id,

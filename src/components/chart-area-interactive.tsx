@@ -176,15 +176,6 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
   }, [companyUid, user, authLoading]);
 
   const { chartData, totalRevenue, totalExpenses } = React.useMemo(() => {
-    console.log(
-      'Chart recalculating with timeRange:',
-      timeRange,
-      'Orders:',
-      orders.length,
-      'Expenses:',
-      expenses.length
-    );
-
     if (!orders.length && !expenses.length)
       return { chartData: [], totalRevenue: 0, totalExpenses: 0 };
 
@@ -195,8 +186,6 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
     else if (timeRange === '365d') daysToSubtract = 365;
     const startDate = new Date(referenceDate);
     startDate.setDate(startDate.getDate() - daysToSubtract);
-
-    console.log('Date range:', startDate, 'to', referenceDate);
 
     const dailyRevenue: { [key: string]: number } = {};
     const dailyExpenses: { [key: string]: number } = {};
@@ -279,8 +268,6 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
       totalExpenses: currentTotalExpenses,
     };
   }, [orders, expenses, timeRange]);
-
-  console.log('Final chart state:', { chartData: chartData.length, totalRevenue, totalExpenses });
 
   if (loading) {
     return (
@@ -389,6 +376,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
                 });
               }}
             />
+
             <ChartTooltip
               cursor={false}
               defaultIndex={isMobile ? -1 : chartData.length - 1}
@@ -406,6 +394,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
                 />
               }
             />
+
             <Area
               dataKey="umsatz"
               type="natural"
@@ -413,6 +402,7 @@ export function ChartAreaInteractive({ companyUid }: { companyUid: string }) {
               stroke="var(--color-umsatz)"
               stackId="a"
             />
+
             <Area
               dataKey="ausgaben"
               type="natural"

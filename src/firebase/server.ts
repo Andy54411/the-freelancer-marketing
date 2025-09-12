@@ -60,8 +60,6 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount),
         projectId: 'tilvo-f142f',
       });
-
-      console.log('✅ Firebase Admin SDK initialized');
     } else {
       console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_KEY not found');
       throw new Error('Firebase credentials missing');

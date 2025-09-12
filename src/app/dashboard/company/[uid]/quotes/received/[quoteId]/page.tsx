@@ -153,19 +153,14 @@ export default function ReceivedQuoteDetailPage() {
       const quoteId = getQuoteId();
       const companyId = getCompanyId();
 
-      console.log(`🎯 Fetching quote details: companyId=${companyId}, quoteId=${quoteId}`);
-
       const token = await firebaseUser.getIdToken();
       if (!token) {
         console.error('❌ No token available');
         return;
       }
 
-      console.log(`🔑 Token obtained, length: ${token.length}`);
-
       // Lade spezifische Quote-Details von der Detail-API
       const apiUrl = `/api/company/${companyId}/quotes/received/${quoteId}`;
-      console.log(`📡 Making API call to: ${apiUrl}`);
 
       const response = await fetch(apiUrl, {
         headers: {
@@ -174,18 +169,11 @@ export default function ReceivedQuoteDetailPage() {
         },
       });
 
-      console.log(`📡 API response status: ${response.status}`);
-
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ API response data:`, data);
+
         if (data.success && data.quote) {
           setQuote(data.quote);
-          console.log('✅ Quote loaded:', {
-            hasResponse: data.quote.hasResponse,
-            hasProposals: data.quote.hasProposals,
-            proposalsCount: data.quote.proposals?.length || 0,
-          });
         } else {
           setError('Angebot nicht gefunden');
         }
@@ -203,7 +191,6 @@ export default function ReceivedQuoteDetailPage() {
 
   // Lade Payment Intent für Quote
   const createPaymentIntent = async () => {
-    console.log('🚀 PAYMENT: Starting createPaymentIntent');
     setPaymentLoading(true);
 
     try {
@@ -220,29 +207,17 @@ export default function ReceivedQuoteDetailPage() {
       const quoteId = getQuoteId();
       const companyId = getCompanyId();
 
-      console.log('📊 PAYMENT: Quote data:', {
-        quoteId,
-        companyId,
-        hasProposals: quote.hasProposals,
-        hasResponse: quote.hasResponse,
-        proposalsCount: quote.proposals?.length || 0,
-      });
-
       const token = await firebaseUser.getIdToken();
-      console.log('🔑 PAYMENT: Token obtained, length:', token.length);
 
       // API Call zur Payment Route
       const paymentUrl = `/api/company/${companyId}/quotes/received/${quoteId}/payment`;
-      console.log('🌐 PAYMENT: Calling API:', paymentUrl);
 
       // Finde den Provider aus den Proposals oder Response
       let proposalId = '';
       if (quote.proposals && quote.proposals.length > 0) {
         proposalId = quote.proposals[0].providerId || quote.proposals[0].id || '';
-        console.log('💼 PAYMENT: Using proposal ID from subcollection:', proposalId);
       } else if (quote.response) {
         proposalId = quote.providerUid || quote.providerId || '';
-        console.log('📜 PAYMENT: Using provider ID from legacy response:', proposalId);
       }
 
       const requestBody = {
@@ -256,7 +231,6 @@ export default function ReceivedQuoteDetailPage() {
         customerFirebaseId: companyId,
         customerStripeId: '', // Will be handled by API
       };
-      console.log('📤 PAYMENT: Request body:', requestBody);
 
       const response = await fetch(paymentUrl, {
         method: 'POST',
@@ -267,14 +241,10 @@ export default function ReceivedQuoteDetailPage() {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📥 PAYMENT: Response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ PAYMENT: Response data:', data);
 
         if (data.success && data.clientSecret) {
-          console.log('🎯 PAYMENT: Success! Setting clientSecret');
           setClientSecret(data.clientSecret);
         } else {
           console.error('❌ PAYMENT: No success or clientSecret in response:', data);
@@ -289,14 +259,12 @@ export default function ReceivedQuoteDetailPage() {
       console.error('💥 PAYMENT: Exception:', error);
       setError('Fehler beim Erstellen der Zahlung');
     } finally {
-      console.log('🏁 PAYMENT: Finished, setting paymentLoading to false');
       setPaymentLoading(false);
     }
   };
 
   // Angebot annehmen - öffnet Payment Modal und startet Payment Intent
   const handleAcceptOffer = () => {
-    console.log('🚀 Angebot annehmen clicked - opening payment modal');
     setShowPaymentModal(true);
     createPaymentIntent(); // Payment Intent direkt erstellen
   };
@@ -810,7 +778,6 @@ export default function ReceivedQuoteDetailPage() {
 
                   <button
                     onClick={() => {
-                      console.log('🚀 Angebot annehmen clicked - opening payment modal');
                       setShowPaymentModal(true);
                       createPaymentIntent();
                     }}
@@ -1046,7 +1013,6 @@ export default function ReceivedQuoteDetailPage() {
                         quote.proposals?.[0]?.totalAmount || quote.response?.totalAmount || 0,
                     }}
                     onSuccess={paymentIntentId => {
-                      console.log('✅ Payment successful:', paymentIntentId);
                       setShowPaymentModal(false);
                       setClientSecret(null);
                       // Refresh quote data to show paid status
@@ -1057,9 +1023,7 @@ export default function ReceivedQuoteDetailPage() {
                       console.error('❌ Payment error:', error);
                       alert(`Fehler bei der Zahlung: ${error}`);
                     }}
-                    onProcessing={isProcessing => {
-                      console.log('Payment processing:', isProcessing);
-                    }}
+                    onProcessing={isProcessing => {}}
                   />
                 </Elements>
               </div>

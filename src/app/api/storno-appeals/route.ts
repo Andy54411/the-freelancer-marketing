@@ -144,6 +144,7 @@ export async function POST(request: NextRequest) {
         'Bearbeitungszeit: 5-7 Werktage',
         'Sie können den Status über Ihr Dashboard verfolgen',
       ],
+
       estimatedProcessingTime: '5-7 Werktage',
       supportInfo: {
         ticketId: contactFormResult.ticketId,
@@ -311,10 +312,6 @@ async function createContactFormTicketForAppeal(appealData: any, stornoData: any
     }
 
     const contactFormResult = await contactFormResponse.json();
-
-    console.log(
-      `Contact Form Ticket erstellt für Appeal ${appealData.id}: ${contactFormResult.ticketId}`
-    );
 
     return {
       success: true,

@@ -27,8 +27,6 @@ export async function GET(request: NextRequest) {
       ],
     };
 
-    console.log('✅ Generated JWKs for Revolut:', jwks);
-
     return NextResponse.json(jwks, {
       headers: {
         'Content-Type': 'application/json',

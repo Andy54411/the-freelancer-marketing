@@ -27,13 +27,7 @@ export function StripeCardCheckout({
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  console.log('[DEBUG] CheckoutForm - Render:', {
-    stripe: !!stripe,
-    elements: !!elements,
-    clientSecret: !!clientSecret,
-    taskAmount,
-    taskId,
-  });
+  // Debug-Log entfernt
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -93,7 +87,6 @@ export function StripeCardCheckout({
           <PaymentElement
             onReady={() => {
               alert('🎉 ENDLICH! PaymentElement funktioniert!');
-              console.log('🎉 PaymentElement minimal test ERFOLGREICH!');
             }}
             onLoadError={error => {
               alert(`❌ PaymentElement Fehler: ${JSON.stringify(error)}`);

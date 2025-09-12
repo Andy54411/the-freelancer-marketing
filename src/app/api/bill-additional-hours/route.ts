@@ -44,8 +44,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📋 Processing bill-additional-hours for:', { orderId, approvedEntryIds });
-
     // Hole Auftragsdaten aus Firebase
     const orderDoc = await db.collection('auftraege').doc(orderId).get();
 
@@ -77,8 +75,6 @@ export async function POST(request: NextRequest) {
 
     // Fallback: Versuche Provider-ID aus companies collection zu holen
     if (!providerStripeAccountId || !providerStripeAccountId.startsWith('acct_')) {
-      console.log('⚠️ Keine Provider Stripe Account ID im Order, versuche Fallback...');
-
       try {
         const providerDoc = await db
           .collection('companies')
@@ -90,7 +86,6 @@ export async function POST(request: NextRequest) {
 
         if (fallbackStripeAccountId && fallbackStripeAccountId.startsWith('acct_')) {
           providerStripeAccountId = fallbackStripeAccountId;
-          console.log('✅ Fallback Provider Stripe Account ID gefunden:', providerStripeAccountId);
         } else {
           console.error('❌ Keine gültige Provider Stripe Account ID gefunden');
           return NextResponse.json(
@@ -147,13 +142,6 @@ export async function POST(request: NextRequest) {
     // Company erhält den Betrag minus Plattformgebühr
     const companyAmount = totalAmount - platformFee;
 
-    console.log('💰 Payment Details:', {
-      totalAmount,
-      platformFee,
-      companyAmount,
-      approvedEntries: approvedEntries.length,
-    });
-
     // IMPROVED SYSTEM: Direct Transfer mit Platform Fee
     // Kunde zahlt Gesamtbetrag, Provider erhält sofort den Betrag minus Platform Fee
     const paymentIntent = await stripe.paymentIntents.create({
@@ -187,8 +175,6 @@ export async function POST(request: NextRequest) {
       },
       description: `Zusätzliche Arbeitsstunden für Auftrag ${orderId} - Direktüberweisung`,
     });
-
-    console.log('✅ PaymentIntent created:', paymentIntent.id);
 
     return NextResponse.json({
       success: true,

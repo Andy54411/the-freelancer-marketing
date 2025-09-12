@@ -10,7 +10,6 @@ import { db } from '@/firebase/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('🔄 WebForm callback received:', body);
 
     const { webFormId, userId, status, bankId, connectionId } = body;
 
@@ -22,8 +21,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (status === 'completed' || status === 'success') {
-      console.log('✅ WebForm completed successfully, syncing data...');
-
       try {
         // Get company data
         const companyDoc = await db.collection('companies').doc(userId).get();
@@ -43,8 +40,6 @@ export async function POST(request: NextRequest) {
         // Create finAPI service and sync data
         const finapiService = createFinAPIService();
         const syncResult = await finapiService.syncUserBankData(companyEmail, userId);
-
-        console.log('🏦 Sync result:', syncResult);
 
         // Store connection info in Firestore for faster retrieval
         await db
@@ -104,7 +99,6 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      console.log('⚠️ WebForm not completed successfully, status:', status);
       return NextResponse.json({
         success: true,
         message: 'WebForm status received but not completed',

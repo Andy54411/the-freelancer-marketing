@@ -124,8 +124,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Steuerberater POST request:', { action, companyId: finalCompanyId, data });
-
     switch (action) {
       case 'invite':
         return await handleInvite(database, finalCompanyId, data);
@@ -204,8 +202,6 @@ async function handleInvite(database: any, companyId: string, data: any) {
       timestamp: new Date(),
       performedBy: invitedBy,
     });
-
-    console.log('Invitation created successfully:', docRef.id);
 
     return NextResponse.json({
       success: true,

@@ -38,19 +38,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const companyData = companyDoc.data();
 
-    console.log('🔍 PaymentTerms API Debug:', {
-      hasSettingsPaymentTerms: !!companyData?.settings?.paymentTerms,
-      hasDefaultPaymentTerms: !!companyData?.defaultPaymentTerms,
-      settingsPaymentTerms: companyData?.settings?.paymentTerms,
-      defaultPaymentTerms: companyData?.defaultPaymentTerms,
-    });
-
     // Prüfe zuerst settings.paymentTerms, dann defaultPaymentTerms, dann Fallback
     let paymentTermsSettings = companyData?.settings?.paymentTerms;
 
     if (!paymentTermsSettings && companyData?.defaultPaymentTerms) {
       // Fallback: Aus normalen Firmeneinstellungen laden
-      console.log('📋 PaymentTerms API: Loading from company defaultPaymentTerms fallback');
+
       paymentTermsSettings = {
         companyId: uid,
         defaultPaymentTerms: companyData.defaultPaymentTerms,
@@ -60,10 +53,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       };
     } else if (!paymentTermsSettings) {
       // Keine Einstellungen vorhanden: Standard-Werte
-      console.log('📋 PaymentTerms API: Using default payment terms');
+
       paymentTermsSettings = getDefaultPaymentTerms();
     } else {
-      console.log('📋 PaymentTerms API: Loading from settings.paymentTerms');
     }
 
     return NextResponse.json({
@@ -129,12 +121,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     });
 
     // Log für Admin-Überwachung
-    console.log('✅ Zahlungskonditionen aktualisiert:', {
-      companyId: uid,
-      defaultDays: paymentTermsSettings.defaultPaymentTerms.days,
-      skontoEnabled: paymentTermsSettings.defaultPaymentTerms.skontoEnabled,
-      customTermsCount: paymentTermsSettings.customPaymentTerms.length,
-    });
 
     return NextResponse.json({
       success: true,
@@ -193,6 +179,7 @@ function getDefaultPaymentTerms() {
         isDefault: false,
       },
     ],
+
     lastUpdated: new Date(),
   };
 }

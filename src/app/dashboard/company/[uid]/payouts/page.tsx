@@ -269,9 +269,7 @@ export default function PayoutOverviewPage() {
 
             // Show cache status in console
             if (result.cached) {
-              console.log(`💾 Balance from cache (${result.cache_age_seconds}s old)`);
             } else {
-              console.log('🔄 Fresh balance from Stripe API');
             }
           }
         } else {
@@ -304,7 +302,6 @@ export default function PayoutOverviewPage() {
     ordersUnsubscribeRef.current = onSnapshot(
       ordersQuery,
       snapshot => {
-        console.log('📋 Aufträge geändert:', snapshot.docs.length, 'Aufträge');
         // Nach Änderungen in Aufträgen → Payout-Daten neu laden
         loadAvailablePayouts();
         loadStripeBalance();
@@ -330,7 +327,6 @@ export default function PayoutOverviewPage() {
     quotesUnsubscribeRef.current = onSnapshot(
       quotesQuery,
       snapshot => {
-        console.log('📝 Quotes geändert:', snapshot.docs.length, 'Quotes');
         // Nach Änderungen in Quotes → Payout-Daten neu laden
         loadAvailablePayouts();
         loadStripeBalance();
@@ -362,8 +358,6 @@ export default function PayoutOverviewPage() {
                 eventData.event_type === 'payout_updated' ||
                 eventData.event_type === 'balance_updated'
               ) {
-                console.log('🔔 Stripe webhook event received:', eventData.event_type);
-
                 // Force refresh balance data
                 loadStripeBalance(true);
                 loadAvailablePayouts();

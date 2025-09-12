@@ -120,7 +120,6 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
 
   const handleNext = async () => {
     if (isSaving) {
-      console.log('🔄 Speichervorgang bereits aktiv - ignoriere weiteren Click');
       return; // Verhindere mehrfache Clicks
     }
 
@@ -130,33 +129,29 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
       return;
     }
 
-    console.log('🚀 Step 1 handleNext gestartet...');
     setIsSaving(true);
 
     try {
       // 1. Nur lokal updaten (KEIN Firestore!)
-      console.log('📝 Lokale Daten aktualisieren...');
+
       updateStepData(1, formData);
 
       // 2. Kurz warten damit lokale Updates verarbeitet werden
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // 3. EINMAL in Firestore speichern
-      console.log('💾 Firestore speichern...');
+
       await saveCurrentStep();
 
       // 4. Zum nächsten Step (OHNE weitere Speicherung)
-      console.log('➡️ Zum nächsten Step navigieren...');
-      goToNextStep();
 
-      console.log('✅ Step 1 erfolgreich abgeschlossen');
+      goToNextStep();
     } catch (error) {
       console.error('❌ Fehler beim Speichern:', error);
       alert('Fehler beim Speichern der Daten. Bitte versuchen Sie es erneut.');
     } finally {
       // Sofort zurücksetzen - keine Verzögerung
       setIsSaving(false);
-      console.log('🔓 isSaving zurückgesetzt');
     }
   };
 
@@ -226,6 +221,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                       }
                       className="sr-only"
                     />
+
                     <div className="text-center">
                       <div className="font-semibold text-gray-900 mb-1">{option.label}</div>
                       <div className="text-sm text-gray-600">{option.desc}</div>
@@ -271,6 +267,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                 placeholder="https://ihre-website.de"
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
               />
+
               <p className="text-sm text-gray-600">
                 Optional: Ihre Firmenwebsite für das öffentliche Profil
               </p>
@@ -289,6 +286,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ companyUid }) => {
                 rows={4}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] resize-none"
               />
+
               <p className="text-sm text-gray-600">
                 Optional: Kurze Beschreibung Ihres Unternehmens für das öffentliche Profil
               </p>

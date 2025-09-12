@@ -216,8 +216,6 @@ export class InventoryService {
    */
   static async findInventoryItems(companyId: string, searchTerm: string): Promise<InventoryItem[]> {
     try {
-      console.log('🔍 Searching inventory for:', searchTerm, 'in company:', companyId);
-
       const itemsRef = collection(db, 'inventory');
 
       // Suche nach exakter SKU oder Name (case-insensitive)
@@ -277,7 +275,6 @@ export class InventoryService {
           (item.description && item.description.toLowerCase().includes(searchLower))
       );
 
-      console.log(`📦 Found ${filteredItems.length} inventory items matching "${searchTerm}"`);
       return filteredItems;
     } catch (error) {
       console.error('❌ Error searching inventory:', error);
@@ -773,8 +770,6 @@ export class InventoryService {
     deliveryNoteId: string
   ): Promise<{ success: boolean; errors: string[] }> {
     try {
-      console.log('📦 Reducing stock for delivery note:', deliveryNoteId);
-
       const batch = writeBatch(db);
       const errors: string[] = [];
 
@@ -842,10 +837,6 @@ export class InventoryService {
             createdBy: companyId,
             companyId: companyId,
           });
-
-          console.log(
-            `✅ Stock reduction prepared for ${inventoryItem.name}: ${inventoryItem.currentStock} → ${newStock}`
-          );
         } catch (itemError) {
           console.error(`❌ Error processing item ${deliveryItem.name}:`, itemError);
           errors.push(`Fehler bei Artikel "${deliveryItem.name}": ${itemError.message}`);
@@ -855,7 +846,7 @@ export class InventoryService {
       // Batch-Update ausführen wenn keine Fehler
       if (errors.length === 0) {
         await batch.commit();
-        console.log('✅ Stock reduction completed successfully');
+
         return { success: true, errors: [] };
       } else {
         console.warn('⚠️ Stock reduction aborted due to errors:', errors);

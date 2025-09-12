@@ -90,7 +90,7 @@ export const ProjectTeamManagement: React.FC<ProjectTeamManagementProps> = ({
         setEmployees(mappedEmployees);
       } catch (error) {
         // Fallback auf direkte Firestore-Abfrage (korrigierter Pfad)
-        console.log('📄 Fallback: Lade Mitarbeiter direkt aus Firestore');
+
         const employeesQuery = query(
           collection(db, 'companies', companyId, 'employees'),
           where('isActive', '==', true)

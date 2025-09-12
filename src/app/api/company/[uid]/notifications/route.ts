@@ -89,8 +89,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const docRef = await db.collection('notifications').add(notification);
 
-    console.log(`✅ Created notification for company ${uid}:`, { type, title });
-
     return NextResponse.json({
       success: true,
       notificationId: docRef.id,

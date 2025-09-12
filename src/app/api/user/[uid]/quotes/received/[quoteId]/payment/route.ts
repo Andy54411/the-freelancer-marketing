@@ -73,7 +73,7 @@ export async function POST(
     }
 
     // Get the quote to verify access and get details
-    console.log('🔍 Getting quote details for:', quoteId);
+
     const projectRef = db.collection('quotes').doc(quoteId);
     const projectDoc = await projectRef.get();
 
@@ -91,7 +91,7 @@ export async function POST(
     }
 
     // Find the proposal using subcollection
-    console.log('🔍 Getting proposal details for:', proposalId);
+
     const proposal = await ProposalSubcollectionService.getProposal(quoteId, proposalId);
 
     if (!proposal) {
@@ -107,14 +107,14 @@ export async function POST(
 
     // Get the provider's companyUid from the proposal
     const providerCompanyUid = proposal.companyUid;
-    console.log('🔍 Provider companyUid:', providerCompanyUid);
+
     if (!providerCompanyUid) {
       console.error('❌ No companyUid in proposal');
       return NextResponse.json({ error: 'Anbieter-ID nicht im Angebot gefunden' }, { status: 400 });
     }
 
     // Get company's Stripe Account ID from companies collection using the companyUid
-    console.log('🔍 Getting company data for:', providerCompanyUid);
+
     const companyRef = db.collection('companies').doc(providerCompanyUid);
     const companyDoc = await companyRef.get();
 
@@ -124,10 +124,7 @@ export async function POST(
     }
 
     const companyData = companyDoc.data();
-    console.log('✅ Company data found:', {
-      id: providerCompanyUid,
-      hasStripeAccount: !!companyData?.stripeAccountId,
-    });
+
     const finalCompanyStripeAccountId = companyData?.stripeAccountId;
 
     if (!finalCompanyStripeAccountId) {
@@ -137,8 +134,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    console.log('✅ Using Stripe Account ID:', finalCompanyStripeAccountId);
 
     // Final validation with database-fetched Stripe Account ID
     if (!proposalId || !amount || !finalCompanyStripeAccountId) {
@@ -155,10 +150,9 @@ export async function POST(
     const companyReceivesCents = totalAmountCents - platformFeeCents;
 
     // Get or create Stripe customer
-    console.log('🔍 Getting/creating Stripe customer for:', customerFirebaseId);
+
     let stripeCustomerId = customerStripeId;
     if (!stripeCustomerId) {
-      console.log('🔄 Creating new Stripe customer');
       const customer = await stripe.customers.create({
         email: decodedToken.email || '',
         name: decodedToken.name || '',
@@ -167,20 +161,11 @@ export async function POST(
         },
       });
       stripeCustomerId = customer.id;
-      console.log('✅ Created Stripe customer:', stripeCustomerId);
     } else {
-      console.log('✅ Using existing Stripe customer:', stripeCustomerId);
     }
 
     // Create PaymentIntent with application fee and transfer data for Stripe Connect
-    console.log(
-      '🔄 Creating PaymentIntent with amount:',
-      totalAmountCents,
-      'fee:',
-      platformFeeCents,
-      'destination:',
-      finalCompanyStripeAccountId
-    );
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalAmountCents,
       currency: currency.toLowerCase(),
@@ -268,8 +253,6 @@ export async function PATCH(
 ) {
   const { uid, quoteId } = await params;
 
-  console.log('🔧 PATCH Payment Route called:', { uid, quoteId });
-
   try {
     // Auth-Check
     const authHeader = request.headers.get('authorization');
@@ -282,7 +265,6 @@ export async function PATCH(
     let decodedToken;
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-      console.log('✅ PATCH: Auth token verified for:', decodedToken.uid);
     } catch (authError) {
       console.error('❌ PATCH: Auth error:', authError);
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
@@ -298,7 +280,6 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    console.log('📝 PATCH: Request body:', body);
 
     const { paymentIntentId, proposalId } = body;
 
@@ -317,7 +298,6 @@ export async function PATCH(
 
     // Verify payment success
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    console.log('🔍 PATCH: PaymentIntent status:', paymentIntent.status);
 
     if (paymentIntent.status !== 'succeeded') {
       console.error('❌ PATCH: Payment not succeeded, status:', paymentIntent.status);
@@ -327,20 +307,13 @@ export async function PATCH(
       );
     }
 
-    console.log('✅ PATCH: Payment verification successful:', {
-      paymentIntentId,
-      amount: paymentIntent.amount,
-      status: paymentIntent.status,
-    });
-
     // Get the quote - try both collections
-    console.log('🔍 PATCH: Looking for quote in collections...');
+
     let projectRef = db.collection('quotes').doc(quoteId);
     let projectDoc = await projectRef.get();
     let collectionUsed = 'quotes';
 
     if (!projectDoc.exists) {
-      console.log('📝 PATCH: Quote not found in quotes collection, trying project_requests...');
       projectRef = db.collection('project_requests').doc(quoteId);
       projectDoc = await projectRef.get();
       collectionUsed = 'project_requests';
@@ -351,7 +324,6 @@ export async function PATCH(
       return NextResponse.json({ error: 'Quote nicht gefunden' }, { status: 404 });
     }
 
-    console.log('✅ PATCH: Quote found in collection:', collectionUsed);
     const projectData = projectDoc.data();
 
     // Check if user owns this project
@@ -382,11 +354,6 @@ export async function PATCH(
         { status: 400 }
       );
     }
-
-    console.log('✅ PATCH: Amount validation successful:', {
-      paymentIntentAmount: paymentIntent.amount,
-      proposalAmount: proposalAmount,
-    });
 
     // Ensure we have a valid amount - fallback to PaymentIntent amount if proposal amount is missing
     const finalAmount = acceptedProposal.totalAmount || paymentIntent.amount / 100;

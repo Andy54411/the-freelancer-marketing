@@ -66,7 +66,6 @@ export default function QuoteChat({
   useEffect(() => {
     if (!quoteId || !firebaseUser) return;
 
-    console.log('🔄 QuoteChat: Setting up real-time listener for quoteId:', quoteId);
     setIsConnected(false);
 
     const messagesRef = collection(db, 'quotes', quoteId, 'chat');
@@ -75,7 +74,6 @@ export default function QuoteChat({
     const unsubscribe = onSnapshot(
       q,
       snapshot => {
-        console.log('📨 QuoteChat: Real-time update received, docs:', snapshot.docs.length);
         setIsConnected(true);
 
         const messagesData = snapshot.docs.map(doc => {
@@ -91,7 +89,6 @@ export default function QuoteChat({
           };
         }) as Message[];
 
-        console.log('📝 QuoteChat: Processed messages:', messagesData.length);
         setMessages(messagesData);
 
         // Markiere Nachrichten als gelesen wenn Chat geöffnet ist
@@ -106,7 +103,6 @@ export default function QuoteChat({
     );
 
     return () => {
-      console.log('🛑 QuoteChat: Cleaning up real-time listener');
       setIsConnected(false);
       unsubscribe();
     };
@@ -122,7 +118,6 @@ export default function QuoteChat({
     const count = messages.filter(msg => msg.senderId !== firebaseUser.uid && !msg.read).length;
 
     setUnreadCount(count);
-    console.log('📊 QuoteChat: Unread count updated:', count);
   }, [messages, firebaseUser?.uid]);
 
   // Nachrichten als gelesen markieren - optimiert für Real-time
@@ -130,16 +125,11 @@ export default function QuoteChat({
     if (!firebaseUser || !quoteId) return;
 
     try {
-      console.log('📖 QuoteChat: Marking messages as read for user:', firebaseUser.uid);
-
       const unreadMessages = messages.filter(msg => msg.senderId !== firebaseUser.uid && !msg.read);
 
       if (unreadMessages.length === 0) {
-        console.log('📖 QuoteChat: No unread messages to mark');
         return;
       }
-
-      console.log('📖 QuoteChat: Marking', unreadMessages.length, 'messages as read');
 
       const updatePromises = unreadMessages.map(msg => {
         const messageRef = doc(db, 'quotes', quoteId, 'chat', msg.id);
@@ -147,7 +137,6 @@ export default function QuoteChat({
       });
 
       await Promise.all(updatePromises);
-      console.log('✅ QuoteChat: Successfully marked messages as read');
     } catch (error) {
       console.error('❌ QuoteChat: Error marking messages as read:', error);
     }
@@ -164,8 +153,6 @@ export default function QuoteChat({
     setNewMessage(''); // Sofort leeren für bessere UX
 
     try {
-      console.log('📤 QuoteChat: Sending message:', messageText);
-
       const messagesRef = collection(db, 'quotes', quoteId, 'chat');
 
       const messageData = {
@@ -178,7 +165,6 @@ export default function QuoteChat({
       };
 
       await addDoc(messagesRef, messageData);
-      console.log('✅ QuoteChat: Message sent successfully');
     } catch (error) {
       console.error('❌ QuoteChat: Error sending message:', error);
       // Nachricht wieder in Input setzen bei Fehler
@@ -317,6 +303,7 @@ export default function QuoteChat({
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-sm"
             disabled={loading}
           />
+
           <button
             type="submit"
             disabled={!newMessage.trim() || loading}

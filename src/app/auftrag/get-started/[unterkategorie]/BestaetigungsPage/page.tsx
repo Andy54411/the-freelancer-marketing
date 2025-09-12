@@ -51,12 +51,6 @@ export default function BestaetigungsPage() {
   const [forceRerender, setForceRerender] = useState(0); // Force re-render trigger
 
   // Debug: Log bei jedem Render
-  console.log(
-    '[DEBUG] Component Render - clientSecret:',
-    clientSecret ? 'vorhanden' : 'null',
-    'forceRerender:',
-    forceRerender
-  );
 
   // States für BestaetigungsContent
   const [jobPriceInCents, setJobPriceInCents] = useState<number | null>(null);
@@ -122,13 +116,10 @@ export default function BestaetigungsPage() {
 
       // WICHTIG: Nicht umleiten, wenn bereits ein Payment-Flow läuft (clientSecret vorhanden)
       if (!firebaseUser && !clientSecret && !isLoading) {
-        console.log('[DEBUG] Auth-Guard: User nicht eingeloggt nach 2s, leite zur Registration um');
         const currentPath = `${window.location.pathname}${window.location.search}`;
         router.push(`/register/user?redirectTo=${encodeURIComponent(currentPath)}`);
         return;
       }
-
-      console.log('[DEBUG] Auth-Guard: User eingeloggt:', firebaseUser?.uid);
 
       // Alle URL-Parameter vorhanden?
       const {
@@ -171,13 +162,6 @@ export default function BestaetigungsPage() {
   // Auto-PaymentIntent-Erstellung wenn User + Preis vorhanden
   useEffect(() => {
     if (firebaseUser && jobPriceInCents && jobPriceInCents > 0 && !clientSecret && !isLoading) {
-      console.log('[DEBUG] Auto-PaymentIntent: Starte automatische Erstellung', {
-        firebaseUser: !!firebaseUser,
-        jobPriceInCents,
-        clientSecret: !!clientSecret,
-        isLoading,
-      });
-
       // Kleine Verzögerung um sicherzustellen, dass alle States gesetzt sind
       const timer = setTimeout(() => {
         createPaymentIntent(jobPriceInCents);
@@ -190,25 +174,13 @@ export default function BestaetigungsPage() {
   // Payment Intent erstellen - extrahiert aus handlePaymentClick für automatische Erstellung
   const createPaymentIntent = async (priceInCents: number) => {
     if (!firebaseUser || !priceInCents || priceInCents <= 0) {
-      console.log('[DEBUG] createPaymentIntent: Voraussetzungen nicht erfüllt:', {
-        firebaseUser: !!firebaseUser,
-        priceInCents,
-      });
       return;
     }
 
     // Avoid duplicate PaymentIntent creation
     if (clientSecret || isLoading) {
-      console.log('[DEBUG] createPaymentIntent: Bereits in Progress oder vorhanden');
       return;
     }
-
-    console.log('[DEBUG] createPaymentIntent startet automatisch', {
-      firebaseUser: firebaseUser ? 'vorhanden' : 'null',
-      uid: firebaseUser?.uid,
-      email: firebaseUser?.email,
-      priceInCents,
-    });
 
     setIsLoading(true);
     setError(null);
@@ -216,7 +188,6 @@ export default function BestaetigungsPage() {
     try {
       // Sofort ein fresh Auth Token holen
       const freshIdToken = await firebaseUser.getIdToken(true); // force refresh
-      console.log('[DEBUG] Fresh Auth Token erhalten');
 
       // 1. Stripe Customer ID erstellen oder abrufen
       const customerResponse = await fetch('/api/stripe/get-or-create-customer', {
@@ -256,8 +227,6 @@ export default function BestaetigungsPage() {
         jobCalculatedPriceInCents: priceInCents,
       };
 
-      console.log('[DEBUG] Erstelle temporären Job-Entwurf:', orderDataForDraft);
-
       // Firebase Callable Function direkt aufrufen
       const createTemporaryJobDraft = httpsCallable(functions, 'createTemporaryJobDraft');
       const tempDraftResult = (await createTemporaryJobDraft(
@@ -273,11 +242,6 @@ export default function BestaetigungsPage() {
 
       setTempJobDraftId(tempDraftId);
       setAnbieterStripeAccountId(stripeAccountId);
-
-      console.log('[DEBUG] Temporärer Job-Entwurf erstellt:', {
-        tempDraftId,
-        stripeAccountId,
-      });
 
       // 3. Billing Details vorbereiten
       const billingDetails: any = {
@@ -316,26 +280,13 @@ export default function BestaetigungsPage() {
       });
 
       const paymentData = await paymentResponse.json();
-      console.log('[DEBUG] Payment API Response (automatisch):', {
-        ok: paymentResponse.ok,
-        status: paymentResponse.status,
-        data: paymentData,
-      });
 
       if (!paymentResponse.ok || !paymentData.clientSecret) {
         console.error('[DEBUG] Payment API Fehler:', paymentData);
         throw new Error(paymentData.error || 'Fehler beim Erstellen der Zahlung');
       }
 
-      console.log('[DEBUG] PaymentIntent automatisch erstellt:', {
-        clientSecret: paymentData.clientSecret ? 'vorhanden' : 'fehlt',
-        paymentIntentId: paymentData.paymentIntentId,
-      });
-
       setClientSecret(paymentData.clientSecret);
-      console.log(
-        '[DEBUG] ClientSecret gesetzt, Payment Element sollte jetzt sofort sichtbar sein'
-      );
 
       // Force re-render durch State-Update
       setForceRerender(prev => prev + 1);
@@ -358,12 +309,6 @@ export default function BestaetigungsPage() {
       return;
     }
 
-    console.log('[DEBUG] Payment-Flow startet, Auth-State:', {
-      firebaseUser: firebaseUser ? 'vorhanden' : 'null',
-      uid: firebaseUser?.uid,
-      email: firebaseUser?.email,
-    });
-
     // WICHTIG: Auth-Daten zwischenspeichern für den Fall, dass Auth während Payment verloren geht
     const authBackup = {
       uid: firebaseUser.uid,
@@ -377,7 +322,6 @@ export default function BestaetigungsPage() {
     try {
       // Sofort ein fresh Auth Token holen
       const freshIdToken = await firebaseUser.getIdToken(true); // force refresh
-      console.log('[DEBUG] Fresh Auth Token erhalten');
 
       // 1. Stripe Customer ID erstellen oder abrufen
       const customerResponse = await fetch('/api/stripe/get-or-create-customer', {
@@ -420,22 +364,13 @@ export default function BestaetigungsPage() {
       };
 
       // Debug: Log die Daten die gesendet werden
-      console.log('[DEBUG] orderDataForDraft:', orderDataForDraft);
-      console.log('[DEBUG] registration context:', {
-        customerType: registration.customerType,
-        selectedCategory: registration.selectedCategory,
-      });
 
       const createDraftCallable = httpsCallable<TemporaryJobDraftData, TemporaryJobDraftResult>(
         functions,
         'createTemporaryJobDraft'
       );
 
-      console.log('[DEBUG] Calling createTemporaryJobDraft with data:', orderDataForDraft);
-
       const draftResult = await createDraftCallable(orderDataForDraft);
-
-      console.log('[DEBUG] createTemporaryJobDraft result:', draftResult);
 
       const { tempDraftId, anbieterStripeAccountId: stripeAccountId } = draftResult.data;
 
@@ -528,33 +463,17 @@ export default function BestaetigungsPage() {
       });
 
       const paymentData = await paymentResponse.json();
-      console.log('[DEBUG] Payment API Response:', {
-        ok: paymentResponse.ok,
-        status: paymentResponse.status,
-        data: paymentData,
-      });
 
       if (!paymentResponse.ok || !paymentData.clientSecret) {
         console.error('[DEBUG] Payment API Fehler:', paymentData);
         throw new Error(paymentData.error || 'Fehler beim Erstellen der Zahlung');
       }
 
-      console.log('[DEBUG] PaymentIntent erfolgreich erstellt:', {
-        clientSecret: paymentData.clientSecret ? 'vorhanden' : 'fehlt',
-        paymentIntentId: paymentData.paymentIntentId,
-      });
-
       setClientSecret(paymentData.clientSecret);
-      console.log('[DEBUG] ClientSecret gesetzt, Payment Element sollte jetzt angezeigt werden');
 
       // Force re-render durch State-Update
       setForceRerender(prev => prev + 1);
-      setTimeout(() => {
-        console.log(
-          '[DEBUG] Nach State-Update - clientSecret:',
-          paymentData.clientSecret ? 'vorhanden' : 'fehlt'
-        );
-      }, 100);
+      setTimeout(() => {}, 100);
     } catch (err) {
       console.error('[DEBUG] Fehler beim Vorbereiten der Zahlung:', err);
 

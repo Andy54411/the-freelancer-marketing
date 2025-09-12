@@ -24,8 +24,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams): Pro
       throw new Error('Firebase Admin konnte nicht initialisiert werden');
     }
 
-    console.log('🗑️ DELETE Time Entry API:', { uid, entryId });
-
     // Prüfe ob der Zeiteintrag existiert und zur Company gehört
     const entryDoc = await db.collection('timeEntries').doc(entryId).get();
 
@@ -48,8 +46,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams): Pro
 
     // Lösche den Zeiteintrag
     await db.collection('timeEntries').doc(entryId).delete();
-
-    console.log('✅ Zeiteintrag erfolgreich gelöscht:', entryId);
 
     return NextResponse.json({
       success: true,
@@ -87,8 +83,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams): Promis
       throw new Error('Firebase Admin konnte nicht initialisiert werden');
     }
 
-    console.log('✏️ PUT Time Entry API:', { uid, entryId, body });
-
     // Prüfe ob der Zeiteintrag existiert und zur Company gehört
     const entryDoc = await db.collection('timeEntries').doc(entryId).get();
 
@@ -120,8 +114,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams): Promis
     // Hole die aktualisierten Daten
     const updatedDoc = await db.collection('timeEntries').doc(entryId).get();
     const updatedData = updatedDoc.data();
-
-    console.log('✅ Zeiteintrag erfolgreich aktualisiert:', entryId);
 
     return NextResponse.json({
       success: true,

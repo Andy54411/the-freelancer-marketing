@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 // Robust Firebase initialization function
 async function getFirebaseServices() {
   try {
-    console.log('Initializing Firebase for getOrderChat API - NO JSON FILES...');
-
     // DIRECT Firebase initialization without JSON imports
     const firebaseAdmin = await import('firebase-admin');
 
@@ -12,10 +10,7 @@ async function getFirebaseServices() {
     let app;
     try {
       app = firebaseAdmin.app();
-      console.log('Using existing Firebase app');
     } catch (appError) {
-      console.log('Initializing new Firebase app for getOrderChat...');
-
       if (
         process.env.FIREBASE_PROJECT_ID &&
         process.env.FIREBASE_PRIVATE_KEY &&
@@ -28,13 +23,11 @@ async function getFirebaseServices() {
             privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
           }),
         });
-        console.log('Initialized with service account credentials');
       } else if (process.env.FIREBASE_PROJECT_ID) {
         app = firebaseAdmin.initializeApp({
           credential: firebaseAdmin.credential.applicationDefault(),
           projectId: process.env.FIREBASE_PROJECT_ID,
         });
-        console.log('Initialized with application default credentials');
       } else {
         throw new Error('No Firebase configuration available');
       }
@@ -42,7 +35,7 @@ async function getFirebaseServices() {
 
     const auth = firebaseAdmin.auth();
     const db = firebaseAdmin.firestore();
-    console.log('Firebase services initialized successfully for getOrderChat API');
+
     return { auth, db };
   } catch (error: any) {
     console.error('Firebase initialization failed:', error);

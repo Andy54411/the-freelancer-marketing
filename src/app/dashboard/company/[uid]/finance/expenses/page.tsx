@@ -85,7 +85,6 @@ export default function ExpensesPage() {
         }));
 
         setExpenses(formattedExpenses);
-        console.log('Loaded expenses from API:', formattedExpenses.length);
       } else {
         console.error('API response error:', result);
         toast.error('Fehler beim Laden der Ausgaben: ' + (result.error || 'Unbekannter Fehler'));
@@ -101,11 +100,6 @@ export default function ExpensesPage() {
   // Neue Ausgabe speichern
   const handleSaveExpense = async (expenseData: any) => {
     try {
-      console.log(
-        '🔍 Frontend: Sending expense data to API:',
-        JSON.stringify(expenseData, null, 2)
-      );
-
       const response = await fetch('/api/expenses', {
         method: 'POST',
         headers: {
@@ -117,15 +111,11 @@ export default function ExpensesPage() {
         }),
       });
 
-      console.log('🔍 Frontend: API response status:', response.status);
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
-
-      console.log('🔍 Frontend: API response result:', JSON.stringify(result, null, 2));
 
       if (result.success) {
         toast.success('Ausgabe erfolgreich gespeichert');

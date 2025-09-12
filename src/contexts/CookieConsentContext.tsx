@@ -63,7 +63,6 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
         if (process.env.NODE_ENV === 'production') {
           sendConsentToGTM(parsedConsent);
         } else {
-          console.log('[DEV] Cookie consent loaded (GTM disabled in development):', parsedConsent);
         }
       }, 200);
     }
@@ -79,7 +78,6 @@ export const CookieConsentProvider: React.FC<CookieConsentProviderProps> = ({ ch
     if (process.env.NODE_ENV === 'production') {
       sendConsentToGTM(updatedConsent);
     } else {
-      console.log('[DEV] Cookie consent updated (GTM disabled in development):', updatedConsent);
     }
   };
 

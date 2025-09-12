@@ -158,7 +158,6 @@ export class FinAPIUserAuthService {
 
       // FALLBACK: Use legacy finAPI system for authentication if available
       try {
-        console.log('🔄 Using legacy finAPI authentication fallback...');
         // Legacy system doesn't maintain user-specific tokens
         // Return null to indicate authentication should be handled elsewhere
         return null;

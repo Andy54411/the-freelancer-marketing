@@ -71,16 +71,16 @@ export function CustomerSelect({
   const loadCustomers = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Loading customers for companyId:', companyId);
 
       // Import API function dynamically to avoid circular dependencies
       const { getCustomers } = await import('@/utils/api/companyApi');
       const response = await getCustomers(companyId);
-      
+
       if (response.success && response.customers) {
         const loadedCustomers: Customer[] = response.customers.map(customer => ({
           id: customer.id,
-          customerNumber: customer.customerNumber || `KD-${customer.id.substring(0, 6).toUpperCase()}`,
+          customerNumber:
+            customer.customerNumber || `KD-${customer.id.substring(0, 6).toUpperCase()}`,
           name: customer.name,
           email: customer.email || '',
           phone: customer.phone || '',
@@ -98,10 +98,8 @@ export function CustomerSelect({
           companyId: customer.companyId || companyId,
         }));
 
-        console.log('✅ Loaded customers via API:', loadedCustomers.length);
         setCustomers(loadedCustomers);
       } else {
-        console.log('❌ No customers found in API response');
         setCustomers([]);
       }
     } catch (error: any) {

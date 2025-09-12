@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔧 Starting Revolut OAuth flow for:', { userId, companyEmail });
-
     // Build OAuth URL - always use registered HTTPS callback for Revolut OAuth
     const clientId = process.env.REVOLUT_CLIENT_ID;
     const redirectUri = 'https://taskilo.de/api/revolut/oauth/callback';
@@ -40,8 +38,6 @@ export async function GET(request: NextRequest) {
       'state',
       `${userId}|${companyEmail}|${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}`
     );
-
-    console.log('🔗 Redirecting to Revolut OAuth:', authUrl.toString());
 
     return NextResponse.json({
       success: true,

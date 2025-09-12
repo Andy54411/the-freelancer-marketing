@@ -15,14 +15,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🏦 Getting Revolut accounts for user:', userId);
-
     try {
       // First try to get stored accounts from Firestore
       const companyDoc = await db.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
-        console.log('📭 No company found for user:', userId);
         return NextResponse.json({
           success: true,
           accounts: [],
@@ -38,8 +35,6 @@ export async function GET(request: NextRequest) {
 
       // If we have stored accounts, return them
       if (Object.keys(revolutAccounts).length > 0) {
-        console.log('✅ Found stored Revolut accounts:', Object.keys(revolutAccounts).length);
-
         const accounts = Object.values(revolutAccounts).map((account: any) => ({
           id: account.accountId,
           name: account.accountName,
@@ -67,7 +62,6 @@ export async function GET(request: NextRequest) {
       // If no stored accounts but we have connections, try to fetch from API
       const connectionIds = Object.keys(revolutConnections);
       if (connectionIds.length === 0) {
-        console.log('📭 No Revolut connections found for user:', userId);
         return NextResponse.json({
           success: true,
           accounts: [],
@@ -82,7 +76,6 @@ export async function GET(request: NextRequest) {
       const connection = revolutConnections[latestConnectionId!];
 
       if (!connection.authData?.accessToken) {
-        console.log('❌ No valid access token found for connection:', latestConnectionId);
         return NextResponse.json(
           {
             success: false,
@@ -98,8 +91,6 @@ export async function GET(request: NextRequest) {
       // Check if token is expired
       const tokenExpiresAt = new Date(connection.authData.expiresAt);
       if (new Date() >= tokenExpiresAt) {
-        console.log('⚠️ Access token expired, need to refresh');
-
         if (connection.authData.refreshToken) {
           try {
             const newTokenData = await revolutOpenBankingService.refreshToken(
@@ -119,7 +110,6 @@ export async function GET(request: NextRequest) {
             });
 
             connection.authData.accessToken = newTokenData.access_token;
-            console.log('✅ Successfully refreshed Revolut token');
           } catch (refreshError: any) {
             console.error('❌ Failed to refresh Revolut token:', refreshError.message);
             return NextResponse.json(
@@ -148,7 +138,6 @@ export async function GET(request: NextRequest) {
       }
 
       // Fetch accounts from Revolut API using stored OAuth token
-      console.log('🔄 Fetching accounts from Revolut API using OAuth token...');
 
       // Make direct API call with OAuth token
       const apiUrl =
@@ -169,7 +158,6 @@ export async function GET(request: NextRequest) {
       }
 
       const apiAccounts = await apiResponse.json();
-      console.log('✅ Retrieved', apiAccounts.length, 'accounts from Revolut API');
 
       // Store accounts in Firestore for future use
       const accountData: any = {};
@@ -201,7 +189,6 @@ export async function GET(request: NextRequest) {
           [`revolut_connections.${latestConnectionId}.lastSync`]: now,
           [`revolut_connections.${latestConnectionId}.accountsCount`]: apiAccounts.length,
         });
-        console.log('✅ Stored', Object.keys(accountData).length, 'Revolut accounts');
       }
 
       // Format response
@@ -236,7 +223,6 @@ export async function GET(request: NextRequest) {
       const revolutAccounts = companyData?.revolut_accounts || {};
 
       if (Object.keys(revolutAccounts).length > 0) {
-        console.log('⚠️ API failed, returning stored accounts as fallback');
         const accounts = Object.values(revolutAccounts).map((account: any) => ({
           id: account.accountId,
           name: account.accountName,

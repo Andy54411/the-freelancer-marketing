@@ -27,8 +27,6 @@ export function useChatNotifications() {
       return;
     }
 
-    console.log('🔔 useChatNotifications: Setting up listeners for user:', firebaseUser.uid);
-
     // Alle Quotes des Users finden (sowohl als Customer als auch als Provider)
     const quotesRef = collection(db, 'quotes');
     const customerQuery = query(quotesRef, where('customerUid', '==', firebaseUser.uid));
@@ -94,15 +92,12 @@ export function useChatNotifications() {
           }
           return updated;
         });
-
-        console.log(`🔔 Chat notifications for quote ${quoteId}: ${unreadCount} unread`);
       });
 
       unsubscribers.push(unsubscribeChat);
     };
 
     return () => {
-      console.log('🛑 useChatNotifications: Cleaning up listeners');
       unsubscribers.forEach(unsubscribe => unsubscribe());
     };
   }, [firebaseUser?.uid]);
@@ -111,7 +106,6 @@ export function useChatNotifications() {
   useEffect(() => {
     const total = notifications.reduce((sum, notification) => sum + notification.unreadCount, 0);
     setTotalUnreadCount(total);
-    console.log('🔔 Total unread chat messages:', total);
   }, [notifications]);
 
   return {

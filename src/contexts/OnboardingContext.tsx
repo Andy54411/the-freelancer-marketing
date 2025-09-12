@@ -51,12 +51,9 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       const now = Date.now();
       if (now - lastLoadTime < RATE_LIMIT_MS) {
-        console.log('🚫 OnboardingContext: Rate-limited - zu schnelle Aufrufe verhindert');
         return;
       }
       lastLoadTime = now;
-
-      console.log('🔄 OnboardingContext: Lade Onboarding-Status...');
 
       try {
         // 🔧 SAUBERE TRENNUNG: Lade Onboarding aus companies collection
@@ -143,12 +140,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   /*
   useEffect(() => {
     if (!user || !companyId || Object.keys(stepData).length === 0) return;
-
-    const saveTimer = setTimeout(async () => {
+     const saveTimer = setTimeout(async () => {
       await saveCurrentStep();
     }, 3000); // Auto-save after 3 seconds like Stripe
-
-    return () => clearTimeout(saveTimer);
+     return () => clearTimeout(saveTimer);
   }, [stepData, companyId, user]);
   */
 
@@ -276,12 +271,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     const overallCompletion =
       stepCompletions.reduce((sum, completion) => sum + completion, 0) / totalSteps;
 
-    console.log('📊 Overall Completion Debug:', {
-      stepCompletions,
-      overallCompletion,
-      stepData,
-    });
-
     return overallCompletion;
   }, [getStepCompletion, totalSteps, stepData]);
 
@@ -388,16 +377,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
     const now = Date.now();
     if (now - lastSaveTime < SAVE_THROTTLE_MS) {
-      console.log(
-        `� saveCurrentStep throttled - last save was ${now - lastSaveTime}ms ago (min: ${SAVE_THROTTLE_MS}ms)`
-      );
       return;
     }
 
-    console.log(
-      `�💾 saveCurrentStep called for step ${currentStep} - Timestamp: ${new Date().toISOString()}`
-    );
-    console.trace('📍 saveCurrentStep call stack:'); // DEBUG: Stack trace to see what's calling this
+    // DEBUG: Stack trace to see what's calling this
 
     try {
       setLastSaveTime(now);
@@ -412,17 +395,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       // Nur aktuellen Step-Data speichern
       if (stepData[currentStep]) {
         companyUpdates[`step${currentStep}`] = stepData[currentStep];
-        console.log(
-          `📊 Saving step ${currentStep} data to companies collection:`,
-          stepData[currentStep]
-        );
       }
 
       const companyDocRef = doc(db, 'companies', companyId);
       await updateDoc(companyDocRef, companyUpdates);
 
       setLastSaved(new Date());
-      console.log(`✅ Step ${currentStep} erfolgreich in companies collection gespeichert`);
     } catch (error) {
       console.error(`❌ Fehler beim Speichern von Step ${currentStep}:`, error);
     } finally {
@@ -440,8 +418,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   const submitOnboarding = useCallback(async (): Promise<void> => {
-    console.log('🚀 submitOnboarding started - using companies collection');
-
     if (!user || !companyId) {
       console.error('❌ submitOnboarding failed: Missing user or companyId', {
         user: !!user,
@@ -451,14 +427,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     }
 
     try {
-      console.log('📊 stepData:', stepData);
-
       // 🔧 SAUBERE TRENNUNG: Alle Onboarding-Daten in companies collection
       const companyDocRef = doc(db, 'companies', companyId);
       const companyDocSnap = await getDoc(companyDocRef);
       const existingCompanyData = companyDocSnap.exists() ? companyDocSnap.data() : {};
-
-      console.log('📝 Processing step data for companies collection...');
 
       // Alle Onboarding-Daten gehen in companies collection
       const companyUpdates: any = {};
@@ -548,18 +520,15 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (stepData[5]) companyUpdates.step5 = stepData[5];
 
       // Update companies document mit allen Onboarding-Daten
-      console.log('💾 Updating companies document with all onboarding data...');
+
       await updateDoc(companyDocRef, companyUpdates);
-      console.log('✅ Companies document updated successfully');
 
       // SUCCESS: Onboarding abgeschlossen - companies-only architecture
-      console.log('✅ Onboarding erfolgreich abgeschlossen (companies-only architecture)');
 
       // Set cookies for middleware
-      console.log('🍪 Setting completion cookies...');
+
       document.cookie = `taskilo_onboarding_complete=true; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
       document.cookie = `taskilo_profile_status=pending_review; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Strict`;
-      console.log('🍪 Cookies set successfully');
 
       // Update onboarding status
     } catch (error) {
@@ -606,17 +575,12 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   );
 
   const updateStepData = useCallback((step: number, data: any) => {
-    console.log(
-      `📝 updateStepData called for step ${step} - Timestamp: ${new Date().toISOString()}:`,
-      data
-    );
-    console.trace('📍 updateStepData call stack:'); // DEBUG: Stack trace to see what's calling this
+    // DEBUG: Stack trace to see what's calling this
     // Nur lokal speichern, NICHT in Firestore!
     setStepData(prev => ({
       ...prev,
       [step]: { ...prev[step], ...data },
     }));
-    console.log(`✅ Step ${step} data locally updated`);
   }, []);
 
   const value: OnboardingContextType = {

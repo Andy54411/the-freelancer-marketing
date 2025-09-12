@@ -21,8 +21,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🔧 Mock Revolut OAuth flow for:', { userId, companyEmail });
-
     // Simulate successful OAuth flow
     const connectionId = `revolut_mock_${Date.now()}`;
     const mockTokenData = {
@@ -99,8 +97,6 @@ export async function GET(request: NextRequest) {
       .update({
         [`revolut_accounts`]: accountsData,
       });
-
-    console.log('✅ Mock Revolut connection and accounts created:', connectionId);
 
     return NextResponse.json({
       success: true,

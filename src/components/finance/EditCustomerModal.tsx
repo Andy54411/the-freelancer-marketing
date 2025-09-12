@@ -73,11 +73,7 @@ export function EditCustomerModal({
       // VAT-Validierung auch beim Laden durchführen
       if (customer.vatId && customer.vatId.length > 2) {
         const validation = validateVATNumber(customer.vatId);
-        console.log('Initial VAT validation on load:', {
-          vatId: customer.vatId,
-          validation: validation,
-          isValid: validation.isValid,
-        });
+
         setFormData(prev => ({ ...prev, vatValidated: validation.isValid }));
       }
     }
@@ -101,16 +97,7 @@ export function EditCustomerModal({
 
     if (upperValue.length > 2) {
       const validation = validateVATNumber(upperValue);
-      console.log('EditModal VAT Debug:', {
-        input: upperValue,
-        validation: validation,
-        isValid: validation.isValid,
-        currentCountry: formData.country,
-        detectedCountry: detectedCountry,
-        willShowGermanSection:
-          (detectedCountry && upperValue.length >= 2 ? detectedCountry : formData.country) ===
-          'Deutschland',
-      });
+
       setFormData(prev => ({ ...prev, vatValidated: validation.isValid }));
     } else {
       setFormData(prev => ({ ...prev, vatValidated: false }));
@@ -489,6 +476,7 @@ export function EditCustomerModal({
                     autoComplete="off"
                     disabled={!!formData.vatId}
                   />
+
                   <div className="text-xs text-gray-500 mt-1">
                     {formData.vatId
                       ? 'Deaktiviert - VAT-Nummer ist gesetzt'
@@ -515,6 +503,7 @@ export function EditCustomerModal({
                               : ''
                         }
                       />
+
                       {formData.vatId && (
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                           {formData.vatValidated ? (
@@ -587,6 +576,7 @@ export function EditCustomerModal({
                               : ''
                         }
                       />
+
                       {formData.vatId && (
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                           {formData.vatValidated ? (
@@ -614,6 +604,7 @@ export function EditCustomerModal({
                     placeholder="Lokale Steuernummer"
                     autoComplete="off"
                   />
+
                   <div className="text-xs text-gray-500 mt-1">Zusätzliche lokale Steuernummer</div>
                 </div>
               </>

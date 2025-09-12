@@ -3,7 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { collection, query, where, orderBy, onSnapshot, QueryDocumentSnapshot, DocumentData, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  QueryDocumentSnapshot,
+  DocumentData,
+  doc,
+  updateDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 
 interface Review {
@@ -47,7 +58,7 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
     setSubmittingReply(true);
     try {
       const reviewRef = doc(db, 'reviews', review.id);
-      
+
       await updateDoc(reviewRef, {
         providerResponse: {
           message: replyText.trim(),
@@ -57,7 +68,6 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
         updatedAt: serverTimestamp(),
       });
 
-      console.log('✅ Provider response saved successfully');
       setShowReplyForm(false);
       onReplySubmitted();
     } catch (err) {
@@ -73,9 +83,7 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
     return Array.from({ length: 5 }, (_, index) => (
       <svg
         key={index}
-        className={`w-4 h-4 ${
-          index < rating ? 'text-yellow-400' : 'text-gray-300'
-        }`}
+        className={`w-4 h-4 ${index < rating ? 'text-yellow-400' : 'text-gray-300'}`}
         fill="currentColor"
         viewBox="0 0 20 20"
       >
@@ -87,15 +95,15 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
   // Datum formatieren
   const formatDate = (timestamp: unknown) => {
     if (!timestamp) return 'Unbekanntes Datum';
-    
+
     try {
-      const date = (timestamp as { toDate?: () => Date }).toDate ? 
-        (timestamp as { toDate: () => Date }).toDate() : 
-        new Date(timestamp as string | number | Date);
+      const date = (timestamp as { toDate?: () => Date }).toDate
+        ? (timestamp as { toDate: () => Date }).toDate()
+        : new Date(timestamp as string | number | Date);
       return date.toLocaleDateString('de-DE', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
     } catch {
       return 'Unbekanntes Datum';
@@ -115,14 +123,10 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-900">
-                {review.customerName}
-              </p>
+              <p className="text-sm font-medium text-gray-900">{review.customerName}</p>
               <div className="flex items-center mt-1">
                 {renderStars(review.rating)}
-                <span className="ml-2 text-sm text-gray-500">
-                  {formatDate(review.createdAt)}
-                </span>
+                <span className="ml-2 text-sm text-gray-500">{formatDate(review.createdAt)}</span>
               </div>
             </div>
             {review.orderId && (
@@ -131,13 +135,9 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
               </span>
             )}
           </div>
-          
+
           {/* Kundenkommentar */}
-          {review.comment && (
-            <p className="mt-3 text-sm text-gray-700">
-              {review.comment}
-            </p>
-          )}
+          {review.comment && <p className="mt-3 text-sm text-gray-700">{review.comment}</p>}
 
           {/* Anbieter-Antwort anzeigen */}
           {review.providerResponse?.message && (
@@ -160,7 +160,12 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
                 className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                  />
                 </svg>
                 {review.providerResponse?.message ? 'Antwort bearbeiten' : 'Antworten'}
               </button>
@@ -168,11 +173,12 @@ function ReviewItem({ review, onReplySubmitted }: ReviewItemProps) {
               <div className="space-y-3">
                 <textarea
                   value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
+                  onChange={e => setReplyText(e.target.value)}
                   placeholder="Ihre Antwort auf diese Bewertung..."
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] text-sm"
                   rows={3}
                 />
+
                 <div className="flex gap-2">
                   <button
                     onClick={handleSubmitReply}
@@ -204,7 +210,7 @@ export default function ReviewsPage() {
   const params = useParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -213,7 +219,6 @@ export default function ReviewsPage() {
   useEffect(() => {
     if (!uid) return;
 
-    console.log('🔍 Loading reviews for provider:', uid);
     setLoading(true);
     setError(null);
 
@@ -226,17 +231,10 @@ export default function ReviewsPage() {
 
       const unsubscribe = onSnapshot(
         reviewsQuery,
-        (snapshot) => {
-          console.log('📋 Reviews snapshot received, size:', snapshot.size);
-          
+        snapshot => {
           const reviewsData = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
             const data = doc.data();
-            console.log('🔍 Review data from Firestore:', {
-              id: doc.id,
-              hasProviderResponse: !!data.providerResponse,
-              providerResponse: data.providerResponse
-            });
-            
+
             return {
               id: doc.id,
               rating: data.rating || 0,
@@ -252,11 +250,10 @@ export default function ReviewsPage() {
             } as Review;
           });
 
-          console.log('✅ Reviews loaded:', reviewsData.length);
           setReviews(reviewsData);
           setLoading(false);
         },
-        (err) => {
+        err => {
           console.error('❌ Error loading reviews:', err);
           setError('Fehler beim Laden der Bewertungen');
           setLoading(false);
@@ -288,9 +285,7 @@ export default function ReviewsPage() {
     return Array.from({ length: 5 }, (_, index) => (
       <svg
         key={index}
-        className={`w-5 h-5 ${
-          index < rating ? 'text-yellow-400' : 'text-gray-300'
-        }`}
+        className={`w-5 h-5 ${index < rating ? 'text-yellow-400' : 'text-gray-300'}`}
         fill="currentColor"
         viewBox="0 0 20 20"
       >
@@ -300,9 +295,10 @@ export default function ReviewsPage() {
   };
 
   // Durchschnittsbewertung berechnen
-  const averageRating = reviews.length > 0 
-    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
-    : 0;
+  const averageRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -348,8 +344,18 @@ export default function ReviewsPage() {
         ) : error ? (
           <div className="p-6 text-center">
             <div className="text-red-500 mb-4">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              <svg
+                className="mx-auto h-12 w-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Fehler beim Laden</h3>
@@ -358,8 +364,18 @@ export default function ReviewsPage() {
         ) : reviews.length === 0 ? (
           <div className="p-6 text-center">
             <div className="text-gray-400 mb-4">
-              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m0 0v10a2 2 0 002 2h6a2 2 0 002-2V8M9 12h6" />
+              <svg
+                className="mx-auto h-12 w-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 8h10m0 0V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m0 0v10a2 2 0 002 2h6a2 2 0 002-2V8M9 12h6"
+                />
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Keine Bewertungen vorhanden</h3>
@@ -369,15 +385,8 @@ export default function ReviewsPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {reviews.map((review) => (
-              <ReviewItem 
-                key={review.id} 
-                review={review} 
-                onReplySubmitted={() => {
-                  // Reviews neu laden nach Antwort
-                  console.log('Reply submitted, reloading reviews...');
-                }}
-              />
+            {reviews.map(review => (
+              <ReviewItem key={review.id} review={review} onReplySubmitted={() => {}} />
             ))}
           </div>
         )}

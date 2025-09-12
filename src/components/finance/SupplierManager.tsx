@@ -177,7 +177,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
   useEffect(() => {
     const handleOpenEditModal = (event: CustomEvent) => {
       const supplier = event.detail;
-      console.log('🎧 Event openEditModal empfangen für Lieferant:', supplier.name);
+
       if (supplier && supplier.isSupplier) {
         setEditingSupplier(supplier);
         setShowEditModal(true);
@@ -236,14 +236,12 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
 
   // View supplier details
   const handleViewSupplier = (supplier: Supplier) => {
-    console.log('🔍 View supplier clicked:', supplier.name);
     setSelectedSupplier(supplier);
     setShowDetailModal(true);
   };
 
   // Edit supplier
   const handleEditSupplier = (supplier: Supplier) => {
-    console.log('✏️ Edit supplier clicked:', supplier.name);
     setEditingSupplier(supplier);
     setShowEditModal(true);
   };
@@ -298,8 +296,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
         return;
       }
 
-      console.log('🗑️ Deleting supplier:', supplier.id, supplier.name);
-
       // Try to delete the document
       const supplierRef = doc(db, 'customers', supplier.id);
       await deleteDoc(supplierRef);
@@ -308,7 +304,6 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
       setSuppliers(prev => prev.filter(s => s.id !== supplier.id));
 
       toast.success('Lieferant erfolgreich gelöscht');
-      console.log('✅ Supplier deleted successfully');
     } catch (error) {
       console.error('Fehler beim Löschen des Lieferanten:', error);
 

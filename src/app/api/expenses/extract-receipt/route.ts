@@ -37,13 +37,11 @@ export async function POST(request: NextRequest) {
     }
 
     const filename = file.name.toLowerCase();
-    console.log('Processing file:', filename, 'Size:', file.size, 'Type:', file.type);
 
     // First try advanced OCR via Firebase Functions
     try {
       const ocrResult = await tryAdvancedOCR(file, companyId, filename);
       if (ocrResult.success) {
-        console.log('✅ Advanced OCR successful:', ocrResult.data);
         return NextResponse.json(ocrResult);
       }
     } catch (ocrError) {
@@ -51,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fallback to enhanced filename analysis
-    console.log('📁 Using enhanced filename analysis as fallback');
+
     const fallbackResult = await performEnhancedFilenameAnalysis(file, companyId, filename);
     return NextResponse.json(fallbackResult);
   } catch (error) {
@@ -100,14 +98,6 @@ async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
     mimeType: file.type,
   };
 
-  console.log('🚀 Calling Firebase Function:', `${functionUrl}/finance/ocr/extract-receipt`);
-  console.log('📄 File details:', {
-    name: filename,
-    size: file.size,
-    type: file.type,
-    base64Length: base64File.length,
-  });
-
   const response = await fetch(`${functionUrl}/finance/ocr/extract-receipt`, {
     method: 'POST',
     headers: {
@@ -119,8 +109,6 @@ async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
     body: JSON.stringify(payload),
   });
 
-  console.log('📡 Firebase Function response status:', response.status);
-
   if (!response.ok) {
     const errorText = await response.text();
     console.error('❌ Firebase Function error:', errorText);
@@ -128,7 +116,7 @@ async function tryAdvancedOCR(file: File, companyId: string, filename: string) {
   }
 
   const result = await response.json();
-  console.log('✅ Firebase Function success:', result);
+
   return result;
 }
 
@@ -173,7 +161,7 @@ async function performEnhancedFilenameAnalysis(file: File, companyId: string, fi
     const match = filename.match(pattern);
     if (match) {
       extractedData.invoiceNumber = match[1];
-      console.log('✅ Found invoice number:', match[1], 'with pattern:', pattern.source);
+
       break;
     }
   }
@@ -228,27 +216,10 @@ async function performEnhancedFilenameAnalysis(file: File, companyId: string, fi
 
         if (isRealistic && !isYear && isNotDate) {
           extractedData.amount = amount;
-          console.log(
-            '✅ Found amount:',
-            amount,
-            'from pattern:',
-            pattern.source,
-            'in text:',
-            match[0]
-          );
+
           amountFound = true;
           break;
         } else {
-          console.log(
-            '❌ Rejected amount:',
-            amount,
-            'isYear:',
-            isYear,
-            'isRealistic:',
-            isRealistic,
-            'isNotDate:',
-            isNotDate
-          );
         }
       }
     } catch (regexError) {
@@ -306,7 +277,7 @@ async function performEnhancedFilenameAnalysis(file: File, companyId: string, fi
     if (mapping.keywords.some(keyword => filename.includes(keyword))) {
       extractedData.vendor = mapping.vendor;
       extractedData.category = mapping.category;
-      console.log('✅ Found vendor by keyword:', mapping.vendor, 'category:', mapping.category);
+
       break;
     }
   }
@@ -362,7 +333,7 @@ async function performEnhancedFilenameAnalysis(file: File, companyId: string, fi
 
         if (year >= 2020 && year <= 2030 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
           extractedData.date = new Date(year, month - 1, day).toISOString().split('T')[0];
-          console.log('✅ Found date:', extractedData.date, 'from pattern:', pattern.source);
+
           break;
         }
       } catch (e) {
@@ -395,15 +366,6 @@ async function performEnhancedFilenameAnalysis(file: File, companyId: string, fi
     extractedData.vatAmount =
       Math.round((extractedData.amount - extractedData.netAmount) * 100) / 100;
   }
-
-  console.log('📋 Fallback extraction complete:', {
-    filename: file.name,
-    hasAmount: !!extractedData.amount,
-    hasInvoiceNumber: !!extractedData.invoiceNumber,
-    hasVendor: !!extractedData.vendor,
-    hasDate: !!extractedData.date,
-    extractedData,
-  });
 
   // Generate detailed message
   const foundItems: string[] = [];

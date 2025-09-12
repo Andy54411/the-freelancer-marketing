@@ -68,45 +68,33 @@ export default function HoursBillingOverview({
         });
 
         if (!response.ok) {
-          console.log('❌ Auftrag nicht gefunden für Rolle-Bestimmung');
           return null;
         }
 
         const result = await response.json();
         if (!result.success || !result.order) {
-          console.log('❌ Auftragsdaten nicht verfügbar für Rolle-Bestimmung');
           return null;
         }
 
         const orderData = result.order;
         setOrderData(orderData);
 
-        console.log('👤 Bestimme Benutzerrolle für HoursBillingOverview:', {
-          currentUserId: userId,
-          isCustomerView, // NEU: Prop-basierte Rollenerkennung
-          customerFirebaseUid: orderData.customerFirebaseUid,
-          selectedAnbieterId: orderData.selectedAnbieterId,
-        });
-
         // 🆕 VORRANG: Verwende isCustomerView Prop wenn verfügbar
         if (isCustomerView !== undefined) {
           const roleFromProp = isCustomerView ? 'customer' : 'provider';
-          console.log('🎯 Verwende Prop-basierte Rolle:', roleFromProp);
+
           setUserRole(roleFromProp);
           return roleFromProp;
         }
 
         // Fallback: Firebase-basierte Rollenerkennung
         if (userId === orderData.customerFirebaseUid) {
-          console.log('🛒 Benutzer ist KUNDE - zeige Freigabe-Buttons');
           setUserRole('customer');
           return 'customer';
         } else if (userId === orderData.selectedAnbieterId) {
-          console.log('🏢 Benutzer ist ANBIETER - verstecke Freigabe-Buttons');
           setUserRole('provider');
           return 'provider';
         } else {
-          console.log('❓ Benutzer-Rolle unbekannt');
           setUserRole(null);
           return null;
         }

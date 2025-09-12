@@ -155,25 +155,15 @@ export default function AddEmployeePage() {
   };
 
   const handleSave = async () => {
-    console.log('🔄 handleSave aufgerufen');
-    console.log('📊 Employee data:', employee);
-    console.log('🔑 CompanyId:', companyId);
-    console.log('👤 Current user auth state:', auth.currentUser?.uid);
-
     if (!validateForm()) {
-      console.log('❌ Validierung fehlgeschlagen:', errors);
       return;
     }
 
-    console.log('✅ Validierung erfolgreich, beginne Speichervorgang...');
     setLoading(true);
     try {
       // Debug: Test Firebase Auth & Token
       if (auth.currentUser) {
         const idTokenResult = await auth.currentUser.getIdTokenResult(true);
-        console.log('🔑 User Token Claims:', idTokenResult.claims);
-        console.log('📧 User Email:', auth.currentUser.email);
-        console.log('🆔 User UID:', auth.currentUser.uid);
       }
 
       // Bereinige undefined Werte für Firebase und füge erweiterte Daten hinzu
@@ -233,9 +223,8 @@ export default function AddEmployeePage() {
       };
 
       // Verwende PersonalService für echte Datenbankoperationen
-      console.log('📝 Sende Daten an PersonalService:', cleanEmployeeData);
+
       const newEmployee = await PersonalService.addEmployee(companyId, cleanEmployeeData);
-      console.log('✅ Neuer Mitarbeiter erstellt:', newEmployee);
 
       // **PHASE 2: Tab-spezifische Daten speichern (falls vorhanden)**
       if (newEmployee.id) {
@@ -259,13 +248,12 @@ export default function AddEmployeePage() {
       );
 
       // Zurück zur Übersicht
-      console.log('🔙 Navigiere zurück zu employees...');
+
       router.push(`/dashboard/company/${companyId}/personal/employees`);
     } catch (error) {
       console.error('❌ Fehler beim Speichern:', error);
       toast.error('Fehler beim Speichern des Mitarbeiters');
     } finally {
-      console.log('🏁 Speichervorgang beendet');
       setLoading(false);
     }
   };
@@ -305,7 +293,6 @@ export default function AddEmployeePage() {
               </Button>
               <Button
                 onClick={() => {
-                  console.log('🖱️ Speichern-Button geklickt');
                   handleSave();
                 }}
                 disabled={loading}

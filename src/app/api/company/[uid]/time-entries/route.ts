@@ -14,8 +14,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Optional: Filter nach Projekt-ID
     const projectId = searchParams.get('projectId');
 
-    console.log('🔍 Loading time entries for company:', companyId, 'projectId:', projectId);
-
     // Basis-Query für alle Zeiteinträge der Company
     let query = db.collection('timeEntries').where('companyId', '==', companyId);
 
@@ -64,12 +62,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       projectBreakdown[projId].totalHours =
         Math.round((projectBreakdown[projId].totalDuration / 60) * 100) / 100;
       projectBreakdown[projId].entries.push(entry);
-    });
-
-    console.log('✅ Loaded time entries:', {
-      total: totalEntries,
-      totalHours,
-      projects: Object.keys(projectBreakdown).length,
     });
 
     return NextResponse.json({

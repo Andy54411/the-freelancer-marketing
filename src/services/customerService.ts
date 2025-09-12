@@ -19,7 +19,6 @@ import { db } from '@/firebase/clients';
 import { Customer } from '@/components/finance/AddCustomerModal';
 
 export class CustomerService {
-  
   /**
    * Alle Kunden für eine Company abrufen
    */
@@ -28,7 +27,7 @@ export class CustomerService {
       const customersRef = collection(db, 'customers');
       const q = query(customersRef, where('companyId', '==', companyId), orderBy('name', 'asc'));
       const snapshot = await getDocs(q);
-      
+
       return snapshot.docs.map(doc => {
         const data = doc.data();
         const customerNumber = data.customerNumber || `KD-${doc.id.substring(0, 6).toUpperCase()}`;
@@ -67,13 +66,14 @@ export class CustomerService {
   static async getCustomer(companyId: string, customerId: string): Promise<Customer | null> {
     try {
       const customerDoc = await getDoc(doc(db, 'customers', customerId));
-      
+
       if (!customerDoc.exists()) {
         return null;
       }
 
       const data = customerDoc.data();
-      const customerNumber = data.customerNumber || `KD-${customerDoc.id.substring(0, 6).toUpperCase()}`;
+      const customerNumber =
+        data.customerNumber || `KD-${customerDoc.id.substring(0, 6).toUpperCase()}`;
 
       return {
         id: customerDoc.id,
@@ -119,8 +119,7 @@ export class CustomerService {
       };
 
       const docRef = await addDoc(collection(db, 'customers'), newCustomer);
-      console.log('✅ Customer created with ID:', docRef.id);
-      
+
       return docRef.id;
     } catch (error) {
       console.error('❌ Error creating customer:', error);
@@ -131,15 +130,17 @@ export class CustomerService {
   /**
    * Aktualisiert einen Kunden
    */
-  static async updateCustomer(companyId: string, customerId: string, updates: Partial<Customer>): Promise<void> {
+  static async updateCustomer(
+    companyId: string,
+    customerId: string,
+    updates: Partial<Customer>
+  ): Promise<void> {
     try {
       const customerRef = doc(db, 'customers', customerId);
       await updateDoc(customerRef, {
         ...updates,
         updatedAt: new Date().toISOString(),
       });
-      
-      console.log('✅ Customer updated:', customerId);
     } catch (error) {
       console.error('❌ Error updating customer:', error);
       throw error;
@@ -152,7 +153,6 @@ export class CustomerService {
   static async deleteCustomer(companyId: string, customerId: string): Promise<void> {
     try {
       await deleteDoc(doc(db, 'customers', customerId));
-      console.log('✅ Customer deleted:', customerId);
     } catch (error) {
       console.error('❌ Error deleting customer:', error);
       throw error;
@@ -165,16 +165,17 @@ export class CustomerService {
   static async searchCustomers(companyId: string, searchTerm: string): Promise<Customer[]> {
     try {
       const customers = await this.getCustomers(companyId);
-      
+
       if (!searchTerm.trim()) {
         return customers;
       }
 
       const term = searchTerm.toLowerCase();
-      return customers.filter(customer => 
-        customer.name.toLowerCase().includes(term) ||
-        customer.email.toLowerCase().includes(term) ||
-        customer.customerNumber.toLowerCase().includes(term)
+      return customers.filter(
+        customer =>
+          customer.name.toLowerCase().includes(term) ||
+          customer.email.toLowerCase().includes(term) ||
+          customer.customerNumber.toLowerCase().includes(term)
       );
     } catch (error) {
       console.error('❌ Error searching customers:', error);
@@ -188,7 +189,7 @@ export class CustomerService {
   static async getNextCustomerNumber(companyId: string): Promise<string> {
     try {
       const customers = await this.getCustomers(companyId);
-      
+
       // Finde die höchste Kundennummer
       let maxNumber = 0;
       customers.forEach(customer => {
@@ -222,9 +223,9 @@ export class CustomerService {
       orderBy('name', 'asc')
     );
 
-    return onSnapshot(customersQuery, (snapshot) => {
+    return onSnapshot(customersQuery, snapshot => {
       const customers: Customer[] = [];
-      
+
       snapshot.forEach(doc => {
         const data = doc.data();
         const customerNumber = data.customerNumber || `KD-${doc.id.substring(0, 6).toUpperCase()}`;
@@ -286,12 +287,16 @@ export class CustomerService {
   /**
    * Prüft ob eine E-Mail bereits verwendet wird
    */
-  static async isEmailTaken(companyId: string, email: string, excludeCustomerId?: string): Promise<boolean> {
+  static async isEmailTaken(
+    companyId: string,
+    email: string,
+    excludeCustomerId?: string
+  ): Promise<boolean> {
     try {
       const customers = await this.getCustomers(companyId);
-      return customers.some(customer => 
-        customer.email.toLowerCase() === email.toLowerCase() && 
-        customer.id !== excludeCustomerId
+      return customers.some(
+        customer =>
+          customer.email.toLowerCase() === email.toLowerCase() && customer.id !== excludeCustomerId
       );
     } catch (error) {
       console.error('❌ Error checking email:', error);
@@ -305,7 +310,7 @@ export class CustomerService {
   static async exportCustomersCSV(companyId: string): Promise<string> {
     try {
       const customers = await this.getCustomers(companyId);
-      
+
       const headers = [
         'Kundennummer',
         'Name',
@@ -320,27 +325,29 @@ export class CustomerService {
         'USt-IdNr',
         'Anzahl Rechnungen',
         'Gesamtumsatz',
-        'Erstellt am'
+        'Erstellt am',
       ];
 
       const csvRows = [
         headers.join(','),
-        ...customers.map(customer => [
-          customer.customerNumber,
-          `"${customer.name}"`,
-          customer.email,
-          customer.phone || '',
-          `"${customer.address}"`,
-          `"${customer.street || ''}"`,
-          `"${customer.city || ''}"`,
-          customer.postalCode || '',
-          customer.country || '',
-          customer.taxNumber || '',
-          customer.vatId || '',
-          customer.totalInvoices.toString(),
-          customer.totalAmount.toFixed(2),
-          new Date(customer.createdAt).toLocaleDateString('de-DE')
-        ].join(','))
+        ...customers.map(customer =>
+          [
+            customer.customerNumber,
+            `"${customer.name}"`,
+            customer.email,
+            customer.phone || '',
+            `"${customer.address}"`,
+            `"${customer.street || ''}"`,
+            `"${customer.city || ''}"`,
+            customer.postalCode || '',
+            customer.country || '',
+            customer.taxNumber || '',
+            customer.vatId || '',
+            customer.totalInvoices.toString(),
+            customer.totalAmount.toFixed(2),
+            new Date(customer.createdAt).toLocaleDateString('de-DE'),
+          ].join(',')
+        ),
       ];
 
       return csvRows.join('\n');

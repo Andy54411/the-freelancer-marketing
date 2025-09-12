@@ -57,8 +57,6 @@ export default function InvoiceTemplatesPage() {
           if (preferredTemplate && AVAILABLE_TEMPLATES.some(t => t.id === preferredTemplate)) {
             setSelectedTemplate(preferredTemplate as InvoiceTemplate);
           }
-
-          console.log('✅ Template-Präferenz via API geladen:', preferredTemplate);
         }
       } catch (error) {
         console.error('❌ Fehler beim Laden der Template-Präferenz:', error);

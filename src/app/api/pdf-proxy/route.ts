@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('Fetching PDF from:', url);
-
     // Fetch die PDF von Firebase Storage
     const response = await fetch(url, {
       method: 'GET',

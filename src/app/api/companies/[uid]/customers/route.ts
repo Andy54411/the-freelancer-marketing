@@ -59,7 +59,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
       // Überspringe Lieferanten basierend auf isSupplier Flag oder LF-Nummer
       if (isSupplier || isLieferantNumber) {
-        console.log(`🚫 Skipping supplier: ${data.name} (${customerNumber})`);
         return;
       }
 

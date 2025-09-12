@@ -138,7 +138,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       timeEntriesUnsubscribe();
     }
 
-    console.log('🔄 Setting up realtime listeners for company:', companyId);
+    // Debug-Log entfernt
 
     // Projects Realtime Listener
     const projectsQuery = query(
@@ -148,9 +148,9 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
     const projectsUnsub = onSnapshot(
       projectsQuery,
-      (snapshot) => {
-        console.log('📊 Projects realtime update:', snapshot.docs.length, 'projects');
-        
+      snapshot => {
+        // Debug-Log entfernt
+
         const projectsData = snapshot.docs.map(doc => {
           const data = doc.data();
           return {
@@ -164,17 +164,17 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         });
 
         setProjects(projectsData);
-        
+
         // Lade automatisch tracked hours für alle Projekte
         loadTrackedHoursForProjects(projectsData);
-        
+
         if (!loading) {
-          console.log('✅ Projects updated via realtime listener');
+          // Debug-Log entfernt
         } else {
           setLoading(false);
         }
       },
-      (error) => {
+      error => {
         console.error('❌ Projects realtime listener error:', error);
         setLoading(false);
       }
@@ -191,14 +191,14 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
     const timeEntriesUnsub = onSnapshot(
       timeEntriesQuery,
-      (snapshot) => {
-        console.log('⏱️ Time entries realtime update:', snapshot.docs.length, 'entries');
-        
+      snapshot => {
+        // Debug-Log entfernt
+
         // Aktualisiere tracked hours für alle betroffenen Projekte
         const currentProjectsData = [...projects];
         loadTrackedHoursForProjects(currentProjectsData);
       },
-      (error) => {
+      error => {
         console.error('❌ Time entries realtime listener error:', error);
       }
     );
@@ -212,21 +212,21 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
   // Lade tracked hours für alle Projekte
   const loadTrackedHoursForProjects = async (projectsData: Project[]) => {
     try {
-      console.log('🔄 Loading tracked hours for', projectsData.length, 'projects');
-      
+      // Debug-Log entfernt
+
       // Aktualisiere alle Projekte parallel
       const updatedProjects = await Promise.all(
-        projectsData.map(async (project) => {
+        projectsData.map(async project => {
           const trackedHours = await calculateTrackedHours(project.id);
           return {
             ...project,
-            trackedHours
+            trackedHours,
           };
         })
       );
 
       setProjects(updatedProjects);
-      console.log('✅ Updated all projects with tracked hours');
+      // Debug-Log entfernt
     } catch (error) {
       console.error('❌ Error loading tracked hours for projects:', error);
     }
@@ -235,8 +235,8 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
   const loadProjects = async () => {
     try {
       setLoading(true);
-      console.log('🚀 Lade Projekte für Company:', companyId);
-      
+      // Debug-Log entfernt
+
       const projectsQuery = query(
         collection(db, 'companies', companyId, 'projects'),
         orderBy('createdAt', 'desc')
@@ -245,19 +245,19 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       const querySnapshot = await getDocs(projectsQuery);
       const loadedProjects: Project[] = [];
 
-      console.log('📋 Gefundene Projekte:', querySnapshot.size);
+      // Debug-Log entfernt
 
       // Lade auch die Zeiteinträge für jedes Projekt
       for (const docSnapshot of querySnapshot.docs) {
         const data = docSnapshot.data();
         const projectId = docSnapshot.id;
 
-        console.log('🔍 Verarbeite Projekt:', projectId, data.name);
+        // Debug-Log entfernt
 
         // Berechne die tatsächlich erfassten Stunden für dieses Projekt
         const actualTrackedHours = await calculateTrackedHours(projectId);
 
-        console.log('⏱️ Projekt', data.name, 'hat', actualTrackedHours, 'erfasste Stunden');
+        // Debug-Log entfernt
 
         loadedProjects.push({
           id: projectId,
@@ -281,14 +281,13 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         });
       }
 
-      console.log('✅ Alle Projekte geladen:', loadedProjects.length);
-      console.log('📊 Projekte mit Zeiteinträgen:', loadedProjects.map(p => `${p.name}: ${p.trackedHours}h`));
-      
+      // Debug-Logs entfernt
+
       setProjects(loadedProjects);
-      
+
       // Debug: Nach dem State-Update
       setTimeout(() => {
-        console.log('🔍 CURRENT PROJECTS STATE:', projects.map(p => `${p.name}: ${p.trackedHours}h`));
+        // Debug-Log entfernt
       }, 100);
     } catch (error) {
       toast.error('Projekte konnten nicht geladen werden');
@@ -300,24 +299,23 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
   // Neue Funktion: Berechne die tatsächlich erfassten Stunden für ein Projekt
   const calculateTrackedHours = async (projectId: string): Promise<number> => {
     try {
-      console.log('🔍 Lade Zeiteinträge für Projekt:', projectId, 'Company:', companyId);
-      
+      // Debug-Log entfernt
+
       // Verwende die neue API anstatt direkter Firestore-Abfrage
       const response = await fetch(`/api/company/${companyId}/time-entries?projectId=${projectId}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to load time entries');
       }
-      
-      console.log('📊 API response für Projekt:', projectId, data);
-      console.log('✅ Berechnete Gesamtstunden:', data.totalHours);
-      
+
+      // Debug-Logs entfernt
+
       return data.totalHours || 0;
     } catch (error) {
       console.error('❌ Fehler beim Laden der Zeiteinträge für Projekt', projectId, ':', error);
@@ -481,26 +479,16 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
 
   const handleCreateProject = async () => {
     try {
-      console.log('🚀 Starting project creation...');
-      console.log('📊 Auth state:', {
-        user: user?.uid,
-        companyId: companyId,
-        userEmail: user?.email,
-      });
+      // Debug-Logs entfernt
 
       // Check auth token and role using Firebase Auth
       const currentUser = auth.currentUser;
       if (currentUser) {
         const token = await currentUser.getIdTokenResult();
-        console.log('🔑 User token claims:', {
-          role: token.claims.role,
-          customClaims: token.claims,
-          uid: token.claims.user_id || currentUser.uid,
-        });
+        // Debug-Log entfernt
       }
 
       if (!newProject.name || !newProject.client) {
-        console.log('❌ Validation failed: Missing required fields');
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
         return;
       }
@@ -526,13 +514,12 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
         updatedAt: serverTimestamp(),
       };
 
-      console.log('📝 Project data to create:', projectData);
-      console.log('📍 Collection path:', `companies/${companyId}/projects`);
+      // Debug-Logs entfernt
 
       // Add to Firebase - Use company-specific collection
       const docRef = await addDoc(collection(db, 'companies', companyId, 'projects'), projectData);
-      
-      console.log('✅ Project created successfully with ID:', docRef.id);
+
+      // Debug-Log entfernt
 
       // Create local project object for immediate UI update
       const project: Project = {
@@ -575,7 +562,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
       toast.success('Projekt wurde erfolgreich erstellt');
     } catch (error) {
       console.error('🚨 Error creating project:', error);
-      
+
       // Detailed error logging
       if (error && typeof error === 'object') {
         console.error('🔍 Error details:', {
@@ -585,7 +572,7 @@ export function ProjectsComponent({ companyId }: ProjectsComponentProps) {
           stack: (error as any).stack,
         });
       }
-      
+
       // Check if it's a Firestore permission error
       if ((error as any)?.code === 'permission-denied') {
         console.error('🚫 PERMISSION DENIED - Check Firestore rules!');

@@ -241,10 +241,6 @@ export function WorkspaceBoard({
         boardColumns: updatedColumns,
         updatedAt: new Date(),
       });
-
-      console.log(
-        `🔄 Task "${movedTask.title}" moved from "${sourceColumn.title}" to "${destColumn.title}" (Realtime sync active)`
-      );
     }
   };
 
@@ -303,10 +299,6 @@ export function WorkspaceBoard({
         boardColumns: updatedColumns,
         updatedAt: new Date(),
       });
-
-      console.log(
-        `✅ Task "${newTask.title}" created in column "${columns.find(col => col.id === selectedColumnId)?.title}" (Realtime sync active)`
-      );
     } catch (error) {
       console.error('Failed to create task:', error);
     }
@@ -719,6 +711,7 @@ export function WorkspaceBoard({
                             <div
                               className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`}
                             />
+
                             <h3 className="font-medium text-gray-900">{task.title}</h3>
                             <Badge variant="outline">{task.priority}</Badge>
                             <Badge variant="outline" className="bg-orange-50 text-orange-600">
@@ -875,6 +868,7 @@ export function WorkspaceBoard({
                                             <div
                                               className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`}
                                             />
+
                                             <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
                                                 <Button

@@ -30,7 +30,6 @@ export class RevolutOpenBankingService {
       // Use certificates from environment variables (Vercel deployment)
       this.transportCert = process.env.REVOLUT_TRANSPORT_CERT;
       this.privateKey = process.env.REVOLUT_PRIVATE_KEY;
-      console.log('🔐 Using Revolut certificates from environment variables');
     } else {
       // Fallback to file system (local development)
       const transportCertPath =
@@ -41,7 +40,6 @@ export class RevolutOpenBankingService {
         if (fs.existsSync(transportCertPath) && fs.existsSync(privateKeyPath)) {
           this.transportCert = fs.readFileSync(transportCertPath, 'utf8');
           this.privateKey = fs.readFileSync(privateKeyPath, 'utf8');
-          console.log('🔐 Using Revolut certificates from files');
         } else {
           console.warn('🚨 Revolut certificates not found, using placeholder');
           this.transportCert = 'placeholder-cert';
@@ -115,9 +113,6 @@ export class RevolutOpenBankingService {
         });
 
         res.on('end', () => {
-          console.log('Revolut auth response status:', res.statusCode);
-          console.log('Revolut auth response:', data);
-
           if (res.statusCode !== 200) {
             reject(new Error(`Revolut Auth Error: ${res.statusCode} - ${data}`));
             return;
@@ -125,7 +120,7 @@ export class RevolutOpenBankingService {
 
           try {
             const tokenData = JSON.parse(data);
-            console.log('✅ Revolut Access Token obtained:', tokenData.token_type);
+
             resolve(tokenData.access_token);
           } catch (error) {
             reject(new Error(`Failed to parse token response: ${data}`));
@@ -174,9 +169,6 @@ export class RevolutOpenBankingService {
         });
 
         res.on('end', () => {
-          console.log(`API response status for ${endpoint}:`, res.statusCode);
-          console.log(`API response for ${endpoint}:`, data);
-
           if (res.statusCode !== 200) {
             reject(new Error(`API Error: ${res.statusCode} - ${data}`));
             return;
@@ -249,8 +241,6 @@ export class RevolutOpenBankingService {
     expires_in: number;
     refresh_token?: string;
   }> {
-    console.log('🔄 Refreshing Revolut access token...');
-
     // Create HTTPS agent with client certificates
     const httpsAgent = new https.Agent({
       cert: this.transportCert,
@@ -282,7 +272,6 @@ export class RevolutOpenBankingService {
     }
 
     const tokenData = await response.json();
-    console.log('✅ Token refreshed successfully');
 
     return tokenData;
   }
@@ -295,11 +284,7 @@ export class RevolutOpenBankingService {
     totalAccounts: number;
     environment: string;
   }> {
-    console.log('🔧 Testing Revolut Open Banking connection...');
-
     const accounts = await this.getAccounts();
-
-    console.log('✅ Revolut accounts retrieved:', accounts.length);
 
     return {
       accounts,

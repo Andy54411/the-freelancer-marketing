@@ -33,8 +33,6 @@ export async function GET(req: NextRequest) {
           throw new Error('Company email not found');
         }
 
-        console.log('🎉 WebForm success callback - using company email:', companyEmail);
-
         // Use the SAME session as WebForm creation via syncUserBankData
         const finapiService = createFinAPIService();
         const bankData = await finapiService.syncUserBankData(companyEmail, userId);
@@ -43,8 +41,6 @@ export async function GET(req: NextRequest) {
         const connection = bankData.connections.find((conn: any) => conn.id === connectionId);
 
         if (connection) {
-          console.log('✅ Found bank connection:', connection.bankName || 'Unknown Bank');
-
           // Speichere Bank-Verbindung in Firestore
           await storeBankConnection(userId, {
             connectionId: connectionId,
@@ -68,8 +64,6 @@ export async function GET(req: NextRequest) {
           );
 
           if (connectionAccounts.length > 0) {
-            console.log('✅ Found accounts for connection:', connectionAccounts.length);
-
             // Konvertiere finAPI Accounts zu StoredBankAccount Format
             const storedAccounts = connectionAccounts.map((account: any) => ({
               accountId: account.id?.toString() || 'unknown',

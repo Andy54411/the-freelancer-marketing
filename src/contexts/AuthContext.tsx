@@ -136,13 +136,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const finalRole = roleFromClaim || roleFromDb;
 
             // Debug: Rollen loggen
-            console.log('🔍 LOGIN REDIRECT CHECK:', {
-              uid: fbUser.uid,
-              email: fbUser.email,
-              user_type: finalRole,
-              pathname,
-              isRedirecting,
-            });
 
             setUser({
               uid: fbUser.uid,
@@ -161,17 +154,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               // 1. Nach Login-Redirect ODER Homepage-Redirect
               if (pathname?.includes('/login') || pathname === '/') {
                 needsRedirect = true;
-                console.log('🔄 HOMEPAGE/LOGIN REDIRECT erkannt für:', finalRole);
               }
               // 2. Firma User auf User Dashboard - SOFORT UMLEITEN!
               else if (finalRole === 'firma' && pathname?.includes('/dashboard/user/')) {
                 needsRedirect = true;
-                console.log('🚨 FIRMA auf USER DASHBOARD erkannt! Sofortige Umleitung...');
               }
               // 3. Kunde User auf Company Dashboard - SOFORT UMLEITEN!
               else if (finalRole === 'kunde' && pathname?.includes('/dashboard/company/')) {
                 needsRedirect = true;
-                console.log('🚨 KUNDE auf COMPANY DASHBOARD erkannt! Sofortige Umleitung...');
               }
 
               if (needsRedirect) {
@@ -186,8 +176,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                         ? '/dashboard/admin'
                         : `/dashboard/user/${fbUser.uid}`; // Fallback
 
-                console.log(`🚀 AUTO-REDIRECT: ${finalRole} von ${pathname} → ${targetPath}`);
-
                 // ROBUSTES REDIRECT mit Fallback
                 try {
                   window.location.assign(targetPath);
@@ -195,7 +183,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   // Fallback nach 2 Sekunden
                   setTimeout(() => {
                     if (window.location.pathname !== targetPath) {
-                      console.log('⚠️ REDIRECT FALLBACK: window.location.href');
                       window.location.href = targetPath;
                     }
                   }, 2000);
@@ -308,8 +295,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       orderBy('lastUpdated', 'desc'),
       limit(5)
     );
-
-    const unsubscribe = onSnapshot(
+     const unsubscribe = onSnapshot(
       recentChatsQuery,
       snapshot => {
         const chatsData = snapshot.docs.map(doc => {
@@ -320,8 +306,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             user.user_type === 'firma'
               ? `/dashboard/company/${user.uid}/inbox`
               : `/dashboard/user/${user.uid}/inbox`;
-
-          return {
+           return {
             id: doc.id,
             otherUserName: userDetails?.name || 'Unbekannter Benutzer',
             otherUserAvatarUrl: userDetails?.avatarUrl || null,
@@ -330,8 +315,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             link: inboxLink,
           };
         });
-
-        const unreadCount = chatsData.filter(chat => chat.isUnread).length;
+         const unreadCount = chatsData.filter(chat => chat.isUnread).length;
         setUnreadMessagesCount(unreadCount);
         setRecentChats(chatsData);
       },
@@ -341,8 +325,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setRecentChats([]);
       }
     );
-
-    return unsubscribe;
+     return unsubscribe;
     */
 
     // Placeholder für Chat-Daten ohne Real-time Subscription

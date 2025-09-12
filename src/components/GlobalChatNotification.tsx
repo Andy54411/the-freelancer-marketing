@@ -17,11 +17,7 @@ export default function GlobalChatNotification({
 
   if (totalUnreadCount === 0) return null;
 
-  const handleClick = () => {
-    // Hier können wir zur Inbox navigieren oder ein Dropdown öffnen
-    console.log('🔔 Global chat notifications clicked:', notifications);
-    // Optional: Öffne ein Dropdown mit allen Chat-Benachrichtigungen
-  };
+  const handleClick = () => {};
 
   return (
     <div className={`relative ${className}`}>

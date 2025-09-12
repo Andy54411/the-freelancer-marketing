@@ -53,8 +53,6 @@ export async function setupStripeWebhooks(
       apiVersion: '2024-06-20',
     });
 
-    console.log('🔧 Setting up Stripe webhooks...');
-
     // Get existing webhooks
     const existingWebhooks = await stripe.webhookEndpoints.list();
 
@@ -71,7 +69,6 @@ export async function setupStripeWebhooks(
       );
 
       if (existing) {
-        console.log(`✅ Webhook already exists: ${fullUrl}`);
         results.push({
           url: fullUrl,
           status: 'exists',
@@ -88,7 +85,6 @@ export async function setupStripeWebhooks(
         api_version: '2024-06-20',
       });
 
-      console.log(`✅ Created webhook: ${fullUrl}`);
       results.push({
         url: fullUrl,
         status: 'created',
@@ -132,8 +128,6 @@ export async function testWebhookConnectivity(stripeSecretKey: string): Promise<
         timestamp: Date.now().toString(),
       },
     });
-
-    console.log('✅ Test charge created:', testCharge.id);
 
     return {
       success: true,

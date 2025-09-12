@@ -160,9 +160,7 @@ export default function EditInvoicePage() {
             }
             return; // Success, exit early
           }
-        } catch (serviceError) {
-          console.log('FirestoreInvoiceService failed, trying direct access:', serviceError);
-        }
+        } catch (serviceError) {}
 
         // Fallback: Try different collection paths
         const possiblePaths = [
@@ -183,9 +181,7 @@ export default function EditInvoicePage() {
                 break;
               }
             }
-          } catch (pathError) {
-            console.log(`Failed to access path ${path.path}:`, pathError);
-          }
+          } catch (pathError) {}
         }
 
         if (invoiceData) {
@@ -210,7 +206,7 @@ export default function EditInvoicePage() {
           }
         } else {
           // Create mock data for testing if no invoice found
-          console.log('No invoice found, creating mock data for testing');
+
           setFormData({
             customerName: 'Test Kunde',
             customerEmail: 'test@kunde.de',
@@ -356,7 +352,6 @@ export default function EditInvoicePage() {
     // Keine automatische Generierung der Rechnungsnummer für Entwürfe
     // Die Nummer wird erst beim Finalisieren erstellt
   }, [uid]); // Entferne die automatische Generierung komplett
-
   // Auto-set due date (14 days from issue date)
   React.useEffect(() => {
     if (formData.issueDate && !formData.dueDate) {
@@ -727,6 +722,7 @@ export default function EditInvoicePage() {
                       }
                       placeholder="Rechnungsnummer eingeben oder automatisch generieren lassen"
                     />
+
                     <p className="text-sm text-gray-500">
                       Bestehende Rechnungsnummer bearbeiten oder neue eingeben
                     </p>

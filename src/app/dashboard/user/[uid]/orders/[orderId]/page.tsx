@@ -99,13 +99,6 @@ export default function OrderDetailPage() {
       }
     }
 
-    console.log('🔍 OrderID Extraktion:', {
-      params,
-      extractedId,
-      pathname: typeof window !== 'undefined' ? window.location.pathname : 'server',
-      segments: typeof window !== 'undefined' ? window.location.pathname.split('/') : [],
-    });
-
     if (extractedId && extractedId !== orderId) {
       setOrderId(extractedId);
     }
@@ -159,17 +152,10 @@ export default function OrderDetailPage() {
 
     // Wenn nach dem Laden kein Benutzer da ist, zum Login weiterleiten.
     if (!currentUser) {
-      console.log('❌ Kein currentUser gefunden, weiterleitung zum Login');
       const currentPath = window.location.pathname + window.location.search;
       router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
       return;
     }
-
-    console.log('✅ CurrentUser geladen:', {
-      uid: currentUser.uid,
-      user_type: currentUser.user_type,
-      email: currentUser.email,
-    });
 
     // Wenn die orderId fehlt, ist das ein Fehler.
     if (!orderId) {
@@ -186,13 +172,6 @@ export default function OrderDetailPage() {
       return;
     }
 
-    console.log('✅ OrderId gelesen:', {
-      orderId,
-      params,
-      url: window.location.href,
-      pathname: window.location.pathname,
-    });
-
     // Zuerst laden wir die Daten über die API (mit ordentlicher Autorisierung)
     // Dann starten wir den Realtime-Listener für Updates
     const initializeOrder = async () => {
@@ -206,12 +185,8 @@ export default function OrderDetailPage() {
           throw new Error('No authentication token available');
         }
 
-        console.log('🔍 Lade Order über API:', orderId);
-
         // Load initial order data via API (with proper authorization)
         const orderData = await getSingleOrder(orderId, idToken);
-
-        console.log('✅ Order über API geladen:', orderData);
 
         // Get participant details
         const { provider: providerDetails, customer: customerDetails } =
@@ -261,10 +236,7 @@ export default function OrderDetailPage() {
     initializeOrder();
 
     // Cleanup function für den useEffect
-    return () => {
-      // Hier könnte später ein Cleanup für Realtime-Listener stehen
-      console.log('🧹 Order Detail Component cleanup');
-    };
+    return () => {};
   }, [authLoading, currentUser?.uid, orderId, router]); // firebaseUser entfernt, da es sich häufig ändert
 
   // Payment Modal State Monitor

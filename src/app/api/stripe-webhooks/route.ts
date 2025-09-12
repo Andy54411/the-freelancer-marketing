@@ -326,7 +326,6 @@ export async function POST(req: NextRequest) {
                   if (!connectAccount.charges_enabled) {
                     // Trotzdem weitermachen, aber warnen
                   }
-
                   // ❌ ENTFERNT: Automatischer Transfer für Additional Hours
                   // const transfer = await stripe.transfers.create({
                   //   amount: transferAmount,
@@ -638,8 +637,6 @@ export async function POST(req: NextRequest) {
             // Extract amount from PaymentIntent if proposal amount is missing
             const proposalAmount = proposal.totalAmount || proposal.price;
             const finalAmount = proposalAmount || paymentIntentSucceeded.amount / 100;
-
-            console.log('💰 Creating order with amount:', finalAmount);
 
             // Create order in auftraege collection
             const orderData = {

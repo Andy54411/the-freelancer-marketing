@@ -191,46 +191,23 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   // Load customers from Firestore
   const loadCustomers = async () => {
     try {
-      console.log('🔍 Loading customers...');
-      console.log('📍 Company ID:', companyId);
-      console.log('👤 Current User:', user?.uid);
-
-      // Debug: Auth information
-      console.log('🔐 Auth Debug:');
-      console.log('- User UID:', user?.uid);
-      console.log('- Company ID:', companyId);
-      console.log('- User object:', user);
-
-      // Debug: Token information (if available)
-      if (user && auth.currentUser) {
-        try {
-          const tokenResult = await auth.currentUser.getIdTokenResult();
-          console.log('- Custom Claims:', tokenResult.claims);
-          console.log('- Role:', tokenResult.claims.role);
-        } catch (tokenError) {
-          console.log('- Token Error:', tokenError);
-        }
-      }
+      // Debug-Logs entfernt
 
       setLoading(true);
 
       // TEMPORÄRE VEREINFACHTE QUERY - Index-Problem umgehen
-      console.log('🔍 Executing simplified customers query...');
       const customersQuery = query(
         collection(db, 'customers'),
         where('companyId', '==', companyId)
         // Temporär ohne isSupplier Filter und orderBy
       );
 
-      console.log('🔍 Executing customers query...');
       const querySnapshot = await getDocs(customersQuery);
-      console.log('📋 Raw query result - documents found:', querySnapshot.size);
 
       const loadedCustomers: Customer[] = [];
 
       querySnapshot.forEach(doc => {
         const data = doc.data();
-        console.log(`📄 Customer document ${doc.id}:`, data);
 
         loadedCustomers.push({
           id: doc.id,
@@ -267,9 +244,6 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
             customer.isSupplier === false ||
             (customer.isSupplier == null && !customer.customerNumber?.startsWith('LF-'));
 
-          console.log(
-            `🔍 Customer ${customer.customerNumber} (${customer.name}): isSupplier=${customer.isSupplier}, filtered=${isNotSupplier}`
-          );
           return isNotSupplier;
         })
         .sort((a, b) => {
@@ -279,14 +253,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
           return dateB - dateA;
         });
 
-      console.log('✅ Processed customers:', loadedCustomers.length);
-      console.log('🔍 Filtered customers (no suppliers):', filteredCustomers.length);
-      console.log('📊 Customer details:', filteredCustomers);
-
       setCustomers(filteredCustomers);
       setNextCustomerNumber(generateNextCustomerNumber(filteredCustomers));
-
-      console.log('🔢 Next customer number:', generateNextCustomerNumber(filteredCustomers));
 
       // Lade die korrekten Statistiken für jeden Kunden
       loadCustomerStatsInBackground(filteredCustomers);
@@ -304,10 +272,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ) => {
     try {
-      console.log('🔍 Starting customer creation process...');
-      console.log('📍 Company ID:', companyId);
-      console.log('👤 Current User:', user?.uid);
-      console.log('📋 Customer Data:', customerData);
+      // Debug-Logs entfernt
 
       if (!user) {
         console.error('❌ User not authenticated');
@@ -323,7 +288,6 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       // Generiere neue Kundennummer BEVOR das Speichern
       const actualCustomerNumber =
         customerData.customerNumber || generateNextCustomerNumber(customers);
-      console.log('🔢 Using customer number:', actualCustomerNumber);
 
       // Filter undefined values for Firebase compatibility
       const cleanCustomerData = Object.entries({
@@ -360,10 +324,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         updatedAt: serverTimestamp(),
       };
 
-      console.log('💾 Final customer document to save:', newCustomer);
-
       const docRef = await addDoc(collection(db, 'customers'), newCustomer);
-      console.log('✅ Customer document created with ID:', docRef.id);
 
       const addedCustomer: Customer = {
         ...customerData,
@@ -376,16 +337,13 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         createdAt: new Date().toISOString(),
       };
 
-      console.log('📋 Adding customer to local state:', addedCustomer);
       setCustomers(prev => [addedCustomer, ...prev]);
 
       // Generiere die NÄCHSTE Kundennummer für den nächsten Kunden
       const nextNum = generateNextCustomerNumber([addedCustomer, ...customers]);
       setNextCustomerNumber(nextNum);
-      console.log('🔢 Next customer number updated to:', nextNum);
 
       toast.success(`Kunde ${customerData.name} erfolgreich hinzugefügt`);
-      console.log('✅ Customer creation completed successfully');
     } catch (error) {
       console.error('❌ Error in handleAddCustomer:', error);
       console.error('🔍 Error details:', error instanceof Error ? error.message : String(error));
@@ -404,13 +362,9 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
   // Automatically create customers from existing invoices
   const createCustomersFromInvoices = async () => {
     try {
-      console.log('🔍 Starting automatic customer creation from invoices...');
-      console.log('📍 Company ID:', companyId);
-      console.log('👤 Current User:', user?.uid);
-      console.log('📊 Current customers count:', customers.length);
+      // Debug-Logs entfernt
 
       // Load existing invoices
-      console.log('🔍 Querying invoices collection...');
       const invoicesQuery = query(
         collection(db, 'invoices'),
         where('companyId', '==', companyId),
@@ -418,7 +372,6 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       );
 
       const invoicesSnapshot = await getDocs(invoicesQuery);
-      console.log('📋 Invoice documents found:', invoicesSnapshot.size);
 
       const uniqueCustomerNames = new Set<string>();
       const allInvoices: any[] = [];
@@ -427,39 +380,25 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       invoicesSnapshot.forEach(doc => {
         const invoice = doc.data();
         allInvoices.push({ id: doc.id, ...invoice });
-        console.log('📄 Invoice:', doc.id, '- Customer:', invoice.customerName);
 
         if (invoice.customerName && invoice.customerName.trim()) {
           uniqueCustomerNames.add(invoice.customerName.trim());
         }
       });
 
-      console.log('📋 Total invoices found:', allInvoices.length);
-      console.log('👥 Unique customer names found:', Array.from(uniqueCustomerNames));
-      console.log('🔢 Unique customers count:', uniqueCustomerNames.size);
-
       let createdCount = 0;
       const creationErrors: string[] = [];
 
       // Create customers that don't exist yet
       for (const customerName of uniqueCustomerNames) {
-        console.log(`\n🔍 Processing customer: "${customerName}"`);
-
         const existingCustomer = fuzzyMatchCustomer(customerName, customers);
-        console.log(
-          '🔍 Fuzzy match result:',
-          existingCustomer ? `Found: ${existingCustomer.name}` : 'Not found'
-        );
 
         if (!existingCustomer) {
           try {
-            console.log(`👤 Creating new customer: ${customerName}`);
-
             const newCustomerNumber = generateNextCustomerNumber([
               ...customers,
               ...Array(createdCount).fill(null),
             ]);
-            console.log('🔢 Generated customer number:', newCustomerNumber);
 
             const newCustomerData = {
               customerNumber: newCustomerNumber,
@@ -477,13 +416,8 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
               contactPersons: [],
             };
 
-            console.log('📝 Customer data to create:', newCustomerData);
-
             await handleAddCustomer(newCustomerData);
             createdCount++;
-            console.log(
-              `✅ Successfully created customer: ${customerName} (${createdCount} total)`
-            );
 
             // Small delay to avoid overwhelming the system
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -493,28 +427,15 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
             creationErrors.push(errorMessage);
           }
         } else {
-          console.log(
-            `✅ Customer already exists: ${customerName} (matched: ${existingCustomer.name})`
-          );
         }
-      }
-
-      console.log('\n📊 FINAL RESULTS:');
-      console.log('✅ Customers created:', createdCount);
-      console.log('❌ Creation errors:', creationErrors.length);
-      if (creationErrors.length > 0) {
-        console.log('🚨 Error details:', creationErrors);
       }
 
       if (createdCount > 0) {
         toast.success(`${createdCount} Kunden automatisch aus Rechnungen erstellt`);
-        console.log(`✅ SUCCESS: Created ${createdCount} customers from invoices`);
       } else if (uniqueCustomerNames.size === 0) {
         toast.info('Keine Rechnungen mit Kundennamen gefunden');
-        console.log('ℹ️ INFO: No invoices with customer names found');
       } else {
         toast.info('Alle Kunden aus Rechnungen sind bereits vorhanden');
-        console.log('ℹ️ INFO: All customers from invoices already exist');
       }
 
       if (creationErrors.length > 0) {

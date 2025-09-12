@@ -262,16 +262,6 @@ export default function QuotePaymentModal({
   };
 
   const createQuotePaymentIntent = async () => {
-    console.log('🚀 QUOTE PAYMENT: Starting createQuotePaymentIntent');
-    console.log('📊 QUOTE PAYMENT DATA:', {
-      quoteId,
-      proposalId,
-      customerFirebaseId,
-      userType,
-      proposalAmount,
-      firebaseUser: !!firebaseUser,
-    });
-
     setIsCreatingPayment(true);
     setError('');
 
@@ -282,12 +272,10 @@ export default function QuotePaymentModal({
       }
 
       const token = await firebaseUser.getIdToken();
-      console.log('🔑 QUOTE PAYMENT: Token obtained, length:', token.length);
 
       // Dynamically choose API route based on user type (B2B vs B2C)
       const apiPath = user_type === 'kunde' ? 'user' : 'company';
       const url = `/api/${apiPath}/${customerFirebaseId}/quotes/received/${quoteId}/payment`;
-      console.log('🌐 QUOTE PAYMENT: Calling API:', url);
 
       const requestBody = {
         action: 'create_payment_intent',
@@ -300,7 +288,6 @@ export default function QuotePaymentModal({
         customerFirebaseId,
         customerStripeId,
       };
-      console.log('📤 QUOTE PAYMENT: Request body:', requestBody);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -311,8 +298,6 @@ export default function QuotePaymentModal({
         body: JSON.stringify(requestBody),
       });
 
-      console.log('📥 QUOTE PAYMENT: Response status:', response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
         console.error('❌ QUOTE PAYMENT: Response not ok:', errorData);
@@ -320,10 +305,8 @@ export default function QuotePaymentModal({
       }
 
       const data = await response.json();
-      console.log('✅ QUOTE PAYMENT: Response data:', data);
 
       if (data.success && data.clientSecret) {
-        console.log('🎯 QUOTE PAYMENT: Success! Setting clientSecret and paymentDetails');
         setClientSecret(data.clientSecret);
         setPaymentDetails(data.paymentDetails);
       } else {
@@ -334,7 +317,6 @@ export default function QuotePaymentModal({
       console.error('💥 QUOTE PAYMENT: Caught error:', error);
       setError(error.message || 'Fehler beim Erstellen der Quote-Zahlung');
     } finally {
-      console.log('🏁 QUOTE PAYMENT: Finished, setting isCreatingPayment to false');
       setIsCreatingPayment(false);
     }
   };

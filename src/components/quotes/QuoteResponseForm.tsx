@@ -63,9 +63,7 @@ export default function QuoteResponseForm({
   quoteDetails,
 }: QuoteResponseFormProps) {
   // Debug: Log quoteDetails beim Laden der Komponente
-  console.log('QuoteResponseForm loaded - quoteDetails:', quoteDetails);
-  console.log('QuoteResponseForm loaded - budget:', quoteDetails?.budget);
-  console.log('QuoteResponseForm loaded - budgetRange:', quoteDetails?.budgetRange);
+
   const [formData, setFormData] = useState<QuoteResponseData>({
     message: '',
     serviceItems: [
@@ -77,6 +75,7 @@ export default function QuoteResponseForm({
         unit: 'Stunden',
       },
     ],
+
     additionalNotes: '',
   });
 
@@ -380,18 +379,6 @@ export default function QuoteResponseForm({
                   <p className="text-gray-900">
                     {(() => {
                       // Debug für Budget-Rendering
-                      console.log(
-                        'QuoteResponseForm rendering budget - budgetRange:',
-                        quoteDetails.budgetRange
-                      );
-                      console.log(
-                        'QuoteResponseForm rendering budget - budget:',
-                        quoteDetails.budget
-                      );
-                      console.log(
-                        'QuoteResponseForm rendering budget - budget type:',
-                        typeof quoteDetails.budget
-                      );
 
                       if (quoteDetails.budgetRange) {
                         // Check if budgetRange is an object or string
@@ -559,6 +546,7 @@ export default function QuoteResponseForm({
             placeholder="Beschreiben Sie Ihr Angebot und gehen Sie auf die Kundenanfrage ein..."
             required
           />
+
           {errors.message && <p className="mt-1 text-sm text-red-600">{errors.message}</p>}
         </div>
 
@@ -572,6 +560,7 @@ export default function QuoteResponseForm({
                 onSelectItem={handleAddInventoryItem}
                 selectedItems={selectedInventoryItems}
               />
+
               <button
                 type="button"
                 onClick={addServiceItem}
@@ -619,6 +608,7 @@ export default function QuoteResponseForm({
                       placeholder="z.B. Badezimmer renovieren"
                       required
                     />
+
                     {errors[`serviceItem_${index}_description`] && (
                       <p className="mt-1 text-xs text-red-600">
                         {errors[`serviceItem_${index}_description`]}
@@ -648,6 +638,7 @@ export default function QuoteResponseForm({
                       }`}
                       required
                     />
+
                     {errors[`serviceItem_${index}_quantity`] && (
                       <p className="mt-1 text-xs text-red-600">
                         {errors[`serviceItem_${index}_quantity`]}

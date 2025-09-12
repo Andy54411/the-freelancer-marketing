@@ -20,6 +20,7 @@ const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) =>
         className="w-10 h-10 text-[#14ad9f]"
       />
     ),
+
     tags: categoryTags['Möbelmontage'] || ['IKEA Möbel aufbauen', 'Küchenmontage'],
     image: '/images/AdobeStock_298445672.jpeg',
     title: 'Möbelmontage',
@@ -37,6 +38,7 @@ const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) =>
         className="w-10 h-10 text-[#14ad9f]"
       />
     ),
+
     tags: categoryTags['Mietköche'] || ['Hochzeitsköche', 'Privat-Dinner'],
     image: '/images/AdobeStock_136993219.jpeg',
     title: 'Mietköche',
@@ -54,6 +56,7 @@ const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) =>
         className="w-10 h-10 text-[#14ad9f]"
       />
     ),
+
     tags: categoryTags['Elektrikarbeiten'] || ['Lampen installieren', 'Steckdosen erneuern'],
     image: '/images/AdobeStock_377954036.jpeg',
     title: 'Elektrikarbeiten',
@@ -71,6 +74,7 @@ const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) =>
         className="w-10 h-10 text-[#14ad9f]"
       />
     ),
+
     tags: categoryTags['Reparaturen im Haus'] || ['Wasserhahn reparieren', 'Wände streichen'],
     image: '/images/AdobeStock_221207083.jpeg',
     title: 'Reparaturen',
@@ -88,6 +92,7 @@ const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) =>
         className="w-10 h-10 text-[#14ad9f]"
       />
     ),
+
     tags: categoryTags['Umzug'] || ['Wohnungsumzug', 'Möbel transportieren'],
     image: '/images/AdobeStock_171302559.jpeg',
     title: 'Umzug',
@@ -105,6 +110,7 @@ const getCategoriesWithDynamicTags = (categoryTags: Record<string, string[]>) =>
         className="w-10 h-10 text-[#14ad9f]"
       />
     ),
+
     tags: categoryTags['Beliebte Tasks'] || ['Reinigungsservice', 'Gartenarbeiten'],
     image: '/images/AdobeStock_369265805.jpeg',
     title: 'Beliebte Tasks',
@@ -200,8 +206,6 @@ export default function CategoryGrid() {
 
     // Generiere URL mit Filtern
     const serviceUrl = generateServiceUrl(mapping);
-
-    console.log(`🚀 Navigiere zu: ${serviceUrl} für Tag: ${tag}`);
 
     // Navigation zur Service-Seite
     router.push(serviceUrl);

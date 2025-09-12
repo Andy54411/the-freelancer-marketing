@@ -22,9 +22,7 @@ export async function POST(request: NextRequest) {
           if (companyDoc.exists) {
             isB2B = true;
             customerType = 'company';
-            console.log(`📋 B2B Quote Request from company: ${customerUid}`);
           } else {
-            console.log(`👤 B2C Quote Request from user: ${customerUid}`);
           }
         }
       } catch (authError) {

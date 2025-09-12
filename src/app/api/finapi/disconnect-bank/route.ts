@@ -15,8 +15,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🔌 Disconnecting bank:', { userId, connectionId, bankId, reason });
-
     try {
       // Get company data
       const companyDoc = await db.collection('companies').doc(userId).get();
@@ -59,7 +57,6 @@ export async function POST(request: NextRequest) {
 
       // Remove the connection
       await db.collection('finapi_connections').doc(userId).delete();
-      console.log('✅ Bank connection removed from Firestore');
 
       // Try to disconnect from finAPI (if real connection exists)
       let finapiDisconnected = false;
@@ -70,15 +67,12 @@ export async function POST(request: NextRequest) {
           const userToken = await finapiService.getUserToken(companyEmail, userId);
 
           if (userToken) {
-            console.log('🔗 Attempting finAPI disconnect for connection:', connectionId);
             // Note: Real finAPI disconnect would go here
             // await finapiService.deleteConnection(userToken, connectionId);
             finapiDisconnected = true;
           }
         }
-      } catch (finapiError: any) {
-        console.log('⚠️ finAPI disconnect failed (expected for demo):', finapiError.message);
-      }
+      } catch (finapiError: any) {}
 
       return NextResponse.json({
         success: true,

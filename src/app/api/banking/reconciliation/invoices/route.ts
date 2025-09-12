@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🧾 Loading invoices for reconciliation, companyId:', companyId);
-
     // Get invoices from Firestore
     const invoicesRef = db.collection('invoices');
     const query = invoicesRef.where('companyId', '==', companyId);
@@ -57,8 +55,6 @@ export async function GET(request: NextRequest) {
         reconciledAt: data.reconciledAt,
       };
     });
-
-    console.log(`✅ Found ${invoices.length} invoices for reconciliation`);
 
     // Set cache control headers to prevent caching
     const response = NextResponse.json({
@@ -113,13 +109,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(
-      `🔗 ${action === 'reconcile' ? 'Reconciling' : 'Unreconciling'} invoice:`,
-      invoiceId,
-      'with transaction:',
-      transactionId
-    );
-
     const invoiceRef = db.collection('invoices').doc(invoiceId);
     const invoiceDoc = await invoiceRef.get();
 
@@ -147,8 +136,6 @@ export async function POST(request: NextRequest) {
     }
 
     await invoiceRef.update(updateData);
-
-    console.log(`✅ Invoice ${action}d successfully`);
 
     return NextResponse.json({
       success: true,

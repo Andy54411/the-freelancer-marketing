@@ -9,8 +9,6 @@ function RevolutOAuthSuccessContent() {
   const error = searchParams?.get('error') || null;
 
   useEffect(() => {
-    console.log('🔍 OAuth Success Page loaded with params:', { connectionId, error });
-
     // Prevent multiple executions
     let messageAlreadySent = false;
 
@@ -20,7 +18,6 @@ function RevolutOAuthSuccessContent() {
 
       try {
         if (error) {
-          console.log('❌ Sending error message to parent:', error);
           // Send error message to parent window
           window.opener?.postMessage(
             {
@@ -30,7 +27,6 @@ function RevolutOAuthSuccessContent() {
             '*' // Allow any origin for popup communication
           );
         } else if (connectionId) {
-          console.log('✅ Sending success message to parent:', connectionId);
           // Send success message to parent window
           window.opener?.postMessage(
             {
@@ -40,11 +36,9 @@ function RevolutOAuthSuccessContent() {
             '*' // Allow any origin for popup communication
           );
         } else {
-          console.log('⚠️ No connectionId or error found, checking for success param');
           // Check for success parameter as fallback
           const success = searchParams?.get('success');
           if (success === 'revolut_connected') {
-            console.log('✅ Found success parameter, sending generic success message');
             window.opener?.postMessage(
               {
                 type: 'REVOLUT_OAUTH_SUCCESS',
@@ -57,7 +51,6 @@ function RevolutOAuthSuccessContent() {
 
         // Close the popup window
         setTimeout(() => {
-          console.log('🔄 Closing popup window');
           window.close();
         }, 1000);
       } catch (err) {

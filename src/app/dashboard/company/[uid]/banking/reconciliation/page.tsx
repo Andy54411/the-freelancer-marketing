@@ -150,13 +150,6 @@ export default function BankingReconciliationPage() {
       );
       const data = await response.json();
 
-      console.log('🔍 Transaction API Response:', {
-        success: data.success,
-        hasData: !!data.data,
-        hasTransactions: !!data.data?.transactions,
-        transactionCount: data.data?.transactions?.length || 0,
-      });
-
       if (data.success && data.data?.transactions) {
         // Transform transactions to match expected format
         const transformedTransactions = data.data.transactions.map((txn: any) => ({
@@ -175,10 +168,8 @@ export default function BankingReconciliationPage() {
           isPending: false,
         }));
 
-        console.log('✅ Transformed transactions:', { count: transformedTransactions.length });
         setTransactions(transformedTransactions);
       } else {
-        console.log('❌ No transactions found in API response');
         setTransactions([]);
       }
     } catch (err: unknown) {
@@ -517,6 +508,7 @@ export default function BankingReconciliationPage() {
               onChange={e => setShowReconciled(e.target.checked)}
               className="h-4 w-4 text-[#14ad9f] focus:ring-[#14ad9f] border-gray-300 rounded"
             />
+
             <label htmlFor="show-reconciled" className="ml-2 block text-sm text-gray-900">
               Abgeglichene Rechnungen anzeigen
             </label>

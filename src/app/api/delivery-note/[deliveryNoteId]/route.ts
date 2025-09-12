@@ -12,14 +12,11 @@ export async function GET(
       return NextResponse.json({ error: 'Lieferschein-ID ist erforderlich' }, { status: 400 });
     }
 
-    console.log('🔍 Loading delivery note via API:', deliveryNoteId);
-
     // Verwende Firebase Admin SDK für server-seitigen Zugriff
     const docRef = db.collection('deliveryNotes').doc(deliveryNoteId);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
-      console.log('❌ Delivery note not found:', deliveryNoteId);
       return NextResponse.json({ error: 'Lieferschein nicht gefunden' }, { status: 404 });
     }
 
@@ -34,8 +31,6 @@ export async function GET(
       invoicedAt: data.invoicedAt?.toDate(),
     };
 
-    console.log('✅ Delivery note loaded successfully:', data.deliveryNoteNumber || 'Unknown');
-
     // Lade Firmendaten für das Template
     let companyData: Record<string, unknown> = {};
     if (data.companyId) {
@@ -44,19 +39,16 @@ export async function GET(
         const companyDoc = await db.collection('companies').doc(data.companyId).get();
         if (companyDoc.exists) {
           companyData = companyDoc.data()!;
-          console.log('✅ Company data loaded from companies collection');
         } else {
           // Fallback: users Collection
           const userDoc = await db.collection('users').doc(data.companyId).get();
           if (userDoc.exists) {
             companyData = userDoc.data()!;
-            console.log('✅ Company data loaded from users collection');
           }
         }
 
         // Debug: Log welche profilePictureURL gefunden wurde
         const profileUrl = companyData.profilePictureURL || companyData.profilePictureFirebaseUrl;
-        console.log('🖼️ Profile picture URL found:', profileUrl);
       } catch (error) {
         console.warn('Could not load company data:', error);
       }

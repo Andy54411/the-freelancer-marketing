@@ -303,7 +303,6 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
         .filter(item => item && Object.keys(item).length > 0); // Entferne leere Objekte
 
       // Debug: Logge das bereinigte Portfolio
-      console.log('Clean portfolio to save:', JSON.stringify(cleanPortfolio, null, 2));
 
       await updateDoc(doc(db, 'companies', userId), {
         'step3.portfolio': cleanPortfolio,
@@ -479,6 +478,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
                   }}
                   className="hidden"
                 />
+
                 <div className="flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md hover:border-[#14ad9f] transition-colors">
                   <Upload className="w-5 h-5 mr-2 text-gray-400" />
                   <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -543,6 +543,7 @@ const PortfolioForm: React.FC<PortfolioFormProps> = ({ formData, handleChange, u
                   onChange={e => setNewItem({ ...newItem, featured: e.target.checked })}
                   className="mr-2 text-[#14ad9f] focus:ring-[#14ad9f]"
                 />
+
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Featured (wird prominent angezeigt)
                 </span>

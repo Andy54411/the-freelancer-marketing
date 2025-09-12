@@ -20,21 +20,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database nicht verfügbar' }, { status: 500 });
     }
 
-    console.log(`🔍 Loading Firestore bank connections for user: ${userId}`);
-
     // Try to get from companies collection first (main storage)
     let userDoc = await db.collection('companies').doc(userId).get();
     let sourceCollection = 'companies';
 
     if (!userDoc.exists) {
       // Fallback to users collection
-      console.log('⚠️ Company document not found, trying users collection');
+
       userDoc = await db.collection('users').doc(userId).get();
       sourceCollection = 'users';
     }
 
     if (!userDoc.exists) {
-      console.log(`❌ No user/company document found: ${userId}`);
       return NextResponse.json({
         success: true,
         bankConnections: [],
@@ -43,17 +40,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    console.log(`✅ Found document in ${sourceCollection} collection`);
-
     const userData = userDoc.data();
     const bankConnections = userData?.bankConnections || [];
 
-    console.log(`✅ Found ${bankConnections.length} bank connections in Firestore`);
-
     // Lade auch Bank-Konten aus Firestore
     const bankAccounts = userData?.bankAccounts || [];
-
-    console.log(`✅ Found ${bankAccounts.length} bank accounts in Firestore`);
 
     return NextResponse.json({
       success: true,
@@ -97,8 +88,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database nicht verfügbar' }, { status: 500 });
     }
 
-    console.log(`💾 Updating Firestore bank data for user: ${userId}`);
-
     const updateData: any = {
       updatedAt: new Date().toISOString(),
     };
@@ -119,32 +108,18 @@ export async function POST(request: NextRequest) {
       updateData.bankSyncStatus = syncStatus;
     }
 
-    console.log('💾 Updating Firestore bank data for user:', userId);
-
     // Try companies collection first (primary location for bank data)
     try {
       await db.collection('companies').doc(userId).update(updateData);
-      console.log(`✅ Successfully updated bank data in companies collection`);
     } catch (companiesError) {
-      console.log(
-        '⚠️ Companies collection update failed, trying users collection:',
-        companiesError
-      );
-
       // Fallback to users collection
       try {
         await db.collection('users').doc(userId).update(updateData);
-        console.log(`✅ Successfully updated bank data in users collection`);
       } catch (usersError) {
-        console.log('❌ Both collections failed, creating new document in companies');
-
         // If both fail, create a new document in companies collection
         await db.collection('companies').doc(userId).set(updateData, { merge: true });
-        console.log(`✅ Successfully created bank data in companies collection`);
       }
     }
-
-    console.log(`✅ Successfully updated bank data in Firestore`);
 
     return NextResponse.json({
       success: true,

@@ -8,20 +8,15 @@ let admin: any;
 async function getFirebaseServices() {
   if (!db || !admin) {
     try {
-      console.log('Initializing Firebase for Quotes API...');
-
       // Try existing server config first
       try {
         const firebaseServer = await import('@/firebase/server');
         db = firebaseServer.db;
         admin = firebaseServer.admin;
         if (db && admin) {
-          console.log('Using existing Firebase server configuration');
           return { db, admin };
         }
-      } catch (importError) {
-        console.log('Existing config not available:', importError.message);
-      }
+      } catch (importError) {}
 
       // Fallback to direct initialization
       const firebaseAdmin = await import('firebase-admin');
@@ -30,10 +25,7 @@ async function getFirebaseServices() {
       let app;
       try {
         app = firebaseAdmin.app();
-        console.log('Using existing Firebase app');
       } catch (appError) {
-        console.log('Initializing new Firebase app...');
-
         if (
           process.env.FIREBASE_PROJECT_ID &&
           process.env.FIREBASE_PRIVATE_KEY &&
@@ -46,13 +38,11 @@ async function getFirebaseServices() {
               privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
             }),
           });
-          console.log('Initialized with service account credentials');
         } else if (process.env.FIREBASE_PROJECT_ID) {
           app = firebaseAdmin.initializeApp({
             credential: firebaseAdmin.credential.applicationDefault(),
             projectId: process.env.FIREBASE_PROJECT_ID,
           });
-          console.log('Initialized with application default credentials');
         } else {
           throw new Error('No Firebase configuration found');
         }
@@ -60,7 +50,6 @@ async function getFirebaseServices() {
 
       db = firebaseAdmin.firestore(app);
       admin = firebaseAdmin;
-      console.log('Firebase Firestore initialized successfully for Quotes API');
     } catch (error) {
       console.error('Firebase initialization error:', error);
       throw error;
@@ -77,23 +66,18 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
 ) {
-  console.log(`🚀 ROUTE HIT! URL: ${request.url}`);
-
   const { uid, quoteId } = await params;
-
-  console.log(`🎯 GET ROUTE CALLED: uid=${uid}, quoteId=${quoteId}`);
 
   try {
     // Auth-Check
     const authHeader = request.headers.get('authorization');
-    console.log(`🔐 Auth header present: ${!!authHeader}`);
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.error('❌ No valid auth header provided');
       return NextResponse.json({ error: 'Authentifizierung erforderlich' }, { status: 401 });
     }
 
     const token = authHeader.split('Bearer ')[1];
-    console.log(`🔑 Token extracted, length: ${token?.length}`);
 
     // Get Firebase services with robust error handling
     const { db, admin: firebaseAdmin } = await getFirebaseServices();
@@ -101,36 +85,31 @@ export async function GET(
     let decodedToken;
     try {
       decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
-      console.log(`✅ Token verified for user: ${decodedToken.uid}`);
     } catch (authError) {
       console.error('❌ Token verification failed:', authError);
       return NextResponse.json({ error: 'Ungültiger Token' }, { status: 401 });
     }
 
     // Check if user is authorized to access this company's data
-    console.log(`🔍 Checking authorization: token.uid=${decodedToken.uid}, requested.uid=${uid}`);
+
     if (decodedToken.uid !== uid) {
       console.error(`❌ Authorization failed: token.uid=${decodedToken.uid}, requested.uid=${uid}`);
       return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 });
     }
 
     // Get company data
-    console.log(`🏢 Loading company data for uid: ${uid}`);
 
     // Try companies collection first (for B2B), then users as fallback (for B2C)
-    console.log(`🔍 Searching for company in 'companies' collection: ${uid}`);
+
     let companyDoc = await db.collection('companies').doc(uid).get();
     if (!companyDoc.exists) {
-      console.log(`❌ Company not found in companies collection, trying users collection: ${uid}`);
       companyDoc = await db.collection('users').doc(uid).get();
       if (!companyDoc.exists) {
         console.error(`❌ Company not found in any collection: ${uid}`);
         return NextResponse.json({ error: 'Unternehmen nicht gefunden' }, { status: 404 });
       } else {
-        console.log(`✅ Found company in 'users' collection: ${uid}`);
       }
     } else {
-      console.log(`✅ Found company in 'companies' collection: ${uid}`);
     }
 
     const companyData = companyDoc.data();
@@ -141,7 +120,7 @@ export async function GET(
     }
 
     // Get the specific quote where this company is the customer
-    console.log(`📄 Loading quote: ${quoteId}`);
+
     const quoteRef = db.collection('quotes').doc(quoteId);
     const quoteDoc = await quoteRef.get();
 
@@ -213,10 +192,6 @@ export async function GET(
         .collection('proposals')
         .get();
 
-      console.log(
-        `🔍 Found ${proposalsSnapshot.docs.length} proposal(s) in subcollection for quote ${quoteId}`
-      );
-
       if (!proposalsSnapshot.empty) {
         // Collect all proposals
         proposalsData = proposalsSnapshot.docs.map(proposalDoc => {
@@ -247,20 +222,7 @@ export async function GET(
         hasResponse = true;
         responseData = firstProposal;
         responseDate = firstProposal.createdAt;
-
-        console.log('✅ Found proposal(s) in subcollection:', {
-          count: proposalsData.length,
-          firstProposalId: firstProposal.id,
-          status: firstProposal.status,
-          amount: firstProposal.totalAmount,
-          submittedAt: firstProposal.submittedAt,
-          contactsExchanged: firstProposal.contactsExchanged,
-          paymentComplete: firstProposal.paymentComplete,
-          customerContact: firstProposal.customerContact,
-          providerContact: firstProposal.providerContact,
-        });
       } else {
-        console.log('❌ No proposals found in subcollection');
       }
     } catch (error) {
       console.error('Error checking proposal subcollection:', error);
@@ -273,7 +235,6 @@ export async function GET(
       responseDate = quoteData.response?.respondedAt
         ? new Date(quoteData.response.respondedAt)
         : null;
-      console.log('✅ Found response in quote document (old structure)');
     }
 
     // Build the quote response object
@@ -337,8 +298,6 @@ export async function POST(
 ) {
   const { uid, quoteId } = await params;
 
-  console.log(`🎯 ACTION ROUTE CALLED: uid=${uid}, quoteId=${quoteId}`);
-
   try {
     // Get the auth token from the request headers
     const authHeader = request.headers.get('authorization');
@@ -352,7 +311,6 @@ export async function POST(
 
     try {
       decodedToken = await admin.auth().verifyIdToken(token);
-      console.log(`✅ Token verified for user: ${decodedToken.uid}`);
     } catch (error) {
       console.error('❌ Token verification failed:', error);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -376,8 +334,6 @@ export async function POST(
       );
     }
 
-    console.log(`📝 Processing ${action} action for quote ${quoteId}`);
-
     // Get the quote document - first try quotes collection, then requests collection
     let quoteDoc = await db.collection('quotes').doc(quoteId).get();
     let quoteData: any = null;
@@ -385,54 +341,37 @@ export async function POST(
 
     if (quoteDoc.exists) {
       quoteData = quoteDoc.data();
-      console.log(`✅ Found quote in quotes collection`);
     } else {
       // Try requests collection as fallback
-      console.log(`⚠️ Quote not found in quotes, trying requests collection...`);
+
       quoteDoc = await db.collection('requests').doc(quoteId).get();
       if (quoteDoc.exists) {
         quoteData = quoteDoc.data();
         isFromRequestsCollection = true;
-        console.log(`✅ Found quote in requests collection`);
       } else {
         console.error(`❌ Quote ${quoteId} not found in any collection`);
         return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
       }
     }
 
-    console.log(`📊 Quote data:`, {
-      status: quoteData?.status,
-      customerUid: quoteData?.customerUid,
-      providerId: quoteData?.providerId,
-      projectTitle: quoteData?.projectTitle,
-    });
-
     if (action === 'accept') {
-      console.log(`✅ Processing ACCEPT action for quote ${quoteId}`);
-
       // Find the accepted proposal
       let proposalId: string | null = null;
       let proposalData: any = null;
 
       try {
-        console.log(`🔍 Looking for proposals in subcollection...`);
         const proposalsSnapshot = await db
           .collection('quotes')
           .doc(quoteId)
           .collection('proposals')
           .get();
 
-        console.log(`📊 Found ${proposalsSnapshot.docs.length} proposals`);
-
         if (!proposalsSnapshot.empty) {
           // Use the first proposal (in a real app, you might want to specify which proposal to accept)
           const firstProposal = proposalsSnapshot.docs[0];
           proposalId = firstProposal.id;
           proposalData = firstProposal.data();
-
-          console.log(`✅ Using proposal ${proposalId} with amount ${proposalData?.totalAmount}`);
         } else {
-          console.log(`⚠️ No proposals found in subcollection, using legacy response`);
           proposalData = quoteData?.response;
         }
       } catch (error) {
@@ -460,23 +399,16 @@ export async function POST(
         );
       }
 
-      console.log(`👥 Customer: ${companyId}, Provider: ${providerId}`);
-
       // Get customer data - check both collections
       let customerData: any = null;
       let customerDoc = await db.collection('companies').doc(companyId).get();
 
       if (customerDoc.exists) {
         customerData = customerDoc.data();
-        console.log(`✅ Found customer in companies collection: ${customerData?.companyName}`);
       } else {
-        console.log(`⚠️ Customer not found in companies, checking users...`);
         customerDoc = await db.collection('users').doc(companyId).get();
         if (customerDoc.exists) {
           customerData = customerDoc.data();
-          console.log(
-            `✅ Found customer in users collection: ${customerData?.firstName} ${customerData?.lastName}`
-          );
         } else {
           console.error(`❌ Customer ${companyId} not found in any collection`);
           return NextResponse.json(
@@ -492,15 +424,10 @@ export async function POST(
 
       if (providerDoc.exists) {
         providerData = providerDoc.data();
-        console.log(`✅ Found provider in companies collection: ${providerData?.companyName}`);
       } else {
-        console.log(`⚠️ Provider not found in companies, checking users...`);
         providerDoc = await db.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           providerData = providerDoc.data();
-          console.log(
-            `✅ Found provider in users collection: ${providerData?.firstName} ${providerData?.lastName}`
-          );
         } else {
           console.error(`❌ Provider ${providerId} not found in any collection`);
           return NextResponse.json(
@@ -511,7 +438,6 @@ export async function POST(
       }
 
       // Update quote with contact exchange information
-      console.log(`📝 Updating quote ${quoteId} with contact exchange...`);
 
       const updateData = {
         customerDecision: {
@@ -544,19 +470,8 @@ export async function POST(
 
       await quoteDoc.ref.update(updateData);
 
-      console.log(`✅ Quote ${quoteId} updated successfully`);
-
       // Send notification to provider about the acceptance
       try {
-        console.log(`📧 Sending notification to provider ${providerId}...`);
-        // TODO: Fix notification service undefined values
-        // await QuoteNotificationService.createContactExchangeNotifications(
-        //   quoteId,
-        //   companyId,
-        //   providerId,
-        //   quoteData?.projectTitle || 'Projekt'
-        // );
-        console.log(`✅ Notification skipped (temporarily disabled)`);
       } catch (notificationError) {
         console.error('⚠️ Failed to send notification:', notificationError);
         // Don't fail the whole operation if notification fails
@@ -570,8 +485,6 @@ export async function POST(
         customerDecision: updateData.customerDecision,
       });
     } else if (action === 'decline') {
-      console.log(`❌ Processing DECLINE action for quote ${quoteId}`);
-
       // Update quote status to declined
       await quoteDoc.ref.update({
         status: 'declined',
@@ -582,8 +495,6 @@ export async function POST(
         },
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-
-      console.log(`✅ Quote ${quoteId} declined successfully`);
 
       return NextResponse.json({
         success: true,

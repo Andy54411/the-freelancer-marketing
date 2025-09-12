@@ -17,14 +17,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    console.log('🏦 Getting accounts for user:', userId, 'credentialType:', credentialType);
-
     try {
       // Get company data to retrieve email
       const companyDoc = await db.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
-        console.log('📭 No company found, returning empty accounts');
         return NextResponse.json({
           success: true,
           accounts: [],
@@ -42,7 +39,6 @@ export async function GET(request: NextRequest) {
       const companyEmail = companyData?.email;
 
       if (!companyEmail) {
-        console.log('📭 No company email found, returning empty accounts');
         return NextResponse.json({
           success: true,
           accounts: [],
@@ -56,13 +52,10 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      console.log('✅ Using company email for accounts:', companyEmail);
-
       // First check if we have stored connection info from WebForm
       const connectionDoc = await db.collection('finapi_connections').doc(userId).get();
       if (connectionDoc.exists) {
         const connectionData = connectionDoc.data();
-        console.log('📄 Found stored connection data:', connectionData);
 
         if (connectionData?.status === 'active') {
           // Return demo account data based on stored connection
@@ -108,14 +101,10 @@ export async function GET(request: NextRequest) {
         const userToken = userData.userToken;
 
         if (userToken) {
-          console.log('✅ Got user token, fetching accounts...');
-
           // Get accounts from finAPI
           const bankData = await finapiService.syncUserBankData(companyEmail, userId);
 
           if (bankData.accounts && bankData.accounts.length > 0) {
-            console.log('✅ Found finAPI accounts:', bankData.accounts.length);
-
             // Group accounts by bank
             const accountsByBank: { [bankName: string]: any[] } = {};
             bankData.accounts.forEach((account: any) => {
@@ -152,7 +141,6 @@ export async function GET(request: NextRequest) {
         console.error('❌ finAPI accounts error:', finapiError.message);
       }
 
-      console.log('📭 No finAPI accounts found');
       return NextResponse.json({
         success: true,
         accounts: [],

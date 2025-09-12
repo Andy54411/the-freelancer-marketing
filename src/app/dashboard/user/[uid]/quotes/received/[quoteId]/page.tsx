@@ -100,20 +100,12 @@ export default function CustomerQuoteDetailsPage({
   }, [uid, quoteId, firebaseUser]);
 
   const fetchQuoteDetails = async () => {
-    console.log('[DEBUG] fetchQuoteDetails called with:', {
-      uid,
-      quoteId,
-      firebaseUser: !!firebaseUser,
-    });
-
     try {
       if (!firebaseUser) {
-        console.log('[DEBUG] No firebaseUser, returning early');
         return;
       }
 
       const token = await firebaseUser.getIdToken();
-      console.log('[DEBUG] Got token, calling API...');
 
       const response = await fetch(`/api/user/${uid}/quotes/received/${quoteId}`, {
         headers: {
@@ -121,20 +113,14 @@ export default function CustomerQuoteDetailsPage({
         },
       });
 
-      console.log('[DEBUG] API response status:', response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log('[DEBUG] API Response:', data);
-        console.log('[DEBUG] Proposals:', data.quote?.proposals);
 
         setQuote(data.quote);
       } else {
         const errorData = await response.json();
-        console.log('[DEBUG] API Error:', errorData);
       }
     } catch (error) {
-      console.log('[DEBUG] Fetch Error:', error);
     } finally {
       setLoading(false);
     }
