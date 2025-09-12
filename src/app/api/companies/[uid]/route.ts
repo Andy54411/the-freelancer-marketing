@@ -144,3 +144,62 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 }
+
+/**
+ * API Route für Company-Daten Update (E-Rechnung Daten)
+ * PATCH /api/companies/[uid] - Update company information for E-Invoice
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> }
+) {
+  try {
+    const { uid } = await params;
+    const body = await request.json();
+
+    if (!uid) {
+      return NextResponse.json({ error: 'UID ist erforderlich' }, { status: 400 });
+    }
+
+    // Get Firebase DB dynamically
+    const db = await getFirebaseDb();
+
+    // Prepare update data
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    // Company basic info
+    if (body.companyName) updateData.companyName = body.companyName;
+    if (body.companyStreet) updateData.companyStreet = body.companyStreet;
+    if (body.companyCity) updateData.companyCity = body.companyCity;
+    if (body.companyPostalCode) updateData.companyPostalCode = body.companyPostalCode;
+    if (body.companyCountry) updateData.companyCountry = body.companyCountry;
+    if (body.contactEmail) updateData.contactEmail = body.contactEmail;
+
+    // Tax information
+    if (body.taxNumber) updateData.taxNumber = body.taxNumber;
+    if (body.vatId) updateData.vatId = body.vatId;
+    if (body.registrationNumber) updateData.registrationNumber = body.registrationNumber;
+
+    // Bank details - merge with existing data
+    if (body.bankDetails) {
+      updateData.bankDetails = body.bankDetails;
+    }
+
+    // Update the company document
+    await db.collection('companies').doc(uid).update(updateData);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Firmendaten erfolgreich aktualisiert',
+      data: updateData,
+    });
+  } catch (error) {
+    console.error('Fehler beim Update der Company-Daten:', error);
+    return NextResponse.json(
+      { error: 'Interner Serverfehler beim Update der Company-Daten' },
+      { status: 500 }
+    );
+  }
+}

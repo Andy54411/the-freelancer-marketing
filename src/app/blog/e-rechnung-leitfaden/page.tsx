@@ -161,7 +161,7 @@ export default function ERechnungLeitfadenPage() {
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex gap-8">
+          <div className="flex gap-8 relative">
             {/* Content */}
             <div className="flex-1 max-w-4xl">
               {/* Wichtiger Hinweis */}
@@ -763,8 +763,8 @@ export default function ERechnungLeitfadenPage() {
             </div>
 
             {/* Table of Contents Sidebar */}
-            <div className="w-80 flex-shrink-0">
-              <div className="sticky top-16 space-y-6">
+            <aside className="w-80 flex-shrink-0">
+              <div className="sticky top-20 space-y-6" style={{ position: 'sticky', top: '5rem' }}>
                 <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-white/20 p-6 shadow-xl">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Inhaltsverzeichnis</h3>
                   <nav className="space-y-2">
@@ -811,8 +811,58 @@ export default function ERechnungLeitfadenPage() {
                     className="w-full h-48 object-cover"
                   />
                 </div>
+
+                {/* Related Articles */}
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-white/20 p-6 shadow-xl">
+                  <h4 className="font-bold text-gray-900 mb-4">Weitere Beiträge</h4>
+                  <div className="space-y-4">
+                    <Link href="/blog/digitalisierung-kleinunternehmen" className="block group">
+                      <div className="bg-gray-50 hover:bg-[#14ad9f]/10 rounded-lg p-4 transition-colors">
+                        <h5 className="font-semibold text-gray-900 group-hover:text-[#14ad9f] text-sm mb-2">
+                          Digitalisierung für Kleinunternehmen
+                        </h5>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Tipps und Tools für die digitale Transformation kleiner Betriebe.
+                        </p>
+                      </div>
+                    </Link>
+
+                    <Link href="/blog/rechnungsstellung-tipps" className="block group">
+                      <div className="bg-gray-50 hover:bg-[#14ad9f]/10 rounded-lg p-4 transition-colors">
+                        <h5 className="font-semibold text-gray-900 group-hover:text-[#14ad9f] text-sm mb-2">
+                          Professionelle Rechnungsstellung
+                        </h5>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Best Practices für korrekte und ansprechende Rechnungen.
+                        </p>
+                      </div>
+                    </Link>
+
+                    <Link href="/blog/steuerliche-vorteile-freelancer" className="block group">
+                      <div className="bg-gray-50 hover:bg-[#14ad9f]/10 rounded-lg p-4 transition-colors">
+                        <h5 className="font-semibold text-gray-900 group-hover:text-[#14ad9f] text-sm mb-2">
+                          Steuerliche Vorteile für Freelancer
+                        </h5>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Welche Ausgaben Sie als Freiberufler absetzen können.
+                        </p>
+                      </div>
+                    </Link>
+
+                    <Link href="/blog/buchhaltung-automatisieren" className="block group">
+                      <div className="bg-gray-50 hover:bg-[#14ad9f]/10 rounded-lg p-4 transition-colors">
+                        <h5 className="font-semibold text-gray-900 group-hover:text-[#14ad9f] text-sm mb-2">
+                          Buchhaltung automatisieren
+                        </h5>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Zeit sparen durch clevere Automatisierung der Buchhaltung.
+                        </p>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
               </div>
-            </div>
+            </aside>
           </div>
         </div>
       </div>

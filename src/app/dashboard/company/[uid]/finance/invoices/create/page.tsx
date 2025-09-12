@@ -1434,11 +1434,31 @@ export default function CreateInvoicePage() {
         setShowEInvoiceModal(false);
         toast.success('Firmendaten gespeichert - E-Rechnung aktiviert!');
       } else {
-        throw new Error('Fehler beim Speichern');
+        // Versuche, detaillierte Fehlermeldung zu erhalten
+        let errorMessage = 'Fehler beim Speichern der Firmendaten';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (e) {
+          // Falls JSON parsing fehlschlägt, verwende Status Text
+          errorMessage = `Server Error: ${response.status} ${response.statusText}`;
+        }
+
+        console.error('API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+        });
+
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Fehler beim Speichern der Firmendaten:', error);
-      toast.error('Fehler beim Speichern der Firmendaten');
+
+      // Zeige spezifische Fehlermeldung oder generische Nachricht
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unbekannter Fehler beim Speichern';
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
