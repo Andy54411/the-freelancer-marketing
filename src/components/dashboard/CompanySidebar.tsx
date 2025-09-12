@@ -75,16 +75,21 @@ const navigationItems: NavigationItem[] = [
     value: 'marketplace',
     subItems: [
       { label: 'Verfügbare Projekte', value: 'marketplace-projects', href: 'marketplace/projects' },
-      { label: 'Meine Angebote', value: 'marketplace-proposals', href: 'marketplace/proposals' },
+      { label: 'Meine Bewerbungen', value: 'marketplace-proposals', href: 'marketplace/proposals' },
+      { label: 'Direkte Anfragen', value: 'marketplace-quotes', href: 'marketplace/quotes' },
+      { label: 'Kategorie-Anfragen', value: 'marketplace-project-quotes', href: 'marketplace/project-quotes' },
     ],
   },
   {
-    label: 'Angebots-Anfragen',
+    label: 'Angebote',
     icon: FiFileText,
     value: 'quotes',
     subItems: [
-      { label: 'Eingehend', value: 'quotes-incoming', href: 'quotes/incoming' },
-      { label: 'Erhaltene Angebote', value: 'quotes-received', href: 'quotes/received' },
+      { label: 'Übersicht', value: 'quotes-overview', href: 'finance/quotes' },
+      { label: 'Neues Angebot', value: 'quotes-create', href: 'finance/quotes/create' },
+      { label: 'Entwürfe', value: 'quotes-drafts', href: 'finance/quotes/drafts' },
+      { label: 'Versendet', value: 'quotes-sent', href: 'finance/quotes/sent' },
+      { label: 'Angenommen', value: 'quotes-accepted', href: 'finance/quotes/accepted' },
     ],
   },
   {
@@ -120,7 +125,6 @@ const navigationItems: NavigationItem[] = [
       { label: 'Rechnungen', value: 'finance-invoices', href: 'finance/invoices' },
       { label: 'E-Rechnungen', value: 'finance-einvoices', href: 'finance/einvoices' },
       { label: 'Lieferscheine', value: 'finance-delivery-notes', href: 'finance/delivery-notes' },
-      { label: 'Angebote', value: 'finance-quotes', href: 'finance/quotes' },
       { label: 'Gutschriften', value: 'finance-credits', href: 'finance/credits' },
       { label: 'Mahnungen', value: 'finance-reminders', href: 'finance/reminders' },
       { label: 'Kunden', value: 'finance-customers', href: 'finance/customers' },
@@ -228,14 +232,27 @@ export default function CompanySidebar({
   const isExpanded = (itemValue: string) => expandedItems.includes(itemValue);
 
   const isItemActive = (item: NavigationItem) => {
-    // Finance aktiv nur wenn Finance ohne Banking
+    // Marketplace aktiv wenn Marketplace-Pfad
+    if (item.value === 'marketplace') {
+      return pathname?.includes('/marketplace');
+    }
+
+    // Finance aktiv nur wenn Finance ohne Banking und ohne Quotes und ohne Marketplace
     if (item.value === 'finance') {
-      return pathname?.includes('/finance') && !pathname?.includes('/banking');
+      return pathname?.includes('/finance') && 
+             !pathname?.includes('/banking') && 
+             !pathname?.includes('/marketplace') && 
+             !pathname?.includes('/quotes');
     }
 
     // Banking aktiv wenn Banking-Pfad
     if (item.value === 'banking') {
       return pathname?.includes('/banking');
+    }
+
+    // Quotes aktiv wenn Finance-Quotes-Pfad (aber nicht Marketplace-Quotes)
+    if (item.value === 'quotes') {
+      return pathname?.includes('/finance/quotes');
     }
 
     // Orders aktiv wenn Orders-Pfad
@@ -263,6 +280,7 @@ export default function CompanySidebar({
       return (
         !pathname ||
         pathname === '/' ||
+        pathname === `/dashboard/company/${pathname?.split('/')[3]}` ||
         (!pathname.includes('/finance') &&
           !pathname.includes('/orders') &&
           !pathname.includes('/inbox') &&
@@ -272,7 +290,10 @@ export default function CompanySidebar({
           !pathname.includes('/reviews') &&
           !pathname.includes('/taskilo-advertising') &&
           !pathname.includes('/steuerportal') &&
-          !pathname.includes('/datev'))
+          !pathname.includes('/marketplace') &&
+          !pathname.includes('/datev') &&
+          !pathname.includes('/personal') &&
+          !pathname.includes('/workspace'))
       );
     }
 
@@ -286,6 +307,18 @@ export default function CompanySidebar({
 
   const isSubItemActive = (subItem: NavigationSubItem) => {
     if (!subItem.href || !pathname) return false;
+    
+    // Spezielle Behandlung für Finance Dashboard - nur exakt /finance, nicht /finance/quotes
+    if (subItem.href === 'finance') {
+      const pathSegments = pathname.split('/');
+      const financeIndex = pathSegments.indexOf('finance');
+      if (financeIndex !== -1) {
+        // Prüfen ob nach 'finance' noch weitere Segmente kommen
+        return financeIndex === pathSegments.length - 1;
+      }
+      return false;
+    }
+    
     return pathname.includes(`/${subItem.href}`);
   };
 

@@ -856,6 +856,40 @@ service cloud.firestore {
       allow delete: if isSupportStaff();
     }
 
+    // Finance: Quotes Collection (Angebote)
+    match /financeQuotes/{quoteId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff
+      allow list: if request.auth != null && 
+                    (isSupportStaff() ||
+                     ('where' in request.query &&
+                      request.query.where != null &&
+                      request.query.where.size() > 0 &&
+                      request.query.where[0].path == 'companyId' &&
+                      request.query.where[0].op == '==' &&
+                      request.query.where[0].value == request.auth.uid));
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       request.resource.data.companyId == request.auth.uid &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       (resource.data.companyId == request.auth.uid ||
+                        isSupportStaff());
+    }
+
     // Finance: Audit Trail Collection (optional für GoBD-Compliance)
     match /financeAudit/{auditId} {
       // Lesen: Nur eigene Firma
@@ -1369,6 +1403,66 @@ service cloud.firestore {
 
     // Payrolls Collection
     match /companies/{companyId}/payrolls/{payrollId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // Quotes Collection (Angebote)
+    match /companies/{companyId}/quotes/{quoteId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId && isCompany()) ||
+                     isSupportStaff();
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId && isCompany()) ||
+                    isSupportStaff();
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.createdAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma
+      allow update: if request.auth != null && 
+                       request.auth.uid == companyId &&
+                       isCompany() &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // Customers Collection (Kunden) - als Subcollection
+    match /companies/{companyId}/customers/{customerId} {
       // Lesen: Nur eigene Firma oder Support Staff
       allow read: if request.auth != null && 
                      (request.auth.uid == companyId && isCompany()) ||

@@ -67,72 +67,43 @@ export function CustomerSelect({
     }
   };
 
-  // Load customers from Firestore
+  // Load customers from API
   const loadCustomers = async () => {
     try {
       setLoading(true);
       console.log('🔍 Loading customers for companyId:', companyId);
 
-      const customersQuery = query(
-        collection(db, 'customers'),
-        where('companyId', '==', companyId),
-        orderBy('name', 'asc')
-      );
+      // Import API function dynamically to avoid circular dependencies
+      const { getCustomers } = await import('@/utils/api/companyApi');
+      const response = await getCustomers(companyId);
+      
+      if (response.success && response.customers) {
+        const loadedCustomers: Customer[] = response.customers.map(customer => ({
+          id: customer.id,
+          customerNumber: customer.customerNumber || `KD-${customer.id.substring(0, 6).toUpperCase()}`,
+          name: customer.name,
+          email: customer.email || '',
+          phone: customer.phone || '',
+          street: customer.street || '',
+          city: customer.city || '',
+          postalCode: customer.postalCode || '',
+          country: customer.country || '',
+          taxNumber: customer.taxNumber || '',
+          vatId: customer.vatId || '',
+          vatValidated: customer.vatValidated || false,
+          totalInvoices: customer.totalInvoices || 0,
+          totalAmount: customer.totalAmount || 0,
+          createdAt: customer.createdAt,
+          contactPersons: customer.contactPersons || [],
+          companyId: customer.companyId || companyId,
+        }));
 
-      console.log('📋 Executing Firestore query...');
-      const querySnapshot = await getDocs(customersQuery);
-      console.log('📊 Query result - docs count:', querySnapshot.size);
-
-      const loadedCustomers: Customer[] = [];
-
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        console.log('📝 Processing customer doc:', doc.id, data);
-
-        // Generiere customerNumber falls nicht vorhanden
-        const customerNumber = data.customerNumber || `KD-${doc.id.substring(0, 6).toUpperCase()}`;
-
-        // Filter: Nur echte Kunden (KD-) anzeigen, keine Lieferanten (LF-)
-        if (!customerNumber.startsWith('KD-')) {
-          console.log('⏭️ Skipping supplier:', customerNumber, data.name);
-          return; // Skip Lieferanten
-        }
-
-        loadedCustomers.push({
-          id: doc.id,
-          customerNumber,
-          name: data.name || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          street: data.street || '',
-          city: data.city || '',
-          postalCode: data.postalCode || '',
-          country: data.country || '',
-          taxNumber: data.taxNumber || '',
-          vatId: data.vatId || '',
-          totalInvoices: data.totalInvoices || 0,
-          totalAmount: data.totalAmount || 0,
-          createdAt:
-            data.createdAt?.toDate?.()?.toISOString() ||
-            data.createdAt?.toISOString?.() ||
-            new Date().toISOString(),
-          contactPersons: data.contactPersons || [],
-          companyId: data.companyId || companyId,
-        });
-      });
-
-      console.log('✅ Loaded customers:', loadedCustomers.length);
-      console.log(
-        '👥 Customer details:',
-        loadedCustomers.map(c => ({
-          id: c.id,
-          name: c.name,
-          customerNumber: c.customerNumber,
-          companyId: c.companyId,
-        }))
-      );
-      setCustomers(loadedCustomers);
+        console.log('✅ Loaded customers via API:', loadedCustomers.length);
+        setCustomers(loadedCustomers);
+      } else {
+        console.log('❌ No customers found in API response');
+        setCustomers([]);
+      }
     } catch (error: any) {
       console.error('❌ Error loading customers:', error);
       console.error('🔍 Error details:', {

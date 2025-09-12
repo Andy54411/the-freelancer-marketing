@@ -34,86 +34,47 @@ import {
   Euro,
   Loader2,
   Search,
+  Send,
+  Check,
+  X,
+  Clock,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Quote {
-  id: string;
-  number: string;
-  customerName: string;
-  customerEmail: string;
-  date: string;
-  validUntil: string;
-  amount: number;
-  tax: number;
-  total: number;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
-  items: Array<{
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    total: number;
-  }>;
-}
+import { QuoteService, Quote as QuoteType } from '@/services/quoteService';
 
 interface QuoteComponentProps {
   companyId: string;
 }
 
 export function QuoteComponent({ companyId }: QuoteComponentProps) {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotes, setQuotes] = useState<QuoteType[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<QuoteType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [stats, setStats] = useState({
+    total: 0,
+    sent: 0,
+    accepted: 0,
+    rejected: 0,
+    draft: 0,
+    expired: 0,
+    totalValue: 0,
+    acceptedValue: 0,
+  });
 
-  // Mock data - in real app this would come from Firestore
+  // Laden der Angebote
   useEffect(() => {
     const loadQuotes = async () => {
       try {
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const mockQuotes: Quote[] = [
-          {
-            id: '1',
-            number: 'A-2025-001',
-            customerName: 'Mustermann GmbH',
-            customerEmail: 'info@mustermann.de',
-            date: '2025-01-15',
-            validUntil: '2025-02-15',
-            amount: 5000,
-            tax: 950,
-            total: 5950,
-            status: 'sent',
-            items: [
-              { description: 'Beratungsleistung', quantity: 20, unitPrice: 150, total: 3000 },
-              { description: 'Projektmanagement', quantity: 40, unitPrice: 50, total: 2000 },
-            ],
-          },
-          {
-            id: '2',
-            number: 'A-2025-002',
-            customerName: 'Tech Solutions AG',
-            customerEmail: 'kontakt@techsolutions.de',
-            date: '2025-01-20',
-            validUntil: '2025-02-20',
-            amount: 8500,
-            tax: 1615,
-            total: 10115,
-            status: 'accepted',
-            items: [
-              { description: 'Software-Entwicklung', quantity: 50, unitPrice: 120, total: 6000 },
-              { description: 'Testing & QA', quantity: 25, unitPrice: 100, total: 2500 },
-            ],
-          },
-        ];
-
-        setQuotes(mockQuotes);
+        const quotesData = await QuoteService.getQuotes(companyId);
+        const statsData = await QuoteService.getQuoteStatistics(companyId);
+        
+        setQuotes(quotesData);
+        setStats(statsData);
       } catch (error) {
-
+        console.error('Error loading quotes:', error);
         toast.error('Angebote konnten nicht geladen werden');
       } finally {
         setLoading(false);
@@ -121,6 +82,13 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
     };
 
     loadQuotes();
+
+    // Real-time Updates
+    const unsubscribe = QuoteService.subscribeToQuotes(companyId, (quotesData) => {
+      setQuotes(quotesData);
+    });
+
+    return () => unsubscribe();
   }, [companyId]);
 
   const formatCurrency = (amount: number) => {
@@ -130,7 +98,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
     }).format(amount);
   };
 
-  const getStatusBadge = (status: Quote['status']) => {
+  const getStatusBadge = (status: QuoteType['status']) => {
     const statusConfig = {
       draft: { label: 'Entwurf', className: 'bg-gray-100 text-gray-800' },
       sent: { label: 'Versendet', className: 'bg-blue-100 text-blue-800' },
@@ -149,13 +117,38 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
       quote.number.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateQuote = () => {
-    toast.success('Angebot erstellt - Weiterleitung zur Bearbeitung');
-    setShowCreateModal(false);
+  const handleViewQuote = (quote: QuoteType) => {
+    window.location.href = `/dashboard/company/${companyId}/finance/quotes/${quote.id}`;
   };
 
-  const handleConvertToInvoice = (quote: Quote) => {
-    toast.success(`Angebot ${quote.number} wird in Rechnung umgewandelt`);
+  const handleConvertToInvoice = async (quote: QuoteType) => {
+    try {
+      await QuoteService.convertToInvoice(companyId, quote.id);
+      toast.success(`Angebot ${quote.number} wird in Rechnung umgewandelt`);
+    } catch (error) {
+      console.error('Error converting quote:', error);
+      toast.error('Fehler beim Umwandeln in Rechnung');
+    }
+  };
+
+  const handleSendQuote = async (quote: QuoteType) => {
+    try {
+      await QuoteService.sendQuote(companyId, quote.id);
+      toast.success(`Angebot ${quote.number} wurde versendet`);
+    } catch (error) {
+      console.error('Error sending quote:', error);
+      toast.error('Fehler beim Versenden des Angebots');
+    }
+  };
+
+  const handleDeleteQuote = async (quote: QuoteType) => {
+    try {
+      await QuoteService.deleteQuote(companyId, quote.id);
+      toast.success(`Angebot ${quote.number} wurde gelöscht`);
+    } catch (error) {
+      console.error('Error deleting quote:', error);
+      toast.error('Fehler beim Löschen des Angebots');
+    }
   };
 
   if (loading) {
@@ -176,7 +169,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
           <p className="text-gray-600 mt-1">Professionelle Angebote erstellen und verwalten</p>
         </div>
         <Button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => window.location.href = `/dashboard/company/${companyId}/finance/quotes/create`}
           className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -185,9 +178,8 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="overview">Übersicht</TabsTrigger>
-          <TabsTrigger value="templates">Vorlagen</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -199,7 +191,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
                   <FileText className="h-8 w-8 text-[#14ad9f]" />
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Gesamt</p>
-                    <p className="text-2xl font-bold text-gray-900">{quotes.length}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
                   </div>
                 </div>
               </CardContent>
@@ -208,12 +200,10 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center">
-                  <Calendar className="h-8 w-8 text-blue-500" />
+                  <Send className="h-8 w-8 text-blue-500" />
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Versendet</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {quotes.filter(q => q.status === 'sent').length}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.sent}</p>
                   </div>
                 </div>
               </CardContent>
@@ -222,12 +212,10 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center">
-                  <Euro className="h-8 w-8 text-green-500" />
+                  <Check className="h-8 w-8 text-green-500" />
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Angenommen</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {quotes.filter(q => q.status === 'accepted').length}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.accepted}</p>
                   </div>
                 </div>
               </CardContent>
@@ -236,12 +224,10 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center">
-                  <Trash2 className="h-8 w-8 text-red-500" />
+                  <X className="h-8 w-8 text-red-500" />
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Abgelehnt</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {quotes.filter(q => q.status === 'rejected').length}
-                    </p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.rejected}</p>
                   </div>
                 </div>
               </CardContent>
@@ -281,7 +267,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
                   </p>
                   {!searchTerm && (
                     <Button
-                      onClick={() => setShowCreateModal(true)}
+                      onClick={() => window.location.href = `/dashboard/company/${companyId}/finance/quotes/create`}
                       className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
                     >
                       Erstes Angebot erstellen
@@ -323,11 +309,23 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedQuote(quote)}
+                            onClick={() => handleViewQuote(quote)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             Ansehen
                           </Button>
+
+                          {quote.status === 'draft' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSendQuote(quote)}
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <Send className="h-4 w-4 mr-1" />
+                              Versenden
+                            </Button>
+                          )}
 
                           {quote.status === 'accepted' && (
                             <Button
@@ -341,10 +339,25 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
                             </Button>
                           )}
 
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => window.location.href = `/dashboard/company/${companyId}/finance/quotes/${quote.id}/edit`}
+                          >
                             <Edit className="h-4 w-4 mr-1" />
                             Bearbeiten
                           </Button>
+
+                          {quote.status === 'draft' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteQuote(quote)}
+                              className="text-red-600 border-red-200 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -354,138 +367,7 @@ export function QuoteComponent({ companyId }: QuoteComponentProps) {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="templates" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Angebots-Vorlagen</CardTitle>
-              <CardDescription>
-                Vorgefertigte Vorlagen für häufig verwendete Angebote
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Vorlagen erstellen</h3>
-                <p className="text-gray-600 mb-4">
-                  Sparen Sie Zeit mit wiederverwendbaren Angebots-Vorlagen
-                </p>
-                <Button className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Erste Vorlage erstellen
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
-
-      {/* Create Quote Modal */}
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Neues Angebot erstellen</DialogTitle>
-            <DialogDescription>Erstellen Sie ein neues professionelles Angebot</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Kunde</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Kunde auswählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kunde1">Mustermann GmbH</SelectItem>
-                    <SelectItem value="kunde2">Tech Solutions AG</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Gültig bis</Label>
-                <Input type="date" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Beschreibung</Label>
-              <Textarea placeholder="Beschreibung des Angebots..." rows={3} />
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={handleCreateQuote}
-                className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-              >
-                Angebot erstellen
-              </Button>
-              <Button variant="outline" onClick={() => setShowCreateModal(false)}>
-                Abbrechen
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Quote Detail Modal */}
-      {selectedQuote && (
-        <Dialog open={!!selectedQuote} onOpenChange={() => setSelectedQuote(null)}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle>Angebot: {selectedQuote.number}</DialogTitle>
-              <DialogDescription>
-                Detailansicht des Angebots für {selectedQuote.customerName}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {getStatusBadge(selectedQuote.status)}
-                  <span className="text-sm text-gray-600">
-                    Erstellt am: {new Date(selectedQuote.date).toLocaleDateString('de-DE')}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    Gültig bis: {new Date(selectedQuote.validUntil).toLocaleDateString('de-DE')}
-                  </span>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  PDF Download
-                </Button>
-              </div>
-
-              <div className="border rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-2">Positionen</h4>
-                <div className="space-y-2">
-                  {selectedQuote.items.map((item, index) => (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span>{item.description}</span>
-                      <span>
-                        {item.quantity} × {formatCurrency(item.unitPrice)} ={' '}
-                        {formatCurrency(item.total)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t mt-4 pt-4 space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>Netto:</span>
-                    <span>{formatCurrency(selectedQuote.amount)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>MwSt. (19%):</span>
-                    <span>{formatCurrency(selectedQuote.tax)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium">
-                    <span>Gesamt:</span>
-                    <span>{formatCurrency(selectedQuote.total)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 }
