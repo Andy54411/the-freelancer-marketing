@@ -90,6 +90,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     'verifizierungsprozess',
     'kundenkommunikation',
     'perfektes-angebot',
+    'rechnungsstellung-tipps',
   ].map(slug => ({
     url: `${baseUrl}/blog/${slug}`,
     lastModified: new Date(),

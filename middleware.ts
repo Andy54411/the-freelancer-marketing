@@ -22,6 +22,18 @@ function logMiddleware(message: string, request: NextRequest, additionalData?: a
 export default async function middleware(request: NextRequest) {
   logMiddleware('Middleware ausgeführt', request);
 
+  // Skip middleware for SEO machine-readable endpoints
+  const pathname = request.nextUrl.pathname;
+  if (
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/sitemap.xml.gz' ||
+    pathname === '/favicon.ico'
+  ) {
+    logMiddleware('SEO/Static endpoint – Middleware übersprungen', request, { pathname });
+    return;
+  }
+
   // Company Dashboard Onboarding Protection (nach Dokumentation)
   if (request.nextUrl.pathname.startsWith('/dashboard/company/')) {
     logMiddleware('Company Dashboard Zugriff erkannt', request);
@@ -147,5 +159,5 @@ async function checkCompanyOnboardingStatus(request: NextRequest) {
 
 export const config = {
   // Apply to all routes except static files
-  matcher: ['/((?!_next|favicon.ico|images|icon).*)'],
+  matcher: ['/((?!_next|favicon.ico|images|icon|robots\.txt|sitemap\.xml).*)'],
 };
