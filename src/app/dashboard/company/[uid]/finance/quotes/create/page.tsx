@@ -20,16 +20,13 @@ import {
 import {
   Calculator,
   Save,
-  Send,
   FileText,
-  ArrowLeft,
   User,
   X,
   Loader2,
   Info,
   ChevronDown,
   Eye,
-  Download,
   Mail,
   Printer,
 } from 'lucide-react';
@@ -48,6 +45,7 @@ import { Switch } from '@/components/ui/switch';
 import { InventoryService } from '@/services/inventoryService';
 import { Popover, PopoverContent, PopoverAnchor } from '@/components/ui/popover';
 import NewProductModal, { NewProductValues } from '@/components/inventory/NewProductModal';
+import NewCustomerModal from '@/components/finance/NewCustomerModal';
 
 interface Customer {
   id: string;
@@ -118,6 +116,11 @@ export default function CreateQuotePage() {
     description: '',
     internalNote: '',
   });
+
+  // Kunden-anlegen Modal State
+  const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [showCustomerSearchPopup, setShowCustomerSearchPopup] = useState(false);
 
   // Sync Preisfelder Netto/Brutto
   const syncGrossFromNet = (net: number, rate: number) =>
@@ -315,6 +318,21 @@ export default function CreateQuotePage() {
     loadCustomers();
   }, [uid, user]);
 
+  // Popup schließen beim Klicken außerhalb
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCustomerSearchPopup) {
+        const target = event.target as Element;
+        if (!target.closest('.customer-search-container')) {
+          setShowCustomerSearchPopup(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showCustomerSearchPopup]);
+
   // Firma laden (für Vorschau: Name, Adresse, Logo/Profilbild, Kontakt, Steuer/Bank)
   useEffect(() => {
     const loadCompany = async () => {
@@ -376,7 +394,7 @@ export default function CreateQuotePage() {
   // Skonto-Defaults aus Einstellungen übernehmen (separat, damit Basis-Text nicht dupliziert wird)
   useEffect(() => {
     if (!settings?.defaultPaymentTerms) return;
-    const d = settings.defaultPaymentTerms as any;
+    const d = settings.defaultPaymentTerms as Record<string, unknown>;
     setSkontoEnabled(Boolean(d.skontoEnabled));
     setSkontoDays(
       typeof d.skontoDays === 'number'
@@ -632,165 +650,46 @@ export default function CreateQuotePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emailCardOpen]);
 
-  // PDF-Generierung (Blob + Download + Base64)
-  const generatePdfBlob = async (attempt: number = 1): Promise<Blob> => {
-    const element = pdfContainerRef.current;
-    if (!element) {
-      console.error('[PDF] Container-Ref ist null');
-      throw new Error('PDF-Container nicht verfügbar');
-    }
-
-    // Sicherstellen, dass der Container im Viewport ist (unsichtbar, aber layouted)
-    const prev = {
-      position: element.style.position,
-      left: element.style.left,
-      top: element.style.top,
-      opacity: element.style.opacity,
-      zIndex: element.style.zIndex as string,
-      width: element.style.width,
-      minHeight: element.style.minHeight,
-      visibility: element.style.visibility,
-    };
-    element.style.position = 'fixed';
-    element.style.left = '0px';
-    element.style.top = '0px';
-    element.style.opacity = '0';
-    element.style.zIndex = '0';
-    element.style.width = '794px'; // ~A4 @ 96dpi
-    element.style.minHeight = element.style.minHeight || '1123px';
-    element.style.visibility = 'visible';
-
-    // Auf Render/Assets warten
-    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
-    // Bilder laden lassen
-    const imgs = Array.from(element.querySelectorAll('img')) as HTMLImageElement[];
-    const imgPromises = imgs.map(img => {
-      if ((img as any).complete && img.naturalWidth > 0) return Promise.resolve();
-      return new Promise<void>(resolve => {
-        const done = () => resolve();
-        const to = setTimeout(done, 2000);
-        img.addEventListener(
-          'load',
-          () => {
-            clearTimeout(to);
-            done();
-          },
-          { once: true }
-        );
-        img.addEventListener(
-          'error',
-          () => {
-            clearTimeout(to);
-            done();
-          },
-          { once: true }
-        );
-      });
-    });
-    if (imgPromises.length) {
-      try {
-        await Promise.all(imgPromises);
-      } catch {}
-    }
-
-    console.log('[PDF] Start Erzeugung', {
-      node: element.nodeName,
-      width: element.clientWidth,
-      height: element.clientHeight,
-      scrollHeight: element.scrollHeight,
-      attempt,
-    });
-
-    const mod = await import('html2pdf.js').catch(err => {
-      console.error('[PDF] html2pdf Import fehlgeschlagen', err);
-      // Zustand zurücksetzen
-      Object.assign(element.style, prev);
-      throw err;
-    });
-    const html2pdf = mod.default;
-    const opt = {
-      margin: 0,
-      filename: 'Angebot.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        logging: true,
-        backgroundColor: '#FFFFFF',
-        windowWidth: Math.max(794, element.scrollWidth || element.clientWidth || 794),
-        windowHeight: Math.max(1123, element.scrollHeight || 1123),
-        onclone: (doc: Document) => {
-          try {
-            // Entferne externe Stylesheets (vermeide oklch in globalen CSS)
-            doc.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
-              link.parentNode?.removeChild(link);
-            });
-            // Minimal-CSS injizieren für das Angebotslayout
-            const style = doc.createElement('style');
-            style.textContent = `
-              .invoice-print-content { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #374151; background: #ffffff; }
-              .invoice-print-content h1 { color: #14ad9f; font-weight: 700; }
-              .invoice-print-content table { width: 100%; border-collapse: collapse; }
-              .invoice-print-content th, .invoice-print-content td { border: 1px solid #D1D5DB; padding: 8px; }
-              .invoice-print-content thead th { background: #14ad9f; color: #ffffff; }
-              .invoice-print-content .text-right { text-align: right; }
-              .invoice-print-content .text-center { text-align: center; }
-              .invoice-print-content .bg-gray-50 { background: #F9FAFB; }
-              .invoice-print-content .text-\\[\\#14ad9f\\] { color: #14ad9f; }
-              .invoice-print-content .border-gray-200 { border-color: #E5E7EB; }
-              .invoice-print-content .border-gray-300 { border-color: #D1D5DB; }
-            `;
-            doc.head.appendChild(style);
-          } catch (e) {
-            console.warn('[PDF] onclone styling warn', e);
-          }
-        },
-      },
-      jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
-    } as any;
-    console.log('[PDF] Optionen', opt);
-
-    let blob: Blob;
+  // PDF-Generierung mit React-PDF und dem umgeschriebenen Template
+  const generatePdfBlob = async (): Promise<Blob> => {
     try {
-      const worker = html2pdf().set(opt).from(element).toPdf();
-      const pdf: any = await worker.get('pdf');
-      const pages =
-        typeof pdf.getNumberOfPages === 'function'
-          ? pdf.getNumberOfPages()
-          : (pdf.internal?.getNumberOfPages?.() ?? undefined);
-      blob = pdf.output('blob');
-      console.log('[PDF] Blob erstellt', { size: (blob as any)?.size, pages });
-    } catch (err) {
-      console.error('[PDF] Worker/Output Fehler', err);
-      // Zustand zurücksetzen
-      Object.assign(element.style, prev);
-      throw err;
-    }
+      console.log('[PDF] Start React-PDF Erzeugung mit umgeschriebenem Template');
+      
+      // Verwende das bestehende Template-Datenformat - EXAKT wie es ist!
+      const templateData = buildPreviewData();
+      
+      console.log('[PDF] Template-Daten erstellt', {
+        companyName: templateData.companyName,
+        customerName: templateData.customerName,
+        quoteNumber: templateData.quoteNumber,
+        itemCount: templateData.items?.length || 0,
+        total: templateData.total,
+        currency: templateData.currency,
+      });
 
-    // Zustand zurücksetzen
-    Object.assign(element.style, prev);
+      // React-PDF importieren
+      const { pdf } = await import('@react-pdf/renderer');
+      const { default: GermanStandardQuotePDF } = await import('@/components/pdf/GermanStandardQuotePDF');
+      
+      // PDF mit dem umgeschriebenen Template generieren
+      const blob = await pdf(<GermanStandardQuotePDF data={templateData} />).toBlob();
+      
+      const size = blob.size;
+      console.log('[PDF] React-PDF Blob erstellt', {
+        size,
+        sizeKB: (size / 1024).toFixed(1),
+        isEmpty: size < 1000,
+      });
 
-    // Fallback: wenn Blob zu klein ist, ein zweiter Versuch mit minimalen Anpassungen
-    const size = (blob as any)?.size || 0;
-    if (size < 1500 && attempt < 2) {
-      console.warn('[PDF] Blob sehr klein, erneuter Versuch mit forciertem minHeight');
-      element.style.minHeight = '1123px';
-      await new Promise<void>(r => setTimeout(() => r(), 120));
-      return generatePdfBlob(attempt + 1);
-    }
-
-    // Hard-Fallback: Canvas + jsPDF, wenn weiterhin zu klein (leer)
-    if (size < 1500) {
-      console.warn('[PDF] Html2pdf-Blob leer – Fallback über html2canvas + jsPDF');
-      try {
-        const fb = await generatePdfViaCanvas(element);
-        if (((fb as any)?.size || 0) > 1500) return fb;
-      } catch (e) {
-        console.error('[PDF] Canvas-Fallback fehlgeschlagen', e);
+      if (size < 1000) {
+        throw new Error('PDF ist zu klein - möglicherweise leer');
       }
-    }
 
-    return blob;
+      return blob;
+    } catch (error) {
+      console.error('[PDF] React-PDF Fehler:', error);
+      throw new Error(`PDF-Erstellung fehlgeschlagen: ${error}`);
+    }
   };
 
   // Fallback-Erzeugung via html2canvas + jsPDF (mit Seiten-Slicing)
@@ -1211,23 +1110,96 @@ export default function CreateQuotePage() {
             {/* Zeile 1 */}
             <div className="space-y-2">
               <Label>Kunde</Label>
-              <Select
-                value={formData.customerName}
-                onValueChange={val => handleCustomerSelect(val)}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={loadingCustomers ? 'Kunden werden geladen…' : 'Kunde auswählen'}
+              <div className="space-y-2">
+                {/* Bestehender Kunde auswählen */}
+                <Select
+                  value={formData.customerName}
+                  onValueChange={val => handleCustomerSelect(val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={loadingCustomers ? 'Kunden werden geladen…' : 'Bestehenden Kunden auswählen'}
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.name}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* ODER - Neuer Kunde mit intelligenter Suche */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 border-t border-gray-300"></div>
+                  <span className="text-xs text-gray-500">oder</span>
+                  <div className="flex-1 border-t border-gray-300"></div>
+                </div>
+                
+                {/* Intelligente Kundensuche */}
+                <div className="relative customer-search-container">
+                  <Input
+                    type="text"
+                    value={formData.customerName}
+                    onChange={e => {
+                      const value = e.target.value;
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        customerName: value 
+                      }));
+                      
+                      // Zeige Popup nur wenn mindestens 2 Zeichen eingegeben wurden
+                      if (value.length >= 2) {
+                        setShowCustomerSearchPopup(true);
+                      } else {
+                        setShowCustomerSearchPopup(false);
+                      }
+                    }}
+                    placeholder="Neuen Kontakt eingeben..."
+                    className="flex-1"
                   />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  {customers.map(c => (
-                    <SelectItem key={c.id} value={c.name}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  
+                  {/* Intelligenter Such-Popup */}
+                  {showCustomerSearchPopup && formData.customerName.length >= 2 && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {/* Gefilterte Kunden anzeigen */}
+                      {customers
+                        .filter(customer => 
+                          customer.name.toLowerCase().includes(formData.customerName.toLowerCase())
+                        )
+                        .slice(0, 5) // Maximal 5 Ergebnisse
+                        .map(customer => (
+                          <div
+                            key={customer.id}
+                            className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                            onClick={() => {
+                              handleCustomerSelect(customer.name);
+                              setShowCustomerSearchPopup(false);
+                            }}
+                          >
+                            <div className="font-medium text-sm">{customer.name}</div>
+                            <div className="text-xs text-gray-500">{customer.customerNumber} • {customer.email}</div>
+                          </div>
+                        ))}
+                      
+                      {/* "Kunden anlegen" Button */}
+                      <div className="border-t border-gray-200 bg-gray-50">
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm text-[#14ad9f] hover:bg-gray-100 font-medium"
+                          onClick={() => {
+                            setShowCustomerSearchPopup(false);
+                            setCreateCustomerOpen(true);
+                          }}
+                        >
+                          + Neuen Kunden &quot;{formData.customerName}&quot; anlegen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>E‑Mail</Label>
@@ -2000,10 +1972,6 @@ export default function CreateQuotePage() {
           <Eye className="w-4 h-4 mr-2" />
           Vorschau
         </Button>
-        <Button type="button" onClick={downloadPdf} variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          PDF herunterladen
-        </Button>
         <Button type="button" onClick={printInBrowser} variant="outline" className="sm:ml-2">
           <Printer className="w-4 h-4 mr-2" />
           Drucken (Browser)
@@ -2019,18 +1987,6 @@ export default function CreateQuotePage() {
             <Save className="w-4 h-4 mr-2" />
           )}
           Speichern
-        </Button>
-        <Button
-          onClick={() => handleSubmit(false)}
-          disabled={loading}
-          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-        >
-          {loading ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4 mr-2" />
-          )}
-          Erstellen und versenden
         </Button>
         <Button
           type="button"
@@ -2107,7 +2063,7 @@ export default function CreateQuotePage() {
                     {sendingEmail ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
-                      <Send className="w-4 h-4 mr-2" />
+                      <Mail className="w-4 h-4 mr-2" />
                     )}{' '}
                     Jetzt senden
                   </Button>
@@ -2254,44 +2210,30 @@ export default function CreateQuotePage() {
         }}
       />
 
-      {/* Unsichtbarer PDF-Container für Download/Anhang (im Viewport layouted, aber unsichtbar) */}
-      <div
-        ref={pdfContainerRef}
-        style={{
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          width: 794,
-          background: '#fff',
-          opacity: 0,
-          zIndex: 0,
+      {/* Modal: Neuer Kunde */}
+      <NewCustomerModal
+        open={createCustomerOpen}
+        onOpenChange={setCreateCustomerOpen}
+        defaultValues={{
+          name: formData.customerName || '',
         }}
-        className="pointer-events-none select-none"
-        aria-hidden
-      >
-        {/* Force hex colors for html2canvas (avoid oklch() parse errors) */}
-        <style>{`
-              /* Global neutralization for html2canvas: force common colors to hex to avoid oklch() */
-              .invoice-print-content { color: #374151 !important; background: #ffffff !important; }
-              .invoice-print-content * { text-shadow: none !important; }
-              .invoice-print-content h1, .invoice-print-content h2, .invoice-print-content h3, .invoice-print-content h4, .invoice-print-content h5, .invoice-print-content h6 { color: #111827 !important; }
-              .invoice-print-content a { color: #1D4ED8 !important; }
-              .prose, .prose * { color: #374151 !important; }
-              .text-gray-700 { color: #374151 !important; }
-              .text-gray-600 { color: #4B5563 !important; }
-              .text-gray-500 { color: #6B7280 !important; }
-              .text-gray-900 { color: #111827 !important; }
-              .bg-white { background-color: #FFFFFF !important; }
-              .bg-gray-50 { background-color: #F9FAFB !important; }
-              .border-gray-200 { border-color: #E5E7EB !important; }
-              .border-gray-300 { border-color: #D1D5DB !important; }
-              .bg-\\[\\#14ad9f\\] { background-color: #14ad9f !important; }
-              .text-\\[\\#14ad9f\\] { color: #14ad9f !important; }
-            `}</style>
-        <div className="invoice-print-content">
-          <GermanStandardQuoteTemplate data={buildPreviewData()} />
-        </div>
-      </div>
+        saving={creatingCustomer}
+        persistDirectly={true}
+        companyId={uid}
+        onSaved={async (customerId) => {
+          try {
+            // Lade Kunden neu mit der existierenden Funktion
+            const response = await getCustomers(uid);
+            if (response.success && response.customers) {
+              setCustomers(response.customers);
+            }
+            toast.success('Kunde erfolgreich erstellt');
+          } catch (error) {
+            console.error('Fehler beim Aktualisieren der Kundenliste:', error);
+          }
+        }}
+      />
+
     </div>
   );
 }

@@ -131,6 +131,48 @@ export async function createInvoice(uid: string, invoiceData: any) {
   }
 }
 
+// Category API Functions
+export async function getCategories() {
+  try {
+    const response = await fetch('/api/categories', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function createCategory(categoryData: any) {
+  try {
+    const response = await fetch('/api/categories', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(categoryData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    throw error;
+  }
+}
+
 // Generic API Error Handler
 export function handleApiError(error: any) {
   if (error.response) {

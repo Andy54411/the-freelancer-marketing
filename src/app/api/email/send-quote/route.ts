@@ -35,11 +35,11 @@ export async function POST(req: NextRequest) {
     }
 
     const service = ResendEmailService.getInstance();
+    // Resend akzeptiert Buffer sehr stabil – wir wandeln Base64 in Buffer.
     const attachments = attachment
       ? [
           {
             filename: attachment.filename,
-            // Resend akzeptiert Buffer am stabilsten
             content: Buffer.from(attachment.contentBase64, 'base64') as unknown as string,
             contentType: 'application/pdf',
           },
@@ -53,7 +53,11 @@ export async function POST(req: NextRequest) {
       htmlContent: html,
       textContent: text,
       attachments,
-      metadata: { ...(meta || {}), attachmentBytes: attachment?.contentBase64?.length },
+      metadata: {
+        ...(meta || {}),
+        attachmentBytes: attachment?.contentBase64?.length || 0,
+        attachmentPresent: Boolean(attachment?.contentBase64 && attachment.contentBase64.length > 1000),
+      },
     });
 
     if (!result.success) {
@@ -62,7 +66,16 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-    return NextResponse.json({ success: true, messageId: result.messageId });
+    const attachedBytes = attachment?.contentBase64?.length || 0;
+    return NextResponse.json({
+      success: true,
+      messageId: result.messageId,
+      attachment: {
+        present: Boolean(attachedBytes && attachedBytes > 1000),
+        bytes: attachedBytes,
+        filename: attachment?.filename,
+      },
+    });
   } catch (e: any) {
     return NextResponse.json(
       { success: false, error: e?.message || 'Serverfehler' },

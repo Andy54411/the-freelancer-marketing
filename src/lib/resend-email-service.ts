@@ -92,10 +92,20 @@ export class ResendEmailService {
         subject: message.subject,
         html: message.htmlContent,
         text: message.textContent,
-        attachments: message.attachments?.map(att => ({
-          filename: att.filename,
-          content: att.content,
-        })),
+        attachments: message.attachments?.map(att => {
+          // Falls content Base64 ist, in Buffer wandeln; wenn bereits Buffer (string/Uint8Array), durchreichen
+          const isLikelyBase64 = typeof att.content === 'string' && /^[A-Za-z0-9+/=]+$/.test(att.content || '');
+          const contentAny = isLikelyBase64
+            ? (Buffer.from(att.content, 'base64') as unknown as string)
+            : (att.content as any);
+          return {
+            filename: att.filename,
+            content: contentAny,
+            type: att.contentType || 'application/pdf',
+            contentType: att.contentType || 'application/pdf',
+            disposition: 'attachment',
+          };
+        }),
         headers: {
           'X-Taskilo-Source': 'admin-panel',
           'X-Taskilo-Metadata': JSON.stringify(message.metadata || {}),
