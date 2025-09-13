@@ -6,13 +6,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { UserPreferencesService, UserPreferences } from '@/lib/userPreferences';
 import TemplatePreview from '@/components/templates/TemplatePreview';
 import type { InvoiceTemplate } from '@/components/finance/InvoiceTemplates';
 
 // Temporary type definition until module is properly resolved
-type DeliveryNoteTemplate = 
+type DeliveryNoteTemplate =
   | 'professional-business-delivery'
   | 'executive-premium-delivery'
   | 'creative-modern-delivery'
@@ -53,7 +59,7 @@ export default function TemplateSettingsPage() {
 
         setPreferences({
           invoiceTemplate: userPrefs.preferredInvoiceTemplate || null,
-          deliveryNoteTemplate: userPrefs.preferredDeliveryNoteTemplate || null,
+          deliveryNoteTemplate: userPrefs.preferredDeliveryTemplate || null,
           quoteTemplate: userPrefs.preferredQuoteTemplate || null,
         });
       } catch (error) {
@@ -93,7 +99,7 @@ export default function TemplateSettingsPage() {
           updateData.preferredInvoiceTemplate = template as InvoiceTemplate;
           break;
         case 'deliveryNoteTemplate':
-          updateData.preferredDeliveryNoteTemplate = template as DeliveryNoteTemplate;
+          updateData.preferredDeliveryTemplate = template;
           break;
         case 'quoteTemplate':
           updateData.preferredQuoteTemplate = template;
@@ -128,11 +134,11 @@ export default function TemplateSettingsPage() {
 
   const renderTemplateContent = () => {
     return (
-      <TemplatePreview 
+      <TemplatePreview
         documentType={currentType as any}
         templateId={getCurrentTemplateId()}
         className="w-full"
-        onTemplateSelect={(templateId) => {
+        onTemplateSelect={templateId => {
           // Template-Auswahl verarbeiten
           const invoiceTypes = ['Invoice', 'Invoicereminder', 'Creditnote'];
           const quoteTypes = ['Order'];
@@ -164,7 +170,7 @@ export default function TemplateSettingsPage() {
     if (deliveryTypes.includes(currentType)) {
       return preferences.deliveryNoteTemplate || 'professional-business-delivery';
     }
-    
+
     return 'professional-business';
   };
 
@@ -228,9 +234,7 @@ export default function TemplateSettingsPage() {
       </div>
 
       {/* Template Content - VOLLE BREITE */}
-      <div className="w-full">
-        {renderTemplateContent()}
-      </div>
+      <div className="w-full">{renderTemplateContent()}</div>
     </div>
   );
 }

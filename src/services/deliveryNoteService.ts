@@ -16,7 +16,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { DeliveryNoteTemplate } from '@/components/templates/delivery-note-templates/types';
+import { DeliveryNoteTemplate } from '@/components/templates/delivery-note-templates';
 
 export interface DeliveryNote {
   id: string;

@@ -42,7 +42,8 @@
     "logs:remove": "node scripts/remove-console-logs.js --dir=src",
     "logs:remove:dry": "node scripts/remove-console-logs.js --dir=src --dry-run",
     "logs:remove:all": "node scripts/remove-console-logs.js --dir=src --include-api",
-    "logs:remove:aggressive": "node scripts/remove-console-logs.js --dir=src --include-api --include-warn --include-error"
+    "logs:remove:aggressive": "node scripts/remove-console-logs.js --dir=src --include-api --include-warn --include-error",
+    "pdf:extract": "node scripts/extract-pdf-text.js"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.864.0",
@@ -236,6 +237,7 @@
     "eslint-config-next": "15.3.5",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
+    "pdf-parse": "^1.1.1",
     "prettier": "^3.6.2",
     "puppeteer": "^24.20.0",
     "tailwindcss": "^4",

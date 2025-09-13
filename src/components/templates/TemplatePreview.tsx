@@ -2,9 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Check, Search, ZoomIn, ZoomOut } from 'lucide-react';
+import { FileText, Check, Search, Eye, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Import der neuen Invoice Templates
 import ProfessionalBusinessTemplate from '@/components/templates/invoice-templates/ProfessionalBusinessTemplate';
@@ -56,8 +57,8 @@ import {
   ExecutivePremiumDeliveryTemplate,
   CreativeModernDeliveryTemplate,
   MinimalistElegantDeliveryTemplate,
-  CorporateClassicDeliveryTemplate,
   TechInnovationDeliveryTemplate,
+  BusinessStandardDeliveryTemplate,
 } from '@/components/templates/delivery-note-templates';
 
 // Reminder (Mahnung) Templates
@@ -152,6 +153,52 @@ const getNewInvoiceTemplateData = (): any => {
     notes: 'Vielen Dank für Ihr Vertrauen!',
     status: 'draft',
     isSmallBusiness: false,
+  };
+};
+
+// SPEZIFISCHE Mock-Daten für BusinessStandardDeliveryTemplate (basierend auf der PDF-Vorlage)
+const getBusinessStandardDeliveryData = (): any => {
+  return {
+    documentNumber: '1011',
+    date: '13.09.2024',
+    customerName: 'Habermann & Söhne',
+    customerAddress: {
+      street: 'Schnurlos-Straße 81',
+      zipCode: '34131',
+      city: 'Kassel',
+      country: 'Deutschland',
+    },
+    customerNumber: '1008',
+    orderNumber: '19658',
+    items: [
+      {
+        description: 'B-3025, Farbe Grün',
+        details: 'Musterartikel',
+        quantity: 1.0,
+        unit: 'Stk.',
+        sku: 'B-3025-078',
+      },
+      {
+        description: 'B-0050, Farbe Blau',
+        details: 'Musterartikel ABC',
+        quantity: 2.0,
+        unit: 'Stk.',
+        sku: 'B-0050-050',
+      },
+      {
+        description: 'A-0086, Antik-Look',
+        details: 'Musterartikel',
+        quantity: 1.0,
+        unit: 'Stk.',
+        sku: 'A-0086-007',
+      },
+      {
+        description: 'Versand und Verpackung',
+        quantity: 1.0,
+        unit: 'Stk.',
+        sku: 'V-13kg',
+      },
+    ],
   };
 };
 
@@ -421,14 +468,14 @@ const NEW_TEMPLATES = {
       component: MinimalistElegantDeliveryTemplate,
     },
     {
-      id: 'corporate-classic-delivery',
-      name: 'Corporate Klassisch',
-      component: CorporateClassicDeliveryTemplate,
-    },
-    {
       id: 'tech-innovation-delivery',
       name: 'Tech Innovation',
       component: TechInnovationDeliveryTemplate,
+    },
+    {
+      id: 'business-standard-delivery',
+      name: 'Business Standard (DIN-orientiert)',
+      component: BusinessStandardDeliveryTemplate,
     },
   ],
   reminder: REMINDER_TEMPLATES.map(t => ({ id: t.id, name: t.name, component: t.component })),
@@ -441,7 +488,9 @@ const PaperThumb: React.FC<{ children: React.ReactNode; scale?: number; classNam
   className = '',
 }) => {
   return (
-    <div className={`relative overflow-hidden bg-white border rounded-md ${className}`}>
+    <div
+      className={`relative overflow-hidden bg-white border rounded-md aspect-[210/297] ${className}`}
+    >
       <div className="absolute inset-[6px]">
         <div
           className="origin-top-left"
@@ -538,7 +587,8 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>(getDefaultTemplate());
   const [query, setQuery] = useState('');
   const [sortAsc, setSortAsc] = useState(true);
-  const [previewScale, setPreviewScale] = useState(0.9);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [modalTemplateId, setModalTemplateId] = useState<string>('');
 
   // Wenn sich der Dokumenttyp oder das vorgewählte Template ändert,
   // setze die lokale Auswahl auf einen passenden Default.
@@ -550,6 +600,11 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   const handleTemplateSelect = (newTemplateId: string) => {
     setSelectedTemplate(newTemplateId);
     onTemplateSelect?.(newTemplateId);
+  };
+
+  const handlePreviewClick = (templateId: string) => {
+    setModalTemplateId(templateId);
+    setShowPreviewModal(true);
   };
 
   const renderTemplateComponent = (template: string) => {
@@ -634,7 +689,32 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       const deliveryTemplate = NEW_TEMPLATES.delivery.find(t => t.id === template);
       if (deliveryTemplate) {
         const Component = deliveryTemplate.component;
-        return <Component {...templateData} />;
+        // Spezifische Mock-Daten für ALLE Delivery Templates
+        const deliveryData = getBusinessStandardDeliveryData();
+        const companyData = {
+          companyName: 'Muster GmbH',
+          address: {
+            street: 'Lange Str. 2',
+            zipCode: '10245',
+            city: 'Berlin',
+            country: 'Deutschland',
+          },
+          management: 'Max Mustermann',
+          commercialRegister: 'AG Berlin HRB 123456',
+          vatId: 'DE216398573',
+          bankDetails: {
+            bankName: 'Sparkasse Berlin',
+            iban: 'DE10 25 25 25 500 600 26 02',
+            bic: 'HERAKLES02',
+          },
+        };
+        return (
+          <Component
+            data={deliveryData}
+            companySettings={companyData}
+            customizations={templateData.customizations}
+          />
+        );
       }
     }
 
@@ -726,12 +806,12 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
         </div>
       </div>
 
-      {/* Haupt-Layout: Links Galerie neu gestaltet, Rechts Vorschau */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_420px] gap-4">
-        {/* LINKS: Neu gestaltete Galerie */}
+      {/* Template-Galerie ohne Preview */}
+      <div className="max-w-4xl">
+        {/* Template-Galerie */}
         <div className="min-w-0">
-          <div className="rounded-xl border border-gray-200 bg-white p-3">
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="rounded-xl border border-gray-200 bg-white p-2">
+            <div className="grid grid-cols-3 gap-2">
               {filteredTemplates.map(tpl => {
                 const isActive = selectedTemplate === tpl.id;
                 return (
@@ -748,20 +828,20 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                       className="w-full text-left p-2"
                       onClick={() => handleTemplateSelect(tpl.id)}
                     >
-                      <PaperThumb className="h-44 mb-2">
+                      <PaperThumb className="h-32 mb-2">
                         {renderTemplateComponent(tpl.id)}
                       </PaperThumb>
                       <div className="px-1">
                         <div className="flex items-center gap-1 truncate">
                           <span
-                            className="text-[11px] font-medium text-gray-900 truncate"
+                            className="text-[10px] font-medium text-gray-900 truncate"
                             title={tpl.name}
                           >
                             {tpl.name}
                           </span>
-                          {isActive && <Check className="h-3.5 w-3.5 text-gray-800" />}
+                          {isActive && <Check className="h-3 w-3 text-gray-800" />}
                         </div>
-                        <div className="text-[10px] text-gray-500 truncate">{tpl.id}</div>
+                        <div className="text-[9px] text-gray-500 truncate">{tpl.id}</div>
                       </div>
                     </button>
 
@@ -777,9 +857,10 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                         </Button>
                         <Button
                           size="sm"
-                          variant="default"
-                          onClick={() => setSelectedTemplate(tpl.id)}
+                          onClick={() => handlePreviewClick(tpl.id)}
+                          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                         >
+                          <Eye className="h-3.5 w-3.5 mr-1" />
                           Vorschau
                         </Button>
                       </div>
@@ -800,60 +881,39 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
             </div>
           </div>
         </div>
+      </div>
 
-        {/* RECHTS: Große Vorschau mit eigener Toolbar */}
-        <div className="min-w-[320px] md:min-w-[420px]">
-          <div className="sticky top-0 self-start">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-              <div className="p-3 border-b border-gray-200 flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-800 truncate">
-                    Vorschau: {availableTemplates.find(t => t.id === selectedTemplate)?.name}
-                  </h3>
-                  <div className="text-[11px] text-muted-foreground truncate">
-                    {selectedTemplate}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setPreviewScale(s => Math.max(0.6, Number((s - 0.05).toFixed(2))))
-                    }
-                    disabled={previewScale <= 0.6}
-                    aria-label="Verkleinern"
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPreviewScale(s => Math.min(1, Number((s + 0.05).toFixed(2))))}
-                    disabled={previewScale >= 1}
-                    aria-label="Vergrößern"
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => onTemplateSelect?.(selectedTemplate)}
-                  >
-                    Verwenden
-                  </Button>
-                </div>
-              </div>
+      {/* Preview Modal */}
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>
+              Template Vorschau: {availableTemplates.find(t => t.id === modalTemplateId)?.name}
+            </DialogTitle>
+          </DialogHeader>
 
-              <div className="p-3">
-                <PaperPreview scale={previewScale} maxHeight={740}>
-                  {renderTemplateComponent(selectedTemplate)}
-                </PaperPreview>
-              </div>
+          <div className="flex-1 overflow-auto bg-gray-50 p-4 rounded-lg min-h-0">
+            <div className="bg-white shadow-lg mx-auto" style={{ width: 'fit-content' }}>
+              {modalTemplateId && renderTemplateComponent(modalTemplateId)}
             </div>
           </div>
-        </div>
-      </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
+            <Button variant="outline" onClick={() => setShowPreviewModal(false)}>
+              Schließen
+            </Button>
+            <Button
+              onClick={() => {
+                handleTemplateSelect(modalTemplateId);
+                setShowPreviewModal(false);
+              }}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
+              Template verwenden
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

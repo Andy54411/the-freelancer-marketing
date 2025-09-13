@@ -1,68 +1,70 @@
-// Delivery Note Templates Export
+import ProfessionalBusinessDeliveryTemplate from './ProfessionalBusinessDeliveryTemplate';
+import ExecutivePremiumDeliveryTemplate from './ExecutivePremiumDeliveryTemplate';
+import CreativeModernDeliveryTemplate from './CreativeModernDeliveryTemplate';
+import MinimalistElegantDeliveryTemplate from './MinimalistElegantDeliveryTemplate';
+import BusinessStandardDeliveryTemplate from './BusinessStandardDeliveryTemplate';
+import TechInnovationDeliveryTemplate from './TechInnovationDeliveryTemplate';
+import { ModernCleanDeliveryTemplate } from './ModernCleanDeliveryTemplate';
+
+export {
+  ProfessionalBusinessDeliveryTemplate,
+  ExecutivePremiumDeliveryTemplate,
+  CreativeModernDeliveryTemplate,
+  MinimalistElegantDeliveryTemplate,
+  TechInnovationDeliveryTemplate,
+  BusinessStandardDeliveryTemplate,
+};
+
 export type DeliveryNoteTemplate =
   | 'professional-business-delivery'
   | 'executive-premium-delivery'
   | 'creative-modern-delivery'
   | 'minimalist-elegant-delivery'
-  | 'corporate-classic-delivery'
-  | 'tech-innovation-delivery';
-export { ProfessionalBusinessDeliveryTemplate } from './ProfessionalBusinessDeliveryTemplate';
-export { ExecutivePremiumDeliveryTemplate } from './ExecutivePremiumDeliveryTemplate';
-export { CreativeModernDeliveryTemplate } from './CreativeModernDeliveryTemplate';
-export { MinimalistElegantDeliveryTemplate } from './MinimalistElegantDeliveryTemplate';
-export { CorporateClassicDeliveryTemplate } from './CorporateClassicDeliveryTemplate';
-export { TechInnovationDeliveryTemplate } from './TechInnovationDeliveryTemplate';
+  | 'tech-innovation-delivery'
+  | 'business-standard-delivery'
+  | 'modern-clean-delivery';
 
-export const deliveryNoteTemplates: Array<{
-  id: DeliveryNoteTemplate;
-  name: string;
-  description: string;
-  component: string;
-}> = [
+export const AVAILABLE_DELIVERY_NOTE_TEMPLATES = [
   {
     id: 'professional-business-delivery',
-    name: 'Professional Business',
-    description: 'Professionelles Lieferschein-Design für Geschäftskunden',
-    component: 'ProfessionalBusinessDeliveryTemplate'
+    name: 'Klassisch Professionell',
+    description: 'Seriöses, neutrales Layout mit klarer Typografie',
+    component: ProfessionalBusinessDeliveryTemplate,
   },
   {
     id: 'executive-premium-delivery',
     name: 'Executive Premium',
-    description: 'Elegante Lieferdokumentation für Führungsebene',
-    component: 'ExecutivePremiumDeliveryTemplate'
+    description: 'Elegantes, dezentes Layout für gehobene Ansprüche',
+    component: ExecutivePremiumDeliveryTemplate,
   },
   {
     id: 'creative-modern-delivery',
-    name: 'Creative Modern',
-    description: 'Modernes, professionelles Lieferschein-Design',
-    component: 'CreativeModernDeliveryTemplate'
+    name: 'Kreativ Modern',
+    description: 'Moderne, klare Struktur – neutral und professionell',
+    component: CreativeModernDeliveryTemplate,
   },
   {
     id: 'minimalist-elegant-delivery',
-    name: 'Minimalist Elegant',
-    description: 'Klares und minimalistisches Lieferschein-Design',
-    component: 'MinimalistElegantDeliveryTemplate'
-  },
-  {
-    id: 'corporate-classic-delivery',
-    name: 'Corporate Classic',
-    description: 'Klassische Unternehmens-Lieferdokumentation',
-    component: 'CorporateClassicDeliveryTemplate'
+    name: 'Minimalistisch Elegant',
+    description: 'Minimal, reduziert und sehr übersichtlich',
+    component: MinimalistElegantDeliveryTemplate,
   },
   {
     id: 'tech-innovation-delivery',
     name: 'Tech Innovation',
-    description: 'Professionelles Lieferschein-Design für Technologieunternehmen',
-    component: 'TechInnovationDeliveryTemplate'
-  }
-];
-
-export const defaultDeliveryNoteTemplate = deliveryNoteTemplates[0];
-
-// Kompatibilitäts-Export für bestehende Finance-Komponenten
-export const AVAILABLE_DELIVERY_NOTE_TEMPLATES: ReadonlyArray<{
-  id: DeliveryNoteTemplate;
-  name: string;
-  description: string;
-  component: string;
-}> = deliveryNoteTemplates;
+    description: 'Zeitgemäße Tech-Ästhetik, neutral und klar',
+    component: TechInnovationDeliveryTemplate,
+  },
+  {
+    id: 'business-standard-delivery',
+    name: 'Business Standard (DIN-orientiert)',
+    description: 'Klares, rechtssicheres B2B-Layout nach DIN-Logik',
+    component: BusinessStandardDeliveryTemplate,
+  },
+  {
+    id: 'modern-clean-delivery',
+    name: 'Modern & Sauber',
+    description: 'Ein modernes, sauberes und ansprechendes Design',
+    component: ModernCleanDeliveryTemplate,
+  },
+] as const;

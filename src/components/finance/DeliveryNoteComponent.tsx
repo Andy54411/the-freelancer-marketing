@@ -124,15 +124,15 @@ export function DeliveryNoteComponent({
 
     try {
       setTemplateLoading(true);
-      const template = await UserPreferencesService.getPreferredDeliveryNoteTemplate(
+      const template = await UserPreferencesService.getTemplatePreference(
         user.uid,
-        companyId
+        'Packinglist' // Dokumenttyp für Lieferscheine
       );
 
       if (template) {
         // Template ist ausgewählt
-        setUserTemplate(template);
-        setFormData(prev => ({ ...prev, template }));
+        setUserTemplate(template as DeliveryNoteTemplate);
+        setFormData(prev => ({ ...prev, template: template as DeliveryNoteTemplate }));
       } else {
         // Kein Template ausgewählt - Modal zeigen
         setUserTemplate(null);
@@ -152,11 +152,13 @@ export function DeliveryNoteComponent({
     try {
       const templateId = templateObject.id as DeliveryNoteTemplate;
 
-      // Speichere Template in User Preferences
+      // Speichere Template in User Preferences mit neuer API
       if (user?.uid) {
-        await UserPreferencesService.updateUserPreferences(user.uid, {
-          preferredDeliveryNoteTemplate: templateId,
-        });
+        await UserPreferencesService.updateTemplatePreference(
+          user.uid,
+          'Packinglist', // Dokumenttyp für Lieferscheine
+          templateId
+        );
       }
 
       // Update states
@@ -194,8 +196,8 @@ export function DeliveryNoteComponent({
       // Template-Auswahl - verwende Standard wenn kein Template ausgewählt
       let templateToUse = userTemplate;
       if (!templateToUse) {
-        // Default Template setzen - German Standard
-        templateToUse = 'german-standard';
+        // Default Template setzen - Professional Business
+        templateToUse = 'professional-business-delivery' as DeliveryNoteTemplate;
       }
 
       if (!formData.customerName || !formData.customerAddress) {

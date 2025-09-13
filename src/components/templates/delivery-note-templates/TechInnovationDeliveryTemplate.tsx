@@ -2,227 +2,151 @@ import React from 'react';
 import type { TemplateProps } from '../types';
 import { resolveLogoUrl } from '../utils/logoUtils';
 
+// Hilfsfunktion: robustes Datumsformat
+const formatDate = (value?: string) => {
+  if (!value) return '';
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? value : d.toLocaleDateString('de-DE');
+};
+
 export const TechInnovationDeliveryTemplate: React.FC<TemplateProps> = ({
   data,
   companySettings,
-  customizations
+  customizations,
 }) => {
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
 
+  // Zusätzliche Felder aus dem Datenobjekt lesen
+  const customerNumber = (data as any).customerNumber as string | undefined;
+  const orderNumber = (data as any).orderNumber || (data as any).customerOrderNumber;
+
   return (
-    <div className="max-w-4xl mx-auto bg-white p-8 border border-gray-300">
-      {/* Professional Header */}
-      <div className="border border-gray-300 mb-8">
-        <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-6">
-              {logoUrl && (
-                <div className="border border-gray-300 p-2 rounded">
-                  <img 
-                    src={logoUrl} 
-                    alt="Logo" 
-                    className="h-12 w-12 object-contain"
-                  />
-                </div>
-              )}
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">LIEFERSCHEIN</h1>
-                <div className="text-gray-600 font-medium text-sm">Delivery Note</div>
-              </div>
+    <div className="max-w-4xl mx-auto bg-white p-10 font-sans text-gray-900">
+      {/* Logo ganz oben */}
+      {logoUrl && (
+        <div className="mb-4">
+          <img src={logoUrl} alt="Logo" className="h-16 w-auto object-contain" />
+        </div>
+      )}
+
+      {/* Firmenadresse in einer Zeile */}
+      <div className="text-xs text-gray-700 mb-6">
+        {companySettings?.companyName}
+        {companySettings?.address && (
+          <>
+            {' '}
+            {companySettings.address.street} | {companySettings.address.zipCode}{' '}
+            {companySettings.address.city}
+          </>
+        )}
+      </div>
+
+      {/* Kopfbereich: Empfänger links, Kennzahlen rechts */}
+      <div className="grid grid-cols-2 gap-16 mb-8">
+        {/* Empfänger */}
+        <div className="text-gray-900">
+          <div className="font-medium">{data.customerName}</div>
+          {data.customerAddress && (
+            <div className="text-sm whitespace-pre-line mt-1">
+              {typeof data.customerAddress === 'string'
+                ? data.customerAddress
+                : `${data.customerAddress.street}\n${data.customerAddress.zipCode} ${data.customerAddress.city}${
+                    data.customerAddress.country ? '\n' + data.customerAddress.country : ''
+                  }`}
             </div>
-            <div className="text-right bg-gray-200 border border-gray-300 p-4 rounded">
-              <div className="text-gray-600 text-sm">Nr.:</div>
-              <div className="text-xl font-bold text-gray-800">{data.documentNumber}</div>
-              <div className="text-gray-600 text-sm mt-1">Datum: {data.date}</div>
+          )}
+        </div>
+        {/* Kennzahlen rechts */}
+        <div className="text-sm text-gray-800">
+          <div className="flex justify-between gap-8">
+            <div className="text-gray-600">Liefer-Nr.:</div>
+            <div className="font-semibold">{data.documentNumber}</div>
+          </div>
+          {customerNumber && (
+            <div className="flex justify-between gap-8 mt-1">
+              <div className="text-gray-600">Kunden-Nr.:</div>
+              <div className="font-medium">{customerNumber}</div>
             </div>
+          )}
+          {orderNumber && (
+            <div className="flex justify-between gap-8 mt-1">
+              <div className="text-gray-600">Bestell-Nr.:</div>
+              <div className="font-medium">{orderNumber}</div>
+            </div>
+          )}
+          <div className="flex justify-between gap-8 mt-1">
+            <div className="text-gray-600">Datum:</div>
+            <div className="font-medium">{formatDate(data.date)}</div>
           </div>
         </div>
       </div>
 
-      {/* Professional Information Section */}
-      <div className="grid grid-cols-2 gap-8 mb-8">
-        {/* Company Information */}
-        <div className="border border-gray-300 p-6">
-          <div className="bg-gray-100 px-3 py-2 border-b border-gray-300 mb-4">
-            <h3 className="font-bold text-gray-800">LIEFERANT</h3>
-          </div>
-          <div className="space-y-2 text-gray-700">
-            <div className="font-bold">{companySettings?.companyName}</div>
-            {companySettings?.address && (
-              <>
-                <div>{companySettings.address.street}</div>
-                <div>{companySettings.address.zipCode} {companySettings.address.city}</div>
-              </>
-            )}
-            <div className="pt-3 space-y-1 text-sm">
-              {companySettings?.contactInfo?.phone && (
-                <div><span className="font-medium">Tel:</span> {companySettings.contactInfo.phone}</div>
-              )}
-              {companySettings?.contactInfo?.email && (
-                <div><span className="font-medium">Email:</span> {companySettings.contactInfo.email}</div>
-              )}
-              {companySettings?.taxId && (
-                <div><span className="font-medium">Steuer-Nr:</span> {companySettings.taxId}</div>
-              )}
-              {companySettings?.vatId && (
-                <div><span className="font-medium">USt-IdNr:</span> {companySettings.vatId}</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Customer Information */}
-        <div className="border border-gray-300 p-6">
-          <div className="bg-gray-100 px-3 py-2 border-b border-gray-300 mb-4">
-            <h3 className="font-bold text-gray-800">EMPFÄNGER</h3>
-          </div>
-          <div className="space-y-2 text-gray-700">
-            <div className="font-bold">{data.customerName}</div>
-            {data.customerAddress && (
-              <div className="whitespace-pre-line">
-                {typeof data.customerAddress === 'string' 
-                  ? data.customerAddress 
-                  : `${data.customerAddress.street}\n${data.customerAddress.zipCode} ${data.customerAddress.city}`
-                }
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Titel */}
+      <div className="flex items-center justify-between mb-6 pb-2 border-b border-blue-300">
+        <div className="text-3xl tracking-wide font-light text-blue-800">Lieferschein</div>
       </div>
 
-      {/* Delivery Details */}
-      <div className="border border-gray-300 mb-8">
-        <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
-          <h3 className="font-bold text-gray-800">LIEFERINFORMATIONEN</h3>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-3 gap-6">
-            <div>
-              <div className="font-bold text-gray-700 text-sm uppercase">Lieferdatum</div>
-              <div className="font-medium text-gray-800 mt-1">{data.date}</div>
-            </div>
-            {data.validUntil && (
-              <div>
-                <div className="font-bold text-gray-700 text-sm uppercase">Gewünschter Termin</div>
-                <div className="font-medium text-gray-800 mt-1">{data.validUntil}</div>
-              </div>
-            )}
-            {data.createdBy && (
-              <div>
-                <div className="font-bold text-gray-700 text-sm uppercase">Bearbeitet von</div>
-                <div className="font-medium text-gray-800 mt-1">{data.createdBy}</div>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Einleitungssatz */}
+      <div className="text-sm text-gray-800 mb-4">
+        Wir bedanken uns für die gute Zusammenarbeit und liefern Ihnen wie vereinbart folgende
+        Waren:
       </div>
 
-      {/* Items Table */}
+      {/* Tabelle mit Tech-Innovation Design */}
       {data.items && data.items.length > 0 && (
-        <div className="border border-gray-300 mb-8">
-          <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
-            <h3 className="font-bold text-gray-800">LIEFERUMFANG</h3>
-          </div>
-          <table className="w-full">
+        <div className="mb-10">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-300">
-                <th className="px-4 py-3 text-left font-bold text-gray-700 border-r border-gray-300">
-                  ARTIKEL
-                </th>
-                <th className="px-4 py-3 text-center font-bold text-gray-700 border-r border-gray-300">
-                  MENGE
-                </th>
-                <th className="px-4 py-3 text-center font-bold text-gray-700 border-r border-gray-300">
-                  EINHEIT
-                </th>
-                <th className="px-4 py-3 text-center font-bold text-gray-700">
-                  STATUS
-                </th>
+              <tr className="bg-blue-600 text-white">
+                <th className="p-3 text-left text-xs font-semibold tracking-wide">Pos.</th>
+                <th className="p-3 text-left text-xs font-semibold tracking-wide">Art-Nr.</th>
+                <th className="p-3 text-left text-xs font-semibold tracking-wide">Bezeichnung</th>
+                <th className="p-3 text-center text-xs font-semibold tracking-wide">Menge</th>
+                <th className="p-3 text-center text-xs font-semibold tracking-wide">Einheit</th>
               </tr>
             </thead>
             <tbody>
-              {data.items.map((item, index) => (
-                <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-4 py-4 border-r border-gray-200">
-                    <div className="font-medium text-gray-800">{item.description}</div>
-                    {item.details && (
-                      <div className="text-sm text-gray-600 mt-1">{item.details}</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-4 text-center font-bold text-gray-800 border-r border-gray-200">
-                    {item.quantity}
-                  </td>
-                  <td className="px-4 py-4 text-center text-gray-700 border-r border-gray-200">
-                    {item.unit || 'Stk.'}
-                  </td>
-                  <td className="px-4 py-4 text-center">
-                    <span className="text-xs font-bold text-gray-700">
-                      GELIEFERT
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {data.items.map((item, idx) => {
+                const artNr =
+                  (item as any).sku || (item as any).articleNumber || (item as any).artNr || '';
+                return (
+                  <tr key={idx} className="border-b border-gray-200 align-top hover:bg-blue-50">
+                    <td className="p-3 text-gray-700">{idx + 1}</td>
+                    <td className="p-3 text-gray-700 whitespace-nowrap">{artNr || '—'}</td>
+                    <td className="p-3">
+                      <div className="font-medium text-gray-900">{item.description}</div>
+                      {item.details && (
+                        <div className="text-sm text-gray-600 mt-1">{item.details}</div>
+                      )}
+                    </td>
+                    <td className="p-3 text-center text-gray-900">
+                      {typeof item.quantity === 'number'
+                        ? item.quantity.toLocaleString('de-DE')
+                        : (item as any).quantity}
+                    </td>
+                    <td className="p-3 text-center text-gray-700">{item.unit || 'Stk.'}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Signature Section */}
-      <div className="grid grid-cols-2 gap-8 mb-8">
-        <div className="border border-gray-300">
-          <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
-            <h4 className="font-bold text-gray-800">LIEFERANT-BESTÄTIGUNG</h4>
-          </div>
-          <div className="p-6">
-            <div className="h-16 mb-4"></div>
-            <div className="border-b-2 border-gray-500 mb-3"></div>
-            <div className="text-sm text-gray-700 space-y-1">
-              <div className="font-medium">Unterschrift, Firmenstempel</div>
-              <div>Name: _________________________</div>
-              <div>Datum: _______________________</div>
-            </div>
-          </div>
-        </div>
-        <div className="border border-gray-300">
-          <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
-            <h4 className="font-bold text-gray-800">EMPFÄNGER-BESTÄTIGUNG</h4>
-          </div>
-          <div className="p-6">
-            <div className="h-16 mb-4"></div>
-            <div className="border-b-2 border-gray-500 mb-3"></div>
-            <div className="text-sm text-gray-700 space-y-1">
-              <div className="font-medium">Unterschrift des Empfängers</div>
-              <div>Name: _________________________</div>
-              <div>Datum: _______________________</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Notes Section */}
-      {data.notes && (
-        <div className="border border-gray-300 mb-6">
-          <div className="bg-gray-100 px-4 py-3 border-b border-gray-300">
-            <h3 className="font-bold text-gray-800">BEMERKUNGEN</h3>
-          </div>
-          <div className="p-6">
-            <div className="text-gray-700 leading-relaxed">{data.notes}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="border-t-2 border-gray-400 pt-6">
+      {/* Footer mit Tech-Innovation Design */}
+      <div className="mt-10 pt-4 border-t border-blue-300 text-xs text-gray-600">
         <div className="text-center">
-          <div className="font-bold text-gray-800 mb-3">
-            LIEFERBESTÄTIGUNG
-          </div>
-          <div className="text-sm text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Mit der Unterschrift bestätigt der Empfänger den ordnungsgemäßen Erhalt der oben aufgeführten Artikel 
-            in einwandfreiem Zustand. Diese Lieferbestätigung dient als Nachweis der vollständigen und sachgemäßen Lieferung.
+          <div className="text-blue-700 font-medium">Tech Innovation • Zukunftstechnologien</div>
+          <div className="mt-2">
+            {companySettings?.vatId && <span>USt-IdNr.: {companySettings.vatId}</span>}
+            {companySettings?.commercialRegister && (
+              <span className="ml-4">HRB: {companySettings.commercialRegister}</span>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default TechInnovationDeliveryTemplate;

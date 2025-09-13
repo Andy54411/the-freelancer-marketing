@@ -343,11 +343,9 @@ export function DeliveryNoteSettingsComponent({ companyId }: DeliveryNoteSetting
                     <CardContent>
                       <p className="text-sm text-gray-600 mb-3">{template.description}</p>
                       <div className="flex flex-wrap gap-1">
-                        {template.features.map((feature, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {feature}
-                          </Badge>
-                        ))}
+                        <Badge variant="secondary" className="text-xs">
+                          Standard-Features
+                        </Badge>
                       </div>
                     </CardContent>
                   </Card>

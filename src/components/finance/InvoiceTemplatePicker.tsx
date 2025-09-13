@@ -1,8 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/firebase/clients';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +16,7 @@ import { Check, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { AVAILABLE_TEMPLATES, InvoiceTemplate, InvoiceTemplateRenderer } from './InvoiceTemplates';
 import { InvoiceData } from '@/types/invoiceTypes';
+import { UserPreferencesService } from '@/lib/userPreferences';
 
 interface InvoiceTemplatePickerProps {
   trigger?: React.ReactNode;
@@ -30,13 +29,46 @@ interface InvoiceTemplatePickerProps {
 export function InvoiceTemplatePicker({
   trigger,
   onTemplateSelect,
-  selectedTemplate = 'german-standard',
+  selectedTemplate: initialSelectedTemplate,
   previewData,
   userId,
 }: InvoiceTemplatePickerProps) {
   const [open, setOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<InvoiceTemplate | null>(null);
-  const [_saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<InvoiceTemplate>('professional-business');
+  const [loading, setLoading] = useState(true);
+
+  // Template aus Datenbank laden
+  useEffect(() => {
+    async function loadUserTemplate() {
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userTemplate = await UserPreferencesService.getTemplatePreference(userId, 'Invoice');
+        if (userTemplate) {
+          setSelectedTemplate(userTemplate as InvoiceTemplate);
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden des Templates:', error);
+        // Fallback auf Default-Template
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Verwende initialSelectedTemplate falls vorhanden, sonst lade aus DB
+    if (initialSelectedTemplate) {
+      setSelectedTemplate(initialSelectedTemplate);
+      setLoading(false);
+    } else {
+      loadUserTemplate();
+    }
+  }, [userId, initialSelectedTemplate]);
 
   // Mock preview data if none provided
   const mockPreviewData: InvoiceData = previewData || {
@@ -96,13 +128,10 @@ export function InvoiceTemplatePicker({
     try {
       setSaving(true);
 
-      // Save to database if userId is provided
+      // Save to database using UserPreferences Service
       if (userId) {
-        const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, {
-          preferredInvoiceTemplate: template,
-          updatedAt: new Date(),
-        });
+        await UserPreferencesService.updateTemplatePreference(userId, 'Invoice', template);
+        setSelectedTemplate(template);
         toast.success(
           `Template "${AVAILABLE_TEMPLATES.find(t => t.id === template)?.name}" ausgewählt und gespeichert`
         );
@@ -115,7 +144,8 @@ export function InvoiceTemplatePicker({
         onTemplateSelect(template);
       }
       setOpen(false);
-    } catch (_error) {
+    } catch (error) {
+      console.error('Fehler beim Speichern der Template-Auswahl:', error);
       toast.error('Fehler beim Speichern der Template-Auswahl');
 
       // Still execute callback even if save failed
@@ -181,13 +211,15 @@ export function InvoiceTemplatePicker({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-gray-900">{template.name}</h3>
-                      {template.id === 'german-standard' && (
+                      {template.id === 'professional-business' && (
                         <Badge variant="secondary" className="bg-[#14ad9f] text-white">
                           Empfohlen
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 leading-relaxed">{template.description}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Professionelles Template für geschäftliche Rechnungen
+                    </p>
                   </div>
 
                   {/* Action Buttons */}
