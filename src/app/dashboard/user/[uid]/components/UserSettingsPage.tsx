@@ -11,7 +11,7 @@ import {
 } from 'firebase/storage'; // NEU: Firebase Storage Imports
 import { FiLoader, FiSave, FiUser, FiLock, FiImage, FiMapPin } from 'react-icons/fi';
 import { toast } from 'sonner';
-import { RawFirestoreUserData } from '@/components/dashboard/SettingsComponent'; // Wiederverwenden des Typs
+import { RawFirestoreUserData } from '@/types/settings'; // Wiederverwenden des Typs
 
 // Interne Datenstruktur für das User-Einstellungsformular
 import {
@@ -55,16 +55,20 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
     if (userData) {
       setForm({
         uid: userData.uid,
-        email: userData.email || '',
-        firstName: userData.firstName || '',
-        lastName: userData.lastName || '',
-        phoneNumber: userData.phoneNumber || '',
-        personalStreet: userData.personalStreet || '',
-        personalHouseNumber: userData.personalHouseNumber || '',
-        personalPostalCode: userData.personalPostalCode || '',
-        personalCity: userData.personalCity || '',
-        personalCountry: userData.personalCountry || null,
-        profilePictureURL: userData.profilePictureURL || '',
+        email: userData.email || userData.step1?.email || '',
+        firstName: userData.step1?.firstName || userData.step1?.personalData?.firstName || '',
+        lastName: userData.step1?.lastName || userData.step1?.personalData?.lastName || '',
+        phoneNumber: userData.step1?.phoneNumber || userData.step1?.personalData?.phone || '',
+        personalStreet:
+          userData.step1?.personalStreet || userData.step1?.personalData?.address?.street || '',
+        personalHouseNumber: userData.step1?.personalData?.address?.houseNumber || '',
+        personalPostalCode:
+          userData.step1?.personalPostalCode ||
+          userData.step1?.personalData?.address?.postalCode ||
+          '',
+        personalCity: userData.step1?.personalData?.address?.city || '',
+        personalCountry: userData.step1?.personalData?.address?.country || null,
+        profilePictureURL: userData.step3?.profilePictureURL || '',
         profilePictureFile: null,
         oldPassword: '',
         newPassword: '',
@@ -105,7 +109,6 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
         newProfilePictureURL = await getDownloadURL(fileRef);
         toast.success('Profilbild erfolgreich hochgeladen!');
       } catch (uploadError: any) {
-
         toast.error(
           `Fehler beim Hochladen des Profilbilds: ${uploadError.message || 'Unbekannter Fehler'}`
         );
@@ -115,30 +118,54 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
     }
 
     const firestoreUpdateData: Partial<RawFirestoreUserData> = {
-      profilePictureURL: newProfilePictureURL, // Verwende die neue oder alte URL
-      firstName: form.firstName,
-      lastName: form.lastName,
-      phoneNumber: form.phoneNumber,
-      personalStreet: form.personalStreet,
-      personalHouseNumber: form.personalHouseNumber,
-      personalPostalCode: form.personalPostalCode,
-      personalCity: form.personalCity,
-      personalCountry: form.personalCountry,
-      updatedAt: serverTimestamp(),
+      step3: {
+        ...userData?.step3,
+        profilePictureURL: newProfilePictureURL, // Verwende die neue oder alte URL
+      },
+      step1: {
+        ...userData?.step1,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phoneNumber: form.phoneNumber,
+        personalStreet: form.personalStreet,
+        personalPostalCode: form.personalPostalCode,
+        personalData: {
+          ...userData?.step1?.personalData,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          phone: form.phoneNumber,
+          address: {
+            ...userData?.step1?.personalData?.address,
+            street: form.personalStreet,
+            houseNumber: form.personalHouseNumber,
+            postalCode: form.personalPostalCode,
+            city: form.personalCity,
+            country: form.personalCountry || undefined,
+          },
+        },
+      },
     };
 
     try {
-      await updateDoc(doc(db, 'users', form.uid), firestoreUpdateData);
+      await updateDoc(doc(db, 'users', form.uid), {
+        ...firestoreUpdateData,
+        updatedAt: serverTimestamp(),
+      });
       toast.success('Benutzereinstellungen erfolgreich gespeichert!');
       // NEU: Event auslösen, um andere Komponenten (wie den Header) zu informieren
-      if (form.profilePictureFile || form.profilePictureURL !== userData?.profilePictureURL) {
+      if (
+        form.profilePictureFile ||
+        form.profilePictureURL !== userData?.step3?.profilePictureURL
+      ) {
         window.dispatchEvent(
           new CustomEvent('profileUpdated', { detail: { profilePictureURL: newProfilePictureURL } })
+        );
+        window.dispatchEvent(
+          new CustomEvent('profilePictureUpdated', { detail: newProfilePictureURL })
         );
       }
       onDataSaved(); // Callback aufrufen, um Daten in der übergeordneten Seite neu zu laden
     } catch (error: unknown) {
-
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler.';
       toast.error(`Fehler: ${message}`);
     } finally {
@@ -176,7 +203,6 @@ const UserSettingsPage: React.FC<UserSettingsPageProps> = ({ userData, onDataSav
           prev ? { ...prev, oldPassword: '', newPassword: '', confirmNewPassword: '' } : null
         );
       } catch (error: any) {
-
         if (error.code === 'auth/wrong-password') {
           toast.error('Das alte Passwort ist nicht korrekt.');
         } else {

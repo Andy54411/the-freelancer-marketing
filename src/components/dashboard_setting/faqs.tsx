@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
-import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
+import { UserDataForSettings } from '@/types/settings';
 
 export interface FAQsFormProps {
   formData: UserDataForSettings;
@@ -21,9 +21,7 @@ interface FAQ {
 const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
   // Initialize FAQs from formData only once on mount
   const [faqs, setFaqs] = useState<FAQ[]>(() => {
-    return formData.step3?.faqs && Array.isArray(formData.step3.faqs) 
-      ? formData.step3.faqs 
-      : [];
+    return formData.step3?.faqs && Array.isArray(formData.step3.faqs) ? formData.step3.faqs : [];
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newFAQ, setNewFAQ] = useState<FAQ>({
@@ -31,13 +29,13 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
     question: '',
     answer: '',
     category: '',
-    featured: false
+    featured: false,
   });
   const [isAdding, setIsAdding] = useState(false);
 
   // Update formData when FAQs change (use a ref to track if we should update)
   const shouldUpdateFormData = useRef(false);
-  
+
   useEffect(() => {
     // Mark that we should start updating form data after first render
     shouldUpdateFormData.current = true;
@@ -54,7 +52,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
       const faq: FAQ = {
         ...newFAQ,
         id: Date.now().toString(),
-        order: faqs.length
+        order: faqs.length,
       };
       setFaqs([...faqs, faq]);
       setNewFAQ({ id: '', question: '', answer: '', category: '', featured: false });
@@ -71,9 +69,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
   };
 
   const saveEdit = (id: string, updatedFAQ: Partial<FAQ>) => {
-    setFaqs(faqs.map(faq => 
-      faq.id === id ? { ...faq, ...updatedFAQ } : faq
-    ));
+    setFaqs(faqs.map(faq => (faq.id === id ? { ...faq, ...updatedFAQ } : faq)));
     setEditingId(null);
   };
 
@@ -82,9 +78,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
   };
 
   const toggleFeatured = (id: string) => {
-    setFaqs(faqs.map(faq => 
-      faq.id === id ? { ...faq, featured: !faq.featured } : faq
-    ));
+    setFaqs(faqs.map(faq => (faq.id === id ? { ...faq, featured: !faq.featured } : faq)));
   };
 
   return (
@@ -118,7 +112,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
               <input
                 type="text"
                 value={newFAQ.question}
-                onChange={(e) => setNewFAQ({ ...newFAQ, question: e.target.value })}
+                onChange={e => setNewFAQ({ ...newFAQ, question: e.target.value })}
                 placeholder="z.B. Wie lange dauert die Lieferung?"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
               />
@@ -129,7 +123,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
               </label>
               <textarea
                 value={newFAQ.answer}
-                onChange={(e) => setNewFAQ({ ...newFAQ, answer: e.target.value })}
+                onChange={e => setNewFAQ({ ...newFAQ, answer: e.target.value })}
                 placeholder="Ihre detaillierte Antwort..."
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
@@ -143,7 +137,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
                 <input
                   type="text"
                   value={newFAQ.category}
-                  onChange={(e) => setNewFAQ({ ...newFAQ, category: e.target.value })}
+                  onChange={e => setNewFAQ({ ...newFAQ, category: e.target.value })}
                   placeholder="z.B. Lieferung, Preise, etc."
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
                 />
@@ -153,7 +147,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
                   <input
                     type="checkbox"
                     checked={newFAQ.featured}
-                    onChange={(e) => setNewFAQ({ ...newFAQ, featured: e.target.checked })}
+                    onChange={e => setNewFAQ({ ...newFAQ, featured: e.target.checked })}
                     className="mr-2 text-[#14ad9f] focus:ring-[#14ad9f]"
                   />
                   <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -194,7 +188,7 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
             <p className="text-sm">Klicken Sie auf &quot;FAQ hinzufügen&quot;, um zu beginnen.</p>
           </div>
         ) : (
-          faqs.map((faq) => (
+          faqs.map(faq => (
             <FAQItem
               key={faq.id}
               faq={faq}
@@ -214,7 +208,11 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
           <div className="flex items-start">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
             <div className="ml-3">
@@ -223,8 +221,8 @@ const FAQsForm: React.FC<FAQsFormProps> = ({ formData, handleChange }) => {
               </h3>
               <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
                 <p>
-                  Ihre FAQs werden automatisch auf Ihrem Profil angezeigt und helfen Kunden, 
-                  schnell Antworten auf ihre Fragen zu finden. Featured FAQs werden prominent angezeigt.
+                  Ihre FAQs werden automatisch auf Ihrem Profil angezeigt und helfen Kunden, schnell
+                  Antworten auf ihre Fragen zu finden. Featured FAQs werden prominent angezeigt.
                 </p>
               </div>
             </div>
@@ -253,7 +251,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
   onSave,
   onCancel,
   onDelete,
-  onToggleFeatured
+  onToggleFeatured,
 }) => {
   const [editData, setEditData] = useState(faq);
 
@@ -272,7 +270,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
             <input
               type="text"
               value={editData.question}
-              onChange={(e) => setEditData({ ...editData, question: e.target.value })}
+              onChange={e => setEditData({ ...editData, question: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
             />
           </div>
@@ -282,7 +280,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
             </label>
             <textarea
               value={editData.answer}
-              onChange={(e) => setEditData({ ...editData, answer: e.target.value })}
+              onChange={e => setEditData({ ...editData, answer: e.target.value })}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
             />
@@ -295,7 +293,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
               <input
                 type="text"
                 value={editData.category || ''}
-                onChange={(e) => setEditData({ ...editData, category: e.target.value })}
+                onChange={e => setEditData({ ...editData, category: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] dark:bg-gray-700 dark:text-white"
               />
             </div>
@@ -304,7 +302,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
                 <input
                   type="checkbox"
                   checked={editData.featured || false}
-                  onChange={(e) => setEditData({ ...editData, featured: e.target.checked })}
+                  onChange={e => setEditData({ ...editData, featured: e.target.checked })}
                   className="mr-2 text-[#14ad9f] focus:ring-[#14ad9f]"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">Featured</span>
@@ -338,9 +336,7 @@ const FAQItem: React.FC<FAQItemProps> = ({
       <div className="flex justify-between items-start">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <h3 className="font-medium text-gray-900 dark:text-white">
-              {faq.question}
-            </h3>
+            <h3 className="font-medium text-gray-900 dark:text-white">{faq.question}</h3>
             {faq.featured && (
               <span className="px-2 py-1 bg-[#14ad9f] text-white text-xs rounded-full">
                 Featured
@@ -352,16 +348,14 @@ const FAQItem: React.FC<FAQItemProps> = ({
               </span>
             )}
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
-            {faq.answer}
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
         </div>
         <div className="flex items-center gap-2 ml-4">
           <button
             onClick={() => onToggleFeatured(faq.id)}
             className={`p-1.5 rounded text-xs transition-colors ${
-              faq.featured 
-                ? 'bg-[#14ad9f] text-white hover:bg-[#129488]' 
+              faq.featured
+                ? 'bg-[#14ad9f] text-white hover:bg-[#129488]'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
             title={faq.featured ? 'Als Featured entfernen' : 'Als Featured markieren'}

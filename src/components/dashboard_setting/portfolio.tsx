@@ -12,7 +12,7 @@ import {
   EyeOff,
   Settings,
 } from 'lucide-react';
-import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
+import { UserDataForSettings } from '@/types/settings';
 import Image from 'next/image';
 import PortfolioItemDetails from './PortfolioItemDetails';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';

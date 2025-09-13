@@ -11,7 +11,12 @@
  */
 
 // Re-export types from types.ts
-export type { DeliveryNoteData, DeliveryNoteItemData, DeliveryNoteTemplate, DeliveryNoteTemplateProps } from './types';
+export type {
+  DeliveryNoteData,
+  DeliveryNoteItemData,
+  DeliveryNoteTemplate,
+  DeliveryNoteTemplateProps,
+} from './types';
 
 // Template Components
 export { GermanStandardDeliveryNoteTemplate } from './GermanStandardDeliveryNoteTemplate';
@@ -51,6 +56,8 @@ export const AVAILABLE_DELIVERY_NOTE_TEMPLATES = [
     preview: '/templates/delivery-note-german-multipage.jpg',
   },
 ] as const;
+
+export type DeliveryNoteTemplateConfig = (typeof AVAILABLE_DELIVERY_NOTE_TEMPLATES)[number];
 
 // Default Template
 export const DEFAULT_DELIVERY_NOTE_TEMPLATE: DeliveryNoteTemplate = 'german-standard';

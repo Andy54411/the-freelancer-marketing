@@ -225,6 +225,18 @@ const navigationItems: NavigationItem[] = [
     label: 'Einstellungen',
     icon: FiSettings,
     value: 'settings',
+    subItems: [
+      { label: 'Allgemein', value: 'settings-general' },
+      { label: 'Buchhaltung & Steuer', value: 'settings-accounting' },
+      { label: 'Zahlungskonditionen', value: 'settings-payment-terms' },
+      { label: 'Bankverbindung', value: 'settings-bank' },
+      { label: 'Logo & Dokumente', value: 'settings-logo' },
+      { label: 'Portfolio', value: 'settings-portfolio' },
+      { label: 'FAQs', value: 'settings-faqs' },
+      { label: 'Auszahlungen', value: 'settings-payouts' },
+      { label: 'Storno-Einstellungen', value: 'settings-storno', href: 'settings/storno' },
+      { label: 'Template-Einstellungen', value: 'settings-templates', href: 'settings/templates' },
+    ],
   },
 ];
 
@@ -403,7 +415,13 @@ export default function CompanyMobileSidebar({
                         return (
                           <button
                             key={subItem.value}
-                            onClick={() => onNavigate(subItem.value, subItem.href)}
+                            onClick={() => {
+                              if (subItem.href) {
+                                onNavigate(subItem.value, subItem.href);
+                              } else {
+                                onNavigate(subItem.value);
+                              }
+                            }}
                             className={`${
                               isSubActive
                                 ? 'bg-[#14ad9f] text-white'

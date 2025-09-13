@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext'; // Importiere den zentralen Auth-Kontext
 import { db } from '@/firebase/clients'; // Importiere die zentralisierte Firestore-Instanz
-import { RawFirestoreUserData } from '@/components/dashboard/SettingsComponent';
+import { RawFirestoreUserData } from '@/types/settings';
 import tableJsonData from '@/app/dashboard/company/[uid]/data.json';
 
 const isNonEmptyString = (val: unknown): val is string =>

@@ -9,7 +9,6 @@ import { callHttpsFunction } from '@/lib/httpsFunctions';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import SettingsComponent from '@/components/dashboard/SettingsComponent';
 import { useCompanyDashboard } from '@/hooks/useCompanyDashboard';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
@@ -332,17 +331,6 @@ export default function CompanyDashboard({ params }: { params: Promise<{ uid: st
               </p>
             </div>
           </div>
-        );
-
-      case 'settings':
-        return (
-          <SettingsComponent
-            userData={userData}
-            onDataSaved={() => {
-              // Reload data when settings are saved
-              window.location.reload();
-            }}
-          />
         );
 
       default:

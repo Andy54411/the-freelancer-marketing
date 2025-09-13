@@ -1,19 +1,51 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import SettingsComponent from '@/components/dashboard/SettingsComponent';
+import GeneralForm from '@/components/dashboard_setting/allgemein';
+import BankForm from '@/components/dashboard_setting/bankverbindung';
+import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
+import LogoForm from '@/components/dashboard_setting/logo';
+import PortfolioForm from '@/components/dashboard_setting/portfolio';
+import FaqsForm from '@/components/dashboard_setting/faqs';
+import PaymentTermsForm from '@/components/settings/PaymentTermsForm';
+import { RawFirestoreUserData, UserDataForSettings } from '@/types/settings';
+import { Loader2 as FiLoader, Save as FiSave } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
-  const [userData, setUserData] = useState<any | null>(null);
-  const [companyData, setCompanyData] = useState<any | null>(null);
+  const view = searchParams?.get('view') || 'general';
+  const [form, setForm] = useState<UserDataForSettings | null>(null);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Funktion zum Umwandeln der Firestore-Daten in das Settings-Format
+  const transformToUserDataForSettings = (rawData: RawFirestoreUserData): UserDataForSettings => {
+    return {
+      uid: rawData.uid,
+      companyName: rawData.companyName || rawData.step2?.companyName,
+      email: rawData.email,
+      displayName: rawData.displayName,
+      step1: rawData.step1,
+      step2: rawData.step2,
+      step3: rawData.step3,
+      step4: rawData.step4,
+      step5: rawData.step5,
+      portfolioItems: rawData.portfolioItems || [],
+      faqs: rawData.faqs || [],
+      paymentTermsSettings: rawData.paymentTermsSettings,
+      logoUrl: rawData.logoUrl,
+      documentTemplates: rawData.documentTemplates,
+      stornoSettings: rawData.stornoSettings,
+    };
+  };
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -23,7 +55,7 @@ export default function SettingsPage() {
       }
 
       if (!user) {
-        return; // Don't set loading to false yet, wait for user
+        return;
       }
 
       if (user.uid !== uid) {
@@ -32,36 +64,48 @@ export default function SettingsPage() {
       }
 
       try {
-        // Für Company-Dashboard: Lade zuerst companies collection
+        // Lade Company-Daten
         const companyDoc = await getDoc(doc(db, 'companies', uid));
         if (companyDoc.exists()) {
-          const companyDocData = companyDoc.data();
-
-          setCompanyData(companyDocData);
-
-          // Setze Company-Daten auch als userData für Kompatibilität
-          setUserData(companyDocData);
+          const companyData = companyDoc.data() as RawFirestoreUserData;
+          const transformedData = transformToUserDataForSettings(companyData);
+          setForm(transformedData);
         } else {
-          // Fallback: Versuche users collection
+          // Fallback: User-Daten
           const userDoc = await getDoc(doc(db, 'users', uid));
           if (userDoc.exists()) {
-            const userDocData = userDoc.data();
-
-            setUserData(userDocData);
+            const userData = userDoc.data() as RawFirestoreUserData;
+            const transformedData = transformToUserDataForSettings(userData);
+            setForm(transformedData);
           } else {
-            // Erstelle ein minimales userData Objekt basierend auf dem Auth-User
-            if (user) {
-              setUserData({
-                uid: user.uid,
-                email: user.email || '',
-                user_type: 'firma',
-                firstName: '',
-                lastName: '',
-              });
-            }
+            // Erstelle Basis-Daten
+            const baseData: UserDataForSettings = {
+              uid: user.uid,
+              email: user.email || '',
+              companyName: '',
+              step1: { personalData: {} },
+              step2: { companyAddress: {} },
+              step3: { bankDetails: {} },
+              portfolioItems: [],
+              faqs: [],
+            };
+            setForm(baseData);
           }
         }
       } catch (error) {
+        console.error('Fehler beim Laden der Benutzerdaten:', error);
+        // Erstelle Fallback-Daten bei Fehler
+        const fallbackData: UserDataForSettings = {
+          uid: user.uid,
+          email: user.email || '',
+          companyName: '',
+          step1: { personalData: {} },
+          step2: { companyAddress: {} },
+          step3: { bankDetails: {} },
+          portfolioItems: [],
+          faqs: [],
+        };
+        setForm(fallbackData);
       } finally {
         setLoading(false);
       }
@@ -70,74 +114,177 @@ export default function SettingsPage() {
     loadUserData();
   }, [uid, user]);
 
-  // DEBUG: Log combined data when it changes
-  useEffect(() => {
-    if (userData || companyData) {
-      const combinedForDebug = companyData ? { ...userData, ...companyData } : userData;
+  // Handle form changes
+  const handleChange = (path: string, value: string | number | boolean | null) => {
+    if (!form) return;
+
+    const pathArray = path.split('.');
+    const newForm = { ...form };
+    let current: any = newForm;
+
+    for (let i = 0; i < pathArray.length - 1; i++) {
+      const key = pathArray[i];
+      if (!current[key]) {
+        current[key] = {};
+      }
+      current = current[key];
     }
-  }, [userData, companyData]);
 
-  // Autorisierung prüfen
-  if (!user || user.uid !== uid) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
-          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
-        </div>
-      </div>
-    );
-  }
+    current[pathArray[pathArray.length - 1]] = value;
+    setForm(newForm);
+  };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Laden...</h2>
-          <p className="text-gray-600">Benutzerdaten werden geladen...</p>
-        </div>
-      </div>
-    );
-  }
+  // Save form data
+  const saveForm = async () => {
+    if (!form || !uid || saving) return;
 
-  const handleDataSaved = async () => {
-    // Benutzerdaten neu laden nach dem Speichern
-    if (uid) {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        if (userDoc.exists()) {
-          const userDocData = userDoc.data();
-          setUserData(userDocData);
-
-          // Check if user is a company by checking companies collection
-          const companyDoc = await getDoc(doc(db, 'companies', uid));
-          if (companyDoc.exists()) {
-            setCompanyData(companyDoc.data());
-          }
-        }
-      } catch (error) {}
+    setSaving(true);
+    try {
+      const docRef = doc(db, 'companies', uid);
+      await updateDoc(docRef, {
+        ...form,
+        lastUpdated: serverTimestamp(),
+      });
+      toast.success('Einstellungen erfolgreich gespeichert!');
+    } catch (error) {
+      console.error('Fehler beim Speichern:', error);
+      toast.error('Fehler beim Speichern der Einstellungen');
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Kombiniere die Daten stabil ohne useMemo um Hook-Reihenfolge zu erhalten
-  let finalData = userData;
-  if (companyData && userData) {
-    finalData = { ...userData, ...companyData };
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[300px] space-y-4">
+        <FiLoader className="animate-spin h-8 w-8 text-teal-600" />
+        <div className="text-center">
+          <span className="text-lg font-semibold text-gray-700">Lade Einstellungen...</span>
+        </div>
+      </div>
+    );
   }
 
-  // Fallback: Wenn keine Daten vorhanden sind, aber wir einen eingeloggten User haben, erstelle Basis-Daten
-  if (!finalData && user && !loading) {
-    finalData = {
-      uid: user.uid,
-      email: user.email || '',
-      user_type: 'firma', // Standard für Company-Dashboard
-      firstName: '',
-      lastName: '',
-      phoneNumber: '',
-      companyName: '',
-      // Weitere Basis-Eigenschaften...
-    };
+  if (!form) {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-[300px] space-y-4">
+        <span className="text-lg font-semibold text-gray-700">Keine Daten gefunden</span>
+      </div>
+    );
   }
 
-  return <SettingsComponent userData={finalData} onDataSaved={handleDataSaved} />;
+  // Funktion zum Rendern der richtigen Komponente basierend auf view
+  const renderSettingsComponent = () => {
+    switch (view) {
+      case 'general':
+        return (
+          <GeneralForm
+            formData={form}
+            handleChange={handleChange}
+            onOpenManagingDirectorPersonalModal={() => {
+              // Optional: Modal-Funktionalität kann hier implementiert werden
+            }}
+          />
+        );
+      case 'bank':
+        return <BankForm formData={form} handleChange={handleChange} />;
+      case 'accounting':
+        return <AccountingForm formData={form} handleChange={handleChange} />;
+      case 'logo':
+        return <LogoForm formData={form} handleChange={handleChange} />;
+      case 'portfolio':
+        return <PortfolioForm formData={form} handleChange={handleChange} />;
+      case 'faqs':
+        return <FaqsForm formData={form} handleChange={handleChange} />;
+      case 'payment-terms':
+        return <PaymentTermsForm formData={form} handleChange={handleChange} />;
+      case 'payouts':
+        return (
+          <div className="text-center py-8">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Auszahlungen</h3>
+            <p className="text-gray-600">Diese Sektion ist noch nicht implementiert.</p>
+          </div>
+        );
+      default:
+        return (
+          <GeneralForm
+            formData={form}
+            handleChange={handleChange}
+            onOpenManagingDirectorPersonalModal={() => {
+              // Optional: Modal-Funktionalität kann hier implementiert werden
+            }}
+          />
+        );
+    }
+  };
+
+  // Titel und Beschreibung basierend auf view
+  const getSettingsTitle = () => {
+    switch (view) {
+      case 'general':
+        return {
+          title: 'Allgemeine Einstellungen',
+          description: 'Verwalten Sie Ihre allgemeinen Firmendaten und Kontaktinformationen',
+        };
+      case 'bank':
+        return {
+          title: 'Bankverbindung',
+          description: 'Verwalten Sie Ihre Bankdaten für Zahlungen und Auszahlungen',
+        };
+      case 'accounting':
+        return {
+          title: 'Buchhaltung & Steuer',
+          description: 'Konfigurieren Sie Ihre Steuer- und Buchhaltungseinstellungen',
+        };
+      case 'logo':
+        return {
+          title: 'Logo & Dokumente',
+          description: 'Verwalten Sie Ihr Firmenlogo und Dokumentvorlagen',
+        };
+      case 'portfolio':
+        return { title: 'Portfolio', description: 'Präsentieren Sie Ihre Arbeiten und Projekte' };
+      case 'faqs':
+        return {
+          title: 'FAQs',
+          description: 'Verwalten Sie häufig gestellte Fragen zu Ihren Services',
+        };
+      default:
+        return { title: 'Einstellungen', description: 'Verwalten Sie Ihre Einstellungen' };
+    }
+  };
+
+  const { title, description } = getSettingsTitle();
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 sm:p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
+        <p className="text-gray-600">{description}</p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        {renderSettingsComponent()}
+
+        <div className="mt-8 pt-6 border-t">
+          <button
+            onClick={saveForm}
+            disabled={saving}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <>
+                <FiLoader className="animate-spin -ml-1 mr-3 h-5 w-5" />
+                Speichern...
+              </>
+            ) : (
+              <>
+                <FiSave className="-ml-1 mr-3 h-5 w-5" />
+                Speichern
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

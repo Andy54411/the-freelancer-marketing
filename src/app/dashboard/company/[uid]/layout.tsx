@@ -175,11 +175,7 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
     else if (isNonEmptyString(userData?.companyName)) {
       companyName = userData.companyName;
     }
-    // 3. Priorität: Firmenname aus step1 (falls vorhanden)
-    else if (isNonEmptyString(userData?.step1?.companyName)) {
-      companyName = userData.step1.companyName;
-    }
-    // 4. Priorität: AuthContext User-Daten (Name als Firmenname)
+    // 3. Priorität: AuthContext User-Daten (Name als Firmenname)
     else if (user && isNonEmptyString(user.firstName) && isNonEmptyString(user.lastName)) {
       companyName = `${user.firstName} ${user.lastName}`;
     } else if (user && isNonEmptyString(user.firstName)) {
@@ -207,6 +203,13 @@ export default function CompanyDashboardLayout({ children }: { children: React.R
       // Wenn href definiert ist, verwende echte Navigation
       if (href) {
         router.push(`/dashboard/company/${uid}/${href}`);
+        return;
+      }
+
+      // Settings-Unterseiten behandeln
+      if (value.startsWith('settings-')) {
+        const settingsView = value.replace('settings-', '');
+        router.push(`/dashboard/company/${uid}/settings?view=${settingsView}`);
         return;
       }
 

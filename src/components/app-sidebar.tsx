@@ -37,7 +37,7 @@ import {
   SidebarMenuItem,
   SidebarProvider, // Dies ist der tatsächliche Kontext-Provider
 } from '@/components/ui/sidebar';
-import { RawFirestoreUserData } from '@/components/dashboard/SettingsComponent'; // Import the type
+import { RawFirestoreUserData } from '@/types/settings'; // Import the type
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   setView?: (view: 'dashboard' | 'settings') => void;
@@ -84,7 +84,6 @@ export function AppSidebar({
         setProfilePictureURL(null);
       }
     } catch (err) {
-
       setError('Fehler beim Laden der Daten');
     } finally {
       setLoading(false);

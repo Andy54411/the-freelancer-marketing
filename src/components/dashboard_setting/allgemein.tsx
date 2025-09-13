@@ -4,7 +4,7 @@
 import React from 'react';
 // KORREKTUR 1: GoogleMap und Circle bleiben, aber useJsApiLoader wird nicht mehr gebraucht.
 import { GoogleMap, Circle } from '@react-google-maps/api';
-import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
+import { UserDataForSettings } from '@/types/settings';
 
 // KORREKTUR 2: Wir importieren unseren eigenen Hook.
 import { useGoogleMaps } from '@/contexts/GoogleMapsLoaderContext';
@@ -97,7 +97,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Firma</label>
           <input
-            value={step2.companyName || ''}
+            value={step2?.companyName || ''}
             onChange={e => handleChange('step2.companyName', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
@@ -105,7 +105,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Firmenzusatz</label>
           <input
-            value={step2.companySuffix || ''}
+            value={step2?.companySuffix || ''}
             onChange={e => handleChange('step2.companySuffix', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             placeholder="z.B. GmbH, UG, e.K."
@@ -125,7 +125,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Rechtsform</label>
           <input
-            value={step2.legalForm || ''}
+            value={step2?.legalForm || ''}
             onChange={e => handleChange('step2.legalForm', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             placeholder="z.B. Einzelunternehmen, GmbH, UG"
@@ -134,7 +134,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Straße</label>
           <input
-            value={step2.address || step2.street || step1.personalStreet || ''}
+            value={step2?.address || step2?.street || step1?.personalStreet || ''}
             onChange={e => handleChange('step2.address', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             placeholder="Straße und Hausnummer"
@@ -144,7 +144,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
           <div className="flex flex-col">
             <label className="block mb-1 font-medium">PLZ</label>
             <input
-              value={step2.postalCode || step1.personalPostalCode || ''}
+              value={step2?.postalCode || step1?.personalPostalCode || ''}
               onChange={e => handleChange('step2.postalCode', e.target.value)}
               className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             />
@@ -152,7 +152,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
           <div className="flex flex-col">
             <label className="block mb-1 font-medium">Stadt</label>
             <input
-              value={step2.city || ''}
+              value={step2?.city || ''}
               onChange={e => handleChange('step2.city', e.target.value)}
               className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             />
@@ -169,7 +169,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Telefon</label>
           <input
-            value={step2.companyPhoneNumber || step1.phoneNumber || ''}
+            value={step2?.companyPhoneNumber || step1?.phoneNumber || ''}
             onChange={e => handleChange('step2.companyPhoneNumber', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
@@ -177,7 +177,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">FAX</label>
           <input
-            value={step2.fax || ''}
+            value={step2?.fax || ''}
             onChange={e => handleChange('step2.fax', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
@@ -185,7 +185,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">E-Mail-Adresse</label>
           <input
-            value={step1.email || ''}
+            value={step1?.email || ''}
             onChange={e => handleChange('step1.email', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
@@ -193,7 +193,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Webseite</label>
           <input
-            value={step2.website || ''}
+            value={step2?.website || ''}
             onChange={e => handleChange('step2.website', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           />
@@ -201,7 +201,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Gesprochene Sprachen</label>
           <input
-            value={step2.languages || ''}
+            value={step2?.languages || ''}
             onChange={e => handleChange('step2.languages', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             placeholder="z. B. Deutsch, Englisch, Türkisch"
@@ -210,7 +210,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
         <div className="flex flex-col">
           <label className="block mb-1 font-medium">Branche</label>
           <select
-            value={step2.industry || ''}
+            value={step2?.industry || ''}
             onChange={e => handleChange('step2.industry', e.target.value)}
             className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
           >
@@ -233,7 +233,7 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
           <div className="flex flex-col">
             <label className="block mb-1 font-medium">Mitarbeiterzahl</label>
             <input
-              value={step2.employees || ''}
+              value={step2?.employees || ''}
               onChange={e => handleChange('step2.employees', e.target.value)}
               className="input dark:bg-gray-800 dark:text-white dark:border-gray-700"
             />
@@ -254,8 +254,8 @@ const GeneralForm: React.FC<GeneralFormProps> = ({
           <label className="block mb-2 font-medium">Einzugsgebiet auf der Karte</label>
           {typeof window !== 'undefined' && (
             <GoogleMapComponent
-              lat={lat}
-              lng={lng}
+              lat={lat ?? null}
+              lng={lng ?? null}
               radiusKm={radiusKm ?? 30}
               onRadiusChange={newRadius => handleChange('radiusKm', newRadius)}
             />

@@ -10,6 +10,7 @@ import {
 export interface UserPreferences {
   preferredInvoiceTemplate: InvoiceTemplate | null; // null bedeutet: User muss auswählen
   preferredDeliveryNoteTemplate: DeliveryNoteTemplate | null; // null bedeutet: User muss auswählen
+  preferredQuoteTemplate: string | null; // Angebots-Template
   preferredLanguage?: string;
   preferredCurrency?: string;
 }
@@ -52,6 +53,7 @@ export class UserPreferencesService {
         return {
           preferredInvoiceTemplate: data.preferredInvoiceTemplate || null, // null wenn nicht gesetzt
           preferredDeliveryNoteTemplate: data.preferredDeliveryNoteTemplate || null, // null wenn nicht gesetzt
+          preferredQuoteTemplate: data.preferredQuoteTemplate || null, // null wenn nicht gesetzt
           preferredLanguage: data.preferredLanguage || 'de',
           preferredCurrency: data.preferredCurrency || 'EUR',
         };
@@ -63,6 +65,7 @@ export class UserPreferencesService {
       return {
         preferredInvoiceTemplate: defaultTemplate, // kann null sein
         preferredDeliveryNoteTemplate: null, // User muss Template auswählen
+        preferredQuoteTemplate: null, // User muss Template auswählen
         preferredLanguage: 'de',
         preferredCurrency: 'EUR',
       };
@@ -71,6 +74,7 @@ export class UserPreferencesService {
       return {
         preferredInvoiceTemplate: fallbackTemplate,
         preferredDeliveryNoteTemplate: 'german-standard', // Default
+        preferredQuoteTemplate: 'german-standard', // Default
         preferredLanguage: 'de',
         preferredCurrency: 'EUR',
       };

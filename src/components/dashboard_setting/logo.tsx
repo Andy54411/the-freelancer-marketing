@@ -15,7 +15,7 @@ import { FiUpload, FiTrash2, FiAlertCircle, FiCheckCircle } from 'react-icons/fi
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
-import { UserDataForSettings } from '@/components/dashboard/SettingsComponent';
+import { UserDataForSettings } from '@/types/settings';
 import { getAuth } from 'firebase/auth';
 
 // ANPASSUNG: 'export' wurde hinzugefügt
