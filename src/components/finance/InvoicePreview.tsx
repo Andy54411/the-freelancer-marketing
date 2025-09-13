@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Eye, Printer } from 'lucide-react';
-import { GermanStandardTemplate } from '../templates/templates/GermanStandardTemplate';
+import ProfessionalBusinessTemplate from '@/components/templates/invoice-templates/ProfessionalBusinessTemplate';
 import { InvoiceData } from '@/types/invoiceTypes';
 
 interface InvoicePreviewProps {
@@ -158,7 +158,69 @@ export function InvoicePreview({ invoiceData, companySettings }: InvoicePreviewP
         const container = printWindow.document.getElementById('print-content');
         if (container) {
           const root = createRoot(container);
-          root.render(React.createElement(GermanStandardTemplate, { data: previewData }));
+          root.render(
+            React.createElement(ProfessionalBusinessTemplate as any, {
+              data: {
+                documentNumber: previewData.invoiceNumber,
+                date: previewData.issueDate,
+                dueDate: previewData.dueDate,
+                customer: {
+                  name: previewData.customerName,
+                  email: previewData.customerEmail || '',
+                  address: {
+                    street: (previewData.customerAddress || '').split('\n')[0] || '',
+                    zipCode:
+                      (previewData.customerAddress || '').split('\n')[1]?.split(' ')[0] || '',
+                    city:
+                      (previewData.customerAddress || '')
+                        .split('\n')[1]
+                        ?.split(' ')
+                        .slice(1)
+                        .join(' ') || '',
+                    country: 'Deutschland',
+                  },
+                },
+                company: {
+                  name: previewData.companyName,
+                  email: previewData.companyEmail,
+                  phone: previewData.companyPhone || '',
+                  address: {
+                    street: (previewData.companyAddress || '').split('\n')[0] || '',
+                    zipCode: (previewData.companyAddress || '').split('\n')[1]?.split(' ')[0] || '',
+                    city:
+                      (previewData.companyAddress || '')
+                        .split('\n')[1]
+                        ?.split(' ')
+                        .slice(1)
+                        .join(' ') || '',
+                    country: 'Deutschland',
+                  },
+                  taxNumber: previewData.companyTaxNumber || '',
+                  vatId: previewData.companyVatId || '',
+                  bankDetails: {
+                    iban: previewData.bankDetails?.iban || '',
+                    bic: previewData.bankDetails?.bic || '',
+                    accountHolder: previewData.bankDetails?.accountHolder || '',
+                  },
+                },
+                items: (previewData.items || []).map((i, idx) => ({
+                  description: i.description || `Position ${idx + 1}`,
+                  quantity: (i as any).quantity || 1,
+                  unit: (i as any).unit || 'Stk.',
+                  unitPrice: (i as any).unitPrice || (i.total ? i.total : 0),
+                  total: i.total || ((i as any).unitPrice || 0) * ((i as any).quantity || 1),
+                })),
+                subtotal: previewData.amount || 0,
+                taxRate: previewData.vatRate || 19,
+                taxAmount: previewData.tax || 0,
+                total: previewData.total || 0,
+                paymentTerms: previewData.paymentTerms || '',
+                notes: previewData.notes || '',
+                status: previewData.status || 'draft',
+                isSmallBusiness: previewData.isSmallBusiness || false,
+              },
+            })
+          );
 
           // Warte bis React gerendert hat, dann drucke
           setTimeout(() => {
@@ -194,7 +256,66 @@ export function InvoicePreview({ invoiceData, companySettings }: InvoicePreviewP
         </DialogHeader>
 
         <div className="bg-white">
-          <GermanStandardTemplate data={previewData} />
+          <ProfessionalBusinessTemplate
+            data={{
+              documentNumber: previewData.invoiceNumber,
+              date: previewData.issueDate,
+              dueDate: previewData.dueDate,
+              customer: {
+                name: previewData.customerName,
+                email: previewData.customerEmail || '',
+                address: {
+                  street: (previewData.customerAddress || '').split('\n')[0] || '',
+                  zipCode: (previewData.customerAddress || '').split('\n')[1]?.split(' ')[0] || '',
+                  city:
+                    (previewData.customerAddress || '')
+                      .split('\n')[1]
+                      ?.split(' ')
+                      .slice(1)
+                      .join(' ') || '',
+                  country: 'Deutschland',
+                },
+              },
+              company: {
+                name: previewData.companyName,
+                email: previewData.companyEmail,
+                phone: previewData.companyPhone || '',
+                address: {
+                  street: (previewData.companyAddress || '').split('\n')[0] || '',
+                  zipCode: (previewData.companyAddress || '').split('\n')[1]?.split(' ')[0] || '',
+                  city:
+                    (previewData.companyAddress || '')
+                      .split('\n')[1]
+                      ?.split(' ')
+                      .slice(1)
+                      .join(' ') || '',
+                  country: 'Deutschland',
+                },
+                taxNumber: previewData.companyTaxNumber || '',
+                vatId: previewData.companyVatId || '',
+                bankDetails: {
+                  iban: previewData.bankDetails?.iban || '',
+                  bic: previewData.bankDetails?.bic || '',
+                  accountHolder: previewData.bankDetails?.accountHolder || '',
+                },
+              },
+              items: (previewData.items || []).map((i, idx) => ({
+                description: i.description || `Position ${idx + 1}`,
+                quantity: (i as any).quantity || 1,
+                unit: (i as any).unit || 'Stk.',
+                unitPrice: (i as any).unitPrice || (i.total ? i.total : 0),
+                total: i.total || ((i as any).unitPrice || 0) * ((i as any).quantity || 1),
+              })),
+              subtotal: previewData.amount || 0,
+              taxRate: previewData.vatRate || 19,
+              taxAmount: previewData.tax || 0,
+              total: previewData.total || 0,
+              paymentTerms: previewData.paymentTerms || '',
+              notes: previewData.notes || '',
+              status: previewData.status || 'draft',
+              isSmallBusiness: previewData.isSmallBusiness || false,
+            }}
+          />
         </div>
       </DialogContent>
     </Dialog>

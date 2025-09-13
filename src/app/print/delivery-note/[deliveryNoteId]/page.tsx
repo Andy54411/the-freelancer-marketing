@@ -3,19 +3,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { DeliveryNote } from '@/services/deliveryNoteService';
-import { DeliveryNoteTemplateRenderer } from '@/components/templates/delivery-note-templates/DeliveryNoteTemplateRenderer';
-import {
-  DeliveryNoteData,
-  DeliveryNoteTemplate,
-} from '@/components/templates/delivery-note-templates/types';
+import { ProfessionalBusinessDeliveryTemplate } from '@/components/templates/delivery-note-templates';
 
 export default function PrintDeliveryNotePage() {
   const params = useParams();
   const deliveryNoteId = typeof params?.deliveryNoteId === 'string' ? params.deliveryNoteId : '';
 
   const [deliveryNote, setDeliveryNote] = useState<DeliveryNote | null>(null);
-  const [deliveryNoteData, setDeliveryNoteData] = useState<DeliveryNoteData | null>(null);
-  const [userTemplate, setUserTemplate] = useState<DeliveryNoteTemplate | null>(null);
+  const [deliveryNoteData, setDeliveryNoteData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,14 +46,11 @@ export default function PrintDeliveryNotePage() {
 
       setDeliveryNote(note);
 
-      // Template-Präferenz laden
-      const preferredTemplate = userData.preferredDeliveryNoteTemplate as DeliveryNoteTemplate;
-      setUserTemplate(preferredTemplate || 'german-standard');
-
-      // Daten für Template-Renderer konvertieren
-      const templateData: DeliveryNoteData = {
+      // Daten für Template konvertieren (Professional Business als Standard)
+      const templateData: any = {
         id: note.id,
         deliveryNoteNumber: note.deliveryNoteNumber,
+        documentNumber: note.deliveryNoteNumber,
         sequentialNumber: note.sequentialNumber,
         date: note.date,
         deliveryDate: note.deliveryDate,
@@ -120,7 +112,22 @@ export default function PrintDeliveryNotePage() {
         createdBy: note.createdBy,
       };
 
-      setDeliveryNoteData(templateData);
+      setDeliveryNoteData({
+        data: templateData,
+        companySettings: {
+          companyName: userData.companyName || userData.name || 'Taskilo',
+          logoUrl:
+            userData.companyLogo ||
+            userData.profilePictureURL ||
+            userData.profilePictureFirebaseUrl,
+          address: undefined,
+          contactInfo: {
+            email: userData.companyEmail || userData.email || 'info@taskilo.de',
+            phone: userData.companyPhone || userData.phone || '',
+          },
+        },
+        customizations: { showLogo: true },
+      });
     } catch (error) {
       setError('Fehler beim Laden des Lieferscheins');
     } finally {
@@ -352,10 +359,10 @@ export default function PrintDeliveryNotePage() {
 
         {/* Template-basiertes A4-optimiertes Layout */}
         <div className="print-delivery-note-wrapper">
-          <DeliveryNoteTemplateRenderer
-            template={userTemplate}
-            data={deliveryNoteData}
-            preview={false}
+          <ProfessionalBusinessDeliveryTemplate
+            data={deliveryNoteData?.data}
+            companySettings={deliveryNoteData?.companySettings}
+            customizations={deliveryNoteData?.customizations}
           />
         </div>
       </div>

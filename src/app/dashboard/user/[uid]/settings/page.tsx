@@ -4,12 +4,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext'; // Importiere useAuth
-import { User as FirebaseUser } from 'firebase/auth'; // Importiere den User-Typ
 import UserHeader from '@/components/UserHeader'; // Importiere die UserHeader-Komponente als Standard-Export
 import { doc, getDoc } from 'firebase/firestore';
 import { db, app } from '@/firebase/clients';
-import SettingsComponent from '@/components/dashboard/SettingsComponent'; // Import SettingsComponent
-import { RawFirestoreUserData } from '@/components/dashboard/SettingsComponent'; // Import Interface
+import { RawFirestoreUserData } from '@/types/settings';
 import UserSettingsPage from '@/app/dashboard/user/[uid]/components/UserSettingsPage'; // NEU: Import für User-Einstellungen‚
 import { Loader2 as FiLoader, AlertCircle as FiAlertCircle } from 'lucide-react';
 
@@ -96,11 +94,7 @@ export default function UserSettingsDashboardPage() {
         {' '}
         {/* Hauptinhaltsbereich, der scrollbar ist, mit Padding */}
         {/* Check if user has company data by checking for company-specific fields */}
-        {userData?.companyName || userData?.selectedCategory ? (
-          <SettingsComponent userData={userData} onDataSaved={handleDataSaved} />
-        ) : (
-          <UserSettingsPage userData={userData} onDataSaved={handleDataSaved} />
-        )}
+        <UserSettingsPage userData={userData} onDataSaved={handleDataSaved} />
       </main>
     </div>
   );
