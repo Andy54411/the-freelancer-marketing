@@ -36,8 +36,53 @@ import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteSer
 import { getAllCurrencies } from '@/data/currencies';
 import { getCustomers } from '@/utils/api/companyApi';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import GermanStandardQuoteTemplate from '@/components/finance/quote-templates/GermanStandardQuoteTemplate';
-import type { QuoteTemplateData as PreviewTemplateData } from '@/components/finance/quote-templates/GermanStandardQuoteTemplate';
+import { ProfessionalBusinessQuoteTemplate } from '@/components/templates/quote-templates';
+type PreviewTemplateData = {
+  quoteNumber: string;
+  date: string;
+  validUntil?: string;
+  title?: string;
+  reference?: string;
+  currency?: string;
+  taxRule?: string;
+  taxRuleLabel?: string;
+  customerName: string;
+  customerAddress?: string;
+  customerEmail?: string;
+  companyName?: string;
+  companyAddress?: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyWebsite?: string;
+  companyLogo?: string;
+  profilePictureURL?: string;
+  companyVatId?: string;
+  companyTaxNumber?: string;
+  items: Array<{
+    id?: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+    taxRate?: number;
+    category?: string;
+  }>;
+  subtotal: number;
+  tax: number;
+  total: number;
+  vatRate?: number;
+  isSmallBusiness?: boolean;
+  bankDetails?: {
+    iban?: string;
+    bic?: string;
+    bankName?: string;
+    accountHolder?: string;
+  };
+  notes?: string;
+  headTextHtml?: string;
+  footerText?: string;
+  contactPersonName?: string;
+};
 import { db } from '@/firebase/clients';
 import { doc, getDoc } from 'firebase/firestore';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
@@ -632,7 +677,7 @@ export default function CreateQuotePage() {
       try {
         setEmailAttachmentError(null);
         setEmailAttachmentReady(false);
-        const filename = `Angebot-${data.companyName.replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
+  const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
         setEmailAttachmentName(filename);
         await new Promise(r => setTimeout(r, 100));
         // Clientseitig erzeugen
@@ -763,7 +808,7 @@ export default function CreateQuotePage() {
       const element = pdfContainerRef.current;
       if (!element) throw new Error('PDF-Container nicht verfügbar');
       const data = buildPreviewData();
-      const filename = `Angebot-${data.companyName.replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
+  const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
 
       // 1) Server-seitiges PDF versuchen (höchste Qualität)
       try {
@@ -1056,7 +1101,7 @@ export default function CreateQuotePage() {
         total: grandTotal,
         currency: formData.currency,
         language: 'de',
-        template: 'GermanStandardQuoteTemplate',
+  template: 'professional-business-quote',
         lastModifiedBy: uid,
         taxRule: formData.taxRule,
         internalContactPerson: formData.internalContactPerson || undefined,
@@ -2086,7 +2131,7 @@ export default function CreateQuotePage() {
                             setEmailAttachmentError(null);
                             setEmailAttachmentReady(false);
                             const data = buildPreviewData();
-                            const filename = `Angebot-${data.companyName.replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
+                            const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
                             setEmailAttachmentName(filename);
                             await new Promise(r => setTimeout(r, 100));
                             const blob = await generatePdfBlob();
@@ -2134,7 +2179,57 @@ export default function CreateQuotePage() {
           <div className="px-6 pb-6">
             <div className="border rounded-md overflow-auto bg-white" style={{ maxHeight: '75vh' }}>
               <div className="p-4">
-                <GermanStandardQuoteTemplate data={buildPreviewData()} preview />
+                <ProfessionalBusinessQuoteTemplate
+                  data={{
+                    documentNumber: buildPreviewData().quoteNumber,
+                    date: buildPreviewData().date,
+                    validUntil: buildPreviewData().validUntil,
+                    customerName: buildPreviewData().customerName,
+                    customerAddress: (() => {
+                      const lines = (buildPreviewData().customerAddress || '').split('\n');
+                      return {
+                        street: lines[0] || '',
+                        zipCode: (lines[1] || '').split(' ')[0] || '',
+                        city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                        country: lines[2] || undefined,
+                      };
+                    })(),
+                    items: buildPreviewData().items?.map(it => ({
+                      description: it.description,
+                      quantity: it.quantity,
+                      unitPrice: it.unitPrice,
+                    })) || [],
+                    subtotal: buildPreviewData().subtotal,
+                    taxRate: buildPreviewData().vatRate,
+                    taxAmount: buildPreviewData().tax,
+                    total: buildPreviewData().total,
+                    notes: buildPreviewData().notes,
+                    createdBy: buildPreviewData().contactPersonName,
+                  }}
+                  companySettings={{
+                    companyName: buildPreviewData().companyName,
+                    logoUrl:
+                      buildPreviewData().companyLogo || buildPreviewData().profilePictureURL,
+                    address: (() => {
+                      const lines = (buildPreviewData().companyAddress || '').split('\n');
+                      return {
+                        street: lines[0] || '',
+                        zipCode: (lines[1] || '').split(' ')[0] || '',
+                        city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                        country: lines[2] || undefined,
+                      };
+                    })(),
+                    contactInfo: {
+                      email: buildPreviewData().companyEmail,
+                      phone: buildPreviewData().companyPhone,
+                      website: buildPreviewData().companyWebsite,
+                    },
+                    vatId: buildPreviewData().companyVatId,
+                    taxId: buildPreviewData().companyTaxNumber,
+                    bankDetails: buildPreviewData().bankDetails,
+                  }}
+                  customizations={{ showLogo: true }}
+                />
               </div>
             </div>
           </div>

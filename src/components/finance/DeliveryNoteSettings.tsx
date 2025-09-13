@@ -36,7 +36,7 @@ import {
 import { toast } from 'sonner';
 import { DeliveryNoteService, DeliveryNoteSettings } from '@/services/deliveryNoteService';
 import { DeliveryNoteApiIntegrations } from './DeliveryNoteApiIntegrations';
-import { AVAILABLE_DELIVERY_NOTE_TEMPLATES } from './delivery-note-templates';
+import { AVAILABLE_DELIVERY_NOTE_TEMPLATES } from '../templates/delivery-note-templates';
 
 interface DeliveryNoteSettingsComponentProps {
   companyId: string;

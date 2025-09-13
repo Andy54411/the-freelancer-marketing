@@ -14,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { AVAILABLE_QUOTE_TEMPLATES, QuoteTemplate } from './quote-templates';
+import { AVAILABLE_QUOTE_TEMPLATES, QuoteTemplate } from '../templates/quote-templates';
 
 interface QuoteTemplatePickerProps {
   trigger?: React.ReactNode;
@@ -26,7 +26,7 @@ interface QuoteTemplatePickerProps {
 export function QuoteTemplatePicker({
   trigger,
   onTemplateSelect,
-  selectedTemplate = 'german-standard',
+  selectedTemplate = 'professional-business-quote',
   userId: _userId,
 }: QuoteTemplatePickerProps) {
   const [open, setOpen] = useState(false);

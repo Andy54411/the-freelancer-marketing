@@ -3,11 +3,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { DeliveryNote } from '@/services/deliveryNoteService';
-import { DeliveryNoteTemplateRenderer } from '@/components/finance/delivery-note-templates/DeliveryNoteTemplateRenderer';
+import { DeliveryNoteTemplateRenderer } from '@/components/templates/delivery-note-templates/DeliveryNoteTemplateRenderer';
 import {
   DeliveryNoteData,
   DeliveryNoteTemplate,
-} from '@/components/finance/delivery-note-templates/types';
+} from '@/components/templates/delivery-note-templates/types';
 
 export default function PrintDeliveryNotePage() {
   const params = useParams();

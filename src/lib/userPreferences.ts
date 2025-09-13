@@ -1,11 +1,11 @@
 // User Preferences Service für Template-Integration
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { InvoiceTemplate, AVAILABLE_TEMPLATES } from '@/components/finance/InvoiceTemplates';
+import { InvoiceTemplate, AVAILABLE_TEMPLATES, DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/InvoiceTemplates';
 import {
   DeliveryNoteTemplate,
   AVAILABLE_DELIVERY_NOTE_TEMPLATES,
-} from '@/components/finance/delivery-note-templates';
+} from '@/components/templates/delivery-note-templates';
 
 export interface UserPreferences {
   preferredInvoiceTemplate: InvoiceTemplate | null; // null bedeutet: User muss auswählen
@@ -70,11 +70,11 @@ export class UserPreferencesService {
         preferredCurrency: 'EUR',
       };
     } catch (error) {
-      const fallbackTemplate = AVAILABLE_TEMPLATES[0]?.id as InvoiceTemplate;
+      const fallbackTemplate = (AVAILABLE_TEMPLATES[0]?.id || DEFAULT_INVOICE_TEMPLATE) as InvoiceTemplate;
       return {
         preferredInvoiceTemplate: fallbackTemplate,
-        preferredDeliveryNoteTemplate: 'german-standard', // Default
-        preferredQuoteTemplate: 'german-standard', // Default
+        preferredDeliveryNoteTemplate: 'professional-business-delivery', // Default
+        preferredQuoteTemplate: 'professional-business-quote', // Default
         preferredLanguage: 'de',
         preferredCurrency: 'EUR',
       };

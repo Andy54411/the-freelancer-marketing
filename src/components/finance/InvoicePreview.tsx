@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Eye, Printer } from 'lucide-react';
-import { GermanStandardTemplate } from './templates/GermanStandardTemplate';
+import { GermanStandardTemplate } from '../templates/templates/GermanStandardTemplate';
 import { InvoiceData } from '@/types/invoiceTypes';
 
 interface InvoicePreviewProps {

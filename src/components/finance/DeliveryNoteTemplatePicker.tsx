@@ -14,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { AVAILABLE_DELIVERY_NOTE_TEMPLATES } from './delivery-note-templates';
+import { AVAILABLE_DELIVERY_NOTE_TEMPLATES } from '../templates/delivery-note-templates';
 
 export type DeliveryNoteTemplate = string;
 

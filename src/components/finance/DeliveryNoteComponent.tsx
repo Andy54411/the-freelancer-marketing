@@ -46,7 +46,7 @@ import { UserPreferencesService } from '@/lib/userPreferences';
 import {
   DeliveryNoteTemplate,
   AVAILABLE_DELIVERY_NOTE_TEMPLATES,
-} from '@/components/finance/delivery-note-templates';
+} from '@/components/templates/delivery-note-templates';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DeliveryNoteComponentProps {

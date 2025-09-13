@@ -5,8 +5,51 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { QuoteService, type Quote as QuoteType } from '@/services/quoteService';
 import { db } from '@/firebase/clients';
 import { doc, getDoc } from 'firebase/firestore';
-import { GermanStandardQuoteTemplate } from '@/components/finance/quote-templates/GermanStandardQuoteTemplate';
-import type { QuoteTemplateData } from '@/components/finance/quote-templates/GermanMultiPageQuoteTemplate';
+import { ProfessionalBusinessQuoteTemplate } from '@/components/templates/quote-templates';
+type QuoteTemplateData = {
+  quoteNumber: string;
+  date: string;
+  validUntil?: string;
+  title?: string;
+  reference?: string;
+  currency?: string;
+  customerName: string;
+  customerAddress?: string;
+  customerEmail?: string;
+  companyName?: string;
+  companyAddress?: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyWebsite?: string;
+  companyLogo?: string;
+  profilePictureURL?: string;
+  companyVatId?: string;
+  companyTaxNumber?: string;
+  items: Array<{
+    id?: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+    taxRate?: number;
+    category?: string;
+  }>;
+  subtotal: number;
+  tax: number;
+  total: number;
+  vatRate?: number;
+  isSmallBusiness?: boolean;
+  bankDetails?: {
+    iban?: string;
+    bic?: string;
+    bankName?: string;
+    accountHolder?: string;
+  };
+  notes?: string;
+  headTextHtml?: string;
+  footerText?: string;
+  contactPersonName?: string;
+};
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 type Params = { uid: string; quoteId: string };
@@ -148,7 +191,57 @@ export default function PrintQuotePage() {
         `}</style>
 
         <div className="invoice-print-content">
-          <GermanStandardQuoteTemplate data={previewData} />
+          {/* Neues Angebots-Template (Professional Business) */}
+          <ProfessionalBusinessQuoteTemplate
+            data={{
+              documentNumber: previewData.quoteNumber,
+              date: previewData.date,
+              validUntil: previewData.validUntil,
+              customerName: previewData.customerName,
+              customerAddress: (() => {
+                const lines = (previewData.customerAddress || '').split('\n');
+                return {
+                  street: lines[0] || '',
+                  zipCode: (lines[1] || '').split(' ')[0] || '',
+                  city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                  country: lines[2] || undefined,
+                };
+              })(),
+              items: previewData.items?.map(it => ({
+                description: it.description,
+                quantity: it.quantity,
+                unitPrice: it.unitPrice,
+              })) || [],
+              subtotal: previewData.subtotal,
+              taxRate: previewData.vatRate,
+              taxAmount: previewData.tax,
+              total: previewData.total,
+              notes: previewData.notes,
+              createdBy: previewData.contactPersonName,
+            }}
+            companySettings={{
+              companyName: previewData.companyName,
+              logoUrl: previewData.companyLogo || previewData.profilePictureURL,
+              address: (() => {
+                const lines = (previewData.companyAddress || '').split('\n');
+                return {
+                  street: lines[0] || '',
+                  zipCode: (lines[1] || '').split(' ')[0] || '',
+                  city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                  country: lines[2] || undefined,
+                };
+              })(),
+              contactInfo: {
+                email: previewData.companyEmail,
+                phone: previewData.companyPhone,
+                website: previewData.companyWebsite,
+              },
+              vatId: previewData.companyVatId,
+              taxId: previewData.companyTaxNumber,
+              bankDetails: previewData.bankDetails,
+            }}
+            customizations={{ showLogo: true }}
+          />
         </div>
       </>
     );
@@ -294,7 +387,56 @@ export default function PrintQuotePage() {
 
       {/* NUR dieser Container wird gedruckt */}
       <div className="invoice-print-content">
-        <GermanStandardQuoteTemplate data={data} />
+        <ProfessionalBusinessQuoteTemplate
+          data={{
+            documentNumber: data.quoteNumber,
+            date: data.date,
+            validUntil: data.validUntil,
+            customerName: data.customerName,
+            customerAddress: (() => {
+              const lines = (data.customerAddress || '').split('\n');
+              return {
+                street: lines[0] || '',
+                zipCode: (lines[1] || '').split(' ')[0] || '',
+                city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                country: lines[2] || undefined,
+              };
+            })(),
+            items: data.items?.map((it: any) => ({
+              description: it.description,
+              quantity: it.quantity,
+              unitPrice: it.unitPrice,
+            })) || [],
+            subtotal: data.subtotal,
+            taxRate: data.vatRate,
+            taxAmount: data.tax,
+            total: data.total,
+            notes: data.notes,
+            createdBy: data.contactPersonName,
+          }}
+          companySettings={{
+            companyName: data.companyName,
+            logoUrl: data.companyLogo || data.profilePictureURL,
+            address: (() => {
+              const lines = (data.companyAddress || '').split('\n');
+              return {
+                street: lines[0] || '',
+                zipCode: (lines[1] || '').split(' ')[0] || '',
+                city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                country: lines[2] || undefined,
+              };
+            })(),
+            contactInfo: {
+              email: data.companyEmail,
+              phone: data.companyPhone,
+              website: data.companyWebsite,
+            },
+            vatId: data.companyVatId,
+            taxId: data.companyTaxNumber,
+            bankDetails: data.bankDetails,
+          }}
+          customizations={{ showLogo: true }}
+        />
       </div>
     </>
   );

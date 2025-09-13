@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { GermanStandardTemplate } from './templates/GermanStandardTemplate';
+import { GermanStandardTemplate } from '../templates/templates/GermanStandardTemplate';
 import { InvoiceData } from '@/types/invoiceTypes';
 
 interface LivePreviewProps {

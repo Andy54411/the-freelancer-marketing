@@ -1,6 +1,50 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
-import type { QuoteTemplateData } from '@/components/finance/quote-templates/GermanStandardQuoteTemplate';
+// Entkoppelt vom alten HTML-Template – lokale Typdefinition
+type QuoteTemplateData = {
+  quoteNumber: string;
+  date: string;
+  validUntil?: string;
+  title?: string;
+  reference?: string;
+  currency?: string;
+  customerName: string;
+  customerAddress?: string;
+  customerEmail?: string;
+  companyName?: string;
+  companyAddress?: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyWebsite?: string;
+  companyLogo?: string;
+  profilePictureURL?: string;
+  companyVatId?: string;
+  companyTaxNumber?: string;
+  items: Array<{
+    id?: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+    taxRate?: number;
+    category?: string;
+  }>;
+  subtotal: number;
+  tax: number;
+  total: number;
+  vatRate?: number;
+  isSmallBusiness?: boolean;
+  bankDetails?: {
+    iban?: string;
+    bic?: string;
+    bankName?: string;
+    accountHolder?: string;
+  };
+  notes?: string;
+  headTextHtml?: string;
+  footerText?: string;
+  contactPersonName?: string;
+};
 
 interface TemplateProps {
   data: QuoteTemplateData;

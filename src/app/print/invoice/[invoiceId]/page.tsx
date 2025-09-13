@@ -1,8 +1,7 @@
 'use client';
 
 import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
-import { InvoiceTemplateRenderer } from '@/components/finance/InvoiceTemplates';
-import { DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/templates/types';
+import { InvoiceTemplateRenderer, DEFAULT_INVOICE_TEMPLATE, AVAILABLE_TEMPLATES } from '@/components/finance/InvoiceTemplates';
 import { db } from '@/firebase/clients';
 import { doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
@@ -42,12 +41,10 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
               const companyData = companyDoc.data();
 
               // Template laden
-              const preferredTemplate = companyData.preferredInvoiceTemplate as string;
-              if (
-                preferredTemplate &&
-                ['german-standard', 'german-multipage'].includes(preferredTemplate)
-              ) {
-                setUserTemplate(preferredTemplate);
+              const preferredTemplate = companyData.preferredInvoiceTemplate as string | undefined;
+              if (preferredTemplate) {
+                const isKnown = AVAILABLE_TEMPLATES.some(t => t.id === preferredTemplate);
+                setUserTemplate(isKnown ? preferredTemplate : DEFAULT_INVOICE_TEMPLATE);
               }
 
               // VOLLSTÄNDIGE Firmendaten in Rechnung einbetten
@@ -310,11 +307,7 @@ export default function PrintInvoicePage({ params }: PrintInvoicePageProps) {
         {/* Minimales A4-optimiertes Layout */}
         <div className="print-invoice-wrapper">
           <InvoiceTemplateRenderer
-            template={
-              userTemplate && ['german-standard', 'german-multipage'].includes(userTemplate)
-                ? userTemplate
-                : DEFAULT_INVOICE_TEMPLATE
-            }
+            template={(userTemplate && AVAILABLE_TEMPLATES.some(t => t.id === userTemplate) ? (userTemplate as any) : DEFAULT_INVOICE_TEMPLATE) as any}
             data={invoiceData}
             preview={false}
           />

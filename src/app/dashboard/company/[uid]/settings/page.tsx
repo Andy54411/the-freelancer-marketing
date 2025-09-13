@@ -11,7 +11,7 @@ import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import LogoForm from '@/components/dashboard_setting/logo';
 import PortfolioForm from '@/components/dashboard_setting/portfolio';
 import FaqsForm from '@/components/dashboard_setting/faqs';
-import PaymentTermsForm from '@/components/settings/PaymentTermsForm';
+import PaymentTermsForm from '@/components/dashboard_setting/PaymentTermsForm';
 import { RawFirestoreUserData, UserDataForSettings } from '@/types/settings';
 import { Loader2 as FiLoader, Save as FiSave } from 'lucide-react';
 import { toast } from 'sonner';
