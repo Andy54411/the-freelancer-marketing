@@ -12,6 +12,8 @@ interface InvoiceData {
   documentNumber: string;
   date: string;
   dueDate: string;
+  serviceDate?: string;
+  servicePeriod?: string;
   customer: {
     name: string;
     email: string;
@@ -55,6 +57,7 @@ interface InvoiceData {
   notes: string;
   status: string;
   isSmallBusiness: boolean;
+  reverseCharge?: boolean;
 }
 
 interface TemplateProps {
@@ -84,7 +87,7 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
         )}
         <h1 className="text-6xl font-thin text-gray-800 mb-8">RECHNUNG</h1>
         <div className="w-24 h-px bg-gray-400 mx-auto mb-8"></div>
-        <p className="text-lg text-gray-500">Dokumentnummer {data.documentNumber}</p>
+        <p className="text-lg text-gray-500">Rechnungsnummer {data.documentNumber}</p>
       </div>
 
       {/* Company & Customer in minimalistischem Layout */}
@@ -113,7 +116,7 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
         </div>
       </div>
 
-      {/* Minimale Datumsangaben */}
+      {/* Datumsangaben & Leistungszeitraum */}
       <div className="flex justify-center mb-16">
         <div className="text-center space-y-6">
           <div>
@@ -123,6 +126,14 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Fälligkeitsdatum</p>
             <p className="text-lg font-light text-gray-800">{data.dueDate}</p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">
+              Leistungsdatum / -zeitraum
+            </p>
+            <p className="text-lg font-light text-gray-800">
+              {data.servicePeriod || data.serviceDate || data.date}
+            </p>
           </div>
         </div>
       </div>
@@ -196,7 +207,7 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
           </div>
           <div className="text-center">
             <p className="uppercase tracking-widest mb-2">Steuerdaten</p>
-            <p className="text-gray-600">USt-IdNr.: {data.company.vatId}</p>
+            {data.company.vatId && <p className="text-gray-600">USt-IdNr.: {data.company.vatId}</p>}
           </div>
         </div>
 
@@ -205,6 +216,15 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
             <p className="text-gray-500 italic font-light">{data.notes}</p>
           </div>
         )}
+
+        <div className="text-center mt-8 text-xs text-gray-500">
+          {data.isSmallBusiness && (
+            <p>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
+          )}
+          {!data.isSmallBusiness && data.reverseCharge && (
+            <p>Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).</p>
+          )}
+        </div>
       </div>
     </div>
   );

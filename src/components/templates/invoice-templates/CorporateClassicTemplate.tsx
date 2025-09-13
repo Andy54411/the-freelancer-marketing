@@ -12,6 +12,8 @@ interface InvoiceData {
   documentNumber: string;
   date: string;
   dueDate: string;
+  serviceDate?: string;
+  servicePeriod?: string;
   customer: {
     name: string;
     email: string;
@@ -55,6 +57,7 @@ interface InvoiceData {
   notes: string;
   status: string;
   isSmallBusiness: boolean;
+  reverseCharge?: boolean;
 }
 
 interface TemplateProps {
@@ -104,7 +107,9 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
               <h2 className="text-4xl font-bold text-gray-900 mb-2 uppercase tracking-widest">
                 RECHNUNG
               </h2>
-              <div className="text-xl font-semibold text-gray-700">Nr. {data.documentNumber}</div>
+              <div className="text-xl font-semibold text-gray-700">
+                Rechnungsnummer {data.documentNumber}
+              </div>
             </div>
           </div>
         </div>
@@ -140,6 +145,14 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
                 Fälligkeitsdatum
               </h4>
               <p className="text-lg font-semibold text-gray-900">{data.dueDate}</p>
+            </div>
+            <div className="bg-gray-50 p-4 border border-gray-300">
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Leistungsdatum / -zeitraum
+              </h4>
+              <p className="text-lg font-semibold text-gray-900">
+                {data.servicePeriod || data.serviceDate || data.date}
+              </p>
             </div>
           </div>
         </div>
@@ -222,9 +235,17 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
             </div>
             <div>
               <h5 className="font-bold text-gray-900 mb-2 uppercase">Steuern</h5>
-              <p>USt-IdNr.: {data.company.vatId}</p>
-              <p>Steuernr.: {data.company.taxNumber}</p>
+              {data.company.vatId && <p>USt-IdNr.: {data.company.vatId}</p>}
+              {data.company.taxNumber && <p>Steuernr.: {data.company.taxNumber}</p>}
             </div>
+          </div>
+          <div className="mt-6 text-xs text-gray-700">
+            {data.isSmallBusiness && (
+              <p>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
+            )}
+            {!data.isSmallBusiness && data.reverseCharge && (
+              <p>Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).</p>
+            )}
           </div>
         </div>
       </div>

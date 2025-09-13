@@ -12,6 +12,8 @@ interface InvoiceData {
   documentNumber: string;
   date: string;
   dueDate: string;
+  serviceDate?: string;
+  servicePeriod?: string;
   customer: {
     name: string;
     email: string;
@@ -55,6 +57,7 @@ interface InvoiceData {
   notes: string;
   status: string;
   isSmallBusiness: boolean;
+  reverseCharge?: boolean;
 }
 
 interface TemplateProps {
@@ -81,7 +84,7 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
             <div className="col-span-2">
               <h1 className="text-4xl font-bold text-gray-800 mb-4">RECHNUNG</h1>
               <div className="w-16 h-1 bg-gray-800 mb-4"></div>
-              <p className="text-lg text-gray-600">#{data.documentNumber}</p>
+              <p className="text-lg text-gray-600">Rechnungsnummer {data.documentNumber}</p>
             </div>
 
             <div className="col-span-3 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -149,6 +152,14 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
                 <p className="text-xs uppercase tracking-wider opacity-75">Zahlungsbedingungen</p>
                 <p className="font-semibold">{data.paymentTerms}</p>
               </div>
+              <div className="bg-white border border-gray-200 p-4 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wider">
+                  Leistungsdatum / -zeitraum
+                </p>
+                <p className="font-semibold text-gray-800">
+                  {data.servicePeriod || data.serviceDate || data.date}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -211,10 +222,12 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
                 <span className="text-gray-600">Zwischensumme</span>
                 <span className="font-semibold text-gray-800">€{data.subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">MwSt. ({data.taxRate}%)</span>
-                <span className="font-semibold text-gray-800">€{data.taxAmount.toFixed(2)}</span>
-              </div>
+              {!(data.isSmallBusiness || data.reverseCharge) && data.taxAmount > 0 && (
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Umsatzsteuer ({data.taxRate}%)</span>
+                  <span className="font-semibold text-gray-800">€{data.taxAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="bg-gray-800 text-white p-4 rounded-lg">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Gesamtbetrag</span>
@@ -246,8 +259,8 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
                   Steuerdaten
                 </h5>
                 <div className="text-sm text-gray-600 space-y-1">
-                  <p>USt-IdNr.: {data.company.vatId}</p>
-                  <p>Steuernr.: {data.company.taxNumber}</p>
+                  {data.company.vatId && <p>USt-IdNr.: {data.company.vatId}</p>}
+                  {data.company.taxNumber && <p>Steuernr.: {data.company.taxNumber}</p>}
                 </div>
               </div>
             </div>
@@ -258,6 +271,15 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
               <p className="text-gray-700">{data.notes}</p>
             </div>
           )}
+
+          <div className="mt-6 text-xs text-gray-600">
+            {data.isSmallBusiness && (
+              <p>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
+            )}
+            {!data.isSmallBusiness && data.reverseCharge && (
+              <p>Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

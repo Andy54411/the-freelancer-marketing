@@ -12,6 +12,9 @@ interface InvoiceData {
   documentNumber: string;
   date: string;
   dueDate: string;
+  /** Leistungsdatum oder Leistungszeitraum gem. §14 UStG */
+  serviceDate?: string;
+  servicePeriod?: string;
   customer: {
     name: string;
     email: string;
@@ -55,6 +58,8 @@ interface InvoiceData {
   notes: string;
   status: string;
   isSmallBusiness: boolean;
+  /** Reverse-Charge Hinweis gem. §13b UStG */
+  reverseCharge?: boolean;
 }
 
 // Hinweis: TemplateProps ist oben bereits mit companySettings/customizations definiert
@@ -75,7 +80,7 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
       <div className="flex justify-between items-start mb-8 pb-6 border-b-2 border-gray-300">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">RECHNUNG</h1>
-          <p className="text-lg text-gray-600">Nr. {data.documentNumber}</p>
+          <p className="text-lg text-gray-600">Rechnungsnummer {data.documentNumber}</p>
         </div>
         <div className="text-right">
           {showLogo && logoUrl && (
@@ -118,6 +123,14 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
             <div>
               <span className="text-sm font-bold text-gray-500 uppercase">Fälligkeitsdatum: </span>
               <span className="font-semibold">{data.dueDate}</span>
+            </div>
+            <div>
+              <span className="text-sm font-bold text-gray-500 uppercase">
+                Leistungsdatum/-zeitraum:{' '}
+              </span>
+              <span className="font-semibold">
+                {data.servicePeriod || data.serviceDate || data.date}
+              </span>
             </div>
             <div>
               <span className="text-sm font-bold text-gray-500 uppercase">
@@ -169,10 +182,12 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
               <span>Zwischensumme:</span>
               <span>€{data.subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between py-2">
-              <span>MwSt. ({data.taxRate}%):</span>
-              <span>€{data.taxAmount.toFixed(2)}</span>
-            </div>
+            {data.taxRate > 0 && (
+              <div className="flex justify-between py-2">
+                <span>Umsatzsteuer ({data.taxRate}%):</span>
+                <span>€{data.taxAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="border-t-2 border-gray-300 pt-2">
               <div className="flex justify-between py-2 text-lg font-bold">
                 <span>Gesamtbetrag:</span>
@@ -183,23 +198,38 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t-2 border-gray-300 pt-6 text-xs text-gray-600">
+      {/* Footer / Compliance */}
+      <div className="border-t-2 border-gray-300 pt-6 text-xs text-gray-700">
         <div className="grid grid-cols-3 gap-8">
           <div>
-            <h4 className="font-bold text-gray-700 mb-2">Bankverbindung</h4>
-            <p>IBAN: {data.company.bankDetails.iban}</p>
-            <p>BIC: {data.company.bankDetails.bic}</p>
+            <h4 className="font-semibold text-gray-800 mb-2">Bankverbindung</h4>
+            {data.company.bankDetails.iban && <p>IBAN: {data.company.bankDetails.iban}</p>}
+            {data.company.bankDetails.bic && <p>BIC: {data.company.bankDetails.bic}</p>}
+            {data.company.bankDetails.accountHolder && (
+              <p>Kontoinhaber: {data.company.bankDetails.accountHolder}</p>
+            )}
           </div>
           <div>
-            <h4 className="font-bold text-gray-700 mb-2">Steuerdaten</h4>
-            <p>USt-IdNr.: {data.company.vatId}</p>
-            <p>Steuernr.: {data.company.taxNumber}</p>
+            <h4 className="font-semibold text-gray-800 mb-2">Steuerdaten</h4>
+            {data.company.vatId && <p>USt-IdNr.: {data.company.vatId}</p>}
+            {data.company.taxNumber && <p>Steuernr.: {data.company.taxNumber}</p>}
           </div>
           <div>
-            <h4 className="font-bold text-gray-700 mb-2">Notizen</h4>
-            <p>{data.notes}</p>
+            <h4 className="font-semibold text-gray-800 mb-2">Hinweise</h4>
+            {data.isSmallBusiness && (
+              <p>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
+            )}
+            {!data.isSmallBusiness && data.reverseCharge && (
+              <p>Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).</p>
+            )}
+            {data.notes && <p className="mt-2 text-gray-700">{data.notes}</p>}
           </div>
+        </div>
+        <div className="mt-4 text-gray-600">
+          <p>
+            Bitte überweisen Sie den Gesamtbetrag bis zum {data.dueDate} unter Angabe der
+            Rechnungsnummer auf das oben genannte Konto.
+          </p>
         </div>
       </div>
     </div>

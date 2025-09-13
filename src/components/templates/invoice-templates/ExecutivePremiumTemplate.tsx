@@ -6,6 +6,8 @@ interface InvoiceData {
   documentNumber: string;
   date: string;
   dueDate: string;
+  serviceDate?: string;
+  servicePeriod?: string;
   customer: {
     name: string;
     address: {
@@ -48,6 +50,7 @@ interface InvoiceData {
   notes: string;
   status: string;
   isSmallBusiness: boolean;
+  reverseCharge?: boolean;
 }
 
 interface TemplateProps {
@@ -82,7 +85,7 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({
               </div>
 
               <div className="text-gray-600">
-                <p className="text-lg font-medium">Dokument Nr. {data.documentNumber}</p>
+                <p className="text-lg font-medium">Rechnungsnummer {data.documentNumber}</p>
                 <p>Erstellt am {data.date}</p>
               </div>
             </div>
@@ -142,6 +145,14 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({
                   Zahlungsbedingungen
                 </h4>
                 <p className="text-gray-800 font-medium">{data.paymentTerms}</p>
+              </div>
+              <div className="bg-white border border-gray-300 p-4 rounded">
+                <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">
+                  Leistungsdatum / -zeitraum
+                </h4>
+                <p className="text-gray-800 font-medium">
+                  {data.servicePeriod || data.serviceDate || data.date}
+                </p>
               </div>
             </div>
           </div>
@@ -226,8 +237,8 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({
             </div>
             <div>
               <h5 className="font-bold text-gray-700 mb-3 uppercase tracking-wider">Steuern</h5>
-              <p>USt-IdNr.: {data.company.vatId}</p>
-              <p>Steuernr.: {data.company.taxNumber}</p>
+              {data.company.vatId && <p>USt-IdNr.: {data.company.vatId}</p>}
+              {data.company.taxNumber && <p>Steuernr.: {data.company.taxNumber}</p>}
             </div>
           </div>
 
@@ -236,6 +247,15 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({
               <p className="text-gray-700 italic">{data.notes}</p>
             </div>
           )}
+
+          <div className="mt-6 text-xs text-gray-600">
+            {data.isSmallBusiness && (
+              <p>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
+            )}
+            {!data.isSmallBusiness && data.reverseCharge && (
+              <p>Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

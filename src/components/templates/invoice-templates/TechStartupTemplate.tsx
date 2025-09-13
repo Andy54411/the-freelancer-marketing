@@ -6,6 +6,8 @@ interface InvoiceData {
   documentNumber: string;
   date: string;
   dueDate: string;
+  serviceDate?: string;
+  servicePeriod?: string;
   customer: {
     name: string;
     email: string;
@@ -49,6 +51,7 @@ interface InvoiceData {
   notes: string;
   status: string;
   isSmallBusiness: boolean;
+  reverseCharge?: boolean;
 }
 
 interface TemplateProps {
@@ -78,8 +81,8 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
               <div className="w-3 h-3 bg-gray-500 rounded-full mr-2"></div>
               <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
             </div>
-            <h1 className="text-3xl font-bold mb-2">$ INVOICE.EXE</h1>
-            <p className="text-gray-300">Document_ID: {data.documentNumber}</p>
+            <h1 className="text-3xl font-bold mb-2">RECHNUNG</h1>
+            <p className="text-gray-300">Rechnungsnummer: {data.documentNumber}</p>
           </div>
 
           <div className="text-right bg-gray-800 p-4 rounded border border-gray-700">
@@ -131,13 +134,23 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
             <div className="space-y-4">
               <div className="bg-gray-100 border border-gray-300 p-4">
                 <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
-                  &gt; DATE_CREATED
+                  &gt; RECHNUNGSDATUM
                 </h4>
                 <p className="font-mono text-lg font-bold text-gray-800">{data.date}</p>
               </div>
               <div className="bg-gray-50 border border-gray-300 p-4">
-                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">&gt; DUE_DATE</h4>
+                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                  &gt; FÄLLIGKEITSDATUM
+                </h4>
                 <p className="font-mono text-lg font-bold text-gray-800">{data.dueDate}</p>
+              </div>
+              <div className="bg-white border border-gray-300 p-4">
+                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                  &gt; LEISTUNGSDATUM/-ZEITRAUM
+                </h4>
+                <p className="font-mono text-lg font-bold text-gray-800">
+                  {data.servicePeriod || data.serviceDate || data.date}
+                </p>
               </div>
             </div>
           </div>
@@ -146,18 +159,18 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
         {/* Tech Artikel-Tabelle */}
         <div className="mb-8">
           <h3 className="text-xs font-bold text-gray-500 uppercase mb-4 tracking-wider">
-            &gt; ITEMS_ARRAY [ ]
+            &gt; POSITIONEN [ ]
           </h3>
 
           <div className="border border-gray-300">
             <table className="w-full font-mono text-xs">
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-300">
-                  <th className="p-3 text-left font-bold">INDEX</th>
-                  <th className="p-3 text-left font-bold">DESCRIPTION</th>
-                  <th className="p-3 text-center font-bold">QTY</th>
-                  <th className="p-3 text-right font-bold">PRICE_UNIT</th>
-                  <th className="p-3 text-right font-bold">TOTAL_PRICE</th>
+                  <th className="p-3 text-left font-bold">NR</th>
+                  <th className="p-3 text-left font-bold">BESCHREIBUNG</th>
+                  <th className="p-3 text-center font-bold">MENGE</th>
+                  <th className="p-3 text-right font-bold">EINZELPREIS</th>
+                  <th className="p-3 text-right font-bold">GESAMT</th>
                 </tr>
               </thead>
               <tbody>
@@ -192,24 +205,22 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
           <div className="w-80">
             <div className="border border-gray-300 bg-gray-50">
               <div className="bg-gray-800 text-white p-3 text-xs font-bold uppercase tracking-wider">
-                &gt; CALCULATION_OUTPUT
+                &gt; BERECHNUNG
               </div>
               <div className="p-4 font-mono space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">subtotal:</span>
+                  <span className="text-gray-600">Zwischensumme:</span>
                   <span className="text-gray-800">EUR {data.subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">tax_rate:</span>
-                  <span className="text-gray-800">{data.taxRate}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">tax_amount:</span>
-                  <span className="text-gray-800">EUR {data.taxAmount.toFixed(2)}</span>
-                </div>
+                {!(data.isSmallBusiness || data.reverseCharge) && data.taxAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Umsatzsteuer ({data.taxRate}%):</span>
+                    <span className="text-gray-800">EUR {data.taxAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="border-t border-gray-300 pt-2">
                   <div className="flex justify-between text-lg font-bold">
-                    <span className="text-gray-800">total_amount:</span>
+                    <span className="text-gray-800">Gesamtbetrag:</span>
                     <span className="text-gray-800">EUR {data.total.toFixed(2)}</span>
                   </div>
                 </div>
@@ -222,27 +233,40 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
         <div className="border-t border-gray-300 pt-6 font-mono text-xs">
           <div className="grid grid-cols-3 gap-8">
             <div>
-              <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; PAYMENT_TERMS</h5>
+              <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; ZAHLUNGSBEDINGUNGEN</h5>
               <p className="text-gray-700">{data.paymentTerms}</p>
             </div>
             <div>
-              <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; BANK_DETAILS</h5>
+              <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; BANKVERBINDUNG</h5>
               <p className="text-gray-700">IBAN: {data.company.bankDetails.iban}</p>
               <p className="text-gray-700">BIC: {data.company.bankDetails.bic}</p>
             </div>
             <div>
-              <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; TAX_INFO</h5>
-              <p className="text-gray-700">VAT_ID: {data.company.vatId}</p>
-              <p className="text-gray-700">TAX_NO: {data.company.taxNumber}</p>
+              <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; STEUERDATEN</h5>
+              {data.company.vatId && (
+                <p className="text-gray-700">USt-IdNr.: {data.company.vatId}</p>
+              )}
+              {data.company.taxNumber && (
+                <p className="text-gray-700">Steuernr.: {data.company.taxNumber}</p>
+              )}
             </div>
           </div>
 
           {data.notes && (
             <div className="mt-6 p-4 bg-gray-100 border border-gray-300">
-              <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; NOTES</h5>
+              <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; HINWEISE</h5>
               <p className="text-gray-700">{data.notes}</p>
             </div>
           )}
+
+          <div className="mt-6 text-center text-gray-500">
+            {data.isSmallBusiness && (
+              <p>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p>
+            )}
+            {!data.isSmallBusiness && data.reverseCharge && (
+              <p>Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).</p>
+            )}
+          </div>
 
           <div className="mt-6 text-center text-gray-400">
             <p>Generated by Tasko Invoice System v2.0</p>
