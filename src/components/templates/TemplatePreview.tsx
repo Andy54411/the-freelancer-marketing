@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Check } from 'lucide-react';
-
-// Alte Templates wurden entfernt – keine Importe mehr aus templates/
+import { FileText, Check, Search, ZoomIn, ZoomOut } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 // Import der neuen Invoice Templates
 import ProfessionalBusinessTemplate from '@/components/templates/invoice-templates/ProfessionalBusinessTemplate';
@@ -61,6 +60,9 @@ import {
   TechInnovationDeliveryTemplate,
 } from '@/components/templates/delivery-note-templates';
 
+// Reminder (Mahnung) Templates
+import { REMINDER_TEMPLATES } from '@/components/templates/reminder-templates';
+
 import type { TemplateProps } from '@/components/templates/types';
 
 interface TemplatePreviewProps {
@@ -78,20 +80,19 @@ interface TemplatePreviewProps {
 }
 
 const getDocumentTypeInfo = (type: string) => {
+  // Neutrale, dezente Kennzeichnung ohne kräftige Farben
   const typeMap = {
-    Invoice: { label: 'Rechnung', color: 'bg-blue-500', bgColor: 'bg-blue-50' },
-    Invoicereminder: { label: 'Mahnung', color: 'bg-red-500', bgColor: 'bg-red-50' },
-    Order: { label: 'Angebot', color: 'bg-green-500', bgColor: 'bg-green-50' },
-    Contractnote: { label: 'Auftragsbestätigung', color: 'bg-purple-500', bgColor: 'bg-purple-50' },
-    Packinglist: { label: 'Lieferschein', color: 'bg-orange-500', bgColor: 'bg-orange-50' },
-    Letter: { label: 'Brief', color: 'bg-gray-500', bgColor: 'bg-gray-50' },
-    Creditnote: { label: 'Gutschrift', color: 'bg-yellow-500', bgColor: 'bg-yellow-50' },
+    Invoice: { label: 'Rechnung', color: 'text-gray-700', bgColor: 'bg-gray-100' },
+    Invoicereminder: { label: 'Mahnung', color: 'text-gray-700', bgColor: 'bg-gray-100' },
+    Order: { label: 'Angebot', color: 'text-gray-700', bgColor: 'bg-gray-100' },
+    Contractnote: { label: 'Auftragsbestätigung', color: 'text-gray-700', bgColor: 'bg-gray-100' },
+    Packinglist: { label: 'Lieferschein', color: 'text-gray-700', bgColor: 'bg-gray-100' },
+    Letter: { label: 'Brief', color: 'text-gray-700', bgColor: 'bg-gray-100' },
+    Creditnote: { label: 'Gutschrift', color: 'text-gray-700', bgColor: 'bg-gray-100' },
   };
 
   return typeMap[type as keyof typeof typeMap] || typeMap.Invoice;
 };
-
-// Alte Invoice-Vorschau-Daten entfernt – wir nutzen die neuen Daten unten (getNewInvoiceTemplateData)
 
 // Erweiterte Beispieldaten für neue Invoice Templates
 const getNewInvoiceTemplateData = (): any => {
@@ -151,6 +152,54 @@ const getNewInvoiceTemplateData = (): any => {
     notes: 'Vielen Dank für Ihr Vertrauen!',
     status: 'draft',
     isSmallBusiness: false,
+  };
+};
+
+// Beispieldaten für Mahnungen (Reminder)
+const getSampleReminderData = () => {
+  return {
+    companyLogo: '/images/Gemini_Generated_Image_pqjk64pqjk64pqjk.jpeg',
+    companyName: 'Ihre Firma GmbH',
+    companyAddress: 'Musterstraße 123',
+    companyCity: 'Musterstadt',
+    companyZip: '12345',
+    companyCountry: 'Deutschland',
+    companyEmail: 'info@ihrefirma.de',
+    companyPhone: '+49 123 456789',
+    companyWebsite: 'www.ihrefirma.de',
+    bankDetails: {
+      accountHolder: 'Ihre Firma GmbH',
+      bankName: 'Musterbank AG',
+      iban: 'DE89 3704 0044 0532 0130 00',
+      bic: 'COBADEFFXXX',
+    },
+    customerName: 'Musterkunde GmbH',
+    customerAddress: 'Kundenstraße 456',
+    customerCity: 'Kundenstadt',
+    customerZip: '67890',
+    customerCountry: 'Deutschland',
+    reminderNumber: 'MN-2025-001',
+    reminderDate: '13.09.2025',
+    originalInvoiceNumber: 'RE-2025-014',
+    originalInvoiceDate: '15.08.2025',
+    dueDate: '29.08.2025',
+    // Leistungsangaben für rechtssichere Darstellung
+    servicePeriodFrom: '01.08.2025',
+    servicePeriodTo: '15.08.2025',
+    reminderLevel: 1 as const,
+    items: [
+      {
+        description: 'Offener Posten aus Rechnung RE-2025-014',
+        quantity: 1,
+        price: 1225.0,
+        total: 1225.0,
+      },
+    ],
+    subtotal: 1225.0,
+    taxRate: 19,
+    taxAmount: 232.75,
+    reminderFee: 5.0,
+    total: 1462.75,
   };
 };
 
@@ -382,6 +431,49 @@ const NEW_TEMPLATES = {
       component: TechInnovationDeliveryTemplate,
     },
   ],
+  reminder: REMINDER_TEMPLATES.map(t => ({ id: t.id, name: t.name, component: t.component })),
+};
+
+// Eigene, neue Wrapper für Miniatur- und Großvorschau (keine Wiederverwendung der alten Frames)
+const PaperThumb: React.FC<{ children: React.ReactNode; scale?: number; className?: string }> = ({
+  children,
+  scale = 0.18,
+  className = '',
+}) => {
+  return (
+    <div className={`relative overflow-hidden bg-white border rounded-md ${className}`}>
+      <div className="absolute inset-[6px]">
+        <div
+          className="origin-top-left"
+          style={{
+            transform: `scale(${scale})`,
+            width: `${Math.round(100 / scale)}%`,
+            height: `${Math.round(100 / scale)}%`,
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PaperPreview: React.FC<{ children: React.ReactNode; scale?: number; maxHeight?: number }> = ({
+  children,
+  scale = 0.85,
+  maxHeight = 740,
+}) => {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-auto" style={{ maxHeight }}>
+        <div className="flex justify-center">
+          <div className="origin-top" style={{ transform: `scale(${scale})` }}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const TemplatePreview: React.FC<TemplatePreviewProps> = ({
@@ -392,14 +484,42 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
 }) => {
   const docInfo = getDocumentTypeInfo(documentType);
 
+  // Prüft, ob eine Template-ID für den aktuellen Dokumenttyp existiert
+  const isTemplateValidForType = (
+    tplId: string | undefined,
+    type: TemplatePreviewProps['documentType']
+  ) => {
+    if (!tplId) return false;
+    switch (type) {
+      case 'Invoice':
+        return NEW_TEMPLATES.invoice.some(t => t.id === tplId);
+      case 'Invoicereminder':
+        return NEW_TEMPLATES.reminder.some(t => t.id === tplId);
+      case 'Order':
+        return NEW_TEMPLATES.quote.some(t => t.id === tplId);
+      case 'Contractnote':
+        return NEW_TEMPLATES.order.some(t => t.id === tplId);
+      case 'Letter':
+        return NEW_TEMPLATES.letter.some(t => t.id === tplId);
+      case 'Creditnote':
+        return NEW_TEMPLATES.credit.some(t => t.id === tplId);
+      case 'Packinglist':
+        return NEW_TEMPLATES.delivery.some(t => t.id === tplId);
+      default:
+        return false;
+    }
+  };
+
   // Bestimme den Standard-Template basierend auf Dokumenttyp
   const getDefaultTemplate = () => {
-    if (templateId) return templateId;
+    // Nutze nur eine externe Template-ID, wenn sie zum Dokumenttyp passt
+    if (templateId && isTemplateValidForType(templateId, documentType)) return templateId;
 
     switch (documentType) {
       case 'Invoice':
-      case 'Invoicereminder':
         return 'professional-business';
+      case 'Invoicereminder':
+        return 'professional-reminder';
       case 'Order':
         return 'professional-business-quote';
       case 'Contractnote':
@@ -416,6 +536,16 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   };
 
   const [selectedTemplate, setSelectedTemplate] = useState<string>(getDefaultTemplate());
+  const [query, setQuery] = useState('');
+  const [sortAsc, setSortAsc] = useState(true);
+  const [previewScale, setPreviewScale] = useState(0.9);
+
+  // Wenn sich der Dokumenttyp oder das vorgewählte Template ändert,
+  // setze die lokale Auswahl auf einen passenden Default.
+  useEffect(() => {
+    setSelectedTemplate(getDefaultTemplate());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentType, templateId]);
 
   const handleTemplateSelect = (newTemplateId: string) => {
     setSelectedTemplate(newTemplateId);
@@ -425,8 +555,8 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   const renderTemplateComponent = (template: string) => {
     const templateData = getSampleTemplateData();
 
-    // Für Rechnungstypen (Invoice, Invoicereminder) - neue Templates
-    if (['Invoice', 'Invoicereminder'].includes(documentType)) {
+    // Für Rechnungstypen (Invoice)
+    if (documentType === 'Invoice') {
       const invoiceTemplate = NEW_TEMPLATES.invoice.find(t => t.id === template);
       if (invoiceTemplate) {
         const Component = invoiceTemplate.component;
@@ -441,6 +571,16 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
         );
       }
       // Kein Fallback mehr – alte Templates wurden entfernt
+    }
+
+    // Für Mahnungen (Invoicereminder)
+    if (documentType === 'Invoicereminder') {
+      const reminderTemplate = NEW_TEMPLATES.reminder.find(t => t.id === template);
+      if (reminderTemplate) {
+        const Component = reminderTemplate.component as React.ComponentType<any>;
+        const sampleReminder = getSampleReminderData();
+        return <Component data={sampleReminder} preview />;
+      }
     }
 
     // Für Angebote (Order)
@@ -503,9 +643,14 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
 
   // Filtere Templates basierend auf Dokumenttyp
   const getAvailableTemplates = () => {
-    // Für Rechnungen und Mahnungen (neue professionelle Templates)
-    if (['Invoice', 'Invoicereminder'].includes(documentType)) {
+    // Für Rechnungen (neue professionelle Templates)
+    if (documentType === 'Invoice') {
       return NEW_TEMPLATES.invoice.map(t => ({ id: t.id, name: t.name }));
+    }
+
+    // Für Mahnungen (Reminder)
+    if (documentType === 'Invoicereminder') {
+      return NEW_TEMPLATES.reminder.map(t => ({ id: t.id, name: t.name }));
     }
 
     // Für Angebote (neue Template-Struktur)
@@ -538,74 +683,174 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   };
 
   const availableTemplates = getAvailableTemplates();
+  const filteredTemplates = useMemo(() => {
+    const base = !query.trim()
+      ? availableTemplates
+      : availableTemplates.filter(t => {
+          const q = query.toLowerCase();
+          return t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
+        });
+    return [...base].sort((a, b) =>
+      sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
+    );
+  }, [availableTemplates, query, sortAsc]);
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Haupt-Layout: Links Große Vorschau, Rechts Template-Galerie */}
-      <div className="flex gap-8">
-        {/* LINKS: Große Template-Vorschau - 75% der Breite */}
-        {/* LINKS: Große Template-Vorschau - bleibt fest beim Scrollen */}
-        <div className="flex-1 sticky top-0 self-start" style={{ flexBasis: '80%' }}>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-gray-800">
-                  Vorschau: {availableTemplates.find(t => t.id === selectedTemplate)?.name}
-                </h3>
-                <Badge variant="outline" className="text-sm px-3 py-1">
-                  {selectedTemplate}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Große Template-Vorschau mit Scroll */}
-            <div className="p-6">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white max-h-[900px] overflow-y-auto">
-                <div className="transform scale-90 origin-top-left w-[111%]">
-                  {renderTemplateComponent(selectedTemplate)}
-                </div>
-              </div>
-            </div>
+      {/* Kopfzeile */}
+      <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            {docInfo.label}
+          </Badge>
+          <span className="text-sm text-muted-foreground">{filteredTemplates.length} Vorlagen</span>
+        </div>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Vorlagen suchen..."
+              className="pl-8"
+            />
           </div>
-        </div>{' '}
-        {/* RECHTS: Template-Galerie - Sticky beim Seiten-Scroll */}
-        <div className="w-72 flex-shrink-0">
-          <div className="space-y-2 pt-3">
-            {availableTemplates.map((template, index) => (
-              <div
-                key={template.id}
-                className={`relative border-2 rounded-lg p-2 cursor-pointer transition-all hover:shadow-lg hover:scale-105 sticky ${
-                  selectedTemplate === template.id
-                    ? 'border-[#14ad9f] bg-[#14ad9f]/5 shadow-lg scale-105'
-                    : 'border-gray-200 hover:border-gray-300 bg-white shadow-sm'
-                }`}
-                style={{ top: `${index * 20 + 20}px` }}
-                onClick={() => handleTemplateSelect(template.id)}
-              >
-                {/* Template Mini-Vorschau */}
-                <div className="bg-white rounded border mb-2 h-80 relative overflow-hidden">
-                  {/* Live Mini-Template-Vorschau - besser sichtbar */}
-                  <div className="absolute top-1 left-1 right-1 bottom-1">
-                    <div
-                      className="transform scale-[0.25] origin-top-left pointer-events-none"
-                      style={{ width: '400%', height: '400%' }}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSortAsc(s => !s)}
+            aria-label="Sortieren"
+          >
+            {sortAsc ? 'A→Z' : 'Z→A'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Haupt-Layout: Links Galerie neu gestaltet, Rechts Vorschau */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_420px] gap-4">
+        {/* LINKS: Neu gestaltete Galerie */}
+        <div className="min-w-0">
+          <div className="rounded-xl border border-gray-200 bg-white p-3">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filteredTemplates.map(tpl => {
+                const isActive = selectedTemplate === tpl.id;
+                return (
+                  <div
+                    key={tpl.id}
+                    className={`group relative rounded-lg border transition-all ${
+                      isActive
+                        ? 'border-gray-800 bg-gray-50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="w-full text-left p-2"
+                      onClick={() => handleTemplateSelect(tpl.id)}
                     >
-                      {renderTemplateComponent(template.id)}
+                      <PaperThumb className="h-44 mb-2">
+                        {renderTemplateComponent(tpl.id)}
+                      </PaperThumb>
+                      <div className="px-1">
+                        <div className="flex items-center gap-1 truncate">
+                          <span
+                            className="text-[11px] font-medium text-gray-900 truncate"
+                            title={tpl.name}
+                          >
+                            {tpl.name}
+                          </span>
+                          {isActive && <Check className="h-3.5 w-3.5 text-gray-800" />}
+                        </div>
+                        <div className="text-[10px] text-gray-500 truncate">{tpl.id}</div>
+                      </div>
+                    </button>
+
+                    {/* Hover-Actions */}
+                    <div className="pointer-events-none absolute inset-2 hidden items-center justify-center gap-2 rounded-lg bg-white/60 backdrop-blur-sm group-hover:flex">
+                      <div className="pointer-events-auto flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleTemplateSelect(tpl.id)}
+                        >
+                          Auswählen
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => setSelectedTemplate(tpl.id)}
+                        >
+                          Vorschau
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                );
+              })}
 
-                {/* Template Info - kompakt */}
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <h4 className="font-medium text-xs text-gray-900 truncate">{template.name}</h4>
-                    {selectedTemplate === template.id && (
-                      <Check className="h-3 w-3 text-[#14ad9f] ml-1 flex-shrink-0" />
-                    )}
+              {filteredTemplates.length === 0 && (
+                <div className="col-span-full">
+                  <div className="border rounded-lg p-6 text-center text-muted-foreground">
+                    <FileText className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                    <div className="text-sm">Keine Vorlagen gefunden</div>
+                    <div className="text-xs">Suche anpassen oder Filter löschen.</div>
                   </div>
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* RECHTS: Große Vorschau mit eigener Toolbar */}
+        <div className="min-w-[320px] md:min-w-[420px]">
+          <div className="sticky top-0 self-start">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+              <div className="p-3 border-b border-gray-200 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-gray-800 truncate">
+                    Vorschau: {availableTemplates.find(t => t.id === selectedTemplate)?.name}
+                  </h3>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {selectedTemplate}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setPreviewScale(s => Math.max(0.6, Number((s - 0.05).toFixed(2))))
+                    }
+                    disabled={previewScale <= 0.6}
+                    aria-label="Verkleinern"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPreviewScale(s => Math.min(1, Number((s + 0.05).toFixed(2))))}
+                    disabled={previewScale >= 1}
+                    aria-label="Vergrößern"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => onTemplateSelect?.(selectedTemplate)}
+                  >
+                    Verwenden
+                  </Button>
+                </div>
               </div>
-            ))}
+
+              <div className="p-3">
+                <PaperPreview scale={previewScale} maxHeight={740}>
+                  {renderTemplateComponent(selectedTemplate)}
+                </PaperPreview>
+              </div>
+            </div>
           </div>
         </div>
       </div>

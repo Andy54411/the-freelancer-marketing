@@ -1,10 +1,10 @@
 import React from 'react';
 import { TemplateProps } from '../types';
 
-export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({ 
-  data, 
+export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
+  data,
   companySettings,
-  customizations 
+  customizations,
 }) => {
   const logoUrl = companySettings?.logoUrl || customizations?.logoUrl;
 
@@ -16,11 +16,7 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
           <div className="flex-1">
             {logoUrl && (
               <div className="mb-8">
-                <img 
-                  src={logoUrl} 
-                  alt="Company Logo" 
-                  className="h-8 w-auto grayscale opacity-80"
-                />
+                <img src={logoUrl} alt="Company Logo" className="h-8 w-auto grayscale opacity-80" />
               </div>
             )}
             <div className="space-y-2">
@@ -30,10 +26,14 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
             </div>
           </div>
           <div className="text-right max-w-xs">
-            <h3 className="font-medium text-gray-900 mb-4 tracking-wide">{companySettings?.companyName}</h3>
+            <h3 className="font-medium text-gray-900 mb-4 tracking-wide">
+              {companySettings?.companyName}
+            </h3>
             <div className="text-gray-600 space-y-1 text-sm">
               <p>{companySettings?.address?.street}</p>
-              <p>{companySettings?.address?.zipCode} {companySettings?.address?.city}</p>
+              <p>
+                {companySettings?.address?.zipCode} {companySettings?.address?.city}
+              </p>
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <p>{companySettings?.contactInfo?.phone}</p>
                 <p>{companySettings?.contactInfo?.email}</p>
@@ -45,16 +45,16 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
 
       <div className="space-y-12">
         {/* Clean Confirmation */}
-        <div className="bg-gray-50 p-8 border-l-2 border-gray-900">
+        <div className="bg-gray-50 p-8 border border-gray-200">
           <div className="flex items-center mb-4">
-            <div className="w-3 h-3 bg-gray-900 rounded-full mr-4"></div>
+            <div className="w-3 h-3 bg-gray-300 rounded-full mr-4"></div>
             <h3 className="text-xl font-medium text-gray-900 tracking-wide">Order Confirmed</h3>
           </div>
           <p className="text-gray-700 leading-relaxed max-w-2xl">
-            Your order has been confirmed and is now being processed. We appreciate your trust in our services 
-            and will ensure precise execution of your requirements.
+            Your order has been confirmed and is now being processed. We appreciate your trust in
+            our services and will ensure precise execution of your requirements.
           </p>
-          <div className="mt-6 inline-block bg-gray-900 text-white px-4 py-1 text-sm tracking-wider">
+          <div className="mt-6 inline-block bg-gray-100 text-gray-800 px-4 py-1 text-sm tracking-wider border border-gray-300">
             #{data.documentNumber}
           </div>
         </div>
@@ -67,7 +67,9 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
               <h5 className="text-2xl font-light text-gray-900">{data.customerName}</h5>
               <div className="text-gray-600 space-y-1">
                 <p>{data.customerAddress?.street}</p>
-                <p>{data.customerAddress?.zipCode} {data.customerAddress?.city}</p>
+                <p>
+                  {data.customerAddress?.zipCode} {data.customerAddress?.city}
+                </p>
               </div>
               {data.customerContact && (
                 <div className="mt-6 pt-4 border-t border-gray-200">
@@ -76,15 +78,19 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
               )}
             </div>
           </div>
-          
+
           <div className="col-span-4 space-y-8">
             <div>
-              <h4 className="text-sm font-medium text-gray-500 tracking-widest uppercase mb-2">Order Date</h4>
+              <h4 className="text-sm font-medium text-gray-500 tracking-widest uppercase mb-2">
+                Order Date
+              </h4>
               <p className="text-xl font-light text-gray-900">{data.date}</p>
             </div>
             {data.validUntil && (
               <div>
-                <h4 className="text-sm font-medium text-gray-500 tracking-widest uppercase mb-2">Completion</h4>
+                <h4 className="text-sm font-medium text-gray-500 tracking-widest uppercase mb-2">
+                  Completion
+                </h4>
                 <p className="text-xl font-light text-gray-900">{data.validUntil}</p>
               </div>
             )}
@@ -99,15 +105,13 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
               <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
                 <div className="grid grid-cols-12 gap-6 items-center">
                   <div className="col-span-1">
-                    <div className="w-8 h-8 bg-gray-900 text-white flex items-center justify-center text-sm">
+                    <div className="w-8 h-8 bg-gray-200 text-gray-800 flex items-center justify-center text-sm border border-gray-300">
                       {String(index + 1).padStart(2, '0')}
                     </div>
                   </div>
                   <div className="col-span-6">
                     <h5 className="font-medium text-gray-900 mb-1">{item.description}</h5>
-                    {item.details && (
-                      <p className="text-gray-600 text-sm">{item.details}</p>
-                    )}
+                    {item.details && <p className="text-gray-600 text-sm">{item.details}</p>}
                   </div>
                   <div className="col-span-2 text-center">
                     <p className="text-gray-600 text-sm tracking-widest uppercase mb-1">Qty</p>
@@ -119,7 +123,9 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
                   </div>
                   <div className="col-span-1 text-right">
                     <p className="text-gray-600 text-sm tracking-widest uppercase mb-1">Total</p>
-                    <p className="font-medium text-gray-900">€{(item.quantity * item.unitPrice).toFixed(2)}</p>
+                    <p className="font-medium text-gray-900">
+                      €{(item.quantity * item.unitPrice).toFixed(2)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -156,7 +162,7 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
                 'Order confirmation received',
                 'Processing and preparation',
                 'Quality control review',
-                'Delivery and completion'
+                'Delivery and completion',
               ].map((step, index) => (
                 <div key={index} className="flex items-center">
                   <div className="w-1 h-1 bg-gray-400 rounded-full mr-4"></div>
@@ -165,7 +171,7 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
               ))}
             </div>
           </div>
-          
+
           <div>
             <h4 className="text-lg font-medium text-gray-900 mb-6 tracking-wide">SUPPORT</h4>
             <div className="space-y-4">
@@ -173,7 +179,7 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
                 'Direct communication line',
                 'Regular progress updates',
                 'Quality assurance',
-                'Post-delivery support'
+                'Post-delivery support',
               ].map((feature, index) => (
                 <div key={index} className="flex items-center">
                   <div className="w-1 h-1 bg-gray-400 rounded-full mr-4"></div>
@@ -203,7 +209,7 @@ export const MinimalistElegantOrderTemplate: React.FC<TemplateProps> = ({
               <p className="text-gray-600">{companySettings?.contactInfo?.email}</p>
             </div>
           </div>
-          
+
           <div className="text-center py-6 border-t border-gray-200">
             <p className="text-gray-600 font-light tracking-wide">
               Thank you for your trust and partnership

@@ -74,12 +74,21 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
 }) => {
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
+  // DIN 5008: deutsches Datumsformat und Währungsformat verwenden
+  const formatDate = (input: string) => {
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? input : d.toLocaleDateString('de-DE');
+  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+  const serviceText =
+    data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
   return (
     <div className="w-full max-w-4xl mx-auto bg-white p-8 font-sans text-sm">
       {/* Header */}
       <div className="flex justify-between items-start mb-8 pb-6 border-b-2 border-gray-300">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">RECHNUNG</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Rechnung</h1>
           <p className="text-lg text-gray-600">Rechnungsnummer {data.documentNumber}</p>
         </div>
         <div className="text-right">
@@ -118,19 +127,17 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           <div className="space-y-3">
             <div>
               <span className="text-sm font-bold text-gray-500 uppercase">Rechnungsdatum: </span>
-              <span className="font-semibold">{data.date}</span>
+              <span className="font-semibold">{formatDate(data.date)}</span>
             </div>
             <div>
               <span className="text-sm font-bold text-gray-500 uppercase">Fälligkeitsdatum: </span>
-              <span className="font-semibold">{data.dueDate}</span>
+              <span className="font-semibold">{formatDate(data.dueDate)}</span>
             </div>
             <div>
               <span className="text-sm font-bold text-gray-500 uppercase">
                 Leistungsdatum/-zeitraum:{' '}
               </span>
-              <span className="font-semibold">
-                {data.servicePeriod || data.serviceDate || data.date}
-              </span>
+              <span className="font-semibold">{serviceText}</span>
             </div>
             <div>
               <span className="text-sm font-bold text-gray-500 uppercase">
@@ -163,10 +170,10 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
                   {item.quantity} {item.unit}
                 </td>
                 <td className="border border-gray-300 p-3 text-right">
-                  €{item.unitPrice.toFixed(2)}
+                  {formatCurrency(item.unitPrice)}
                 </td>
                 <td className="border border-gray-300 p-3 text-right font-semibold">
-                  €{item.total.toFixed(2)}
+                  {formatCurrency(item.total)}
                 </td>
               </tr>
             ))}
@@ -180,18 +187,18 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           <div className="space-y-2">
             <div className="flex justify-between py-2">
               <span>Zwischensumme:</span>
-              <span>€{data.subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(data.subtotal)}</span>
             </div>
             {data.taxRate > 0 && (
               <div className="flex justify-between py-2">
                 <span>Umsatzsteuer ({data.taxRate}%):</span>
-                <span>€{data.taxAmount.toFixed(2)}</span>
+                <span>{formatCurrency(data.taxAmount)}</span>
               </div>
             )}
             <div className="border-t-2 border-gray-300 pt-2">
               <div className="flex justify-between py-2 text-lg font-bold">
                 <span>Gesamtbetrag:</span>
-                <span>€{data.total.toFixed(2)}</span>
+                <span>{formatCurrency(data.total)}</span>
               </div>
             </div>
           </div>
@@ -227,8 +234,8 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
         </div>
         <div className="mt-4 text-gray-600">
           <p>
-            Bitte überweisen Sie den Gesamtbetrag bis zum {data.dueDate} unter Angabe der
-            Rechnungsnummer auf das oben genannte Konto.
+            Bitte überweisen Sie den Gesamtbetrag bis zum {formatDate(data.dueDate)} unter Angabe
+            der Rechnungsnummer auf das oben genannte Konto.
           </p>
         </div>
       </div>

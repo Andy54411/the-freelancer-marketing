@@ -1,7 +1,11 @@
 // User Preferences Service für Template-Integration
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
-import { InvoiceTemplate, AVAILABLE_TEMPLATES, DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/InvoiceTemplates';
+import {
+  InvoiceTemplate,
+  AVAILABLE_TEMPLATES,
+  DEFAULT_INVOICE_TEMPLATE,
+} from '@/components/finance/InvoiceTemplates';
 import {
   DeliveryNoteTemplate,
   AVAILABLE_DELIVERY_NOTE_TEMPLATES,
@@ -70,7 +74,8 @@ export class UserPreferencesService {
         preferredCurrency: 'EUR',
       };
     } catch (error) {
-      const fallbackTemplate = (AVAILABLE_TEMPLATES[0]?.id || DEFAULT_INVOICE_TEMPLATE) as InvoiceTemplate;
+      const fallbackTemplate = (AVAILABLE_TEMPLATES[0]?.id ||
+        DEFAULT_INVOICE_TEMPLATE) as InvoiceTemplate;
       return {
         preferredInvoiceTemplate: fallbackTemplate,
         preferredDeliveryNoteTemplate: 'professional-business-delivery', // Default
@@ -90,15 +95,24 @@ export class UserPreferencesService {
   ): Promise<void> {
     try {
       const docRef = doc(db, this.COLLECTION, userId);
+      // Nur definierte Felder schreiben (Firestore erlaubt keine undefined-Werte)
+      const clean: Record<string, unknown> = {};
+      Object.entries(preferences || {}).forEach(([k, v]) => {
+        if (v !== undefined) clean[k] = v;
+      });
+
       await setDoc(
         docRef,
         {
-          ...preferences,
-          updatedAt: new Date(),
+          ...clean,
+          userId, // optional hilfreich für Security Rules
+          updatedAt: serverTimestamp(),
         },
         { merge: true }
       );
     } catch (error) {
+      // Rohfehler loggen, damit Ursachen (z. B. Security Rules) sichtbar werden
+      console.error('updateUserPreferences error:', error);
       throw new Error('User-Preferences konnten nicht gespeichert werden');
     }
   }

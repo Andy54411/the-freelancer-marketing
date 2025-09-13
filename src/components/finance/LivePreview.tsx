@@ -88,69 +88,80 @@ export function LivePreview({ invoiceData, companySettings }: LivePreviewProps) 
   };
 
   return (
-    <div
-      className="w-full h-full overflow-hidden bg-white"
-      style={{
-        transform: 'scale(0.25)',
-        transformOrigin: 'top left',
-        width: '400%',
-        height: '400%',
-      }}
-    >
-      <ProfessionalBusinessTemplate
-        data={{
-          documentNumber: previewData.invoiceNumber,
-          date: previewData.issueDate,
-          dueDate: previewData.dueDate,
-          customer: {
-            name: previewData.customerName,
-            email: previewData.customerEmail || '',
-            address: {
-              street: (previewData.customerAddress || '').split('\n')[0] || '',
-              zipCode: (previewData.customerAddress || '').split('\n')[1]?.split(' ')[0] || '',
-              city:
-                (previewData.customerAddress || '').split('\n')[1]?.split(' ').slice(1).join(' ') ||
-                '',
-              country: 'Deutschland',
-            },
-          },
-          company: {
-            name: previewData.companyName,
-            email: previewData.companyEmail,
-            phone: previewData.companyPhone || '',
-            address: {
-              street: (previewData.companyAddress || '').split('\n')[0] || '',
-              zipCode: (previewData.companyAddress || '').split('\n')[1]?.split(' ')[0] || '',
-              city:
-                (previewData.companyAddress || '').split('\n')[1]?.split(' ').slice(1).join(' ') ||
-                '',
-              country: 'Deutschland',
-            },
-            taxNumber: previewData.companyTaxNumber || '',
-            vatId: previewData.companyVatId || '',
-            bankDetails: {
-              iban: previewData.bankDetails?.iban || '',
-              bic: previewData.bankDetails?.bic || '',
-              accountHolder: previewData.bankDetails?.accountHolder || '',
-            },
-          },
-          items: (previewData.items || []).map((i, idx) => ({
-            description: i.description || `Position ${idx + 1}`,
-            quantity: (i as any).quantity || 1,
-            unit: (i as any).unit || 'Stk.',
-            unitPrice: (i as any).unitPrice || (i.total ? i.total : 0),
-            total: i.total || ((i as any).unitPrice || 0) * ((i as any).quantity || 1),
-          })),
-          subtotal: previewData.amount || 0,
-          taxRate: previewData.vatRate || 19,
-          taxAmount: previewData.tax || 0,
-          total: previewData.total || 0,
-          paymentTerms: previewData.paymentTerms || '',
-          notes: previewData.notes || '',
-          status: previewData.status || 'draft',
-          isSmallBusiness: previewData.isSmallBusiness || false,
-        }}
-      />
+    <div className="relative w-full h-full overflow-hidden bg-white">
+      <div className="absolute inset-[4px]">
+        {/* Skalierter, zentrierter Inhalt wie bei DocumentThumbnailFrame */}
+        <div
+          className="transform origin-top-left pointer-events-none"
+          style={{
+            // 0.22 passt in ~260px Höhe ohne Scrollen
+            scale: 0.22,
+            width: `${Math.round(100 / 0.22)}%`,
+            height: `${Math.round(100 / 0.22)}%`,
+          }}
+        >
+          <ProfessionalBusinessTemplate
+            data={{
+              documentNumber: previewData.invoiceNumber,
+              date: previewData.issueDate,
+              dueDate: previewData.dueDate,
+              customer: {
+                name: previewData.customerName,
+                email: previewData.customerEmail || '',
+                address: {
+                  street: (previewData.customerAddress || '').split('\n')[0] || '',
+                  zipCode: (previewData.customerAddress || '').split('\n')[1]?.split(' ')[0] || '',
+                  city:
+                    (previewData.customerAddress || '')
+                      .split('\n')[1]
+                      ?.split(' ')
+                      .slice(1)
+                      .join(' ') || '',
+                  country: 'Deutschland',
+                },
+              },
+              company: {
+                name: previewData.companyName,
+                email: previewData.companyEmail,
+                phone: previewData.companyPhone || '',
+                address: {
+                  street: (previewData.companyAddress || '').split('\n')[0] || '',
+                  zipCode: (previewData.companyAddress || '').split('\n')[1]?.split(' ')[0] || '',
+                  city:
+                    (previewData.companyAddress || '')
+                      .split('\n')[1]
+                      ?.split(' ')
+                      .slice(1)
+                      .join(' ') || '',
+                  country: 'Deutschland',
+                },
+                taxNumber: previewData.companyTaxNumber || '',
+                vatId: previewData.companyVatId || '',
+                bankDetails: {
+                  iban: previewData.bankDetails?.iban || '',
+                  bic: previewData.bankDetails?.bic || '',
+                  accountHolder: previewData.bankDetails?.accountHolder || '',
+                },
+              },
+              items: (previewData.items || []).map((i, idx) => ({
+                description: i.description || `Position ${idx + 1}`,
+                quantity: (i as any).quantity || 1,
+                unit: (i as any).unit || 'Stk.',
+                unitPrice: (i as any).unitPrice || (i.total ? i.total : 0),
+                total: i.total || ((i as any).unitPrice || 0) * ((i as any).quantity || 1),
+              })),
+              subtotal: previewData.amount || 0,
+              taxRate: previewData.vatRate || 19,
+              taxAmount: previewData.tax || 0,
+              total: previewData.total || 0,
+              paymentTerms: previewData.paymentTerms || '',
+              notes: previewData.notes || '',
+              status: previewData.status || 'draft',
+              isSmallBusiness: previewData.isSmallBusiness || false,
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,123 +1,125 @@
 import React from 'react';
 import { TemplateProps } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
-export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({ 
-  data, 
+export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
+  data,
   companySettings,
-  customizations 
+  customizations,
 }) => {
-  const logoUrl = companySettings?.logoUrl || customizations?.logoUrl;
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
+  const formatDate = (input?: string) => {
+    if (!input) return '';
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? input : d.toLocaleDateString('de-DE');
+  };
+  const formatCurrency = (value?: number) =>
+    typeof value === 'number'
+      ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+      : '';
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-8 font-serif">
-      {/* Corporate Header */}
-      <div className="border-b-4 border-blue-900 pb-6 mb-8">
+    <div className="max-w-4xl mx-auto bg-white p-8 font-serif text-sm">
+      {/* Kopfbereich */}
+      <div className="pb-6 mb-8 border-b-2 border-gray-300">
         <div className="flex justify-between items-start">
           <div className="flex-1">
             {logoUrl && (
-              <img 
-                src={logoUrl} 
-                alt="Company Logo" 
-                className="h-16 w-auto mb-6"
-              />
+              <img src={logoUrl} alt="Firmenlogo" className="h-14 w-auto mb-6 object-contain" />
             )}
-            <h1 className="text-4xl font-bold text-blue-900 mb-2">BUSINESS QUOTATION</h1>
-            <p className="text-lg text-blue-700">Reference Number: {data.documentNumber}</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Angebot</h1>
+            <p className="text-gray-600">Referenz {data.documentNumber}</p>
           </div>
-          <div className="text-right bg-blue-50 p-6 rounded border border-blue-200">
-            <h2 className="font-bold text-xl text-blue-900 mb-3">{companySettings?.companyName}</h2>
-            <div className="text-blue-800 space-y-1">
+          <div className="text-right bg-gray-50 p-6 rounded border">
+            <h2 className="font-bold text-lg text-gray-900 mb-2">{companySettings?.companyName}</h2>
+            <div className="text-gray-700 space-y-1">
               <p>{companySettings?.address?.street}</p>
-              <p>{companySettings?.address?.zipCode} {companySettings?.address?.city}</p>
-              <div className="mt-3 pt-3 border-t border-blue-200">
+              <p>
+                {companySettings?.address?.zipCode} {companySettings?.address?.city}
+              </p>
+              <div className="mt-3 pt-3 border-t border-gray-300">
                 <p>Tel: {companySettings?.contactInfo?.phone}</p>
-                <p>Email: {companySettings?.contactInfo?.email}</p>
+                <p>E-Mail: {companySettings?.contactInfo?.email}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Corporate Introduction */}
-      <div className="mb-8 p-6 bg-blue-50 border-l-4 border-blue-600 rounded-r">
-        <h3 className="text-xl font-bold text-blue-900 mb-3">Corporate Proposal</h3>
-        <p className="text-blue-800 text-lg leading-relaxed">
-          We are pleased to submit this comprehensive business proposal for your consideration. 
-          Our corporate solutions are designed to meet the highest standards of quality and 
-          reliability, ensuring exceptional value for your investment.
-        </p>
-      </div>
-
-      {/* Client & Quote Information */}
+      {/* Kunde & Angebotsinformationen */}
       <div className="grid grid-cols-2 gap-8 mb-8">
         <div>
-          <h3 className="text-lg font-bold text-blue-900 mb-4 border-b-2 border-blue-200 pb-2">
-            CLIENT DETAILS
+          <h3 className="text-sm font-bold text-gray-700 mb-3 border-b border-gray-300 pb-2">
+            Kundendaten
           </h3>
-          <div className="space-y-2">
-            <p className="text-xl font-semibold text-gray-900">{data.customerName}</p>
+          <div className="space-y-1">
+            <p className="text-lg font-semibold text-gray-900">{data.customerName}</p>
             <p className="text-gray-700">{data.customerAddress?.street}</p>
-            <p className="text-gray-700">{data.customerAddress?.zipCode} {data.customerAddress?.city}</p>
+            <p className="text-gray-700">
+              {data.customerAddress?.zipCode} {data.customerAddress?.city}
+            </p>
             {data.customerContact && (
-              <div className="mt-4 pt-4 border-t border-gray-300">
-                <p className="text-gray-700 font-medium">
-                  <span className="text-blue-700">Contact Person:</span> {data.customerContact}
-                </p>
+              <div className="mt-3 pt-3 border-t border-gray-300">
+                <p className="text-gray-700">Ansprechpartner: {data.customerContact}</p>
               </div>
             )}
           </div>
         </div>
-        
+
         <div>
-          <h3 className="text-lg font-bold text-blue-900 mb-4 border-b-2 border-blue-200 pb-2">
-            QUOTATION DETAILS
+          <h3 className="text-sm font-bold text-gray-700 mb-3 border-b border-gray-300 pb-2">
+            Angebotsdetails
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Quotation Date:</span>
-              <span className="font-semibold text-gray-900">{data.date}</span>
+              <span className="text-gray-600">Datum:</span>
+              <span className="font-semibold text-gray-900">{formatDate(data.date)}</span>
             </div>
+            {data.validUntil && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Gültig bis:</span>
+                <span className="font-semibold text-gray-900">{formatDate(data.validUntil)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Valid Until:</span>
-              <span className="font-semibold text-gray-900">{data.validUntil}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600 font-medium">Prepared By:</span>
-              <span className="font-semibold text-gray-900">{data.createdBy || 'Corporate Team'}</span>
+              <span className="text-gray-600">Erstellt von:</span>
+              <span className="font-semibold text-gray-900">{data.createdBy || 'Team'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Corporate Services Table */}
+      {/* Leistungen & Preise */}
       <div className="mb-8">
-        <h3 className="text-xl font-bold text-blue-900 mb-6">CORPORATE SERVICES & PRICING</h3>
-        <table className="w-full border-collapse border-2 border-blue-900">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Leistungen & Preise</h3>
+        <table className="w-full border-collapse border border-gray-400">
           <thead>
-            <tr className="bg-blue-900 text-white">
-              <th className="border border-blue-900 p-4 text-left font-bold">Item</th>
-              <th className="border border-blue-900 p-4 text-left font-bold">Service Description</th>
-              <th className="border border-blue-900 p-4 text-center font-bold">Quantity</th>
-              <th className="border border-blue-900 p-4 text-right font-bold">Unit Rate</th>
-              <th className="border border-blue-900 p-4 text-right font-bold">Total Amount</th>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 p-3 text-left font-bold">Pos.</th>
+              <th className="border border-gray-300 p-3 text-left font-bold">Beschreibung</th>
+              <th className="border border-gray-300 p-3 text-center font-bold">Menge</th>
+              <th className="border border-gray-300 p-3 text-right font-bold">Einzelpreis</th>
+              <th className="border border-gray-300 p-3 text-right font-bold">Gesamt</th>
             </tr>
           </thead>
           <tbody>
             {data.items?.map((item, index) => (
-              <tr key={index} className={index % 2 === 0 ? 'bg-blue-50' : 'bg-white'}>
-                <td className="border border-blue-300 p-4 font-semibold text-blue-900">
+              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="border border-gray-300 p-3 text-center">
                   {String(index + 1).padStart(2, '0')}
                 </td>
-                <td className="border border-blue-300 p-4">
+                <td className="border border-gray-300 p-3">
                   <div className="font-semibold text-gray-900">{item.description}</div>
                   {item.details && (
                     <div className="text-sm text-gray-600 mt-1 leading-relaxed">{item.details}</div>
                   )}
                 </td>
-                <td className="border border-blue-300 p-4 text-center font-medium">{item.quantity}</td>
-                <td className="border border-blue-300 p-4 text-right font-medium">€{item.unitPrice?.toFixed(2)}</td>
-                <td className="border border-blue-300 p-4 text-right font-bold text-blue-900">
-                  €{(item.quantity * item.unitPrice).toFixed(2)}
+                <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                <td className="border border-gray-300 p-3 text-right">
+                  {formatCurrency(item.unitPrice)}
+                </td>
+                <td className="border border-gray-300 p-3 text-right font-semibold">
+                  {formatCurrency(item.quantity * item.unitPrice)}
                 </td>
               </tr>
             ))}
@@ -125,26 +127,28 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
         </table>
       </div>
 
-      {/* Corporate Financial Summary */}
+      {/* Zusammenfassung */}
       <div className="flex justify-end mb-8">
-        <div className="w-96 border-2 border-blue-900 rounded">
-          <div className="bg-blue-900 text-white p-4">
-            <h4 className="font-bold text-xl">FINANCIAL SUMMARY</h4>
+        <div className="w-96 border border-gray-400 rounded">
+          <div className="bg-gray-100 p-4">
+            <h4 className="font-bold text-lg text-gray-900">Zusammenfassung</h4>
           </div>
-          <div className="p-4 bg-blue-50">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-lg">
-                <span className="font-medium text-blue-800">Subtotal:</span>
-                <span className="font-semibold">€{data.subtotal?.toFixed(2)}</span>
+          <div className="p-4 bg-white">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span>Zwischensumme:</span>
+                <span>{formatCurrency(data.subtotal)}</span>
               </div>
-              <div className="flex justify-between items-center text-lg">
-                <span className="font-medium text-blue-800">VAT ({data.taxRate}%):</span>
-                <span className="font-semibold">€{data.taxAmount?.toFixed(2)}</span>
-              </div>
-              <div className="border-t-2 border-blue-600 pt-3">
+              {typeof data.taxRate === 'number' && data.taxRate > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold text-blue-900">TOTAL:</span>
-                  <span className="text-3xl font-bold text-blue-900">€{data.total?.toFixed(2)}</span>
+                  <span>Umsatzsteuer ({data.taxRate}%):</span>
+                  <span>{formatCurrency(data.taxAmount)}</span>
+                </div>
+              )}
+              <div className="border-t border-gray-300 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold">Gesamtbetrag:</span>
+                  <span className="text-xl font-bold">{formatCurrency(data.total)}</span>
                 </div>
               </div>
             </div>
@@ -152,59 +156,50 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
         </div>
       </div>
 
-      {/* Corporate Terms */}
+      {/* Bedingungen */}
       <div className="grid grid-cols-2 gap-8 mb-8">
-        <div className="border border-blue-300 rounded p-6 bg-blue-50">
-          <h4 className="font-bold text-blue-900 mb-4 text-lg">TERMS & CONDITIONS</h4>
-          <ul className="text-blue-800 space-y-2">
-            <li>• Payment Terms: Net 30 days from invoice date</li>
-            <li>• Quotation Validity: {data.validUntil}</li>
-            <li>• Service Delivery: As per agreed timeline</li>
-            <li>• All prices are exclusive of applicable taxes</li>
-            <li>• Standard corporate warranty applies</li>
+        <div className="border border-gray-300 rounded p-6 bg-gray-50">
+          <h4 className="font-bold text-gray-900 mb-3 text-base">Bedingungen</h4>
+          <ul className="text-gray-700 space-y-1 text-sm">
+            <li>• Zahlungsziel: 30 Tage netto</li>
+            <li>• Angebot gültig bis: {formatDate(data.validUntil)}</li>
+            <li>• Lieferung/Leistung wie vereinbart</li>
+            <li>• Alle Preise verstehen sich zzgl. USt., sofern anwendbar</li>
           </ul>
         </div>
-        <div className="border border-green-300 rounded p-6 bg-green-50">
-          <h4 className="font-bold text-green-800 mb-4 text-lg">CORPORATE BENEFITS</h4>
-          <ul className="text-green-700 space-y-2">
-            <li>• Dedicated account manager</li>
-            <li>• Priority customer support</li>
-            <li>• Flexible payment options</li>
-            <li>• Quality assurance guarantee</li>
-            <li>• Post-delivery support included</li>
+        <div className="border border-gray-300 rounded p-6 bg-gray-50">
+          <h4 className="font-bold text-gray-900 mb-3 text-base">Hinweise</h4>
+          <ul className="text-gray-700 space-y-1 text-sm">
+            <li>• Individuelle Anpassungen möglich</li>
+            <li>• Rückfragen jederzeit willkommen</li>
+            <li>• Ansprechpartner: {data.createdBy || 'Team'}</li>
           </ul>
         </div>
       </div>
 
-      {/* Corporate Footer */}
-      <div className="border-t-4 border-blue-900 pt-6">
-        <div className="grid grid-cols-3 gap-8 text-sm text-blue-800 mb-6">
+      {/* Fußbereich */}
+      <div className="border-t-2 border-gray-300 pt-6">
+        <div className="grid grid-cols-3 gap-8 text-sm text-gray-700 mb-6">
           <div>
-            <h5 className="font-bold text-blue-900 mb-3">COMPANY REGISTRATION</h5>
-            <p>Tax ID: {companySettings?.taxId}</p>
-            <p>VAT Number: {companySettings?.vatId}</p>
-            <p>Commercial Register: {companySettings?.commercialRegister}</p>
+            <h5 className="font-bold text-gray-900 mb-2">Unternehmensdaten</h5>
+            <p>Steuernummer: {companySettings?.taxId}</p>
+            <p>USt-IdNr.: {companySettings?.vatId}</p>
+            <p>Handelsregister: {companySettings?.commercialRegister}</p>
           </div>
           <div>
-            <h5 className="font-bold text-blue-900 mb-3">BANKING DETAILS</h5>
+            <h5 className="font-bold text-gray-900 mb-2">Bankdaten</h5>
             <p>IBAN: {companySettings?.bankDetails?.iban}</p>
-            <p>BIC/SWIFT: {companySettings?.bankDetails?.bic}</p>
+            <p>BIC: {companySettings?.bankDetails?.bic}</p>
             <p>Bank: {companySettings?.bankDetails?.bankName}</p>
           </div>
           <div>
-            <h5 className="font-bold text-blue-900 mb-3">CONTACT INFORMATION</h5>
-            <p>Phone: {companySettings?.contactInfo?.phone}</p>
-            <p>Email: {companySettings?.contactInfo?.email}</p>
+            <h5 className="font-bold text-gray-900 mb-2">Kontakt</h5>
+            <p>Telefon: {companySettings?.contactInfo?.phone}</p>
+            <p>E-Mail: {companySettings?.contactInfo?.email}</p>
             <p>Web: {companySettings?.contactInfo?.website}</p>
           </div>
         </div>
-        
-        <div className="text-center bg-blue-900 text-white p-6 rounded">
-          <p className="text-xl font-bold mb-2">Thank You for Your Business Consideration</p>
-          <p className="text-blue-200">
-            We appreciate the opportunity to serve your corporate needs
-          </p>
-        </div>
+        <div className="text-center text-gray-600 text-sm">Vielen Dank für Ihr Interesse.</div>
       </div>
     </div>
   );

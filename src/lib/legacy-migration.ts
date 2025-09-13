@@ -513,8 +513,9 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
 
     const companyData = companySnap.data();
 
-    // Check if onboarding is completed using companies collection
-    if (companyData.onboardingCompleted === true) {
+    // Check if onboarding is completed or approved by admin
+    // CRITICAL FIX: Check both onboardingCompleted AND approvalStatus
+    if (companyData.onboardingCompleted === true || companyData.approvalStatus === 'approved') {
       return {
         needsOnboarding: false,
         completionPercentage: 100,
@@ -539,7 +540,8 @@ export async function checkCompanyOnboardingStatus(companyUid: string): Promise<
     const currentStep = parseInt(companyData.onboardingCurrentStep) || 1;
 
     return {
-      needsOnboarding: !companyData.onboardingCompleted,
+      needsOnboarding:
+        !companyData.onboardingCompleted && companyData.approvalStatus !== 'approved',
       completionPercentage,
       currentStep,
     };

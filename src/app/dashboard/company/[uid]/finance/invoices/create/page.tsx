@@ -53,7 +53,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoicePreview } from '@/components/finance/InvoicePreview';
-import { LivePreview } from '@/components/finance/LivePreview';
+import DocumentPreviewFrame from '@/components/templates/preview/DocumentPreviewFrame';
+import ProfessionalBusinessTemplate from '@/components/templates/invoice-templates/ProfessionalBusinessTemplate';
 import { InvoiceData } from '@/types/invoiceTypes';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { useAuth } from '@/contexts/AuthContext';
@@ -1477,8 +1478,107 @@ export default function CreateInvoicePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Far Left Column: Sticky Large Live Preview */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-4">
+            <Card className="shadow-sm">
+              <CardHeader className="py-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Eye className="h-4 w-4" />
+                  Mini-Vorschau
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="bg-white rounded border mb-2 h-80 relative overflow-hidden">
+                  <div className="absolute inset-[4px]">
+                    <div
+                      className="transform origin-top-left pointer-events-none"
+                      style={{
+                        scale: 0.22,
+                        width: `${Math.round(100 / 0.22)}%`,
+                        height: `${Math.round(100 / 0.22)}%`,
+                      }}
+                    >
+                      <ProfessionalBusinessTemplate
+                        data={{
+                          documentNumber: formData.invoiceNumber || 'R-2025-000',
+                          date: formData.issueDate || new Date().toISOString().split('T')[0],
+                          dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
+                          customer: {
+                            name: formData.customerName || 'Kunden auswählen...',
+                            email: formData.customerEmail || '',
+                            address: {
+                              street: (formData.customerAddress || '').split('\n')[0] || '',
+                              zipCode:
+                                (formData.customerAddress || '').split('\n')[1]?.split(' ')[0] ||
+                                '',
+                              city:
+                                (formData.customerAddress || '')
+                                  .split('\n')[1]
+                                  ?.split(' ')
+                                  .slice(1)
+                                  .join(' ') || '',
+                              country: 'Deutschland',
+                            },
+                          },
+                          company: {
+                            name: companySettings?.companyName || 'Ihr Unternehmen',
+                            email: companySettings?.companyEmail || 'info@ihrunternehmen.de',
+                            phone: companySettings?.companyPhone || '+49 123 456789',
+                            address: {
+                              street: (companySettings?.companyAddress || '').split('\n')[0] || '',
+                              zipCode:
+                                (companySettings?.companyAddress || '')
+                                  .split('\n')[1]
+                                  ?.split(' ')[0] || '',
+                              city:
+                                (companySettings?.companyAddress || '')
+                                  .split('\n')[1]
+                                  ?.split(' ')
+                                  .slice(1)
+                                  .join(' ') || '',
+                              country: 'Deutschland',
+                            },
+                            taxNumber: companySettings?.taxNumber || '',
+                            vatId: companySettings?.vatId || '',
+                            bankDetails: {
+                              iban: '',
+                              bic: '',
+                              accountHolder: '',
+                            },
+                          },
+                          items:
+                            items.length > 0
+                              ? (items as any)
+                              : ([
+                                  {
+                                    id: 'placeholder',
+                                    description: 'Beispiel Dienstleistung',
+                                    quantity: 1,
+                                    unitPrice: 100.0,
+                                    total: 100.0,
+                                  },
+                                ] as any),
+                          subtotal: subtotal,
+                          taxRate: Number(formData.taxRate || '19'),
+                          taxAmount: tax,
+                          total: total,
+                          paymentTerms: formData.paymentTerms,
+                          notes: formData.notes,
+                          status: 'draft',
+                          isSmallBusiness: formData.taxNote === 'kleinunternehmer',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Middle Column: Form */}
         <div className="lg:col-span-2">
           <form onSubmit={e => e.preventDefault()} className="space-y-8">
             {/* Customer Information */}
@@ -2175,66 +2275,18 @@ export default function CreateInvoicePage() {
           </form>
         </div>
 
-        {/* Right Column: Live Preview & PDF Actions */}
+        {/* Right Column: Aktionen & PDF Vorschau */}
         <div className="lg:col-span-1">
-          <div className="sticky top-8 space-y-4">
-            {/* Live Invoice Preview */}
+          <div className="sticky top-4 space-y-3">
+            {/* PDF Preview Button */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5" />
-                  Live Vorschau
+              <CardHeader className="py-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Eye className="h-4 w-4" /> PDF/Vorschau & Druck
                 </CardTitle>
-                <CardDescription>Echtzeitvorschau Ihrer Rechnung</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-2">
                 <div className="space-y-4">
-                  {/* Live Invoice Preview */}
-                  <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
-                    <div style={{ height: '260px' }}>
-                      <LivePreview
-                        invoiceData={{
-                          invoiceNumber: formData.invoiceNumber || 'R-2025-000',
-                          issueDate: formData.issueDate || new Date().toISOString().split('T')[0],
-                          dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
-                          customerName: formData.customerName || 'Kunden auswählen...',
-                          customerAddress:
-                            formData.customerAddress || 'Kundenadresse wird hier angezeigt',
-                          customerEmail: formData.customerEmail || '',
-                          description: formData.description || '',
-                          items:
-                            items.length > 0
-                              ? items
-                              : [
-                                  {
-                                    id: 'placeholder',
-                                    description: 'Beispiel Dienstleistung',
-                                    quantity: 1,
-                                    unitPrice: 100.0,
-                                    total: 100.0,
-                                  },
-                                ],
-
-                          amount: subtotal,
-                          tax: tax,
-                          total: total,
-                          taxNote: (formData.taxNote !== 'none' ? formData.taxNote : undefined) as
-                            | 'kleinunternehmer'
-                            | 'reverse-charge'
-                            | undefined,
-                          paymentTerms: formData.paymentTerms,
-                          // Skonto-Daten für Preview
-                          skontoEnabled: formData.skontoEnabled,
-                          skontoDays: formData.skontoDays,
-                          skontoPercentage: formData.skontoPercentage,
-                          skontoText: formData.skontoText,
-                        }}
-                        companySettings={companySettings || undefined}
-                      />
-                    </div>
-                  </div>
-
-                  {/* PDF Preview Button */}
                   <InvoicePreview
                     invoiceData={{
                       invoiceNumber: formData.invoiceNumber,

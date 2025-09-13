@@ -122,14 +122,30 @@ export function useCompanyDashboard() {
         if (!isNonEmptyString(identityBack)) missing.push('Ausweis Rückseite');
 
         setMissingFields(missing);
+
+        // KRITISCHER FIX: Prüfe Admin-Approval-Status BEVOR Onboarding-Status gesetzt wird!
+        // Wenn Admin approvalStatus = 'approved' gesetzt hat, NIEMALS Onboarding zeigen!
+        const isAdminApproved =
+          (data as any)?.approvalStatus === 'approved' || (data as any)?.adminApproved === true;
+
         // Zentralen Onboarding-Status ableiten
         const totalAreas = 6; // Anzahl der betrachteten Bereiche
         const completed = Math.max(0, totalAreas - missing.length);
         const percent = Math.round((completed / totalAreas) * 100);
-        setNeedsOnboarding(missing.length > 0);
-        setCompletionPercentage(percent);
-        setCurrentStep(deriveCurrentStep(missing));
-        if (missing.length > 0) {
+
+        // ENTSCHEIDEND: Admin-Approval überschreibt ALLES!
+        if (isAdminApproved) {
+          setNeedsOnboarding(false);
+          setCompletionPercentage(100);
+          setCurrentStep(5);
+        } else {
+          setNeedsOnboarding(missing.length > 0);
+          setCompletionPercentage(percent);
+          setCurrentStep(deriveCurrentStep(missing));
+        }
+
+        // UI-Popup nur wenn tatsächlich Onboarding benötigt wird
+        if (!isAdminApproved && missing.length > 0) {
           setShowPopup(true);
           setView('settings');
         }

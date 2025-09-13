@@ -30,14 +30,14 @@ export const AVAILABLE_QUOTE_TEMPLATES: ReadonlyArray<{
   {
     id: 'executive-premium-quote',
     name: 'Executive Premium',
-    description: 'Elegantes, dunkles Header-Design für gehobene Business-Ansprüche.',
-    features: ['Akzentfarben', 'Header-Block', 'Kompakter Fußbereich'],
+    description: 'Elegantes, dezentes Layout mit klarer Struktur und professioneller Typografie.',
+    features: ['Dezente Farben', 'Klarer Kopfbereich', 'Kompakter Fußbereich'],
   },
   {
     id: 'creative-modern-quote',
     name: 'Kreativ Modern',
-    description: 'Modernes, freundliches Layout mit dezenten Farbflächen.',
-    features: ['Badge-Elemente', 'Leichte Akzente', 'Klarer Tabellenstil'],
+    description: 'Modernes, freundliches Layout in neutraler Farbgebung.',
+    features: ['Dezente Akzente', 'Klarer Tabellenstil', 'Gut lesbare Typografie'],
   },
   {
     id: 'minimalist-elegant-quote',
@@ -48,14 +48,14 @@ export const AVAILABLE_QUOTE_TEMPLATES: ReadonlyArray<{
   {
     id: 'corporate-classic-quote',
     name: 'Corporate Klassisch',
-    description: 'Klassisches Corporate-Design mit klaren Hierarchien.',
-    features: ['Formale Struktur', 'Klarer Kopfbereich', 'Serifentypografie optional'],
+    description: 'Klassisches, neutrales Unternehmenslayout mit klaren Hierarchien.',
+    features: ['Formale Struktur', 'Klarer Kopfbereich', 'Serifen- oder Sans-Typo'],
   },
   {
     id: 'tech-innovation-quote',
     name: 'Tech Innovation',
-    description: 'Tech-inspiriertes Layout mit prägnanten Kontrasten.',
-    features: ['High-Contrast', 'Markante Akzente', 'Kompatibel mit dunklen Logos'],
+    description: 'Tech-inspiriertes, neutrales Layout ohne starke Kontraste.',
+    features: ['Sachlich', 'Sachliche Akzente', 'Kompatibel mit Logos'],
   },
 ];
 

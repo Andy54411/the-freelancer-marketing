@@ -1,34 +1,42 @@
 import React from 'react';
 import { TemplateProps } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
-export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({ 
-  data, 
+export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
+  data,
   companySettings,
-  customizations 
+  customizations,
 }) => {
-  const logoUrl = companySettings?.logoUrl || customizations?.logoUrl;
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
+  const formatDate = (input?: string) => {
+    if (!input) return '';
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? input : d.toLocaleDateString('de-DE');
+  };
+  const formatCurrency = (value?: number) =>
+    typeof value === 'number'
+      ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+      : '';
 
   return (
-    <div className="max-w-4xl mx-auto bg-white font-sans">
-      {/* Professional Header */}
-      <div className="bg-gradient-to-r from-blue-800 to-blue-900 text-white p-8">
+    <div className="max-w-4xl mx-auto bg-white font-sans text-sm">
+      {/* Kopfbereich */}
+      <div className="p-8 pb-6 border-b-2 border-gray-300">
         <div className="flex justify-between items-start">
           <div className="flex-1">
             {logoUrl && (
-              <img 
-                src={logoUrl} 
-                alt="Company Logo" 
-                className="h-16 w-auto mb-4 bg-white p-2 rounded"
-              />
+              <img src={logoUrl} alt="Firmenlogo" className="h-12 w-auto mb-4 object-contain" />
             )}
-            <h1 className="text-4xl font-bold mb-2">QUOTATION</h1>
-            <p className="text-xl text-blue-200">Document #{data.documentNumber}</p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-1">Angebot</h1>
+            <p className="text-gray-600">Angebotsnummer {data.documentNumber}</p>
           </div>
-          <div className="text-right bg-white/10 p-4 rounded-lg backdrop-blur">
-            <h2 className="font-bold text-xl mb-2">{companySettings?.companyName}</h2>
-            <div className="text-blue-100 space-y-1">
+          <div className="text-right">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">{companySettings?.companyName}</h2>
+            <div className="text-gray-600">
               <p>{companySettings?.address?.street}</p>
-              <p>{companySettings?.address?.zipCode} {companySettings?.address?.city}</p>
+              <p>
+                {companySettings?.address?.zipCode} {companySettings?.address?.city}
+              </p>
               <p className="mt-2">{companySettings?.contactInfo?.phone}</p>
               <p>{companySettings?.contactInfo?.email}</p>
             </div>
@@ -37,128 +45,125 @@ export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
       </div>
 
       <div className="p-8">
-        {/* Client & Quote Info */}
+        {/* Kunde & Angebotsdaten */}
         <div className="grid grid-cols-2 gap-8 mb-8">
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-              <div className="w-4 h-4 bg-blue-600 rounded-full mr-3"></div>
-              CLIENT INFORMATION
-            </h3>
-            <div className="space-y-2">
-              <p className="text-xl font-semibold text-gray-900">{data.customerName}</p>
-              <p className="text-gray-600">{data.customerAddress?.street}</p>
-              <p className="text-gray-600">{data.customerAddress?.zipCode} {data.customerAddress?.city}</p>
+          <div>
+            <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Kunde</h3>
+            <div className="bg-gray-50 p-4 rounded">
+              <p className="font-bold text-gray-800">{data.customerName}</p>
+              <p className="text-gray-700">{data.customerAddress?.street}</p>
+              <p className="text-gray-700">
+                {data.customerAddress?.zipCode} {data.customerAddress?.city}
+              </p>
               {data.customerContact && (
-                <p className="text-gray-600 mt-3 pt-3 border-t border-gray-300">
-                  Contact: {data.customerContact}
+                <p className="text-gray-700 mt-3 pt-3 border-t border-gray-200">
+                  Ansprechpartner: {data.customerContact}
                 </p>
               )}
             </div>
           </div>
-          
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-blue-800 mb-2">Quote Date</h4>
-              <p className="text-xl font-bold text-blue-900">{data.date}</p>
-            </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-green-800 mb-2">Valid Until</h4>
-              <p className="text-xl font-bold text-green-900">{data.validUntil}</p>
+          <div>
+            <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Angebotsdetails</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Datum:</span>
+                <span className="font-semibold">{formatDate(data.date)}</span>
+              </div>
+              {data.validUntil && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Gültig bis:</span>
+                  <span className="font-semibold">{formatDate(data.validUntil)}</span>
+                </div>
+              )}
+              {data.createdBy && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Erstellt von:</span>
+                  <span className="font-semibold">{data.createdBy}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Items Table */}
+        {/* Positionen */}
         <div className="mb-8">
-          <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-            <div className="w-6 h-6 bg-blue-600 rounded mr-3 flex items-center justify-center">
-              <span className="text-white text-sm">✓</span>
-            </div>
-            SERVICE BREAKDOWN
-          </h3>
-          
-          <div className="overflow-hidden rounded-lg border border-gray-200">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
-                <tr>
-                  <th className="p-4 text-left font-semibold">#</th>
-                  <th className="p-4 text-left font-semibold">Service Description</th>
-                  <th className="p-4 text-center font-semibold">Qty</th>
-                  <th className="p-4 text-right font-semibold">Unit Price</th>
-                  <th className="p-4 text-right font-semibold">Total</th>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 p-3 text-left font-bold">Pos.</th>
+                <th className="border border-gray-300 p-3 text-left font-bold">
+                  Leistungsbeschreibung
+                </th>
+                <th className="border border-gray-300 p-3 text-center font-bold">Menge</th>
+                <th className="border border-gray-300 p-3 text-right font-bold">Einzelpreis</th>
+                <th className="border border-gray-300 p-3 text-right font-bold">Gesamt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.items?.map((item, index) => (
+                <tr key={index}>
+                  <td className="border border-gray-300 p-3 text-center">{index + 1}</td>
+                  <td className="border border-gray-300 p-3">
+                    <div className="font-semibold text-gray-800">{item.description}</div>
+                    {item.details && (
+                      <div className="text-sm text-gray-600 mt-1">{item.details}</div>
+                    )}
+                  </td>
+                  <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                  <td className="border border-gray-300 p-3 text-right">
+                    {formatCurrency(item.unitPrice)}
+                  </td>
+                  <td className="border border-gray-300 p-3 text-right font-semibold">
+                    {formatCurrency(item.quantity * item.unitPrice)}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.items?.map((item, index) => (
-                  <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-200`}>
-                    <td className="p-4 font-semibold text-blue-600">{String(index + 1).padStart(2, '0')}</td>
-                    <td className="p-4">
-                      <div className="font-semibold text-gray-900">{item.description}</div>
-                      {item.details && (
-                        <div className="text-sm text-gray-600 mt-1">{item.details}</div>
-                      )}
-                    </td>
-                    <td className="p-4 text-center font-medium">{item.quantity}</td>
-                    <td className="p-4 text-right font-medium">€{item.unitPrice?.toFixed(2)}</td>
-                    <td className="p-4 text-right font-bold text-blue-900">
-                      €{(item.quantity * item.unitPrice).toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        {/* Professional Totals */}
+        {/* Summen */}
         <div className="flex justify-end mb-8">
-          <div className="w-96 bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
-            <div className="bg-gray-800 text-white p-4">
-              <h4 className="font-bold text-lg">INVESTMENT SUMMARY</h4>
-            </div>
-            <div className="p-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Subtotal:</span>
-                <span className="font-semibold">€{data.subtotal?.toFixed(2)}</span>
+          <div className="w-80">
+            <div className="space-y-2">
+              <div className="flex justify-between py-2">
+                <span>Zwischensumme:</span>
+                <span>{formatCurrency(data.subtotal)}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">VAT ({data.taxRate}%):</span>
-                <span className="font-semibold">€{data.taxAmount?.toFixed(2)}</span>
-              </div>
-              <div className="border-t-2 border-blue-600 pt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-gray-800">Total Investment:</span>
-                  <span className="text-2xl font-bold text-blue-900">€{data.total?.toFixed(2)}</span>
+              {typeof data.taxRate === 'number' && data.taxRate > 0 && (
+                <div className="flex justify-between py-2">
+                  <span>Umsatzsteuer ({data.taxRate}%):</span>
+                  <span>{formatCurrency(data.taxAmount)}</span>
+                </div>
+              )}
+              <div className="border-t-2 border-gray-300 pt-2">
+                <div className="flex justify-between py-2 text-lg font-bold">
+                  <span>Gesamtbetrag:</span>
+                  <span>{formatCurrency(data.total)}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="border-t-2 border-gray-200 pt-6">
-          <div className="grid grid-cols-3 gap-8 text-sm text-gray-600">
+        {/* Fußbereich */}
+        <div className="pt-6 border-t-2 border-gray-300 text-xs text-gray-700">
+          <div className="grid grid-cols-3 gap-8">
             <div>
-              <h5 className="font-semibold text-gray-800 mb-2">Business Details</h5>
-              <p>{companySettings?.taxId}</p>
-              <p>VAT: {companySettings?.vatId}</p>
+              <h5 className="font-bold text-gray-800 mb-2">Steuerliche Angaben</h5>
+              <p>Steuernummer: {companySettings?.taxId}</p>
+              <p>USt-IdNr.: {companySettings?.vatId}</p>
             </div>
             <div>
-              <h5 className="font-semibold text-gray-800 mb-2">Banking</h5>
+              <h5 className="font-bold text-gray-800 mb-2">Bankverbindung</h5>
               <p>IBAN: {companySettings?.bankDetails?.iban}</p>
               <p>BIC: {companySettings?.bankDetails?.bic}</p>
             </div>
             <div>
-              <h5 className="font-semibold text-gray-800 mb-2">Contact</h5>
-              <p>{companySettings?.contactInfo?.phone}</p>
-              <p>{companySettings?.contactInfo?.email}</p>
+              <h5 className="font-bold text-gray-800 mb-2">Kontakt</h5>
+              <p>Telefon: {companySettings?.contactInfo?.phone}</p>
+              <p>E-Mail: {companySettings?.contactInfo?.email}</p>
             </div>
-          </div>
-          
-          <div className="text-center mt-6 pt-6 border-t border-gray-200">
-            <p className="text-lg font-semibold text-blue-800">
-              Thank you for considering our professional services
-            </p>
           </div>
         </div>
       </div>

@@ -1,54 +1,45 @@
 import React from 'react';
 import { TemplateProps } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
-export const TechInnovationQuoteTemplate: React.FC<TemplateProps> = ({ 
-  data, 
+export const TechInnovationQuoteTemplate: React.FC<TemplateProps> = ({
+  data,
   companySettings,
-  customizations 
+  customizations,
 }) => {
-  const logoUrl = companySettings?.logoUrl || customizations?.logoUrl;
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
+  const formatDate = (input?: string) => {
+    if (!input) return '';
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? input : d.toLocaleDateString('de-DE');
+  };
+  const formatCurrency = (value?: number) =>
+    typeof value === 'number'
+      ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+      : '';
 
   return (
-    <div className="max-w-4xl mx-auto bg-gray-50 font-mono">
-      {/* Tech Header */}
-      <div className="bg-gradient-to-r from-gray-900 via-blue-900 to-cyan-900 text-green-400 p-8 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="grid grid-cols-20 gap-1 h-full">
-            {Array.from({ length: 400 }).map((_, i) => (
-              <div key={i} className="bg-green-400 animate-pulse" style={{ animationDelay: `${i * 0.1}s` }}></div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="relative z-10 flex justify-between items-start">
+    <div className="max-w-4xl mx-auto bg-white font-sans text-sm">
+      {/* Kopfbereich */}
+      <div className="p-8 border-b-2 border-gray-300">
+        <div className="flex justify-between items-start">
           <div className="flex-1">
             {logoUrl && (
-              <div className="bg-gray-900 p-3 rounded border border-green-400 inline-block mb-6">
-                <img 
-                  src={logoUrl} 
-                  alt="Company Logo" 
-                  className="h-12 w-auto filter brightness-0 invert"
-                />
-              </div>
+              <img src={logoUrl} alt="Firmenlogo" className="h-12 w-auto mb-4 object-contain" />
             )}
-            <div className="font-mono">
-              <h1 className="text-4xl font-bold mb-2 text-green-300">
-                <span className="text-cyan-400">[</span> TECH QUOTE <span className="text-cyan-400">]</span>
-              </h1>
-              <p className="text-xl text-cyan-300">ID: {data.documentNumber}</p>
-              <div className="mt-4 p-2 bg-gray-900 border border-green-400 rounded inline-block">
-                <p className="text-green-400 text-sm">STATUS: READY_FOR_REVIEW</p>
-              </div>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">Angebot</h1>
+            <p className="text-gray-600">ID {data.documentNumber}</p>
           </div>
-          <div className="text-right bg-gray-900 border border-green-400 p-6 rounded">
-            <h2 className="font-bold text-xl mb-3 text-cyan-400">{companySettings?.companyName}</h2>
-            <div className="text-green-300 space-y-1 text-sm font-mono">
-              <p>→ {companySettings?.address?.street}</p>
-              <p>→ {companySettings?.address?.zipCode} {companySettings?.address?.city}</p>
-              <div className="mt-3 pt-3 border-t border-green-400">
-                <p>📞 {companySettings?.contactInfo?.phone}</p>
-                <p>✉ {companySettings?.contactInfo?.email}</p>
+          <div className="text-right">
+            <h2 className="font-bold text-lg text-gray-900 mb-2">{companySettings?.companyName}</h2>
+            <div className="text-gray-700 space-y-1 text-sm">
+              <p>{companySettings?.address?.street}</p>
+              <p>
+                {companySettings?.address?.zipCode} {companySettings?.address?.city}
+              </p>
+              <div className="mt-3 pt-3 border-t border-gray-300">
+                <p>{companySettings?.contactInfo?.phone}</p>
+                <p>{companySettings?.contactInfo?.email}</p>
               </div>
             </div>
           </div>
@@ -56,96 +47,69 @@ export const TechInnovationQuoteTemplate: React.FC<TemplateProps> = ({
       </div>
 
       <div className="p-8">
-        {/* Tech Introduction */}
-        <div className="mb-8 bg-gray-900 border border-green-400 rounded p-6">
-          <h3 className="text-xl font-bold text-green-400 mb-4 font-mono">
-            <span className="text-cyan-400">[</span> SYSTEM_PROPOSAL <span className="text-cyan-400">]</span>
-          </h3>
-          <div className="bg-gray-800 p-4 rounded border border-gray-600 font-mono text-sm">
-            <p className="text-green-300 leading-relaxed">
-              <span className="text-cyan-400">$ </span>
-              Initializing innovative solution proposal...
-              <br />
-              <span className="text-cyan-400">$ </span>
-              Our cutting-edge technology stack delivers scalable solutions.
-              <br />
-              <span className="text-cyan-400">$ </span>
-              Ready to deploy advanced features and optimize your workflow.
-            </p>
-          </div>
-        </div>
-
-        {/* Client & System Info */}
+        {/* Kunde & Angebotsinfo */}
         <div className="grid grid-cols-2 gap-8 mb-8">
-          <div className="bg-gray-900 border border-cyan-400 rounded p-6">
-            <h3 className="text-lg font-bold text-cyan-400 mb-4 font-mono">
-              [CLIENT_DATA]
-            </h3>
-            <div className="space-y-3 font-mono">
-              <div className="text-green-300">
-                <span className="text-gray-400">name:</span> "{data.customerName}"
-              </div>
-              <div className="text-green-300">
-                <span className="text-gray-400">address:</span> "{data.customerAddress?.street}"
-              </div>
-              <div className="text-green-300">
-                <span className="text-gray-400">location:</span> "{data.customerAddress?.zipCode} {data.customerAddress?.city}"
+          <div className="bg-gray-50 p-6 rounded">
+            <h3 className="text-sm font-bold text-gray-600 mb-3">Kunde</h3>
+            <div className="space-y-2">
+              <div className="text-gray-900 text-lg font-semibold">{data.customerName}</div>
+              <div className="text-gray-700">{data.customerAddress?.street}</div>
+              <div className="text-gray-700">
+                {data.customerAddress?.zipCode} {data.customerAddress?.city}
               </div>
               {data.customerContact && (
-                <div className="text-green-300 mt-4 pt-4 border-t border-gray-600">
-                  <span className="text-gray-400">contact:</span> "{data.customerContact}"
+                <div className="mt-4 pt-4 border-t border-gray-200 text-gray-700">
+                  Ansprechpartner: {data.customerContact}
                 </div>
               )}
             </div>
           </div>
-          
           <div className="space-y-4">
-            <div className="bg-blue-900 border border-cyan-400 rounded p-4">
-              <h4 className="font-bold text-cyan-300 mb-2 font-mono">[DATE_CREATED]</h4>
-              <p className="text-xl font-bold text-white font-mono">{data.date}</p>
+            <div className="bg-white border border-gray-300 p-4 rounded">
+              <h4 className="font-semibold text-gray-700 mb-1">Datum</h4>
+              <p className="text-lg font-bold text-gray-900">{formatDate(data.date)}</p>
             </div>
-            <div className="bg-green-900 border border-green-400 rounded p-4">
-              <h4 className="font-bold text-green-300 mb-2 font-mono">[EXPIRES]</h4>
-              <p className="text-xl font-bold text-white font-mono">{data.validUntil}</p>
-            </div>
+            {data.validUntil && (
+              <div className="bg-white border border-gray-300 p-4 rounded">
+                <h4 className="font-semibold text-gray-700 mb-1">Gültig bis</h4>
+                <p className="text-lg font-bold text-gray-900">{formatDate(data.validUntil)}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Tech Services */}
+        {/* Leistungen */}
         <div className="mb-8">
-          <h3 className="text-xl font-bold text-green-400 mb-6 font-mono">
-            <span className="text-cyan-400">[</span> SERVICE_MODULES <span className="text-cyan-400">]</span>
-          </h3>
-          
-          <div className="space-y-4">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Module & Preise</h3>
+          <div className="space-y-3">
             {data.items?.map((item, index) => (
-              <div key={index} className="bg-gray-900 border border-gray-600 rounded p-6 hover:border-green-400 transition-colors">
-                <div className="grid grid-cols-12 gap-4 items-center font-mono">
+              <div key={index} className="bg-white border border-gray-200 rounded p-4">
+                <div className="grid grid-cols-12 gap-4 items-start">
                   <div className="col-span-1">
-                    <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded flex items-center justify-center">
-                      <span className="text-white font-bold">{(index + 1).toString(16).toUpperCase()}</span>
+                    <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-700 font-semibold">
+                      {index + 1}
                     </div>
                   </div>
                   <div className="col-span-7">
-                    <h4 className="font-bold text-lg text-green-400 mb-1">{item.description}</h4>
+                    <div className="font-semibold text-gray-900">{item.description}</div>
                     {item.details && (
-                      <div className="text-gray-400 text-sm bg-gray-800 p-2 rounded mt-2">
-                        <span className="text-cyan-400">// </span>{item.details}
-                      </div>
+                      <div className="text-sm text-gray-600 mt-1">{item.details}</div>
                     )}
                   </div>
                   <div className="col-span-1 text-center">
-                    <div className="bg-gray-800 border border-gray-600 rounded px-3 py-2">
-                      <span className="text-green-400 font-bold">{item.quantity}</span>
+                    <div className="bg-gray-50 rounded px-3 py-1 inline-block text-gray-800 font-medium">
+                      {item.quantity}
                     </div>
                   </div>
                   <div className="col-span-2 text-right">
-                    <p className="text-gray-400 text-xs">UNIT_PRICE</p>
-                    <p className="font-bold text-lg text-cyan-400">€{item.unitPrice?.toFixed(2)}</p>
+                    <div className="text-xs text-gray-500">Einzelpreis</div>
+                    <div className="font-semibold">{formatCurrency(item.unitPrice)}</div>
                   </div>
                   <div className="col-span-1 text-right">
-                    <p className="text-gray-400 text-xs">TOTAL</p>
-                    <p className="font-bold text-xl text-green-400">€{(item.quantity * item.unitPrice).toFixed(2)}</p>
+                    <div className="text-xs text-gray-500">Gesamt</div>
+                    <div className="font-bold text-gray-900">
+                      {formatCurrency(item.quantity * item.unitPrice)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -153,69 +117,52 @@ export const TechInnovationQuoteTemplate: React.FC<TemplateProps> = ({
           </div>
         </div>
 
-        {/* Tech Calculation */}
+        {/* Zusammenfassung */}
         <div className="flex justify-end mb-8">
-          <div className="w-96 bg-gray-900 border border-green-400 rounded">
-            <div className="bg-gradient-to-r from-green-600 to-cyan-600 p-4">
-              <h4 className="font-bold text-xl text-white font-mono">[CALCULATION_ENGINE]</h4>
+          <div className="w-96 bg-white border border-gray-300 rounded">
+            <div className="bg-gray-100 p-4">
+              <h4 className="font-bold text-gray-900">Zusammenfassung</h4>
             </div>
-            <div className="p-6 space-y-4 font-mono">
-              <div className="flex justify-between items-center text-lg">
-                <span className="text-gray-400">subtotal:</span>
-                <span className="text-green-400 font-bold">€{data.subtotal?.toFixed(2)}</span>
+            <div className="p-6 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700">Zwischensumme:</span>
+                <span className="font-semibold">{formatCurrency(data.subtotal)}</span>
               </div>
-              <div className="flex justify-between items-center text-lg">
-                <span className="text-gray-400">vat_rate:</span>
-                <span className="text-cyan-400 font-bold">{data.taxRate}%</span>
-              </div>
-              <div className="flex justify-between items-center text-lg">
-                <span className="text-gray-400">vat_amount:</span>
-                <span className="text-cyan-400 font-bold">€{data.taxAmount?.toFixed(2)}</span>
-              </div>
-              <div className="border-t-2 border-green-400 pt-4">
+              {typeof data.taxRate === 'number' && data.taxRate > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-green-400">total_output:</span>
-                  <span className="text-3xl font-bold text-green-300">€{data.total?.toFixed(2)}</span>
+                  <span className="text-gray-700">Umsatzsteuer ({data.taxRate}%):</span>
+                  <span className="font-semibold">{formatCurrency(data.taxAmount)}</span>
+                </div>
+              )}
+              <div className="border-t border-gray-300 pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-gray-900">Gesamtbetrag:</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {formatCurrency(data.total)}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Tech Footer */}
-        <div className="bg-gray-900 border border-green-400 rounded p-8">
-          <div className="grid grid-cols-3 gap-8 text-sm font-mono mb-6">
+        {/* Fußbereich */}
+        <div className="border-t border-gray-300 pt-6">
+          <div className="grid grid-cols-3 gap-8 text-sm text-gray-700">
             <div>
-              <h5 className="font-bold text-green-400 mb-3">[COMPANY_DATA]</h5>
-              <div className="text-gray-400 space-y-1">
-                <p>tax_id: {companySettings?.taxId}</p>
-                <p>vat_num: {companySettings?.vatId}</p>
-              </div>
+              <h5 className="font-bold text-gray-900 mb-2">Unternehmen</h5>
+              <p>Steuernummer: {companySettings?.taxId}</p>
+              <p>USt-IdNr.: {companySettings?.vatId}</p>
             </div>
             <div>
-              <h5 className="font-bold text-cyan-400 mb-3">[BANK_CONFIG]</h5>
-              <div className="text-gray-400 space-y-1">
-                <p>iban: {companySettings?.bankDetails?.iban}</p>
-                <p>bic: {companySettings?.bankDetails?.bic}</p>
-              </div>
+              <h5 className="font-bold text-gray-900 mb-2">Bank</h5>
+              <p>IBAN: {companySettings?.bankDetails?.iban}</p>
+              <p>BIC: {companySettings?.bankDetails?.bic}</p>
             </div>
             <div>
-              <h5 className="font-bold text-blue-400 mb-3">[CONNECT]</h5>
-              <div className="text-gray-400 space-y-1">
-                <p>tel: {companySettings?.contactInfo?.phone}</p>
-                <p>mail: {companySettings?.contactInfo?.email}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-center border-t border-gray-600 pt-6">
-            <div className="bg-gray-800 p-4 rounded border border-gray-600">
-              <p className="text-xl font-bold text-green-400 font-mono mb-2">
-                <span className="text-cyan-400">[</span> SYSTEM_READY <span className="text-cyan-400">]</span>
-              </p>
-              <p className="text-gray-400 font-mono text-sm">
-                Awaiting deployment confirmation... Let's build the future together!
-              </p>
+              <h5 className="font-bold text-gray-900 mb-2">Kontakt</h5>
+              <p>{companySettings?.contactInfo?.phone}</p>
+              <p>{companySettings?.contactInfo?.email}</p>
             </div>
           </div>
         </div>

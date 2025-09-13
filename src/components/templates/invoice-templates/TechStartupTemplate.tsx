@@ -70,22 +70,26 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
 }) => {
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
+  // DIN 5008: deutsches Datum und EUR Währungsformat
+  const formatDate = (input: string) => {
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? input : d.toLocaleDateString('de-DE');
+  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+  const serviceText =
+    data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
   return (
     <div className="w-full max-w-4xl mx-auto bg-white font-mono text-sm">
-      {/* Tech-Header mit Monospace */}
-      <div className="bg-gray-900 text-white p-8">
+      {/* Heller, neutraler Header */}
+      <div className="bg-white border-b border-gray-200 p-8">
         <div className="flex justify-between items-start">
           <div>
-            <div className="flex items-center mb-4">
-              <div className="w-3 h-3 bg-white rounded-full mr-2"></div>
-              <div className="w-3 h-3 bg-gray-500 rounded-full mr-2"></div>
-              <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-            </div>
-            <h1 className="text-3xl font-bold mb-2">RECHNUNG</h1>
-            <p className="text-gray-300">Rechnungsnummer: {data.documentNumber}</p>
+            <h1 className="text-3xl font-bold mb-1 text-gray-900">Rechnung</h1>
+            <p className="text-gray-600">Rechnungsnummer: {data.documentNumber}</p>
           </div>
 
-          <div className="text-right bg-gray-800 p-4 rounded border border-gray-700">
+          <div className="text-right bg-gray-50 p-4 rounded border border-gray-200">
             {showLogo && logoUrl && (
               <img
                 src={logoUrl}
@@ -93,20 +97,20 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
                 className="h-10 w-auto ml-auto mb-2 object-contain"
               />
             )}
-            <pre className="text-xs text-gray-300 mb-2">
+            <pre className="text-[10px] text-gray-500 mb-2">
               {`
 ┌─────────────────────────┐
 │      ${data.company.name.padEnd(15)}      │
 └─────────────────────────┘
 `}
             </pre>
-            <div className="text-sm text-gray-300">
+            <div className="text-sm text-gray-600">
               <p>{data.company.address.street}</p>
               <p>
                 {data.company.address.zipCode} {data.company.address.city}
               </p>
-              <p className="mt-2 text-gray-400">[{data.company.phone}]</p>
-              <p className="text-gray-400">[{data.company.email}]</p>
+              <p className="mt-2 text-gray-500">[{data.company.phone}]</p>
+              <p className="text-gray-500">[{data.company.email}]</p>
             </div>
           </div>
         </div>
@@ -136,21 +140,21 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
                 <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
                   &gt; RECHNUNGSDATUM
                 </h4>
-                <p className="font-mono text-lg font-bold text-gray-800">{data.date}</p>
+                <p className="font-mono text-lg font-bold text-gray-800">{formatDate(data.date)}</p>
               </div>
               <div className="bg-gray-50 border border-gray-300 p-4">
                 <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
                   &gt; FÄLLIGKEITSDATUM
                 </h4>
-                <p className="font-mono text-lg font-bold text-gray-800">{data.dueDate}</p>
+                <p className="font-mono text-lg font-bold text-gray-800">
+                  {formatDate(data.dueDate)}
+                </p>
               </div>
               <div className="bg-white border border-gray-300 p-4">
                 <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
                   &gt; LEISTUNGSDATUM/-ZEITRAUM
                 </h4>
-                <p className="font-mono text-lg font-bold text-gray-800">
-                  {data.servicePeriod || data.serviceDate || data.date}
-                </p>
+                <p className="font-mono text-lg font-bold text-gray-800">{serviceText}</p>
               </div>
             </div>
           </div>
@@ -177,7 +181,7 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
                 {data.items.map((item, index) => (
                   <tr key={index} className="border-b border-gray-200">
                     <td className="p-3">
-                      <span className="bg-gray-800 text-white px-2 py-1 rounded text-xs">
+                      <span className="bg-gray-200 text-gray-800 px-2 py-1 rounded text-xs">
                         {String(index).padStart(2, '0')}
                       </span>
                     </td>
@@ -188,10 +192,10 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
                       </span>
                     </td>
                     <td className="p-3 text-right text-gray-600">
-                      EUR {item.unitPrice.toFixed(2)}
+                      {formatCurrency(item.unitPrice)}
                     </td>
                     <td className="p-3 text-right font-bold text-gray-800">
-                      EUR {item.total.toFixed(2)}
+                      {formatCurrency(item.total)}
                     </td>
                   </tr>
                 ))}
@@ -204,24 +208,24 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
         <div className="flex justify-end mb-8">
           <div className="w-80">
             <div className="border border-gray-300 bg-gray-50">
-              <div className="bg-gray-800 text-white p-3 text-xs font-bold uppercase tracking-wider">
+              <div className="bg-gray-100 text-gray-800 p-3 text-xs font-bold uppercase tracking-wider border-b border-gray-300">
                 &gt; BERECHNUNG
               </div>
               <div className="p-4 font-mono space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Zwischensumme:</span>
-                  <span className="text-gray-800">EUR {data.subtotal.toFixed(2)}</span>
+                  <span className="text-gray-800">{formatCurrency(data.subtotal)}</span>
                 </div>
                 {!(data.isSmallBusiness || data.reverseCharge) && data.taxAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Umsatzsteuer ({data.taxRate}%):</span>
-                    <span className="text-gray-800">EUR {data.taxAmount.toFixed(2)}</span>
+                    <span className="text-gray-800">{formatCurrency(data.taxAmount)}</span>
                   </div>
                 )}
                 <div className="border-t border-gray-300 pt-2">
                   <div className="flex justify-between text-lg font-bold">
                     <span className="text-gray-800">Gesamtbetrag:</span>
-                    <span className="text-gray-800">EUR {data.total.toFixed(2)}</span>
+                    <span className="text-gray-800">{formatCurrency(data.total)}</span>
                   </div>
                 </div>
               </div>

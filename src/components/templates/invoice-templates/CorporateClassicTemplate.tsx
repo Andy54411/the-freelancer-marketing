@@ -74,10 +74,19 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
 }) => {
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
+  // DIN 5008: deutsches Datums- und Währungsformat
+  const formatDate = (input: string) => {
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? input : d.toLocaleDateString('de-DE');
+  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+  const serviceText =
+    data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
   return (
     <div className="w-full max-w-4xl mx-auto bg-white font-serif text-sm">
       {/* Header mit klassischem Zweispalten-Layout */}
-      <div className="border-b-4 border-gray-900 p-8">
+      <div className="border-b border-gray-200 p-8">
         <div className="grid grid-cols-2 gap-8">
           {/* Links: Company Info */}
           <div>
@@ -103,10 +112,8 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
 
           {/* Rechts: Invoice Title */}
           <div className="text-right">
-            <div className="border-4 border-gray-900 p-6 bg-gray-50">
-              <h2 className="text-4xl font-bold text-gray-900 mb-2 uppercase tracking-widest">
-                RECHNUNG
-              </h2>
+            <div className="border border-gray-300 p-6 bg-white">
+              <h2 className="text-4xl font-bold text-gray-900 mb-2">Rechnung</h2>
               <div className="text-xl font-semibold text-gray-700">
                 Rechnungsnummer {data.documentNumber}
               </div>
@@ -134,47 +141,45 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
           </div>
 
           <div className="space-y-4">
-            <div className="bg-gray-100 p-4 border border-gray-300">
+            <div className="bg-gray-50 p-4 border border-gray-300">
               <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                 Rechnungsdatum
               </h4>
-              <p className="text-lg font-semibold text-gray-900">{data.date}</p>
+              <p className="text-lg font-semibold text-gray-900">{formatDate(data.date)}</p>
             </div>
-            <div className="bg-gray-50 p-4 border border-gray-300">
+            <div className="bg-white p-4 border border-gray-300">
               <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                 Fälligkeitsdatum
               </h4>
-              <p className="text-lg font-semibold text-gray-900">{data.dueDate}</p>
+              <p className="text-lg font-semibold text-gray-900">{formatDate(data.dueDate)}</p>
             </div>
             <div className="bg-gray-50 p-4 border border-gray-300">
               <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                 Leistungsdatum / -zeitraum
               </h4>
-              <p className="text-lg font-semibold text-gray-900">
-                {data.servicePeriod || data.serviceDate || data.date}
-              </p>
+              <p className="text-lg font-semibold text-gray-900">{serviceText}</p>
             </div>
           </div>
         </div>
 
         {/* Klassische Tabelle mit klaren Linien */}
         <div className="mb-8">
-          <table className="w-full border-collapse border-2 border-gray-900">
+          <table className="w-full border-collapse border border-gray-300">
             <thead>
-              <tr className="bg-gray-900 text-white">
-                <th className="border border-gray-900 p-3 text-left font-bold uppercase tracking-wider">
+              <tr className="bg-gray-100 text-gray-800">
+                <th className="border border-gray-300 p-3 text-left font-semibold tracking-wider">
                   Position
                 </th>
-                <th className="border border-gray-900 p-3 text-left font-bold uppercase tracking-wider">
+                <th className="border border-gray-300 p-3 text-left font-semibold tracking-wider">
                   Beschreibung
                 </th>
-                <th className="border border-gray-900 p-3 text-center font-bold uppercase tracking-wider">
+                <th className="border border-gray-300 p-3 text-center font-semibold tracking-wider">
                   Menge
                 </th>
-                <th className="border border-gray-900 p-3 text-right font-bold uppercase tracking-wider">
+                <th className="border border-gray-300 p-3 text-right font-semibold tracking-wider">
                   Einzelpreis
                 </th>
-                <th className="border border-gray-900 p-3 text-right font-bold uppercase tracking-wider">
+                <th className="border border-gray-300 p-3 text-right font-semibold tracking-wider">
                   Gesamtpreis
                 </th>
               </tr>
@@ -182,18 +187,18 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
             <tbody>
               {data.items.map((item, index) => (
                 <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="border border-gray-400 p-3 text-center font-semibold">
+                  <td className="border border-gray-200 p-3 text-center font-medium">
                     {index + 1}
                   </td>
-                  <td className="border border-gray-400 p-3 text-gray-900">{item.description}</td>
-                  <td className="border border-gray-400 p-3 text-center">
+                  <td className="border border-gray-200 p-3 text-gray-900">{item.description}</td>
+                  <td className="border border-gray-200 p-3 text-center">
                     {item.quantity} {item.unit}
                   </td>
-                  <td className="border border-gray-400 p-3 text-right">
-                    €{item.unitPrice.toFixed(2)}
+                  <td className="border border-gray-200 p-3 text-right">
+                    {formatCurrency(item.unitPrice)}
                   </td>
-                  <td className="border border-gray-400 p-3 text-right font-semibold">
-                    €{item.total.toFixed(2)}
+                  <td className="border border-gray-200 p-3 text-right font-semibold">
+                    {formatCurrency(item.total)}
                   </td>
                 </tr>
               ))}
@@ -204,18 +209,20 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
         {/* Klassische Summen-Darstellung */}
         <div className="flex justify-end">
           <div className="w-80">
-            <div className="border-2 border-gray-900 bg-gray-50">
-              <div className="border-b border-gray-400 p-3 flex justify-between">
+            <div className="border border-gray-300 bg-white">
+              <div className="border-b border-gray-200 p-3 flex justify-between">
                 <span className="font-medium text-gray-700">Zwischensumme:</span>
-                <span className="font-semibold">€{data.subtotal.toFixed(2)}</span>
+                <span className="font-semibold">{formatCurrency(data.subtotal)}</span>
               </div>
-              <div className="border-b border-gray-400 p-3 flex justify-between">
-                <span className="font-medium text-gray-700">MwSt. ({data.taxRate}%):</span>
-                <span className="font-semibold">€{data.taxAmount.toFixed(2)}</span>
-              </div>
-              <div className="bg-gray-900 text-white p-4 flex justify-between">
-                <span className="text-lg font-bold uppercase tracking-wider">Gesamtbetrag:</span>
-                <span className="text-xl font-bold">€{data.total.toFixed(2)}</span>
+              {!(data.isSmallBusiness || data.reverseCharge) && data.taxAmount > 0 && (
+                <div className="border-b border-gray-200 p-3 flex justify-between">
+                  <span className="font-medium text-gray-700">Umsatzsteuer ({data.taxRate}%):</span>
+                  <span className="font-semibold">{formatCurrency(data.taxAmount)}</span>
+                </div>
+              )}
+              <div className="p-4 flex justify-between bg-gray-50 border-t border-gray-200">
+                <span className="text-lg font-bold">Gesamtbetrag:</span>
+                <span className="text-xl font-bold">{formatCurrency(data.total)}</span>
               </div>
             </div>
           </div>

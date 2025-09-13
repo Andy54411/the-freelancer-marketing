@@ -2,12 +2,6 @@ import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
 import { resolveLogoUrl } from '../utils/logoUtils';
 
-interface TemplateProps {
-  data: InvoiceData;
-  companySettings?: CompanySettings;
-  customizations?: TemplateCustomizations;
-}
-
 interface InvoiceData {
   documentNumber: string;
   date: string;
@@ -62,11 +56,11 @@ interface InvoiceData {
 
 interface TemplateProps {
   data: InvoiceData;
+  companySettings?: CompanySettings;
+  customizations?: TemplateCustomizations;
 }
 
-/**
- * Creative Modern Template - Asymmetrisch, modern aber professionell
- */
+// Creative Modern Template - Asymmetrisch, modern aber professionell
 export const CreativeModernTemplate: React.FC<TemplateProps> = ({
   data,
   companySettings,
@@ -74,16 +68,27 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
 }) => {
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
+
+  // DIN 5008: deutsches Datums- und Währungsformat
+  const formatDate = (input: string) => {
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? input : d.toLocaleDateString('de-DE');
+  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+  const serviceText =
+    data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-white font-sans text-sm">
       {/* Asymmetrischer Header */}
       <div className="relative">
-        <div className="bg-gray-100 h-40 absolute top-0 right-0 w-2/3"></div>
+        <div className="bg-gray-100 h-40 absolute top-0 right-0 w-2/3" />
         <div className="relative z-10 p-8">
           <div className="grid grid-cols-5 gap-8">
             <div className="col-span-2">
-              <h1 className="text-4xl font-bold text-gray-800 mb-4">RECHNUNG</h1>
-              <div className="w-16 h-1 bg-gray-800 mb-4"></div>
+              <h1 className="text-4xl font-bold text-gray-800 mb-4">Rechnung</h1>
+              <div className="w-16 h-1 bg-gray-800 mb-4" />
               <p className="text-lg text-gray-600">Rechnungsnummer {data.documentNumber}</p>
             </div>
 
@@ -140,25 +145,25 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
               <div className="flex justify-between">
                 <div>
                   <p className="text-xs text-gray-400 uppercase tracking-wider">Rechnungsdatum</p>
-                  <p className="text-lg font-semibold text-gray-800">{data.date}</p>
+                  <p className="text-lg font-semibold text-gray-800">{formatDate(data.date)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-400 uppercase tracking-wider">Fälligkeitsdatum</p>
-                  <p className="text-lg font-semibold text-gray-800">{data.dueDate}</p>
+                  <p className="text-lg font-semibold text-gray-800">{formatDate(data.dueDate)}</p>
                 </div>
               </div>
 
-              <div className="bg-gray-800 text-white p-4 rounded-lg">
-                <p className="text-xs uppercase tracking-wider opacity-75">Zahlungsbedingungen</p>
+              <div className="bg-gray-50 text-gray-900 p-4 rounded-lg border border-gray-200">
+                <p className="text-xs uppercase tracking-wider text-gray-500">
+                  Zahlungsbedingungen
+                </p>
                 <p className="font-semibold">{data.paymentTerms}</p>
               </div>
               <div className="bg-white border border-gray-200 p-4 rounded-lg">
                 <p className="text-xs text-gray-500 uppercase tracking-wider">
                   Leistungsdatum / -zeitraum
                 </p>
-                <p className="font-semibold text-gray-800">
-                  {data.servicePeriod || data.serviceDate || data.date}
-                </p>
+                <p className="font-semibold text-gray-800">{serviceText}</p>
               </div>
             </div>
           </div>
@@ -203,9 +208,11 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
                         {item.quantity} {item.unit}
                       </span>
                     </td>
-                    <td className="p-4 text-right text-gray-600">€{item.unitPrice.toFixed(2)}</td>
+                    <td className="p-4 text-right text-gray-600">
+                      {formatCurrency(item.unitPrice)}
+                    </td>
                     <td className="p-4 text-right font-semibold text-gray-800">
-                      €{item.total.toFixed(2)}
+                      {formatCurrency(item.total)}
                     </td>
                   </tr>
                 ))}
@@ -220,18 +227,20 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({
             <div className="space-y-3">
               <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-600">Zwischensumme</span>
-                <span className="font-semibold text-gray-800">€{data.subtotal.toFixed(2)}</span>
+                <span className="font-semibold text-gray-800">{formatCurrency(data.subtotal)}</span>
               </div>
               {!(data.isSmallBusiness || data.reverseCharge) && data.taxAmount > 0 && (
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="text-gray-600">Umsatzsteuer ({data.taxRate}%)</span>
-                  <span className="font-semibold text-gray-800">€{data.taxAmount.toFixed(2)}</span>
+                  <span className="font-semibold text-gray-800">
+                    {formatCurrency(data.taxAmount)}
+                  </span>
                 </div>
               )}
-              <div className="bg-gray-800 text-white p-4 rounded-lg">
+              <div className="bg-gray-50 text-gray-900 p-4 rounded-lg border border-gray-200">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">Gesamtbetrag</span>
-                  <span className="text-2xl font-bold">€{data.total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold">{formatCurrency(data.total)}</span>
                 </div>
               </div>
             </div>

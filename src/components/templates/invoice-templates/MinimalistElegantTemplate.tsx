@@ -74,6 +74,14 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
 }) => {
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
+  const formatDate = (input: string) => {
+    const d = new Date(input);
+    return isNaN(d.getTime()) ? input : d.toLocaleDateString('de-DE');
+  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value);
+  const serviceText =
+    data.servicePeriod || (data.serviceDate ? formatDate(data.serviceDate) : formatDate(data.date));
   return (
     <div className="w-full max-w-4xl mx-auto bg-white p-12 font-light text-sm">
       {/* Minimalistischer Header */}
@@ -85,7 +93,7 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
             className="h-12 w-auto mx-auto mb-4 object-contain"
           />
         )}
-        <h1 className="text-6xl font-thin text-gray-800 mb-8">RECHNUNG</h1>
+        <h1 className="text-6xl font-thin text-gray-800 mb-8">Rechnung</h1>
         <div className="w-24 h-px bg-gray-400 mx-auto mb-8"></div>
         <p className="text-lg text-gray-500">Rechnungsnummer {data.documentNumber}</p>
       </div>
@@ -121,19 +129,17 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
         <div className="text-center space-y-6">
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Rechnungsdatum</p>
-            <p className="text-lg font-light text-gray-800">{data.date}</p>
+            <p className="text-lg font-light text-gray-800">{formatDate(data.date)}</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">Fälligkeitsdatum</p>
-            <p className="text-lg font-light text-gray-800">{data.dueDate}</p>
+            <p className="text-lg font-light text-gray-800">{formatDate(data.dueDate)}</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">
               Leistungsdatum / -zeitraum
             </p>
-            <p className="text-lg font-light text-gray-800">
-              {data.servicePeriod || data.serviceDate || data.date}
-            </p>
+            <p className="text-lg font-light text-gray-800">{serviceText}</p>
           </div>
         </div>
       </div>
@@ -164,9 +170,9 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
                 <td className="py-6 text-center text-gray-600">
                   {item.quantity} {item.unit}
                 </td>
-                <td className="py-6 text-right text-gray-600">€{item.unitPrice.toFixed(2)}</td>
+                <td className="py-6 text-right text-gray-600">{formatCurrency(item.unitPrice)}</td>
                 <td className="py-6 text-right font-medium text-gray-800">
-                  €{item.total.toFixed(2)}
+                  {formatCurrency(item.total)}
                 </td>
               </tr>
             ))}
@@ -179,16 +185,18 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
         <div className="w-72 space-y-4">
           <div className="flex justify-between py-2">
             <span className="text-gray-500">Zwischensumme</span>
-            <span className="text-gray-800">€{data.subtotal.toFixed(2)}</span>
+            <span className="text-gray-800">{formatCurrency(data.subtotal)}</span>
           </div>
           <div className="flex justify-between py-2">
             <span className="text-gray-500">Mehrwertsteuer ({data.taxRate}%)</span>
-            <span className="text-gray-800">€{data.taxAmount.toFixed(2)}</span>
+            <span className="text-gray-800">{formatCurrency(data.taxAmount)}</span>
           </div>
           <div className="border-t border-gray-200 pt-4">
             <div className="flex justify-between py-2">
               <span className="text-lg font-light text-gray-800">Gesamtbetrag</span>
-              <span className="text-xl font-medium text-gray-800">€{data.total.toFixed(2)}</span>
+              <span className="text-xl font-medium text-gray-800">
+                {formatCurrency(data.total)}
+              </span>
             </div>
           </div>
         </div>

@@ -5,33 +5,29 @@ import { resolveLogoUrl } from '../utils/logoUtils';
 export const CorporateClassicDeliveryTemplate: React.FC<TemplateProps> = ({
   data,
   companySettings,
-  customizations
+  customizations,
 }) => {
   const logoUrl = resolveLogoUrl(customizations, companySettings, data);
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-8 border border-gray-200">
       {/* Corporate Header */}
-      <div className="bg-gray-800 text-white p-6 mb-8 -m-8 mb-8">
+      <div className="bg-white border-b border-gray-200 p-6 mb-8 -m-8 mt-0">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-6">
             {logoUrl && (
-              <div className="bg-white p-2 rounded">
-                <img 
-                  src={logoUrl} 
-                  alt="Company Logo" 
-                  className="h-12 w-12 object-contain"
-                />
+              <div className="bg-white p-2 rounded border border-gray-200">
+                <img src={logoUrl} alt="Company Logo" className="h-12 w-12 object-contain" />
               </div>
             )}
             <div>
-              <h1 className="text-2xl font-bold">LIEFERSCHEIN</h1>
-              <div className="text-gray-200 font-medium text-sm">DELIVERY NOTE</div>
+              <h1 className="text-2xl font-bold text-gray-900">LIEFERSCHEIN</h1>
+              <div className="text-gray-500 font-medium text-sm">DELIVERY NOTE</div>
             </div>
           </div>
-          <div className="text-right bg-gray-700 p-4 rounded">
-            <div className="text-xl font-bold">#{data.documentNumber}</div>
-            <div className="text-gray-200 text-sm">{data.date}</div>
+          <div className="text-right bg-gray-50 p-4 rounded border border-gray-200">
+            <div className="text-xl font-bold text-gray-900">#{data.documentNumber}</div>
+            <div className="text-gray-600 text-sm">{data.date}</div>
           </div>
         </div>
       </div>
@@ -48,21 +44,31 @@ export const CorporateClassicDeliveryTemplate: React.FC<TemplateProps> = ({
             {companySettings?.address && (
               <>
                 <div>{companySettings.address.street}</div>
-                <div>{companySettings.address.zipCode} {companySettings.address.city}</div>
+                <div>
+                  {companySettings.address.zipCode} {companySettings.address.city}
+                </div>
               </>
             )}
             <div className="pt-3 space-y-1 text-sm">
               {companySettings?.contactInfo?.phone && (
-                <div><span className="font-medium">Tel:</span> {companySettings.contactInfo.phone}</div>
+                <div>
+                  <span className="font-medium">Tel:</span> {companySettings.contactInfo.phone}
+                </div>
               )}
               {companySettings?.contactInfo?.email && (
-                <div><span className="font-medium">Email:</span> {companySettings.contactInfo.email}</div>
+                <div>
+                  <span className="font-medium">Email:</span> {companySettings.contactInfo.email}
+                </div>
               )}
               {companySettings?.taxId && (
-                <div><span className="font-medium">Steuer-Nr:</span> {companySettings.taxId}</div>
+                <div>
+                  <span className="font-medium">Steuer-Nr:</span> {companySettings.taxId}
+                </div>
               )}
               {companySettings?.vatId && (
-                <div><span className="font-medium">USt-IdNr:</span> {companySettings.vatId}</div>
+                <div>
+                  <span className="font-medium">USt-IdNr:</span> {companySettings.vatId}
+                </div>
               )}
             </div>
           </div>
@@ -77,10 +83,9 @@ export const CorporateClassicDeliveryTemplate: React.FC<TemplateProps> = ({
             <div className="font-bold">{data.customerName}</div>
             {data.customerAddress && (
               <div className="whitespace-pre-line">
-                {typeof data.customerAddress === 'string' 
-                  ? data.customerAddress 
-                  : `${data.customerAddress.street}\n${data.customerAddress.zipCode} ${data.customerAddress.city}`
-                }
+                {typeof data.customerAddress === 'string'
+                  ? data.customerAddress
+                  : `${data.customerAddress.street}\n${data.customerAddress.zipCode} ${data.customerAddress.city}`}
               </div>
             )}
           </div>
@@ -132,9 +137,7 @@ export const CorporateClassicDeliveryTemplate: React.FC<TemplateProps> = ({
                 <th className="px-4 py-3 text-center font-bold text-gray-700 border-r border-gray-300">
                   EINHEIT
                 </th>
-                <th className="px-4 py-3 text-center font-bold text-gray-700">
-                  STATUS
-                </th>
+                <th className="px-4 py-3 text-center font-bold text-gray-700">STATUS</th>
               </tr>
             </thead>
             <tbody>
@@ -153,9 +156,7 @@ export const CorporateClassicDeliveryTemplate: React.FC<TemplateProps> = ({
                     {item.unit || 'Stk.'}
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <span className="text-xs font-bold text-gray-700">
-                      GELIEFERT
-                    </span>
+                    <span className="text-xs font-bold text-gray-700">GELIEFERT</span>
                   </td>
                 </tr>
               ))}
@@ -211,12 +212,11 @@ export const CorporateClassicDeliveryTemplate: React.FC<TemplateProps> = ({
       {/* Corporate Footer */}
       <div className="border-t-2 border-gray-400 pt-6">
         <div className="text-center">
-          <div className="font-bold text-gray-800 mb-3">
-            LIEFERBESTÄTIGUNG
-          </div>
+          <div className="font-bold text-gray-800 mb-3">LIEFERBESTÄTIGUNG</div>
           <div className="text-sm text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Mit der Unterschrift bestätigt der Empfänger den ordnungsgemäßen Erhalt der oben aufgeführten Artikel 
-            in einwandfreiem Zustand. Diese Lieferbestätigung dient als Nachweis der vollständigen und sachgemäßen Lieferung.
+            Mit der Unterschrift bestätigt der Empfänger den ordnungsgemäßen Erhalt der oben
+            aufgeführten Artikel in einwandfreiem Zustand. Diese Lieferbestätigung dient als
+            Nachweis der vollständigen und sachgemäßen Lieferung.
           </div>
         </div>
       </div>
