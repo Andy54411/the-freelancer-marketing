@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
 interface InvoiceData {
   documentNumber: string;
@@ -59,8 +60,12 @@ interface TemplateProps {
 /**
  * Tech Startup Template - Modern, technisch, strukturiert
  */
-export const TechStartupTemplate: React.FC<TemplateProps> = ({ data, companySettings, customizations }) => {
-  const logoUrl = customizations?.logoUrl ?? companySettings?.logoUrl;
+export const TechStartupTemplate: React.FC<TemplateProps> = ({
+  data,
+  companySettings,
+  customizations,
+}) => {
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
   return (
     <div className="w-full max-w-4xl mx-auto bg-white font-mono text-sm">
@@ -76,13 +81,17 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({ data, companySett
             <h1 className="text-3xl font-bold mb-2">$ INVOICE.EXE</h1>
             <p className="text-gray-300">Document_ID: {data.documentNumber}</p>
           </div>
-          
+
           <div className="text-right bg-gray-800 p-4 rounded border border-gray-700">
             {showLogo && logoUrl && (
-              <img src={logoUrl} alt={`${data.company.name} Logo`} className="h-10 w-auto ml-auto mb-2 object-contain" />
+              <img
+                src={logoUrl}
+                alt={`${data.company.name} Logo`}
+                className="h-10 w-auto ml-auto mb-2 object-contain"
+              />
             )}
             <pre className="text-xs text-gray-300 mb-2">
-{`
+              {`
 ┌─────────────────────────┐
 │      ${data.company.name.padEnd(15)}      │
 └─────────────────────────┘
@@ -90,7 +99,9 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({ data, companySett
             </pre>
             <div className="text-sm text-gray-300">
               <p>{data.company.address.street}</p>
-              <p>{data.company.address.zipCode} {data.company.address.city}</p>
+              <p>
+                {data.company.address.zipCode} {data.company.address.city}
+              </p>
               <p className="mt-2 text-gray-400">[{data.company.phone}]</p>
               <p className="text-gray-400">[{data.company.email}]</p>
             </div>
@@ -110,14 +121,18 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({ data, companySett
                 <div className="font-mono text-sm space-y-1">
                   <p className="text-gray-800 font-bold">{data.customer.name}</p>
                   <p className="text-gray-600">{data.customer.address.street}</p>
-                  <p className="text-gray-600">{data.customer.address.zipCode} {data.customer.address.city}</p>
+                  <p className="text-gray-600">
+                    {data.customer.address.zipCode} {data.customer.address.city}
+                  </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div className="bg-gray-100 border border-gray-300 p-4">
-                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">&gt; DATE_CREATED</h4>
+                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+                  &gt; DATE_CREATED
+                </h4>
                 <p className="font-mono text-lg font-bold text-gray-800">{data.date}</p>
               </div>
               <div className="bg-gray-50 border border-gray-300 p-4">
@@ -133,7 +148,7 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({ data, companySett
           <h3 className="text-xs font-bold text-gray-500 uppercase mb-4 tracking-wider">
             &gt; ITEMS_ARRAY [ ]
           </h3>
-          
+
           <div className="border border-gray-300">
             <table className="w-full font-mono text-xs">
               <thead>
@@ -159,8 +174,12 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({ data, companySett
                         {item.quantity} {item.unit}
                       </span>
                     </td>
-                    <td className="p-3 text-right text-gray-600">EUR {item.unitPrice.toFixed(2)}</td>
-                    <td className="p-3 text-right font-bold text-gray-800">EUR {item.total.toFixed(2)}</td>
+                    <td className="p-3 text-right text-gray-600">
+                      EUR {item.unitPrice.toFixed(2)}
+                    </td>
+                    <td className="p-3 text-right font-bold text-gray-800">
+                      EUR {item.total.toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -217,7 +236,7 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({ data, companySett
               <p className="text-gray-700">TAX_NO: {data.company.taxNumber}</p>
             </div>
           </div>
-          
+
           {data.notes && (
             <div className="mt-6 p-4 bg-gray-100 border border-gray-300">
               <h5 className="text-gray-500 uppercase mb-2 font-bold">&gt; NOTES</h5>
@@ -226,7 +245,7 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({ data, companySett
           )}
 
           <div className="mt-6 text-center text-gray-400">
-            <p>// Generated by Tasko Invoice System v2.0</p>
+            <p>Generated by Tasko Invoice System v2.0</p>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
 interface TemplateProps {
   data: InvoiceData;
@@ -63,8 +64,12 @@ interface TemplateProps {
 /**
  * Creative Modern Template - Asymmetrisch, modern aber professionell
  */
-export const CreativeModernTemplate: React.FC<TemplateProps> = ({ data, companySettings, customizations }) => {
-  const logoUrl = customizations?.logoUrl ?? companySettings?.logoUrl;
+export const CreativeModernTemplate: React.FC<TemplateProps> = ({
+  data,
+  companySettings,
+  customizations,
+}) => {
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
   return (
     <div className="w-full max-w-4xl mx-auto bg-white font-sans text-sm">
@@ -78,15 +83,21 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({ data, companyS
               <div className="w-16 h-1 bg-gray-800 mb-4"></div>
               <p className="text-lg text-gray-600">#{data.documentNumber}</p>
             </div>
-            
+
             <div className="col-span-3 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
               {showLogo && logoUrl && (
-                <img src={logoUrl} alt={`${data.company.name} Logo`} className="h-10 w-auto ml-auto mb-2 object-contain" />
+                <img
+                  src={logoUrl}
+                  alt={`${data.company.name} Logo`}
+                  className="h-10 w-auto ml-auto mb-2 object-contain"
+                />
               )}
               <h2 className="text-xl font-bold text-gray-800 mb-3">{data.company.name}</h2>
               <div className="text-gray-600 space-y-1">
                 <p>{data.company.address.street}</p>
-                <p>{data.company.address.zipCode} {data.company.address.city}</p>
+                <p>
+                  {data.company.address.zipCode} {data.company.address.city}
+                </p>
                 <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-200">
                   <div>
                     <p className="text-xs text-gray-400 uppercase">Telefon</p>
@@ -115,11 +126,13 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({ data, companyS
                 <div className="space-y-2">
                   <p className="text-xl font-semibold text-gray-800">{data.customer.name}</p>
                   <p className="text-gray-600">{data.customer.address.street}</p>
-                  <p className="text-gray-600">{data.customer.address.zipCode} {data.customer.address.city}</p>
+                  <p className="text-gray-600">
+                    {data.customer.address.zipCode} {data.customer.address.city}
+                  </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="col-span-2 space-y-4">
               <div className="flex justify-between">
                 <div>
@@ -131,7 +144,7 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({ data, companyS
                   <p className="text-lg font-semibold text-gray-800">{data.dueDate}</p>
                 </div>
               </div>
-              
+
               <div className="bg-gray-800 text-white p-4 rounded-lg">
                 <p className="text-xs uppercase tracking-wider opacity-75">Zahlungsbedingungen</p>
                 <p className="font-semibold">{data.paymentTerms}</p>
@@ -146,11 +159,21 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({ data, companyS
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="p-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
-                  <th className="p-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Beschreibung</th>
-                  <th className="p-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Anzahl</th>
-                  <th className="p-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Einzelpreis</th>
-                  <th className="p-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Gesamt</th>
+                  <th className="p-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="p-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Beschreibung
+                  </th>
+                  <th className="p-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Anzahl
+                  </th>
+                  <th className="p-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Einzelpreis
+                  </th>
+                  <th className="p-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Gesamt
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white">
@@ -170,7 +193,9 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({ data, companyS
                       </span>
                     </td>
                     <td className="p-4 text-right text-gray-600">€{item.unitPrice.toFixed(2)}</td>
-                    <td className="p-4 text-right font-semibold text-gray-800">€{item.total.toFixed(2)}</td>
+                    <td className="p-4 text-right font-semibold text-gray-800">
+                      €{item.total.toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -205,17 +230,21 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({ data, companyS
           <div className="grid grid-cols-2 gap-8">
             <div className="space-y-4">
               <div>
-                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Bankverbindung</h5>
+                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  Bankverbindung
+                </h5>
                 <div className="text-sm text-gray-600 space-y-1">
                   <p>IBAN: {data.company.bankDetails.iban}</p>
                   <p>BIC: {data.company.bankDetails.bic}</p>
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div>
-                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Steuerdaten</h5>
+                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  Steuerdaten
+                </h5>
                 <div className="text-sm text-gray-600 space-y-1">
                   <p>USt-IdNr.: {data.company.vatId}</p>
                   <p>Steuernr.: {data.company.taxNumber}</p>
@@ -223,7 +252,7 @@ export const CreativeModernTemplate: React.FC<TemplateProps> = ({ data, companyS
               </div>
             </div>
           </div>
-          
+
           {data.notes && (
             <div className="mt-6 p-4 bg-gray-50 rounded-lg border-l-4 border-gray-300">
               <p className="text-gray-700">{data.notes}</p>

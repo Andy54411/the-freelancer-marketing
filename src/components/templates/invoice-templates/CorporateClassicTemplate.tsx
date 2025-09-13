@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
 interface TemplateProps {
   data: InvoiceData;
@@ -63,8 +64,12 @@ interface TemplateProps {
 /**
  * Corporate Classic Template - Zweispaltig mit klassischem Business-Layout
  */
-export const CorporateClassicTemplate: React.FC<TemplateProps> = ({ data, companySettings, customizations }) => {
-  const logoUrl = customizations?.logoUrl ?? companySettings?.logoUrl;
+export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
+  data,
+  companySettings,
+  customizations,
+}) => {
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
   return (
     <div className="w-full max-w-4xl mx-auto bg-white font-serif text-sm">
@@ -74,28 +79,32 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({ data, compan
           {/* Links: Company Info */}
           <div>
             {showLogo && logoUrl && (
-              <img src={logoUrl} alt={`${data.company.name} Logo`} className="h-12 w-auto mb-3 object-contain" />
+              <img
+                src={logoUrl}
+                alt={`${data.company.name} Logo`}
+                className="h-12 w-auto mb-3 object-contain"
+              />
             )}
             <h1 className="text-3xl font-bold text-gray-900 mb-2 uppercase tracking-wider">
               {data.company.name}
             </h1>
             <div className="text-gray-700 space-y-1">
               <p>{data.company.address.street}</p>
-              <p>{data.company.address.zipCode} {data.company.address.city}</p>
+              <p>
+                {data.company.address.zipCode} {data.company.address.city}
+              </p>
               <p className="mt-2 font-medium">{data.company.phone}</p>
               <p>{data.company.email}</p>
             </div>
           </div>
-          
+
           {/* Rechts: Invoice Title */}
           <div className="text-right">
             <div className="border-4 border-gray-900 p-6 bg-gray-50">
               <h2 className="text-4xl font-bold text-gray-900 mb-2 uppercase tracking-widest">
                 RECHNUNG
               </h2>
-              <div className="text-xl font-semibold text-gray-700">
-                Nr. {data.documentNumber}
-              </div>
+              <div className="text-xl font-semibold text-gray-700">Nr. {data.documentNumber}</div>
             </div>
           </div>
         </div>
@@ -112,18 +121,24 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({ data, compan
               <div className="text-lg font-medium space-y-1">
                 <p className="font-bold text-gray-900">{data.customer.name}</p>
                 <p className="text-gray-700">{data.customer.address.street}</p>
-                <p className="text-gray-700">{data.customer.address.zipCode} {data.customer.address.city}</p>
+                <p className="text-gray-700">
+                  {data.customer.address.zipCode} {data.customer.address.city}
+                </p>
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-4">
             <div className="bg-gray-100 p-4 border border-gray-300">
-              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Rechnungsdatum</h4>
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Rechnungsdatum
+              </h4>
               <p className="text-lg font-semibold text-gray-900">{data.date}</p>
             </div>
             <div className="bg-gray-50 p-4 border border-gray-300">
-              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Fälligkeitsdatum</h4>
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Fälligkeitsdatum
+              </h4>
               <p className="text-lg font-semibold text-gray-900">{data.dueDate}</p>
             </div>
           </div>
@@ -134,21 +149,39 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({ data, compan
           <table className="w-full border-collapse border-2 border-gray-900">
             <thead>
               <tr className="bg-gray-900 text-white">
-                <th className="border border-gray-900 p-3 text-left font-bold uppercase tracking-wider">Position</th>
-                <th className="border border-gray-900 p-3 text-left font-bold uppercase tracking-wider">Beschreibung</th>
-                <th className="border border-gray-900 p-3 text-center font-bold uppercase tracking-wider">Menge</th>
-                <th className="border border-gray-900 p-3 text-right font-bold uppercase tracking-wider">Einzelpreis</th>
-                <th className="border border-gray-900 p-3 text-right font-bold uppercase tracking-wider">Gesamtpreis</th>
+                <th className="border border-gray-900 p-3 text-left font-bold uppercase tracking-wider">
+                  Position
+                </th>
+                <th className="border border-gray-900 p-3 text-left font-bold uppercase tracking-wider">
+                  Beschreibung
+                </th>
+                <th className="border border-gray-900 p-3 text-center font-bold uppercase tracking-wider">
+                  Menge
+                </th>
+                <th className="border border-gray-900 p-3 text-right font-bold uppercase tracking-wider">
+                  Einzelpreis
+                </th>
+                <th className="border border-gray-900 p-3 text-right font-bold uppercase tracking-wider">
+                  Gesamtpreis
+                </th>
               </tr>
             </thead>
             <tbody>
               {data.items.map((item, index) => (
                 <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="border border-gray-400 p-3 text-center font-semibold">{index + 1}</td>
+                  <td className="border border-gray-400 p-3 text-center font-semibold">
+                    {index + 1}
+                  </td>
                   <td className="border border-gray-400 p-3 text-gray-900">{item.description}</td>
-                  <td className="border border-gray-400 p-3 text-center">{item.quantity} {item.unit}</td>
-                  <td className="border border-gray-400 p-3 text-right">€{item.unitPrice.toFixed(2)}</td>
-                  <td className="border border-gray-400 p-3 text-right font-semibold">€{item.total.toFixed(2)}</td>
+                  <td className="border border-gray-400 p-3 text-center">
+                    {item.quantity} {item.unit}
+                  </td>
+                  <td className="border border-gray-400 p-3 text-right">
+                    €{item.unitPrice.toFixed(2)}
+                  </td>
+                  <td className="border border-gray-400 p-3 text-right font-semibold">
+                    €{item.total.toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
 interface TemplateProps {
   data: InvoiceData;
@@ -63,15 +64,23 @@ interface TemplateProps {
 /**
  * Minimalist Elegant Template - Reduziert, clean, viel Weißraum
  */
-export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({ data, companySettings, customizations }) => {
-  const logoUrl = customizations?.logoUrl ?? companySettings?.logoUrl;
+export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
+  data,
+  companySettings,
+  customizations,
+}) => {
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
   return (
     <div className="w-full max-w-4xl mx-auto bg-white p-12 font-light text-sm">
       {/* Minimalistischer Header */}
       <div className="text-center mb-16">
         {showLogo && logoUrl && (
-          <img src={logoUrl} alt={`${data.company.name} Logo`} className="h-12 w-auto mx-auto mb-4 object-contain" />
+          <img
+            src={logoUrl}
+            alt={`${data.company.name} Logo`}
+            className="h-12 w-auto mx-auto mb-4 object-contain"
+          />
         )}
         <h1 className="text-6xl font-thin text-gray-800 mb-8">RECHNUNG</h1>
         <div className="w-24 h-px bg-gray-400 mx-auto mb-8"></div>
@@ -84,18 +93,22 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({ data, compa
           <h2 className="text-lg font-light text-gray-800 mb-6">{data.company.name}</h2>
           <div className="text-gray-500 space-y-1 leading-relaxed">
             <p>{data.company.address.street}</p>
-            <p>{data.company.address.zipCode} {data.company.address.city}</p>
+            <p>
+              {data.company.address.zipCode} {data.company.address.city}
+            </p>
             <p className="mt-4">{data.company.phone}</p>
             <p>{data.company.email}</p>
           </div>
         </div>
-        
+
         <div>
           <h3 className="text-lg font-light text-gray-800 mb-6">Rechnungsempfänger</h3>
           <div className="text-gray-700 space-y-1 leading-relaxed">
             <p className="font-medium">{data.customer.name}</p>
             <p>{data.customer.address.street}</p>
-            <p>{data.customer.address.zipCode} {data.customer.address.city}</p>
+            <p>
+              {data.customer.address.zipCode} {data.customer.address.city}
+            </p>
           </div>
         </div>
       </div>
@@ -119,19 +132,31 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({ data, compa
         <table className="w-full">
           <thead>
             <tr>
-              <th className="text-left pb-4 text-xs uppercase tracking-widest text-gray-400 font-normal">Beschreibung</th>
-              <th className="text-center pb-4 text-xs uppercase tracking-widest text-gray-400 font-normal">Menge</th>
-              <th className="text-right pb-4 text-xs uppercase tracking-widest text-gray-400 font-normal">Einzelpreis</th>
-              <th className="text-right pb-4 text-xs uppercase tracking-widest text-gray-400 font-normal">Gesamtpreis</th>
+              <th className="text-left pb-4 text-xs uppercase tracking-widest text-gray-400 font-normal">
+                Beschreibung
+              </th>
+              <th className="text-center pb-4 text-xs uppercase tracking-widest text-gray-400 font-normal">
+                Menge
+              </th>
+              <th className="text-right pb-4 text-xs uppercase tracking-widest text-gray-400 font-normal">
+                Einzelpreis
+              </th>
+              <th className="text-right pb-4 text-xs uppercase tracking-widest text-gray-400 font-normal">
+                Gesamtpreis
+              </th>
             </tr>
           </thead>
           <tbody>
             {data.items.map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
                 <td className="py-6 text-gray-800 font-light">{item.description}</td>
-                <td className="py-6 text-center text-gray-600">{item.quantity} {item.unit}</td>
+                <td className="py-6 text-center text-gray-600">
+                  {item.quantity} {item.unit}
+                </td>
                 <td className="py-6 text-right text-gray-600">€{item.unitPrice.toFixed(2)}</td>
-                <td className="py-6 text-right font-medium text-gray-800">€{item.total.toFixed(2)}</td>
+                <td className="py-6 text-right font-medium text-gray-800">
+                  €{item.total.toFixed(2)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -174,7 +199,7 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({ data, compa
             <p className="text-gray-600">USt-IdNr.: {data.company.vatId}</p>
           </div>
         </div>
-        
+
         {data.notes && (
           <div className="text-center mt-12">
             <p className="text-gray-500 italic font-light">{data.notes}</p>

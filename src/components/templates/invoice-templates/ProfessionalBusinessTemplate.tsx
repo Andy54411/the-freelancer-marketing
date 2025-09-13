@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
 interface TemplateProps {
   data: InvoiceData;
@@ -61,8 +62,12 @@ interface InvoiceData {
 /**
  * Professional Business Template - Klassisch, sauber, deutscher Standard
  */
-export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({ data, companySettings, customizations }) => {
-  const logoUrl = customizations?.logoUrl ?? companySettings?.logoUrl ?? (companySettings as any)?.profilbildurl;
+export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
+  data,
+  companySettings,
+  customizations,
+}) => {
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
   return (
     <div className="w-full max-w-4xl mx-auto bg-white p-8 font-sans text-sm">
@@ -74,12 +79,18 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({ data, co
         </div>
         <div className="text-right">
           {showLogo && logoUrl && (
-            <img src={logoUrl} alt={`${data.company.name} Logo`} className="h-12 w-auto ml-auto mb-2 object-contain" />
+            <img
+              src={logoUrl}
+              alt={`${data.company.name} Logo`}
+              className="h-12 w-auto ml-auto mb-2 object-contain"
+            />
           )}
           <h2 className="text-xl font-bold text-gray-800 mb-2">{data.company.name}</h2>
           <div className="text-gray-600">
             <p>{data.company.address.street}</p>
-            <p>{data.company.address.zipCode} {data.company.address.city}</p>
+            <p>
+              {data.company.address.zipCode} {data.company.address.city}
+            </p>
             <p className="mt-2">{data.company.phone}</p>
             <p>{data.company.email}</p>
           </div>
@@ -93,7 +104,9 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({ data, co
           <div className="bg-gray-50 p-4 rounded">
             <p className="font-bold text-gray-800">{data.customer.name}</p>
             <p className="text-gray-700">{data.customer.address.street}</p>
-            <p className="text-gray-700">{data.customer.address.zipCode} {data.customer.address.city}</p>
+            <p className="text-gray-700">
+              {data.customer.address.zipCode} {data.customer.address.city}
+            </p>
           </div>
         </div>
         <div>
@@ -107,7 +120,9 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({ data, co
               <span className="font-semibold">{data.dueDate}</span>
             </div>
             <div>
-              <span className="text-sm font-bold text-gray-500 uppercase">Zahlungsbedingungen: </span>
+              <span className="text-sm font-bold text-gray-500 uppercase">
+                Zahlungsbedingungen:{' '}
+              </span>
               <span className="font-semibold">{data.paymentTerms}</span>
             </div>
           </div>
@@ -131,9 +146,15 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({ data, co
               <tr key={index}>
                 <td className="border border-gray-300 p-3 text-center">{index + 1}</td>
                 <td className="border border-gray-300 p-3">{item.description}</td>
-                <td className="border border-gray-300 p-3 text-center">{item.quantity} {item.unit}</td>
-                <td className="border border-gray-300 p-3 text-right">€{item.unitPrice.toFixed(2)}</td>
-                <td className="border border-gray-300 p-3 text-right font-semibold">€{item.total.toFixed(2)}</td>
+                <td className="border border-gray-300 p-3 text-center">
+                  {item.quantity} {item.unit}
+                </td>
+                <td className="border border-gray-300 p-3 text-right">
+                  €{item.unitPrice.toFixed(2)}
+                </td>
+                <td className="border border-gray-300 p-3 text-right font-semibold">
+                  €{item.total.toFixed(2)}
+                </td>
               </tr>
             ))}
           </tbody>

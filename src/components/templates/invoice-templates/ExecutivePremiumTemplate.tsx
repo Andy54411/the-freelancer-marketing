@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CompanySettings, TemplateCustomizations } from '../types';
+import { resolveLogoUrl } from '../utils/logoUtils';
 
 interface InvoiceData {
   documentNumber: string;
@@ -58,8 +59,12 @@ interface TemplateProps {
 /**
  * Executive Premium Template - Exklusives Design mit grauen Akzenten
  */
-export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({ data, companySettings, customizations }) => {
-  const logoUrl = customizations?.logoUrl ?? companySettings?.logoUrl;
+export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({
+  data,
+  companySettings,
+  customizations,
+}) => {
+  const logoUrl = resolveLogoUrl(customizations, companySettings, data);
   const showLogo = customizations?.showLogo ?? true;
   return (
     <div className="w-full max-w-4xl mx-auto bg-white font-sans text-sm">
@@ -67,7 +72,7 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({ data, compan
       <div className="relative">
         {/* Grauer Seitenbalken */}
         <div className="absolute left-0 top-0 w-2 h-full bg-gray-800"></div>
-        
+
         <div className="pl-8 pr-8 py-8">
           <div className="flex justify-between items-start">
             <div className="flex-1">
@@ -75,21 +80,27 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({ data, compan
                 <h1 className="text-5xl font-light text-gray-800 mb-2">RECHNUNG</h1>
                 <div className="w-20 h-1 bg-gray-800"></div>
               </div>
-              
+
               <div className="text-gray-600">
                 <p className="text-lg font-medium">Dokument Nr. {data.documentNumber}</p>
                 <p>Erstellt am {data.date}</p>
               </div>
             </div>
-            
+
             <div className="text-right bg-gray-50 p-6 rounded-lg border-l-4 border-gray-800">
               {showLogo && logoUrl && (
-                <img src={logoUrl} alt={`${data.company.name} Logo`} className="h-10 w-auto ml-auto mb-2 object-contain" />
+                <img
+                  src={logoUrl}
+                  alt={`${data.company.name} Logo`}
+                  className="h-10 w-auto ml-auto mb-2 object-contain"
+                />
               )}
               <h2 className="text-2xl font-bold text-gray-800 mb-3">{data.company.name}</h2>
               <div className="text-gray-600 space-y-1">
                 <p>{data.company.address.street}</p>
-                <p>{data.company.address.zipCode} {data.company.address.city}</p>
+                <p>
+                  {data.company.address.zipCode} {data.company.address.city}
+                </p>
                 <div className="mt-3 pt-3 border-t border-gray-300">
                   <p className="font-medium">{data.company.phone}</p>
                   <p>{data.company.email}</p>
@@ -112,18 +123,24 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({ data, compan
                 <div className="bg-white border-l-4 border-gray-800 pl-6 py-4">
                   <p className="text-xl font-semibold text-gray-800 mb-2">{data.customer.name}</p>
                   <p className="text-gray-600">{data.customer.address.street}</p>
-                  <p className="text-gray-600">{data.customer.address.zipCode} {data.customer.address.city}</p>
+                  <p className="text-gray-600">
+                    {data.customer.address.zipCode} {data.customer.address.city}
+                  </p>
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-6">
               <div className="bg-gray-800 text-white p-4 rounded">
-                <h4 className="text-xs font-bold uppercase tracking-widest mb-2">Fälligkeitsdatum</h4>
+                <h4 className="text-xs font-bold uppercase tracking-widest mb-2">
+                  Fälligkeitsdatum
+                </h4>
                 <p className="text-xl font-bold">{data.dueDate}</p>
               </div>
               <div className="bg-gray-100 border border-gray-300 p-4 rounded">
-                <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">Zahlungsbedingungen</h4>
+                <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">
+                  Zahlungsbedingungen
+                </h4>
                 <p className="text-gray-800 font-medium">{data.paymentTerms}</p>
               </div>
             </div>
@@ -136,12 +153,14 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({ data, compan
             <div className="bg-gray-800 text-white p-4">
               <h3 className="text-lg font-bold uppercase tracking-wider">Leistungsübersicht</h3>
             </div>
-            
+
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-200">
                   <th className="p-4 text-left font-semibold text-gray-700">#</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Leistungsbeschreibung</th>
+                  <th className="p-4 text-left font-semibold text-gray-700">
+                    Leistungsbeschreibung
+                  </th>
                   <th className="p-4 text-center font-semibold text-gray-700">Menge</th>
                   <th className="p-4 text-right font-semibold text-gray-700">Einzelpreis</th>
                   <th className="p-4 text-right font-semibold text-gray-700">Gesamtpreis</th>
@@ -150,11 +169,17 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({ data, compan
               <tbody>
                 {data.items.map((item, index) => (
                   <tr key={index} className="border-b border-gray-200">
-                    <td className="p-4 font-medium text-gray-600">{String(index + 1).padStart(2, '0')}</td>
+                    <td className="p-4 font-medium text-gray-600">
+                      {String(index + 1).padStart(2, '0')}
+                    </td>
                     <td className="p-4 font-medium text-gray-800">{item.description}</td>
-                    <td className="p-4 text-center text-gray-600">{item.quantity} {item.unit}</td>
+                    <td className="p-4 text-center text-gray-600">
+                      {item.quantity} {item.unit}
+                    </td>
                     <td className="p-4 text-right text-gray-600">€{item.unitPrice.toFixed(2)}</td>
-                    <td className="p-4 text-right font-bold text-gray-800">€{item.total.toFixed(2)}</td>
+                    <td className="p-4 text-right font-bold text-gray-800">
+                      €{item.total.toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -205,7 +230,7 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({ data, compan
               <p>Steuernr.: {data.company.taxNumber}</p>
             </div>
           </div>
-          
+
           {data.notes && (
             <div className="mt-8 p-4 bg-gray-50 rounded border-l-4 border-gray-800">
               <p className="text-gray-700 italic">{data.notes}</p>
