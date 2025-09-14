@@ -27,8 +27,9 @@ export const CreativeModernQuoteTemplate: React.FC<TemplateProps> = ({
             {logoUrl && (
               <img src={logoUrl} alt="Firmenlogo" className="h-12 w-auto mb-4 object-contain" />
             )}
-            <h1 className="text-3xl font-bold text-gray-800 mb-1">Angebot</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-1">{data.title || 'Angebot'}</h1>
             <p className="text-gray-600">Nr. {data.documentNumber}</p>
+            {data.reference && <p className="text-gray-600">Referenz: {data.reference}</p>}
           </div>
           <div className="text-right bg-gray-50 p-6 rounded border">
             <h3 className="font-bold text-lg mb-2 text-gray-900">{companySettings?.companyName}</h3>
@@ -47,6 +48,13 @@ export const CreativeModernQuoteTemplate: React.FC<TemplateProps> = ({
       </div>
 
       <div className="p-8">
+        {/* Kopf-Text */}
+        {data.headTextHtml && (
+          <div className="mb-8 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <div dangerouslySetInnerHTML={{ __html: data.headTextHtml }} />
+          </div>
+        )}
+
         {/* Kunde & Angebotsinfo */}
         <div className="grid grid-cols-12 gap-6 mb-8">
           <div className="col-span-8 bg-gray-50 p-6 rounded">
@@ -58,6 +66,7 @@ export const CreativeModernQuoteTemplate: React.FC<TemplateProps> = ({
                 <p>
                   {data.customerAddress?.zipCode} {data.customerAddress?.city}
                 </p>
+                {data.customerEmail && <p className="text-gray-700">{data.customerEmail}</p>}
               </div>
               {data.customerContact && (
                 <div className="mt-4 pt-4 border-t border-gray-200">
@@ -83,38 +92,65 @@ export const CreativeModernQuoteTemplate: React.FC<TemplateProps> = ({
 
         {/* Positionen */}
         <div className="mb-8">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Leistungsübersicht</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Leistungen & Preise</h3>
           <div className="space-y-3">
-            {data.items?.map((item, index) => (
-              <div key={index} className="bg-white rounded border border-gray-200 p-4">
-                <div className="grid grid-cols-12 gap-4 items-start">
-                  <div className="col-span-1">
-                    <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-700 font-semibold">
-                      {index + 1}
+            {data.items?.map((item, index) => {
+              const discountFactor =
+                item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
+              const totalPrice = item.quantity * item.unitPrice * discountFactor;
+              const isDiscount = item.category === 'discount';
+
+              return (
+                <div key={index} className="bg-white rounded border border-gray-200 p-4">
+                  <div className="grid grid-cols-12 gap-4 items-start">
+                    <div className="col-span-1">
+                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-700 font-semibold">
+                        {String(index + 1).padStart(2, '0')}
+                      </div>
                     </div>
-                  </div>
-                  <div className="col-span-6">
-                    <h4 className="font-semibold text-gray-900 mb-1">{item.description}</h4>
-                    {item.details && <p className="text-gray-600 text-sm">{item.details}</p>}
-                  </div>
-                  <div className="col-span-2 text-center">
-                    <div className="bg-gray-50 rounded px-3 py-1 inline-block">
-                      <span className="font-semibold text-gray-800">{item.quantity}</span>
+                    <div className="col-span-5">
+                      <h4
+                        className={`font-semibold mb-1 ${isDiscount ? 'text-red-600' : 'text-gray-900'}`}
+                      >
+                        {item.description}
+                      </h4>
+                      {item.details && <p className="text-gray-600 text-sm">{item.details}</p>}
                     </div>
-                  </div>
-                  <div className="col-span-2 text-right">
-                    <p className="text-gray-500 text-xs">Einzelpreis</p>
-                    <p className="font-semibold">{formatCurrency(item.unitPrice)}</p>
-                  </div>
-                  <div className="col-span-1 text-right">
-                    <p className="text-gray-500 text-xs">Gesamt</p>
-                    <p className="font-bold text-gray-900">
-                      {formatCurrency(item.quantity * item.unitPrice)}
-                    </p>
+                    <div className="col-span-1 text-center">
+                      <p className="text-gray-500 text-xs">Menge</p>
+                      <div className="bg-gray-50 rounded px-3 py-1 inline-block">
+                        <span className="font-semibold text-gray-800">{item.quantity}</span>
+                        {item.unit && (
+                          <span className="text-gray-600 text-sm ml-1">{item.unit}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="col-span-1 text-center">
+                      <p className="text-gray-500 text-xs">Rabatt</p>
+                      <div className="bg-gray-50 rounded px-3 py-1 inline-block">
+                        <span className="font-semibold text-gray-800">
+                          {!isDiscount && item.discountPercent && item.discountPercent > 0
+                            ? `${item.discountPercent}%`
+                            : '-'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <p className="text-gray-500 text-xs">Einzelpreis</p>
+                      <p className={`font-semibold ${isDiscount ? 'text-red-600' : ''}`}>
+                        {formatCurrency(item.unitPrice)}
+                      </p>
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <p className="text-gray-500 text-xs">Gesamt</p>
+                      <p className={`font-bold ${isDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+                        {formatCurrency(totalPrice)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -146,6 +182,39 @@ export const CreativeModernQuoteTemplate: React.FC<TemplateProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Fuß-Text */}
+        {data.footerText && (
+          <div className="mb-8 p-4 bg-gray-50 rounded border-l-4 border-gray-400">
+            <div dangerouslySetInnerHTML={{ __html: data.footerText }} />
+          </div>
+        )}
+
+        {/* Notizen */}
+        {data.notes && (
+          <div className="mb-8 p-4 bg-yellow-50 rounded border-l-4 border-yellow-400">
+            <h4 className="font-bold text-gray-800 mb-2">Hinweise</h4>
+            <div className="whitespace-pre-line text-gray-700">{data.notes}</div>
+          </div>
+        )}
+
+        {/* Zahlungs- und Lieferbedingungen */}
+        {(data.paymentTerms || data.deliveryTerms) && (
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {data.paymentTerms && (
+              <div className="bg-blue-50 p-4 rounded border-l-4 border-blue-400">
+                <h4 className="font-bold text-gray-800 mb-2">Zahlungsbedingungen</h4>
+                <p className="text-gray-700">{data.paymentTerms}</p>
+              </div>
+            )}
+            {data.deliveryTerms && (
+              <div className="bg-green-50 p-4 rounded border-l-4 border-green-400">
+                <h4 className="font-bold text-gray-800 mb-2">Lieferbedingungen</h4>
+                <p className="text-gray-700">{data.deliveryTerms}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Fußbereich */}
         <div className="border-t border-gray-300 pt-6">

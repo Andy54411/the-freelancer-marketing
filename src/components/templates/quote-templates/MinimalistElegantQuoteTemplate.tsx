@@ -27,8 +27,11 @@ export const MinimalistElegantQuoteTemplate: React.FC<TemplateProps> = ({
             {logoUrl && (
               <img src={logoUrl} alt="Firmenlogo" className="h-12 w-auto mb-8 object-contain" />
             )}
-            <h1 className="text-4xl font-thin text-gray-900 mb-2 tracking-wider">Angebot</h1>
+            <h1 className="text-4xl font-thin text-gray-900 mb-2 tracking-wider">
+              {data.title || 'Angebot'}
+            </h1>
             <p className="text-gray-500 text-base tracking-wide">{data.documentNumber}</p>
+            {data.reference && <p className="text-gray-600">Referenz: {data.reference}</p>}
           </div>
           <div className="text-right text-gray-600 space-y-1">
             <h2 className="font-medium text-lg text-gray-900 mb-1">
@@ -57,6 +60,7 @@ export const MinimalistElegantQuoteTemplate: React.FC<TemplateProps> = ({
               <p className="text-gray-600">
                 {data.customerAddress?.zipCode} {data.customerAddress?.city}
               </p>
+              {data.customerEmail && <p className="text-gray-700">{data.customerEmail}</p>}
               {data.customerContact && (
                 <p className="text-gray-600 mt-4 pt-4 border-t border-gray-100">
                   Ansprechpartner: {data.customerContact}
@@ -80,14 +84,37 @@ export const MinimalistElegantQuoteTemplate: React.FC<TemplateProps> = ({
                   <p className="text-lg font-light">{formatDate(data.validUntil)}</p>
                 </div>
               )}
+              {data.paymentTerms && (
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">
+                    Zahlungsbedingungen
+                  </p>
+                  <p className="text-lg font-light">{data.paymentTerms}</p>
+                </div>
+              )}
+              {data.deliveryTerms && (
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">
+                    Lieferbedingungen
+                  </p>
+                  <p className="text-lg font-light">{data.deliveryTerms}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Kopf-Text */}
+        {data.headTextHtml && (
+          <div className="mb-8 p-4 bg-gray-50 rounded border-l-4 border-gray-400">
+            <div dangerouslySetInnerHTML={{ __html: data.headTextHtml }} />
+          </div>
+        )}
+
         {/* Leistungen */}
         <div>
           <h3 className="text-xs uppercase tracking-widest text-gray-400 mb-6 font-medium">
-            Leistungen
+            Leistungen & Preise
           </h3>
           <div className="space-y-6">
             {data.items?.map((item, index) => (
@@ -98,8 +125,12 @@ export const MinimalistElegantQuoteTemplate: React.FC<TemplateProps> = ({
                       {String(index + 1).padStart(2, '0')}
                     </span>
                   </div>
-                  <div className="col-span-7">
-                    <h4 className="text-base font-light text-gray-900 mb-1">{item.description}</h4>
+                  <div className="col-span-6">
+                    <h4
+                      className={`text-base font-light text-gray-900 mb-1${item.category === 'discount' ? ' text-red-600' : ''}`}
+                    >
+                      {item.description}
+                    </h4>
                     {item.details && (
                       <p className="text-sm text-gray-500 leading-relaxed">{item.details}</p>
                     )}
@@ -107,12 +138,24 @@ export const MinimalistElegantQuoteTemplate: React.FC<TemplateProps> = ({
                   <div className="col-span-1 text-center">
                     <span className="text-gray-600 font-light">{item.quantity}</span>
                   </div>
+                  <div className="col-span-1 text-center">
+                    <span className="text-gray-600 font-light">
+                      {!item.category && item.discountPercent && item.discountPercent > 0
+                        ? `${item.discountPercent}%`
+                        : '-'}
+                    </span>
+                  </div>
                   <div className="col-span-2 text-right">
                     <p className="text-sm text-gray-400 mb-1">{formatCurrency(item.unitPrice)}</p>
                   </div>
                   <div className="col-span-1 text-right">
                     <p className="text-base font-light text-gray-900">
-                      {formatCurrency(item.quantity * item.unitPrice)}
+                      {(() => {
+                        const discountFactor =
+                          item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
+                        const totalPrice = item.quantity * item.unitPrice * discountFactor;
+                        return formatCurrency(totalPrice);
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -153,10 +196,15 @@ export const MinimalistElegantQuoteTemplate: React.FC<TemplateProps> = ({
                 Bedingungen
               </h4>
               <div className="space-y-2 text-sm text-gray-600">
-                <p>Zahlungsziel: 30 Tage netto</p>
+                {data.paymentTerms && <p>Zahlungsbedingungen: {data.paymentTerms}</p>}
                 <p>Angebot gültig bis: {formatDate(data.validUntil)}</p>
-                <p>Lieferung/Leistung: nach Auftragsbestätigung</p>
-                <p>Alle Beträge verstehen sich zzgl. gesetzlicher USt., sofern anwendbar</p>
+                {data.deliveryTerms && <p>Lieferung/Leistung: {data.deliveryTerms}</p>}
+                <p>
+                  Alle Beträge verstehen sich{' '}
+                  {data.isSmallBusiness
+                    ? 'als Kleinunternehmer ohne USt.'
+                    : 'zzgl. gesetzlicher USt.'}
+                </p>
               </div>
             </div>
             <div>
@@ -171,6 +219,21 @@ export const MinimalistElegantQuoteTemplate: React.FC<TemplateProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Fuß-Text */}
+        {data.footerText && (
+          <div className="mb-8 p-4 bg-gray-50 rounded border-l-4 border-gray-400">
+            <div dangerouslySetInnerHTML={{ __html: data.footerText }} />
+          </div>
+        )}
+
+        {/* Zusätzliche Notizen */}
+        {data.notes && (
+          <div className="mb-8 p-4 bg-yellow-50 rounded border-l-4 border-yellow-400">
+            <h4 className="font-bold text-gray-800 mb-2">Hinweise</h4>
+            <div className="whitespace-pre-line text-gray-700">{data.notes}</div>
+          </div>
+        )}
 
         {/* Fuß */}
         <div className="pt-8 border-t border-gray-200">

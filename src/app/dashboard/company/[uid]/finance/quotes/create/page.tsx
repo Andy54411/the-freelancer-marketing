@@ -36,7 +36,16 @@ import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteSer
 import { getAllCurrencies } from '@/data/currencies';
 import { getCustomers } from '@/utils/api/companyApi';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ProfessionalBusinessQuoteTemplate } from '@/components/templates/quote-templates';
+import {
+  ProfessionalBusinessQuoteTemplate,
+  ExecutivePremiumQuoteTemplate,
+  CreativeModernQuoteTemplate,
+  MinimalistElegantQuoteTemplate,
+  CorporateClassicQuoteTemplate,
+  TechInnovationQuoteTemplate,
+  type QuoteTemplate,
+} from '@/components/templates/quote-templates';
+import { UserPreferencesService } from '@/lib/userPreferences';
 type PreviewTemplateData = {
   quoteNumber: string;
   date: string;
@@ -66,6 +75,8 @@ type PreviewTemplateData = {
     total: number;
     taxRate?: number;
     category?: string;
+    discountPercent?: number;
+    unit?: string;
   }>;
   subtotal: number;
   tax: number;
@@ -82,6 +93,8 @@ type PreviewTemplateData = {
   headTextHtml?: string;
   footerText?: string;
   contactPersonName?: string;
+  paymentTerms?: string;
+  deliveryTerms?: string;
 };
 import { db } from '@/firebase/clients';
 import { doc, getDoc } from 'firebase/firestore';
@@ -137,6 +150,12 @@ export default function CreateQuotePage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfSizeBytes, setPdfSizeBytes] = useState<number | null>(null);
   const [creatingPdf, setCreatingPdf] = useState<boolean>(false);
+
+  // Template Auswahl & User Preferences
+  const [selectedTemplate, setSelectedTemplate] = useState<QuoteTemplate>(
+    'professional-business-quote'
+  );
+  const [loadingTemplate, setLoadingTemplate] = useState(true);
 
   // PDF Hidden Container Ref
   const pdfContainerRef = useRef<HTMLDivElement | null>(null);
@@ -402,7 +421,47 @@ export default function CreateQuotePage() {
     }
   }, [formData.taxRule, settings?.defaultTaxRate]);
 
-  // Defaults aus Unternehmenseinstellungen anwenden (einmalig, ohne Nutzereingaben zu überschreiben)
+  // Template Auswahl & User Preferences laden
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const loadUserTemplate = async () => {
+      try {
+        setLoadingTemplate(true);
+        // Lade direkt die User Preferences
+        const preferences = await UserPreferencesService.getUserPreferences(user.uid, uid);
+
+        if (preferences.preferredQuoteTemplate) {
+          setSelectedTemplate(preferences.preferredQuoteTemplate as QuoteTemplate);
+        } else {
+          // Fallback auf corporate-classic-quote laut Datenbank
+          setSelectedTemplate('corporate-classic-quote');
+        }
+      } catch (error) {
+        console.warn('Fehler beim Laden der Template-Preferences:', error);
+        setSelectedTemplate('corporate-classic-quote'); // Fallback
+      } finally {
+        setLoadingTemplate(false);
+      }
+    };
+
+    loadUserTemplate();
+  }, [user?.uid, uid]);
+
+  // Template-Komponente dynamisch rendern
+  const renderTemplateComponent = (templateId: QuoteTemplate) => {
+    const components = {
+      'professional-business-quote': ProfessionalBusinessQuoteTemplate,
+      'executive-premium-quote': ExecutivePremiumQuoteTemplate,
+      'creative-modern-quote': CreativeModernQuoteTemplate,
+      'minimalist-elegant-quote': MinimalistElegantQuoteTemplate,
+      'corporate-classic-quote': CorporateClassicQuoteTemplate,
+      'tech-innovation-quote': TechInnovationQuoteTemplate,
+    };
+
+    const TemplateComponent = components[templateId] || CorporateClassicQuoteTemplate;
+    return TemplateComponent;
+  };
   useEffect(() => {
     if (!settings) return;
 
@@ -592,7 +651,8 @@ export default function CreateQuotePage() {
       companyName,
       companyAddress,
       companyEmail: (company?.email as string) || undefined,
-      companyPhone: (company?.companyPhoneNumber as string) || undefined,
+      companyPhone:
+        (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || undefined,
       companyWebsite:
         (company?.website as string) || (company?.companyWebsite as string) || undefined,
       companyLogo: (company?.companyLogo as string) || undefined,
@@ -627,12 +687,14 @@ export default function CreateQuotePage() {
           total: lineTotalNet,
           taxRate: undefined,
           category: it.category as any,
+          discountPercent: it.discountPercent || 0,
+          unit: it.unit,
         };
       }),
       subtotal,
-      tax: vat,
-      total: grandTotal,
-      vatRate: taxRate,
+      tax: showNet ? 0 : vat, // Bei Netto-Anzeige keine Steuer anzeigen
+      total: showNet ? subtotal : grandTotal, // Bei Netto-Anzeige nur Netto-Summe zeigen
+      vatRate: showNet ? 0 : taxRate, // Bei Netto-Anzeige keine Steuer-Rate anzeigen
       isSmallBusiness: settings?.ust === 'kleinunternehmer' || taxRate === 0,
       bankDetails: company
         ? {
@@ -650,6 +712,8 @@ export default function CreateQuotePage() {
       headTextHtml: formData.headTextHtml || undefined,
       footerText: formData.footerText || undefined,
       contactPersonName: contactPersonNameForFooter,
+      paymentTerms: finalPaymentTerms || undefined,
+      deliveryTerms: formData.deliveryTerms || undefined,
     };
 
     return data;
@@ -677,7 +741,7 @@ export default function CreateQuotePage() {
       try {
         setEmailAttachmentError(null);
         setEmailAttachmentReady(false);
-  const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
+        const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
         setEmailAttachmentName(filename);
         await new Promise(r => setTimeout(r, 100));
         // Clientseitig erzeugen
@@ -699,10 +763,10 @@ export default function CreateQuotePage() {
   const generatePdfBlob = async (): Promise<Blob> => {
     try {
       console.log('[PDF] Start React-PDF Erzeugung mit umgeschriebenem Template');
-      
+
       // Verwende das bestehende Template-Datenformat - EXAKT wie es ist!
       const templateData = buildPreviewData();
-      
+
       console.log('[PDF] Template-Daten erstellt', {
         companyName: templateData.companyName,
         customerName: templateData.customerName,
@@ -714,11 +778,13 @@ export default function CreateQuotePage() {
 
       // React-PDF importieren
       const { pdf } = await import('@react-pdf/renderer');
-      const { default: GermanStandardQuotePDF } = await import('@/components/pdf/GermanStandardQuotePDF');
-      
+      const { default: GermanStandardQuotePDF } = await import(
+        '@/components/pdf/GermanStandardQuotePDF'
+      );
+
       // PDF mit dem umgeschriebenen Template generieren
       const blob = await pdf(<GermanStandardQuotePDF data={templateData} />).toBlob();
-      
+
       const size = blob.size;
       console.log('[PDF] React-PDF Blob erstellt', {
         size,
@@ -808,7 +874,7 @@ export default function CreateQuotePage() {
       const element = pdfContainerRef.current;
       if (!element) throw new Error('PDF-Container nicht verfügbar');
       const data = buildPreviewData();
-  const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
+      const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
 
       // 1) Server-seitiges PDF versuchen (höchste Qualität)
       try {
@@ -1101,7 +1167,7 @@ export default function CreateQuotePage() {
         total: grandTotal,
         currency: formData.currency,
         language: 'de',
-  template: 'professional-business-quote',
+        template: 'professional-business-quote',
         lastModifiedBy: uid,
         taxRule: formData.taxRule,
         internalContactPerson: formData.internalContactPerson || undefined,
@@ -1156,32 +1222,8 @@ export default function CreateQuotePage() {
             <div className="space-y-2">
               <Label>Kunde</Label>
               <div className="space-y-2">
-                {/* Bestehender Kunde auswählen */}
-                <Select
-                  value={formData.customerName}
-                  onValueChange={val => handleCustomerSelect(val)}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={loadingCustomers ? 'Kunden werden geladen…' : 'Bestehenden Kunden auswählen'}
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {customers.map(c => (
-                      <SelectItem key={c.id} value={c.name}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                {/* ODER - Neuer Kunde mit intelligenter Suche */}
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 border-t border-gray-300"></div>
-                  <span className="text-xs text-gray-500">oder</span>
-                  <div className="flex-1 border-t border-gray-300"></div>
-                </div>
-                
+                {/* Neuer Kunde mit intelligenter Suche */}
+
                 {/* Intelligente Kundensuche */}
                 <div className="relative customer-search-container">
                   <Input
@@ -1189,11 +1231,11 @@ export default function CreateQuotePage() {
                     value={formData.customerName}
                     onChange={e => {
                       const value = e.target.value;
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        customerName: value 
+                      setFormData(prev => ({
+                        ...prev,
+                        customerName: value,
                       }));
-                      
+
                       // Zeige Popup nur wenn mindestens 2 Zeichen eingegeben wurden
                       if (value.length >= 2) {
                         setShowCustomerSearchPopup(true);
@@ -1204,13 +1246,13 @@ export default function CreateQuotePage() {
                     placeholder="Neuen Kontakt eingeben..."
                     className="flex-1"
                   />
-                  
+
                   {/* Intelligenter Such-Popup */}
                   {showCustomerSearchPopup && formData.customerName.length >= 2 && (
                     <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
                       {/* Gefilterte Kunden anzeigen */}
                       {customers
-                        .filter(customer => 
+                        .filter(customer =>
                           customer.name.toLowerCase().includes(formData.customerName.toLowerCase())
                         )
                         .slice(0, 5) // Maximal 5 Ergebnisse
@@ -1224,10 +1266,12 @@ export default function CreateQuotePage() {
                             }}
                           >
                             <div className="font-medium text-sm">{customer.name}</div>
-                            <div className="text-xs text-gray-500">{customer.customerNumber} • {customer.email}</div>
+                            <div className="text-xs text-gray-500">
+                              {customer.customerNumber} • {customer.email}
+                            </div>
                           </div>
                         ))}
-                      
+
                       {/* "Kunden anlegen" Button */}
                       <div className="border-t border-gray-200 bg-gray-50">
                         <button
@@ -2179,57 +2223,88 @@ export default function CreateQuotePage() {
           <div className="px-6 pb-6">
             <div className="border rounded-md overflow-auto bg-white" style={{ maxHeight: '75vh' }}>
               <div className="p-4">
-                <ProfessionalBusinessQuoteTemplate
-                  data={{
-                    documentNumber: buildPreviewData().quoteNumber,
-                    date: buildPreviewData().date,
-                    validUntil: buildPreviewData().validUntil,
-                    customerName: buildPreviewData().customerName,
-                    customerAddress: (() => {
-                      const lines = (buildPreviewData().customerAddress || '').split('\n');
-                      return {
-                        street: lines[0] || '',
-                        zipCode: (lines[1] || '').split(' ')[0] || '',
-                        city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
-                        country: lines[2] || undefined,
-                      };
-                    })(),
-                    items: buildPreviewData().items?.map(it => ({
-                      description: it.description,
-                      quantity: it.quantity,
-                      unitPrice: it.unitPrice,
-                    })) || [],
-                    subtotal: buildPreviewData().subtotal,
-                    taxRate: buildPreviewData().vatRate,
-                    taxAmount: buildPreviewData().tax,
-                    total: buildPreviewData().total,
-                    notes: buildPreviewData().notes,
-                    createdBy: buildPreviewData().contactPersonName,
-                  }}
-                  companySettings={{
-                    companyName: buildPreviewData().companyName,
-                    logoUrl:
-                      buildPreviewData().companyLogo || buildPreviewData().profilePictureURL,
-                    address: (() => {
-                      const lines = (buildPreviewData().companyAddress || '').split('\n');
-                      return {
-                        street: lines[0] || '',
-                        zipCode: (lines[1] || '').split(' ')[0] || '',
-                        city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
-                        country: lines[2] || undefined,
-                      };
-                    })(),
-                    contactInfo: {
-                      email: buildPreviewData().companyEmail,
-                      phone: buildPreviewData().companyPhone,
-                      website: buildPreviewData().companyWebsite,
-                    },
-                    vatId: buildPreviewData().companyVatId,
-                    taxId: buildPreviewData().companyTaxNumber,
-                    bankDetails: buildPreviewData().bankDetails,
-                  }}
-                  customizations={{ showLogo: true }}
-                />
+                {(() => {
+                  if (loadingTemplate) {
+                    return (
+                      <div className="flex items-center justify-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                        <span className="ml-2">Template wird geladen...</span>
+                      </div>
+                    );
+                  }
+
+                  const TemplateComponent = renderTemplateComponent(selectedTemplate);
+                  const previewData = buildPreviewData();
+
+                  return (
+                    <TemplateComponent
+                      data={{
+                        documentNumber: previewData.quoteNumber,
+                        date: previewData.date,
+                        validUntil: previewData.validUntil,
+                        title: previewData.title,
+                        reference: previewData.reference,
+                        customerName: previewData.customerName,
+                        customerEmail: previewData.customerEmail,
+                        customerAddress: (() => {
+                          const lines = (previewData.customerAddress || '').split('\n');
+                          return {
+                            street: lines[0] || '',
+                            zipCode: (lines[1] || '').split(' ')[0] || '',
+                            city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                            country: lines[2] || undefined,
+                          };
+                        })(),
+                        items:
+                          previewData.items?.map(it => ({
+                            description: it.description,
+                            quantity: it.quantity,
+                            unitPrice: it.unitPrice,
+                            discountPercent: it.discountPercent || 0,
+                            category: it.category,
+                            unit: it.unit,
+                          })) || [],
+                        subtotal: previewData.subtotal,
+                        taxRate: previewData.vatRate,
+                        taxAmount: previewData.tax,
+                        total: previewData.total,
+                        currency: previewData.currency,
+                        taxRule: previewData.taxRule,
+                        taxRuleLabel: previewData.taxRuleLabel,
+                        isSmallBusiness: previewData.isSmallBusiness,
+                        headTextHtml: previewData.headTextHtml,
+                        footerText: previewData.footerText,
+                        notes: previewData.notes,
+                        createdBy: previewData.contactPersonName,
+                        paymentTerms: previewData.paymentTerms,
+                        deliveryTerms: previewData.deliveryTerms,
+                        internalContactPerson: formData.internalContactPerson,
+                      }}
+                      companySettings={{
+                        companyName: previewData.companyName,
+                        logoUrl: previewData.companyLogo || previewData.profilePictureURL,
+                        address: (() => {
+                          const lines = (previewData.companyAddress || '').split('\n');
+                          return {
+                            street: lines[0] || '',
+                            zipCode: (lines[1] || '').split(' ')[0] || '',
+                            city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                            country: lines[2] || undefined,
+                          };
+                        })(),
+                        contactInfo: {
+                          email: previewData.companyEmail,
+                          phone: previewData.companyPhone,
+                          website: previewData.companyWebsite,
+                        },
+                        vatId: previewData.companyVatId,
+                        taxId: previewData.companyTaxNumber,
+                        bankDetails: previewData.bankDetails,
+                      }}
+                      customizations={{ showLogo: true }}
+                    />
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -2315,7 +2390,7 @@ export default function CreateQuotePage() {
         saving={creatingCustomer}
         persistDirectly={true}
         companyId={uid}
-        onSaved={async (customerId) => {
+        onSaved={async customerId => {
           try {
             // Lade Kunden neu mit der existierenden Funktion
             const response = await getCustomers(uid);
@@ -2328,7 +2403,6 @@ export default function CreateQuotePage() {
           }
         }}
       />
-
     </div>
   );
 }

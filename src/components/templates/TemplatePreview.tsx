@@ -7,6 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+// Import moderne Template-Thumbnail Lösung
+// import SmartTemplateThumb from '@/components/templates/SmartTemplateThumb';
+import DocumentPreviewFrame from '@/components/templates/preview/DocumentPreviewFrame';
+
 // Import der neuen Invoice Templates
 import ProfessionalBusinessTemplate from '@/components/templates/invoice-templates/ProfessionalBusinessTemplate';
 import CorporateClassicTemplate from '@/components/templates/invoice-templates/CorporateClassicTemplate';
@@ -481,47 +485,52 @@ const NEW_TEMPLATES = {
   reminder: REMINDER_TEMPLATES.map(t => ({ id: t.id, name: t.name, component: t.component })),
 };
 
-// Eigene, neue Wrapper für Miniatur- und Großvorschau (keine Wiederverwendung der alten Frames)
-const PaperThumb: React.FC<{ children: React.ReactNode; scale?: number; className?: string }> = ({
-  children,
-  scale = 0.18,
-  className = '',
-}) => {
+// Einfache, funktionierende Template-Thumbnail Komponente
+const TemplateThumb: React.FC<{
+  templateId: string;
+  children: React.ReactNode;
+  className?: string;
+}> = ({ templateId, children, className = '' }) => {
   return (
     <div
-      className={`relative overflow-hidden bg-white border rounded-md aspect-[210/297] ${className}`}
+      className={`relative overflow-hidden bg-white border rounded-md aspect-[210/297] shadow-sm ${className}`}
     >
-      <div className="absolute inset-[6px]">
-        <div
-          className="origin-top-left"
-          style={{
-            transform: `scale(${scale})`,
-            width: `${Math.round(100 / scale)}%`,
-            height: `${Math.round(100 / scale)}%`,
-          }}
-        >
-          {children}
-        </div>
+      <div className="absolute inset-0 overflow-hidden">
+        {children ? (
+          <div
+            className="absolute origin-top-left"
+            style={{
+              transform: 'scale(0.35)',
+              width: '286%',
+              height: '286%',
+              top: '10%',
+              left: '0',
+            }}
+          >
+            {children}
+          </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <div className="text-center">
+              <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <div className="text-xs text-gray-500">Template {templateId}</div>
+              <div className="text-xs text-red-500">Nicht geladen</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-const PaperPreview: React.FC<{ children: React.ReactNode; scale?: number; maxHeight?: number }> = ({
-  children,
-  scale = 0.85,
-  maxHeight = 740,
-}) => {
+// Optimized Modal Preview using existing infrastructure
+const TemplateModalPreview: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white">
-      <div className="overflow-auto" style={{ maxHeight }}>
-        <div className="flex justify-center">
-          <div className="origin-top" style={{ transform: `scale(${scale})` }}>
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
+    <DocumentPreviewFrame scale={0.75} maxHeight={600} padding={16}>
+      {children}
+    </DocumentPreviewFrame>
   );
 };
 
@@ -607,34 +616,187 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
     setShowPreviewModal(true);
   };
 
+  // Fallback Template das immer funktioniert
+  const getFallbackTemplate = (templateId: string) => {
+    return (
+      <div className="w-full min-h-[1100px] bg-white p-8 text-sm" style={{ width: '800px' }}>
+        <div className="max-w-none">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h1 className="text-4xl font-bold mb-2">RECHNUNG</h1>
+              <div className="text-lg">Rechnungsnummer: 2024-001</div>
+              <div>Datum: 13.09.2024</div>
+            </div>
+            <div className="text-right">
+              <div className="font-bold text-xl mb-2">Ihre Firma GmbH</div>
+              <div>Musterstraße 123</div>
+              <div>12345 Musterstadt</div>
+              <div className="mt-2">+49 123 456789</div>
+              <div>info@ihrefirma.de</div>
+            </div>
+          </div>
+
+          {/* Kunde */}
+          <div className="mb-8">
+            <h3 className="font-bold mb-3 text-sm uppercase">Rechnungsempfänger</h3>
+            <div className="border-l-4 border-gray-800 pl-4">
+              <div className="font-bold">Musterkunde GmbH</div>
+              <div>Kundenstraße 456</div>
+              <div>67890 Kundenstadt</div>
+            </div>
+          </div>
+
+          {/* Positionen */}
+          <table className="w-full border-collapse border border-gray-300 mb-8">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 p-3 text-left">Position</th>
+                <th className="border border-gray-300 p-3 text-left">Beschreibung</th>
+                <th className="border border-gray-300 p-3 text-center">Menge</th>
+                <th className="border border-gray-300 p-3 text-right">Einzelpreis</th>
+                <th className="border border-gray-300 p-3 text-right">Gesamtpreis</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-gray-300 p-3 text-center">1</td>
+                <td className="border border-gray-300 p-3">Webentwicklung Dienstleistung</td>
+                <td className="border border-gray-300 p-3 text-center">10 Stunden</td>
+                <td className="border border-gray-300 p-3 text-right">85,00 €</td>
+                <td className="border border-gray-300 p-3 text-right font-bold">850,00 €</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="border border-gray-300 p-3 text-center">2</td>
+                <td className="border border-gray-300 p-3">Design & Konzeption</td>
+                <td className="border border-gray-300 p-3 text-center">5 Stunden</td>
+                <td className="border border-gray-300 p-3 text-right">75,00 €</td>
+                <td className="border border-gray-300 p-3 text-right font-bold">375,00 €</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Summen */}
+          <div className="flex justify-end mb-8">
+            <div className="w-80">
+              <div className="border border-gray-300 bg-white">
+                <div className="border-b border-gray-200 p-3 flex justify-between">
+                  <span>Zwischensumme:</span>
+                  <span className="font-bold">1.225,00 €</span>
+                </div>
+                <div className="border-b border-gray-200 p-3 flex justify-between">
+                  <span>Umsatzsteuer (19%):</span>
+                  <span className="font-bold">232,75 €</span>
+                </div>
+                <div className="p-4 flex justify-between bg-gray-50">
+                  <span className="text-lg font-bold">Gesamtbetrag:</span>
+                  <span className="text-xl font-bold">1.457,75 €</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="border-t-2 border-gray-900 pt-6 text-xs text-gray-600">
+            <div className="grid grid-cols-3 gap-8">
+              <div>
+                <div className="font-bold mb-2 uppercase">Zahlungsbedingungen</div>
+                <div>14 Tage netto</div>
+              </div>
+              <div>
+                <div className="font-bold mb-2 uppercase">Bankverbindung</div>
+                <div>IBAN: DE89 1234 5678 9012 3456 78</div>
+                <div>BIC: DEUTDEFF123</div>
+              </div>
+              <div>
+                <div className="font-bold mb-2 uppercase">Steuerdaten</div>
+                <div>USt-IdNr.: DE123456789</div>
+                <div>Steuernr.: 123/456/78901</div>
+              </div>
+            </div>
+            <div className="mt-4 text-center">
+              <span className="text-blue-600">Template: {templateId}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Beispieldaten für Delivery Notes
+  const getDeliveryNoteData = () => {
+    return {
+      documentNumber: 'LS-2024-001',
+      date: '13.09.2024',
+      customerName: 'Musterkunde GmbH',
+      customer: {
+        name: 'Musterkunde GmbH',
+        address: {
+          street: 'Kundenstraße 456',
+          zipCode: '67890',
+          city: 'Kundenstadt',
+        },
+      },
+      items: [
+        {
+          description: 'Webentwicklung Dienstleistung',
+          quantity: 10,
+          unit: 'Stunden',
+          unitPrice: 85.0,
+        },
+        {
+          description: 'Design & Konzeption',
+          quantity: 5,
+          unit: 'Stunden',
+          unitPrice: 75.0,
+        },
+      ],
+    };
+  };
+
   const renderTemplateComponent = (template: string) => {
+    console.log('🔧 Rendering template:', template, 'for documentType:', documentType);
+
     const templateData = getSampleTemplateData();
 
     // Für Rechnungstypen (Invoice)
     if (documentType === 'Invoice') {
       const invoiceTemplate = NEW_TEMPLATES.invoice.find(t => t.id === template);
+      console.log('🔧 Found invoice template:', invoiceTemplate?.id);
       if (invoiceTemplate) {
         const Component = invoiceTemplate.component;
         const sampleData = getNewInvoiceTemplateData();
         const { companySettings } = getSampleTemplateData();
-        return (
-          <Component
-            data={sampleData}
-            companySettings={companySettings}
-            customizations={{ showLogo: true, logoUrl: companySettings?.logoUrl }}
-          />
-        );
+        console.log('🔧 Rendering Invoice Component');
+        try {
+          return (
+            <Component
+              data={sampleData}
+              companySettings={companySettings}
+              customizations={{ showLogo: true, logoUrl: companySettings?.logoUrl }}
+            />
+          );
+        } catch (error) {
+          console.error('❌ Template Component Error:', error);
+          return getFallbackTemplate(template);
+        }
       }
-      // Kein Fallback mehr – alte Templates wurden entfernt
+      console.log('⚠️ No invoice template found for:', template);
+      return getFallbackTemplate(template);
     }
 
     // Für Mahnungen (Invoicereminder)
     if (documentType === 'Invoicereminder') {
       const reminderTemplate = NEW_TEMPLATES.reminder.find(t => t.id === template);
       if (reminderTemplate) {
-        const Component = reminderTemplate.component as React.ComponentType<any>;
-        const sampleReminder = getSampleReminderData();
-        return <Component data={sampleReminder} preview />;
+        try {
+          const Component = reminderTemplate.component as React.ComponentType<any>;
+          const sampleReminder = getSampleReminderData();
+          return <Component data={sampleReminder} preview />;
+        } catch (error) {
+          console.error('❌ Reminder Template Error:', error);
+          return getFallbackTemplate(template);
+        }
       }
     }
 
@@ -642,25 +804,27 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
     if (documentType === 'Order') {
       const quoteTemplate = NEW_TEMPLATES.quote.find(t => t.id === template);
       if (quoteTemplate) {
-        const Component = quoteTemplate.component;
-        return <Component {...templateData} />;
+        try {
+          const Component = quoteTemplate.component;
+          return <Component {...templateData} />;
+        } catch (error) {
+          console.error('❌ Quote Template Error:', error);
+          return getFallbackTemplate(template);
+        }
       }
-      // Fallback für alte Templates
-      return (
-        <div className="p-8 text-center text-gray-500">
-          <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-          <h3 className="text-lg font-medium mb-2">Angebot Template</h3>
-          <p>Template wird geladen...</p>
-        </div>
-      );
     }
 
     // Für Auftragsbestätigungen (Contractnote)
     if (documentType === 'Contractnote') {
       const orderTemplate = NEW_TEMPLATES.order.find(t => t.id === template);
       if (orderTemplate) {
-        const Component = orderTemplate.component;
-        return <Component {...templateData} />;
+        try {
+          const Component = orderTemplate.component;
+          return <Component {...templateData} />;
+        } catch (error) {
+          console.error('❌ Order Template Error:', error);
+          return getFallbackTemplate(template);
+        }
       }
     }
 
@@ -668,57 +832,73 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
     if (documentType === 'Letter') {
       const letterTemplate = NEW_TEMPLATES.letter.find(t => t.id === template);
       if (letterTemplate) {
-        const Component = letterTemplate.component;
-        return <Component {...templateData} />;
+        try {
+          const Component = letterTemplate.component;
+          return <Component {...templateData} />;
+        } catch (error) {
+          console.error('❌ Letter Template Error:', error);
+          return getFallbackTemplate(template);
+        }
       }
     }
 
-    // Für Gutschriften/Kredite (Creditnote)
+    // Für Gutschriften (Creditnote)
     if (documentType === 'Creditnote') {
       const creditTemplate = NEW_TEMPLATES.credit.find(t => t.id === template);
       if (creditTemplate) {
-        const Component = creditTemplate.component;
-        return <Component {...templateData} />;
+        try {
+          const Component = creditTemplate.component;
+          return <Component {...templateData} />;
+        } catch (error) {
+          console.error('❌ Credit Template Error:', error);
+          return getFallbackTemplate(template);
+        }
       }
-      // Kein Fallback mehr – alte Templates entfernt
     }
-    // Keine zweite Fallback-Behandlung mehr für Invoice-Typen
 
     // Für Lieferscheine (Packinglist)
     if (documentType === 'Packinglist') {
       const deliveryTemplate = NEW_TEMPLATES.delivery.find(t => t.id === template);
       if (deliveryTemplate) {
-        const Component = deliveryTemplate.component;
-        // Spezifische Mock-Daten für ALLE Delivery Templates
-        const deliveryData = getBusinessStandardDeliveryData();
-        const companyData = {
-          companyName: 'Muster GmbH',
-          address: {
-            street: 'Lange Str. 2',
-            zipCode: '10245',
-            city: 'Berlin',
-            country: 'Deutschland',
-          },
-          management: 'Max Mustermann',
-          commercialRegister: 'AG Berlin HRB 123456',
-          vatId: 'DE216398573',
-          bankDetails: {
-            bankName: 'Sparkasse Berlin',
-            iban: 'DE10 25 25 25 500 600 26 02',
-            bic: 'HERAKLES02',
-          },
-        };
-        return (
-          <Component
-            data={deliveryData}
-            companySettings={companyData}
-            customizations={templateData.customizations}
-          />
-        );
+        try {
+          const Component = deliveryTemplate.component;
+          const deliveryData = getDeliveryNoteData();
+          const companyData = {
+            companyName: 'Muster GmbH',
+            address: {
+              street: 'Lange Str. 2',
+              zipCode: '10245',
+              city: 'Berlin',
+              country: 'Deutschland',
+            },
+            email: 'info@musterfirma.de',
+            phone: '+49 30 12345678',
+            management: 'Max Mustermann',
+            commercialRegister: 'AG Berlin HRB 123456',
+            vatId: 'DE216398573',
+            bankDetails: {
+              bankName: 'Sparkasse Berlin',
+              iban: 'DE10 25 25 25 500 600 26 02',
+              bic: 'HERAKLES02',
+            },
+          };
+          return (
+            <Component
+              data={deliveryData}
+              companySettings={companyData}
+              customizations={templateData.customizations}
+            />
+          );
+        } catch (error) {
+          console.error('❌ Delivery Template Error:', error);
+          return getFallbackTemplate(template);
+        }
       }
     }
 
-    return null;
+    // Fallback wenn kein Template gefunden wurde
+    console.log('⚠️ No template found for:', template, 'documentType:', documentType);
+    return getFallbackTemplate(template);
   };
 
   // Filtere Templates basierend auf Dokumenttyp
@@ -759,7 +939,7 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
     }
 
     // Fallback: nimm das erste Invoice-Template
-    return [NEW_TEMPLATES.invoice[0]];
+    return [NEW_TEMPLATES.invoice[0]].map(t => ({ id: t.id, name: t.name }));
   };
 
   const availableTemplates = getAvailableTemplates();
@@ -810,8 +990,8 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
       <div className="max-w-4xl">
         {/* Template-Galerie */}
         <div className="min-w-0">
-          <div className="rounded-xl border border-gray-200 bg-white p-2">
-            <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-xl border border-gray-200 bg-white p-3">
+            <div className="grid grid-cols-2 gap-4">
               {filteredTemplates.map(tpl => {
                 const isActive = selectedTemplate === tpl.id;
                 return (
@@ -825,42 +1005,46 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
                   >
                     <button
                       type="button"
-                      className="w-full text-left p-2"
+                      className="w-full text-left p-4"
                       onClick={() => handleTemplateSelect(tpl.id)}
                     >
-                      <PaperThumb className="h-32 mb-2">
-                        {renderTemplateComponent(tpl.id)}
-                      </PaperThumb>
-                      <div className="px-1">
-                        <div className="flex items-center gap-1 truncate">
+                      <TemplateThumb templateId={tpl.id} className="h-56 mb-3">
+                        {(() => {
+                          const component = renderTemplateComponent(tpl.id);
+                          console.log('🔧 Rendered component for', tpl.id, ':', !!component);
+                          return component;
+                        })()}
+                      </TemplateThumb>
+                      <div className="px-2">
+                        <div className="flex items-center gap-2 truncate">
                           <span
-                            className="text-[10px] font-medium text-gray-900 truncate"
+                            className="text-sm font-medium text-gray-900 truncate"
                             title={tpl.name}
                           >
                             {tpl.name}
                           </span>
-                          {isActive && <Check className="h-3 w-3 text-gray-800" />}
+                          {isActive && <Check className="h-4 w-4 text-gray-800" />}
                         </div>
-                        <div className="text-[9px] text-gray-500 truncate">{tpl.id}</div>
+                        <div className="text-xs text-gray-500 truncate">{tpl.id}</div>
                       </div>
                     </button>
 
                     {/* Hover-Actions */}
-                    <div className="pointer-events-none absolute inset-2 hidden items-center justify-center gap-2 rounded-lg bg-white/60 backdrop-blur-sm group-hover:flex">
-                      <div className="pointer-events-auto flex gap-2">
+                    <div className="pointer-events-none absolute inset-0 hidden items-center justify-center gap-3 rounded-lg bg-white/70 backdrop-blur-sm group-hover:flex">
+                      <div className="pointer-events-auto flex gap-3">
                         <Button
-                          size="sm"
+                          size="default"
                           variant="outline"
                           onClick={() => handleTemplateSelect(tpl.id)}
                         >
                           Auswählen
                         </Button>
                         <Button
-                          size="sm"
+                          size="default"
                           onClick={() => handlePreviewClick(tpl.id)}
                           className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                         >
-                          <Eye className="h-3.5 w-3.5 mr-1" />
+                          <Eye className="h-4 w-4 mr-2" />
                           Vorschau
                         </Button>
                       </div>
@@ -893,9 +1077,9 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({
           </DialogHeader>
 
           <div className="flex-1 overflow-auto bg-gray-50 p-4 rounded-lg min-h-0">
-            <div className="bg-white shadow-lg mx-auto" style={{ width: 'fit-content' }}>
+            <TemplateModalPreview>
               {modalTemplateId && renderTemplateComponent(modalTemplateId)}
-            </div>
+            </TemplateModalPreview>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">

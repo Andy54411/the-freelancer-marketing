@@ -25,9 +25,17 @@ import {
   Loader2,
   Check,
   X,
+  MoreVertical,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { QuoteService, Quote as QuoteType } from '@/services/quoteService';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 export default function QuoteDetailPage() {
   const params = useParams();

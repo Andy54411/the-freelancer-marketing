@@ -9,7 +9,10 @@ export interface DocumentData {
   documentNumber: string;
   date: string;
   validUntil?: string;
+  title?: string;
+  reference?: string;
   customerName: string;
+  customerEmail?: string;
   customerAddress?: Address;
   customerContact?: string;
   items?: LineItem[];
@@ -17,8 +20,17 @@ export interface DocumentData {
   taxRate?: number;
   taxAmount?: number;
   total?: number;
+  currency?: string;
+  taxRule?: string;
+  taxRuleLabel?: string;
+  isSmallBusiness?: boolean;
+  headTextHtml?: string;
+  footerText?: string;
   notes?: string;
   createdBy?: string;
+  paymentTerms?: string;
+  deliveryTerms?: string;
+  internalContactPerson?: string;
 }
 
 export interface Address {
@@ -34,6 +46,8 @@ export interface LineItem {
   quantity: number;
   unit?: string;
   unitPrice: number;
+  discountPercent?: number;
+  category?: string;
 }
 
 export interface CompanySettings {

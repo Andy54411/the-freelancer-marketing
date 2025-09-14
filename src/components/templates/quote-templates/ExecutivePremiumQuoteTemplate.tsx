@@ -27,8 +27,9 @@ export const ExecutivePremiumQuoteTemplate: React.FC<TemplateProps> = ({
             {logoUrl && (
               <img src={logoUrl} alt="Firmenlogo" className="h-14 w-auto mb-4 object-contain" />
             )}
-            <h1 className="text-3xl font-bold mb-1 text-gray-900">Angebot</h1>
+            <h1 className="text-3xl font-bold mb-1 text-gray-900">{data.title || 'Angebot'}</h1>
             <p className="text-gray-600">Referenz {data.documentNumber}</p>
+            {data.reference && <p className="text-gray-600">Ihre Referenz: {data.reference}</p>}
           </div>
           <div className="text-right">
             <h3 className="font-bold text-lg mb-2 text-gray-900">{companySettings?.companyName}</h3>
@@ -47,6 +48,13 @@ export const ExecutivePremiumQuoteTemplate: React.FC<TemplateProps> = ({
       </div>
 
       <div className="p-8">
+        {/* Kopf-Text */}
+        {data.headTextHtml && (
+          <div className="mb-8 p-6 bg-gray-50 rounded-lg border-l-4 border-gray-400">
+            <div dangerouslySetInnerHTML={{ __html: data.headTextHtml }} />
+          </div>
+        )}
+
         {/* Kunde & Angebotsdetails */}
         <div className="grid grid-cols-3 gap-6 mb-8">
           <div className="col-span-2 bg-gray-50 p-6 rounded">
@@ -58,6 +66,7 @@ export const ExecutivePremiumQuoteTemplate: React.FC<TemplateProps> = ({
                 <p>
                   {data.customerAddress?.zipCode} {data.customerAddress?.city}
                 </p>
+                {data.customerEmail && <p>{data.customerEmail}</p>}
               </div>
               {data.customerContact && (
                 <div className="mt-4 pt-4 border-t border-gray-300">
@@ -78,12 +87,24 @@ export const ExecutivePremiumQuoteTemplate: React.FC<TemplateProps> = ({
                 <p className="text-lg font-bold text-gray-900">{formatDate(data.validUntil)}</p>
               </div>
             )}
+            {data.paymentTerms && (
+              <div className="bg-white border border-gray-300 p-4 rounded">
+                <h4 className="font-semibold text-gray-700 mb-1">Zahlungsbedingungen</h4>
+                <p className="text-sm text-gray-900">{data.paymentTerms}</p>
+              </div>
+            )}
+            {data.deliveryTerms && (
+              <div className="bg-white border border-gray-300 p-4 rounded">
+                <h4 className="font-semibold text-gray-700 mb-1">Lieferbedingungen</h4>
+                <p className="text-sm text-gray-900">{data.deliveryTerms}</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Leistungen */}
         <div className="mb-8">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Leistungsportfolio</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">Leistungen & Preise</h3>
           <div className="overflow-hidden rounded border border-gray-300">
             <table className="w-full border-collapse">
               <thead>
@@ -91,6 +112,7 @@ export const ExecutivePremiumQuoteTemplate: React.FC<TemplateProps> = ({
                   <th className="p-3 text-left font-bold">Pos.</th>
                   <th className="p-3 text-left font-bold">Beschreibung</th>
                   <th className="p-3 text-center font-bold">Menge</th>
+                  <th className="p-3 text-center font-bold">Rabatt</th>
                   <th className="p-3 text-right font-bold">Einzelpreis</th>
                   <th className="p-3 text-right font-bold">Gesamt</th>
                 </tr>
@@ -101,7 +123,7 @@ export const ExecutivePremiumQuoteTemplate: React.FC<TemplateProps> = ({
                     key={index}
                     className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-t border-gray-200`}
                   >
-                    <td className="p-3 text-center">{index + 1}</td>
+                    <td className="p-3 text-center">{String(index + 1).padStart(2, '0')}</td>
                     <td className="p-3">
                       <div className="font-semibold text-gray-900">{item.description}</div>
                       {item.details && (
@@ -115,9 +137,21 @@ export const ExecutivePremiumQuoteTemplate: React.FC<TemplateProps> = ({
                         {item.quantity}
                       </span>
                     </td>
+                    <td className="p-3 text-center">
+                      <span className="px-2 py-1 rounded bg-gray-100 text-sm font-medium">
+                        {!item.category && item.discountPercent && item.discountPercent > 0
+                          ? `${item.discountPercent}%`
+                          : '-'}
+                      </span>
+                    </td>
                     <td className="p-3 text-right">{formatCurrency(item.unitPrice)}</td>
                     <td className="p-3 text-right font-semibold">
-                      {formatCurrency(item.quantity * item.unitPrice)}
+                      {(() => {
+                        const discountFactor =
+                          item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
+                        const totalPrice = item.quantity * item.unitPrice * discountFactor;
+                        return formatCurrency(totalPrice);
+                      })()}
                     </td>
                   </tr>
                 ))}
@@ -156,6 +190,21 @@ export const ExecutivePremiumQuoteTemplate: React.FC<TemplateProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Fuß-Text */}
+        {data.footerText && (
+          <div className="mb-8 p-6 bg-gray-50 rounded-lg border-l-4 border-gray-400">
+            <div dangerouslySetInnerHTML={{ __html: data.footerText }} />
+          </div>
+        )}
+
+        {/* Zusätzliche Notizen */}
+        {data.notes && (
+          <div className="mb-8 p-6 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <h4 className="font-bold text-gray-900 mb-2">Weitere Hinweise</h4>
+            <div className="whitespace-pre-line text-gray-700">{data.notes}</div>
+          </div>
+        )}
 
         {/* Fußbereich */}
         <div className="border-t border-gray-300 pt-8">

@@ -27,8 +27,9 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
             {logoUrl && (
               <img src={logoUrl} alt="Firmenlogo" className="h-14 w-auto mb-6 object-contain" />
             )}
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Angebot</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">{data.title || 'Angebot'}</h1>
             <p className="text-gray-600">Referenz {data.documentNumber}</p>
+            {data.reference && <p className="text-gray-600">Referenz: {data.reference}</p>}
           </div>
           <div className="text-right bg-gray-50 p-6 rounded border">
             <h2 className="font-bold text-lg text-gray-900 mb-2">{companySettings?.companyName}</h2>
@@ -58,6 +59,7 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
             <p className="text-gray-700">
               {data.customerAddress?.zipCode} {data.customerAddress?.city}
             </p>
+            {data.customerEmail && <p className="text-gray-700">{data.customerEmail}</p>}
             {data.customerContact && (
               <div className="mt-3 pt-3 border-t border-gray-300">
                 <p className="text-gray-700">Ansprechpartner: {data.customerContact}</p>
@@ -85,9 +87,28 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
               <span className="text-gray-600">Erstellt von:</span>
               <span className="font-semibold text-gray-900">{data.createdBy || 'Team'}</span>
             </div>
+            {data.paymentTerms && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Zahlungsbedingungen:</span>
+                <span className="font-semibold text-gray-900">{data.paymentTerms}</span>
+              </div>
+            )}
+            {data.deliveryTerms && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Lieferbedingungen:</span>
+                <span className="font-semibold text-gray-900">{data.deliveryTerms}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Kopf-Text */}
+      {data.headTextHtml && (
+        <div className="mb-8 p-4 bg-gray-50 rounded border-l-4 border-gray-400">
+          <div dangerouslySetInnerHTML={{ __html: data.headTextHtml }} />
+        </div>
+      )}
 
       {/* Leistungen & Preise */}
       <div className="mb-8">
@@ -98,6 +119,7 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
               <th className="border border-gray-300 p-3 text-left font-bold">Pos.</th>
               <th className="border border-gray-300 p-3 text-left font-bold">Beschreibung</th>
               <th className="border border-gray-300 p-3 text-center font-bold">Menge</th>
+              <th className="border border-gray-300 p-3 text-center font-bold">Rabatt</th>
               <th className="border border-gray-300 p-3 text-right font-bold">Einzelpreis</th>
               <th className="border border-gray-300 p-3 text-right font-bold">Gesamt</th>
             </tr>
@@ -109,17 +131,31 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
                   {String(index + 1).padStart(2, '0')}
                 </td>
                 <td className="border border-gray-300 p-3">
-                  <div className="font-semibold text-gray-900">{item.description}</div>
+                  <div
+                    className={`font-semibold text-gray-900${item.category === 'discount' ? ' text-red-600' : ''}`}
+                  >
+                    {item.description}
+                  </div>
                   {item.details && (
                     <div className="text-sm text-gray-600 mt-1 leading-relaxed">{item.details}</div>
                   )}
                 </td>
                 <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                <td className="border border-gray-300 p-3 text-center">
+                  {!item.category && item.discountPercent && item.discountPercent > 0
+                    ? `${item.discountPercent}%`
+                    : '-'}
+                </td>
                 <td className="border border-gray-300 p-3 text-right">
                   {formatCurrency(item.unitPrice)}
                 </td>
                 <td className="border border-gray-300 p-3 text-right font-semibold">
-                  {formatCurrency(item.quantity * item.unitPrice)}
+                  {(() => {
+                    const discountFactor =
+                      item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
+                    const totalPrice = item.quantity * item.unitPrice * discountFactor;
+                    return formatCurrency(totalPrice);
+                  })()}
                 </td>
               </tr>
             ))}
@@ -161,10 +197,13 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
         <div className="border border-gray-300 rounded p-6 bg-gray-50">
           <h4 className="font-bold text-gray-900 mb-3 text-base">Bedingungen</h4>
           <ul className="text-gray-700 space-y-1 text-sm">
-            <li>• Zahlungsziel: 30 Tage netto</li>
+            {data.paymentTerms && <li>• Zahlungsbedingungen: {data.paymentTerms}</li>}
             <li>• Angebot gültig bis: {formatDate(data.validUntil)}</li>
-            <li>• Lieferung/Leistung wie vereinbart</li>
-            <li>• Alle Preise verstehen sich zzgl. USt., sofern anwendbar</li>
+            {data.deliveryTerms && <li>• Lieferung/Leistung: {data.deliveryTerms}</li>}
+            <li>
+              • Alle Preise verstehen sich{' '}
+              {data.isSmallBusiness ? 'als Kleinunternehmer ohne USt.' : 'zzgl. USt.'}
+            </li>
           </ul>
         </div>
         <div className="border border-gray-300 rounded p-6 bg-gray-50">
@@ -176,6 +215,21 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
           </ul>
         </div>
       </div>
+
+      {/* Fuß-Text */}
+      {data.footerText && (
+        <div className="mb-8 p-4 bg-gray-50 rounded border-l-4 border-gray-400">
+          <div dangerouslySetInnerHTML={{ __html: data.footerText }} />
+        </div>
+      )}
+
+      {/* Notizen */}
+      {data.notes && (
+        <div className="mb-8 p-4 bg-yellow-50 rounded border-l-4 border-yellow-400">
+          <h4 className="font-bold text-gray-800 mb-2">Hinweise</h4>
+          <div className="whitespace-pre-line text-gray-700">{data.notes}</div>
+        </div>
+      )}
 
       {/* Fußbereich */}
       <div className="border-t-2 border-gray-300 pt-6">

@@ -554,7 +554,7 @@ export const ProfessionalReminderTemplate: React.FC<TemplateProps> = ({
             </tr>
           </thead>
           <tbody className={`${theme.rowStriping}`}>
-            {data.items.map((item, index) => (
+            {(data.items || []).map((item, index) => (
               <tr key={index} className="bg-white">
                 <td className={`py-3 px-3 border-b ${theme.sectionBorder}`}>{item.description}</td>
                 <td className={`text-right py-3 px-3 border-b ${theme.sectionBorder}`}>

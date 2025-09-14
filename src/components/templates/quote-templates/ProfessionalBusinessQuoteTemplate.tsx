@@ -27,8 +27,9 @@ export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
             {logoUrl && (
               <img src={logoUrl} alt="Firmenlogo" className="h-12 w-auto mb-4 object-contain" />
             )}
-            <h1 className="text-3xl font-bold text-gray-800 mb-1">Angebot</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-1">{data.title || 'Angebot'}</h1>
             <p className="text-gray-600">Angebotsnummer {data.documentNumber}</p>
+            {data.reference && <p className="text-gray-600">Referenz: {data.reference}</p>}
           </div>
           <div className="text-right">
             <h2 className="text-xl font-bold text-gray-800 mb-2">{companySettings?.companyName}</h2>
@@ -45,6 +46,12 @@ export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
       </div>
 
       <div className="p-8">
+        {/* Kopf-Text */}
+        {data.headTextHtml && (
+          <div className="mb-8 p-4 bg-gray-50 rounded">
+            <div dangerouslySetInnerHTML={{ __html: data.headTextHtml }} />
+          </div>
+        )}
         {/* Kunde & Angebotsdaten */}
         <div className="grid grid-cols-2 gap-8 mb-8">
           <div>
@@ -55,6 +62,7 @@ export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
               <p className="text-gray-700">
                 {data.customerAddress?.zipCode} {data.customerAddress?.city}
               </p>
+              {data.customerEmail && <p className="text-gray-700 mt-1">{data.customerEmail}</p>}
               {data.customerContact && (
                 <p className="text-gray-700 mt-3 pt-3 border-t border-gray-200">
                   Ansprechpartner: {data.customerContact}
@@ -81,6 +89,18 @@ export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
                   <span className="font-semibold">{data.createdBy}</span>
                 </div>
               )}
+              {data.paymentTerms && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Zahlungsbedingungen:</span>
+                  <span className="font-semibold">{data.paymentTerms}</span>
+                </div>
+              )}
+              {data.deliveryTerms && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Lieferbedingungen:</span>
+                  <span className="font-semibold">{data.deliveryTerms}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -91,10 +111,9 @@ export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
             <thead>
               <tr className="bg-gray-100">
                 <th className="border border-gray-300 p-3 text-left font-bold">Pos.</th>
-                <th className="border border-gray-300 p-3 text-left font-bold">
-                  Leistungsbeschreibung
-                </th>
+                <th className="border border-gray-300 p-3 text-left font-bold">Beschreibung</th>
                 <th className="border border-gray-300 p-3 text-center font-bold">Menge</th>
+                <th className="border border-gray-300 p-3 text-center font-bold">Rabatt</th>
                 <th className="border border-gray-300 p-3 text-right font-bold">Einzelpreis</th>
                 <th className="border border-gray-300 p-3 text-right font-bold">Gesamt</th>
               </tr>
@@ -102,19 +121,35 @@ export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
             <tbody>
               {data.items?.map((item, index) => (
                 <tr key={index}>
-                  <td className="border border-gray-300 p-3 text-center">{index + 1}</td>
+                  <td className="border border-gray-300 p-3 text-center">
+                    {String(index + 1).padStart(2, '0')}
+                  </td>
                   <td className="border border-gray-300 p-3">
-                    <div className="font-semibold text-gray-800">{item.description}</div>
+                    <div
+                      className={`font-semibold text-gray-800${item.category === 'discount' ? ' text-red-600' : ''}`}
+                    >
+                      {item.description}
+                    </div>
                     {item.details && (
                       <div className="text-sm text-gray-600 mt-1">{item.details}</div>
                     )}
                   </td>
                   <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                  <td className="border border-gray-300 p-3 text-center">
+                    {!item.category && item.discountPercent && item.discountPercent > 0
+                      ? `${item.discountPercent}%`
+                      : '-'}
+                  </td>
                   <td className="border border-gray-300 p-3 text-right">
                     {formatCurrency(item.unitPrice)}
                   </td>
                   <td className="border border-gray-300 p-3 text-right font-semibold">
-                    {formatCurrency(item.quantity * item.unitPrice)}
+                    {(() => {
+                      const discountFactor =
+                        item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
+                      const totalPrice = item.quantity * item.unitPrice * discountFactor;
+                      return formatCurrency(totalPrice);
+                    })()}
                   </td>
                 </tr>
               ))}
@@ -145,6 +180,21 @@ export const ProfessionalBusinessQuoteTemplate: React.FC<TemplateProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Fuß-Text */}
+        {data.footerText && (
+          <div className="mb-8 p-4 bg-gray-50 rounded">
+            <div dangerouslySetInnerHTML={{ __html: data.footerText }} />
+          </div>
+        )}
+
+        {/* Zusätzliche Notizen */}
+        {data.notes && (
+          <div className="mb-8 p-4 bg-yellow-50 rounded border-l-4 border-yellow-400">
+            <h4 className="font-bold text-gray-800 mb-2">Zusätzliche Hinweise</h4>
+            <div className="whitespace-pre-line text-gray-700">{data.notes}</div>
+          </div>
+        )}
 
         {/* Fußbereich */}
         <div className="pt-6 border-t-2 border-gray-300 text-xs text-gray-700">
