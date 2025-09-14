@@ -1,14 +1,9 @@
 'use client';
 
-import { FirestoreInvoiceService } from '@/services/firestoreInvoiceService';
-import React, { useState, useEffect } from 'react';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -16,56 +11,112 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import FooterTextEditor from '@/components/finance/FooterTextEditor';
+import InventorySelector from '@/components/quotes/InventorySelector';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import {
-  ModalCard,
-  ModalCardHeader,
-  ModalCardTitle,
-  ModalCardDescription,
-  ModalCardContent,
-  ModalCardSection,
-  ModalCardActions,
-} from '@/components/ui/modal-card';
-import {
-  ArrowLeft,
-  Plus,
-  Trash2,
   Calculator,
+  Save,
   FileText,
+  User,
+  X,
   Loader2,
+  Info,
+  ChevronDown,
   Eye,
-  MoreVertical,
-  AlertCircle,
-  CheckCircle,
+  Mail,
+  Printer,
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { InvoicePreview } from '@/components/finance/InvoicePreview';
-import DocumentPreviewFrame from '@/components/templates/preview/DocumentPreviewFrame';
-import ProfessionalBusinessTemplate from '@/components/templates/invoice-templates/ProfessionalBusinessTemplate';
-import { InvoiceData } from '@/types/invoiceTypes';
-import { useCompanySettings } from '@/hooks/useCompanySettings';
-import { useAuth } from '@/contexts/AuthContext';
-import { findOrCreateCustomer } from '@/utils/customerUtils';
-// API Imports statt Firebase
+import { QuoteService, Quote as QuoteType, QuoteItem } from '@/services/quoteService';
+import { FirestoreInvoiceService as InvoiceService } from '@/services/firestoreInvoiceService';
+import { InvoiceData as InvoiceType } from '@/types/invoiceTypes';
+import { QuoteItem as InvoiceItem } from '@/services/quoteService';
+import { getAllCurrencies } from '@/data/currencies';
+import { getCustomers } from '@/utils/api/companyApi';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  getCompanyData,
-  getCustomers,
-  createInvoice,
-  handleApiError,
-} from '@/utils/api/companyApi';
+  ProfessionalBusinessTemplate,
+  ExecutivePremiumTemplate,
+  CreativeModernTemplate,
+  MinimalistElegantTemplate,
+  CorporateClassicTemplate,
+  TechStartupTemplate as TechInnovationTemplate,
+} from '@/components/templates/invoice-templates';
+
+// Invoice Template Types
+type InvoiceTemplate =
+  | 'professional-business-invoice'
+  | 'executive-premium-invoice'
+  | 'creative-modern-invoice'
+  | 'minimalist-elegant-invoice'
+  | 'corporate-classic-invoice'
+  | 'tech-innovation-invoice';
+import { UserPreferencesService } from '@/lib/userPreferences';
+import { TextTemplateService } from '@/services/TextTemplateService';
+type PreviewTemplateData = {
+  invoiceNumber: string;
+  date: string;
+  validUntil?: string;
+  title?: string;
+  reference?: string;
+  currency?: string;
+  taxRule?: string;
+  taxRuleLabel?: string;
+  customerName: string;
+  customerAddress?: string;
+  customerEmail?: string;
+  companyName?: string;
+  companyAddress?: string;
+  companyEmail?: string;
+  companyPhone?: string;
+  companyWebsite?: string;
+  companyLogo?: string;
+  profilePictureURL?: string;
+  companyVatId?: string;
+  companyTaxNumber?: string;
+  companyRegister?: string;
+  items: Array<{
+    id?: string;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+    taxRate?: number;
+    category?: string;
+    discountPercent?: number;
+    unit?: string;
+  }>;
+  subtotal: number;
+  tax: number;
+  total: number;
+  vatRate?: number;
+  isSmallBusiness?: boolean;
+  bankDetails?: {
+    iban?: string;
+    bic?: string;
+    bankName?: string;
+    accountHolder?: string;
+  };
+  notes?: string;
+  headTextHtml?: string;
+  footerText?: string;
+  contactPersonName?: string;
+  paymentTerms?: string;
+  deliveryTerms?: string;
+};
+import { db } from '@/firebase/clients';
+import { doc, getDoc } from 'firebase/firestore';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { Switch } from '@/components/ui/switch';
+import { InventoryService } from '@/services/inventoryService';
+import { Popover, PopoverContent, PopoverAnchor } from '@/components/ui/popover';
+import NewProductModal, { NewProductValues } from '@/components/inventory/NewProductModal';
+import NewCustomerModal from '@/components/finance/NewCustomerModal';
 
 interface Customer {
   id: string;
@@ -73,2611 +124,2522 @@ interface Customer {
   name: string;
   email: string;
   phone?: string;
-  // Legacy address für Kompatibilität
-  address?: string;
-  // Strukturierte Adresse
   street?: string;
   city?: string;
   postalCode?: string;
   country?: string;
-  taxNumber?: string;
-  vatId?: string;
-  vatValidated?: boolean;
-  totalInvoices?: number;
-  totalAmount?: number;
-  createdAt?: string;
-  contactPersons?: any[];
-  companyId?: string;
 }
 
-interface InvoiceItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  discount: number; // Rabatt in Prozent (0-100)
-  total: number;
-}
-
-export default function CreateInvoicePage() {
-  const router = useRouter();
+export default function CreateQuotePage() {
   const params = useParams();
-  const searchParams = useSearchParams();
+  const router = useRouter();
   const { user } = useAuth();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
+  const { settings } = useCompanySettings(uid);
 
-  // Load company settings
-  const {
-    settings: companySettings,
-    loading: companyLoading,
-    error: companyError,
-  } = useCompanySettings(uid);
-
-  // Load company data and template via API instead of direct Firebase
-  useEffect(() => {
-    const loadCompanyDataAndTemplate = async () => {
-      if (!uid) return;
-
-      try {
-        // Load Company data via API
-        const response = await getCompanyData(uid);
-        if (response.success && response.company) {
-          const companyData = response.company;
-          setFullCompanyData(companyData);
-
-          // Prüfe Kleinunternehmer-Status aus der Datenbank
-          const isKleinunternehmer =
-            companyData.kleinunternehmer === 'ja' || companyData.step2?.kleinunternehmer === 'ja';
-
-          // Prüfe ob die Company aus dem Ausland ist
-          const companyCountry =
-            companyData.companyCountry || companyData.step1?.personalCountry || '';
-          const isGermanCompany =
-            !companyCountry ||
-            companyCountry.toUpperCase() === 'DE' ||
-            companyCountry.toUpperCase() === 'DEUTSCHLAND' ||
-            companyCountry.toUpperCase() === 'GERMANY';
-
-          if (isKleinunternehmer) {
-            setFormData(prev => ({
-              ...prev,
-              taxNote: 'kleinunternehmer',
-              taxRate: '0',
-            }));
-          } else if (!isGermanCompany) {
-            // Ausländische Company stellt Rechnung an deutsche Kunden
-            setFormData(prev => ({
-              ...prev,
-              taxNote: 'reverse-charge',
-              taxRate: '0',
-            }));
-          }
-        }
-      } catch (error) {
-        toast.error('Fehler beim Laden der Firmendaten');
-      }
-    };
-
-    loadCompanyDataAndTemplate();
-  }, [uid]);
-
-  // State für echte Kunden
+  // UI state
+  const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(true);
-  const [fullCompanyData, setFullCompanyData] = useState<any>(null);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [showNet, setShowNet] = useState(true);
+  const [taxRate, setTaxRate] = useState(19);
+  const [showDetailedOptions, setShowDetailedOptions] = useState(false);
+  const [taxDEOpen, setTaxDEOpen] = useState(true);
+  const [taxEUOpen, setTaxEUOpen] = useState(false);
+  const [taxNonEUOpen, setTaxNonEUOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [company, setCompany] = useState<any | null>(null);
+  // E-Mail Versand UI
+  const [emailCardOpen, setEmailCardOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailAttachmentB64, setEmailAttachmentB64] = useState<string | null>(null);
+  const [emailAttachmentName, setEmailAttachmentName] = useState<string>('Angebot.pdf');
+  const [emailAttachmentReady, setEmailAttachmentReady] = useState<boolean>(false);
+  const [emailAttachmentError, setEmailAttachmentError] = useState<string | null>(null);
+  // On-demand PDF creation
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfSizeBytes, setPdfSizeBytes] = useState<number | null>(null);
+  const [creatingPdf, setCreatingPdf] = useState<boolean>(false);
 
+  // Template Auswahl & User Preferences
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>(
+    'professional-business-invoice'
+  );
+  const [loadingTemplate, setLoadingTemplate] = useState(true);
+
+  // PDF Hidden Container Ref
+  const pdfContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Produkt-anlegen Prompt/Modal State
+  const [dismissedCreatePromptIds, setDismissedCreatePromptIds] = useState<Set<string>>(new Set());
+  const [createProductOpen, setCreateProductOpen] = useState(false);
+  const [createProductForIndex, setCreateProductForIndex] = useState<number | null>(null);
+  const [creatingProduct, setCreatingProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState<NewProductValues>({
+    name: '',
+    imageUrl: '',
+    sku: '',
+    category: 'Artikel',
+    unit: 'Stk',
+    stock: 0,
+    taxRate: 19,
+    purchaseNet: 0,
+    purchaseGross: 0,
+    sellingNet: 0,
+    sellingGross: 0,
+    description: '',
+    internalNote: '',
+  });
+
+  // Kunden-anlegen Modal State
+  const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [showCustomerSearchPopup, setShowCustomerSearchPopup] = useState(false);
+
+  // Textvorlagen State
+  const [textTemplates, setTextTemplates] = useState<any[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedHeadTemplate, setSelectedHeadTemplate] = useState<string>('');
+  const [selectedFooterTemplate, setSelectedFooterTemplate] = useState<string>('');
+
+  // Sync Preisfelder Netto/Brutto
+  const syncGrossFromNet = (net: number, rate: number) =>
+    Number.isFinite(net) ? net * (1 + Math.max(0, rate) / 100) : 0;
+  const syncNetFromGross = (gross: number, rate: number) =>
+    Number.isFinite(gross) ? gross / (1 + Math.max(0, rate) / 100) : 0;
+
+  // Popover-Open-Status pro Zeile und Debounce-Timer pro Item
+  const itemsRef = useRef<InvoiceItem[]>([]);
+  const [popoverOpenIds, setPopoverOpenIds] = useState<Set<string>>(new Set());
+  const popoverTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Debounced onChange für Beschreibung
+  const handleDescriptionChange = (index: number, id: string, value: string) => {
+    handleItemChange(index, 'description', value);
+    const timers = popoverTimersRef.current;
+    const existing = timers.get(id);
+    if (existing) clearTimeout(existing);
+    const t = setTimeout(() => {
+      const list = itemsRef.current;
+      const current = list.find(i => i.id === id);
+      const shouldOpen =
+        Boolean(current) &&
+        current!.category !== 'discount' &&
+        Boolean((current!.description || '').trim()) &&
+        !current!.inventoryItemId &&
+        !dismissedCreatePromptIds.has(id) &&
+        !createProductOpen;
+      setPopoverOpenIds(prev => {
+        const next = new Set(prev);
+        if (shouldOpen) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+
+      // Auto-Mapping aus Inventar: Wenn Beschreibung wie Name oder SKU passt, Produktdaten übernehmen
+      (async () => {
+        try {
+          const row = itemsRef.current.find(i => i.id === id);
+          if (!row || row.inventoryItemId) return;
+          const term = (row.description || '').trim();
+          if (!term || term.length < 2) return;
+          const results = await InventoryService.findInventoryItems(uid, term);
+          if (!results || results.length === 0) return;
+          const lower = term.toLowerCase();
+          const exactSku = results.find(r => (r.sku || '').toLowerCase() === lower);
+          const exactName = results.find(r => (r.name || '').toLowerCase() === lower);
+          const match = exactSku || exactName || (results.length === 1 ? results[0] : undefined);
+          if (!match) return;
+          setItems(prev =>
+            prev.map((it, i) => {
+              if (i !== index) return it;
+              const unitPriceNet = Number(match.sellingPrice) || 0;
+              const qty = Number.isFinite(it.quantity) ? it.quantity : 1;
+              return {
+                ...it,
+                description: match.name || it.description,
+                unit: match.unit || 'Stk',
+                unitPrice: unitPriceNet,
+                total: computeItemTotalNet(qty, unitPriceNet),
+                inventoryItemId: match.id,
+              };
+            })
+          );
+          setPopoverOpenIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
+        } catch (_) {
+          // ignoriere Fehler in der Auto-Suche
+        }
+      })();
+    }, 100);
+    timers.set(id, t);
+  };
+
+  // Konsistenz: Wenn Items/Modal/“dismissed” sich ändern, Popover neu bewerten
+  useEffect(() => {
+    setPopoverOpenIds(prev => {
+      const next = new Set(prev);
+      const list = itemsRef.current;
+      for (const id of Array.from(prev)) {
+        const current = list.find(i => i.id === id);
+        const shouldOpen =
+          Boolean(current) &&
+          current!.category !== 'discount' &&
+          Boolean((current!.description || '').trim()) &&
+          !current!.inventoryItemId &&
+          !dismissedCreatePromptIds.has(id) &&
+          !createProductOpen;
+        if (!shouldOpen) next.delete(id);
+      }
+      return next;
+    });
+  }, [dismissedCreatePromptIds, createProductOpen]);
+
+  // Cleanup: ausstehende Timer beim Unmount löschen
+  useEffect(() => {
+    return () => {
+      for (const t of popoverTimersRef.current.values()) clearTimeout(t);
+      popoverTimersRef.current.clear();
+    };
+  }, []);
+
+  // Kein automatisches Modal mehr – wir nutzen einen kleinen Popover unter dem Feld
+
+  // Skonto-UI-State
+  const [skontoEnabled, setSkontoEnabled] = useState<boolean>(false);
+  const [skontoDays, setSkontoDays] = useState<number | undefined>(undefined);
+  const [skontoPercentage, setSkontoPercentage] = useState<number | undefined>(undefined);
+  const [skontoText, setSkontoText] = useState<string>('');
+
+  // Form state
   const [formData, setFormData] = useState({
     customerName: '',
+    customerNumber: '',
     customerEmail: '',
     customerAddress: '',
-    customerVatId: '', // VAT-ID des Kunden
-    invoiceNumber: '',
-    issueDate: new Date().toISOString().split('T')[0],
-    dueDate: '',
-    description: '',
-    taxRate: '19', // Standard German VAT
-    taxNote: 'none', // Standard: Kein Steuerhinweis
+    title: '',
+    customerOrderNumber: '',
+    validUntil: '',
+    headTextHtml: '',
+    footerText: '',
     notes: '',
-    paymentTerms: '', // Zahlungskonditionen
-    // Skonto-Felder hinzufügen
-    skontoEnabled: false,
-    skontoDays: 3,
-    skontoPercentage: 2.0,
-    skontoText: '', // Text für Skonto-Bedingungen
+    currency: 'EUR',
+    internalContactPerson: '',
+    deliveryTerms: '',
+    paymentTerms: '',
+    taxRule: 'DE_TAXABLE' as
+      | 'DE_TAXABLE'
+      | 'DE_EXEMPT_4_USTG'
+      | 'DE_REVERSE_13B'
+      | 'EU_REVERSE_18B'
+      | 'EU_INTRACOMMUNITY_SUPPLY'
+      | 'EU_OSS'
+      | 'NON_EU_EXPORT'
+      | 'NON_EU_OUT_OF_SCOPE',
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isEInvoiceEnabled, setIsEInvoiceEnabled] = useState(false);
-  const [showEInvoiceModal, setShowEInvoiceModal] = useState(false);
-  const [modalFormData, setModalFormData] = useState({
-    companyName: '',
-    companyStreet: '',
-    companyCity: '',
-    companyPostalCode: '',
-    companyCountry: '',
-    taxNumber: '',
-    vatId: '',
-    registrationNumber: '',
-    iban: '',
-    bic: '',
-    contactEmail: '',
-  });
-
-  // Auto-fill modalFormData mit verfügbaren Firmendaten
-  useEffect(() => {
-    if (fullCompanyData && showEInvoiceModal) {
-      setModalFormData(prev => ({
-        ...prev,
-        companyName: fullCompanyData.companyName || prev.companyName,
-        companyStreet: fullCompanyData.companyStreet || prev.companyStreet,
-        companyCity: fullCompanyData.companyCity || prev.companyCity,
-        companyPostalCode: fullCompanyData.companyPostalCode || prev.companyPostalCode,
-        companyCountry: fullCompanyData.companyCountry || prev.companyCountry,
-        taxNumber: fullCompanyData.taxNumber || prev.taxNumber,
-        vatId: fullCompanyData.vatId || prev.vatId,
-        registrationNumber: fullCompanyData.registrationNumber || prev.registrationNumber,
-        iban: fullCompanyData.bankDetails?.iban || prev.iban,
-        bic: fullCompanyData.bankDetails?.bic || prev.bic,
-        contactEmail:
-          fullCompanyData.contactEmail ||
-          fullCompanyData.email ||
-          fullCompanyData.step1?.email ||
-          prev.contactEmail,
-      }));
-    }
-  }, [fullCompanyData, showEInvoiceModal]);
-
-  const [items, setItems] = useState<InvoiceItem[]>([
+  // Items (Netto im State)
+  const [items, setItems] = useState<QuoteItem[]>([
     {
-      id: 'item_1',
+      id:
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2),
       description: 'Leistung',
       quantity: 1,
-      unitPrice: 50,
-      discount: 0,
-      total: 50,
+      unitPrice: 0,
+      total: 0,
     },
   ]);
 
-  // Load customers via API instead of direct Firebase
+  // Halte itemsRef synchron, damit Debounce/Popover-Logik nicht vor Deklaration auf items zugreift
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  // Bei jeder Items-Änderung Popover-Entscheidungen neu evaluieren
+  useEffect(() => {
+    setPopoverOpenIds(prev => {
+      const next = new Set(prev);
+      for (const id of Array.from(prev)) {
+        const current = items.find(i => i.id === id);
+        const shouldOpen =
+          Boolean(current) &&
+          current!.category !== 'discount' &&
+          Boolean((current!.description || '').trim()) &&
+          !current!.inventoryItemId &&
+          !dismissedCreatePromptIds.has(id) &&
+          !createProductOpen;
+        if (!shouldOpen) next.delete(id);
+      }
+      return next;
+    });
+  }, [items, dismissedCreatePromptIds, createProductOpen]);
+
+  // Kunden laden
   useEffect(() => {
     const loadCustomers = async () => {
       if (!uid || !user || user.uid !== uid) return;
-
       try {
         setLoadingCustomers(true);
-        // Load customers via API
         const response = await getCustomers(uid);
         if (response.success && response.customers) {
           setCustomers(response.customers);
         }
-      } catch (error) {
+      } catch (e) {
         toast.error('Fehler beim Laden der Kunden');
       } finally {
         setLoadingCustomers(false);
       }
     };
-
     loadCustomers();
   }, [uid, user]);
 
-  // Lade Projektdaten aus URL-Parametern und fülle Formular vor
+  // Popup schließen beim Klicken außerhalb
   useEffect(() => {
-    if (!searchParams) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCustomerSearchPopup) {
+        const target = event.target as Element;
+        if (!target.closest('.customer-search-container')) {
+          setShowCustomerSearchPopup(false);
+        }
+      }
+    };
 
-    const projectParam = searchParams.get('project');
-    if (projectParam) {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showCustomerSearchPopup]);
+
+  // Firma laden (für Vorschau: Name, Adresse, Logo/Profilbild, Kontakt, Steuer/Bank)
+  // Wichtig: settings als Dependency, damit Template-Daten automatisch aktualisiert werden
+  useEffect(() => {
+    const loadCompany = async () => {
+      if (!uid || !user || user.uid !== uid) return;
       try {
-        const projectData = JSON.parse(projectParam);
+        const snap = await getDoc(doc(db, 'companies', uid));
+        if (snap.exists()) setCompany(snap.data());
+      } catch (e) {
+        // still render, but without company info
+      }
+    };
+    loadCompany();
+  }, [uid, user, settings]); // settings als Dependency hinzugefügt für automatische Template-Updates
 
-        // Fülle Formular mit Projektdaten vor
-        setFormData(prev => ({
-          ...prev,
-          customerName: projectData.client || prev.customerName,
-          description: `Rechnung für Projekt: ${projectData.projectName}${projectData.description ? `\n\n${projectData.description}` : ''}`,
-        }));
+  // Steuerlogik aus der Auswahl ableiten (berücksichtigt Standard-Steuersatz aus Einstellungen)
+  useEffect(() => {
+    if (formData.taxRule === 'DE_TAXABLE') {
+      const rate = settings?.defaultTaxRate ? parseInt(settings.defaultTaxRate, 10) : 19;
+      setTaxRate(Number.isFinite(rate) ? rate : 19);
+    } else {
+      setTaxRate(0);
+    }
+  }, [formData.taxRule, settings?.defaultTaxRate]);
 
-        // Erstelle Items basierend auf den erfassten Stunden
-        if (projectData.dailyLineItems && projectData.dailyLineItems.length > 0) {
-          // Verwende tagesweise Aufschlüsselung
-          const projectItems: InvoiceItem[] = projectData.dailyLineItems.map(
-            (dayItem: any, index: number) => ({
-              id: `day_${index}`,
-              description: dayItem.description, // Format: "2025-01-19: Projektname (8.5h)"
-              quantity: dayItem.hours,
-              unitPrice: dayItem.hourlyRate,
-              discount: 0,
-              total: dayItem.amount,
-            })
-          );
+  // Template Auswahl & User Preferences laden
+  useEffect(() => {
+    if (!user?.uid) return;
 
-          setItems(projectItems);
-        } else if (projectData.totalHours > 0 && projectData.hourlyRate > 0) {
-          // Fallback für alte Projektdaten ohne dailyLineItems
-          const projectItems: InvoiceItem[] = [
-            {
-              id: 'project_hours',
-              description: `Projektarbeit: ${projectData.projectName}`,
-              quantity: projectData.totalHours,
-              unitPrice: projectData.hourlyRate,
-              discount: 0,
-              total: projectData.revenue,
-            },
-          ];
+    const loadUserTemplate = async () => {
+      try {
+        setLoadingTemplate(true);
+        // Lade direkt die User Preferences
+        const preferences = await UserPreferencesService.getUserPreferences(user.uid, uid);
 
-          // Füge detaillierte Zeiteinträge hinzu, falls verfügbar
-          if (projectData.timeEntries && projectData.timeEntries.length > 0) {
-            const timeEntriesDescription = projectData.timeEntries
-              .map(
-                (entry: any) =>
-                  `${entry.date}: ${entry.description} (${Math.round((entry.duration / 60) * 100) / 100}h)`
-              )
-              .join('\n');
-
-            projectItems[0].description += `\n\nDetaillierte Zeiterfassung:\n${timeEntriesDescription}`;
-          }
-
-          setItems(projectItems);
+        if (preferences.preferredQuoteTemplate) {
+          setSelectedTemplate(preferences.preferredInvoiceTemplate as InvoiceTemplate);
+        } else {
+          // Fallback auf corporate-classic-quote laut Datenbank
+          setSelectedTemplate('corporate-classic-invoice');
         }
       } catch (error) {
-        toast.error('Fehler beim Laden der Projektdaten');
+        console.warn('Fehler beim Laden der Template-Preferences:', error);
+        setSelectedTemplate('corporate-classic-invoice'); // Fallback
+      } finally {
+        setLoadingTemplate(false);
+      }
+    };
+
+    loadUserTemplate();
+  }, [user?.uid, uid]);
+
+  // Textvorlagen laden
+  useEffect(() => {
+    const loadTextTemplates = async () => {
+      if (!uid) return;
+
+      try {
+        setLoadingTemplates(true);
+        const templates = await TextTemplateService.getTextTemplates(uid);
+        setTextTemplates(templates);
+
+        // Standard-Templates automatisch auswählen
+        const headTemplate = templates.find(
+          t => t.objectType === 'INVOICE' && t.textType === 'HEAD' && t.isDefault
+        );
+        const footerTemplate = templates.find(
+          t => t.objectType === 'INVOICE' && t.textType === 'FOOT' && t.isDefault
+        );
+
+        if (headTemplate && !formData.headTextHtml) {
+          setSelectedHeadTemplate(headTemplate.id);
+          setFormData(prev => ({ ...prev, headTextHtml: headTemplate.text }));
+        }
+
+        if (footerTemplate && !formData.footerText) {
+          setSelectedFooterTemplate(footerTemplate.id);
+          setFormData(prev => ({ ...prev, footerText: footerTemplate.text }));
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Textvorlagen:', error);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+
+    loadTextTemplates();
+  }, [uid, formData.headTextHtml, formData.footerText]);
+
+  // Template-Komponente dynamisch rendern
+  const renderTemplateComponent = (templateId: InvoiceTemplate) => {
+    const components = {
+      'professional-business-invoice': ProfessionalBusinessTemplate,
+      'executive-premium-invoice': ExecutivePremiumTemplate,
+      'creative-modern-invoice': CreativeModernTemplate,
+      'minimalist-elegant-invoice': MinimalistElegantTemplate,
+      'corporate-classic-invoice': CorporateClassicTemplate,
+      'tech-innovation-invoice': TechInnovationTemplate,
+    };
+
+    const TemplateComponent = components[templateId] || CorporateClassicTemplate;
+    return TemplateComponent;
+  };
+  useEffect(() => {
+    if (!settings) return;
+
+    // Preisanzeige (Netto/Brutto)
+    setShowNet(settings.priceInput !== 'brutto');
+
+    // Steuerregel aus USt-Status ableiten
+    setFormData(prev => {
+      const next = { ...prev };
+      if (settings.ust === 'kleinunternehmer') {
+        // Für Kleinunternehmer: keine USt -> sinnvolle Default-Regelung
+        next.taxRule = 'DE_EXEMPT_4_USTG';
+      } else {
+        // Standardfall: steuerpflichtig in DE
+        next.taxRule = prev.taxRule || 'DE_TAXABLE';
+      }
+
+      // Zahlungsbedingungen vorbelegen (nur Basis-Text; Skonto wird separat gesteuert)
+      if (!prev.paymentTerms && settings.defaultPaymentTerms) {
+        const d = settings.defaultPaymentTerms;
+        const baseText = d.text || `Zahlbar binnen ${d.days} Tagen ohne Abzug`;
+        next.paymentTerms = baseText;
+      }
+
+      // Währung vorbelegen (falls vorhanden und noch nicht bewusst geändert)
+      if (prev.currency === 'EUR' && (company?.defaultCurrency as string)) {
+        next.currency = company?.defaultCurrency as string;
+      }
+
+      return next;
+    });
+  }, [settings, company?.defaultCurrency]);
+
+  // Skonto-Defaults aus Einstellungen übernehmen (separat, damit Basis-Text nicht dupliziert wird)
+  useEffect(() => {
+    if (!settings?.defaultPaymentTerms) return;
+    const d = settings.defaultPaymentTerms as Record<string, unknown>;
+    setSkontoEnabled(Boolean(d.skontoEnabled));
+    setSkontoDays(
+      typeof d.skontoDays === 'number'
+        ? d.skontoDays
+        : typeof d.days === 'number'
+          ? d.days
+          : undefined
+    );
+    setSkontoPercentage(typeof d.skontoPercentage === 'number' ? d.skontoPercentage : undefined);
+    setSkontoText(typeof d.skontoText === 'string' ? d.skontoText : '');
+  }, [settings?.defaultPaymentTerms]);
+
+  // Währungen: alle ISO-4217 Codes mit lokalisierten Namen
+  const allCurrencies = React.useMemo(() => getAllCurrencies('de-DE'), []);
+
+  // Einheiten-Auswahl (analog zur gewünschten Liste)
+  const UNIT_OPTIONS = React.useMemo(
+    () => [
+      { label: 'Stk', value: 'Stk' },
+      { label: 'pauschal', value: 'pauschal' },
+      { label: 'Std', value: 'Std' },
+      { label: '%', value: '%' },
+      { label: 'Tag(e)', value: 'Tag(e)' },
+      // Hinweis: SelectItem darf keinen leeren value haben – 'none' dient als Platzhalter und wird auf '' gemappt
+      { label: '—', value: 'none' },
+      { label: 'm²', value: 'm²' },
+      { label: 'm', value: 'm' },
+      { label: 'kg', value: 'kg' },
+      { label: 't', value: 't' },
+      { label: 'lfm', value: 'lfm' },
+      { label: 'm³', value: 'm³' },
+      { label: 'km', value: 'km' },
+      { label: 'L', value: 'L' },
+    ],
+    []
+  );
+
+  // Currency-Formatter
+  const formatCurrency = (amount: number) => {
+    try {
+      return new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: formData.currency || 'EUR',
+      }).format(Number.isFinite(amount) ? amount : 0);
+    } catch {
+      return `${(Number.isFinite(amount) ? amount : 0).toFixed(2)} ${formData.currency || 'EUR'}`;
+    }
+  };
+
+  // Datum als dd.mm.yyyy formatieren
+  const formatDateDE = (d: Date | string | undefined): string => {
+    if (!d) return '';
+    try {
+      const dateObj = typeof d === 'string' ? new Date(d) : d;
+      if (Number.isNaN(dateObj.getTime())) return '';
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const yyyy = String(dateObj.getFullYear());
+      return `${dd}.${mm}.${yyyy}`;
+    } catch {
+      return '';
+    }
+  };
+
+  // Platzhalter-Ersetzung für Textvorlagen
+  const replacePlaceholders = (text: string, data: PreviewTemplateData): string => {
+    if (!text) return '';
+
+    // Erstelle Platzhalter-Mapping
+    const placeholders = {
+      // Kunden-Information
+      '[%KUNDENNAME%]': data.customerName || '',
+      '[%KUNDENNUMMER%]': formData.customerNumber || '',
+      '[%KUNDENADRESSE%]': data.customerAddress || '',
+      '[%KUNDENANREDE%]': data.customerName ? `Sehr geehrte Damen und Herren` : '',
+      '[%VOLLEANREDE%]': data.customerName ? `Sehr geehrte Damen und Herren` : '',
+
+      // Rechnungs-Information
+      '[%RECHNUNGSNUMMER%]': data.invoiceNumber || '',
+      '[%ANGEBOTSNUMMER%]': data.invoiceNumber || '', // Fallback für gemischte Templates
+      '[%RECHNUNGSDATUM%]': formatDateDE(data.date) || '',
+      '[%ZAHLUNGSZIEL%]': formatDateDE(data.validUntil) || '',
+      '[%LEISTUNGSDATUM%]': formatDateDE(data.date) || '',
+
+      // Finanz-Information
+      '[%BETRAG%]': formatCurrency(data.total),
+      '[%NETTOBETRAG%]': formatCurrency(data.subtotal),
+      '[%STEUERBETRAG%]': formatCurrency(data.tax),
+      '[%WAEHRUNG%]': data.currency || 'EUR',
+      '[%STEUERSATZ%]': `${data.vatRate || 0}%`,
+
+      // Unternehmens-Information
+      '[%KONTAKTPERSON%]': data.contactPersonName || data.companyName || '',
+      '[%FIRMENNAME%]': data.companyName || '',
+      '[%FIRMENADRESSE%]': data.companyAddress || '',
+      '[%FIRMENTELEFON%]': data.companyPhone || '',
+      '[%FIRMENEMAIL%]': data.companyEmail || '',
+      '[%FIRMENWEBSITE%]': data.companyWebsite || '',
+      '[%UMSATZSTEUERID%]': data.companyVatId || '',
+      '[%STEUERNUMMER%]': data.companyTaxNumber || '',
+
+      // Bank-Information
+      '[%IBAN%]': data.bankDetails?.iban || '',
+      '[%BIC%]': data.bankDetails?.bic || '',
+      '[%BANKNAME%]': data.bankDetails?.bankName || '',
+      '[%KONTOINHABER%]': data.bankDetails?.accountHolder || '',
+
+      // Sonstige
+      '[%DATUM%]': formatDateDE(new Date()),
+      '[%TITEL%]': data.title || '',
+      '[%REFERENZ%]': data.reference || '',
+    };
+
+    // Alle Platzhalter ersetzen
+    let result = text;
+    Object.entries(placeholders).forEach(([placeholder, value]) => {
+      const regex = new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+      result = result.replace(regex, value);
+    });
+
+    return result;
+  };
+
+  // Vorschau-Daten für das Template zusammenbauen
+  const buildPreviewData = (): PreviewTemplateData => {
+    const today = new Date();
+    // Firmenname und -adresse aus companies-Collection, mit Fallbacks
+    const companyName =
+      (company?.companyName as string) ||
+      (settings?.companyName as string) ||
+      ((user as any)?.companyName as string) ||
+      ((user as any)?.displayName as string) ||
+      'Ihr Unternehmen';
+    // Kontaktperson: interne Eingabe > Company-Kontakt > Vor-/Nachname > Firmenname
+    const contactPersonNameForFooter =
+      (formData.internalContactPerson || '').trim() ||
+      (company?.contactPerson?.name as string) ||
+      '' ||
+      [company?.firstName, company?.lastName].filter(Boolean).join(' ') ||
+      (companyName as string) ||
+      undefined;
+    const companyAddress = [
+      [company?.companyStreet, company?.companyHouseNumber].filter(Boolean).join(' '),
+      [company?.companyPostalCode, company?.companyCity].filter(Boolean).join(' '),
+      company?.companyCountry,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    // Kopf-Text (HTML) rudimentär in Text wandeln + weitere Metadaten als Bemerkungen bündeln
+    const htmlToText = (html: string) =>
+      (html || '')
+        .replace(/<br\s*\/?>(\s*)/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&');
+    const noteLines: string[] = [];
+    // Kopf-Text und Referenz werden separat im Template angezeigt
+    if (formData.deliveryTerms) noteLines.push(`Lieferbedingungen: ${formData.deliveryTerms}`);
+    if (formData.paymentTerms) noteLines.push(`Zahlungsbedingungen: ${formData.paymentTerms}`);
+    // Zahlungsbedingungen final zusammenbauen (Skonto separat anhängen, falls aktiv)
+    // Skonto-Satz: Wenn Skonto aktiv ist, zuerst benutzerdefinierten Text nutzen; sonst Tage/%-Fallback
+    let skontoSentence = '';
+    if (skontoEnabled) {
+      if (skontoText?.trim()) {
+        skontoSentence = skontoText.trim();
+      } else if (skontoDays && skontoPercentage) {
+        skontoSentence = `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`;
       }
     }
-  }, [searchParams]);
+    const finalPaymentTerms = [formData.paymentTerms?.trim(), skontoSentence]
+      .filter(Boolean)
+      .join('\n\n');
+    const previewNotes =
+      [
+        formData.deliveryTerms ? `Lieferbedingungen: ${formData.deliveryTerms}` : '',
+        finalPaymentTerms ? `Zahlungsbedingungen: ${finalPaymentTerms}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n') || undefined;
 
-  // Initialize payment terms from company settings when component loads
-  React.useEffect(() => {
-    if (companySettings && companySettings.defaultPaymentTerms && !formData.paymentTerms) {
-      const paymentDays = companySettings.defaultPaymentTerms.days || 14;
-      const paymentText =
-        companySettings.defaultPaymentTerms.text ||
-        `Zahlbar binnen ${paymentDays} Tagen ohne Abzug`;
-      const skontoEnabled = companySettings.defaultPaymentTerms.skontoEnabled || false;
-      const skontoDays = companySettings.defaultPaymentTerms.skontoDays || 3;
-      const skontoPercentage = companySettings.defaultPaymentTerms.skontoPercentage || 2.0;
+    const taxRuleLabelMap: Record<string, string> = {
+      DE_TAXABLE: 'Umsatzsteuerpflichtige Umsätze (DE, i. d. R. 19%)',
+      DE_EXEMPT_4_USTG: 'Steuerfreie Umsätze §4 UStG',
+      DE_REVERSE_13B: 'Reverse Charge gem. §13b UStG',
+      EU_REVERSE_18B: 'Reverse Charge gem. §18b UStG (EU)',
+      EU_INTRACOMMUNITY_SUPPLY: 'Innergemeinschaftliche Lieferungen (EU)',
+      EU_OSS: 'OSS – One-Stop-Shop (EU)',
+      NON_EU_EXPORT: 'Ausfuhren (Drittland)',
+      NON_EU_OUT_OF_SCOPE: 'Nicht im Inland steuerbare Leistung (außerhalb EU)',
+    };
 
-      setFormData(prev => ({
-        ...prev,
-        paymentTerms: paymentText,
-        skontoEnabled: skontoEnabled,
-        skontoDays: skontoDays,
-        skontoPercentage: skontoPercentage,
-        skontoText: skontoEnabled
-          ? `${skontoPercentage}% Skonto bei Zahlung binnen ${skontoDays} Tagen`
-          : '',
-      }));
+    const data: PreviewTemplateData = {
+      invoiceNumber: 'Vorschau',
+      date: formatDateDE(today),
+      validUntil: formatDateDE(formData.validUntil),
+      title: formData.title || undefined,
+      reference: formData.customerOrderNumber || undefined,
+      currency:
+        formData.currency ||
+        (company?.defaultCurrency as string) ||
+        ((settings as any)?.defaultCurrency as string) ||
+        'EUR',
+      taxRule: formData.taxRule,
+      taxRuleLabel: taxRuleLabelMap[formData.taxRule] || undefined,
+      customerName: formData.customerName || 'Kunde',
+      customerAddress: formData.customerAddress || '',
+      customerEmail: formData.customerEmail || undefined,
+      companyName,
+      companyAddress,
+      companyEmail: (company?.email as string) || undefined,
+      companyPhone:
+        (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || undefined,
+      companyWebsite:
+        (company?.website as string) || (company?.companyWebsite as string) || undefined,
+      companyLogo: (company?.companyLogo as string) || undefined,
+      profilePictureURL: (company?.profilePictureURL as string) || undefined,
+      companyVatId:
+        (company?.vatId as string) ||
+        (company as any)?.vatIdForBackend ||
+        (company as any)?.step3?.vatId ||
+        ((settings as any)?.vatId as string) ||
+        undefined,
+      companyTaxNumber:
+        (company?.taxNumber as string) ||
+        (company as any)?.taxNumberForBackend ||
+        (company as any)?.step3?.taxNumber ||
+        ((settings as any)?.taxNumber as string) ||
+        undefined,
+      companyRegister:
+        (company?.companyRegisterPublic as string) ||
+        (company?.companyRegister as string) ||
+        (company as any)?.step3?.companyRegister ||
+        ((settings as any)?.districtCourt as string) ||
+        ((settings as any)?.companyRegister as string) ||
+        undefined,
+      items: items.map(it => {
+        const qty = Number.isFinite(it.quantity) ? it.quantity : 0;
+        const unit = Number.isFinite(it.unitPrice) ? it.unitPrice : 0;
+        const baseTotal = Number.isFinite(it.total) ? it.total : qty * unit;
+        const sign = it.category === 'discount' ? -1 : 1;
+        const factor =
+          it.category === 'discount'
+            ? 1
+            : 1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
+        const lineTotalNet = baseTotal * sign * factor;
+        return {
+          id: it.id,
+          description: it.description || '',
+          quantity: qty,
+          unitPrice: unit,
+          total: lineTotalNet,
+          taxRate: undefined,
+          category: it.category as any,
+          discountPercent: it.discountPercent || 0,
+          unit: it.unit,
+        };
+      }),
+      subtotal,
+      tax: showNet ? 0 : vat, // Bei Netto-Anzeige keine Steuer anzeigen
+      total: showNet ? subtotal : grandTotal, // Bei Netto-Anzeige nur Netto-Summe zeigen
+      vatRate: showNet ? 0 : taxRate, // Bei Netto-Anzeige keine Steuer-Rate anzeigen
+      isSmallBusiness: settings?.ust === 'kleinunternehmer' || taxRate === 0,
+      bankDetails: company
+        ? {
+            iban:
+              (company as any)?.step4?.iban ||
+              (company?.iban as string) ||
+              ((settings as any)?.step4?.iban as string) ||
+              undefined,
+            bic:
+              (company as any)?.step4?.bic ||
+              (company?.bic as string) ||
+              ((settings as any)?.step4?.bic as string) ||
+              undefined,
+            bankName:
+              (company as any)?.step4?.bankName ||
+              (company?.bankName as string) ||
+              ((settings as any)?.step4?.bankName as string) ||
+              undefined,
+            accountHolder:
+              (company as any)?.step4?.accountHolder ||
+              (company?.accountHolder as string) ||
+              ((settings as any)?.step4?.accountHolder as string) ||
+              (settings as any)?.accountHolder ||
+              (companyName as string) ||
+              undefined,
+          }
+        : undefined,
+      notes: previewNotes,
+      headTextHtml: formData.headTextHtml || undefined,
+      footerText: formData.footerText || undefined,
+      contactPersonName: contactPersonNameForFooter,
+      paymentTerms: finalPaymentTerms || undefined,
+      deliveryTerms: formData.deliveryTerms || undefined,
+    };
+
+    return data;
+  };
+
+  // Platzhalter in Textvorlagen ersetzen
+  const getProcessedPreviewData = (): PreviewTemplateData => {
+    const data = buildPreviewData();
+
+    // Platzhalter in Kopf- und Fußtext ersetzen
+    const processedData = {
+      ...data,
+      headTextHtml: data.headTextHtml ? replacePlaceholders(data.headTextHtml, data) : undefined,
+      footerText: data.footerText ? replacePlaceholders(data.footerText, data) : undefined,
+    };
+
+    return processedData;
+  };
+
+  // E-Mail Defaults setzen, wenn das E-Mail-Card geöffnet wird
+  useEffect(() => {
+    if (!emailCardOpen) return;
+    const data = buildPreviewData();
+    if (!emailSubject) {
+      setEmailSubject(`Angebot ${data.companyName}${data.title ? ' – ' + data.title : ''}`);
     }
-  }, [companySettings]);
+    if (!emailBody) {
+      setEmailBody(
+        `Hallo ${data.customerName || ''},\n\n` +
+          `anbei erhalten Sie unser Angebot${data.title ? ' zu: ' + data.title : ''}.` +
+          `\n\nGesamtbetrag: ${formatCurrency(data.total)}\nGültig bis: ${data.validUntil}` +
+          `\n\nBei Fragen melden Sie sich gerne.` +
+          `\n\nBeste Grüße\n${data.companyName}`
+      );
+    }
+    if (!emailTo && formData.customerEmail) setEmailTo(formData.customerEmail);
+    // PDF vorab erstellen (rein clientseitig)
+    (async () => {
+      try {
+        setEmailAttachmentError(null);
+        setEmailAttachmentReady(false);
+        const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
+        setEmailAttachmentName(filename);
+        await new Promise(r => setTimeout(r, 100));
+        // Clientseitig erzeugen
+        const blob = await generatePdfBlob();
+        if (!blob || (blob as any).size === 0) throw new Error('Leeres PDF');
+        const base64 = await blobToBase64(blob);
+        setEmailAttachmentB64(base64);
+        setEmailAttachmentReady(true);
+      } catch (err: any) {
+        console.error('PDF-PreRender fehlgeschlagen', err);
+        setEmailAttachmentError(err?.message || 'PDF konnte nicht erstellt werden');
+        setEmailAttachmentReady(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailCardOpen]);
 
-  // Auto-generate invoice number only when finalizing (not for drafts)
-  React.useEffect(() => {
-    // Keine automatische Generierung der Rechnungsnummer für Entwürfe
-    // Die Nummer wird erst beim Finalisieren erstellt
-  }, [uid]); // Entferne die automatische Generierung komplett
-  // Auto-set due date und payment terms basierend auf Company Settings
-  React.useEffect(() => {
-    if (companySettings && formData.issueDate) {
-      const issueDate = new Date(formData.issueDate);
-      const paymentDays = companySettings.defaultPaymentTerms?.days || 14;
+  // PDF-Generierung mit React-PDF und dem umgeschriebenen Template
+  const generatePdfBlob = async (): Promise<Blob> => {
+    try {
+      console.log('[PDF] Start React-PDF Erzeugung mit umgeschriebenem Template');
 
-      // Set payment terms if empty, default, or different from company settings
-      const isDefaultPaymentTerms =
-        !formData.paymentTerms ||
-        formData.paymentTerms === '' ||
-        (formData.paymentTerms.includes('Zahlbar binnen') &&
-          formData.paymentTerms.includes('Tagen ohne Abzug')) ||
-        formData.paymentTerms === 'Zahlbar binnen 14 Tagen ohne Abzug';
+      // Verwende das bestehende Template-Datenformat - angepasst für Invoice mit Platzhaltern
+      const templateData = {
+        ...getProcessedPreviewData(),
+        dueDate: getProcessedPreviewData().validUntil, // Fälligkeitsdatum für Rechnungen
+      };
 
-      if (isDefaultPaymentTerms) {
-        const paymentText =
-          companySettings.defaultPaymentTerms?.text ||
-          `Zahlbar binnen ${paymentDays} Tagen ohne Abzug`;
+      console.log('[PDF] Template-Daten erstellt', {
+        companyName: templateData.companyName,
+        customerName: templateData.customerName,
+        invoiceNumber: templateData.invoiceNumber,
+        itemCount: templateData.items?.length || 0,
+        total: templateData.total,
+        currency: templateData.currency,
+      });
 
-        const skontoEnabled = companySettings.defaultPaymentTerms?.skontoEnabled || false;
-        const skontoDays = companySettings.defaultPaymentTerms?.skontoDays || 3;
-        const skontoPercentage = companySettings.defaultPaymentTerms?.skontoPercentage || 2.0;
+      // React-PDF importieren
+      const { pdf } = await import('@react-pdf/renderer');
+      const { default: GermanStandardInvoicePDF } = await import(
+        '@/components/pdf/GermanStandardInvoicePDF'
+      );
 
-        setFormData(prev => ({
-          ...prev,
-          paymentTerms: paymentText,
-          skontoEnabled: skontoEnabled,
-          skontoDays: skontoDays,
-          skontoPercentage: skontoPercentage,
-          skontoText: skontoEnabled
-            ? `${skontoPercentage}% Skonto bei Zahlung binnen ${skontoDays} Tagen`
-            : '',
-          // Only update due date if not already set
-          dueDate:
-            prev.dueDate ||
-            new Date(issueDate.getTime() + paymentDays * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0],
-        }));
+      // PDF mit dem umgeschriebenen Template generieren
+      const blob = await pdf(<GermanStandardInvoicePDF data={templateData} />).toBlob();
+
+      const size = blob.size;
+      console.log('[PDF] React-PDF Blob erstellt', {
+        size,
+        sizeKB: (size / 1024).toFixed(1),
+        isEmpty: size < 1000,
+      });
+
+      if (size < 1000) {
+        throw new Error('PDF ist zu klein - möglicherweise leer');
+      }
+
+      return blob;
+    } catch (error) {
+      console.error('[PDF] React-PDF Fehler:', error);
+      throw new Error(`PDF-Erstellung fehlgeschlagen: ${error}`);
+    }
+  };
+
+  // Fallback-Erzeugung via html2canvas + jsPDF (mit Seiten-Slicing)
+  const generatePdfViaCanvas = async (element: HTMLElement): Promise<Blob> => {
+    const [{ default: html2canvas }, { default: jsPDF }]: any = await Promise.all([
+      import('html2canvas'),
+      import('jspdf'),
+    ]);
+
+    // Sicherstellen, dass Layout steht
+    await new Promise<void>(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#FFFFFF',
+      logging: true,
+      windowWidth: Math.max(794, element.scrollWidth || element.clientWidth || 794),
+      windowHeight: Math.max(1123, element.scrollHeight || 1123),
+    });
+
+    const imgWidthPt = 595.28; // A4 Breite in pt
+    const pageHeightPt = 841.89; // A4 Höhe in pt
+    const canvasWidthPx = canvas.width;
+    const canvasHeightPx = canvas.height;
+    const ratio = imgWidthPt / canvasWidthPx;
+    const imgHeightPt = canvasHeightPx * ratio;
+
+    const pdf = new jsPDF('p', 'pt', 'a4');
+
+    if (imgHeightPt <= pageHeightPt) {
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidthPt, imgHeightPt);
+    } else {
+      // Mehrseitig: in Seitenhöhe-Pixeln schneiden
+      const pageHeightPx = Math.floor(pageHeightPt / ratio);
+      let renderedPx = 0;
+      let pageIndex = 0;
+      const tmp = document.createElement('canvas');
+      const ctx = tmp.getContext('2d')!;
+      tmp.width = canvasWidthPx;
+      while (renderedPx < canvasHeightPx) {
+        const sliceHeightPx = Math.min(pageHeightPx, canvasHeightPx - renderedPx);
+        tmp.height = sliceHeightPx;
+        ctx.clearRect(0, 0, tmp.width, tmp.height);
+        ctx.drawImage(
+          canvas,
+          0,
+          renderedPx,
+          canvasWidthPx,
+          sliceHeightPx,
+          0,
+          0,
+          canvasWidthPx,
+          sliceHeightPx
+        );
+        const imgData = tmp.toDataURL('image/jpeg', 0.98);
+        if (pageIndex > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidthPt, sliceHeightPx * ratio);
+        renderedPx += sliceHeightPx;
+        pageIndex++;
       }
     }
-  }, [formData.issueDate, companySettings]);
 
-  // Sicherheitsprüfung: Nur der Owner kann Rechnungen erstellen
+    return pdf.output('blob');
+  };
+
+  const downloadPdf = async () => {
+    try {
+      console.log('[PDF] Download gestartet');
+      const element = pdfContainerRef.current;
+      if (!element) throw new Error('PDF-Container nicht verfügbar');
+      const data = getProcessedPreviewData();
+      const filename = `Rechnung-${(data.companyName || 'Rechnung').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
+
+      // 1) Server-seitiges PDF versuchen (höchste Qualität)
+      try {
+        const previewData = getProcessedPreviewData();
+        const res = await fetch('/api/pdf/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid,
+            quoteId: 'preview',
+            host: window.location.host,
+            data: previewData,
+          }),
+        });
+        if (res.ok) {
+          const arrayBuffer = await res.arrayBuffer();
+          const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+          if ((blob as any).size > 1500) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+              URL.revokeObjectURL(url);
+              a.remove();
+            }, 1000);
+            console.log('[PDF] Download ausgelöst (server)', {
+              filename,
+              size: (blob as any).size,
+            });
+            return;
+          }
+        } else {
+          const err = await res.json().catch(() => ({}));
+          console.warn('[PDF] Server-PDF fehlgeschlagen', err);
+        }
+      } catch (e) {
+        console.warn('[PDF] Server-PDF Fehler', e);
+      }
+
+      // 2) Client-Fallback
+      const blob = await generatePdfBlob();
+      if (!blob || (blob as any).size === 0) throw new Error('Leeres PDF erhalten');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 1000);
+      console.log('[PDF] Download ausgelöst (client)', { filename, size: (blob as any).size });
+    } catch (e: any) {
+      console.error('[PDF] Download-Fehler', e);
+      toast.error(`PDF konnte nicht erstellt werden${e?.message ? `: ${e.message}` : ''}`);
+    }
+  };
+
+  const printInBrowser = () => {
+    try {
+      const data = getProcessedPreviewData();
+      // UTF-8-sichere Base64-Kodierung (vermeidet UmsÃ¤tze/ä/ö/ü-Probleme)
+      const encodeBase64Utf8 = (obj: any): string => {
+        const json = typeof obj === 'string' ? obj : JSON.stringify(obj);
+        const bytes = new TextEncoder().encode(json);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return btoa(bin);
+      };
+      const payload = encodeURIComponent(encodeBase64Utf8(data));
+      const url = `/print/quote/${uid}/preview?auto=1&payload=${payload}`;
+      const win = window.open(url, '_blank');
+      if (!win || win.closed || typeof win.closed === 'undefined') {
+        toast.message('Popup-Blocker aktiv – bitte Popups erlauben und erneut versuchen.');
+      }
+    } catch (e) {
+      toast.error('Browser-Druck konnte nicht gestartet werden');
+    }
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1] || '';
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+  const sendEmailWithPdf = async () => {
+    if (!emailTo) {
+      toast.error('Empfänger fehlt');
+      return;
+    }
+    try {
+      setSendingEmail(true);
+      const data = getProcessedPreviewData();
+      let base64 = emailAttachmentB64;
+      if (!emailAttachmentReady || !base64) {
+        // als Fallback jetzt erzeugen
+        await new Promise(r => setTimeout(r, 150));
+        toast.message('PDF wird erstellt …');
+        // Clientseitig erzeugen (kein Server-PDF)
+        const blob = await generatePdfBlob();
+        if (!blob || (blob as any).size === 0) {
+          toast.error('PDF ist leer – Erstellung fehlgeschlagen');
+          return;
+        }
+        base64 = await blobToBase64(blob);
+      }
+      // Absender auf firmenname@taskilo.de normalisieren
+      const slug = (data.companyName || 'taskilo')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '');
+      const from = `${slug}@taskilo.de`;
+      toast.message('E-Mail wird versendet …');
+      const res = await fetch('/api/email/send-quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: [emailTo],
+          subject: emailSubject || `Angebot ${data.companyName}`,
+          html: (emailBody || '').replace(/\n/g, '<br />'),
+          text: emailBody || undefined,
+          from,
+          attachment: { filename: emailAttachmentName || 'Angebot.pdf', contentBase64: base64 },
+          meta: { uid, source: 'create-quote' },
+        }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        toast.success('E-Mail wurde versendet');
+        setEmailCardOpen(false);
+      } else {
+        toast.error(json?.error || 'E-Mail Versand fehlgeschlagen');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('E-Mail Versand fehlgeschlagen (siehe Konsole)');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Guard
   if (!user || user.uid !== uid) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <div className="flex-1 p-8 bg-gray-50">
-          <h1 className="text-2xl font-bold mb-6">Nicht berechtigt</h1>
-          <p className="text-gray-600">
-            Sie sind nicht berechtigt, Rechnungen für diese Firma zu erstellen.
-          </p>
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Zugriff verweigert</h2>
+          <p className="text-gray-600">Sie sind nicht berechtigt, diese Seite zu sehen.</p>
         </div>
       </div>
     );
   }
 
-  // Hilfsfunktion zur Erkennung von ausländischen Unternehmen für Reverse-Charge
-  const isReverseChargeApplicable = (
-    customer: Customer,
-    customerVatId: string,
-    companyData?: any
-  ) => {
-    // Prüfe zuerst ob die Company selbst aus dem Ausland ist
-    if (companyData) {
-      const companyCountry = companyData.companyCountry || companyData.step1?.personalCountry || '';
-      const isGermanCompany =
-        !companyCountry ||
-        companyCountry.toUpperCase() === 'DE' ||
-        companyCountry.toUpperCase() === 'DEUTSCHLAND' ||
-        companyCountry.toUpperCase() === 'GERMANY';
-
-      // Wenn ausländische Company, immer Reverse-Charge für deutsche Kunden
-      if (!isGermanCompany) {
-        return true;
-      }
-    }
-
-    // Dann prüfe anhand der VAT-ID ob es ein ausländisches Unternehmen als Kunde ist
-    if (customerVatId && customerVatId.trim() !== '') {
-      const vatPrefix = customerVatId.substring(0, 2).toUpperCase();
-      // Deutsche VAT-ID beginnt mit DE
-      const isGermanVat = vatPrefix === 'DE';
-
-      // Alle EU-Länder-Codes (ohne Deutschland) - für EU-Reverse-Charge
-      const euCountryCodes = [
-        'AT',
-        'BE',
-        'BG',
-        'HR',
-        'CY',
-        'CZ',
-        'DK',
-        'EE',
-        'FI',
-        'FR',
-        'GR',
-        'HU',
-        'IE',
-        'IT',
-        'LV',
-        'LT',
-        'LU',
-        'MT',
-        'NL',
-        'PL',
-        'PT',
-        'RO',
-        'SK',
-        'SI',
-        'ES',
-        'SE',
-      ];
-
-      // Alle internationalen Länder-Codes (Auswahl der wichtigsten)
-      const internationalCountryCodes = [
-        'US',
-        'CA',
-        'GB',
-        'CH',
-        'NO',
-        'AU',
-        'NZ',
-        'JP',
-        'KR',
-        'CN',
-        'IN',
-        'SG',
-        'HK',
-        'BR',
-        'MX',
-        'AR',
-        'CL',
-        'ZA',
-        'IL',
-        'TR',
-        'RU',
-        'UA',
-        'BY',
-        'MD',
-        'RS',
-        'BA',
-        'ME',
-        'MK',
-        'AL',
-        'XK',
-      ];
-
-      const isEUVat = euCountryCodes.includes(vatPrefix);
-      const isInternationalVat = internationalCountryCodes.includes(vatPrefix);
-
-      // Reverse-Charge gilt für alle ausländischen Unternehmen (EU + International) mit gültiger VAT-ID/Tax-ID
-      return !isGermanVat && (isEUVat || isInternationalVat);
-    }
-
-    // Prüfe anhand der Adresse/Land - ALLE Länder außer Deutschland
-    const customerCountry = customer.country?.toUpperCase().trim();
-    if (
-      customerCountry &&
-      customerCountry !== '' &&
-      customerCountry !== 'DE' &&
-      customerCountry !== 'DEUTSCHLAND' &&
-      customerCountry !== 'GERMANY'
-    ) {
-      // Umfassende Liste aller Länder (Auswahl der wichtigsten + alle EU)
-      const allForeignCountries = [
-        // EU-Länder
-        'AT',
-        'AUSTRIA',
-        'ÖSTERREICH',
-        'BE',
-        'BELGIUM',
-        'BELGIEN',
-        'BG',
-        'BULGARIA',
-        'BULGARIEN',
-        'HR',
-        'CROATIA',
-        'KROATIEN',
-        'CY',
-        'CYPRUS',
-        'ZYPERN',
-        'CZ',
-        'CZECH REPUBLIC',
-        'TSCHECHIEN',
-        'CZECHIA',
-        'DK',
-        'DENMARK',
-        'DÄNEMARK',
-        'EE',
-        'ESTONIA',
-        'ESTLAND',
-        'FI',
-        'FINLAND',
-        'FINNLAND',
-        'FR',
-        'FRANCE',
-        'FRANKREICH',
-        'GR',
-        'GREECE',
-        'GRIECHENLAND',
-        'HU',
-        'HUNGARY',
-        'UNGARN',
-        'IE',
-        'IRELAND',
-        'IRLAND',
-        'IT',
-        'ITALY',
-        'ITALIEN',
-        'LV',
-        'LATVIA',
-        'LETTLAND',
-        'LT',
-        'LITHUANIA',
-        'LITAUEN',
-        'LU',
-        'LUXEMBOURG',
-        'LUXEMBURG',
-        'MT',
-        'MALTA',
-        'NL',
-        'NETHERLANDS',
-        'NIEDERLANDE',
-        'HOLLAND',
-        'PL',
-        'POLAND',
-        'POLEN',
-        'PT',
-        'PORTUGAL',
-        'RO',
-        'ROMANIA',
-        'RUMÄNIEN',
-        'SK',
-        'SLOVAKIA',
-        'SLOWAKEI',
-        'SI',
-        'SLOVENIA',
-        'SLOWENIEN',
-        'ES',
-        'SPAIN',
-        'SPANIEN',
-        'SE',
-        'SWEDEN',
-        'SCHWEDEN',
-
-        // Weitere europäische Länder
-        'GB',
-        'UK',
-        'UNITED KINGDOM',
-        'VEREINIGTES KÖNIGREICH',
-        'ENGLAND',
-        'BRITAIN',
-        'CH',
-        'SWITZERLAND',
-        'SCHWEIZ',
-        'NO',
-        'NORWAY',
-        'NORWEGEN',
-        'IS',
-        'ICELAND',
-        'ISLAND',
-        'LI',
-        'LIECHTENSTEIN',
-        'MC',
-        'MONACO',
-        'AD',
-        'ANDORRA',
-        'SM',
-        'SAN MARINO',
-        'VA',
-        'VATICAN',
-        'VATIKAN',
-        'RS',
-        'SERBIA',
-        'SERBIEN',
-        'BA',
-        'BOSNIA',
-        'BOSNIEN',
-        'ME',
-        'MONTENEGRO',
-        'MK',
-        'MACEDONIA',
-        'MAZEDONIEN',
-        'AL',
-        'ALBANIA',
-        'ALBANIEN',
-        'XK',
-        'KOSOVO',
-        'MD',
-        'MOLDOVA',
-        'UA',
-        'UKRAINE',
-        'BY',
-        'BELARUS',
-        'WEISSRUSSLAND',
-        'RU',
-        'RUSSIA',
-        'RUSSLAND',
-        'TR',
-        'TURKEY',
-        'TÜRKEI',
-
-        // Nordamerika
-        'US',
-        'USA',
-        'UNITED STATES',
-        'VEREINIGTE STAATEN',
-        'AMERICA',
-        'CA',
-        'CANADA',
-        'KANADA',
-        'MX',
-        'MEXICO',
-        'MEXIKO',
-
-        // Südamerika
-        'BR',
-        'BRAZIL',
-        'BRASILIEN',
-        'AR',
-        'ARGENTINA',
-        'ARGENTINIEN',
-        'CL',
-        'CHILE',
-        'CO',
-        'COLOMBIA',
-        'KOLUMBIEN',
-        'PE',
-        'PERU',
-        'VE',
-        'VENEZUELA',
-        'UY',
-        'URUGUAY',
-        'PY',
-        'PARAGUAY',
-        'BO',
-        'BOLIVIA',
-        'BOLIVIEN',
-        'EC',
-        'ECUADOR',
-        'GY',
-        'GUYANA',
-        'SR',
-        'SURINAME',
-
-        // Asien
-        'CN',
-        'CHINA',
-        'JP',
-        'JAPAN',
-        'KR',
-        'KOREA',
-        'SOUTH KOREA',
-        'SÜDKOREA',
-        'IN',
-        'INDIA',
-        'INDIEN',
-        'SG',
-        'SINGAPORE',
-        'SINGAPUR',
-        'HK',
-        'HONG KONG',
-        'HONGKONG',
-        'TW',
-        'TAIWAN',
-        'TH',
-        'THAILAND',
-        'VN',
-        'VIETNAM',
-        'MY',
-        'MALAYSIA',
-        'ID',
-        'INDONESIA',
-        'INDONESIEN',
-        'PH',
-        'PHILIPPINES',
-        'PHILIPPINEN',
-        'BD',
-        'BANGLADESH',
-        'PK',
-        'PAKISTAN',
-        'AF',
-        'AFGHANISTAN',
-        'IR',
-        'IRAN',
-        'IQ',
-        'IRAQ',
-        'IRAK',
-        'IL',
-        'ISRAEL',
-        'JO',
-        'JORDAN',
-        'JORDANIEN',
-        'LB',
-        'LEBANON',
-        'LIBANON',
-        'SY',
-        'SYRIA',
-        'SYRIEN',
-        'SA',
-        'SAUDI ARABIA',
-        'SAUDI-ARABIEN',
-        'AE',
-        'UAE',
-        'UNITED ARAB EMIRATES',
-        'VEREINIGTE ARABISCHE EMIRATE',
-        'QA',
-        'QATAR',
-        'KATAR',
-        'KW',
-        'KUWAIT',
-        'BH',
-        'BAHRAIN',
-        'OM',
-        'OMAN',
-        'YE',
-        'YEMEN',
-        'JEMEN',
-        'UZ',
-        'UZBEKISTAN',
-        'USBEKISTAN',
-        'KZ',
-        'KAZAKHSTAN',
-        'KASACHSTAN',
-        'KG',
-        'KYRGYZSTAN',
-        'KIRGISISTAN',
-        'TJ',
-        'TAJIKISTAN',
-        'TADSCHIKISTAN',
-        'TM',
-        'TURKMENISTAN',
-        'MN',
-        'MONGOLIA',
-        'MONGOLEI',
-
-        // Afrika
-        'ZA',
-        'SOUTH AFRICA',
-        'SÜDAFRIKA',
-        'EG',
-        'EGYPT',
-        'ÄGYPTEN',
-        'NG',
-        'NIGERIA',
-        'KE',
-        'KENYA',
-        'KENIA',
-        'GH',
-        'GHANA',
-        'ET',
-        'ETHIOPIA',
-        'ÄTHIOPIEN',
-        'MA',
-        'MOROCCO',
-        'MAROKKO',
-        'DZ',
-        'ALGERIA',
-        'ALGERIEN',
-        'TN',
-        'TUNISIA',
-        'TUNESIEN',
-        'LY',
-        'LIBYA',
-        'LIBYEN',
-        'SD',
-        'SUDAN',
-        'UG',
-        'UGANDA',
-        'TZ',
-        'TANZANIA',
-        'TANSANIA',
-        'ZW',
-        'ZIMBABWE',
-        'SIMBABWE',
-        'ZM',
-        'ZAMBIA',
-        'SAMBIA',
-        'BW',
-        'BOTSWANA',
-        'BOTSUANA',
-        'NA',
-        'NAMIBIA',
-        'SZ',
-        'SWAZILAND',
-        'ESWATINI',
-        'LS',
-        'LESOTHO',
-        'MW',
-        'MALAWI',
-        'MZ',
-        'MOZAMBIQUE',
-        'MOSAMBIK',
-        'AO',
-        'ANGOLA',
-        'CD',
-        'CONGO',
-        'KONGO',
-        'CM',
-        'CAMEROON',
-        'KAMERUN',
-        'CI',
-        'IVORY COAST',
-        'ELFENBEINKÜSTE',
-        'SN',
-        'SENEGAL',
-        'ML',
-        'MALI',
-        'BF',
-        'BURKINA FASO',
-        'NE',
-        'NIGER',
-        'TD',
-        'CHAD',
-        'TSCHAD',
-        'CF',
-        'CENTRAL AFRICAN REPUBLIC',
-        'ZENTRALAFRIKANISCHE REPUBLIK',
-        'GA',
-        'GABON',
-        'GABUN',
-        'GQ',
-        'EQUATORIAL GUINEA',
-        'ÄQUATORIALGUINEA',
-        'ST',
-        'SAO TOME',
-        'SAO TOME UND PRINCIPE',
-        'CV',
-        'CAPE VERDE',
-        'KAPVERDEN',
-        'GM',
-        'GAMBIA',
-        'GW',
-        'GUINEA-BISSAU',
-        'GN',
-        'GUINEA',
-        'SL',
-        'SIERRA LEONE',
-        'LR',
-        'LIBERIA',
-        'TG',
-        'TOGO',
-        'BJ',
-        'BENIN',
-        'DJ',
-        'DJIBOUTI',
-        'DSCHIBUTI',
-        'ER',
-        'ERITREA',
-        'SO',
-        'SOMALIA',
-        'SC',
-        'SEYCHELLES',
-        'SEYCHELLEN',
-        'MU',
-        'MAURITIUS',
-        'MG',
-        'MADAGASCAR',
-        'MADAGASKAR',
-        'KM',
-        'COMOROS',
-        'KOMOREN',
-        'YT',
-        'MAYOTTE',
-        'RE',
-        'REUNION',
-        'RÉUNION',
-
-        // Ozeanien
-        'AU',
-        'AUSTRALIA',
-        'AUSTRALIEN',
-        'NZ',
-        'NEW ZEALAND',
-        'NEUSEELAND',
-        'FJ',
-        'FIJI',
-        'FIDSCHI',
-        'PG',
-        'PAPUA NEW GUINEA',
-        'PAPUA-NEUGUINEA',
-        'NC',
-        'NEW CALEDONIA',
-        'NEUKALEDONIEN',
-        'PF',
-        'FRENCH POLYNESIA',
-        'FRANZÖSISCH-POLYNESIEN',
-        'WS',
-        'SAMOA',
-        'TO',
-        'TONGA',
-        'VU',
-        'VANUATU',
-        'SB',
-        'SOLOMON ISLANDS',
-        'SALOMONEN',
-        'FM',
-        'MICRONESIA',
-        'MIKRONESIEN',
-        'MH',
-        'MARSHALL ISLANDS',
-        'MARSHALLINSELN',
-        'PW',
-        'PALAU',
-        'NR',
-        'NAURU',
-        'KI',
-        'KIRIBATI',
-        'TV',
-        'TUVALU',
-        'CK',
-        'COOK ISLANDS',
-        'COOKINSELN',
-        'NU',
-        'NIUE',
-        'TK',
-        'TOKELAU',
-        'AS',
-        'AMERICAN SAMOA',
-        'AMERIKANISCH-SAMOA',
-        'GU',
-        'GUAM',
-        'MP',
-        'NORTHERN MARIANA ISLANDS',
-        'NÖRDLICHE MARIANEN',
-      ];
-
-      return allForeignCountries.includes(customerCountry);
-    }
-
-    return false;
+  // Helpers
+  const computeItemTotalNet = (qty: number, unitNet: number) => {
+    const q = isFinite(qty) ? Math.max(0, qty) : 0;
+    const p = isFinite(unitNet) ? Math.max(0, unitNet) : 0;
+    return q * p;
   };
 
+  // Totals (Rabatt-Positionen abziehen)
+  const subtotal = items.reduce((sum, it) => {
+    const t = it.total || 0;
+    if (it.category === 'discount') {
+      return sum + -Math.abs(t);
+    }
+    const factor = 1 - Math.max(0, Math.min(100, it.discountPercent || 0)) / 100;
+    return sum + t * factor;
+  }, 0);
+  const vat = subtotal * (taxRate / 100);
+  const grandTotal = subtotal + vat;
+
+  // Handlers
   const handleCustomerSelect = (customerName: string) => {
     const customer = customers.find(c => c.name === customerName);
-    if (customer) {
-      // Erstelle Adresse aus strukturierten Feldern oder verwende Legacy-Adresse
-      const customerAddress =
-        customer.street || customer.city || customer.postalCode || customer.country
-          ? `${customer.street || ''}${customer.street ? '\n' : ''}${customer.postalCode || ''} ${customer.city || ''}${customer.city && customer.country ? '\n' : ''}${customer.country || ''}`
-          : customer.address || '';
-
-      const customerVatId = customer.vatId || '';
-
-      // Prüfe Reverse-Charge-Anwendbarkeit
-      const shouldApplyReverseCharge = isReverseChargeApplicable(
-        customer,
-        customerVatId,
-        fullCompanyData
-      );
-
-      setFormData(prev => ({
-        ...prev,
-        customerName: customer.name,
-        customerEmail: customer.email,
-        customerAddress: customerAddress,
-        customerVatId: customerVatId,
-        // Automatisch Reverse-Charge setzen wenn EU-Ausland erkannt
-        taxNote: shouldApplyReverseCharge ? 'reverse-charge' : prev.taxNote,
-        // Bei Reverse-Charge Steuersatz auf 0% setzen
-        taxRate: shouldApplyReverseCharge ? '0' : prev.taxRate,
-      }));
-
-      // Benutzer informieren wenn Reverse-Charge automatisch gesetzt wurde
-      if (shouldApplyReverseCharge) {
-        toast.info(
-          'Reverse-Charge-Verfahren erkannt: EU-Auslandsgeschäft mit Unternehmen. Steuersatz automatisch auf 0% gesetzt.'
-        );
-      }
-    }
+    if (!customer) return;
+    setFormData(prev => ({
+      ...prev,
+      customerName: customer.name,
+      customerNumber: customer.customerNumber || '',
+      customerEmail: customer.email || '',
+      customerAddress:
+        customer.street && customer.city
+          ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
+          : prev.customerAddress,
+    }));
   };
 
   const addItem = () => {
-    const newItem: InvoiceItem = {
-      id: `item_${Date.now()}`,
+    const newItem: QuoteItem = {
+      id:
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2),
       description: '',
       quantity: 1,
       unitPrice: 0,
-      discount: 0,
       total: 0,
+      unit: 'Stk',
+      discountPercent: 0,
     };
     setItems(prev => [...prev, newItem]);
   };
 
-  const removeItem = (itemId: string) => {
-    if (items.length > 1) {
-      setItems(prev => prev.filter(item => item.id !== itemId));
-    }
+  const removeItem = (index: number) => {
+    setItems(prev => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
   };
 
-  const updateItem = (itemId: string, field: keyof InvoiceItem, value: string | number) => {
+  const handleItemChange = (index: number, field: keyof QuoteItem, value: any) => {
     setItems(prev =>
-      prev.map(item => {
-        if (item.id === itemId) {
-          const updatedItem = { ...item, [field]: value };
-
-          // Recalculate total if quantity, unitPrice, or discount changed
-          if (field === 'quantity' || field === 'unitPrice' || field === 'discount') {
-            const baseTotal = updatedItem.quantity * updatedItem.unitPrice;
-            const discountAmount = (baseTotal * updatedItem.discount) / 100;
-            updatedItem.total = baseTotal - discountAmount;
-          }
-
-          return updatedItem;
+      prev.map((item, i) => {
+        if (i !== index) return item;
+        const next: QuoteItem = { ...item };
+        if (field === 'description') next.description = String(value);
+        if (field === 'quantity') next.quantity = parseFloat(String(value)) || 0;
+        if (field === 'unitPrice') {
+          const input = parseFloat(String(value)) || 0;
+          const net = showNet ? input : input / (1 + taxRate / 100);
+          next.unitPrice = net;
         }
-        return item;
+        next.total = computeItemTotalNet(next.quantity, next.unitPrice);
+        return next;
       })
     );
   };
 
-  const calculateTotals = () => {
-    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-
-    // Use formData.taxRate for VAT calculation (user's selected rate)
-    let tax = 0;
-    let total = subtotal;
-
-    if (companySettings?.ust !== 'kleinunternehmer') {
-      const taxRate = parseFloat(formData.taxRate || '19') / 100;
-      tax = subtotal * taxRate;
-      total = subtotal + tax;
-    }
-
-    return { subtotal, tax, total };
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(amount);
-  };
-
-  // Funktion zum Prüfen ob eine Rechnungsnummer bereits existiert
-  const checkInvoiceNumberExists = async (invoiceNumber: string): Promise<boolean> => {
+  const handleSubmit = async (asDraft = true) => {
+    if (loading) return;
+    setLoading(true);
     try {
-      const allInvoices = await FirestoreInvoiceService.getInvoicesByCompany(uid);
-      const exists = allInvoices.some(
-        invoice => invoice.invoiceNumber === invoiceNumber || invoice.number === invoiceNumber
-      );
-
-      return exists;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  // Funktion zum Generieren der nächsten Rechnungsnummer - nutzt den korrekten Service
-  const generateNextInvoiceNumber = async () => {
-    try {
-      const { sequentialNumber, formattedNumber } =
-        await FirestoreInvoiceService.getNextInvoiceNumber(uid);
-
-      return { number: formattedNumber, sequentialNumber };
-    } catch (error) {
-      // Fallback
-      const year = new Date().getFullYear();
-      const randomNumber = Math.floor(Math.random() * 1000) + 1;
-      const fallbackNumber = `R-${year}-${randomNumber.toString().padStart(3, '0')}`;
-      return { number: fallbackNumber, sequentialNumber: randomNumber };
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent, action: 'draft' | 'finalize') => {
-    e.preventDefault();
-
-    if (isSubmitting) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Validation
-      if (!formData.customerName || !formData.issueDate || !formData.dueDate) {
+      if (!formData.customerName || !formData.validUntil) {
         toast.error('Bitte füllen Sie alle Pflichtfelder aus');
-        setIsSubmitting(false);
         return;
       }
-
-      // Rechnungsnummer-Logik für finalisierte Rechnungen
-      if (action === 'finalize') {
-        // Prüfe ob bereits eine Rechnungsnummer vorhanden ist (bei Draft-Bearbeitung)
-        if (!formData.invoiceNumber) {
-          // Generiere neue Rechnungsnummer nur wenn keine vorhanden ist
-        } else {
-          // Prüfe ob die vorhandene Rechnungsnummer eindeutig ist
-          const numberExists = await checkInvoiceNumberExists(formData.invoiceNumber);
-          if (numberExists) {
-            toast.error(
-              `Rechnungsnummer ${formData.invoiceNumber} ist bereits vergeben. Bitte verwenden Sie eine andere Nummer.`
-            );
-            setIsSubmitting(false);
-            return;
-          }
-        }
-      }
-
-      const hasValidItems = items.some(
-        item => item.description && item.quantity > 0 && item.unitPrice > 0
-      );
+      const hasValidItems = items.some(it => it.description && it.quantity > 0);
       if (!hasValidItems) {
         toast.error('Bitte fügen Sie mindestens eine gültige Position hinzu');
-        setIsSubmitting(false);
         return;
       }
+      const validUntilDate = new Date(formData.validUntil);
 
-      // Bei Finalisierung Rechnungsnummer verwalten
-      let finalInvoiceNumber = formData.invoiceNumber || '';
-      let sequentialNumber: number | undefined;
+      // Zahlungsbedingungen final (inkl. Skonto, falls aktiv)
+      const skontoSentence =
+        skontoEnabled && skontoDays && skontoPercentage
+          ? skontoText?.trim() ||
+            `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`
+          : '';
+      const finalPaymentTerms =
+        [formData.paymentTerms?.trim(), skontoSentence].filter(Boolean).join('\n\n') || undefined;
 
-      // Nur für finale Rechnungen eine echte Rechnungsnummer generieren (wenn nicht bereits vorhanden)
-      if (action === 'finalize' && !finalInvoiceNumber) {
-        const result = await generateNextInvoiceNumber();
-        finalInvoiceNumber = result.number;
-        sequentialNumber = result.sequentialNumber;
-      } else if (action === 'finalize' && finalInvoiceNumber) {
-      } else {
-        // Für Entwürfe keine Rechnungsnummer setzen
-      } // Create invoice via API instead of direct Firebase
-      const invoiceData = {
-        invoiceNumber: finalInvoiceNumber,
+      const quoteData: Omit<QuoteType, 'id' | 'number' | 'createdAt' | 'updatedAt'> = {
+        companyId: uid,
         customerName: formData.customerName,
         customerEmail: formData.customerEmail,
-        customerAddress: formData.customerAddress,
-        customerVatId: formData.customerVatId,
-        description: formData.description,
-        issueDate: formData.issueDate,
-        dueDate: formData.dueDate,
-        items: items.filter(item => item.description && item.quantity > 0),
-        taxRate: formData.taxRate,
-        taxNote: formData.taxNote,
+        customerPhone: '',
+        customerOrderNumber: formData.customerOrderNumber || undefined,
+        customerAddress: formData.customerAddress
+          ? {
+              street: formData.customerAddress.split('\n')[0] || '',
+              city: formData.customerAddress.split('\n')[1] || '',
+              postalCode: '',
+              country: formData.customerAddress.split('\n')[2] || 'Deutschland',
+            }
+          : undefined,
+        date: new Date(),
+        validUntil: validUntilDate,
+        status: asDraft ? 'draft' : 'sent',
+        title: formData.title,
+        description: formData.headTextHtml,
         notes: formData.notes,
-        paymentTerms: formData.paymentTerms, // Zahlungskonditionen
-        // Skonto-Daten für Speicherung
-        skontoEnabled: formData.skontoEnabled,
-        skontoDays: formData.skontoDays,
-        skontoPercentage: formData.skontoPercentage,
-        skontoText: formData.skontoText,
-        status: action === 'finalize' ? 'finalized' : 'draft',
+        footerText: formData.footerText,
+        deliveryMethod: formData.deliveryTerms ? 'custom' : undefined,
+        deliveryDate: undefined,
+        deliveryAddress: undefined,
+        items: items.filter(it => it.description && it.quantity > 0),
+        subtotal,
+        taxAmount: vat,
+        total: grandTotal,
+        currency: formData.currency,
+        language: 'de',
+        template: 'professional-business-quote',
+        lastModifiedBy: uid,
+        taxRule: formData.taxRule,
+        internalContactPerson: formData.internalContactPerson || undefined,
+        deliveryTerms: formData.deliveryTerms || undefined,
+        paymentTerms: finalPaymentTerms,
+        createdBy: uid,
       };
 
-      // Create invoice via API
-      const response = await createInvoice(uid, invoiceData);
+      const createdQuoteId = await QuoteService.createQuote(uid, quoteData);
 
-      if (response.success) {
-        if (action === 'finalize') {
-          toast.success(`Rechnung ${finalInvoiceNumber} erfolgreich erstellt!`);
-        } else {
-          toast.success('Entwurf erfolgreich gespeichert!');
+      // Bestand reservieren für alle Inventar-Artikel in den Positionen
+      try {
+        const inventoryItems = (items || [])
+          .filter(it => it.inventoryItemId && it.quantity > 0 && it.category !== 'discount')
+          .map(it => ({ itemId: it.inventoryItemId as string, quantity: it.quantity }));
+
+        if (inventoryItems.length > 0) {
+          await InventoryService.reserveItemsForQuote(uid, createdQuoteId, inventoryItems);
         }
-
-        // Redirect to invoice overview
-        router.push(`/dashboard/company/${uid}/finance/invoices`);
-      } else {
-        throw new Error(response.error || 'Fehler beim Erstellen der Rechnung');
-      }
-    } catch (error) {
-      handleApiError(error);
-
-      // User-friendly error messages
-      if (error.message.includes('Netzwerk')) {
-        toast.error('Netzwerkfehler - bitte prüfen Sie Ihre Internetverbindung');
-      } else if (error.message.includes('Berechtigung')) {
-        toast.error('Berechtigung verweigert - bitte kontaktieren Sie den Support');
-      } else {
-        toast.error(error.message || 'Unbekannter Fehler beim Speichern der Rechnung');
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // E-Rechnung Validierung
-  const validateEInvoiceRequirements = () => {
-    if (!fullCompanyData)
-      return { valid: false, missing: ['Firmendaten nicht geladen'], missingFields: ['all'] };
-
-    const missing: string[] = [];
-    const missingFields: string[] = [];
-
-    // Pflichtfelder für E-Rechnung prüfen
-    if (!fullCompanyData.companyName) {
-      missing.push('Firmenname');
-      missingFields.push('companyName');
-    }
-    if (!fullCompanyData.companyStreet) {
-      missing.push('Firmenadresse');
-      missingFields.push('companyStreet');
-    }
-    if (!fullCompanyData.companyCity) {
-      missing.push('Stadt');
-      missingFields.push('companyCity');
-    }
-    if (!fullCompanyData.companyPostalCode) {
-      missing.push('Postleitzahl');
-      missingFields.push('companyPostalCode');
-    }
-    if (!fullCompanyData.companyCountry) {
-      missing.push('Land');
-      missingFields.push('companyCountry');
-    }
-    if (!fullCompanyData.taxNumber && !fullCompanyData.vatId) {
-      missing.push('Steuernummer oder USt-IdNr.');
-      missingFields.push('taxNumber', 'vatId');
-    }
-    if (!fullCompanyData.registrationNumber) {
-      missing.push('Handelsregisternummer');
-      missingFields.push('registrationNumber');
-    }
-    if (!fullCompanyData.bankDetails?.iban) {
-      missing.push('IBAN');
-      missingFields.push('iban');
-    }
-    if (!fullCompanyData.bankDetails?.bic) {
-      missing.push('BIC');
-      missingFields.push('bic');
-    }
-    if (!fullCompanyData.contactEmail && !fullCompanyData.email && !fullCompanyData.step1?.email) {
-      missing.push('Kontakt E-Mail');
-      missingFields.push('contactEmail');
-    }
-
-    return { valid: missing.length === 0, missing, missingFields };
-  };
-
-  // Prüft ob ein Feld fehlt und angezeigt werden soll
-  const isFieldMissing = (fieldName: string) => {
-    const validation = validateEInvoiceRequirements();
-    return validation.missingFields.includes(fieldName);
-  };
-
-  const handleEInvoiceToggle = (checked: boolean) => {
-    if (checked) {
-      const validation = validateEInvoiceRequirements();
-      if (!validation.valid) {
-        // Befülle Modal-Form mit vorhandenen Daten
-        if (fullCompanyData) {
-          setModalFormData({
-            companyName: fullCompanyData.companyName || '',
-            companyStreet: fullCompanyData.companyStreet || '',
-            companyCity: fullCompanyData.companyCity || '',
-            companyPostalCode: fullCompanyData.companyPostalCode || '',
-            companyCountry: fullCompanyData.companyCountry || '',
-            taxNumber: fullCompanyData.taxNumber || '',
-            vatId: fullCompanyData.vatId || '',
-            registrationNumber: fullCompanyData.registrationNumber || '',
-            iban: fullCompanyData.bankDetails?.iban || '',
-            bic: fullCompanyData.bankDetails?.bic || '',
-            contactEmail:
-              fullCompanyData.contactEmail ||
-              fullCompanyData.email ||
-              fullCompanyData.step1?.email ||
-              '',
-          });
-        }
-        setShowEInvoiceModal(true);
-        return; // Toggle bleibt deaktiviert
-      }
-    }
-    setIsEInvoiceEnabled(checked);
-  };
-
-  const handleSaveEInvoiceData = async () => {
-    try {
-      setIsSubmitting(true);
-
-      // Update company data via API
-      const response = await fetch(`/api/companies/${uid}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          companyName: modalFormData.companyName,
-          companyStreet: modalFormData.companyStreet,
-          companyCity: modalFormData.companyCity,
-          companyPostalCode: modalFormData.companyPostalCode,
-          companyCountry: modalFormData.companyCountry,
-          taxNumber: modalFormData.taxNumber,
-          vatId: modalFormData.vatId,
-          registrationNumber: modalFormData.registrationNumber,
-          contactEmail: modalFormData.contactEmail,
-          bankDetails: {
-            ...fullCompanyData?.bankDetails,
-            iban: modalFormData.iban,
-            bic: modalFormData.bic,
-          },
-        }),
-      });
-
-      if (response.ok) {
-        // Update local data
-        setFullCompanyData(prev => ({
-          ...prev,
-          ...modalFormData,
-          bankDetails: {
-            ...prev?.bankDetails,
-            iban: modalFormData.iban,
-            bic: modalFormData.bic,
-          },
-        }));
-
-        // Aktiviere E-Rechnung
-        setIsEInvoiceEnabled(true);
-        setShowEInvoiceModal(false);
-        toast.success('Firmendaten gespeichert - E-Rechnung aktiviert!');
-      } else {
-        // Versuche, detaillierte Fehlermeldung zu erhalten
-        let errorMessage = 'Fehler beim Speichern der Firmendaten';
+      } catch (reserveErr: any) {
+        // Rollback: Quote wieder löschen, wenn Reservierung fehlschlägt
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (e) {
-          // Falls JSON parsing fehlschlägt, verwende Status Text
-          errorMessage = `Server Error: ${response.status} ${response.statusText}`;
-        }
-
-        throw new Error(errorMessage);
+          await QuoteService.deleteQuote(uid, createdQuoteId);
+        } catch {}
+        console.error(reserveErr);
+        toast.error(reserveErr?.message || 'Bestandsreservierung ist fehlgeschlagen');
+        return; // nicht weiter navigieren
       }
-    } catch (error) {
-      // Zeige spezifische Fehlermeldung oder generische Nachricht
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unbekannter Fehler beim Speichern';
-      toast.error(errorMessage);
+
+      toast.success(asDraft ? 'Angebot als Entwurf gespeichert' : 'Angebot erstellt und versendet');
+      router.push(`/dashboard/company/${uid}/finance/quotes`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Angebot konnte nicht gespeichert werden');
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-
-  const handleBackToInvoices = () => {
-    router.push(`/dashboard/company/${uid}/finance/invoices`);
-  };
-
-  const { subtotal, tax, total } = calculateTotals();
-
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {/* Header */}
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={handleBackToInvoices}
-          className="mb-4 text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück zu Rechnungen
-        </Button>
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      {/* Allgemeine Angaben */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <User className="h-5 w-5 mr-2 text-[#14ad9f]" />
+            Allgemeine Angaben
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Zeile 1 */}
+            <div className="space-y-2">
+              <Label>Kunde</Label>
+              <div className="space-y-2">
+                {/* Neuer Kunde mit intelligenter Suche */}
 
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Neue Rechnung erstellen</h1>
-            <p className="text-gray-600">
-              Erstellen Sie eine professionelle Rechnung für Ihre Kunden.
-            </p>
-          </div>
+                {/* Intelligente Kundensuche */}
+                <div className="relative customer-search-container">
+                  <Input
+                    type="text"
+                    value={formData.customerName}
+                    onChange={e => {
+                      const value = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        customerName: value,
+                      }));
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-4">
-            {/* E-Rechnung Toggle */}
-            <div className="flex items-center space-x-3">
-              <Label htmlFor="e-invoice-toggle" className="text-sm font-medium">
-                E-Rechnung
-              </Label>
-              <Switch
-                id="e-invoice-toggle"
-                checked={isEInvoiceEnabled}
-                onCheckedChange={handleEInvoiceToggle}
+                      // Zeige Popup nur wenn mindestens 2 Zeichen eingegeben wurden
+                      if (value.length >= 2) {
+                        setShowCustomerSearchPopup(true);
+                      } else {
+                        setShowCustomerSearchPopup(false);
+                      }
+                    }}
+                    placeholder="Neuen Kontakt eingeben..."
+                    className="flex-1"
+                  />
+
+                  {/* Intelligenter Such-Popup */}
+                  {showCustomerSearchPopup && formData.customerName.length >= 2 && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {/* Gefilterte Kunden anzeigen */}
+                      {customers
+                        .filter(customer =>
+                          customer.name.toLowerCase().includes(formData.customerName.toLowerCase())
+                        )
+                        .slice(0, 5) // Maximal 5 Ergebnisse
+                        .map(customer => (
+                          <div
+                            key={customer.id}
+                            className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                            onClick={() => {
+                              handleCustomerSelect(customer.name);
+                              setShowCustomerSearchPopup(false);
+                            }}
+                          >
+                            <div className="font-medium text-sm">{customer.name}</div>
+                            <div className="text-xs text-gray-500">
+                              {customer.customerNumber} • {customer.email}
+                            </div>
+                          </div>
+                        ))}
+
+                      {/* "Kunden anlegen" Button */}
+                      <div className="border-t border-gray-200 bg-gray-50">
+                        <button
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm text-[#14ad9f] hover:bg-gray-100 font-medium"
+                          onClick={() => {
+                            setShowCustomerSearchPopup(false);
+                            setCreateCustomerOpen(true);
+                          }}
+                        >
+                          + Neuen Kunden &quot;{formData.customerName}&quot; anlegen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>E‑Mail</Label>
+              <Input
+                type="email"
+                value={formData.customerEmail}
+                onChange={e => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
+                placeholder="kunde@example.com"
               />
             </div>
 
-            <Button
-              variant="outline"
-              className="text-sm"
-              onClick={e => handleSubmit(e as any, 'draft')}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Speichern
-            </Button>
+            {/* Zeile 2 */}
+            <div className="space-y-2">
+              <Label>Angebotstitel</Label>
+              <Input
+                value={formData.title}
+                onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="z. B. Angebot für Webentwicklung"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="customerOrderNumber">Referenz / Bestellnummer</Label>
+              <Input
+                id="customerOrderNumber"
+                value={formData.customerOrderNumber}
+                onChange={e =>
+                  setFormData(prev => ({ ...prev, customerOrderNumber: e.target.value }))
+                }
+                placeholder="z. B. PO-12345 / Kundenreferenz"
+              />
+            </div>
 
-            <Button
-              className="text-sm bg-[#14ad9f] hover:bg-[#129488]"
-              onClick={e => handleSubmit(e as any, 'finalize')}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Speichern und aktivieren
-            </Button>
+            {/* Zeile 3 */}
+            <div className="space-y-2">
+              <Label>Kundennummer</Label>
+              <Input
+                value={formData.customerNumber}
+                onChange={e => setFormData(prev => ({ ...prev, customerNumber: e.target.value }))}
+                placeholder="Optional"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="validUntil">Gültig bis *</Label>
+              <Input
+                id="validUntil"
+                type="date"
+                value={formData.validUntil}
+                onChange={e => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
+                min={new Date().toISOString().split('T')[0]}
+                required
+              />
+            </div>
 
-            {/* Dropdown Menu für weitere Aktionen */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="px-2">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => {
-                    // TODO: Aufgabe erstellen Funktionalität
-                    toast.info('Aufgabe erstellen - Coming Soon');
-                  }}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Aufgabe erstellen
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (confirm('Möchten Sie die Rechnung wirklich löschen?')) {
-                      router.push(`/dashboard/company/${uid}/finance/invoices`);
-                    }
-                  }}
-                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Löschen
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Adresse unter beiden Spalten */}
+            <div className="space-y-2 md:col-span-2">
+              <Label>Adresse</Label>
+              <Textarea
+                value={formData.customerAddress}
+                onChange={e => setFormData(prev => ({ ...prev, customerAddress: e.target.value }))}
+                placeholder={'Straße 1\n12345 Stadt\nDeutschland'}
+                rows={3}
+              />
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Far Left Column: Sticky Large Live Preview */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-4">
-            <Card className="shadow-sm">
-              <CardHeader className="py-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Eye className="h-4 w-4" />
-                  Mini-Vorschau
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="bg-white rounded border mb-2 h-80 relative overflow-hidden">
-                  <div className="absolute inset-[4px]">
-                    <div
-                      className="transform origin-top-left pointer-events-none"
-                      style={{
-                        scale: 0.22,
-                        width: `${Math.round(100 / 0.22)}%`,
-                        height: `${Math.round(100 / 0.22)}%`,
+      {/* Kopf-Text mit Textvorlagen */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileText className="h-5 w-5 mr-2 text-[#14ad9f]" />
+            Kopf-Text & Textvorlagen
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Textvorlagen Selector für Kopftext */}
+          <div className="flex items-center gap-2">
+            <Label className="flex-shrink-0">Kopftext-Vorlage:</Label>
+            <Select
+              value={selectedHeadTemplate}
+              onValueChange={value => {
+                setSelectedHeadTemplate(value);
+                const template = textTemplates.find(t => t.id === value);
+                if (template) {
+                  setFormData(prev => ({ ...prev, headTextHtml: template.text }));
+                }
+              }}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Vorlage auswählen..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Keine Vorlage</SelectItem>
+                {textTemplates
+                  .filter(t => t.objectType === 'INVOICE' && t.textType === 'HEAD')
+                  .map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} {template.isDefault && '(Standard)'}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTemplateModal(true)}
+            >
+              Vorlagen verwalten
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Einleitung / Kopf-Text</Label>
+            <FooterTextEditor
+              value={formData.headTextHtml}
+              onChange={(html: string) => setFormData(prev => ({ ...prev, headTextHtml: html }))}
+              companyId={uid}
+              objectType="INVOICE"
+              textType="HEAD"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Produkte / Positionen */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Calculator className="h-5 w-5 mr-2 text-[#14ad9f]" />
+            Produkte
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Brutto/Netto Schalter */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm text-gray-600">Preisanzeige</div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={showNet ? 'default' : 'outline'}
+                className={showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
+                onClick={() => setShowNet(true)}
+                size="sm"
+              >
+                Netto
+              </Button>
+              <Button
+                type="button"
+                variant={!showNet ? 'default' : 'outline'}
+                className={!showNet ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' : ''}
+                onClick={() => setShowNet(false)}
+                size="sm"
+              >
+                Brutto
+              </Button>
+            </div>
+          </div>
+
+          {/* Positions-Steuerleiste */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <Button type="button" variant="link" onClick={addItem} className="px-0 text-[#14ad9f]">
+              + Position hinzufügen
+            </Button>
+            <InventorySelector
+              companyId={uid}
+              onSelectItem={(invItem, quantity) => {
+                const qty = Math.max(1, quantity || 1);
+                const unitPriceNet = invItem.sellingPrice || 0;
+                const newItem: QuoteItem = {
+                  id:
+                    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                      ? crypto.randomUUID()
+                      : Math.random().toString(36).slice(2),
+                  description: invItem.name,
+                  quantity: qty,
+                  unitPrice: unitPriceNet,
+                  total: computeItemTotalNet(qty, unitPriceNet),
+                  unit: invItem.unit,
+                  inventoryItemId: invItem.id,
+                  discountPercent: 0,
+                };
+                setItems(prev => [...prev, newItem]);
+              }}
+              selectedItems={items.map(i => i.inventoryItemId).filter(Boolean) as string[]}
+            />
+            <Button
+              type="button"
+              variant="link"
+              onClick={() => {
+                const newItem: QuoteItem = {
+                  id:
+                    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                      ? crypto.randomUUID()
+                      : Math.random().toString(36).slice(2),
+                  description: 'Gesamtrabatt',
+                  quantity: 1,
+                  unitPrice: 0,
+                  total: 0,
+                  category: 'discount',
+                };
+                setItems(prev => [...prev, newItem]);
+              }}
+              className="px-0 text-[#14ad9f]"
+            >
+              + Gesamtrabatt hinzufügen
+            </Button>
+          </div>
+
+          {/* Positionsliste */}
+          <div className="space-y-4">
+            {items.map((item, index) => {
+              const unitPriceDisplay = showNet
+                ? item.unitPrice
+                : item.unitPrice * (1 + taxRate / 100);
+              // Rabatt-Positionen als negative Beträge darstellen
+              const baseTotalNet = item.total || 0;
+              const sign = item.category === 'discount' ? -1 : 1;
+              // Positions-Rabatt anwenden, außer bei speziellen Rabatt-Positionszeilen
+              const discountFactor =
+                item.category === 'discount'
+                  ? 1
+                  : 1 - Math.max(0, Math.min(100, item.discountPercent || 0)) / 100;
+              const totalNet = baseTotalNet * sign * discountFactor;
+              const totalGross = totalNet * (1 + taxRate / 100);
+              return (
+                <div
+                  key={item.id}
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border border-gray-200 rounded-lg"
+                >
+                  <div className="md:col-span-4">
+                    <div className="flex items-center gap-1">
+                      <Label>Beschreibung</Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            aria-label="Hinweis zur Beschreibung"
+                            className="cursor-help inline-flex"
+                          >
+                            <Info className="w-4 h-4 text-[#14ad9f]" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" align="start" className="max-w-xs text-sm">
+                          <p>
+                            Hinweis: Die Beschreibung ist für den Kunden sichtbar. Du kannst auch
+                            die SKU oder den exakten Produktnamen eingeben, um Werte automatisch aus
+                            dem Inventar zu übernehmen.
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Popover
+                      open={popoverOpenIds.has(item.id)}
+                      onOpenChange={open => {
+                        if (!open) {
+                          setDismissedCreatePromptIds(prev => new Set(prev).add(item.id));
+                        }
                       }}
                     >
-                      <ProfessionalBusinessTemplate
-                        data={{
-                          documentNumber: formData.invoiceNumber || 'R-2025-000',
-                          date: formData.issueDate || new Date().toISOString().split('T')[0],
-                          dueDate: formData.dueDate || new Date().toISOString().split('T')[0],
-                          customer: {
-                            name: formData.customerName || 'Kunden auswählen...',
-                            email: formData.customerEmail || '',
-                            address: {
-                              street: (formData.customerAddress || '').split('\n')[0] || '',
-                              zipCode:
-                                (formData.customerAddress || '').split('\n')[1]?.split(' ')[0] ||
-                                '',
-                              city:
-                                (formData.customerAddress || '')
-                                  .split('\n')[1]
-                                  ?.split(' ')
-                                  .slice(1)
-                                  .join(' ') || '',
-                              country: 'Deutschland',
-                            },
-                          },
-                          company: {
-                            name: companySettings?.companyName || 'Ihr Unternehmen',
-                            email: companySettings?.companyEmail || 'info@ihrunternehmen.de',
-                            phone: companySettings?.companyPhone || '+49 123 456789',
-                            address: {
-                              street: (companySettings?.companyAddress || '').split('\n')[0] || '',
-                              zipCode:
-                                (companySettings?.companyAddress || '')
-                                  .split('\n')[1]
-                                  ?.split(' ')[0] || '',
-                              city:
-                                (companySettings?.companyAddress || '')
-                                  .split('\n')[1]
-                                  ?.split(' ')
-                                  .slice(1)
-                                  .join(' ') || '',
-                              country: 'Deutschland',
-                            },
-                            taxNumber: companySettings?.taxNumber || '',
-                            vatId: companySettings?.vatId || '',
-                            bankDetails: {
-                              iban: '',
-                              bic: '',
-                              accountHolder: '',
-                            },
-                          },
-                          items:
-                            items.length > 0
-                              ? (items as any)
-                              : ([
-                                  {
-                                    id: 'placeholder',
-                                    description: 'Beispiel Dienstleistung',
-                                    quantity: 1,
-                                    unitPrice: 100.0,
-                                    total: 100.0,
-                                  },
-                                ] as any),
-                          subtotal: subtotal,
-                          taxRate: Number(formData.taxRate || '19'),
-                          taxAmount: tax,
-                          total: total,
-                          paymentTerms: formData.paymentTerms,
-                          notes: formData.notes,
-                          status: 'draft',
-                          isSmallBusiness: formData.taxNote === 'kleinunternehmer',
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Middle Column: Form */}
-        <div className="lg:col-span-2">
-          <form onSubmit={e => e.preventDefault()} className="space-y-8">
-            {/* Customer Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Kundendaten</CardTitle>
-                <CardDescription>Informationen zum Rechnungsempfänger</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="customer">Kunde auswählen</Label>
-                    <Select onValueChange={handleCustomerSelect}>
-                      <SelectTrigger>
-                        <SelectValue
+                      <div className="relative">
+                        <Input
+                          value={item.description}
+                          onChange={e => handleDescriptionChange(index, item.id, e.target.value)}
                           placeholder={
-                            loadingCustomers
-                              ? 'Kunden werden geladen...'
-                              : customers.length === 0
-                                ? 'Keine Kunden gefunden - erstellen Sie zuerst einen Kunden'
-                                : 'Bestehenden Kunden wählen oder neu eingeben'
+                            item.category === 'discount'
+                              ? 'Rabatt / Nachlass'
+                              : 'Leistungsbeschreibung'
                           }
                         />
+                        <PopoverAnchor />
+                      </div>
+                      <PopoverContent side="bottom" align="start">
+                        <div className="text-sm">
+                          <div className="font-medium mb-2">Als Produkt speichern?</div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                              onClick={() => {
+                                const rate = Number.isFinite(taxRate) ? taxRate : 19;
+                                const name = item.description || '';
+                                const unit = (item.unit as string) || 'Stk';
+                                const sellingNet = Number.isFinite(item.unitPrice)
+                                  ? item.unitPrice
+                                  : 0;
+                                setNewProduct({
+                                  name,
+                                  imageUrl: '',
+                                  sku: '',
+                                  category: 'Artikel',
+                                  unit,
+                                  stock: 0,
+                                  taxRate: rate,
+                                  purchaseNet: 0,
+                                  purchaseGross: 0,
+                                  sellingNet,
+                                  sellingGross: Number(
+                                    syncGrossFromNet(sellingNet, rate).toFixed(2)
+                                  ),
+                                  description: '',
+                                  internalNote: '',
+                                });
+                                setCreateProductForIndex(index);
+                                setCreateProductOpen(true);
+                                setDismissedCreatePromptIds(prev => new Set(prev).add(item.id));
+                              }}
+                            >
+                              Produkt erstellen
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                setDismissedCreatePromptIds(prev => new Set(prev).add(item.id))
+                              }
+                            >
+                              Später
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="md:col-span-1">
+                    <Label>Menge</Label>
+                    <Input
+                      type="number"
+                      value={item.quantity}
+                      onChange={e =>
+                        handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                      }
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div className="md:col-span-1">
+                    <Label>Einheit</Label>
+                    <Select
+                      value={(item.unit as string) ?? 'Stk'}
+                      onValueChange={val => {
+                        const mapped = val === 'none' ? '' : val;
+                        setItems(prev =>
+                          prev.map((it, i) => (i === index ? { ...it, unit: mapped } : it))
+                        );
+                      }}
+                      disabled={item.category === 'discount'}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Einheit" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {customers.map(customer => (
-                          <SelectItem key={customer.id} value={customer.name}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{customer.name}</span>
-                              <span className="text-xs text-gray-500">
-                                {customer.customerNumber}
-                              </span>
-                            </div>
+                      <SelectContent className="max-h-72">
+                        {UNIT_OPTIONS.map(u => (
+                          <SelectItem key={u.value || 'blank'} value={u.value}>
+                            {u.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="customerName">Firmenname *</Label>
+                  <div className="md:col-span-2">
+                    <Label>
+                      Preis
+                      <small className="font-normal text-gray-500">
+                        {' '}
+                        ({showNet ? 'Netto' : 'Brutto'})
+                      </small>
+                    </Label>
                     <Input
-                      id="customerName"
-                      value={formData.customerName}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, customerName: e.target.value }))
+                      type="number"
+                      value={
+                        Number.isFinite(unitPriceDisplay) ? Number(unitPriceDisplay.toFixed(2)) : 0
                       }
-                      placeholder="Mustermann GmbH"
-                      required
+                      onChange={e =>
+                        handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)
+                      }
+                      min="0"
+                      step="0.01"
+                      className="w-28 md:w-32 h-8 text-sm px-2"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customerEmail">E-Mail</Label>
+                  {/* Rabatt in % (nur für normale Positionen) */}
+                  <div className="md:col-span-1">
+                    <Label>Rabatt %</Label>
                     <Input
-                      id="customerEmail"
-                      type="email"
-                      value={formData.customerEmail}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, customerEmail: e.target.value }))
-                      }
-                      placeholder="info@mustermann.de"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="customerAddress">Rechnungsadresse</Label>
-                    <Textarea
-                      id="customerAddress"
-                      value={formData.customerAddress}
-                      onChange={e =>
-                        setFormData(prev => ({ ...prev, customerAddress: e.target.value }))
-                      }
-                      placeholder="Musterstraße 123&#10;12345 Berlin&#10;Deutschland"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customerVatId">USt-IdNr. / VAT-ID</Label>
-                    <Input
-                      id="customerVatId"
-                      value={formData.customerVatId}
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.1}
+                      value={item.category === 'discount' ? 0 : (item.discountPercent ?? 0)}
                       onChange={e => {
-                        const vatId = e.target.value;
-
-                        // Erstelle temporäres Customer-Objekt für Validierung
-                        const tempCustomer: Customer = {
-                          id: 'temp',
-                          name: formData.customerName,
-                          email: formData.customerEmail,
-                          vatId: vatId,
-                          // Versuche Land aus Adresse zu extrahieren
-                          country: formData.customerAddress?.split('\n').pop()?.trim() || '',
-                        };
-
-                        // Prüfe Reverse-Charge bei VAT-ID Eingabe
-                        const shouldApplyReverseCharge = isReverseChargeApplicable(
-                          tempCustomer,
-                          vatId,
-                          fullCompanyData
+                        const v = parseFloat(e.target.value);
+                        setItems(prev =>
+                          prev.map((it, i) =>
+                            i === index
+                              ? {
+                                  ...it,
+                                  discountPercent: Number.isFinite(v)
+                                    ? Math.max(0, Math.min(100, v))
+                                    : 0,
+                                }
+                              : it
+                          )
                         );
-
-                        setFormData(prev => ({
-                          ...prev,
-                          customerVatId: vatId,
-                          // Nur automatisch setzen wenn noch kein spezifischer Steuerhinweis gesetzt ist
-                          taxNote:
-                            shouldApplyReverseCharge && prev.taxNote === 'none'
-                              ? 'reverse-charge'
-                              : prev.taxNote,
-                          taxRate:
-                            shouldApplyReverseCharge && prev.taxNote === 'none'
-                              ? '0'
-                              : prev.taxRate,
-                        }));
-
-                        // Benutzer informieren
-                        if (shouldApplyReverseCharge && vatId.length >= 4) {
-                          toast.info(
-                            'EU-VAT-ID erkannt: Reverse-Charge-Verfahren wurde automatisch aktiviert.'
-                          );
-                        }
                       }}
-                      placeholder="DE123456789"
+                      disabled={item.category === 'discount'}
                     />
-
-                    <p className="text-xs text-gray-500">
-                      Umsatzsteuer-Identifikationsnummer des Kunden (optional)
-                    </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Invoice Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Rechnungsdetails</CardTitle>
-                <CardDescription>Grundlegende Informationen zur Rechnung</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="invoiceNumber">Rechnungsnummer</Label>
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
-                      <span className="text-gray-500 font-medium">
-                        Wird bei Finalisierung automatisch generiert
-                      </span>
+                  <div className="md:col-span-2">
+                    <Label>Betrag</Label>
+                    <div
+                      className={`h-10 flex items-center text-sm font-medium ${item.category === 'discount' ? 'text-red-600' : ''}`}
+                    >
+                      {formatCurrency(showNet ? totalNet : totalGross)}
                     </div>
-                    <p className="text-sm text-gray-500">
-                      Entwürfe erhalten noch keine finale Rechnungsnummer
-                    </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="issueDate">Rechnungsdatum *</Label>
-                    <Input
-                      id="issueDate"
-                      type="date"
-                      value={formData.issueDate}
-                      onChange={e => setFormData(prev => ({ ...prev, issueDate: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dueDate">Fälligkeitsdatum *</Label>
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      value={formData.dueDate}
-                      onChange={e => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-                      required
-                    />
+                  <div className="md:col-span-1 flex items-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeItem(index)}
+                      className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                      disabled={items.length === 1}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Fuß-Text (unter Positionen) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">Fuß-Text</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="footerText">Fuß-Text mit Platzhaltern</Label>
+          <FooterTextEditor
+            value={formData.footerText}
+            onChange={(html: string) => setFormData(prev => ({ ...prev, footerText: html }))}
+            companyId={uid}
+            objectType="INVOICE"
+            textType="FOOT"
+          />
+          <div className="text-xs text-gray-500">Verfügbare Platzhalter: [%KONTAKTPERSON%]</div>
+        </CardContent>
+      </Card>
+
+      {/* Mehr Optionen */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Mehr Optionen</CardTitle>
+            <Button
+              type="button"
+              variant="link"
+              className="px-0 text-[#14ad9f]"
+              onClick={() => setShowDetailedOptions(v => !v)}
+            >
+              {!showDetailedOptions ? 'Weitere Optionen einblenden' : 'Weitere Optionen ausblenden'}
+            </Button>
+          </div>
+        </CardHeader>
+        {showDetailedOptions && (
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="description">Kurzbeschreibung</Label>
-                  <Input
-                    id="description"
-                    value={formData.description}
-                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="z.B. Beratungsleistungen für Projekt XYZ"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Invoice Items */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Rechnungspositionen</CardTitle>
-                    <CardDescription>Fügen Sie Leistungen und Produkte hinzu</CardDescription>
-                  </div>
-                  <Button type="button" variant="outline" onClick={addItem}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Position hinzufügen
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700">
-                        <th className="text-left py-3 px-3 font-medium text-gray-700 dark:text-gray-300">
-                          Produkt oder Service
-                        </th>
-                        <th className="text-center py-3 px-2 font-medium text-gray-700 dark:text-gray-300 w-20">
-                          Menge
-                        </th>
-                        <th className="text-right py-3 px-2 font-medium text-gray-700 dark:text-gray-300 w-28">
-                          Preis
-                        </th>
-                        <th className="text-center py-3 px-2 font-medium text-gray-700 dark:text-gray-300 w-20">
-                          Rabatt
-                        </th>
-                        <th className="text-right py-3 px-2 font-medium text-gray-700 dark:text-gray-300 w-28">
-                          Betrag
-                        </th>
-                        <th className="w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map((item, index) => (
-                        <tr
-                          key={item.id}
-                          className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        >
-                          <td className="py-3 px-3">
-                            <Input
-                              value={item.description}
-                              onChange={e => updateItem(item.id, 'description', e.target.value)}
-                              placeholder="Leistungsbeschreibung eingeben..."
-                              className="border-0 bg-transparent p-0 focus:ring-0 text-base"
-                            />
-                          </td>
-                          <td className="py-3 px-2 text-center">
-                            <Input
-                              type="number"
-                              min="1"
-                              step="1"
-                              value={item.quantity}
-                              onChange={e =>
-                                updateItem(item.id, 'quantity', parseInt(e.target.value) || 1)
-                              }
-                              className="w-16 text-center mx-auto"
-                            />
-                          </td>
-                          <td className="py-3 px-2">
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={item.unitPrice}
-                                onChange={e =>
-                                  updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)
-                                }
-                                className="text-right pr-6 w-24"
-                                placeholder="0,00"
-                              />
-
-                              <span className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
-                                €
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-2 text-center">
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                value={item.discount}
-                                onChange={e =>
-                                  updateItem(item.id, 'discount', parseFloat(e.target.value) || 0)
-                                }
-                                className="w-16 text-center pr-5 mx-auto"
-                                placeholder="0"
-                              />
-
-                              <span className="absolute right-1 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
-                                %
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-2 text-right">
-                            <div className="text-base font-semibold text-gray-900 dark:text-white">
-                              {formatCurrency(item.total)}
-                            </div>
-                          </td>
-                          <td className="py-3 px-2 text-center">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeItem(item.id)}
-                              disabled={items.length === 1}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Summary Row */}
-                <div className="border-t pt-4">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="text-sm text-gray-600">
-                      <p>
-                        {(() => {
-                          const { subtotal } = calculateTotals();
-                          const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-                          return `${items.length} Position${items.length !== 1 ? 'en' : ''} • ${totalItems} Artikel • Netto: ${formatCurrency(subtotal)}`;
-                        })()}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end space-y-1">
-                      {(() => {
-                        const { subtotal, tax, total } = calculateTotals();
-                        return (
-                          <>
-                            <div className="flex justify-between w-48">
-                              <span className="text-sm text-gray-600">Zwischensumme:</span>
-                              <span className="text-sm font-medium">
-                                {formatCurrency(subtotal)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between w-48">
-                              <span className="text-sm text-gray-600">
-                                MwSt ({formData.taxRate}%):
-                              </span>
-                              <span className="text-sm font-medium">{formatCurrency(tax)}</span>
-                            </div>
-                            <div className="flex justify-between w-48 text-lg font-bold pt-2 border-t">
-                              <span>Gesamtbetrag:</span>
-                              <span className="text-[#14ad9f]">{formatCurrency(total)}</span>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Steuerhinweise */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Steuerhinweise</CardTitle>
-                <CardDescription>
-                  Wählen Sie einen passenden Steuerhinweis für Ihre Rechnung
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="taxNote">Steuerhinweis</Label>
+                  <Label>Währung</Label>
                   <Select
-                    value={formData.taxNote}
-                    onValueChange={value => {
-                      setFormData(prev => ({
-                        ...prev,
-                        taxNote: value,
-                        // Automatisch Steuersatz auf 0% setzen bei Kleinunternehmer
-                        taxRate: value === 'kleinunternehmer' ? '0' : prev.taxRate,
-                      }));
-                    }}
+                    value={formData.currency}
+                    onValueChange={val => setFormData(prev => ({ ...prev, currency: val }))}
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Steuerhinweis auswählen (optional)" />
+                    <SelectTrigger>
+                      <SelectValue placeholder="Bitte auswählen" />
                     </SelectTrigger>
-                    <SelectContent className="max-w-md w-80">
-                      <SelectItem value="none">Kein Steuerhinweis</SelectItem>
-                      <SelectItem
-                        value="kleinunternehmer"
-                        className="whitespace-normal py-3 h-auto leading-relaxed"
-                      >
-                        <div className="text-sm">
-                          Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.
-                        </div>
-                      </SelectItem>
-                      <SelectItem
-                        value="reverse-charge"
-                        className="whitespace-normal py-3 h-auto leading-relaxed"
-                      >
-                        <div className="text-sm">
-                          Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als
-                          Leistungsempfänger die Umsatzsteuer als Unternehmer.
-                        </div>
-                      </SelectItem>
+                    <SelectContent
+                      className="max-h-96 overflow-y-auto"
+                      style={{ scrollbarGutter: 'stable' }}
+                    >
+                      {allCurrencies.map(c => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.name} ({c.code})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-
-                  {/* Anzeige des ausgewählten Steuerhinweises */}
-                  {formData.taxNote && formData.taxNote !== 'none' && (
-                    <div className="mt-3 p-3 bg-gray-50 rounded-md border-l-4 border-[#14ad9f]">
-                      <div className="text-sm text-gray-700">
-                        <strong>Ausgewählter Steuerhinweis:</strong>
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1 leading-relaxed">
-                        {formData.taxNote === 'kleinunternehmer' &&
-                          'Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.'}
-                        {formData.taxNote === 'reverse-charge' &&
-                          'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'}
-                      </div>
-                    </div>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Zahlungskonditionen */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Zahlungskonditionen</CardTitle>
-                <CardDescription>
-                  Bearbeiten Sie die Zahlungskonditionen für diese Rechnung
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="paymentTerms">Zahlungskonditionen</Label>
-                  <Textarea
-                    id="paymentTerms"
-                    value={formData.paymentTerms}
-                    onChange={e => setFormData(prev => ({ ...prev, paymentTerms: e.target.value }))}
-                    placeholder="z.B. Zahlbar binnen 14 Tagen ohne Abzug"
-                    rows={2}
+                  <Label>Interne Kontaktperson</Label>
+                  <Input
+                    value={formData.internalContactPerson}
+                    onChange={e =>
+                      setFormData(p => ({ ...p, internalContactPerson: e.target.value }))
+                    }
+                    placeholder="Name der Kontaktperson"
                   />
-
-                  <p className="text-xs text-gray-500">
-                    Automatisch basierend auf Ihren Firmeneinstellungen gesetzt. Sie können diese
-                    für diese Rechnung anpassen.
-                  </p>
                 </div>
 
-                {/* Schnellauswahl für Zahlungskonditionen */}
                 <div className="space-y-2">
-                  <Label>Schnellauswahl</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {(() => {
-                      const companyDays = companySettings?.defaultPaymentTerms?.days || 14;
-                      const baseOptions = [
-                        { days: 7, text: 'Zahlbar binnen 7 Tagen ohne Abzug' },
-                        { days: 14, text: 'Zahlbar binnen 14 Tagen ohne Abzug' },
-                        { days: 30, text: 'Zahlbar binnen 30 Tagen ohne Abzug' },
-                        { days: 0, text: 'Sofort fällig bei Erhalt' },
-                      ];
+                  <Label>Lieferbedingungen</Label>
+                  <Input
+                    value={formData.deliveryTerms}
+                    onChange={e => setFormData(p => ({ ...p, deliveryTerms: e.target.value }))}
+                    placeholder="z.B. Lieferung innerhalb von 14 Tagen"
+                  />
+                </div>
 
-                      // Add company default if it's not already in the list
-                      if (![7, 14, 30, 0].includes(companyDays)) {
-                        baseOptions.unshift({
-                          days: companyDays,
-                          text:
-                            companySettings?.defaultPaymentTerms?.text ||
-                            `Zahlbar binnen ${companyDays} Tagen ohne Abzug`,
-                        });
-                      }
-
-                      return baseOptions.map(option => (
-                        <Button
-                          key={option.days}
-                          type="button"
-                          variant={
-                            // Highlight company default
-                            option.days === companyDays ? 'default' : 'outline'
-                          }
-                          size="sm"
-                          onClick={() => {
-                            const issueDate = new Date(formData.issueDate);
-                            const dueDate = new Date(
-                              issueDate.getTime() + option.days * 24 * 60 * 60 * 1000
-                            );
-                            setFormData(prev => ({
-                              ...prev,
-                              paymentTerms: option.text,
-                              dueDate: dueDate.toISOString().split('T')[0],
-                            }));
-                          }}
-                          className={`text-xs justify-center ${
-                            option.days === companyDays
-                              ? 'bg-[#14ad9f] hover:bg-[#129488] text-white'
-                              : ''
-                          }`}
-                        >
-                          {option.days === 0 ? 'Sofort' : `${option.days} Tage`}
-                          {option.days === companyDays && ' (Standard)'}
-                        </Button>
-                      ));
-                    })()}
-                  </div>
+                <div className="space-y-2">
+                  <Label>Zahlungsbedingungen</Label>
+                  <Input
+                    value={formData.paymentTerms}
+                    onChange={e => setFormData(p => ({ ...p, paymentTerms: e.target.value }))}
+                    placeholder="z.B. 14 Tage netto"
+                  />
                 </div>
 
                 {/* Skonto-Einstellungen */}
-                <div className="space-y-4 border-t pt-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="skontoEnabled"
-                      checked={formData.skontoEnabled}
-                      onChange={e => {
-                        const enabled = e.target.checked;
-                        const skontoText = enabled
-                          ? `${formData.skontoPercentage}% Skonto bei Zahlung binnen ${formData.skontoDays} Tagen`
-                          : '';
-                        setFormData(prev => ({
-                          ...prev,
-                          skontoEnabled: enabled,
-                          skontoText: skontoText,
-                        }));
-                      }}
-                      className="rounded border-gray-300 text-[#14ad9f] focus:ring-[#14ad9f]"
-                    />
-
-                    <Label htmlFor="skontoEnabled" className="text-sm font-medium">
-                      Skonto gewähren
-                    </Label>
+                <div className="space-y-2 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="font-medium">Skonto</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600">aktivieren</span>
+                      <Switch checked={skontoEnabled} onCheckedChange={setSkontoEnabled} />
+                    </div>
                   </div>
-
-                  {formData.skontoEnabled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="skontoDays">Skonto-Tage</Label>
+                  {skontoEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <Label>Skontotage</Label>
                         <Input
-                          id="skontoDays"
                           type="number"
-                          min="1"
-                          max="30"
-                          value={formData.skontoDays}
+                          min={1}
+                          value={skontoDays ?? ''}
                           onChange={e => {
-                            const days = parseInt(e.target.value) || 3;
-                            const skontoText = `${formData.skontoPercentage}% Skonto bei Zahlung binnen ${days} Tagen`;
-                            setFormData(prev => ({
-                              ...prev,
-                              skontoDays: days,
-                              skontoText: skontoText,
-                            }));
+                            const v = parseInt(e.target.value, 10);
+                            setSkontoDays(Number.isFinite(v) ? Math.max(1, v) : undefined);
                           }}
-                          placeholder="3"
+                          placeholder="z.B. 10"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="skontoPercentage">Skonto-Prozentsatz (%)</Label>
+                      <div className="space-y-1">
+                        <Label>Skonto %</Label>
                         <Input
-                          id="skontoPercentage"
                           type="number"
-                          step="0.1"
-                          min="0.1"
-                          max="10"
-                          value={formData.skontoPercentage}
+                          min={0}
+                          step={0.1}
+                          value={skontoPercentage ?? ''}
                           onChange={e => {
-                            const percentage = parseFloat(e.target.value) || 2.0;
-                            const skontoText = `${percentage}% Skonto bei Zahlung binnen ${formData.skontoDays} Tagen`;
-                            setFormData(prev => ({
-                              ...prev,
-                              skontoPercentage: percentage,
-                              skontoText: skontoText,
-                            }));
+                            const v = parseFloat(e.target.value);
+                            setSkontoPercentage(Number.isFinite(v) ? Math.max(0, v) : undefined);
                           }}
-                          placeholder="2.0"
+                          placeholder="z.B. 2"
                         />
                       </div>
-                      <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="skontoText">Skonto-Text für Rechnung</Label>
+                      <div className="space-y-1 md:col-span-1">
+                        <Label>Text (optional)</Label>
                         <Input
-                          id="skontoText"
-                          value={formData.skontoText}
-                          onChange={e =>
-                            setFormData(prev => ({ ...prev, skontoText: e.target.value }))
-                          }
-                          placeholder="2% Skonto bei Zahlung binnen 3 Tagen"
+                          value={skontoText}
+                          onChange={e => setSkontoText(e.target.value)}
+                          placeholder="Bei Zahlung binnen X Tagen Y% Skonto"
                         />
                       </div>
                     </div>
                   )}
+                  {skontoEnabled && (
+                    <div className="text-xs text-gray-500">
+                      Vorschau:{' '}
+                      {skontoText?.trim() ||
+                        (skontoDays && skontoPercentage
+                          ? `Bei Zahlung binnen ${skontoDays} Tagen ${skontoPercentage}% Skonto`
+                          : '—')}
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Additional Notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Zusätzliche Informationen</CardTitle>
-                <CardDescription>Optionale Anmerkungen für die Rechnung</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="notes">Notizen</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Zusätzliche Informationen oder Zahlungshinweise..."
-                      rows={3}
+              {/* Umsatzsteuerregelung: Drei unabhängige Accordions */}
+              <div className="space-y-3">
+                <Label className="font-semibold">Umsatzsteuerregelung</Label>
+
+                {/* In Deutschland */}
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between bg-muted/30 px-3 py-2 hover:bg-muted/50 transition"
+                    onClick={() => setTaxDEOpen(v => !v)}
+                  >
+                    <span className="text-sm font-medium">In Deutschland</span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${taxDEOpen ? 'rotate-180' : ''}`}
                     />
-                  </div>
-
-                  {/* E-Rechnung Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center space-x-3">
-                      <div className="p-2 bg-blue-100 rounded-full">
-                        <FileText className="h-4 w-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <Label
-                          htmlFor="eInvoiceEnabled"
-                          className="text-sm font-medium text-blue-800"
+                  </button>
+                  {taxDEOpen && (
+                    <div className="p-3 space-y-2">
+                      {[
+                        {
+                          key: 'DE_TAXABLE',
+                          label: 'Umsatzsteuerpflichtige Umsätze',
+                          hint: 'Regelsteuersatz, i. d. R. 19% (oder 7% für bestimmte Leistungen).',
+                        },
+                        {
+                          key: 'DE_EXEMPT_4_USTG',
+                          label: 'Steuerfreie Umsätze §4 UStG',
+                          hint: 'Umsätze, die nach §4 UStG von der Steuer befreit sind (z. B. bestimmte Versicherungen).',
+                        },
+                        {
+                          key: 'DE_REVERSE_13B',
+                          label: 'Reverse Charge gem. §13b UStG',
+                          hint: 'Steuerschuld geht auf den Leistungsempfänger über (B2B, bestimmte Leistungen).',
+                        },
+                      ].map(opt => (
+                        <label
+                          key={opt.key}
+                          className={`flex items-center justify-between gap-3 rounded border p-2 ${formData.taxRule === opt.key ? 'border-[#14ad9f] bg-[#14ad9f]/5' : 'border-gray-200'}`}
                         >
-                          E-Rechnung aktivieren
-                        </Label>
-                        <p className="text-xs text-blue-600 mt-1">
-                          Für B2B-Rechnungen ab 250€ ab 01.01.2025 (Übergangszeit bis 31.12.2026)
-                          <a
-                            href="/blog/e-rechnung-leitfaden"
-                            target="_blank"
-                            className="block text-[#14ad9f] hover:underline mt-1 font-medium"
-                          >
-                            → Kompletter E-Rechnung Leitfaden
-                          </a>
-                        </p>
-                      </div>
-                    </div>
-                    <Switch
-                      id="eInvoiceEnabled"
-                      checked={isEInvoiceEnabled}
-                      onCheckedChange={handleEInvoiceToggle}
-                      className="data-[state=checked]:bg-[#14ad9f]"
-                    />
-                  </div>
-
-                  {isEInvoiceEnabled && (
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-center text-green-800">
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        <span className="text-sm font-medium">E-Rechnung aktiviert</span>
-                      </div>
-                      <p className="text-xs text-green-700 mt-1">
-                        Diese Rechnung wird im E-Rechnung-Format (XRechnung/ZUGFeRD) erstellt.
-                      </p>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="taxRule"
+                              className="accent-[#14ad9f]"
+                              checked={formData.taxRule === (opt.key as any)}
+                              onChange={() => setFormData(p => ({ ...p, taxRule: opt.key as any }))}
+                            />
+                            <span>{opt.label}</span>
+                          </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-gray-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>{opt.hint}</TooltipContent>
+                          </Tooltip>
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-6 border-t">
-              <Button type="button" variant="outline" onClick={handleBackToInvoices}>
-                Abbrechen
-              </Button>
+                {/* Im EU-Ausland */}
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between bg-muted/30 px-3 py-2 hover:bg-muted/50 transition"
+                    onClick={() => setTaxEUOpen(v => !v)}
+                  >
+                    <span className="text-sm font-medium">Im EU-Ausland</span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${taxEUOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {taxEUOpen && (
+                    <div className="p-3 space-y-2">
+                      {[
+                        {
+                          key: 'EU_REVERSE_18B',
+                          label: 'Reverse Charge gem. §18b UStG',
+                          hint: 'B2B-Leistungen innerhalb der EU – Steuerschuld beim Leistungsempfänger.',
+                        },
+                        {
+                          key: 'EU_INTRACOMMUNITY_SUPPLY',
+                          label: 'Innergemeinschaftliche Lieferungen',
+                          hint: 'Lieferung von Waren in anderes EU-Land an Unternehmer mit USt-IdNr., i. d. R. steuerfrei.',
+                        },
+                        {
+                          key: 'EU_OSS',
+                          label: 'OSS – One-Stop-Shop',
+                          hint: 'Fernverkauf an Privatkunden in EU; Besteuerung im Bestimmungsland über OSS.',
+                        },
+                      ].map(opt => (
+                        <label
+                          key={opt.key}
+                          className={`flex items-center justify-between gap-3 rounded border p-2 ${formData.taxRule === opt.key ? 'border-[#14ad9f] bg-[#14ad9f]/5' : 'border-gray-200'}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="taxRule"
+                              className="accent-[#14ad9f]"
+                              checked={formData.taxRule === (opt.key as any)}
+                              onChange={() => setFormData(p => ({ ...p, taxRule: opt.key as any }))}
+                            />
+                            <span>{opt.label}</span>
+                          </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-gray-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>{opt.hint}</TooltipContent>
+                          </Tooltip>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isSubmitting}
-                  onClick={e => handleSubmit(e, 'draft')}
-                  className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Calculator className="h-4 w-4 mr-2" />
+                {/* Außerhalb der EU */}
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between bg-muted/30 px-3 py-2 hover:bg-muted/50 transition"
+                    onClick={() => setTaxNonEUOpen(v => !v)}
+                  >
+                    <span className="text-sm font-medium">Außerhalb der EU</span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${taxNonEUOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {taxNonEUOpen && (
+                    <div className="p-3 space-y-2">
+                      {[
+                        {
+                          key: 'NON_EU_EXPORT',
+                          label: 'Ausfuhren',
+                          hint: 'Warenlieferungen in Drittländer (außerhalb EU) sind i. d. R. steuerfrei (Nachweis erforderlich).',
+                        },
+                        {
+                          key: 'NON_EU_OUT_OF_SCOPE',
+                          label: 'Nicht im Inland steuerbare Leistung (außerhalb EU, z.B. Schweiz)',
+                          hint: 'Leistung gilt nicht im Inland als ausgeführt – keine deutsche USt.',
+                        },
+                      ].map(opt => (
+                        <label
+                          key={opt.key}
+                          className={`flex items-center justify-between gap-3 rounded border p-2 ${formData.taxRule === opt.key ? 'border-[#14ad9f] bg-[#14ad9f]/5' : 'border-gray-200'}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="taxRule"
+                              className="accent-[#14ad9f]"
+                              checked={formData.taxRule === (opt.key as any)}
+                              onChange={() => setFormData(p => ({ ...p, taxRule: opt.key as any }))}
+                            />
+                            <span>{opt.label}</span>
+                          </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-gray-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>{opt.hint}</TooltipContent>
+                          </Tooltip>
+                        </label>
+                      ))}
+                    </div>
                   )}
-                  Als Entwurf speichern
-                </Button>
-                <Button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={e => handleSubmit(e, 'finalize')}
-                  className="bg-[#14ad9f] hover:bg-[#0f9d84] text-white"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <FileText className="h-4 w-4 mr-2" />
-                  )}
-                  Rechnung erstellen
-                </Button>
+                </div>
+
+                <div className="text-xs text-gray-500">
+                  Hinweis: Je nach Regelung setzen wir den USt.-Satz automatisch (DE steuerpflichtig
+                  → 19%, andere Regeln → 0%).
+                </div>
               </div>
             </div>
-          </form>
-        </div>
+          </CardContent>
+        )}
+      </Card>
 
-        {/* Right Column: Aktionen & PDF Vorschau */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-4 space-y-3">
-            {/* PDF Preview Button */}
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Eye className="h-4 w-4" /> PDF/Vorschau & Druck
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-2">
-                <div className="space-y-4">
-                  <InvoicePreview
-                    invoiceData={{
-                      invoiceNumber: formData.invoiceNumber,
-                      issueDate: formData.issueDate,
-                      dueDate: formData.dueDate,
-                      customerName: formData.customerName,
-                      customerAddress: formData.customerAddress,
-                      customerEmail: formData.customerEmail,
-                      description: formData.description,
-                      items: items,
-                      amount: subtotal,
-                      tax: tax,
-                      total: total,
-                      taxNote: (formData.taxNote !== 'none' ? formData.taxNote : undefined) as
-                        | 'kleinunternehmer'
-                        | 'reverse-charge'
-                        | undefined,
-                      paymentTerms: formData.paymentTerms,
-                      // Skonto-Daten für PDF Preview
-                      skontoEnabled: formData.skontoEnabled,
-                      skontoDays: formData.skontoDays,
-                      skontoPercentage: formData.skontoPercentage,
-                      skontoText: formData.skontoText,
-                    }}
-                    companySettings={companySettings || undefined}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+      {/* Summen */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Summen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="text-sm">
+            <li className="flex justify-between py-2 border-b">
+              <span>Gesamtsumme Netto (inkl. Rabatte / Aufschläge)</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </li>
+            {!showNet && taxRate > 0 && (
+              <li className="flex justify-between py-2 border-b">
+                <span>Umsatzsteuer {taxRate}%</span>
+                <span>{formatCurrency(vat)}</span>
+              </li>
+            )}
+            <li className="flex justify-between py-2">
+              <span className="text-lg font-semibold">
+                {showNet ? 'Gesamt (Netto)' : 'Gesamt (Brutto)'}
+              </span>
+              <span className="text-lg font-semibold">
+                {formatCurrency(showNet ? subtotal : grandTotal)}
+              </span>
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
 
-            {/* Quick Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Rechnungsübersicht</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Positionen:</span>
-                    <span className="font-medium">{items.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Zwischensumme:</span>
-                    <span className="font-medium">{formatCurrency(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">MwSt. ({formData.taxRate}%):</span>
-                    <span className="font-medium">{formatCurrency(tax)}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t">
-                    <span className="font-semibold">Gesamtbetrag:</span>
-                    <span className="font-bold text-[#14ad9f]">{formatCurrency(total)}</span>
-                  </div>
-
-                  {/* Tax Note Preview */}
-                  {formData.taxNote && formData.taxNote !== 'none' && (
-                    <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                      <p className="text-xs text-gray-600 font-medium mb-1">Steuerhinweis:</p>
-                      <p className="text-xs text-gray-700">
-                        {formData.taxNote === 'kleinunternehmer'
-                          ? 'Gemäß § 19 Abs. 1 UStG wird keine Umsatzsteuer berechnet.'
-                          : 'Nach dem Reverse-Charge-Prinzip §13b Abs.2 UStG schulden Sie als Leistungsempfänger die Umsatzsteuer als Unternehmer.'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-
-      {/* E-Rechnung Profil-Vervollständigung Modal */}
-      <div className={showEInvoiceModal ? 'fixed inset-0 z-50' : 'hidden'}>
-        {/* Custom overlay without blur */}
-        <div className="fixed inset-0 bg-black/30" onClick={() => setShowEInvoiceModal(false)} />
-        {/* Custom sheet content */}
-        <div
-          className="fixed right-0 top-0 h-full w-[90vw] max-w-[900px] bg-transparent z-10 overflow-y-auto p-0"
-          style={{
-            transform: showEInvoiceModal ? 'translateX(0)' : 'translateX(100%)',
-            transition: 'transform 300ms ease-in-out',
-          }}
-        >
-          <div className="p-6 min-h-full !border-0" style={{ border: 'none', outline: 'none' }}>
-            <ModalCard
-              variant="elevated"
-              className="w-full shadow-2xl !border-0 !outline-none !ring-0"
-              style={{
-                border: 'none',
-                outline: 'none',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      {/* Fußtext mit Textvorlagen */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileText className="h-5 w-5 mr-2 text-[#14ad9f]" />
+            Fußtext & Zahlungsbedingungen
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Textvorlagen Selector für Fußtext */}
+          <div className="flex items-center gap-2">
+            <Label className="flex-shrink-0">Fußtext-Vorlage:</Label>
+            <Select
+              value={selectedFooterTemplate}
+              onValueChange={value => {
+                setSelectedFooterTemplate(value);
+                const template = textTemplates.find(t => t.id === value);
+                if (template) {
+                  setFormData(prev => ({ ...prev, footerText: template.text }));
+                }
               }}
             >
-              <ModalCardHeader icon={<AlertCircle className="h-5 w-5 text-amber-600" />}>
-                <ModalCardTitle>E-Rechnung einrichten</ModalCardTitle>
-                <ModalCardDescription>
-                  Vervollständigen Sie Ihre Firmendaten für die E-Rechnung
-                </ModalCardDescription>
-              </ModalCardHeader>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Vorlage auswählen..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Keine Vorlage</SelectItem>
+                {textTemplates
+                  .filter(t => t.objectType === 'INVOICE' && t.textType === 'FOOT')
+                  .map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} {template.isDefault && '(Standard)'}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-              <ModalCardContent spacing="lg">
-                {/* Firmeninformationen */}
-                {(isFieldMissing('companyName') ||
-                  isFieldMissing('companyStreet') ||
-                  isFieldMissing('companyCity') ||
-                  isFieldMissing('companyPostalCode') ||
-                  isFieldMissing('companyCountry')) && (
-                  <ModalCardSection title="Firmeninformationen" variant="default">
-                    <div className="space-y-4">
-                      {isFieldMissing('companyName') && (
-                        <div>
-                          <Label
-                            htmlFor="modal-companyName"
-                            className="text-sm font-medium text-gray-700"
-                          >
-                            Firmenname
-                          </Label>
-                          <Input
-                            id="modal-companyName"
-                            value={modalFormData.companyName}
-                            onChange={e =>
-                              setModalFormData(prev => ({ ...prev, companyName: e.target.value }))
-                            }
-                            placeholder="Mustermann GmbH"
-                            className="rounded-xl mt-1"
-                          />
-                        </div>
-                      )}
+          <div className="space-y-2">
+            <Label>Fußtext / Hinweise</Label>
+            <FooterTextEditor
+              value={formData.footerText}
+              onChange={(html: string) => setFormData(prev => ({ ...prev, footerText: html }))}
+              companyId={uid}
+              objectType="INVOICE"
+              textType="FOOT"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-                      {isFieldMissing('companyStreet') && (
-                        <div>
-                          <Label
-                            htmlFor="modal-companyStreet"
-                            className="text-sm font-medium text-gray-700"
-                          >
-                            Straße und Hausnummer
-                          </Label>
-                          <Input
-                            id="modal-companyStreet"
-                            value={modalFormData.companyStreet}
-                            onChange={e =>
-                              setModalFormData(prev => ({ ...prev, companyStreet: e.target.value }))
-                            }
-                            placeholder="Musterstraße 123"
-                            className="rounded-xl mt-1"
-                          />
-                        </div>
-                      )}
+      {/* Interne Notizen */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Interne Notizen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={formData.notes}
+            onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            placeholder="Interne Notizen (werden nicht im Angebot angezeigt)..."
+            rows={3}
+          />
+        </CardContent>
+      </Card>
 
-                      {(isFieldMissing('companyPostalCode') || isFieldMissing('companyCity')) && (
-                        <div className="grid grid-cols-2 gap-3">
-                          {isFieldMissing('companyPostalCode') && (
-                            <div>
-                              <Label
-                                htmlFor="modal-companyPostalCode"
-                                className="text-sm font-medium text-gray-700"
-                              >
-                                PLZ
-                              </Label>
-                              <Input
-                                id="modal-companyPostalCode"
-                                value={modalFormData.companyPostalCode}
-                                onChange={e =>
-                                  setModalFormData(prev => ({
-                                    ...prev,
-                                    companyPostalCode: e.target.value,
-                                  }))
-                                }
-                                placeholder="12345"
-                                className="rounded-xl mt-1"
-                              />
-                            </div>
-                          )}
-                          {isFieldMissing('companyCity') && (
-                            <div>
-                              <Label
-                                htmlFor="modal-companyCity"
-                                className="text-sm font-medium text-gray-700"
-                              >
-                                Stadt
-                              </Label>
-                              <Input
-                                id="modal-companyCity"
-                                value={modalFormData.companyCity}
-                                onChange={e =>
-                                  setModalFormData(prev => ({
-                                    ...prev,
-                                    companyCity: e.target.value,
-                                  }))
-                                }
-                                placeholder="Berlin"
-                                className="rounded-xl mt-1"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
+      {/* Aktionen */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Button
+          onClick={() => setPreviewOpen(true)}
+          variant="outline"
+          className="text-[#14ad9f] border-[#14ad9f]"
+        >
+          <Eye className="w-4 h-4 mr-2" />
+          Vorschau
+        </Button>
+        <Button type="button" onClick={printInBrowser} variant="outline" className="sm:ml-2">
+          <Printer className="w-4 h-4 mr-2" />
+          Drucken (Browser)
+        </Button>
+        <Button
+          onClick={() => handleSubmit(true)}
+          disabled={loading}
+          className="bg-gray-600 hover:bg-gray-700 text-white"
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
+          Speichern
+        </Button>
+        <Button
+          type="button"
+          onClick={() => setEmailCardOpen(v => !v)}
+          variant="default"
+          className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+        >
+          <Mail className="w-4 h-4 mr-2" />
+          Als E-Mail versenden
+        </Button>
+      </div>
 
-                      {isFieldMissing('companyCountry') && (
-                        <div>
-                          <Label
-                            htmlFor="modal-companyCountry"
-                            className="text-sm font-medium text-gray-700"
-                          >
-                            Land
-                          </Label>
-                          <Input
-                            id="modal-companyCountry"
-                            value={modalFormData.companyCountry}
-                            onChange={e =>
-                              setModalFormData(prev => ({
-                                ...prev,
-                                companyCountry: e.target.value,
-                              }))
-                            }
-                            placeholder="Deutschland"
-                            className="rounded-xl mt-1"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </ModalCardSection>
+      {emailCardOpen && (
+        <div className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>E-Mail versenden</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-3">
+                {pdfPreviewUrl && (
+                  <div className="rounded border p-2 bg-gray-50 text-xs text-gray-600">
+                    PDF bereit • Größe:{' '}
+                    {pdfSizeBytes ? `${(pdfSizeBytes / 1024).toFixed(1)} KB` : '—'} •
+                    <a
+                      className="ml-1 underline text-[#14ad9f]"
+                      href={pdfPreviewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Anzeigen
+                    </a>
+                    <a
+                      className="ml-2 underline"
+                      href={pdfPreviewUrl}
+                      download={emailAttachmentName || 'Angebot.pdf'}
+                    >
+                      Download
+                    </a>
+                  </div>
                 )}
-
-                {/* Steuerinformationen */}
-                {(isFieldMissing('taxNumber') ||
-                  isFieldMissing('vatId') ||
-                  isFieldMissing('registrationNumber')) && (
-                  <ModalCardSection title="Steuerinformationen" variant="info">
-                    <div className="space-y-4">
-                      {(isFieldMissing('taxNumber') || isFieldMissing('vatId')) && (
-                        <>
-                          <div>
-                            <Label
-                              htmlFor="modal-taxNumber"
-                              className="text-sm font-medium text-gray-700"
-                            >
-                              Steuernummer
-                            </Label>
-                            <Input
-                              id="modal-taxNumber"
-                              value={modalFormData.taxNumber}
-                              onChange={e =>
-                                setModalFormData(prev => ({ ...prev, taxNumber: e.target.value }))
-                              }
-                              placeholder="123/456/78901"
-                              className="rounded-xl mt-1"
-                            />
-                          </div>
-
-                          <div>
-                            <Label
-                              htmlFor="modal-vatId"
-                              className="text-sm font-medium text-gray-700"
-                            >
-                              USt-IdNr.
-                            </Label>
-                            <Input
-                              id="modal-vatId"
-                              value={modalFormData.vatId}
-                              onChange={e =>
-                                setModalFormData(prev => ({ ...prev, vatId: e.target.value }))
-                              }
-                              placeholder="DE123456789"
-                              className="rounded-xl mt-1"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {isFieldMissing('registrationNumber') && (
-                        <div>
-                          <Label
-                            htmlFor="modal-registrationNumber"
-                            className="text-sm font-medium text-gray-700"
-                          >
-                            Handelsregisternummer
-                          </Label>
-                          <Input
-                            id="modal-registrationNumber"
-                            value={modalFormData.registrationNumber}
-                            onChange={e =>
-                              setModalFormData(prev => ({
-                                ...prev,
-                                registrationNumber: e.target.value,
-                              }))
-                            }
-                            placeholder="HRB 12345"
-                            className="rounded-xl mt-1"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </ModalCardSection>
-                )}
-
-                {/* Bankdaten */}
-                {(isFieldMissing('iban') || isFieldMissing('bic')) && (
-                  <ModalCardSection title="Bankdaten" variant="warning">
-                    <div className="space-y-4">
-                      {isFieldMissing('iban') && (
-                        <div>
-                          <Label htmlFor="modal-iban" className="text-sm font-medium text-gray-700">
-                            IBAN
-                          </Label>
-                          <Input
-                            id="modal-iban"
-                            value={modalFormData.iban}
-                            onChange={e =>
-                              setModalFormData(prev => ({ ...prev, iban: e.target.value }))
-                            }
-                            placeholder="DE89 3704 0044 0532 0130 00"
-                            className="rounded-xl mt-1"
-                          />
-                        </div>
-                      )}
-
-                      {isFieldMissing('bic') && (
-                        <div>
-                          <Label htmlFor="modal-bic" className="text-sm font-medium text-gray-700">
-                            BIC
-                          </Label>
-                          <Input
-                            id="modal-bic"
-                            value={modalFormData.bic}
-                            onChange={e =>
-                              setModalFormData(prev => ({ ...prev, bic: e.target.value }))
-                            }
-                            placeholder="COBADEFFXXX"
-                            className="rounded-xl mt-1"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </ModalCardSection>
-                )}
-
-                {/* Kontaktdaten */}
-                {isFieldMissing('contactEmail') && (
-                  <ModalCardSection title="Kontaktdaten" variant="default">
-                    <div>
-                      <Label
-                        htmlFor="modal-contactEmail"
-                        className="text-sm font-medium text-gray-700"
-                      >
-                        E-Mail
-                      </Label>
-                      <Input
-                        id="modal-contactEmail"
-                        type="email"
-                        value={modalFormData.contactEmail}
-                        onChange={e =>
-                          setModalFormData(prev => ({ ...prev, contactEmail: e.target.value }))
-                        }
-                        placeholder="info@mustermann.de"
-                        className="rounded-xl mt-1"
-                      />
-                    </div>
-                  </ModalCardSection>
-                )}
-
-                {/* Aktionen */}
-                <ModalCardActions>
+                <div className="space-y-1">
+                  <Label>Empfänger</Label>
+                  <Input
+                    value={emailTo}
+                    onChange={e => setEmailTo(e.target.value)}
+                    placeholder="kunde@example.com"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Betreff</Label>
+                  <Input
+                    value={emailSubject}
+                    onChange={e => setEmailSubject(e.target.value)}
+                    placeholder="Angebot …"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Text</Label>
+                  <Textarea
+                    rows={6}
+                    value={emailBody}
+                    onChange={e => setEmailBody(e.target.value)}
+                    placeholder="Ihre Nachricht …"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
                   <Button
-                    className="bg-[#14ad9f] hover:bg-[#129488] rounded-full py-3"
-                    onClick={handleSaveEInvoiceData}
-                    disabled={isSubmitting}
+                    type="button"
+                    onClick={sendEmailWithPdf}
+                    disabled={sendingEmail}
+                    className="bg-[#14ad9f] hover:bg-[#129488] text-white"
                   >
-                    {isSubmitting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {sendingEmail ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                    )}
-                    Speichern und E-Rechnung aktivieren
+                      <Mail className="w-4 h-4 mr-2" />
+                    )}{' '}
+                    Jetzt senden
                   </Button>
-
-                  <Button
-                    variant="outline"
-                    className="rounded-full py-3"
-                    onClick={() => setShowEInvoiceModal(false)}
-                    disabled={isSubmitting}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setEmailCardOpen(false)}>
                     Abbrechen
                   </Button>
-                </ModalCardActions>
-              </ModalCardContent>
-            </ModalCard>
-          </div>
+                </div>
+                <div className="text-xs text-gray-500">
+                  {emailAttachmentReady ? (
+                    <>Anhang bereit: {emailAttachmentName}</>
+                  ) : emailAttachmentError ? (
+                    <>
+                      Anhang fehlgeschlagen: {emailAttachmentError}
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="px-1"
+                        onClick={async () => {
+                          try {
+                            setEmailAttachmentError(null);
+                            setEmailAttachmentReady(false);
+                            const data = buildPreviewData();
+                            const filename = `Angebot-${(data.companyName || 'Angebot').replace(/[^a-z0-9]+/gi, '-')}-${data.date}.pdf`;
+                            setEmailAttachmentName(filename);
+                            await new Promise(r => setTimeout(r, 100));
+                            const blob = await generatePdfBlob();
+                            if (!blob || (blob as any).size === 0) throw new Error('Leeres PDF');
+                            const base64 = await blobToBase64(blob);
+                            setEmailAttachmentB64(base64);
+                            setEmailAttachmentReady(true);
+                          } catch (err: any) {
+                            setEmailAttachmentError(
+                              err?.message || 'PDF konnte nicht erstellt werden'
+                            );
+                            setEmailAttachmentReady(false);
+                          }
+                        }}
+                      >
+                        Erneut erstellen
+                      </Button>
+                    </>
+                  ) : (
+                    <>Anhang wird erstellt …</>
+                  )}{' '}
+                  • Absender:{' '}
+                  {(() => {
+                    const data = buildPreviewData();
+                    const slug = (data.companyName || 'taskilo')
+                      .normalize('NFKD')
+                      .replace(/[\u0300-\u036f]/g, '')
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '');
+                    return `${slug}@taskilo.de`;
+                  })()}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      )}
+
+      {/* Vorschau-Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-[1000px] w-full p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>Vorschau Angebot</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6">
+            <div className="border rounded-md overflow-auto bg-white" style={{ maxHeight: '75vh' }}>
+              <div className="p-4">
+                {(() => {
+                  if (loadingTemplate) {
+                    return (
+                      <div className="flex items-center justify-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                        <span className="ml-2">Template wird geladen...</span>
+                      </div>
+                    );
+                  }
+
+                  const TemplateComponent = renderTemplateComponent(selectedTemplate);
+                  const previewData = buildPreviewData();
+
+                  return (
+                    <TemplateComponent
+                      data={previewData as any}
+                      companySettings={{
+                        companyName: previewData.companyName,
+                        logoUrl: previewData.companyLogo || previewData.profilePictureURL,
+                        address: (() => {
+                          const lines = (previewData.companyAddress || '').split('\n');
+                          return {
+                            street: lines[0] || '',
+                            zipCode: (lines[1] || '').split(' ')[0] || '',
+                            city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+                            country: lines[2] || undefined,
+                          };
+                        })(),
+                        contactInfo: {
+                          email: previewData.companyEmail,
+                          phone: previewData.companyPhone,
+                          website: previewData.companyWebsite,
+                        },
+                        vatId: previewData.companyVatId,
+                        taxId: previewData.companyTaxNumber,
+                        commercialRegister: previewData.companyRegister,
+                        bankDetails: previewData.bankDetails,
+                      }}
+                      customizations={{ showLogo: true }}
+                    />
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Neues Produkt */}
+      <NewProductModal
+        open={createProductOpen}
+        onOpenChange={setCreateProductOpen}
+        defaultValues={newProduct}
+        saving={creatingProduct}
+        onSave={async vals => {
+          if (!uid || !vals.name.trim()) return;
+          setCreatingProduct(true);
+          try {
+            const itemId = await InventoryService.addInventoryItem(uid, {
+              name: vals.name.trim(),
+              description: vals.description || undefined,
+              sku: vals.sku || '',
+              category: vals.category || 'Allgemein',
+              unit: vals.unit || 'Stk',
+              currentStock: vals.stock || 0,
+              reservedStock: 0,
+              availableStock: (vals.stock || 0) - 0,
+              minStock: 0,
+              maxStock: undefined,
+              purchasePrice: Number(vals.purchaseNet) || 0,
+              sellingPrice: Number(vals.sellingNet) || 0,
+              supplierName: undefined,
+              supplierContact: undefined,
+              location: undefined,
+              barcode: undefined,
+              image: vals.imageUrl || undefined,
+              status: 'active',
+              weight: undefined,
+              dimensions: undefined,
+              notes: vals.internalNote || undefined,
+            });
+
+            if (createProductForIndex !== null) {
+              setItems(prev =>
+                prev.map((it, i) =>
+                  i === createProductForIndex
+                    ? {
+                        ...it,
+                        inventoryItemId: itemId,
+                        unit: vals.unit,
+                        unitPrice:
+                          Number.isFinite(it.unitPrice) && it.unitPrice > 0
+                            ? it.unitPrice
+                            : vals.sellingNet || 0,
+                        total: computeItemTotalNet(
+                          it.quantity,
+                          Number.isFinite(it.unitPrice) && it.unitPrice > 0
+                            ? it.unitPrice
+                            : vals.sellingNet || 0
+                        ),
+                      }
+                    : it
+                )
+              );
+            }
+
+            toast.success('Produkt angelegt und Position verknüpft');
+            setCreateProductOpen(false);
+          } catch (err) {
+            console.error(err);
+            toast.error('Produkt konnte nicht angelegt werden');
+          } finally {
+            setCreatingProduct(false);
+          }
+        }}
+      />
+
+      {/* Modal: Neuer Kunde */}
+      <NewCustomerModal
+        open={createCustomerOpen}
+        onOpenChange={setCreateCustomerOpen}
+        defaultValues={{
+          name: formData.customerName || '',
+        }}
+        saving={creatingCustomer}
+        persistDirectly={true}
+        companyId={uid}
+        onSaved={async customerId => {
+          try {
+            // Lade Kunden neu mit der existierenden Funktion
+            const response = await getCustomers(uid);
+            if (response.success && response.customers) {
+              setCustomers(response.customers);
+            }
+            toast.success('Kunde erfolgreich erstellt');
+          } catch (error) {
+            console.error('Fehler beim Aktualisieren der Kundenliste:', error);
+          }
+        }}
+      />
+
+      {/* Modal: Textvorlagen verwalten */}
+      <Dialog open={showTemplateModal} onOpenChange={setShowTemplateModal}>
+        <DialogContent className="max-w-[800px] w-full">
+          <DialogHeader>
+            <DialogTitle>Textvorlagen verwalten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Hier können Sie neue Textvorlagen für Kopf- und Fußtexte erstellen und verwalten.
+            </p>
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>Textvorlagen-Verwaltung wird in Kürze verfügbar sein.</p>
+              <p className="text-xs mt-1">
+                Navigieren Sie zu Finance → Textvorlagen für die vollständige Verwaltung.
+              </p>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setShowTemplateModal(false)}>Schließen</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+// Ende CreateQuotePage

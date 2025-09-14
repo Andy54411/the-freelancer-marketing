@@ -85,6 +85,8 @@ interface CreateStripeAccountClientData {
   mcc?: string;
   iban?: string;
   accountHolder?: string;
+  bic?: string; // 🔧 ADD: BIC für Stripe Function Interface
+  bankName?: string; // 🔧 ADD: bankName für Stripe Function Interface
   profilePictureFileId?: string;
   businessLicenseFileId?: string;
   masterCraftsmanCertificateFileId?: string;
@@ -154,6 +156,10 @@ export default function Step5CompanyPage() {
     setIban,
     accountHolder,
     setAccountHolder,
+    bic, // 🔧 ADD: BIC aus Registration Context
+    setBic, // 🔧 ADD: BIC setter
+    bankName, // 🔧 ADD: bankName aus Registration Context
+    setBankName, // 🔧 ADD: bankName setter
     dateOfBirth,
     personalStreet,
     personalHouseNumber,
@@ -428,7 +434,7 @@ export default function Step5CompanyPage() {
   );
 
   const isFormValid = useCallback((): boolean => {
-    if (!iban?.trim() || !accountHolder?.trim()) return false;
+    if (!iban?.trim() || !accountHolder?.trim() || !bic?.trim() || !bankName?.trim()) return false; // 🔧 ADD: BIC und bankName Validierung
     if (!(identityFrontFile instanceof File) || !(identityBackFile instanceof File)) return false;
     if (!(profilePictureFile instanceof File)) return false;
     if (!hourlyRate || parseFloat(hourlyRate) <= 0) return false;
@@ -529,6 +535,8 @@ export default function Step5CompanyPage() {
       const missingFieldsList: string[] = [];
       if (!iban?.trim()) missingFieldsList.push('IBAN');
       if (!accountHolder?.trim()) missingFieldsList.push('Kontoinhaber');
+      if (!bic?.trim()) missingFieldsList.push('BIC'); // 🔧 ADD: BIC Validierung
+      if (!bankName?.trim()) missingFieldsList.push('Bank Name'); // 🔧 ADD: bankName Validierung
       if (!(identityFrontFile instanceof File)) missingFieldsList.push('Ausweis Vorderseite');
       if (!(identityBackFile instanceof File)) missingFieldsList.push('Ausweis Rückseite');
       if (!(profilePictureFile instanceof File)) missingFieldsList.push('Profilbild');
@@ -757,10 +765,11 @@ export default function Step5CompanyPage() {
         isActualExecutive: isActualExecutive ?? deleteField(),
         actualRepresentativeTitle: actualRepresentativeTitle || null,
 
-        // Banking
-        iban: iban || '',
-        accountHolder: accountHolder?.trim() || '',
-        bankCountry: companyCountry || personalCountry || 'DE',
+        // 🔧 FIX: Banking-Daten NICHT in Root-Level speichern - nur step4 Struktur verwenden
+        // Banking-Daten werden durch Stripe Function in step4 geschrieben
+        // iban: iban || '',  // ❌ ENTFERNT: Root-Level Banking überschreibt step4
+        // accountHolder: accountHolder?.trim() || '',  // ❌ ENTFERNT
+        // bankCountry: companyCountry || personalCountry || 'DE',  // ❌ ENTFERNT
 
         // Stripe Dokumente
         identityFrontUrlStripeId: idFrontResult.stripeFileId,
@@ -999,6 +1008,8 @@ export default function Step5CompanyPage() {
         mcc: derivedMcc,
         iban,
         accountHolder: accountHolder?.trim(),
+        bic: bic?.trim(), // 🔧 ADD: BIC an Stripe Function übergeben
+        bankName: bankName?.trim(), // 🔧 ADD: bankName an Stripe Function übergeben
         profilePictureFileId: profilePicResult.stripeFileId,
         businessLicenseFileId: businessLicResult.stripeFileId,
         masterCraftsmanCertificateFileId: masterCertStripeFileId,
@@ -1201,6 +1212,40 @@ export default function Step5CompanyPage() {
                 onChange={e => setIban(e.target.value.replace(/\s/g, ''))}
                 className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !iban?.trim() ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="DE89..."
+                disabled={isLoading || isConvertingImage}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="bic"
+                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !bic?.trim() ? 'text-red-600' : 'text-gray-700'}`}
+              >
+                BIC*
+              </label>
+              <input
+                type="text"
+                id="bic"
+                value={bic || ''}
+                onChange={e => setBic(e.target.value.toUpperCase().trim())}
+                className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !bic?.trim() ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="COBADEFFXXX"
+                disabled={isLoading || isConvertingImage}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="bankName"
+                className={`block text-sm font-medium mb-1 ${hasAttemptedSubmit && !bankName?.trim() ? 'text-red-600' : 'text-gray-700'}`}
+              >
+                Bank Name*
+              </label>
+              <input
+                type="text"
+                id="bankName"
+                value={bankName || ''}
+                onChange={e => setBankName(e.target.value.trim())}
+                className={`mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm ${hasAttemptedSubmit && !bankName?.trim() ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="Commerzbank AG"
                 disabled={isLoading || isConvertingImage}
               />
             </div>

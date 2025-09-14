@@ -1907,5 +1907,30 @@ service cloud.firestore {
       // Support Staff kann alle Feedbacks lesen
       allow read: if isSupportStaff();
     }
+
+    // 📄 TEXT TEMPLATES COLLECTION - SevDesk-like Text Template System
+    match /textTemplates/{templateId} {
+      // Companies können ihre eigenen Text-Templates erstellen
+      allow create: if request.auth != null 
+                    && isCompany()
+                    && request.resource.data.companyId == request.auth.uid
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.keys().hasAll(['name', 'category', 'objectType', 'textType', 'text', 'companyId', 'createdBy', 'isDefault', 'isPrivate']);
+
+      // Companies können ihre eigenen Text-Templates lesen und auflisten
+      allow read, list: if request.auth != null 
+                        && (resource.data.companyId == request.auth.uid || 
+                            isSupportStaff());
+
+      // Companies können ihre eigenen Text-Templates aktualisieren
+      allow update: if request.auth != null 
+                    && resource.data.companyId == request.auth.uid
+                    && resource.data.createdBy == request.auth.uid;
+
+      // Companies können ihre eigenen Text-Templates löschen
+      allow delete: if request.auth != null 
+                    && (resource.data.companyId == request.auth.uid || 
+                        isSupportStaff());
+    }
   }
 }

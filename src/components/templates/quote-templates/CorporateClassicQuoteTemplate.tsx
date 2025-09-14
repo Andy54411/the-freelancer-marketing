@@ -15,8 +15,71 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
   };
   const formatCurrency = (value?: number) =>
     typeof value === 'number'
-      ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+      ? new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: data.currency || 'EUR',
+        }).format(value)
       : '';
+
+  // 🇩🇪 Deutsche Umsatzsteuer-Hinweistexte nach UStG
+  const getTaxNotice = () => {
+    switch (data.taxRule) {
+      case 'DE_TAXABLE':
+        return null; // Keine besonderen Hinweise bei normaler Besteuerung
+      case 'DE_EXEMPT_4_USTG':
+        return 'Steuerfreie Leistung gemäß § 4 UStG.';
+      case 'DE_REVERSE_13B':
+        return 'Steuerschuldnerschaft des Leistungsempfängers gemäß § 13b UStG.';
+      case 'EU_REVERSE_18B':
+        return 'Reverse Charge Verfahren gemäß § 18b UStG (EU).';
+      case 'EU_INTRACOMMUNITY_SUPPLY':
+        return 'Innergemeinschaftliche Lieferung gemäß § 4 Nr. 1b UStG ist steuerbefreit.';
+      case 'EU_OSS':
+        return 'Besteuerung nach OSS-Verfahren (One-Stop-Shop).';
+      case 'NON_EU_EXPORT':
+        return 'Ausfuhrlieferung gemäß § 4 Nr. 1a UStG ist steuerbefreit.';
+      case 'NON_EU_OUT_OF_SCOPE':
+        return 'Leistung nicht im Inland steuerbar.';
+      default:
+        // Prüfung auf Kleinunternehmer über isSmallBusiness
+        return data.isSmallBusiness ? 'Gemäß § 19 UStG wird keine Umsatzsteuer erhoben.' : null;
+    }
+  };
+
+  // 💰 Intelligente Preishinweise basierend auf Währung und Steuereinstellungen
+  const getPriceNotice = () => {
+    const currency = data.currency || 'EUR';
+    const isGermanCurrency = currency === 'EUR';
+    const isSwissCurrency = currency === 'CHF';
+    const priceInput = (data as any).priceInput; // TypeScript-Workaround
+
+    // Schweizer Franken - andere Steuerlogik
+    if (isSwissCurrency) {
+      if (priceInput === 'brutto') {
+        return 'inkl. MwSt.';
+      } else {
+        return 'zzgl. MwSt.';
+      }
+    }
+
+    // Deutsche/EU Währung
+    if (isGermanCurrency) {
+      if (data.isSmallBusiness) {
+        return 'als Kleinunternehmer ohne USt.';
+      } else if (priceInput === 'brutto') {
+        return 'inkl. USt.';
+      } else {
+        return 'zzgl. USt.';
+      }
+    }
+
+    // Andere Währungen - generisch
+    if (priceInput === 'brutto') {
+      return 'inkl. Steuern';
+    } else {
+      return 'zzgl. anfallender Steuern';
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-8 font-serif text-sm">
@@ -113,54 +176,68 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
       {/* Leistungen & Preise */}
       <div className="mb-8">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Leistungen & Preise</h3>
-        <table className="w-full border-collapse border border-gray-400">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 p-3 text-left font-bold">Pos.</th>
-              <th className="border border-gray-300 p-3 text-left font-bold">Beschreibung</th>
-              <th className="border border-gray-300 p-3 text-center font-bold">Menge</th>
-              <th className="border border-gray-300 p-3 text-center font-bold">Rabatt</th>
-              <th className="border border-gray-300 p-3 text-right font-bold">Einzelpreis</th>
-              <th className="border border-gray-300 p-3 text-right font-bold">Gesamt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.items?.map((item, index) => (
-              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border border-gray-300 p-3 text-center">
-                  {String(index + 1).padStart(2, '0')}
-                </td>
-                <td className="border border-gray-300 p-3">
-                  <div
-                    className={`font-semibold text-gray-900${item.category === 'discount' ? ' text-red-600' : ''}`}
-                  >
-                    {item.description}
-                  </div>
-                  {item.details && (
-                    <div className="text-sm text-gray-600 mt-1 leading-relaxed">{item.details}</div>
+        {(() => {
+          // Check if any item has a discount
+          const hasAnyDiscount =
+            data.items?.some(item => item.discountPercent && item.discountPercent > 0) || false;
+
+          return (
+            <table className="w-full border-collapse border border-gray-400">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-gray-300 p-3 text-left font-bold">Pos.</th>
+                  <th className="border border-gray-300 p-3 text-left font-bold">Beschreibung</th>
+                  <th className="border border-gray-300 p-3 text-center font-bold">Menge</th>
+                  {hasAnyDiscount && (
+                    <th className="border border-gray-300 p-3 text-center font-bold">Rabatt</th>
                   )}
-                </td>
-                <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
-                <td className="border border-gray-300 p-3 text-center">
-                  {!item.category && item.discountPercent && item.discountPercent > 0
-                    ? `${item.discountPercent}%`
-                    : '-'}
-                </td>
-                <td className="border border-gray-300 p-3 text-right">
-                  {formatCurrency(item.unitPrice)}
-                </td>
-                <td className="border border-gray-300 p-3 text-right font-semibold">
-                  {(() => {
-                    const discountFactor =
-                      item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
-                    const totalPrice = item.quantity * item.unitPrice * discountFactor;
-                    return formatCurrency(totalPrice);
-                  })()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <th className="border border-gray-300 p-3 text-right font-bold">Einzelpreis</th>
+                  <th className="border border-gray-300 p-3 text-right font-bold">Gesamt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items?.map((item, index) => (
+                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="border border-gray-300 p-3 text-center">
+                      {String(index + 1).padStart(2, '0')}
+                    </td>
+                    <td className="border border-gray-300 p-3">
+                      <div
+                        className={`font-semibold text-gray-900${item.category === 'discount' ? ' text-red-600' : ''}`}
+                      >
+                        {item.description}
+                      </div>
+                      {item.details && (
+                        <div className="text-sm text-gray-600 mt-1 leading-relaxed">
+                          {item.details}
+                        </div>
+                      )}
+                    </td>
+                    <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
+                    {hasAnyDiscount && (
+                      <td className="border border-gray-300 p-3 text-center">
+                        {!item.category && item.discountPercent && item.discountPercent > 0
+                          ? `${item.discountPercent}%`
+                          : '-'}
+                      </td>
+                    )}
+                    <td className="border border-gray-300 p-3 text-right">
+                      {formatCurrency(item.unitPrice)}
+                    </td>
+                    <td className="border border-gray-300 p-3 text-right font-semibold">
+                      {(() => {
+                        const discountFactor =
+                          item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
+                        const totalPrice = item.quantity * item.unitPrice * discountFactor;
+                        return formatCurrency(totalPrice);
+                      })()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        })()}
       </div>
 
       {/* Zusammenfassung */}
@@ -200,10 +277,7 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
             {data.paymentTerms && <li>• Zahlungsbedingungen: {data.paymentTerms}</li>}
             <li>• Angebot gültig bis: {formatDate(data.validUntil)}</li>
             {data.deliveryTerms && <li>• Lieferung/Leistung: {data.deliveryTerms}</li>}
-            <li>
-              • Alle Preise verstehen sich{' '}
-              {data.isSmallBusiness ? 'als Kleinunternehmer ohne USt.' : 'zzgl. USt.'}
-            </li>
+            <li>• Alle Preise verstehen sich {getPriceNotice()}</li>
           </ul>
         </div>
         <div className="border border-gray-300 rounded p-6 bg-gray-50">
@@ -233,6 +307,13 @@ export const CorporateClassicQuoteTemplate: React.FC<TemplateProps> = ({
 
       {/* Fußbereich */}
       <div className="border-t-2 border-gray-300 pt-6">
+        {/* 🇩🇪 Umsatzsteuer-Hinweise */}
+        {getTaxNotice() && (
+          <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded">
+            <p className="text-sm text-blue-800 font-medium">{getTaxNotice()}</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-3 gap-8 text-sm text-gray-700 mb-6">
           <div>
             <h5 className="font-bold text-gray-900 mb-2">Unternehmensdaten</h5>

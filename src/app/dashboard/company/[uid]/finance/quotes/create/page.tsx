@@ -46,6 +46,8 @@ import {
   type QuoteTemplate,
 } from '@/components/templates/quote-templates';
 import { UserPreferencesService } from '@/lib/userPreferences';
+import { TextTemplateService } from '@/services/TextTemplateService';
+import { formatCurrency, formatDate } from '@/lib/utils';
 type PreviewTemplateData = {
   quoteNumber: string;
   date: string;
@@ -67,6 +69,7 @@ type PreviewTemplateData = {
   profilePictureURL?: string;
   companyVatId?: string;
   companyTaxNumber?: string;
+  companyRegister?: string;
   items: Array<{
     id?: string;
     description: string;
@@ -185,6 +188,11 @@ export default function CreateQuotePage() {
   const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [showCustomerSearchPopup, setShowCustomerSearchPopup] = useState(false);
+
+  // Textvorlagen State
+  const [textTemplates, setTextTemplates] = useState<any[]>([]);
+  const [selectedHeadTemplate, setSelectedHeadTemplate] = useState<string>('');
+  const [selectedFooterTemplate, setSelectedFooterTemplate] = useState<string>('');
 
   // Sync Preisfelder Netto/Brutto
   const syncGrossFromNet = (net: number, rate: number) =>
@@ -344,6 +352,70 @@ export default function CreateQuotePage() {
     itemsRef.current = items;
   }, [items]);
 
+  // Platzhalter für Textvorlagen ersetzen
+  const replacePlaceholders = (text: string): string => {
+    if (!text) return '';
+
+    const subtotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
+    const total = subtotal * (1 + (taxRate || 0) / 100);
+    const vatAmount = total - subtotal;
+
+    const placeholders = {
+      '[%KUNDENNAME%]': formData.customerName || '',
+      '[%KUNDENFIRMA%]': formData.customerName || '',
+      '[%ANGEBOTSNUMMER%]': '', // Wird beim Speichern generiert
+      '[%ANGEBOTSDATUM%]': formatDate(new Date().toISOString()),
+      '[%GUELTIGKEITSDATUM%]': formData.validUntil ? formatDate(formData.validUntil) : '',
+      '[%GESAMTBETRAG%]': formatCurrency(total),
+      '[%NETTOBETRAG%]': formatCurrency(subtotal),
+      '[%MEHRWERTSTEUERBETRAG%]': formatCurrency(vatAmount),
+      '[%FIRMENNAME%]': company?.name || '',
+      '[%HEUTE%]': formatDate(new Date().toISOString()),
+      '[%IBAN%]': company?.bankDetails?.iban || '',
+      '[%BIC%]': company?.bankDetails?.bic || '',
+      '[%BANKNAME%]': company?.bankDetails?.bankName || '',
+      '[%KONTOINHABER%]': company?.bankDetails?.accountHolder || '',
+      '[%USTID%]': company?.vatId || '',
+      '[%STEUERNUMMER%]': company?.taxNumber || '',
+      '[%HANDELSREGISTER%]': company?.commercialRegister || '',
+      '[%ZAHLUNGSBEDINGUNGEN%]': formData.paymentTerms || '',
+      '[%LIEFERBEDINGUNGEN%]': formData.deliveryTerms || '',
+    };
+
+    let result = text;
+    Object.entries(placeholders).forEach(([placeholder, value]) => {
+      result = result.replace(
+        new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+        value
+      );
+    });
+
+    return result;
+  };
+
+  // Template-Auswahl Handler
+  const handleHeadTemplateChange = (templateId: string) => {
+    setSelectedHeadTemplate(templateId);
+    const template = textTemplates.find(t => t.id === templateId);
+    if (template) {
+      setFormData(prev => ({
+        ...prev,
+        headTextHtml: replacePlaceholders(template.text),
+      }));
+    }
+  };
+
+  const handleFooterTemplateChange = (templateId: string) => {
+    setSelectedFooterTemplate(templateId);
+    const template = textTemplates.find(t => t.id === templateId);
+    if (template) {
+      setFormData(prev => ({
+        ...prev,
+        footerText: replacePlaceholders(template.text),
+      }));
+    }
+  };
+
   // Bei jeder Items-Änderung Popover-Entscheidungen neu evaluieren
   useEffect(() => {
     setPopoverOpenIds(prev => {
@@ -382,6 +454,40 @@ export default function CreateQuotePage() {
     loadCustomers();
   }, [uid, user]);
 
+  // Textvorlagen laden
+  useEffect(() => {
+    const loadTextTemplates = async () => {
+      if (!uid || !user || user.uid !== uid) return;
+      try {
+        const templates = await TextTemplateService.getTextTemplatesByType(uid, 'QUOTE');
+        setTextTemplates(templates);
+
+        // Standard-Templates automatisch auswählen und in formData setzen
+        const headTemplate = templates.find(t => t.textType === 'HEAD' && t.isDefault);
+        const footerTemplate = templates.find(t => t.textType === 'FOOT' && t.isDefault);
+
+        if (headTemplate) {
+          setSelectedHeadTemplate(headTemplate.id);
+          setFormData(prev => ({
+            ...prev,
+            headTextHtml: replacePlaceholders(headTemplate.text),
+          }));
+        }
+        if (footerTemplate) {
+          setSelectedFooterTemplate(footerTemplate.id);
+          setFormData(prev => ({
+            ...prev,
+            footerText: replacePlaceholders(footerTemplate.text),
+          }));
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Textvorlagen:', error);
+      }
+    };
+
+    loadTextTemplates();
+  }, [uid, user]);
+
   // Popup schließen beim Klicken außerhalb
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -398,6 +504,7 @@ export default function CreateQuotePage() {
   }, [showCustomerSearchPopup]);
 
   // Firma laden (für Vorschau: Name, Adresse, Logo/Profilbild, Kontakt, Steuer/Bank)
+  // Wichtig: settings als Dependency, damit Template-Daten automatisch aktualisiert werden
   useEffect(() => {
     const loadCompany = async () => {
       if (!uid || !user || user.uid !== uid) return;
@@ -409,7 +516,7 @@ export default function CreateQuotePage() {
       }
     };
     loadCompany();
-  }, [uid, user]);
+  }, [uid, user, settings]); // settings als Dependency hinzugefügt für automatische Template-Updates
 
   // Steuerlogik aus der Auswahl ableiten (berücksichtigt Standard-Steuersatz aus Einstellungen)
   useEffect(() => {
@@ -669,6 +776,13 @@ export default function CreateQuotePage() {
         (company as any)?.step3?.taxNumber ||
         ((settings as any)?.taxNumber as string) ||
         undefined,
+      companyRegister:
+        (company?.companyRegisterPublic as string) ||
+        (company?.companyRegister as string) ||
+        (company as any)?.step3?.companyRegister ||
+        ((settings as any)?.districtCourt as string) ||
+        ((settings as any)?.companyRegister as string) ||
+        undefined,
       items: items.map(it => {
         const qty = Number.isFinite(it.quantity) ? it.quantity : 0;
         const unit = Number.isFinite(it.unitPrice) ? it.unitPrice : 0;
@@ -698,11 +812,25 @@ export default function CreateQuotePage() {
       isSmallBusiness: settings?.ust === 'kleinunternehmer' || taxRate === 0,
       bankDetails: company
         ? {
-            iban: (company?.iban as string) || undefined,
-            bic: (company?.bic as string) || undefined,
-            bankName: (company?.bankName as string) || undefined,
+            iban:
+              (company as any)?.step4?.iban ||
+              (company?.iban as string) ||
+              ((settings as any)?.step4?.iban as string) ||
+              undefined,
+            bic:
+              (company as any)?.step4?.bic ||
+              (company?.bic as string) ||
+              ((settings as any)?.step4?.bic as string) ||
+              undefined,
+            bankName:
+              (company as any)?.step4?.bankName ||
+              (company?.bankName as string) ||
+              ((settings as any)?.step4?.bankName as string) ||
+              undefined,
             accountHolder:
+              (company as any)?.step4?.accountHolder ||
               (company?.accountHolder as string) ||
+              ((settings as any)?.step4?.accountHolder as string) ||
               (settings as any)?.accountHolder ||
               (companyName as string) ||
               undefined,
@@ -1366,9 +1494,30 @@ export default function CreateQuotePage() {
         </CardHeader>
         <CardContent className="space-y-2">
           <Label>Einleitung / Kopf-Text</Label>
+          {/* Head Template Auswahl */}
+          <div className="mb-3">
+            <Select value={selectedHeadTemplate} onValueChange={handleHeadTemplateChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Kopf-Textvorlage auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {textTemplates
+                  .filter(template => template.textType === 'HEAD')
+                  .map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                      {template.isDefault && ' (Standard)'}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
           <FooterTextEditor
             value={formData.headTextHtml}
             onChange={(html: string) => setFormData(prev => ({ ...prev, headTextHtml: html }))}
+            companyId={uid}
+            objectType="QUOTE"
+            textType="HEAD"
           />
         </CardContent>
       </Card>
@@ -1692,6 +1841,9 @@ export default function CreateQuotePage() {
           <FooterTextEditor
             value={formData.footerText}
             onChange={(html: string) => setFormData(prev => ({ ...prev, footerText: html }))}
+            companyId={uid}
+            objectType="QUOTE"
+            textType="FOOT"
           />
           <div className="text-xs text-gray-500">Verfügbare Platzhalter: [%KONTAKTPERSON%]</div>
         </CardContent>
@@ -2036,6 +2188,44 @@ export default function CreateQuotePage() {
         </CardContent>
       </Card>
 
+      {/* Fußtext */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileText className="h-5 w-5 mr-2 text-[#14ad9f]" />
+            Fußtext
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label>Fußtext / Schlussbemerkungen</Label>
+          {/* Footer Template Auswahl */}
+          <div className="mb-3">
+            <Select value={selectedFooterTemplate} onValueChange={handleFooterTemplateChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Fußtext-Vorlage auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {textTemplates
+                  .filter(template => template.textType === 'FOOT')
+                  .map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                      {template.isDefault && ' (Standard)'}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <FooterTextEditor
+            value={formData.footerText}
+            onChange={(html: string) => setFormData(prev => ({ ...prev, footerText: html }))}
+            companyId={uid}
+            objectType="QUOTE"
+            textType="FOOT"
+          />
+        </CardContent>
+      </Card>
+
       {/* Interne Notizen */}
       <Card>
         <CardHeader>
@@ -2299,6 +2489,7 @@ export default function CreateQuotePage() {
                         },
                         vatId: previewData.companyVatId,
                         taxId: previewData.companyTaxNumber,
+                        commercialRegister: previewData.companyRegister,
                         bankDetails: previewData.bankDetails,
                       }}
                       customizations={{ showLogo: true }}

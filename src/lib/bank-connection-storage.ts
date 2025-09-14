@@ -124,7 +124,7 @@ export async function storeBankConnection(
 }
 
 /**
- * Speichert oder aktualisiert Bankkonten in der User-Datenbank
+ * Speichert oder aktualisiert Bankkonten in der Company-Datenbank (step4 Struktur)
  * Unterstützt mehrere Banken und verschiedene Kontotypen
  */
 export async function storeBankAccounts(
@@ -132,12 +132,30 @@ export async function storeBankAccounts(
   accounts: StoredBankAccount[]
 ): Promise<void> {
   try {
-    const userDocRef = db.collection('users').doc(firebaseUid);
+    // 🔧 FIX: Für Unternehmen in companies Collection mit step4 Struktur speichern
+    const companyDocRef = db.collection('companies').doc(firebaseUid);
     const now = new Date();
 
-    // Update-Daten vorbereiten
+    // Extrahiere primäres Banking-Konto für step4 Struktur
+    const primaryAccount = accounts.find(acc => acc.isDefault) || accounts[0];
+
+    if (primaryAccount) {
+      // Update step4 Banking-Daten (wie Stripe Function)
+      const step4BankingData = {
+        'step4.iban': primaryAccount.iban || undefined,
+        'step4.bic': primaryAccount.bic || undefined,
+        'step4.bankName': primaryAccount.bankName || undefined,
+        'step4.accountHolder': primaryAccount.owner?.name || undefined,
+        'step4.lastFinAPISync': FieldValue.serverTimestamp(),
+      };
+
+      await companyDocRef.set(step4BankingData, { merge: true });
+    }
+
+    // Zusätzlich: Banking-Übersicht in separater banking Struktur für Dashboard
     const updateData: any = {
       'banking.lastSync': FieldValue.serverTimestamp(),
+      'banking.source': 'finapi',
       updatedAt: FieldValue.serverTimestamp(),
     };
 
@@ -150,14 +168,14 @@ export async function storeBankAccounts(
       }
       accountsByBank[account.bankId].push(account);
 
-      // Speichere jedes Konto individual
+      // Speichere jedes Konto individual für Dashboard
       updateData[`banking.accounts.${account.finapiAccountId}`] = {
         ...account,
         lastUpdated: now,
       };
     });
 
-    // Aktualisiere Bank-spezifische Informationen
+    // Aktualisiere Bank-spezifische Informationen für Dashboard
     Object.entries(accountsByBank).forEach(([bankId, bankAccounts]) => {
       const firstAccount = bankAccounts[0];
       updateData[`banking.banks.${bankId}.accountIds`] = bankAccounts.map(a => a.finapiAccountId);
@@ -170,9 +188,9 @@ export async function storeBankAccounts(
       updateData[`banking.banks.${bankId}.currency`] = firstAccount.currency;
     });
 
-    await userDocRef.update(updateData);
+    await companyDocRef.set(updateData, { merge: true });
 
-    // Aktualisiere Statistiken
+    // Aktualisiere Banking-Statistiken
     await updateBankingStatistics(firebaseUid);
   } catch (error) {
     throw new Error(`Failed to store bank accounts: ${error}`);
@@ -180,18 +198,19 @@ export async function storeBankAccounts(
 }
 
 /**
- * Aktualisiert Banking-Statistiken (Anzahl Banken, Konten, Gesamtsaldo)
+ * Aktualisiert Banking-Statistiken in companies Collection (Anzahl Banken, Konten, Gesamtsaldo)
  */
 export async function updateBankingStatistics(firebaseUid: string): Promise<void> {
   try {
-    const userDocRef = db.collection('users').doc(firebaseUid);
-    const userDoc = await userDocRef.get();
+    // 🔧 FIX: companies Collection statt users
+    const companyDocRef = db.collection('companies').doc(firebaseUid);
+    const companyDoc = await companyDocRef.get();
 
-    if (!userDoc.exists || !userDoc.data()?.banking) {
+    if (!companyDoc.exists || !companyDoc.data()?.banking) {
       return;
     }
 
-    const bankingData = userDoc.data()!.banking;
+    const bankingData = companyDoc.data()!.banking;
     const connections = bankingData.connections || {};
     const accounts = bankingData.accounts || {};
     const banks = bankingData.banks || {};
@@ -214,32 +233,36 @@ export async function updateBankingStatistics(firebaseUid: string): Promise<void
     // Währungen sammeln
     const currencies = new Set(Object.values(accounts).map((acc: any) => acc.currency || 'EUR'));
 
-    await userDocRef.update({
-      'banking.totalBanks': totalBanks,
-      'banking.totalConnections': totalConnections,
-      'banking.totalAccounts': totalAccounts,
-      'banking.totalBalance': totalBalance,
-      'banking.activeConnections': activeConnections,
-      'banking.currencies': Array.from(currencies),
-      'banking.lastStatsUpdate': FieldValue.serverTimestamp(),
-    });
+    await companyDocRef.set(
+      {
+        'banking.totalBanks': totalBanks,
+        'banking.totalConnections': totalConnections,
+        'banking.totalAccounts': totalAccounts,
+        'banking.totalBalance': totalBalance,
+        'banking.activeConnections': activeConnections,
+        'banking.currencies': Array.from(currencies),
+        'banking.lastStatsUpdate': FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
   } catch (error) {}
 }
 
 /**
- * Holt gespeicherte Bankverbindungen eines Users
+ * Holt gespeicherte Bankverbindungen einer Company
  * Gruppiert nach Banken für bessere Übersicht
  */
 export async function getUserBankConnections(firebaseUid: string): Promise<StoredBankConnection[]> {
   try {
-    const userDocRef = db.collection('users').doc(firebaseUid);
-    const userDoc = await userDocRef.get();
+    // 🔧 FIX: companies Collection statt users
+    const companyDocRef = db.collection('companies').doc(firebaseUid);
+    const companyDoc = await companyDocRef.get();
 
-    if (!userDoc.exists || !userDoc.data()?.banking?.connections) {
+    if (!companyDoc.exists || !companyDoc.data()?.banking?.connections) {
       return [];
     }
 
-    const connectionsData = userDoc.data()!.banking.connections;
+    const connectionsData = companyDoc.data()!.banking.connections;
     return Object.values(connectionsData) as StoredBankConnection[];
   } catch (error) {
     return [];
@@ -247,18 +270,19 @@ export async function getUserBankConnections(firebaseUid: string): Promise<Store
 }
 
 /**
- * Holt gespeicherte Bankkonten eines Users
+ * Holt gespeicherte Bankkonten einer Company
  */
 export async function getUserBankAccounts(firebaseUid: string): Promise<StoredBankAccount[]> {
   try {
-    const userDocRef = db.collection('users').doc(firebaseUid);
-    const userDoc = await userDocRef.get();
+    // 🔧 FIX: companies Collection statt users
+    const companyDocRef = db.collection('companies').doc(firebaseUid);
+    const companyDoc = await companyDocRef.get();
 
-    if (!userDoc.exists || !userDoc.data()?.banking?.accounts) {
+    if (!companyDoc.exists || !companyDoc.data()?.banking?.accounts) {
       return [];
     }
 
-    const accountsData = userDoc.data()!.banking.accounts;
+    const accountsData = companyDoc.data()!.banking.accounts;
     return Object.values(accountsData) as StoredBankAccount[];
   } catch (error) {
     return [];
@@ -266,7 +290,7 @@ export async function getUserBankAccounts(firebaseUid: string): Promise<StoredBa
 }
 
 /**
- * Holt gespeicherte Bankkonten eines Users gruppiert nach Banken
+ * Holt gespeicherte Bankkonten einer Company gruppiert nach Banken
  */
 export async function getUserBankAccountsByBank(
   firebaseUid: string
@@ -307,14 +331,15 @@ export async function getUserBankingOverview(firebaseUid: string): Promise<{
   };
 } | null> {
   try {
-    const userDocRef = db.collection('users').doc(firebaseUid);
-    const userDoc = await userDocRef.get();
+    // 🔧 FIX: companies Collection statt users
+    const companyDocRef = db.collection('companies').doc(firebaseUid);
+    const companyDoc = await companyDocRef.get();
 
-    if (!userDoc.exists || !userDoc.data()?.banking) {
+    if (!companyDoc.exists || !companyDoc.data()?.banking) {
       return null;
     }
 
-    const bankingData = userDoc.data()!.banking;
+    const bankingData = companyDoc.data()!.banking;
 
     return {
       banks: Object.values(bankingData.banks || {}),
@@ -349,13 +374,14 @@ export async function getAccountsByBank(
 }
 export async function hasUserBankingSetup(firebaseUid: string): Promise<boolean> {
   try {
-    const userDocRef = db.collection('users').doc(firebaseUid);
-    const userDoc = await userDocRef.get();
+    // 🔧 FIX: companies Collection statt users
+    const companyDocRef = db.collection('companies').doc(firebaseUid);
+    const companyDoc = await companyDocRef.get();
 
     return (
-      userDoc.exists &&
-      userDoc.data()?.banking?.isSetup === true &&
-      Object.keys(userDoc.data()?.banking?.connections || {}).length > 0
+      companyDoc.exists &&
+      companyDoc.data()?.banking?.isSetup === true &&
+      Object.keys(companyDoc.data()?.banking?.connections || {}).length > 0
     );
   } catch (error) {
     return false;
@@ -370,28 +396,33 @@ export async function deactivateBankConnection(
   connectionId: string
 ): Promise<void> {
   try {
-    const userDocRef = db.collection('users').doc(firebaseUid);
+    // 🔧 FIX: companies Collection statt users
+    const companyDocRef = db.collection('companies').doc(firebaseUid);
 
-    await userDocRef.update({
-      [`banking.connections.${connectionId}.connectionStatus`]: 'inactive',
-      [`banking.connections.${connectionId}.updatedAt`]: FieldValue.serverTimestamp(),
-      'banking.lastSync': FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    await companyDocRef.set(
+      {
+        [`banking.connections.${connectionId}.connectionStatus`]: 'inactive',
+        [`banking.connections.${connectionId}.updatedAt`]: FieldValue.serverTimestamp(),
+        'banking.lastSync': FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
   } catch (error) {
     throw new Error(`Failed to deactivate bank connection: ${error}`);
   }
 }
 
 /**
- * Aktualisiert Konto-Salden in der Datenbank
+ * Aktualisiert Konto-Salden in der companies Collection mit step4 Update
  */
 export async function updateAccountBalances(
   firebaseUid: string,
   accountUpdates: Array<{ finapiAccountId: string; balance: number; availableBalance: number }>
 ): Promise<void> {
   try {
-    const userDocRef = db.collection('users').doc(firebaseUid);
+    // 🔧 FIX: companies Collection statt users + step4 Update für primäres Konto
+    const companyDocRef = db.collection('companies').doc(firebaseUid);
     const now = new Date();
 
     const updateData: any = {
@@ -406,7 +437,30 @@ export async function updateAccountBalances(
       updateData[`banking.accounts.${update.finapiAccountId}.lastUpdated`] = now;
     });
 
-    await userDocRef.update(updateData);
+    await companyDocRef.set(updateData, { merge: true });
+
+    // 🔧 Zusätzlich: Update des primären step4 Kontos falls verfügbar
+    const companyDoc = await companyDocRef.get();
+    const bankingData = companyDoc.data()?.banking || {};
+    const primaryAccount = Object.values(bankingData.accounts || {}).find(
+      (account: any) => account.isPrimary === true
+    ) as any;
+
+    if (primaryAccount && primaryAccount.finapiAccountId) {
+      const primaryUpdate = accountUpdates.find(
+        update => update.finapiAccountId === primaryAccount.finapiAccountId
+      );
+
+      if (primaryUpdate) {
+        await companyDocRef.set(
+          {
+            'step4.accountBalance': primaryUpdate.balance,
+            'step4.availableBalance': primaryUpdate.availableBalance,
+          },
+          { merge: true }
+        );
+      }
+    }
   } catch (error) {
     throw new Error(`Failed to update account balances: ${error}`);
   }

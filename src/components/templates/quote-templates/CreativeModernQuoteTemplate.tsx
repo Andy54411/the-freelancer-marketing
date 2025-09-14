@@ -15,8 +15,36 @@ export const CreativeModernQuoteTemplate: React.FC<TemplateProps> = ({
   };
   const formatCurrency = (value?: number) =>
     typeof value === 'number'
-      ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
+      ? new Intl.NumberFormat('de-DE', {
+          style: 'currency',
+          currency: data.currency || 'EUR',
+        }).format(value)
       : '';
+
+  // 🇩🇪 Deutsche Umsatzsteuer-Hinweistexte nach UStG
+  const getTaxNotice = () => {
+    switch (data.taxRule) {
+      case 'DE_TAXABLE':
+        return null; // Keine besonderen Hinweise bei normaler Besteuerung
+      case 'DE_EXEMPT_4_USTG':
+        return 'Steuerfreie Leistung gemäß § 4 UStG.';
+      case 'DE_REVERSE_13B':
+        return 'Steuerschuldnerschaft des Leistungsempfängers gemäß § 13b UStG.';
+      case 'EU_REVERSE_18B':
+        return 'Reverse Charge Verfahren gemäß § 18b UStG (EU).';
+      case 'EU_INTRACOMMUNITY_SUPPLY':
+        return 'Innergemeinschaftliche Lieferung gemäß § 4 Nr. 1b UStG ist steuerbefreit.';
+      case 'EU_OSS':
+        return 'Besteuerung nach OSS-Verfahren (One-Stop-Shop).';
+      case 'NON_EU_EXPORT':
+        return 'Ausfuhrlieferung gemäß § 4 Nr. 1a UStG ist steuerbefreit.';
+      case 'NON_EU_OUT_OF_SCOPE':
+        return 'Leistung nicht im Inland steuerbar.';
+      default:
+        // Prüfung auf Kleinunternehmer über isSmallBusiness
+        return data.isSmallBusiness ? 'Gemäß § 19 UStG wird keine Umsatzsteuer erhoben.' : null;
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto bg-white font-sans text-sm">
@@ -94,63 +122,73 @@ export const CreativeModernQuoteTemplate: React.FC<TemplateProps> = ({
         <div className="mb-8">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Leistungen & Preise</h3>
           <div className="space-y-3">
-            {data.items?.map((item, index) => {
-              const discountFactor =
-                item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
-              const totalPrice = item.quantity * item.unitPrice * discountFactor;
-              const isDiscount = item.category === 'discount';
+            {(() => {
+              // Check if any item has a discount
+              const hasAnyDiscount =
+                data.items?.some(item => item.discountPercent && item.discountPercent > 0) || false;
 
-              return (
-                <div key={index} className="bg-white rounded border border-gray-200 p-4">
-                  <div className="grid grid-cols-12 gap-4 items-start">
-                    <div className="col-span-1">
-                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-700 font-semibold">
-                        {String(index + 1).padStart(2, '0')}
+              return data.items?.map((item, index) => {
+                const discountFactor =
+                  item.category === 'discount' ? -1 : 1 - (item.discountPercent || 0) / 100;
+                const totalPrice = item.quantity * item.unitPrice * discountFactor;
+                const isDiscount = item.category === 'discount';
+
+                return (
+                  <div key={index} className="bg-white rounded border border-gray-200 p-4">
+                    <div
+                      className={`grid gap-4 items-start ${hasAnyDiscount ? 'grid-cols-12' : 'grid-cols-11'}`}
+                    >
+                      <div className="col-span-1">
+                        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-gray-700 font-semibold">
+                          {String(index + 1).padStart(2, '0')}
+                        </div>
                       </div>
-                    </div>
-                    <div className="col-span-5">
-                      <h4
-                        className={`font-semibold mb-1 ${isDiscount ? 'text-red-600' : 'text-gray-900'}`}
-                      >
-                        {item.description}
-                      </h4>
-                      {item.details && <p className="text-gray-600 text-sm">{item.details}</p>}
-                    </div>
-                    <div className="col-span-1 text-center">
-                      <p className="text-gray-500 text-xs">Menge</p>
-                      <div className="bg-gray-50 rounded px-3 py-1 inline-block">
-                        <span className="font-semibold text-gray-800">{item.quantity}</span>
-                        {item.unit && (
-                          <span className="text-gray-600 text-sm ml-1">{item.unit}</span>
-                        )}
+                      <div className={hasAnyDiscount ? 'col-span-5' : 'col-span-6'}>
+                        <h4
+                          className={`font-semibold mb-1 ${isDiscount ? 'text-red-600' : 'text-gray-900'}`}
+                        >
+                          {item.description}
+                        </h4>
+                        {item.details && <p className="text-gray-600 text-sm">{item.details}</p>}
                       </div>
-                    </div>
-                    <div className="col-span-1 text-center">
-                      <p className="text-gray-500 text-xs">Rabatt</p>
-                      <div className="bg-gray-50 rounded px-3 py-1 inline-block">
-                        <span className="font-semibold text-gray-800">
-                          {!isDiscount && item.discountPercent && item.discountPercent > 0
-                            ? `${item.discountPercent}%`
-                            : '-'}
-                        </span>
+                      <div className="col-span-1 text-center">
+                        <p className="text-gray-500 text-xs">Menge</p>
+                        <div className="bg-gray-50 rounded px-3 py-1 inline-block">
+                          <span className="font-semibold text-gray-800">{item.quantity}</span>
+                          {item.unit && (
+                            <span className="text-gray-600 text-sm ml-1">{item.unit}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="col-span-2 text-right">
-                      <p className="text-gray-500 text-xs">Einzelpreis</p>
-                      <p className={`font-semibold ${isDiscount ? 'text-red-600' : ''}`}>
-                        {formatCurrency(item.unitPrice)}
-                      </p>
-                    </div>
-                    <div className="col-span-2 text-right">
-                      <p className="text-gray-500 text-xs">Gesamt</p>
-                      <p className={`font-bold ${isDiscount ? 'text-red-600' : 'text-gray-900'}`}>
-                        {formatCurrency(totalPrice)}
-                      </p>
+                      {hasAnyDiscount && (
+                        <div className="col-span-1 text-center">
+                          <p className="text-gray-500 text-xs">Rabatt</p>
+                          <div className="bg-gray-50 rounded px-3 py-1 inline-block">
+                            <span className="font-semibold text-gray-800">
+                              {!isDiscount && item.discountPercent && item.discountPercent > 0
+                                ? `${item.discountPercent}%`
+                                : '-'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="col-span-2 text-right">
+                        <p className="text-gray-500 text-xs">Einzelpreis</p>
+                        <p className={`font-semibold ${isDiscount ? 'text-red-600' : ''}`}>
+                          {formatCurrency(item.unitPrice)}
+                        </p>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <p className="text-gray-500 text-xs">Gesamt</p>
+                        <p className={`font-bold ${isDiscount ? 'text-red-600' : 'text-gray-900'}`}>
+                          {formatCurrency(totalPrice)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              });
+            })()}
           </div>
         </div>
 
@@ -218,16 +256,29 @@ export const CreativeModernQuoteTemplate: React.FC<TemplateProps> = ({
 
         {/* Fußbereich */}
         <div className="border-t border-gray-300 pt-6">
+          {/* 🇩🇪 Umsatzsteuer-Hinweise */}
+          {getTaxNotice() && (
+            <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded">
+              <p className="text-sm text-blue-800 font-medium">{getTaxNotice()}</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-8 text-sm text-gray-700">
             <div>
               <h5 className="font-bold text-gray-900 mb-2">Unternehmen</h5>
               <p>Steuernummer: {companySettings?.taxId}</p>
               <p>USt-IdNr.: {companySettings?.vatId}</p>
+              {companySettings?.commercialRegister && (
+                <p>Handelsregister: {companySettings?.commercialRegister}</p>
+              )}
             </div>
             <div>
               <h5 className="font-bold text-gray-900 mb-2">Bank</h5>
               <p>IBAN: {companySettings?.bankDetails?.iban}</p>
               <p>BIC: {companySettings?.bankDetails?.bic}</p>
+              {companySettings?.bankDetails?.bankName && (
+                <p>Bank: {companySettings?.bankDetails?.bankName}</p>
+              )}
             </div>
             <div>
               <h5 className="font-bold text-gray-900 mb-2">Kontakt</h5>

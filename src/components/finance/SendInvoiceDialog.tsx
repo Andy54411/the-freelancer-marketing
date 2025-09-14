@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,9 +12,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Send, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvoiceData } from '@/types/invoiceTypes';
+import { TextTemplateService } from '@/services/TextTemplateService';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface SendInvoiceDialogProps {
   isOpen: boolean;
@@ -41,6 +50,88 @@ Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 
 Mit freundlichen Grüßen
 ${companyName}`);
+
+  // Textvorlagen State
+  const [emailTemplates, setEmailTemplates] = useState<any[]>([]);
+  const [selectedSubjectTemplate, setSelectedSubjectTemplate] = useState<string>('');
+  const [selectedBodyTemplate, setSelectedBodyTemplate] = useState<string>('');
+
+  // Textvorlagen laden
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const templates = await TextTemplateService.getTextTemplatesByType(
+          invoice.companyId || '',
+          'INVOICE'
+        );
+        setEmailTemplates(templates);
+
+        // Standard-Templates automatisch auswählen
+        const subjectTemplate = templates.find(t => t.textType === 'SUBJECT' && t.isDefault);
+        const bodyTemplate = templates.find(t => t.textType === 'BODY' && t.isDefault);
+
+        if (subjectTemplate) {
+          setSelectedSubjectTemplate(subjectTemplate.id);
+          setSubject(replacePlaceholders(subjectTemplate.text, invoice, companyName));
+        }
+        if (bodyTemplate) {
+          setSelectedBodyTemplate(bodyTemplate.id);
+          setMessage(replacePlaceholders(bodyTemplate.text, invoice, companyName));
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der E-Mail-Templates:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadTemplates();
+    }
+  }, [isOpen, invoice, companyName]);
+
+  // Platzhalter für E-Mail-Inhalte ersetzen
+  const replacePlaceholders = (text: string, invoice: InvoiceData, companyName: string): string => {
+    if (!text) return '';
+
+    const placeholders = {
+      '[%KUNDENNAME%]': invoice.customerName || '',
+      '[%KUNDENFIRMA%]': invoice.customerName || '',
+      '[%RECHNUNGSNUMMER%]': invoice.invoiceNumber || invoice.number || '',
+      '[%RECHNUNGSDATUM%]': formatDate(invoice.date),
+      '[%FAELLIGKEITSDATUM%]': formatDate(invoice.dueDate),
+      '[%GESAMTBETRAG%]': formatCurrency(invoice.total || 0),
+      '[%NETTOBETRAG%]': formatCurrency(invoice.total || 0), // Falls subtotal nicht verfügbar
+      '[%MEHRWERTSTEUERBETRAG%]': formatCurrency(0), // Vereinfacht, da subtotal nicht verfügbar
+      '[%FIRMENNAME%]': companyName || '',
+      '[%HEUTE%]': formatDate(new Date().toISOString()),
+    };
+
+    let result = text;
+    Object.entries(placeholders).forEach(([placeholder, value]) => {
+      result = result.replace(
+        new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+        value
+      );
+    });
+
+    return result;
+  };
+
+  // Template-Auswahl Handler
+  const handleSubjectTemplateChange = (templateId: string) => {
+    setSelectedSubjectTemplate(templateId);
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      setSubject(replacePlaceholders(template.text, invoice, companyName));
+    }
+  };
+
+  const handleBodyTemplateChange = (templateId: string) => {
+    setSelectedBodyTemplate(templateId);
+    const template = emailTemplates.find(t => t.id === templateId);
+    if (template) {
+      setMessage(replacePlaceholders(template.text, invoice, companyName));
+    }
+  };
 
   // Funktion zur Konvertierung des Firmennamens in E-Mail-Format (gleiche Logik wie Backend)
   const createEmailFromCompanyName = (companyName: string): string => {
@@ -90,7 +181,6 @@ ${companyName}`);
 
       onClose();
     } catch (error) {
-
       toast.error('Fehler beim Versenden der Rechnung', {
         description: error instanceof Error ? error.message : 'Unbekannter Fehler',
       });
@@ -140,6 +230,24 @@ ${companyName}`);
             <Label htmlFor="subject" className="text-sm font-medium">
               Betreff
             </Label>
+            {/* Subject Template Auswahl */}
+            <div className="mb-2">
+              <Select value={selectedSubjectTemplate} onValueChange={handleSubjectTemplateChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Betreff-Vorlage auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {emailTemplates
+                    .filter(template => template.textType === 'SUBJECT')
+                    .map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                        {template.isStandard && ' (Standard)'}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Input
               id="subject"
               value={subject}
@@ -153,6 +261,24 @@ ${companyName}`);
             <Label htmlFor="message" className="text-sm font-medium">
               Nachricht
             </Label>
+            {/* Body Template Auswahl */}
+            <div className="mb-2">
+              <Select value={selectedBodyTemplate} onValueChange={handleBodyTemplateChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Nachrichten-Vorlage auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {emailTemplates
+                    .filter(template => template.textType === 'BODY')
+                    .map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                        {template.isStandard && ' (Standard)'}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Textarea
               id="message"
               value={message}

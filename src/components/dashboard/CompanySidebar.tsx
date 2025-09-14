@@ -127,6 +127,12 @@ const navigationItems: NavigationItem[] = [
     ],
   },
   {
+    label: 'Buchhaltung',
+    icon: FiCalculator,
+    value: 'accounting',
+    href: 'finance/accounting',
+  },
+  {
     label: 'Kunden',
     icon: FiUsers,
     value: 'customers',
@@ -246,6 +252,7 @@ const navigationItems: NavigationItem[] = [
       { label: 'Auszahlungen', value: 'settings-payouts' },
       { label: 'Storno-Einstellungen', value: 'settings-storno', href: 'settings/storno' },
       { label: 'Template-Einstellungen', value: 'settings-templates', href: 'settings/templates' },
+      { label: 'Textvorlagen', value: 'settings-textvorlagen', href: 'settings/textvorlagen' },
     ],
   },
 ];

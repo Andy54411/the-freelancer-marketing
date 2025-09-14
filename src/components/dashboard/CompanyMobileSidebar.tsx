@@ -26,6 +26,7 @@ import {
   Users as FiUsers,
   FolderTree as FiFolderTree,
   Boxes as FiBoxes,
+  Calculator as FiCalculator,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -100,6 +101,12 @@ const navigationItems: NavigationItem[] = [
       { label: 'Mahnungen', value: 'invoices-reminders', href: 'finance/reminders' },
       { label: 'Gutschriften', value: 'invoices-credits', href: 'finance/credits' },
     ],
+  },
+  {
+    label: 'Buchhaltung',
+    icon: FiCalculator,
+    value: 'accounting',
+    href: 'finance/accounting',
   },
   {
     label: 'Kunden',

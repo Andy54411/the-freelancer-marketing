@@ -106,7 +106,7 @@ interface CreateStripeAccountCallableData {
   vatId?: string;
   companyWebsite?: string;
   mcc?: string;
-  iban?: string; accountHolder?: string;
+  iban?: string; accountHolder?: string; bic?: string; bankName?: string;
 }
 
 interface CreateStripeAccountCallableResult {
@@ -125,7 +125,7 @@ interface UpdateStripeCompanyDetailsData {
   taxNumber?: string;
   vatId?: string;
   mcc?: string;
-  iban?: string; accountHolder?: string; bankCountry?: string | null;
+  iban?: string; accountHolder?: string; bankCountry?: string | null; bic?: string; bankName?: string;
   representativeFirstName?: string; representativeLastName?: string;
   representativeEmail?: string; representativePhone?: string;
   representativeDateOfBirth?: string;
@@ -690,7 +690,9 @@ export const createStripeAccountIfComplete = onCall(
       "step3.masterCraftsmanCertificateURL": payloadFromClient.masterCraftsmanCertificateUrl || FieldValue.delete(),
       "step3.identityFrontUrl": payloadFromClient.identityFrontUrl || null,
       "step3.identityBackUrl": payloadFromClient.identityBackUrl || null,
-      "step4.iban": payloadFromClient.iban ? `****${payloadFromClient.iban.slice(-4)}` : null, // Nur die letzten 4 Ziffern speichern
+      "step4.iban": payloadFromClient.iban || null, // 🔧 FIX: Vollständige IBAN speichern, nicht maskieren
+      "step4.bic": payloadFromClient.bic || null, // 🔧 FIX: BIC hinzufügen
+      "step4.bankName": payloadFromClient.bankName || null, // 🔧 FIX: bankName hinzufügen
       "step4.accountHolder": payloadFromClient.accountHolder || null,
     };
     // KRITISCHER FIX: Stripe-Daten für Firmen in companies collection speichern, NICHT in users
@@ -917,7 +919,9 @@ export const updateStripeCompanyDetails = onCall(
       const db = getDb();
       const companyDocRefForUpdate = db.collection('companies').doc(request.auth!.uid);
       const firestoreUpdatePayload: { [key: string]: any } = {
-        "step4.iban": updatePayloadFromClient.iban ? `****${updatePayloadFromClient.iban.slice(-4)}` : undefined,
+        "step4.iban": updatePayloadFromClient.iban || undefined, // 🔧 FIX: Vollständige IBAN speichern, nicht maskieren
+        "step4.bic": updatePayloadFromClient.bic || undefined, // 🔧 FIX: BIC hinzufügen
+        "step4.bankName": updatePayloadFromClient.bankName || undefined, // 🔧 FIX: bankName hinzufügen
         "step4.accountHolder": updatePayloadFromClient.accountHolder || undefined,
       };
       await companyDocRefForUpdate.set(firestoreUpdatePayload, { merge: true });

@@ -1,0 +1,51 @@
+{"users": [
+{
+  "localId": "B8EDGV7K7lZiMQ23iNcxoZbmpku1",
+  "email": "test@test.de",
+  "emailVerified": false,
+  "passwordHash": "KNRGCijWLDzSux4O0G7CXxGgKrGZFrNubYur7b8d8Xwd+GwphjtJ2bsEZkTv4XFWfENoZ1wM8kjRlZJe6VxLxg==",
+  "salt": "vUYcttD8JrvNcQ==",
+  "displayName": "Andy Staudinger",
+  "lastSignedInAt": "1757070533333",
+  "createdAt": "1757070533333",
+  "customAttributes": "{\"role\":\"kunde\"}",
+  "providerUserInfo": []
+},
+{
+  "localId": "LLc8PX1VYHfpoFknk8o51LAOfSA2",
+  "email": "a.staudinger32@icloud.com",
+  "emailVerified": true,
+  "lastSignedInAt": "1757828881823",
+  "createdAt": "1756305954732",
+  "providerUserInfo": []
+},
+{
+  "localId": "VP9BNVTey1WvdkMb0EPA3rdPq4t2",
+  "email": "test42@test.de",
+  "emailVerified": false,
+  "passwordHash": "5MxnaI4YxJJFC4oCmdWduziKSLkDaLVGLB62B2WJp+0B3fUcDbWTPc7kpAs1/Gupy00hsztTqp03i/tEhqyYcg==",
+  "salt": "b/PotQf+RcsCYA==",
+  "displayName": "test test",
+  "lastSignedInAt": "1757859343349",
+  "createdAt": "1757076189156",
+  "customAttributes": "{\"role\":\"kunde\"}",
+  "providerUserInfo": []
+},
+{
+  "localId": "t0VQOV5RfTMIIgo6UDhy5b3z0BL2",
+  "email": "a.staudinger32@gmail.com",
+  "emailVerified": true,
+  "displayName": "andy staudinge",
+  "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocKptxRgMmOR1evAsRvds4KeaSmJiNwH5BLQ3Yh2ltrhG_Z_Pg=s96-c",
+  "lastSignedInAt": "1757563103589",
+  "createdAt": "1756479269972",
+  "providerUserInfo": [
+    {
+      "providerId": "google.com",
+      "rawId": "109327055219861699968",
+      "email": "a.staudinger32@gmail.com",
+      "displayName": "andy staudinge",
+      "photoUrl": "https://lh3.googleusercontent.com/a/ACg8ocKptxRgMmOR1evAsRvds4KeaSmJiNwH5BLQ3Yh2ltrhG_Z_Pg=s96-c"
+    }
+  ]
+}]}

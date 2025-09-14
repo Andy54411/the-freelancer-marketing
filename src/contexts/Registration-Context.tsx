@@ -66,6 +66,8 @@ interface RegistrationData {
   companyWebsite?: string; // Webseite des Unternehmens
   iban?: string;
   accountHolder?: string;
+  bic?: string; // 🔧 ADD: BIC für Banking
+  bankName?: string; // 🔧 ADD: Bank Name für Banking
   selectedSkills: { [hauptkategorie: string]: string[] | null }; // Geändert: Nicht mehr optional
   selectedHandwerkSkills?: string[] | null;
   selectedHaushaltServices?: string[] | null;
@@ -138,6 +140,8 @@ export interface RegistrationContextType extends RegistrationData {
   setCompanyWebsite: Dispatch<SetStateAction<string | undefined>>;
   setIban: Dispatch<SetStateAction<string | undefined>>;
   setAccountHolder: Dispatch<SetStateAction<string | undefined>>;
+  setBic: Dispatch<SetStateAction<string | undefined>>; // 🔧 ADD: BIC setter
+  setBankName: Dispatch<SetStateAction<string | undefined>>; // 🔧 ADD: bankName setter
   setSelectedSkills: Dispatch<SetStateAction<{ [hauptkategorie: string]: string[] | null }>>; // Geändert: | undefined entfernt
   setSelectedHandwerkSkills: Dispatch<SetStateAction<string[] | null | undefined>>;
   setSelectedHaushaltServices: Dispatch<SetStateAction<string[] | null | undefined>>;
@@ -232,6 +236,8 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
       companyWebsite: '',
       iban: '',
       accountHolder: '',
+      bic: '', // 🔧 ADD: BIC für Banking
+      bankName: '', // 🔧 ADD: Bank Name für Banking
       selectedSkills: {},
       selectedHandwerkSkills: null, // Standard auf 'DE'
       selectedHaushaltServices: null,
@@ -508,6 +514,16 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
       ...prev,
       accountHolder: typeof value === 'function' ? value(prev.accountHolder) : value,
     }));
+  const setBicState = (value: SetStateAction<string | undefined>) =>
+    setRegistrationState(prev => ({
+      ...prev,
+      bic: typeof value === 'function' ? value(prev.bic) : value,
+    }));
+  const setBankNameState = (value: SetStateAction<string | undefined>) =>
+    setRegistrationState(prev => ({
+      ...prev,
+      bankName: typeof value === 'function' ? value(prev.bankName) : value,
+    }));
   const setSelectedSkillsState = (value: SetStateAction<{ [key: string]: string[] | null }>) =>
     setRegistrationState(prev => ({
       ...prev,
@@ -650,6 +666,8 @@ export const RegistrationProvider: React.FC<RegistrationProviderProps> = ({ chil
     setCompanyWebsite: setCompanyWebsiteState,
     setIban: setIbanState,
     setAccountHolder: setAccountHolderState,
+    setBic: setBicState, // 🔧 ADD: BIC setter
+    setBankName: setBankNameState, // 🔧 ADD: bankName setter
     setSelectedSkills: setSelectedSkillsState,
     setSelectedHandwerkSkills: setSelectedHandwerkSkillsState,
     setSelectedHaushaltServices: setSelectedHaushaltServicesState,

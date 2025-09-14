@@ -32,7 +32,7 @@ export default function SettingsPage() {
       uid: rawData.uid,
       companyName: rawData.companyName || rawData.step2?.companyName,
       email: rawData.email,
-      displayName: rawData.displayName,
+      displayName: rawData.displayName || rawData.email || '',
       step1: rawData.step1,
       step2: rawData.step2,
       step3: rawData.step3,
@@ -82,6 +82,7 @@ export default function SettingsPage() {
             const baseData: UserDataForSettings = {
               uid: user.uid,
               email: user.email || '',
+              displayName: user.email || '',
               companyName: '',
               step1: { personalData: {} },
               step2: { companyAddress: {} },
@@ -98,6 +99,7 @@ export default function SettingsPage() {
         const fallbackData: UserDataForSettings = {
           uid: user.uid,
           email: user.email || '',
+          displayName: user.email || '',
           companyName: '',
           step1: { personalData: {} },
           step2: { companyAddress: {} },
@@ -141,8 +143,34 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const docRef = doc(db, 'companies', uid);
+
+      // Filter out undefined values recursively
+      const cleanData = (obj: any): any => {
+        if (obj === null || obj === undefined) {
+          return null;
+        }
+
+        if (Array.isArray(obj)) {
+          return obj.map(item => cleanData(item));
+        }
+
+        if (typeof obj === 'object') {
+          const cleaned: any = {};
+          for (const [key, value] of Object.entries(obj)) {
+            if (value !== undefined) {
+              cleaned[key] = cleanData(value);
+            }
+          }
+          return cleaned;
+        }
+
+        return obj;
+      };
+
+      const cleanedForm = cleanData(form);
+
       await updateDoc(docRef, {
-        ...form,
+        ...cleanedForm,
         lastUpdated: serverTimestamp(),
       });
       toast.success('Einstellungen erfolgreich gespeichert!');
