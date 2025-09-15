@@ -131,7 +131,7 @@ export default function QuoteChat({
       }
 
       const updatePromises = unreadMessages.map(msg => {
-        const messageRef = doc(db, 'quotes', quoteId, 'chat', msg.id);
+        const messageRef = doc(db, 'companies', companyId, 'quotes', quoteId, 'chat', msg.id);
         return updateDoc(messageRef, { read: true });
       });
 

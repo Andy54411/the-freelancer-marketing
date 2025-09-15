@@ -16,13 +16,38 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { InvoiceData, InvoiceNumbering, GermanInvoiceService } from '@/types/invoiceTypes';
+import { NumberSequenceService } from './numberSequenceService';
 
 export class FirestoreInvoiceService {
   /**
-   * Generiert die nächste fortlaufende Rechnungsnummer mit Firestore-Transaction
-   * Stellt sicher, dass Nummern nie doppelt vergeben werden
+   * Generiert die nächste fortlaufende Rechnungsnummer mit NumberSequenceService
+   * Nutzt die konfigurierten Nummerkreise aus dem Accounting-Bereich
    */
   static async getNextInvoiceNumber(companyId: string): Promise<{
+    sequentialNumber: number;
+    formattedNumber: string;
+  }> {
+    try {
+      // Nutze den NumberSequenceService für die Rechnungsnummerierung
+      const result = await NumberSequenceService.getNextNumberForType(companyId, 'Rechnung');
+      
+      return {
+        sequentialNumber: result.number,
+        formattedNumber: result.formattedNumber,
+      };
+    } catch (error) {
+      console.error('Fehler beim Generieren der Rechnungsnummer:', error);
+
+      // Fallback auf das alte System falls NumberSequence nicht gefunden wird
+      return await this.getNextInvoiceNumberFallback(companyId);
+    }
+  }
+
+  /**
+   * Fallback-Methode für Rechnungsnummerierung (alte Implementierung)
+   * Wird verwendet wenn der NumberSequenceService fehlschlägt
+   */
+  static async getNextInvoiceNumberFallback(companyId: string): Promise<{
     sequentialNumber: number;
     formattedNumber: string;
   }> {
@@ -39,8 +64,6 @@ export class FirestoreInvoiceService {
         if (numberingDoc.exists()) {
           const data = numberingDoc.data() as InvoiceNumbering;
           nextNumber = data.nextNumber;
-        } else {
-
         }
 
         // Update der nächsten Nummer
@@ -60,8 +83,9 @@ export class FirestoreInvoiceService {
         };
       });
     } catch (error) {
+      console.error('Fallback-Rechnungsnummerierung fehlgeschlagen:', error);
 
-      // Fallback: Generiere eine Nummer basierend auf Timestamp
+      // Letzter Fallback: Generiere eine Nummer basierend auf Timestamp
       const fallbackNumber = Date.now() % 1000;
 
       return {

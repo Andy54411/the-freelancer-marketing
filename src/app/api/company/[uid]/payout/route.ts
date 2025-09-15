@@ -9,7 +9,7 @@ import Stripe from 'stripe';
 // Dynamic Firebase imports to prevent build-time issues
 let db: any;
 
-async function getFirebaseServices() {
+async function getFirebaseServices(companyId: string) {
   if (!db) {
     try {
       // DIRECT Firebase initialization without JSON imports
@@ -66,7 +66,7 @@ interface PayoutRequest {
  * POST: Company requests manual payout
  * Validates all completed orders and initiates bank transfer
  */
-export async function POST(request: NextRequest, { params }: { params: { uid: string } }) {
+export async function POST(request: NextRequest, { params }: { params: { uid: string } }, companyId: string) {
   try {
     // Fix Next.js warning
     const resolvedParams = await params;
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
     });
 
     // 2. QUOTE PAYMENTS: Suche nach Quote Payments die auszahlungsbereit sind
-    const quotesRef = adminDb.collection('quotes');
+    const quotesRef = adminDb.collection('companies').doc(companyId).collection('quotes');
     const quotesQuery = quotesRef.where('status', '==', 'contacts_exchanged');
     const quotesSnap = await quotesQuery.get();
 
@@ -265,7 +265,7 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
 
     // Quote Proposals Status Update + Provision Transfer
     for (const transfer of quoteProvisionTransfers) {
-      const quoteRef = adminDb.collection('quotes').doc(transfer.quoteId);
+      const quoteRef = adminDb.collection('companies').doc(companyId).collection('quotes').doc(transfer.quoteId);
       const proposalRef = quoteRef.collection('proposals').doc(transfer.proposalId);
 
       // Update Proposal Status
@@ -349,7 +349,7 @@ export async function POST(request: NextRequest, { params }: { params: { uid: st
 /**
  * GET: Get available payout amount for company from Stripe Balance
  */
-export async function GET(request: NextRequest, { params }: { params: { uid: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { uid: string } }, companyId: string) {
   try {
     // Fix Next.js warning
     const resolvedParams = await params;
@@ -434,7 +434,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
 
     // Quote Payments für Info
     try {
-      const quotesRef = adminDb.collection('quotes');
+      const quotesRef = adminDb.collection('companies').doc(companyId).collection('quotes');
       const quotesQuery = quotesRef.where('status', '==', 'contacts_exchanged').limit(5);
       const quotesSnap = await quotesQuery.get();
 

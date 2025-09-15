@@ -183,7 +183,7 @@ export default function InventoryComponent({ companyId }: InventoryComponentProp
     if (!selectedItem) return;
 
     try {
-      await InventoryService.deleteInventoryItem(selectedItem.id);
+      await InventoryService.deleteInventoryItem(companyId, selectedItem.id);
       await loadData();
       setShowDeleteDialog(false);
       setSelectedItem(null);

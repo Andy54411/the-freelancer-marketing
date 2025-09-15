@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/firebase/server';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
   const { uid } = await params;
 
   try {
@@ -63,10 +63,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let quotesSnapshot;
     try {
       // Get only quotes for this specific provider to improve performance
-      quotesSnapshot = await db.collection('quotes').where('providerId', '==', uid).get();
+      quotesSnapshot = await db.collection('companies').doc(companyId).collection('quotes').where('providerId', '==', uid).get();
     } catch (error) {
       // Fallback: Get all quotes if the filtered query fails
-      quotesSnapshot = await db.collection('quotes').get();
+      quotesSnapshot = await db.collection('companies').doc(companyId).collection('quotes').get();
     }
 
     const quotes: Record<string, unknown>[] = [];
@@ -172,7 +172,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       try {
         // First check subcollection proposals (new format)
         const proposalsSnapshot = await db
-          .collection('quotes')
+          .collection('companies').doc(companyId).collection('quotes')
           .doc(doc.id)
           .collection('proposals')
           .where('providerId', '==', uid)

@@ -389,7 +389,7 @@ const ProjectsPage: React.FC = () => {
 
       if (project?.isDirectAssignment) {
         // Lösche aus quotes Collection (direkte KI-Anfragen)
-        await deleteDoc(doc(db, 'quotes', projectId));
+        await deleteDoc(doc(db, 'companies', companyId, 'quotes', projectId));
       } else {
         // Lösche aus project_requests Collection (öffentliche Projekte)
         await deleteDoc(doc(db, 'project_requests', projectId));

@@ -24,8 +24,9 @@ export class CustomerService {
    */
   static async getCustomers(companyId: string): Promise<Customer[]> {
     try {
-      const customersRef = collection(db, 'customers');
-      const q = query(customersRef, where('companyId', '==', companyId), orderBy('name', 'asc'));
+      // NEUE SUBCOLLECTION STRUKTUR
+      const customersRef = collection(db, 'companies', companyId, 'customers');
+      const q = query(customersRef, orderBy('name', 'asc'));
       const snapshot = await getDocs(q);
 
       return snapshot.docs.map(doc => {
@@ -64,7 +65,8 @@ export class CustomerService {
    */
   static async getCustomer(companyId: string, customerId: string): Promise<Customer | null> {
     try {
-      const customerDoc = await getDoc(doc(db, 'customers', customerId));
+      // NEUE SUBCOLLECTION STRUKTUR
+      const customerDoc = await getDoc(doc(db, 'companies', companyId, 'customers', customerId));
 
       if (!customerDoc.exists()) {
         return null;
@@ -93,7 +95,7 @@ export class CustomerService {
         totalAmount: data.totalAmount || 0,
         createdAt: data.createdAt || new Date().toISOString(),
         contactPersons: data.contactPersons || [],
-        companyId: data.companyId || companyId,
+        companyId: companyId, // Setze explizit die companyId
       };
     } catch (error) {
       throw error;
@@ -103,20 +105,21 @@ export class CustomerService {
   /**
    * Erstellt einen neuen Kunden
    */
-  static async createCustomer(
+  static async addCustomer(
     companyId: string,
     customerData: Omit<Customer, 'id' | 'totalInvoices' | 'totalAmount' | 'createdAt' | 'companyId'>
   ): Promise<string> {
     try {
       const newCustomer = {
         ...customerData,
-        companyId,
+        // companyId nicht mehr nötig - ist implizit durch Subcollection
         totalInvoices: 0,
         totalAmount: 0,
         createdAt: new Date().toISOString(),
       };
 
-      const docRef = await addDoc(collection(db, 'customers'), newCustomer);
+      // NEUE SUBCOLLECTION STRUKTUR
+      const docRef = await addDoc(collection(db, 'companies', companyId, 'customers'), newCustomer);
 
       return docRef.id;
     } catch (error) {
@@ -133,7 +136,8 @@ export class CustomerService {
     updates: Partial<Customer>
   ): Promise<void> {
     try {
-      const customerRef = doc(db, 'customers', customerId);
+      // NEUE SUBCOLLECTION STRUKTUR
+      const customerRef = doc(db, 'companies', companyId, 'customers', customerId);
       await updateDoc(customerRef, {
         ...updates,
         updatedAt: new Date().toISOString(),
@@ -148,7 +152,8 @@ export class CustomerService {
    */
   static async deleteCustomer(companyId: string, customerId: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, 'customers', customerId));
+      // NEUE SUBCOLLECTION STRUKTUR
+      await deleteDoc(doc(db, 'companies', companyId, 'customers', customerId));
     } catch (error) {
       throw error;
     }
@@ -210,9 +215,9 @@ export class CustomerService {
     companyId: string,
     callback: (customers: Customer[]) => void
   ): () => void {
+    // NEUE SUBCOLLECTION STRUKTUR
     const customersQuery = query(
-      collection(db, 'customers'),
-      where('companyId', '==', companyId),
+      collection(db, 'companies', companyId, 'customers'),
       orderBy('name', 'asc')
     );
 

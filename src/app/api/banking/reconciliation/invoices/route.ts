@@ -5,7 +5,7 @@ import { db } from '@/firebase/server';
  * GET /api/banking/reconciliation/invoices
  * Get invoices for banking reconciliation
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, companyId: string) {
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Get invoices from Firestore
     const invoicesRef = db.collection('invoices');
-    const query = invoicesRef.where('companyId', '==', companyId);
+    const query = invoicesRef;
 
     // Execute query
     const snapshot = await query.get();
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
  * POST /api/banking/reconciliation/invoices
  * Update invoice reconciliation status
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, companyId: string) {
   try {
     const body = await request.json();
     const { invoiceId, transactionId, action } = body;

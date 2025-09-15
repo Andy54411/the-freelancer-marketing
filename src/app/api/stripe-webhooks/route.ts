@@ -28,7 +28,7 @@ const stripe = stripeSecretKey
     })
   : null;
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, companyId: string) {
   if (!stripe) {
     const errorKey = 'stripe_not_configured';
     if (shouldLogError(errorKey)) {
@@ -599,7 +599,7 @@ export async function POST(req: NextRequest) {
 
           try {
             // Handle quote -> order conversion directly in webhook
-            const quoteRef = db.collection('quotes').doc(quoteId);
+            const quoteRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
             const quoteDoc = await quoteRef.get();
 
             if (!quoteDoc.exists) {
@@ -1065,6 +1065,6 @@ export async function POST(req: NextRequest) {
 }
 
 // Andere HTTP-Methoden nicht erlaubt
-export async function GET() {
+export async function GET(companyId: string) {
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }

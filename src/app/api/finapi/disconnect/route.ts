@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 import { FieldValue } from 'firebase-admin/firestore';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, companyId: string) {
   try {
     const body = await request.json();
     const { companyId } = body;
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Lösche alle finAPI-Sessions für diese Company
-    const sessionsQuery = db.collection('finapi_sessions').where('companyId', '==', companyId);
+    const sessionsQuery = db.collection('finapi_sessions');
 
     const sessionsSnapshot = await sessionsQuery.get();
     const deletePromises = sessionsSnapshot.docs.map(doc => doc.ref.delete());
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Lösche alle finAPI-Disconnections für diese Company (falls vorhanden)
     const disconnectionsQuery = db
       .collection('finapi_disconnections')
-      .where('companyId', '==', companyId);
+      ;
 
     const disconnectionsSnapshot = await disconnectionsQuery.get();
     const disconnectDeletePromises = disconnectionsSnapshot.docs.map(doc => doc.ref.delete());

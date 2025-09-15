@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
             // Real Firebase query
             const invitesSnapshot = await (database as any)
               .collection('steuerberater_invites')
-              .where('companyId', '==', companyId)
+              
               .orderBy('createdAt', 'desc')
               .get();
 
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
             // Query without orderBy to avoid index requirement
             const docsSnapshot = await (database as any)
               .collection('shared_documents')
-              .where('companyId', '==', companyId)
+              
               .get();
 
             const documents = docsSnapshot.docs
@@ -278,7 +278,7 @@ async function handleInvite(database: any, companyId: string, data: any) {
     try {
       const existingSnapshot = await (database as any)
         .collection('steuerberater_invites')
-        .where('companyId', '==', companyId)
+        
         .where('email', '==', email)
         .get();
 

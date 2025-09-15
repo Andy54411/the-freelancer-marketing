@@ -487,7 +487,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
       cleanCustomerData.lastModifiedBy = user.uid;
       cleanCustomerData.updatedAt = serverTimestamp();
 
-      const customerRef = doc(db, 'customers', updatedCustomer.id);
+      const customerRef = doc(db, 'companies', companyId, 'customers', updatedCustomer.id);
       await updateDoc(customerRef, cleanCustomerData);
 
       // Update local state
@@ -518,7 +518,7 @@ export function CustomerManager({ companyId }: CustomerManagerProps) {
         return;
       }
 
-      const customerRef = doc(db, 'customers', customer.id);
+      const customerRef = doc(db, 'companies', companyId, 'customers', customer.id);
       await deleteDoc(customerRef);
 
       // Update local state

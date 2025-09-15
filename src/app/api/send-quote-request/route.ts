@@ -6,7 +6,7 @@ import { QuoteNotificationService } from '@/lib/quote-notifications';
  * API Route zum Senden von Angebotsanfragen über das Dashboard
  * POST /api/send-quote-request
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, companyId: string) {
   try {
     const body = await request.json();
     const { providerId, customerUid, projectData, customerInfo } = body;
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     };
 
     // In quotes Collection speichern
-    await db.collection('quotes').doc(quoteId).set(quoteRequest);
+    await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).set(quoteRequest);
 
     // Provider-Namen für Notifications abrufen
     let providerName = 'Anbieter';

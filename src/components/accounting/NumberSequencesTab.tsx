@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Pencil, Trash2 } from 'lucide-react';
+import NumberSequenceModal from './NumberSequenceModal';
 
 export interface NumberSequence {
   id: string;
@@ -27,13 +28,33 @@ interface NumberSequencesTabProps {
   sequences: NumberSequence[];
   onEdit: (sequence: NumberSequence) => void;
   onDelete: (sequence: NumberSequence) => void;
+  onUpdate: (sequence: NumberSequence) => void;
 }
 
 export default function NumberSequencesTab({
   sequences,
   onEdit,
   onDelete,
+  onUpdate,
 }: NumberSequencesTabProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSequence, setSelectedSequence] = useState<NumberSequence | null>(null);
+
+  const handleEdit = (sequence: NumberSequence) => {
+    console.log('handleEdit called with sequence:', sequence);
+    setSelectedSequence(sequence);
+    setIsModalOpen(true);
+    console.log('Modal should be open now, isModalOpen:', true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedSequence(null);
+  };
+
+  const handleModalSave = (updatedSequence: NumberSequence) => {
+    onUpdate(updatedSequence);
+  };
   return (
     <Card>
       <CardHeader>
@@ -68,7 +89,7 @@ export default function NumberSequencesTab({
                           ? 'Nummernkreis bearbeiten'
                           : 'Nummernkreis kann nicht bearbeitet werden'
                       }
-                      onClick={() => onEdit(sequence)}
+                      onClick={() => handleEdit(sequence)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -88,6 +109,14 @@ export default function NumberSequencesTab({
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* Modal */}
+      <NumberSequenceModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSave={handleModalSave}
+        sequence={selectedSequence}
+      />
     </Card>
   );
 }

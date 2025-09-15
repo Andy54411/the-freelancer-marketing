@@ -3,7 +3,7 @@ import { db } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
 import { ProjectEmailNotificationService } from '@/lib/project-email-notifications';
 
-export async function POST(request: Request) {
+export async function POST(request: Request, companyId: string) {
   try {
     const { projectData, userId } = await request.json();
 
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
         };
 
         // Speichere Quest in der quotes Collection
-        const questRef = await db.collection('quotes').add(questDoc);
+        const questRef = await db.collection('companies').doc(companyId).collection('quotes').add(questDoc);
 
         // Aktualisiere Quest mit seiner ID
         await questRef.update({

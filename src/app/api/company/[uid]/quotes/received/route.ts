@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/firebase/server';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
   const { uid } = await params;
 
   try {
@@ -66,14 +66,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     try {
       // First try to find by customerUid (more reliable)
       quotesSnapshot = await db
-        .collection('quotes')
+        .collection('companies').doc(companyId).collection('quotes')
         .where('customerUid', '==', uid)
         .orderBy('createdAt', 'desc')
         .get();
     } catch (error) {
       // Fallback to customerEmail query
       quotesSnapshot = await db
-        .collection('quotes')
+        .collection('companies').doc(companyId).collection('quotes')
         .where('customerEmail', '==', customerEmail)
         .orderBy('createdAt', 'desc')
         .get();
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (quotesSnapshot.docs.length === 0) {
       try {
         const fallbackSnapshot = await db
-          .collection('quotes')
+          .collection('companies').doc(companyId).collection('quotes')
           .where('customerEmail', '==', customerEmail)
           .orderBy('createdAt', 'desc')
           .get();
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         // ALWAYS check subcollection for proposals, regardless of proposalsInSubcollection flag
 
         const proposalsSnapshot = await db
-          .collection('quotes')
+          .collection('companies').doc(companyId).collection('quotes')
           .doc(doc.id)
           .collection('proposals')
           .get();

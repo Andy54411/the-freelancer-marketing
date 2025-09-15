@@ -22,7 +22,10 @@ export default function TransactionMatchingTab({ onCreateRule }: TransactionMatc
           <p className="text-muted-foreground mb-4">
             Richten Sie automatische Regeln für die Zuordnung von Banktransaktionen ein.
           </p>
-          <Button onClick={onCreateRule}>
+          <Button 
+            onClick={onCreateRule}
+            className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Neue Regel erstellen
           </Button>

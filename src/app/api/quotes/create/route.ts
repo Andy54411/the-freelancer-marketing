@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db, admin } from '@/firebase/server';
 import { QuoteNotificationService } from '@/lib/quote-notifications';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, companyId: string) {
   try {
     // Get auth token to identify the customer
     const authHeader = request.headers.get('authorization');
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     };
 
     // In quotes Collection speichern mit Firebase Admin
-    await db.collection('quotes').doc(quoteId).set(quoteRequest);
+    await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).set(quoteRequest);
 
     // Provider-Namen für Notifications abrufen
     let providerName = 'Anbieter';

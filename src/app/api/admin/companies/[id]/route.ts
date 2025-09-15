@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }, companyId: string) {
   try {
     const { id } = await params;
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .get();
 
     // Hole alle Quotes wo diese Company der Provider ist
-    const quotesSnapshot = await db.collection('quotes').where('providerId', '==', id).get();
+    const quotesSnapshot = await db.collection('companies').doc(companyId).collection('quotes').where('providerId', '==', id).get();
 
     // Berechne Statistiken aus Aufträgen
     let totalRevenue = 0;

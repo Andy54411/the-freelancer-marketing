@@ -10,7 +10,7 @@ import admin from 'firebase-admin';
 /**
  * Neue Angebot-Response Struktur verarbeiten
  */
-async function handleNewQuoteResponse(request: NextRequest, quoteId: string, response: any) {
+async function handleNewQuoteResponse(request: NextRequest, quoteId: string, response: any, companyId: string) {
   // Token aus Authorization Header extrahieren
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -49,7 +49,7 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     }
 
     // Quote-Daten abrufen für Notification
-    const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+    const quoteDoc = await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).get();
     if (!quoteDoc.exists) {
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }
@@ -130,7 +130,7 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
 /**
  * Behandelt Ablehnung einer Quote (action: "decline")
  */
-async function handleQuoteDecline(request: NextRequest, quoteId: string) {
+async function handleQuoteDecline(request: NextRequest, quoteId: string, companyId: string) {
   // TODO: Implement quote decline logic
   // This could involve creating a decline record, updating quote status, etc.
 
@@ -144,7 +144,7 @@ async function handleQuoteDecline(request: NextRequest, quoteId: string) {
  * API Route zum Antworten auf eine Quote (Angebot abgeben)
  * POST /api/quotes/respond
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, companyId: string) {
   try {
     const body = await request.json();
 
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
  * API Route um bestehende Angebote zu aktualisieren
  * PUT /api/quotes/respond
  */
-export async function PUT(request: NextRequest) {
+export async function PUT(request: NextRequest, companyId: string) {
   try {
     const body = await request.json();
 
@@ -291,7 +291,7 @@ export async function PUT(request: NextRequest) {
  * API Route um Angebote für eine Quote zu laden
  * GET /api/quotes/respond?quoteId=xxx
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, companyId: string) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const quoteId = searchParams.get('quoteId');

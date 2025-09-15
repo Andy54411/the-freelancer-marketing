@@ -262,7 +262,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
       cleanSupplierData.lastModifiedBy = user.uid;
       cleanSupplierData.updatedAt = serverTimestamp();
 
-      const supplierRef = doc(db, 'customers', updatedSupplier.id);
+      const supplierRef = doc(db, 'companies', companyId, 'customers', updatedSupplier.id);
       await updateDoc(supplierRef, cleanSupplierData);
 
       setSuppliers(prev => prev.map(s => (s.id === updatedSupplier.id ? updatedSupplier : s)));
@@ -291,7 +291,7 @@ export function SupplierManager({ companyId }: SupplierManagerProps) {
       }
 
       // Try to delete the document
-      const supplierRef = doc(db, 'customers', supplier.id);
+      const supplierRef = doc(db, 'companies', companyId, 'customers', supplier.id);
       await deleteDoc(supplierRef);
 
       // Update local state only if deletion was successful

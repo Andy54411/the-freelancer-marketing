@@ -134,7 +134,7 @@ export function CustomerDetailModal({
         });
 
         // Supplier-Dokument direkt aktualisieren
-        const supplierRef = doc(db, 'customers', customer.id);
+        const supplierRef = doc(db, 'companies', companyId, 'customers', customer.id);
         await updateDoc(supplierRef, {
           totalAmount,
           totalInvoices,
@@ -236,7 +236,7 @@ export function CustomerDetailModal({
     if (!localCustomer?.id) return;
 
     try {
-      const customerDocRef = doc(db, 'customers', localCustomer.id);
+      const customerDocRef = doc(db, 'companies', companyId, 'customers', localCustomer.id);
       const customerDocSnapshot = await getDocs(
         query(collection(db, 'customers'), where('__name__', '==', localCustomer.id))
       );

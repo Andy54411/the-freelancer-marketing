@@ -5,7 +5,7 @@ import { QuoteNotificationService } from '@/lib/quote-notifications';
 let db: any;
 let admin: any;
 
-async function getFirebaseServices() {
+async function getFirebaseServices(companyId: string) {
   if (!db || !admin) {
     try {
       // Try existing server config first
@@ -64,7 +64,7 @@ async function getFirebaseServices() {
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
-) {
+, companyId: string) {
   const { uid, quoteId } = await params;
 
   try {
@@ -116,7 +116,7 @@ export async function GET(
 
     // Get the specific quote where this company is the customer
 
-    const quoteRef = db.collection('quotes').doc(quoteId);
+    const quoteRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
     const quoteDoc = await quoteRef.get();
 
     if (!quoteDoc.exists) {
@@ -181,7 +181,7 @@ export async function GET(
     try {
       // Check subcollection for proposals (new structure)
       const proposalsSnapshot = await db
-        .collection('quotes')
+        .collection('companies').doc(companyId).collection('quotes')
         .doc(quoteId)
         .collection('proposals')
         .get();
@@ -286,7 +286,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
-) {
+, companyId: string) {
   const { uid, quoteId } = await params;
 
   try {
@@ -322,7 +322,7 @@ export async function POST(
     }
 
     // Get the quote document - first try quotes collection, then requests collection
-    let quoteDoc = await db.collection('quotes').doc(quoteId).get();
+    let quoteDoc = await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).get();
     let quoteData: any = null;
     let isFromRequestsCollection = false;
 
@@ -347,7 +347,7 @@ export async function POST(
 
       try {
         const proposalsSnapshot = await db
-          .collection('quotes')
+          .collection('companies').doc(companyId).collection('quotes')
           .doc(quoteId)
           .collection('proposals')
           .get();

@@ -5,7 +5,7 @@ import { db } from '@/firebase/server';
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ quoteId: string }> }
-) {
+, companyId: string) {
   try {
     const { quoteId } = await params;
 
@@ -23,7 +23,7 @@ export async function POST(
     const decodedToken = await getAuth().verifyIdToken(token);
 
     // Try to load from quotes collection first
-    const quoteRef = db.collection('quotes').doc(quoteId);
+    const quoteRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
     const quoteDoc = await quoteRef.get();
 
     if (!quoteDoc.exists) {

@@ -523,7 +523,7 @@ export class FinanceService {
     try {
       const { doc, updateDoc } = await import('firebase/firestore');
 
-      await updateDoc(doc(db, 'expenses', id), updates);
+      await updateDoc(doc(db, 'companies', companyId, 'expenses', id), updates);
     } catch (error) {
 
       throw error;
@@ -551,7 +551,7 @@ export class FinanceService {
     try {
       const { doc, deleteDoc } = await import('firebase/firestore');
 
-      await deleteDoc(doc(db, 'expenses', id));
+      await deleteDoc(doc(db, 'companies', companyId, 'expenses', id));
     } catch (error) {
 
       throw error;

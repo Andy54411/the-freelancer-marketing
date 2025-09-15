@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// Entfernt: Tabs Import - verwenden jetzt custom Tab-Leiste
 import { Button } from '@/components/ui/button';
 import {
   Calculator,
@@ -11,130 +11,54 @@ import {
   Wallet,
   ArrowLeftRight,
   Building2,
-  Plus,
 } from 'lucide-react';
 
 // Import Tab Components
 import NumberSequencesTab, { NumberSequence } from '@/components/accounting/NumberSequencesTab';
-import BookingAccountsTab, { BookingAccount } from '@/components/accounting/BookingAccountsTab';
+import BookingAccountsTab from '@/components/accounting/BookingAccountsTab';
 import PaymentMethodsTab, { PaymentMethod } from '@/components/accounting/PaymentMethodsTab';
 import PaymentAccountsTab, { PaymentAccount } from '@/components/accounting/PaymentAccountsTab';
 import TransactionMatchingTab from '@/components/accounting/TransactionMatchingTab';
 import CostCentersTab, { CostCenter } from '@/components/accounting/CostCentersTab';
 
+// Import Services
+import { NumberSequenceService } from '@/services/numberSequenceService';
+
 export default function AccountingPage() {
   const params = useParams();
   const uid = typeof params?.uid === 'string' ? params.uid : '';
   const [activeTab, setActiveTab] = useState('sequences');
+  
+  // State für Nummerkreise - wird aus der Datenbank geladen
+  const [numberSequences, setNumberSequences] = useState<NumberSequence[]>([]);
+  const [loadingSequences, setLoadingSequences] = useState(true);
 
-  // Mock data - replace with actual API calls
-  const [numberSequences, setNumberSequences] = useState<NumberSequence[]>([
-    {
-      id: '1',
-      format: '%NUMBER',
-      type: 'Kreditor',
-      nextNumber: 70000,
-      nextFormatted: '70000',
-      canEdit: false,
-      canDelete: false,
-    },
-    {
-      id: '2',
-      format: '%NUMBER',
-      type: 'Debitor',
-      nextNumber: 10000,
-      nextFormatted: '10000',
-      canEdit: false,
-      canDelete: false,
-    },
-    {
-      id: '3',
-      format: '%NUMBER',
-      type: 'Inventar',
-      nextNumber: 1000,
-      nextFormatted: '1000',
-      canEdit: true,
-      canDelete: false,
-    },
-    {
-      id: '4',
-      format: '%NUMBER',
-      type: 'Kontakt',
-      nextNumber: 1000,
-      nextFormatted: '1000',
-      canEdit: true,
-      canDelete: false,
-    },
-    {
-      id: '5',
-      format: 'GU-%NUMBER',
-      type: 'Gutschrift',
-      nextNumber: 1000,
-      nextFormatted: 'GU-1000',
-      canEdit: true,
-      canDelete: false,
-    },
-    {
-      id: '6',
-      format: 'RE-%NUMBER',
-      type: 'Rechnung',
-      nextNumber: 1000,
-      nextFormatted: 'RE-1000',
-      canEdit: true,
-      canDelete: false,
-    },
-    {
-      id: '7',
-      format: 'AB-%NUMBER',
-      type: 'Auftragsbestätigung',
-      nextNumber: 1000,
-      nextFormatted: 'AB-1000',
-      canEdit: true,
-      canDelete: false,
-    },
-    {
-      id: '8',
-      format: 'AN-%NUMBER',
-      type: 'Angebot',
-      nextNumber: 1000,
-      nextFormatted: 'AN-1000',
-      canEdit: true,
-      canDelete: false,
-    },
-    {
-      id: '9',
-      format: 'LI-%NUMBER',
-      type: 'Lieferschein',
-      nextNumber: 1000,
-      nextFormatted: 'LI-1000',
-      canEdit: true,
-      canDelete: false,
-    },
-    {
-      id: '10',
-      format: '%NUMBER',
-      type: 'Produkt',
-      nextNumber: 1001,
-      nextFormatted: '1001',
-      canEdit: true,
-      canDelete: false,
-    },
-  ]);
+  // Lade Nummerkreise aus der Datenbank
+  useEffect(() => {
+    const loadNumberSequences = async () => {
+      if (!uid) return;
+      
+      try {
+        setLoadingSequences(true);
+        const sequences = await NumberSequenceService.getNumberSequences(uid);
+        setNumberSequences(sequences);
+      } catch (error) {
+        console.error('Fehler beim Laden der Nummerkreise:', error);
+        // Fallback: Erstelle Standard-Nummerkreise wenn keine existieren
+        try {
+          console.log('Erstelle Standard-Nummerkreise für bestehende Company:', uid);
+          const defaultSequences = await NumberSequenceService.createDefaultSequences(uid);
+          setNumberSequences(defaultSequences);
+        } catch (createError) {
+          console.error('Fehler beim Erstellen der Standard-Nummerkreise:', createError);
+        }
+      } finally {
+        setLoadingSequences(false);
+      }
+    };
 
-  const [bookingAccounts, setBookingAccounts] = useState<BookingAccount[]>([
-    { id: '1', number: '1000', name: 'Kasse', type: 'ASSET', automaticBooking: true },
-    { id: '2', number: '1200', name: 'Bank', type: 'ASSET', automaticBooking: true },
-    { id: '3', number: '1400', name: 'Forderungen', type: 'ASSET', automaticBooking: false },
-    {
-      id: '4',
-      number: '3400',
-      name: 'Verbindlichkeiten',
-      type: 'LIABILITY',
-      automaticBooking: false,
-    },
-    { id: '5', number: '8400', name: 'Umsatzerlöse 19%', type: 'INCOME', automaticBooking: true },
-    { id: '6', number: '4400', name: 'Wareneinkauf 19%', type: 'EXPENSE', automaticBooking: false },
-  ]);
+    loadNumberSequences();
+  }, [uid]);
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
     {
@@ -197,12 +121,27 @@ export default function AccountingPage() {
     console.log('Delete number sequence:', sequence);
   };
 
-  const handleEditBookingAccount = (account: BookingAccount) => {
-    console.log('Edit booking account:', account);
-  };
+  const handleUpdateNumberSequence = async (updatedSequence: NumberSequence) => {
+    try {
+      // Aktualisiere die Datenbank
+      await NumberSequenceService.updateNumberSequence(
+        uid,
+        updatedSequence.id,
+        {
+          format: updatedSequence.format,
+          nextNumber: updatedSequence.nextNumber,
+        }
+      );
 
-  const handleDeleteBookingAccount = (account: BookingAccount) => {
-    console.log('Delete booking account:', account);
+      // Aktualisiere den lokalen State
+      setNumberSequences(prev =>
+        prev.map(seq => (seq.id === updatedSequence.id ? updatedSequence : seq))
+      );
+      
+      console.log('Updated number sequence:', updatedSequence);
+    } catch (error) {
+      console.error('Fehler beim Aktualisieren des Nummerkreises:', error);
+    }
   };
 
   const handleEditPaymentMethod = (method: PaymentMethod) => {
@@ -248,85 +187,121 @@ export default function AccountingPage() {
             Verwalten Sie Ihre Buchhaltungseinstellungen und Konfigurationen
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Neuer Eintrag
-        </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="sequences" className="flex items-center gap-2">
-            <Hash className="h-4 w-4" />
-            Nummernkreise
-          </TabsTrigger>
-          <TabsTrigger value="accounts" className="flex items-center gap-2">
-            <Calculator className="h-4 w-4" />
-            Buchungskonten
-          </TabsTrigger>
-          <TabsTrigger value="payment-methods" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Zahlungsmethoden
-          </TabsTrigger>
-          <TabsTrigger value="payment-accounts" className="flex items-center gap-2">
-            <Wallet className="h-4 w-4" />
-            Zahlungskonten
-          </TabsTrigger>
-          <TabsTrigger value="transaction-matching" className="flex items-center gap-2">
-            <ArrowLeftRight className="h-4 w-4" />
-            Transaktionszuordnung
-          </TabsTrigger>
-          <TabsTrigger value="cost-centers" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            Kostenstelle
-          </TabsTrigger>
-        </TabsList>
+      {/* NEUE CUSTOM TAB-LEISTE - Taskilo Design */}
+      <div className="space-y-6">
+        <div className="bg-gray-100 p-1 rounded-lg">
+          <nav className="grid w-full grid-cols-6 gap-1">
+            <button
+              onClick={() => setActiveTab('sequences')}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                activeTab === 'sequences'
+                  ? 'bg-[#14ad9f] text-white shadow-sm'
+                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Hash className="h-4 w-4" />
+              Nummernkreise
+            </button>
+            <button
+              onClick={() => setActiveTab('accounts')}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                activeTab === 'accounts'
+                  ? 'bg-[#14ad9f] text-white shadow-sm'
+                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Calculator className="h-4 w-4" />
+              Buchungskonten
+            </button>
+            <button
+              onClick={() => setActiveTab('payment-methods')}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                activeTab === 'payment-methods'
+                  ? 'bg-[#14ad9f] text-white shadow-sm'
+                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <CreditCard className="h-4 w-4" />
+              Zahlungsmethoden
+            </button>
+            <button
+              onClick={() => setActiveTab('payment-accounts')}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                activeTab === 'payment-accounts'
+                  ? 'bg-[#14ad9f] text-white shadow-sm'
+                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Wallet className="h-4 w-4" />
+              Zahlungskonten
+            </button>
+            <button
+              onClick={() => setActiveTab('transaction-matching')}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                activeTab === 'transaction-matching'
+                  ? 'bg-[#14ad9f] text-white shadow-sm'
+                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              Transaktionszuordnung
+            </button>
+            <button
+              onClick={() => setActiveTab('cost-centers')}
+              className={`flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                activeTab === 'cost-centers'
+                  ? 'bg-[#14ad9f] text-white shadow-sm'
+                  : 'bg-transparent text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Building2 className="h-4 w-4" />
+              Kostenstelle
+            </button>
+          </nav>
+        </div>
 
-        <TabsContent value="sequences">
-          <NumberSequencesTab
-            sequences={numberSequences}
-            onEdit={handleEditNumberSequence}
-            onDelete={handleDeleteNumberSequence}
-          />
-        </TabsContent>
-
-        <TabsContent value="accounts">
-          <BookingAccountsTab
-            accounts={bookingAccounts}
-            onEdit={handleEditBookingAccount}
-            onDelete={handleDeleteBookingAccount}
-          />
-        </TabsContent>
-
-        <TabsContent value="payment-methods">
-          <PaymentMethodsTab
-            methods={paymentMethods}
-            onEdit={handleEditPaymentMethod}
-            onToggleActive={handleTogglePaymentMethod}
-          />
-        </TabsContent>
-
-        <TabsContent value="payment-accounts">
-          <PaymentAccountsTab
-            accounts={paymentAccounts}
-            onEdit={handleEditPaymentAccount}
-            onDelete={handleDeletePaymentAccount}
-          />
-        </TabsContent>
-
-        <TabsContent value="transaction-matching">
-          <TransactionMatchingTab onCreateRule={handleCreateTransactionRule} />
-        </TabsContent>
-
-        <TabsContent value="cost-centers">
-          <CostCentersTab
-            costCenters={costCenters}
-            onEdit={handleEditCostCenter}
-            onDelete={handleDeleteCostCenter}
-            onToggleActive={handleToggleCostCenter}
-          />
-        </TabsContent>
-      </Tabs>
+        {/* TAB CONTENT */}
+        <div>
+          {activeTab === 'sequences' && (
+            <NumberSequencesTab
+              sequences={numberSequences}
+              onEdit={handleEditNumberSequence}
+              onDelete={handleDeleteNumberSequence}
+              onUpdate={handleUpdateNumberSequence}
+            />
+          )}
+          {activeTab === 'accounts' && (
+            <BookingAccountsTab companyUid={uid} />
+          )}
+          {activeTab === 'payment-methods' && (
+            <PaymentMethodsTab
+              methods={paymentMethods}
+              onEdit={handleEditPaymentMethod}
+              onToggleActive={handleTogglePaymentMethod}
+            />
+          )}
+          {activeTab === 'payment-accounts' && (
+            <PaymentAccountsTab
+              accounts={paymentAccounts}
+              onEdit={handleEditPaymentAccount}
+              onDelete={handleDeletePaymentAccount}
+            />
+          )}
+          {activeTab === 'transaction-matching' && (
+            <TransactionMatchingTab onCreateRule={handleCreateTransactionRule} />
+          )}
+          {activeTab === 'cost-centers' && (
+            <CostCentersTab
+              costCenters={costCenters}
+              onEdit={handleEditCostCenter}
+              onDelete={handleDeleteCostCenter}
+              onToggleActive={handleToggleCostCenter}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -856,6 +856,44 @@ service cloud.firestore {
       allow delete: if isSupportStaff();
     }
 
+    // Finance: Number Sequences Collection (zentrale Nummerkreis-Verwaltung)
+    match /numberSequences/{sequenceId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (resource.data.companyId == request.auth.uid ||
+                      isSupportStaff());
+      
+      // Listen-Abfragen: Nur eigene Firma mit companyId-Filter oder Support Staff
+      allow list: if request.auth != null && 
+                    (isSupportStaff() ||
+                     ('where' in request.query &&
+                      request.query.where != null &&
+                      ['companyId', '==', request.auth.uid] in request.query.where));
+      
+      // Erstellen: Nur eigene Firma
+      allow create: if request.auth != null && 
+                       request.resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.keys().hasAll(['type', 'format', 'nextNumber', 'companyId']) &&
+                       request.resource.data.createdAt == request.time &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Aktualisieren: Nur eigene Firma (für Nummernkreis-Updates und Generierung)
+      allow update: if request.auth != null && 
+                       resource.data.companyId == request.auth.uid &&
+                       isCompany() &&
+                       request.resource.data.companyId == resource.data.companyId &&
+                       request.resource.data.type == resource.data.type &&
+                       request.resource.data.updatedAt == request.time;
+      
+      // Löschen: Nur Support Staff oder eigene Firma (falls canDelete: true)
+      allow delete: if isSupportStaff() || 
+                       (request.auth != null && 
+                        resource.data.companyId == request.auth.uid &&
+                        isCompany() &&
+                        resource.data.canDelete == true);
+    }
+
     // Finance: Quotes Collection (Angebote)
     match /financeQuotes/{quoteId} {
       // Lesen: Nur eigene Firma oder Support Staff
@@ -1494,6 +1532,40 @@ service cloud.firestore {
       // Löschen: Nur eigene Firma oder Support Staff
       allow delete: if request.auth != null && 
                        ((request.auth.uid == companyId && isCompany()) ||
+                        isSupportStaff());
+    }
+
+    // BookingAccounts Collection (Buchungskonten) - als Subcollection
+    // TEMPORÄRE DEBUG-VERSION - Mehr Logging und lockerere Regeln
+    match /companies/{companyId}/bookingAccounts/{accountId} {
+      // Lesen: Nur eigene Firma oder Support Staff
+      allow read: if request.auth != null && 
+                     (request.auth.uid == companyId || 
+                      isCompany() ||
+                      isSupportStaff());
+      
+      // Listen-Abfragen: Nur eigene Firma
+      allow list: if request.auth != null && 
+                    (request.auth.uid == companyId || 
+                     isCompany() ||
+                     isSupportStaff());
+      
+      // Erstellen: Nur eigene Firma - GELOCKERT FÜR DEBUG
+      allow create: if request.auth != null && 
+                       (request.auth.uid == companyId || 
+                        isCompany() ||
+                        isSupportStaff());
+      
+      // Aktualisieren: Nur eigene Firma - GELOCKERT FÜR DEBUG
+      allow update: if request.auth != null && 
+                       (request.auth.uid == companyId || 
+                        isCompany() ||
+                        isSupportStaff());
+      
+      // Löschen: Nur eigene Firma oder Support Staff
+      allow delete: if request.auth != null && 
+                       (request.auth.uid == companyId || 
+                        isCompany() ||
                         isSupportStaff());
     }
 

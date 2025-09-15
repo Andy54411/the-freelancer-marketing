@@ -152,7 +152,7 @@ const ProjectDetailPage: React.FC = () => {
 
         // Falls nicht in project_requests gefunden, prüfe quotes Collection
         if (!projectDocSnap.exists()) {
-          projectDocRef = doc(db, 'quotes', projectId);
+          projectDocRef = doc(db, 'companies', companyId, 'quotes', projectId);
           projectDocSnap = await getDoc(projectDocRef);
         }
 

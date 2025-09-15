@@ -51,11 +51,11 @@ export class ProposalSubcollectionService {
     quoteId: string,
     proposalData: ProposalData,
     fullResponse?: any
-  ): Promise<void> {
+  , companyId: string): Promise<void> {
     const proposalId = proposalData.companyUid; // Use companyUid as document ID
 
     const proposalRef = db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .doc(proposalId);
@@ -82,15 +82,15 @@ export class ProposalSubcollectionService {
       quoteUpdate.responseAt = now;
     }
 
-    await db.collection('quotes').doc(quoteId).update(quoteUpdate);
+    await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).update(quoteUpdate);
   }
 
   /**
    * Get all proposals for a quote
    */
-  static async getProposalsForQuote(quoteId: string): Promise<ProposalData[]> {
+  static async getProposalsForQuote(quoteId: string, companyId: string): Promise<ProposalData[]> {
     const proposalsSnapshot = await db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .orderBy('createdAt', 'desc')
@@ -105,9 +105,9 @@ export class ProposalSubcollectionService {
   /**
    * Get a specific proposal
    */
-  static async getProposal(quoteId: string, proposalId: string): Promise<ProposalData | null> {
+  static async getProposal(quoteId: string, proposalId: string, companyId: string): Promise<ProposalData | null> {
     const proposalDoc = await db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .doc(proposalId)
@@ -131,9 +131,9 @@ export class ProposalSubcollectionService {
     proposalId: string,
     status: 'accepted' | 'declined',
     updateData?: Partial<ProposalData>
-  ): Promise<void> {
+  , companyId: string): Promise<void> {
     const proposalRef = db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .doc(proposalId);
@@ -151,7 +151,7 @@ export class ProposalSubcollectionService {
       await this.declineOtherProposals(quoteId, proposalId);
 
       // Update quote status
-      await db.collection('quotes').doc(quoteId).update({
+      await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).update({
         status: 'accepted',
         acceptedProposalId: proposalId,
         acceptedAt: Timestamp.now(),
@@ -162,9 +162,9 @@ export class ProposalSubcollectionService {
   /**
    * Decline all other proposals when one is accepted
    */
-  static async declineOtherProposals(quoteId: string, acceptedProposalId: string): Promise<void> {
+  static async declineOtherProposals(quoteId: string, acceptedProposalId: string, companyId: string): Promise<void> {
     const proposalsSnapshot = await db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .where('status', '==', 'pending')
@@ -194,9 +194,9 @@ export class ProposalSubcollectionService {
   /**
    * Check if company has already submitted a proposal
    */
-  static async hasExistingProposal(quoteId: string, companyUid: string): Promise<boolean> {
+  static async hasExistingProposal(quoteId: string, companyUid: string, companyId: string): Promise<boolean> {
     const proposalDoc = await db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .doc(companyUid)
@@ -211,7 +211,7 @@ export class ProposalSubcollectionService {
   static async getProposalsByCompany(
     companyUid: string,
     limit: number = 50
-  ): Promise<
+  , companyId: string): Promise<
     Array<{
       proposalId: string;
       quoteId: string;
@@ -240,7 +240,7 @@ export class ProposalSubcollectionService {
       // Get parent quote data
       const quoteId = proposalDoc.ref.parent.parent?.id;
       if (quoteId) {
-        const quoteDoc = await db.collection('quotes').doc(quoteId).get();
+        const quoteDoc = await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).get();
         if (quoteDoc.exists) {
           const quoteData = quoteDoc.data();
 
@@ -260,9 +260,9 @@ export class ProposalSubcollectionService {
   /**
    * Delete a proposal (soft delete - mark as deleted)
    */
-  static async deleteProposal(quoteId: string, proposalId: string): Promise<void> {
+  static async deleteProposal(quoteId: string, proposalId: string, companyId: string): Promise<void> {
     const proposalRef = db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .doc(proposalId);
@@ -277,9 +277,9 @@ export class ProposalSubcollectionService {
   /**
    * Get proposal count for a quote
    */
-  static async getProposalCount(quoteId: string): Promise<number> {
+  static async getProposalCount(quoteId: string, companyId: string): Promise<number> {
     const proposalsSnapshot = await db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .where('status', '!=', 'deleted')
@@ -292,14 +292,14 @@ export class ProposalSubcollectionService {
    * Migrate from legacy array structure to subcollections
    * (Used by migration script and for backwards compatibility)
    */
-  static async migrateLegacyProposals(quoteId: string, proposalsArray: any[]): Promise<void> {
+  static async migrateLegacyProposals(quoteId: string, proposalsArray: any[], companyId: string): Promise<void> {
     const batch = db.batch();
     const now = Timestamp.now();
 
     proposalsArray.forEach(proposal => {
       if (proposal.companyUid) {
         const proposalRef = db
-          .collection('quotes')
+          .collection('companies').doc(companyId).collection('quotes')
           .doc(quoteId)
           .collection('proposals')
           .doc(proposal.companyUid);
@@ -317,7 +317,7 @@ export class ProposalSubcollectionService {
     await batch.commit();
 
     // Remove proposals array from quote
-    await db.collection('quotes').doc(quoteId).update({
+    await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).update({
       proposals: FieldValue.delete(),
       proposalsMigratedAt: now,
       proposalsInSubcollection: true,

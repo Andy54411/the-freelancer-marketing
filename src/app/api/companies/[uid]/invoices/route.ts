@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Runtime Firebase initialization to prevent build-time issues
-async function getFirebaseDb(): Promise<any> {
+async function getFirebaseDb(companyId: string): Promise<any> {
   try {
     // Dynamically import Firebase services
     const firebaseModule = await import('@/firebase/server');
@@ -27,7 +27,7 @@ async function getFirebaseDb(): Promise<any> {
  * API Route für Invoices
  * GET /api/companies/[uid]/invoices
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
   try {
     const { uid } = await params;
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Lade Invoices aus Firestore
     const invoicesQuery = await db
       .collection('invoices')
-      .where('companyId', '==', uid)
+      
       .orderBy('createdAt', 'desc')
       .get();
 
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
  * API Route für neue Invoice
  * POST /api/companies/[uid]/invoices
  */
-export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
   try {
     const { uid } = await params;
     const body = await request.json();
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           const testNumber = `R-${currentYear}-${sequentialNumber.toString().padStart(3, '0')}`;
           const existingInvoice = await db
             .collection('invoices')
-            .where('companyId', '==', uid)
+            
             .where('invoiceNumber', '==', testNumber)
             .limit(1)
             .get();

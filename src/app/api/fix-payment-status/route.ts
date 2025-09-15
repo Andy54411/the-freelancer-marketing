@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, admin } from '@/firebase/server';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, companyId: string) {
   try {
     const { paymentIntentId, orderId } = await req.json();
 
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const orderData = orderSnapshot.data()!;
-    const timeEntriesRef = orderRef.collection('timeEntries');
+    const timeEntriesRef = orderRef.collection('companies').doc(companyId).collection('timeEntries');
 
     // Find all time entries with this payment intent that are still billing_pending
     const timeEntriesSnapshot = await timeEntriesRef
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, companyId: string) {
   const { searchParams } = new URL(req.url);
   const orderId = searchParams.get('orderId');
   const paymentIntentId = searchParams.get('paymentIntentId');
@@ -102,7 +102,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const orderRef = db.collection('auftraege').doc(orderId);
-    const timeEntriesSnapshot = await orderRef.collection('timeEntries').get();
+    const timeEntriesSnapshot = await orderRef.collection('companies').doc(companyId).collection('timeEntries').get();
 
     const entries = timeEntriesSnapshot.docs.map(doc => ({
       id: doc.id,

@@ -1081,6 +1081,18 @@ export default function Step5CompanyPage() {
           profileStatus: 'pending_onboarding',
         });
 
+        // ✅ NEU: Standard-Nummerkreise für neue Company erstellen
+        setCurrentStepMessage('Nummerkreise werden eingerichtet...');
+        try {
+          // Import der NumberSequenceService erfolgt dynamisch um Import-Probleme zu vermeiden
+          const { NumberSequenceService } = await import('@/services/numberSequenceService');
+          await NumberSequenceService.createDefaultSequences(currentAuthUserUID);
+          console.log('✅ Standard-Nummerkreise erfolgreich für Company erstellt:', currentAuthUserUID);
+        } catch (numberSequenceError) {
+          console.warn('⚠️ Fehler beim Erstellen der Standard-Nummerkreise:', numberSequenceError);
+          // Nicht blockierend - Registrierung läuft weiter
+        }
+
         // SUCCESS: Registration abgeschlossen - harmonisiertes System ist bereits konfiguriert
 
         setCurrentStepMessage('Weiterleitung zum Onboarding...');

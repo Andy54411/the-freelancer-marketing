@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Runtime Firebase initialization to prevent build-time issues
-async function getFirebaseDb(): Promise<any> {
+async function getFirebaseDb(companyId: string): Promise<any> {
   try {
     // Dynamically import Firebase services
     const firebaseModule = await import('@/firebase/server');
@@ -36,12 +36,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Get Firebase DB dynamically
-    const db = await getFirebaseDb();
+    const db = await getFirebaseDb(uid);
 
     // Lade nur echte Kunden aus Firestore (keine Lieferanten)
     const customersQuery = await db
-      .collection('customers')
-      .where('companyId', '==', uid)
+      .collection('companies').doc(uid).collection('customers')
+      
       .orderBy('createdAt', 'desc')
       .get();
 
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
  * API Route für neuen Customer
  * POST /api/companies/[uid]/customers
  */
-export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
   try {
     const { uid } = await params;
     const body = await request.json();
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Get Firebase DB dynamically
-    const db = await getFirebaseDb();
+    const db = await getFirebaseDb(uid);
 
     // Erstelle neuen Kunden
     const newCustomer = {
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('customers').add(newCustomer);
+    const docRef = await db.collection('companies').doc(companyId).collection('customers').add(newCustomer);
 
     return NextResponse.json({
       success: true,

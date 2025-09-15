@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, companyId: string) {
   try {
     const { paymentIntentId } = await req.json();
 
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Search for this PaymentIntent in proposals
-    const quotesSnapshot = await db.collection('quotes').get();
+    const quotesSnapshot = await db.collection('companies').doc(companyId).collection('quotes').get();
     const results: any[] = [];
 
     for (const quoteDoc of quotesSnapshot.docs) {

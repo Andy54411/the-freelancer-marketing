@@ -9,7 +9,7 @@ import { ProposalSubcollectionService } from '@/services/ProposalSubcollectionSe
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
-) {
+, companyId: string) {
   const { uid, quoteId } = await params;
 
   try {
@@ -39,7 +39,7 @@ export async function GET(
 
     if (!projectDoc.exists) {
       // Check if it might be in the quotes collection instead
-      projectRef = db.collection('quotes').doc(quoteId);
+      projectRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
       projectDoc = await projectRef.get();
       isQuotesCollection = true;
 

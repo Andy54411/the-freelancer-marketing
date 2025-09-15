@@ -116,6 +116,17 @@ export class SomeService {
 - **Notifications**: Sonner for toast notifications
 - **Animations**: Framer Motion for smooth transitions
 
+### Taskilo Color Scheme
+- **Primary Color**: `#14ad9f` (Türkis/Teal) - Use for primary buttons, headers, main actions
+- **Primary Hover**: `#129488` (Darker Teal) - Use for hover states
+- **Modal Headers**: Use `bg-[#14ad9f]` with `text-white` for modal headers
+- **Modal Footers**: Use `bg-[#14ad9f]` with white buttons (`bg-white text-[#14ad9f]`)
+- **Primary Buttons**: `bg-[#14ad9f] hover:bg-[#129488] text-white`
+- **Link Hover**: `hover:text-[#14ad9f]` for interactive links
+- **Focus States**: `focus:ring-[#14ad9f] focus:border-[#14ad9f]` for form inputs
+
+**NEVER use black (#000000) as the primary color - always use the Taskilo teal (#14ad9f)**
+
 ### German Business Logic
 ```typescript
 // Kleinunternehmer-Regelung (deutsche Steuerlogik)

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/firebase/server';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, companyId: string) {
   try {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get('companyId');
@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Firebase Admin SDK Abfrage für Kunden/Lieferanten
-    const customersRef = db.collection('customers');
-    const querySnapshot = await customersRef.where('companyId', '==', companyId).get();
+    const customersRef = db.collection('companies').doc(companyId).collection('customers');
+    const querySnapshot = await customersRef.get();
 
     const customers: any[] = [];
 
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest, companyId: string) {
   try {
     const body = await request.json();
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('customers').add(customerData);
+    const docRef = await db.collection('companies').doc(companyId).collection('customers').add(customerData);
 
     return NextResponse.json({
       success: true,

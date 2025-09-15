@@ -6,7 +6,7 @@ import { db } from '@/firebase/server';
  * GET /api/company/[uid]/time-entries
  */
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
   try {
     const { uid: companyId } = await params;
     const { searchParams } = new URL(request.url);
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const projectId = searchParams.get('projectId');
 
     // Basis-Query für alle Zeiteinträge der Company
-    let query = db.collection('timeEntries').where('companyId', '==', companyId);
+    let query = db.collection('companies').doc(companyId).collection('timeEntries');
 
     // Optional: Filter nach Projekt
     if (projectId) {

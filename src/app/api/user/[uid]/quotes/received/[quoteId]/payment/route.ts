@@ -21,7 +21,7 @@ function getStripeInstance() {
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
-) {
+, companyId: string) {
   const { uid, quoteId } = await params;
 
   try {
@@ -74,7 +74,7 @@ export async function POST(
 
     // Get the quote to verify access and get details
 
-    const projectRef = db.collection('quotes').doc(quoteId);
+    const projectRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
     const projectDoc = await projectRef.get();
 
     if (!projectDoc.exists) {
@@ -189,7 +189,7 @@ export async function POST(
     // Store PaymentIntent ID for webhook processing, but keep status as 'pending'
     // Status will only change to 'payment_pending' and then 'accepted' via webhook
     const proposalRef = db
-      .collection('quotes')
+      .collection('companies').doc(companyId).collection('quotes')
       .doc(quoteId)
       .collection('proposals')
       .doc(proposalId);
@@ -236,7 +236,7 @@ export async function POST(
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ uid: string; quoteId: string }> }
-) {
+, companyId: string) {
   const { uid, quoteId } = await params;
 
   try {
@@ -288,7 +288,7 @@ export async function PATCH(
 
     // Get the quote - try both collections
 
-    let projectRef = db.collection('quotes').doc(quoteId);
+    let projectRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
     let projectDoc = await projectRef.get();
     let collectionUsed = 'quotes';
 

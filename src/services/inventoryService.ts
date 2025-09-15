@@ -97,9 +97,9 @@ export class InventoryService {
    */
   static async getInventoryItems(companyId: string): Promise<InventoryItem[]> {
     try {
+      // NEUE SUBCOLLECTION STRUKTUR
       const itemsQuery = query(
-        collection(db, 'inventory'),
-        where('companyId', '==', companyId),
+        collection(db, 'companies', companyId, 'inventory'),
         orderBy('name', 'asc')
       );
 
@@ -158,7 +158,7 @@ export class InventoryService {
    */
   static async getInventoryItem(companyId: string, itemId: string): Promise<InventoryItem | null> {
     try {
-      const itemRef = doc(db, 'inventory', itemId);
+      const itemRef = doc(db, 'companies', companyId, 'inventory', itemId);
       const itemSnapshot = await getDocs(
         query(
           collection(db, 'inventory'),
@@ -399,11 +399,12 @@ export class InventoryService {
    * Inventar-Artikel aktualisieren
    */
   static async updateInventoryItem(
+    companyId: string,
     itemId: string,
     updates: Partial<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'companyId'>>
   ): Promise<void> {
     try {
-      const itemRef = doc(db, 'inventory', itemId);
+      const itemRef = doc(db, 'companies', companyId, 'inventory', itemId);
       const payload: Record<string, any> = { ...updates, updatedAt: serverTimestamp() };
       const cleanedUpdates = Object.fromEntries(
         Object.entries(payload).filter(([, v]) => v !== undefined)
@@ -440,7 +441,7 @@ export class InventoryService {
       const quantity = type === 'out' ? -(previousStock - newStock) : newStock - previousStock;
 
       // Bestand aktualisieren
-      await this.updateInventoryItem(itemId, { currentStock: newStock });
+      await this.updateInventoryItem(companyId, itemId, { currentStock: newStock });
 
       // Stock-Movement hinzufügen
       await this.addStockMovement(companyId, {
@@ -532,9 +533,9 @@ export class InventoryService {
   /**
    * Inventar-Artikel löschen
    */
-  static async deleteInventoryItem(itemId: string): Promise<void> {
+  static async deleteInventoryItem(companyId: string, itemId: string): Promise<void> {
     try {
-      await deleteDoc(doc(db, 'inventory', itemId));
+      await deleteDoc(doc(db, 'companies', companyId, 'inventory', itemId));
     } catch (error) {
       throw error;
     }
@@ -552,7 +553,7 @@ export class InventoryService {
       const batch = writeBatch(db);
 
       for (const item of items) {
-        const itemRef = doc(db, 'inventory', item.itemId);
+        const itemRef = doc(db, 'companies', companyId, 'inventory', item.itemId);
         const currentItem = await this.getInventoryItem(companyId, item.itemId);
 
         if (!currentItem) {
@@ -618,7 +619,7 @@ export class InventoryService {
       const batch = writeBatch(db);
 
       for (const item of items) {
-        const itemRef = doc(db, 'inventory', item.itemId);
+        const itemRef = doc(db, 'companies', companyId, 'inventory', item.itemId);
         const currentItem = await this.getInventoryItem(companyId, item.itemId);
 
         if (!currentItem) {
@@ -680,7 +681,7 @@ export class InventoryService {
       const batch = writeBatch(db);
 
       for (const item of items) {
-        const itemRef = doc(db, 'inventory', item.itemId);
+        const itemRef = doc(db, 'companies', companyId, 'inventory', item.itemId);
         const currentItem = await this.getInventoryItem(companyId, item.itemId);
 
         if (!currentItem) {
@@ -808,7 +809,7 @@ export class InventoryService {
           const newAvailableStock = newStock - inventoryItem.reservedStock;
 
           // Inventar-Item aktualisieren
-          const itemRef = doc(db, 'inventory', inventoryItem.id);
+          const itemRef = doc(db, 'companies', companyId, 'inventory', inventoryItem.id);
           batch.update(itemRef, {
             currentStock: newStock,
             availableStock: newAvailableStock,
