@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
@@ -20,6 +21,10 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<'email' | 'google' | 'apple' | null>(null);
 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams?.get('redirectTo') || '/dashboard';
+
   const handleEmailPasswordLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!email.trim() || !password.trim()) {
@@ -30,10 +35,8 @@ export default function LoginPage() {
     setError(null);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Die Weiterleitung wird jetzt vollständig vom AuthContext gehandhabt.
-      // Nach einem erfolgreichen Login wird die Seite durch die Weiterleitung
-      // ohnehin unmounted. Das Zurücksetzen des Ladezustands ist nur bei
-      // einem Fehler notwendig.
+      // Explizite Weiterleitung nach erfolgreichem Login
+      router.replace(redirectTo);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as { code: string; message: string };
@@ -64,10 +67,8 @@ export default function LoginPage() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      // Die Weiterleitung wird jetzt vollständig vom AuthContext gehandhabt.
-      // Nach einem erfolgreichen Login wird die Seite durch die Weiterleitung
-      // ohnehin unmounted. Das Zurücksetzen des Ladezustands ist nur bei
-      // einem Fehler notwendig.
+      // Explizite Weiterleitung nach erfolgreichem Login
+      router.replace(redirectTo);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as { code: string; message: string };
@@ -96,10 +97,8 @@ export default function LoginPage() {
       provider.addScope('email');
       provider.addScope('name');
       const result = await signInWithPopup(auth, provider);
-      // Die Weiterleitung wird jetzt vollständig vom AuthContext gehandhabt.
-      // Nach einem erfolgreichen Login wird die Seite durch die Weiterleitung
-      // ohnehin unmounted. Das Zurücksetzen des Ladezustands ist nur bei
-      // einem Fehler notwendig.
+      // Explizite Weiterleitung nach erfolgreichem Login
+      router.replace(redirectTo);
     } catch (err: unknown) {
       if (typeof err === 'object' && err !== null && 'code' in err) {
         const firebaseError = err as { code: string; message: string };
