@@ -100,19 +100,19 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({
               {showLogo && logoUrl && (
                 <img
                   src={logoUrl}
-                  alt={`${data.company.name} Logo`}
+                  alt={`${data.company?.name || 'Company'} Logo`}
                   className="h-10 w-auto ml-auto mb-2 object-contain"
                 />
               )}
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">{data.company.name}</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-3">{data.company?.name || 'Company Name'}</h2>
               <div className="text-gray-600 space-y-1">
-                <p>{data.company.address.street}</p>
+                <p>{data.company?.address?.street}</p>
                 <p>
-                  {data.company.address.zipCode} {data.company.address.city}
+                  {data.company?.address?.zipCode} {data.company?.address?.city}
                 </p>
                 <div className="mt-3 pt-3 border-t border-gray-300">
-                  <p className="font-medium">{data.company.phone}</p>
-                  <p>{data.company.email}</p>
+                  <p className="font-medium">{data.company?.phone}</p>
+                  <p>{data.company?.email}</p>
                 </div>
               </div>
             </div>
@@ -130,10 +130,10 @@ export const ExecutivePremiumTemplate: React.FC<TemplateProps> = ({
                   Rechnungsadresse
                 </h3>
                 <div className="bg-white border border-gray-200 pl-6 py-4">
-                  <p className="text-xl font-semibold text-gray-800 mb-2">{data.customer.name}</p>
-                  <p className="text-gray-600">{data.customer.address.street}</p>
+                  <p className="text-xl font-semibold text-gray-800 mb-2">{data.customer?.name || 'Customer Name'}</p>
+                  <p className="text-gray-600">{data.customer?.address?.street}</p>
                   <p className="text-gray-600">
-                    {data.customer.address.zipCode} {data.customer.address.city}
+                    {data.customer?.address?.zipCode} {data.customer?.address?.city}
                   </p>
                 </div>
               </div>

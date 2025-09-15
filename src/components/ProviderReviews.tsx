@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, limit, orderBy, startAfter } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
+import { collection, query, where, getDocs, limit, orderBy, startAfter, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import {
   Star,
@@ -27,8 +27,11 @@ interface Review {
   isVerified?: boolean;
   isReturningCustomer?: boolean;
   helpfulVotes?: number;
+  unhelpfulVotes?: number;
+  userVotes?: { [ip: string]: 'helpful' | 'unhelpful' };
   providerResponse?: {
-    comment: string;
+    comment?: string;
+    message?: string;
     date: any;
   };
 }
@@ -44,6 +47,12 @@ export default function ProviderReviews({
   reviewCount = 0,
   averageRating = 0,
 }: ProviderReviewsProps) {
+  // console.log('🔍 [ProviderReviews] Component gestartet mit Props:', { 
+  //   providerId, 
+  //   reviewCount, 
+  //   averageRating 
+  // });
+  
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -54,14 +63,25 @@ export default function ProviderReviews({
   const [translatingReviews, setTranslatingReviews] = useState<Set<string>>(new Set());
   const [translatedResponses, setTranslatedResponses] = useState<Map<string, string>>(new Map());
   const [translatingResponses, setTranslatingResponses] = useState<Set<string>>(new Set());
+  const [providerProfilePicture, setProviderProfilePicture] = useState<string>('');
+  const [userIP, setUserIP] = useState<string>('');
 
   const REVIEWS_PER_PAGE = 5;
 
-  useEffect(() => {
-    loadReviews(true);
+  // Lade Profilbild des Anbieters
+  const loadProviderProfile = useCallback(async () => {
+    try {
+      const companyDoc = await getDoc(doc(db, 'companies', providerId));
+      if (companyDoc.exists()) {
+        const data = companyDoc.data();
+        setProviderProfilePicture(data.profilePictureURL || data.profilePictureFirebaseUrl || '');
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des Anbieter-Profils:', error);
+    }
   }, [providerId]);
 
-  const loadReviews = async (initial = false) => {
+  const loadReviews = useCallback(async (initial = false) => {
     try {
       if (initial) {
         setLoading(true);
@@ -72,30 +92,32 @@ export default function ProviderReviews({
         setLoadingMore(true);
       }
 
+      // Versuche zuerst die neue Subcollection-Struktur
+      // console.log('🔍 [ProviderReviews] Versuche Subcollection:', `companies/${providerId}/reviews`);
+      
       let reviewsQuery = query(
-        collection(db, 'reviews'),
-        where('providerId', '==', providerId),
-        orderBy('date', 'desc'),
+        collection(db, `companies/${providerId}/reviews`),
+        orderBy('createdAt', 'desc'),
         limit(REVIEWS_PER_PAGE)
       );
 
       if (!initial && lastVisible) {
         reviewsQuery = query(
-          collection(db, 'reviews'),
-          where('providerId', '==', providerId),
-          orderBy('date', 'desc'),
+          collection(db, `companies/${providerId}/reviews`),
+          orderBy('createdAt', 'desc'),
           startAfter(lastVisible),
           limit(REVIEWS_PER_PAGE)
         );
       }
 
-      const reviewsSnapshot = await getDocs(reviewsQuery);
+      let reviewsSnapshot = await getDocs(reviewsQuery);
+
       const reviewsData = reviewsSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
           rating: data.rating || 0,
-          comment: data.comment || '',
+          comment: data.comment || data.reviewText || '',
           reviewerName: data.reviewerName || 'Anonymer Nutzer',
           reviewerCountry: data.reviewerCountry,
           date: data.date,
@@ -104,15 +126,37 @@ export default function ProviderReviews({
           projectDuration: data.projectDuration,
           isVerified: data.isVerified || false,
           isReturningCustomer: data.isReturningCustomer || false,
-          helpfulVotes: data.helpfulVotes || 0,
+          helpfulVotes: data.helpfulVotes || undefined,
+          unhelpfulVotes: data.unhelpfulVotes || undefined,
+          userVotes: data.userVotes || {},
           providerResponse: data.providerResponse,
         };
       }) as Review[];
 
+      // Sortiere lokal nach helpfulVotes (hilfreichste zuerst)
+      reviewsData.sort((a, b) => {
+        const aHelpful = a.helpfulVotes || 0;
+        const bHelpful = b.helpfulVotes || 0;
+        if (aHelpful !== bHelpful) {
+          return bHelpful - aHelpful; // Höchste zuerst
+        }
+        // Bei gleichen helpfulVotes, sortiere nach Datum (neueste zuerst)
+        const aTime = a.date?.toDate?.()?.getTime() || 0;
+        const bTime = b.date?.toDate?.()?.getTime() || 0;
+        return bTime - aTime;
+      });
+
+      // console.log('🔍 [ProviderReviews] Verarbeitete reviewsData:', reviewsData);
+
       if (initial) {
         setReviews(reviewsData);
+        // console.log('🔍 [ProviderReviews] Reviews initial gesetzt:', reviewsData.length);
       } else {
-        setReviews(prev => [...prev, ...reviewsData]);
+        setReviews(prev => {
+          const newReviews = [...prev, ...reviewsData];
+          console.log('🔍 [ProviderReviews] Reviews erweitert:', newReviews.length);
+          return newReviews;
+        });
       }
 
       // Set pagination state
@@ -124,10 +168,75 @@ export default function ProviderReviews({
         setLastVisible(reviewsSnapshot.docs[reviewsSnapshot.docs.length - 1]);
       }
     } catch (error) {
-
+      console.error('❌ [ProviderReviews] Fehler beim Laden der Reviews:', error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
+    }
+  }, [providerId]);
+
+  useEffect(() => {
+    loadReviews(true);
+    loadProviderProfile();
+    loadUserIP();
+  }, [providerId]);
+
+  // Lade User-IP
+  const loadUserIP = useCallback(async () => {
+    try {
+      const response = await fetch('/api/get-ip');
+      const data = await response.json();
+      setUserIP(data.ip || 'unknown');
+    } catch (error) {
+      setUserIP('unknown');
+    }
+  }, []);
+
+  // Vote für Review
+  const voteReview = async (reviewId: string, voteType: 'helpful' | 'unhelpful') => {
+    if (!userIP) return;
+
+    try {
+      const reviewRef = doc(db, `companies/${providerId}/reviews`, reviewId);
+      const reviewDoc = await getDoc(reviewRef);
+      
+      if (reviewDoc.exists()) {
+        const data = reviewDoc.data();
+        const userVotes = data.userVotes || {};
+        
+        // Prüfe ob User bereits gevotet hat
+        if (userVotes[userIP]) {
+          return; // User hat bereits gevotet
+        }
+
+        // Update Votes
+        const updateData: any = {
+          [`userVotes.${userIP}`]: voteType
+        };
+
+        if (voteType === 'helpful') {
+          updateData.helpfulVotes = increment(1);
+        } else {
+          updateData.unhelpfulVotes = increment(1);
+        }
+
+        await updateDoc(reviewRef, updateData);
+
+        // Update lokalen State
+        setReviews(prev => prev.map(review => {
+          if (review.id === reviewId) {
+            return {
+              ...review,
+              helpfulVotes: voteType === 'helpful' ? (review.helpfulVotes || 0) + 1 : review.helpfulVotes,
+              unhelpfulVotes: voteType === 'unhelpful' ? (review.unhelpfulVotes || 0) + 1 : review.unhelpfulVotes,
+              userVotes: { ...review.userVotes, [userIP]: voteType }
+            };
+          }
+          return review;
+        }));
+      }
+    } catch (error) {
+      console.error('Fehler beim Voten:', error);
     }
   };
 
@@ -249,8 +358,7 @@ export default function ProviderReviews({
         setTranslatedReviews(prev => new Map([...prev, [reviewId, data.translatedText]]));
       }
     } catch (error) {
-
-      // Fallback: zeige Original-Text
+      console.error('Übersetzung fehlgeschlagen:', error);
     } finally {
       if (isResponse) {
         setTranslatingResponses(prev => {
@@ -272,7 +380,7 @@ export default function ProviderReviews({
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-          Bewertungen ({reviewCount})
+          Bewertungen ({reviews.length})
         </h2>
         <div className="space-y-6">
           {[...Array(3)].map((_, i) => (
@@ -298,7 +406,7 @@ export default function ProviderReviews({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
-        Bewertungen ({reviewCount})
+        Bewertungen ({reviews.length})
       </h2>
 
       {/* Rating Summary */}
@@ -311,12 +419,14 @@ export default function ProviderReviews({
               </div>
               {renderStars(Math.round(averageRating), 'md')}
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {reviewCount} Bewertungen
+                {reviews.length} Bewertungen
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Debug removed */}
 
       {reviews.length > 0 ? (
         <div className="space-y-6">
@@ -471,9 +581,17 @@ export default function ProviderReviews({
                   {review.providerResponse && (
                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 ml-8">
                       <div className="flex items-start space-x-3">
-                        <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                          A
-                        </div>
+                        {providerProfilePicture ? (
+                          <img
+                            src={providerProfilePicture}
+                            alt="Anbieter Profilbild"
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-[#14ad9f] rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                            A
+                          </div>
+                        )}
                         <div className="flex-1">
                           <p className="font-medium text-gray-900 dark:text-white mb-1">
                             Antwort des Anbieters
@@ -481,14 +599,14 @@ export default function ProviderReviews({
                           <p className="text-gray-700 dark:text-gray-300 text-sm">
                             {translatedResponses.has(review.id)
                               ? translatedResponses.get(review.id)
-                              : review.providerResponse.comment}
+                              : (review.providerResponse.comment || review.providerResponse.message)}
                           </p>
 
                           {/* Translation Button for Response */}
                           <div className="mt-2 flex items-center gap-2">
                             <button
                               onClick={() =>
-                                translateText(review.providerResponse!.comment, review.id, true)
+                                translateText(review.providerResponse!.comment || review.providerResponse!.message!, review.id, true)
                               }
                               disabled={translatingResponses.has(review.id)}
                               className="inline-flex items-center gap-1 text-xs text-[#14ad9f] hover:text-teal-600 font-medium disabled:opacity-50"
@@ -520,16 +638,39 @@ export default function ProviderReviews({
                   {/* Helpful Buttons */}
                   <div className="flex items-center space-x-4 text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Hilfreich?</span>
-                    <button className="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    <button 
+                      onClick={() => voteReview(review.id, 'helpful')}
+                      disabled={!!review.userVotes?.[userIP]}
+                      className={`flex items-center space-x-1 transition-colors ${
+                        review.userVotes?.[userIP] === 'helpful' 
+                          ? 'text-[#14ad9f]' 
+                          : review.userVotes?.[userIP] 
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-gray-600 dark:text-gray-400 hover:text-[#14ad9f]'
+                      }`}
+                    >
                       <ThumbsUp className="w-4 h-4" />
                       <span>Ja</span>
                       {review.helpfulVotes && review.helpfulVotes > 0 && (
                         <span className="text-xs">({review.helpfulVotes})</span>
                       )}
                     </button>
-                    <button className="flex items-center space-x-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    <button 
+                      onClick={() => voteReview(review.id, 'unhelpful')}
+                      disabled={!!review.userVotes?.[userIP]}
+                      className={`flex items-center space-x-1 transition-colors ${
+                        review.userVotes?.[userIP] === 'unhelpful' 
+                          ? 'text-red-500' 
+                          : review.userVotes?.[userIP] 
+                            ? 'text-gray-400 cursor-not-allowed' 
+                            : 'text-gray-600 dark:text-gray-400 hover:text-red-500'
+                      }`}
+                    >
                       <ThumbsDown className="w-4 h-4" />
                       <span>Nein</span>
+                      {review.unhelpfulVotes && review.unhelpfulVotes > 0 && (
+                        <span className="text-xs">({review.unhelpfulVotes})</span>
+                      )}
                     </button>
                   </div>
                 </div>

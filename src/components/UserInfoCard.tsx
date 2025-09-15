@@ -160,7 +160,7 @@ const UserInfoCard: React.FC<UserInfoCardProps> = ({
 
         // 2. Lade Review-Daten für Provider
         if (userRole === 'provider') {
-          const reviewsQuery = query(collection(db, 'reviews'), where('providerId', '==', userId));
+          const reviewsQuery = query(collection(db, `companies/${userId}/reviews`));
           const reviewsSnapshot = await getDocs(reviewsQuery);
 
           if (!reviewsSnapshot.empty) {

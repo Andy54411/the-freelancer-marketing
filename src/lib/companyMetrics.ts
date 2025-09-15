@@ -31,10 +31,9 @@ export async function calculateCompanyMetrics(companyUid: string): Promise<Compa
     const ordersSnapshot = await getDocs(ordersQuery);
     const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // 2. Bewertungen laden
-    const reviewsRef = collection(db, 'reviews');
-    const reviewsQuery = query(reviewsRef, where('reviewedUid', '==', companyUid));
-    const reviewsSnapshot = await getDocs(reviewsQuery);
+    // 2. Bewertungen laden aus Subcollection
+    const reviewsRef = collection(db, `companies/${companyUid}/reviews`);
+    const reviewsSnapshot = await getDocs(reviewsRef);
     const reviews = reviewsSnapshot.docs.map(doc => doc.data());
 
     // 3. Chat-Daten für Response Time laden

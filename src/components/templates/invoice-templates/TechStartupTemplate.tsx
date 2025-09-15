@@ -93,21 +93,21 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
             {showLogo && logoUrl && (
               <img
                 src={logoUrl}
-                alt={`${data.company.name} Logo`}
+                alt={`${data.company?.name || 'Company'} Logo`}
                 className="h-10 w-auto ml-auto mb-2 object-contain"
               />
             )}
             <pre className="text-[10px] text-gray-500 mb-2">
               {`
 ┌─────────────────────────┐
-│      ${data.company.name.padEnd(15)}      │
+│      ${(data.company?.name || 'Company Name').padEnd(15)}      │
 └─────────────────────────┘
 `}
             </pre>
             <div className="text-sm text-gray-600">
-              <p>{data.company.address.street}</p>
+              <p>{data.company?.address?.street}</p>
               <p>
-                {data.company.address.zipCode} {data.company.address.city}
+                {data.company?.address?.zipCode} {data.company?.address?.city}
               </p>
               <p className="mt-2 text-gray-500">[{data.company.phone}]</p>
               <p className="text-gray-500">[{data.company.email}]</p>
@@ -126,10 +126,10 @@ export const TechStartupTemplate: React.FC<TemplateProps> = ({
                   &gt; CLIENT_INFO
                 </h3>
                 <div className="font-mono text-sm space-y-1">
-                  <p className="text-gray-800 font-bold">{data.customer.name}</p>
-                  <p className="text-gray-600">{data.customer.address.street}</p>
+                  <p className="text-gray-800 font-bold">{data.customer?.name || 'Customer Name'}</p>
+                  <p className="text-gray-600">{data.customer?.address?.street}</p>
                   <p className="text-gray-600">
-                    {data.customer.address.zipCode} {data.customer.address.city}
+                    {data.customer?.address?.zipCode} {data.customer?.address?.city}
                   </p>
                 </div>
               </div>

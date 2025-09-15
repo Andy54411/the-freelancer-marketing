@@ -92,35 +92,33 @@ export default function SubcategoryPage() {
   // Lade echte Bewertungen und abgeschlossene Aufträge für Provider
   const enrichProvidersWithReviews = async (providers: Provider[]): Promise<Provider[]> => {
     try {
-      // Get all reviews from collection with improved query and limit
-      const reviewsQuery = query(
-        collection(db, 'reviews'),
-        limit(500) // Reasonable limit for performance
-      );
-      const allReviewsSnapshot = await getDocs(reviewsQuery);
-
-      // Create a map of providerId to reviews for efficient lookup
+      // Create maps for efficient lookup
       const reviewsMap = new Map<string, any[]>();
-      // Create a map of providerId to completed jobs count (based on reviews)
       const completedJobsMap = new Map<string, number>();
 
-      allReviewsSnapshot.forEach(doc => {
-        const data = doc.data();
-        const providerId = data.providerId;
+      // Load reviews for each provider from their subcollection
+      for (const provider of providers) {
+        try {
+          const reviewsQuery = query(
+            collection(db, `companies/${provider.id}/reviews`),
+            limit(50) // Reasonable limit per provider
+          );
+          const reviewsSnapshot = await getDocs(reviewsQuery);
+          
+          const providerReviews: any[] = [];
+          reviewsSnapshot.forEach(doc => {
+            providerReviews.push(doc.data());
+          });
 
-        if (!reviewsMap.has(providerId)) {
-          reviewsMap.set(providerId, []);
+          if (providerReviews.length > 0) {
+            reviewsMap.set(provider.id, providerReviews);
+            completedJobsMap.set(provider.id, providerReviews.length);
+          }
+        } catch (error) {
+          // Skip provider if subcollection doesn't exist or access denied
+          continue;
         }
-
-        reviewsMap.get(providerId)!.push({
-          id: doc.id,
-          ...data,
-        });
-
-        // Jede Review entspricht einem abgeschlossenen Auftrag
-        const currentCompletedJobs = completedJobsMap.get(providerId) || 0;
-        completedJobsMap.set(providerId, currentCompletedJobs + 1);
-      });
+      }
 
       // Enrich each provider with their reviews and completed jobs
       const enrichedProviders = providers.map(provider => {
@@ -134,12 +132,10 @@ export default function SubcategoryPage() {
         if (providerReviews.length > 0) {
           totalRating = providerReviews.reduce((sum, review) => {
             const rating = Number(review.rating) || 0;
-
             return sum + rating;
           }, 0);
 
           averageRating = totalRating / providerReviews.length;
-        } else {
         }
 
         return {

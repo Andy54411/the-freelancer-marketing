@@ -753,6 +753,14 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                         </p>
                         <p className="text-xs text-gray-500">
                           {(() => {
+                            // Verbesserte Logik: Verwende authUser.user_type als primäre Quelle
+                            if (authUser?.user_type === 'firma' || authUser?.companyName) {
+                              return 'Anbieter';
+                            } else if (authUser?.user_type === 'kunde') {
+                              return 'Kunde';
+                            }
+                            
+                            // Fallback auf URL-basierte Erkennung
                             if (typeof window !== 'undefined') {
                               const currentPath = window.location.pathname;
                               if (currentPath.includes('/dashboard/company/')) {
@@ -761,7 +769,8 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                                 return 'Kunde';
                               }
                             }
-                            // Fallback basierend auf authUser data
+                            
+                            // Letzter Fallback
                             return authUser?.user_type
                               ? authUser.user_type.charAt(0).toUpperCase() +
                                   authUser.user_type.slice(1)
@@ -770,151 +779,110 @@ const UserHeader: React.FC<UserHeaderProps> = ({ currentUid }) => {
                         </p>
                       </div>
                       <hr />
-                      {/* --- DYNAMISCHE LINKS BASIEREND AUF AKTUELLER ROUTE --- */}
+                      {/* --- DYNAMISCHE LINKS BASIEREND AUF USER TYPE --- */}
                       {(() => {
-                        if (typeof window !== 'undefined') {
-                          const currentPath = window.location.pathname;
-                          const isCompanyDashboard = currentPath.includes('/dashboard/company/');
+                        // Verbesserte Logik: Verwende authUser.user_type als primäre Quelle
+                        const isCompany = authUser?.user_type === 'firma' || authUser?.companyName;
+                        
+                        // Fallback auf URL-basierte Erkennung wenn user_type nicht klar ist
+                        const urlBasedCompany = typeof window !== 'undefined' && 
+                          window.location.pathname.includes('/dashboard/company/');
 
-                          if (isCompanyDashboard) {
-                            // Links für Company Dashboard
-                            return (
-                              <>
-                                <Link
-                                  href={`/dashboard/company/${currentUser.uid}`}
-                                  className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiGrid className="inline mr-2" />
-                                  Dashboard & Aufträge
-                                </Link>
-                                <Link
-                                  href={`/dashboard/company/${currentUser.uid}/orders/overview`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiCheckSquare className="inline mr-2" />
-                                  Meine Aufträge
-                                </Link>
-                                <Link
-                                  href={`/dashboard/company/${currentUser.uid}/inbox`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiInbox className="inline mr-2" />
-                                  Posteingang
-                                </Link>
-                                <hr />
-                                <Link
-                                  href={`/dashboard/company/${currentUser.uid}/settings`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiSettings className="inline mr-2" />
-                                  Meine Einstellungen
-                                </Link>
-                              </>
-                            );
-                          } else {
-                            // Links für User Dashboard
-                            return (
-                              <>
-                                <Link
-                                  href={`/dashboard/user/${currentUser.uid}`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiGrid className="inline mr-2" />
-                                  Dashboard
-                                </Link>
-                                <Link
-                                  href={`/dashboard/user/${currentUser.uid}/projects`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiPackage className="inline mr-2" />
-                                  Meine Projekte
-                                </Link>
-                                <Link
-                                  href={`/dashboard/user/${currentUser.uid}/orders/overview`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiBriefcase className="inline mr-2" />
-                                  Meine Aufträge
-                                </Link>
-                                <Link
-                                  href={`/dashboard/user/${currentUser.uid}/quotes`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiFileText className="inline mr-2" />
-                                  Meine Angebote
-                                </Link>
-                                <Link
-                                  href={`/dashboard/user/${currentUser.uid}/projects/create`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiFilePlus className="inline mr-2" />
-                                  Eine Projektanfrage posten
-                                </Link>
-                                <hr />
-                                <Link
-                                  href={`/dashboard/user/${currentUser.uid}/settings`}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  onClick={() => setIsProfileDropdownOpen(false)}
-                                >
-                                  <FiSettings className="inline mr-2" />
-                                  Meine Einstellungen
-                                </Link>
-                              </>
-                            );
-                          }
+                        if (isCompany || urlBasedCompany) {
+                          // Links für Company Dashboard
+                          return (
+                            <>
+                              <Link
+                                href={`/dashboard/company/${currentUser.uid}`}
+                                className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiGrid className="inline mr-2" />
+                                Dashboard & Aufträge
+                              </Link>
+                              <Link
+                                href={`/dashboard/company/${currentUser.uid}/orders/overview`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiCheckSquare className="inline mr-2" />
+                                Meine Aufträge
+                              </Link>
+                              <Link
+                                href={`/dashboard/company/${currentUser.uid}/inbox`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiInbox className="inline mr-2" />
+                                Posteingang
+                              </Link>
+                              <hr />
+                              <Link
+                                href={`/dashboard/company/${currentUser.uid}/settings`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiSettings className="inline mr-2" />
+                                Meine Einstellungen
+                              </Link>
+                            </>
+                          );
+                        } else {
+                          // Links für User Dashboard
+                          return (
+                            <>
+                              <Link
+                                href={`/dashboard/user/${currentUser.uid}`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiGrid className="inline mr-2" />
+                                Dashboard
+                              </Link>
+                              <Link
+                                href={`/dashboard/user/${currentUser.uid}/projects`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiPackage className="inline mr-2" />
+                                Meine Projekte
+                              </Link>
+                              <Link
+                                href={`/dashboard/user/${currentUser.uid}/orders/overview`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiBriefcase className="inline mr-2" />
+                                Meine Aufträge
+                              </Link>
+                              <Link
+                                href={`/dashboard/user/${currentUser.uid}/quotes`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiFileText className="inline mr-2" />
+                                Meine Angebote
+                              </Link>
+                              <Link
+                                href={`/dashboard/user/${currentUser.uid}/projects/create`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiFilePlus className="inline mr-2" />
+                                Eine Projektanfrage posten
+                              </Link>
+                              <hr />
+                              <Link
+                                href={`/dashboard/user/${currentUser.uid}/settings`}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onClick={() => setIsProfileDropdownOpen(false)}
+                              >
+                                <FiSettings className="inline mr-2" />
+                                Meine Einstellungen
+                              </Link>
+                            </>
+                          );
                         }
-
-                        // Fallback für Server-side rendering oder wenn window nicht verfügbar
-                        return authUser?.companyName ? (
-                          // Fallback Company Links
-                          <>
-                            <Link
-                              href={`/dashboard/company/${currentUser.uid}`}
-                              className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => setIsProfileDropdownOpen(false)}
-                            >
-                              <FiGrid className="inline mr-2" />
-                              Dashboard & Aufträge
-                            </Link>
-                            <Link
-                              href={`/dashboard/company/${currentUser.uid}/settings`}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => setIsProfileDropdownOpen(false)}
-                            >
-                              <FiSettings className="inline mr-2" />
-                              Meine Einstellungen
-                            </Link>
-                          </>
-                        ) : (
-                          // Fallback User Links
-                          <>
-                            <Link
-                              href={`/dashboard/user/${currentUser.uid}`}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => setIsProfileDropdownOpen(false)}
-                            >
-                              <FiGrid className="inline mr-2" />
-                              Dashboard
-                            </Link>
-                            <Link
-                              href={`/dashboard/user/${currentUser.uid}/settings`}
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              onClick={() => setIsProfileDropdownOpen(false)}
-                            >
-                              <FiSettings className="inline mr-2" />
-                              Meine Einstellungen
-                            </Link>
-                          </>
-                        );
                       })()}
                       <hr className="my-1" />
                       <button

@@ -18,7 +18,7 @@ import {
 import { Star } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import Header from '@/components/Header';
+import { DynamicHeader } from '@/components/DynamicHeader';
 import CompanyReviewManagement from '@/components/CompanyReviewManagement';
 import DirectChatModal from '@/components/DirectChatModal';
 import ProviderReviews from '@/components/ProviderReviews';
@@ -141,10 +141,9 @@ export default function ProfilePage() {
   // Da Reviews nur für abgeschlossene Aufträge erstellt werden, können wir sie als Proxy verwenden
   const loadRealCompletedJobs = async (providerId: string): Promise<number> => {
     try {
-      // Query für Reviews dieses Providers (öffentlich lesbar)
+      // Query für Reviews dieses Providers aus der Subcollection
       const reviewsQuery = query(
-        collection(db, 'reviews'),
-        where('providerId', '==', providerId),
+        collection(db, `companies/${providerId}/reviews`),
         limit(100) // Vernünftiges Limit für Performance
       );
 
@@ -165,8 +164,7 @@ export default function ProfilePage() {
   ): Promise<{ averageRating: number; totalReviews: number }> => {
     try {
       const reviewsQuery = query(
-        collection(db, 'reviews'),
-        where('providerId', '==', providerId),
+        collection(db, `companies/${providerId}/reviews`),
         limit(100)
       );
 
@@ -539,8 +537,7 @@ export default function ProfilePage() {
         const { collection, query, where, getDocs, orderBy } = await import('firebase/firestore');
 
         const reviewsQuery = query(
-          collection(db, 'reviews'),
-          where('providerId', '==', companyId),
+          collection(db, `companies/${companyId}/reviews`),
           orderBy('createdAt', 'desc')
         );
 
@@ -645,7 +642,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <Header />
+      <DynamicHeader />
       <div className="min-h-screen bg-gradient-to-br from-[#14ad9f] via-teal-600 to-blue-600 relative">
         <div className="absolute inset-0 bg-black/20 pointer-events-none"></div>
         <div className="relative z-10 pt-20">

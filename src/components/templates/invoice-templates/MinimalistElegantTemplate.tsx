@@ -89,7 +89,7 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
         {showLogo && logoUrl && (
           <img
             src={logoUrl}
-            alt={`${data.company.name} Logo`}
+            alt={`${data.company?.name || 'Company'} Logo`}
             className="h-12 w-auto mx-auto mb-4 object-contain"
           />
         )}
@@ -101,13 +101,13 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
       {/* Company & Customer in minimalistischem Layout */}
       <div className="grid grid-cols-2 gap-16 mb-16">
         <div className="text-right">
-          <h2 className="text-lg font-light text-gray-800 mb-6">{data.company.name}</h2>
+          <h2 className="text-lg font-light text-gray-800 mb-6">{data.company?.name || 'Company Name'}</h2>
           <div className="text-gray-500 space-y-1 leading-relaxed">
-            <p>{data.company.address.street}</p>
+            <p>{data.company?.address?.street}</p>
             <p>
-              {data.company.address.zipCode} {data.company.address.city}
+              {data.company?.address?.zipCode} {data.company?.address?.city}
             </p>
-            <p className="mt-4">{data.company.phone}</p>
+            <p className="mt-4">{data.company?.phone}</p>
             <p>{data.company.email}</p>
           </div>
         </div>
@@ -115,10 +115,10 @@ export const MinimalistElegantTemplate: React.FC<TemplateProps> = ({
         <div>
           <h3 className="text-lg font-light text-gray-800 mb-6">Rechnungsempfänger</h3>
           <div className="text-gray-700 space-y-1 leading-relaxed">
-            <p className="font-medium">{data.customer.name}</p>
-            <p>{data.customer.address.street}</p>
+            <p className="font-medium">{data.customer?.name || 'Customer Name'}</p>
+            <p>{data.customer?.address?.street}</p>
             <p>
-              {data.customer.address.zipCode} {data.customer.address.city}
+              {data.customer?.address?.zipCode} {data.customer?.address?.city}
             </p>
           </div>
         </div>

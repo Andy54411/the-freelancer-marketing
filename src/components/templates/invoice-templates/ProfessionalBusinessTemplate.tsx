@@ -95,18 +95,18 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
           {showLogo && logoUrl && (
             <img
               src={logoUrl}
-              alt={`${data.company.name} Logo`}
+              alt={`${data.company?.name || 'Company'} Logo`}
               className="h-12 w-auto ml-auto mb-2 object-contain"
             />
           )}
-          <h2 className="text-xl font-bold text-gray-800 mb-2">{data.company.name}</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">{data.company?.name || 'Company Name'}</h2>
           <div className="text-gray-600">
-            <p>{data.company.address.street}</p>
+            <p>{data.company?.address?.street}</p>
             <p>
-              {data.company.address.zipCode} {data.company.address.city}
+              {data.company?.address?.zipCode} {data.company?.address?.city}
             </p>
-            <p className="mt-2">{data.company.phone}</p>
-            <p>{data.company.email}</p>
+            <p className="mt-2">{data.company?.phone}</p>
+            <p>{data.company?.email}</p>
           </div>
         </div>
       </div>
@@ -116,10 +116,10 @@ export const ProfessionalBusinessTemplate: React.FC<TemplateProps> = ({
         <div>
           <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Rechnungsempfänger</h3>
           <div className="bg-gray-50 p-4 rounded">
-            <p className="font-bold text-gray-800">{data.customer.name}</p>
-            <p className="text-gray-700">{data.customer.address.street}</p>
+            <p className="font-bold text-gray-800">{data.customer?.name || 'Customer Name'}</p>
+            <p className="text-gray-700">{data.customer?.address?.street}</p>
             <p className="text-gray-700">
-              {data.customer.address.zipCode} {data.customer.address.city}
+              {data.customer?.address?.zipCode} {data.customer?.address?.city}
             </p>
           </div>
         </div>

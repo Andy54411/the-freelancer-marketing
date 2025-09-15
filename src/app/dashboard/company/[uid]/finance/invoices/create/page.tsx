@@ -14,6 +14,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 import FooterTextEditor from '@/components/finance/FooterTextEditor';
 import InventorySelector from '@/components/quotes/InventorySelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +34,12 @@ import {
   Eye,
   Mail,
   Printer,
+  CheckCircle,
+  AlertTriangle,
+  MoreHorizontal,
+  Copy,
+  Download,
+  Settings,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -39,6 +50,8 @@ import { QuoteItem as InvoiceItem } from '@/services/quoteService';
 import { getAllCurrencies } from '@/data/currencies';
 import { getCustomers } from '@/utils/api/companyApi';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   ProfessionalBusinessTemplate,
   ExecutivePremiumTemplate,
@@ -108,13 +121,31 @@ type PreviewTemplateData = {
   contactPersonName?: string;
   paymentTerms?: string;
   deliveryTerms?: string;
+  // Company-Objekt für Template-Kompatibilität
+  company?: {
+    name: string;
+    email: string;
+    phone: string;
+    address: {
+      street: string;
+      zipCode: string;
+      city: string;
+      country: string;
+    };
+    taxNumber: string;
+    vatId: string;
+    bankDetails: {
+      iban: string;
+      bic: string;
+      accountHolder: string;
+    };
+  };
 };
 import { db } from '@/firebase/clients';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { Switch } from '@/components/ui/switch';
 import { InventoryService } from '@/services/inventoryService';
-import { Popover, PopoverContent, PopoverAnchor } from '@/components/ui/popover';
 import NewProductModal, { NewProductValues } from '@/components/inventory/NewProductModal';
 import NewCustomerModal from '@/components/finance/NewCustomerModal';
 
@@ -128,6 +159,8 @@ interface Customer {
   city?: string;
   postalCode?: string;
   country?: string;
+  vatId?: string;
+  vatValidated?: boolean;
 }
 
 export default function CreateQuotePage() {
@@ -199,12 +232,87 @@ export default function CreateQuotePage() {
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [showCustomerSearchPopup, setShowCustomerSearchPopup] = useState(false);
 
+  // Kontakttyp State (neu für SevDesk-Style Interface)
+  const [contactType, setContactType] = useState<'organisation' | 'person'>('organisation');
+
+  // Adresszusatz State
+  const [showAddressAddition, setShowAddressAddition] = useState(false);
+
+  // Lieferdatum State (Einzeldatum vs. Zeitraum)
+  const [deliveryDateType, setDeliveryDateType] = useState<'single' | 'range'>('single');
+  const [deliveryDateRange, setDeliveryDateRange] = useState<{from?: Date; to?: Date}>({});
+  const [deliveryDatePopoverOpen, setDeliveryDatePopoverOpen] = useState(false);
+
   // Textvorlagen State
   const [textTemplates, setTextTemplates] = useState<any[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [selectedHeadTemplate, setSelectedHeadTemplate] = useState<string>('');
   const [selectedFooterTemplate, setSelectedFooterTemplate] = useState<string>('');
+
+  // Nummernkreis Modal State
+  const [showNumberingModal, setShowNumberingModal] = useState(false);
+  const [numberingFormat, setNumberingFormat] = useState('RE-%NUMBER');
+  const [nextNumber, setNextNumber] = useState(1000);
+
+  // E-Rechnung State
+  const [eInvoiceEnabled, setEInvoiceEnabled] = useState(false);
+  const [showCompliancePanel, setShowCompliancePanel] = useState(false);
+  const [complianceErrors, setComplianceErrors] = useState<string[]>([]);
+  const [eInvoiceSettings, setEInvoiceSettings] = useState<any>(null);
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
+
+  // Company Settings Banner State
+  const [showCompanySettingsBanner, setShowCompanySettingsBanner] = useState(false);
+  const [showCompanySettingsModal, setShowCompanySettingsModal] = useState(false);
+  const [companySettingsFormData, setCompanySettingsFormData] = useState({
+    companyOwner: '',
+    companyName: '',
+    street: '',
+    zip: '',
+    city: '',
+    taxNumber: '',
+    vatNumber: '',
+    email: '',
+    phone: '',
+    iban: '',
+    bic: '',
+  });
+
+  // Customer helper functions
+  const selectCustomer = (customer: Customer) => {
+    setFormData(prev => ({
+      ...prev,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      customerNumber: customer.customerNumber || '',
+      customerAddress: 
+        customer.street && customer.city
+          ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
+          : prev.customerAddress,
+    }));
+    setShowCustomerSearchPopup(false);
+  };
+
+  const setShowNewCustomerModal = (show: boolean) => {
+    console.log('setShowNewCustomerModal aufgerufen mit:', show);
+    console.log('createCustomerOpen current state:', createCustomerOpen);
+    setCreateCustomerOpen(show);
+    console.log('setCreateCustomerOpen aufgerufen mit:', show);
+  };
+
+  // Nummernkreis Vorschau generieren
+  const generateNumberPreview = (format: string, number: number): string => {
+    const now = new Date();
+    return format
+      .replace('%NUMBER', number.toString())
+      .replace('%YYYY', now.getFullYear().toString())
+      .replace('%YY', now.getFullYear().toString().slice(-2))
+      .replace('%MM', (now.getMonth() + 1).toString().padStart(2, '0'))
+      .replace('%M', (now.getMonth() + 1).toString())
+      .replace('%DD', now.getDate().toString().padStart(2, '0'))
+      .replace('%D', now.getDate().toString());
+  };
 
   // Sync Preisfelder Netto/Brutto
   const syncGrossFromNet = (net: number, rate: number) =>
@@ -321,6 +429,8 @@ export default function CreateQuotePage() {
   // Form state
   const [formData, setFormData] = useState({
     customerName: '',
+    customerFirstName: '',
+    customerLastName: '',
     customerNumber: '',
     customerEmail: '',
     customerAddress: '',
@@ -424,13 +534,82 @@ export default function CreateQuotePage() {
       if (!uid || !user || user.uid !== uid) return;
       try {
         const snap = await getDoc(doc(db, 'companies', uid));
-        if (snap.exists()) setCompany(snap.data());
+        if (snap.exists()) {
+          const companyData = snap.data();
+          setCompany(companyData);
+          
+          // Prüfe Vollständigkeit der Unternehmensdaten für Banner
+          const requiredFields = [
+            companyData.companyName,
+            companyData.companyStreet,
+            companyData.companyCity,
+            companyData.companyPostalCode,
+            companyData.vatId || companyData.taxNumber || companyData.step3?.vatId || companyData.step3?.taxNumber,
+          ];
+          
+          const missingRequiredFields = requiredFields.some(field => !field?.trim());
+          const missingOptionalFields = !companyData.email && !companyData.phoneNumber && !companyData.iban;
+          
+          // Zeige Banner wenn wichtige Felder fehlen
+          if (missingRequiredFields || missingOptionalFields) {
+            setShowCompanySettingsBanner(true);
+            
+            // Vorausfüllen der Formulardaten für das Modal
+            setCompanySettingsFormData({
+              companyOwner: companyData.firstName && companyData.lastName 
+                ? `${companyData.firstName} ${companyData.lastName}` 
+                : '',
+              companyName: companyData.companyName || '',
+              street: companyData.companyStreet || '',
+              zip: companyData.companyPostalCode || '',
+              city: companyData.companyCity || '',
+              taxNumber: companyData.taxNumber || companyData.step3?.taxNumber || '',
+              vatNumber: companyData.vatId || companyData.step3?.vatId || '',
+              email: companyData.email || '',
+              phone: companyData.phoneNumber || companyData.companyPhoneNumber || '',
+              iban: companyData.iban || companyData.step4?.iban || '',
+              bic: companyData.bic || companyData.step4?.bic || '',
+            });
+          }
+        }
       } catch (e) {
         // still render, but without company info
       }
     };
     loadCompany();
   }, [uid, user, settings]); // settings als Dependency hinzugefügt für automatische Template-Updates
+
+  // Nummernkreis-Einstellungen laden
+  useEffect(() => {
+    const loadNumberingSettings = async () => {
+      if (!uid) return;
+
+      try {
+        const companyRef = doc(db, 'companies', uid);
+        const companySnap = await getDoc(companyRef);
+        
+        if (companySnap.exists()) {
+          const data = companySnap.data();
+          const numbering = data.invoiceNumbering;
+          
+          if (numbering) {
+            setNumberingFormat(numbering.format || 'RE-%NUMBER');
+            setNextNumber(numbering.nextNumber || 1000);
+            
+            // Setze die aktuelle Rechnungsnummer basierend auf den geladenen Einstellungen
+            setFormData(prev => ({
+              ...prev,
+              title: generateNumberPreview(numbering.format || 'RE-%NUMBER', numbering.nextNumber || 1000)
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Fehler beim Laden der Nummernkreis-Einstellungen:', error);
+      }
+    };
+
+    loadNumberingSettings();
+  }, [uid]);
 
   // Steuerlogik aus der Auswahl ableiten (berücksichtigt Standard-Steuersatz aus Einstellungen)
   useEffect(() => {
@@ -568,6 +747,39 @@ export default function CreateQuotePage() {
     setSkontoPercentage(typeof d.skontoPercentage === 'number' ? d.skontoPercentage : undefined);
     setSkontoText(typeof d.skontoText === 'string' ? d.skontoText : '');
   }, [settings?.defaultPaymentTerms]);
+
+  // E-Rechnung Einstellungen laden
+  useEffect(() => {
+    const loadEInvoiceSettings = async () => {
+      if (!uid) return;
+      
+      try {
+        // Check if E-Rechnung settings exist in company document
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+        const companyRef = doc(db, 'companies', uid);
+        const companySnap = await getDoc(companyRef);
+        
+        if (companySnap.exists()) {
+          const companyData = companySnap.data();
+          const einvoiceSettings = companyData.eInvoiceSettings;
+          
+          if (einvoiceSettings) {
+            setEInvoiceSettings(einvoiceSettings);
+            setEInvoiceEnabled(Boolean(einvoiceSettings.enableAutoGeneration));
+          } else {
+            setEInvoiceEnabled(false);
+          }
+        } else {
+          setEInvoiceEnabled(false);
+        }
+      } catch (error) {
+        console.log('E-Rechnung Settings konnten nicht geladen werden:', error);
+        setEInvoiceEnabled(false);
+      }
+    };
+    loadEInvoiceSettings();
+  }, [uid]);
 
   // Währungen: alle ISO-4217 Codes mit lokalisierten Namen
   const allCurrencies = React.useMemo(() => getAllCurrencies('de-DE'), []);
@@ -852,6 +1064,47 @@ export default function CreateQuotePage() {
       contactPersonName: contactPersonNameForFooter,
       paymentTerms: finalPaymentTerms || undefined,
       deliveryTerms: formData.deliveryTerms || undefined,
+      // Company-Objekt für Template-Kompatibilität
+      company: {
+        name: companyName,
+        email: (company?.email as string) || '',
+        phone: (company?.phoneNumber as string) || (company?.companyPhoneNumber as string) || '',
+        address: (() => {
+          const lines = companyAddress.split('\n');
+          return {
+            street: lines[0] || '',
+            zipCode: (lines[1] || '').split(' ')[0] || '',
+            city: (lines[1] || '').split(' ').slice(1).join(' ') || '',
+            country: lines[2] || '',
+          };
+        })(),
+        taxNumber: (company?.taxNumber as string) ||
+          (company as any)?.taxNumberForBackend ||
+          (company as any)?.step3?.taxNumber ||
+          ((settings as any)?.taxNumber as string) ||
+          '',
+        vatId: (company?.vatId as string) ||
+          (company as any)?.vatIdForBackend ||
+          (company as any)?.step3?.vatId ||
+          ((settings as any)?.vatId as string) ||
+          '',
+        bankDetails: {
+          iban: (company as any)?.step4?.iban ||
+            (company?.iban as string) ||
+            ((settings as any)?.step4?.iban as string) ||
+            '',
+          bic: (company as any)?.step4?.bic ||
+            (company?.bic as string) ||
+            ((settings as any)?.step4?.bic as string) ||
+            '',
+          accountHolder: (company as any)?.step4?.accountHolder ||
+            (company?.accountHolder as string) ||
+            ((settings as any)?.step4?.accountHolder as string) ||
+            (settings as any)?.accountHolder ||
+            companyName ||
+            '',
+        },
+      },
     };
 
     return data;
@@ -1353,6 +1606,22 @@ export default function CreateQuotePage() {
       }
 
       toast.success(asDraft ? 'Angebot als Entwurf gespeichert' : 'Angebot erstellt und versendet');
+      
+      // Erhöhe die nächste Nummer im Nummernkreis nach erfolgreichem Speichern
+      if (!asDraft) {
+        try {
+          const companyRef = doc(db, 'companies', uid);
+          await updateDoc(companyRef, {
+            'invoiceNumbering.nextNumber': nextNumber + 1
+          });
+          // Aktualisiere auch den lokalen State
+          setNextNumber(prev => prev + 1);
+        } catch (error) {
+          console.error('Fehler beim Aktualisieren der nächsten Nummer:', error);
+          // Nicht kritisch, deshalb kein toast.error
+        }
+      }
+      
       router.push(`/dashboard/company/${uid}/finance/quotes`);
     } catch (e) {
       console.error(e);
@@ -1361,9 +1630,577 @@ export default function CreateQuotePage() {
       setLoading(false);
     }
   };
+
+  // E-Rechnung Toggle Handler
+  const handleEInvoiceToggle = async (enabled: boolean) => {
+    if (!enabled) {
+      setEInvoiceEnabled(false);
+      return;
+    }
+    
+    // Umfassende E-Rechnung Compliance Prüfung
+    try {
+      const complianceErrors: string[] = [];
+      const invalidFieldsSet = new Set<string>();
+      
+      // 1. Lade Company-Daten für vollständige Prüfung
+      let companyData: any = null;
+      try {
+        const { doc, getDoc } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+        const companyRef = doc(db, 'companies', uid);
+        const companySnap = await getDoc(companyRef);
+        if (companySnap.exists()) {
+          companyData = companySnap.data();
+        } else {
+          complianceErrors.push('Unternehmensdaten nicht gefunden');
+        }
+      } catch (error) {
+        complianceErrors.push('Fehler beim Laden der Unternehmensdaten');
+      }
+      
+      // 2. Unternehmensdaten Prüfung (§14 UStG) - aus companies collection
+      if (companyData) {
+        // Firmenname (Pflichtfeld)
+        if (!companyData.companyName?.trim()) {
+          complianceErrors.push('Firmenname ist erforderlich');
+        }
+        
+        // Vollständige Firmenanschrift prüfen (aus der echten DB-Struktur)
+        if (!companyData.companyStreet?.trim()) {
+          complianceErrors.push('Firmenstraße ist erforderlich');
+        }
+        if (!companyData.companyCity?.trim()) {
+          complianceErrors.push('Firmenort ist erforderlich');
+        }
+        if (!companyData.companyPostalCode?.trim()) {
+          complianceErrors.push('Postleitzahl der Firma ist erforderlich');
+        }
+        if (!companyData.companyCountry?.trim()) {
+          complianceErrors.push('Land der Firma ist erforderlich');
+        }
+        
+        // E-Mail für Versendung (aus der echten DB-Struktur)
+        const hasEmail = companyData.contactEmail?.trim() || companyData.email?.trim();
+        if (!hasEmail) {
+          complianceErrors.push('Firmen-E-Mail-Adresse ist erforderlich');
+        }
+        
+        // Telefonnummer (aus der echten DB-Struktur)
+        const hasPhone = companyData.companyPhoneNumber?.trim() || companyData.phoneNumber?.trim();
+        if (!hasPhone) {
+          complianceErrors.push('Firmen-Telefonnummer ist für E-Rechnungen empfohlen');
+        }
+        
+        // Steuerliche Identifikation (aus der echten DB-Struktur)
+        const hasVatId = companyData.vatId?.trim() || companyData.step3?.vatId?.trim();
+        const hasTaxNumber = companyData.taxNumber?.trim() || companyData.step3?.taxNumber?.trim();
+        
+        if (!hasVatId && !hasTaxNumber) {
+          complianceErrors.push('USt-IdNr. oder Steuernummer ist erforderlich für E-Rechnungen');
+        }
+        
+        // Kleinunternehmer-spezifische Prüfung (aus der echten DB-Struktur)
+        const isKleinunternehmer = companyData.kleinunternehmer === 'ja' || 
+                                   companyData.ust === 'kleinunternehmer' || 
+                                   companyData.step2?.kleinunternehmer === 'ja';
+        
+        if (isKleinunternehmer) {
+          if (hasVatId) {
+            complianceErrors.push('Kleinunternehmer dürfen keine USt-IdNr. auf Rechnungen ausweisen');
+          }
+          if (!hasTaxNumber) {
+            complianceErrors.push('Kleinunternehmer benötigen eine Steuernummer für E-Rechnungen');
+          }
+        } else {
+          // Regelbesteuerte Unternehmen
+          if (!hasVatId && !hasTaxNumber) {
+            complianceErrors.push('Regelbesteuerte Unternehmen benötigen USt-IdNr. oder Steuernummer');
+          }
+        }
+        
+        // Rechtsform und Registrierung (aus der echten DB-Struktur)
+        const legalForm = companyData.legalForm || companyData.step2?.legalForm;
+        if (legalForm && legalForm !== 'Einzelunternehmen' && legalForm !== 'Freiberufler') {
+          // Kapitalgesellschaften benötigen Handelsregistereintrag
+          const hasRegister = companyData.companyRegister?.trim() || 
+                             companyData.step3?.companyRegister?.trim() ||
+                             companyData.registrationNumber?.trim();
+          if (!hasRegister) {
+            complianceErrors.push('Handelsregisternummer ist für Kapitalgesellschaften erforderlich');
+          }
+        }
+        
+        // Bankverbindung für Zahlungen (aus der echten DB-Struktur)
+        const hasIban = companyData.iban?.trim() || companyData.step4?.iban?.trim();
+        const hasBic = companyData.bic?.trim() || companyData.step4?.bic?.trim();
+        const hasBankName = companyData.bankName?.trim() || companyData.step4?.bankName?.trim();
+        const hasAccountHolder = companyData.accountHolder?.trim() || companyData.step4?.accountHolder?.trim();
+        
+        if (!hasIban) {
+          complianceErrors.push('IBAN ist für E-Rechnungen erforderlich');
+        }
+        if (!hasBic) {
+          complianceErrors.push('BIC ist für E-Rechnungen erforderlich');
+        }
+        if (!hasBankName) {
+          complianceErrors.push('Bankname ist für E-Rechnungen erforderlich');
+        }
+        if (!hasAccountHolder) {
+          complianceErrors.push('Kontoinhaber ist für E-Rechnungen erforderlich');
+        }
+        
+        // Website (aus der echten DB-Struktur)
+        const hasWebsite = companyData.website?.trim() || 
+                          companyData.companyWebsite?.trim() || 
+                          companyData.step1?.website?.trim() ||
+                          companyData.companyWebsiteForBackend?.trim();
+        if (!hasWebsite) {
+          complianceErrors.push('Firmen-Website ist für professionelle E-Rechnungen empfohlen');
+        }
+        
+        // Logo für Branding (aus der echten DB-Struktur)
+        const hasLogo = companyData.profilePictureURL?.trim() || 
+                       companyData.profilePictureFirebaseUrl?.trim();
+        if (!hasLogo) {
+          complianceErrors.push('Firmen-Logo ist für professionelle E-Rechnungen empfohlen');
+        }
+        
+        // Branchenangabe (aus der echten DB-Struktur)
+        const hasIndustry = companyData.selectedCategory?.trim() || 
+                           companyData.step2?.industry?.trim() ||
+                           companyData.industry?.trim();
+        if (!hasIndustry) {
+          complianceErrors.push('Branchenangabe ist für E-Rechnungen empfohlen');
+        }
+        
+        // Geschäftsbeschreibung (aus der echten DB-Struktur)
+        if (!companyData.description?.trim()) {
+          complianceErrors.push('Geschäftsbeschreibung ist für professionelle E-Rechnungen empfohlen');
+        }
+      } else {
+        complianceErrors.push('Unternehmensdaten nicht vollständig - bitte Firmenprofil vervollständigen');
+      }
+      
+      // 3. Kundendaten Prüfung - Prüfe ob gültiger Kunde ausgewählt wurde
+      const selectedCustomer = customers.find(c => c.name === formData.customerName);
+      
+      if (!formData.customerName.trim()) {
+        complianceErrors.push('Kundenname ist erforderlich');
+        invalidFieldsSet.add('customerName');
+      } else if (!selectedCustomer) {
+        // Neuer Kunde - prüfe manuell eingegebene Daten
+        if (!formData.customerAddress?.trim()) {
+          complianceErrors.push('Vollständige Kundenanschrift ist erforderlich');
+          invalidFieldsSet.add('customerAddress');
+        } else {
+          const addressLines = formData.customerAddress.split('\n').filter(line => line.trim());
+          if (addressLines.length < 3) {
+            complianceErrors.push('Kundenanschrift muss Straße, PLZ/Ort und Land enthalten');
+            invalidFieldsSet.add('customerAddress');
+          }
+        }
+        
+        if (!formData.customerEmail?.trim()) {
+          complianceErrors.push('Kunden-E-Mail-Adresse für E-Rechnung Versendung erforderlich');
+          invalidFieldsSet.add('customerEmail');
+        }
+      } else {
+        // Existierender Kunde - prüfe Vollständigkeit in der Customers Collection
+        if (!selectedCustomer.email?.trim()) {
+          complianceErrors.push(`Kunde &quot;${selectedCustomer.name}&quot; hat keine E-Mail-Adresse hinterlegt`);
+        }
+        
+        if (!selectedCustomer.street?.trim() || !selectedCustomer.city?.trim() || !selectedCustomer.postalCode?.trim()) {
+          complianceErrors.push(`Kunde &quot;${selectedCustomer.name}&quot; hat unvollständige Adressdaten`);
+        }
+        
+        // Für B2B-Kunden (mit VAT-ID) zusätzliche Prüfungen
+        if (selectedCustomer.vatId?.trim()) {
+          if (!selectedCustomer.vatValidated) {
+            complianceErrors.push(`USt-IdNr. von Kunde &quot;${selectedCustomer.name}&quot; ist nicht validiert`);
+          }
+        }
+      }
+      
+      // 4. Rechnungsdaten Prüfung
+      if (!formData.title?.trim()) {
+        complianceErrors.push('Rechnungsnummer ist erforderlich');
+        invalidFieldsSet.add('title');
+      }
+      
+      // 5. Positionen Prüfung
+      const validItems = items.filter(item => 
+        item.description?.trim() && 
+        item.quantity > 0 && 
+        item.unitPrice >= 0 &&
+        item.category !== 'discount'
+      );
+      
+      if (validItems.length === 0) {
+        complianceErrors.push('Mindestens eine gültige Position ist erforderlich');
+        invalidFieldsSet.add('items');
+      }
+      
+      // 6. Steuerliche Prüfung
+      if (!formData.taxRule) {
+        complianceErrors.push('Steuerliche Behandlung muss definiert sein');
+        invalidFieldsSet.add('taxRule');
+      }
+      
+      // 7. E-Rechnung spezifische Anforderungen
+      if (contactType === 'organisation') {
+        // Für B2B E-Rechnungen
+        if (!formData.customerEmail) {
+          complianceErrors.push('Kunden-E-Mail-Adresse für E-Rechnung Versendung erforderlich');
+        }
+      }
+      
+      // 8. Format-spezifische Prüfungen
+      const defaultFormat = eInvoiceSettings?.defaultFormat || 'zugferd';
+      
+      if (defaultFormat === 'xrechnung') {
+        // XRechnung benötigt zusätzliche Metadaten
+        if (!formData.customerOrderNumber?.trim()) {
+          complianceErrors.push('Bestellnummer für XRechnung erforderlich');
+        }
+      }
+      
+      // 9. Betragsprüfung
+      const totalAmount = subtotal + vat;
+      if (totalAmount <= 0) {
+        complianceErrors.push('Rechnungsbetrag muss größer als 0 sein');
+      }
+      
+      // 10. Währungsprüfung
+      if (formData.currency !== 'EUR') {
+        complianceErrors.push('E-Rechnungen werden aktuell nur in EUR unterstützt');
+      }
+      
+      // 11. Datum Prüfungen
+      const today = new Date();
+      const invoiceDate = new Date();
+      
+      if (invoiceDate > today) {
+        complianceErrors.push('Rechnungsdatum darf nicht in der Zukunft liegen');
+      }
+      
+      // Zeige Compliance Fehler oder aktiviere E-Rechnung
+      if (complianceErrors.length > 0) {
+        setEInvoiceEnabled(false);
+        setComplianceErrors(complianceErrors);
+        setInvalidFields(invalidFieldsSet);
+        setShowCompliancePanel(true);
+        
+        // Kurze Toast-Nachricht mit Hinweis auf Panel
+        toast.error('E-Rechnung kann nicht aktiviert werden', {
+          description: `${complianceErrors.length} Probleme gefunden. Fehlende Felder sind rot markiert.`,
+          duration: 5000,
+        });
+        
+        return;
+      }
+      
+      // Alle Prüfungen bestanden - E-Rechnung aktivieren
+      setEInvoiceEnabled(true);
+      setInvalidFields(new Set()); // Clear invalid fields
+      
+      // Update settings in company document
+      try {
+        const { doc, updateDoc } = await import('firebase/firestore');
+        const { db } = await import('@/firebase/clients');
+        
+        const updatedSettings = {
+          defaultFormat: eInvoiceSettings?.defaultFormat || 'zugferd',
+          defaultStandard: eInvoiceSettings?.defaultStandard || 'EN16931',
+          enableAutoGeneration: true,
+          peppol: eInvoiceSettings?.peppol || {
+            enabled: false,
+            participantId: '',
+            endpoint: '',
+          },
+          validation: eInvoiceSettings?.validation || {
+            strictMode: true,
+            autoCorrection: false,
+          },
+          updatedAt: new Date(),
+        };
+        
+        const companyRef = doc(db, 'companies', uid);
+        await updateDoc(companyRef, {
+          'eInvoiceSettings': updatedSettings
+        });
+        
+        setEInvoiceSettings(updatedSettings);
+      } catch (updateError) {
+        console.error('Fehler beim Speichern der E-Rechnung Einstellungen:', updateError);
+        // Don't fail the whole process if settings can't be saved
+      }
+      
+      toast.success('E-Rechnung aktiviert', {
+        description: 'Alle Compliance-Anforderungen erfüllt. E-Rechnungen werden automatisch generiert.',
+      });
+      
+    } catch (error) {
+      console.error('Fehler bei E-Rechnung Compliance-Prüfung:', error);
+      toast.error('E-Rechnung Prüfung fehlgeschlagen', {
+        description: 'Technischer Fehler bei der Compliance-Prüfung. Bitte versuchen Sie es erneut.',
+      });
+      setEInvoiceEnabled(false);
+    }
+  };
+
+  // Company Settings Save Handler
+  const handleCompanySettingsSave = async () => {
+    try {
+      const companyRef = doc(db, 'companies', uid);
+      await updateDoc(companyRef, {
+        companyName: companySettingsFormData.companyName,
+        companyStreet: companySettingsFormData.street,
+        companyCity: companySettingsFormData.city,
+        companyPostalCode: companySettingsFormData.zip,
+        taxNumber: companySettingsFormData.taxNumber,
+        vatId: companySettingsFormData.vatNumber,
+        email: companySettingsFormData.email,
+        phoneNumber: companySettingsFormData.phone,
+        iban: companySettingsFormData.iban,
+        bic: companySettingsFormData.bic,
+        firstName: companySettingsFormData.companyOwner.split(' ')[0] || '',
+        lastName: companySettingsFormData.companyOwner.split(' ').slice(1).join(' ') || '',
+        updatedAt: new Date(),
+      });
+
+      toast.success('Unternehmensdaten gespeichert');
+      setShowCompanySettingsModal(false);
+      setShowCompanySettingsBanner(false);
+      
+      // Reload company data
+      const snap = await getDoc(companyRef);
+      if (snap.exists()) {
+        setCompany(snap.data());
+      }
+    } catch (error) {
+      console.error('Fehler beim Speichern der Unternehmensdaten:', error);
+      toast.error('Fehler beim Speichern der Unternehmensdaten');
+    }
+  };
+
+  // Hilfsfunktion für fehlerhafte Felder
+  const getFieldErrorClass = (fieldName: string) => {
+    return invalidFields.has(fieldName) 
+      ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+      : '';
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
-      {/* Allgemeine Angaben */}
+      {/* Header - SevDesk Style */}
+      <header className="w-full" style={{ maxWidth: '1440px' }}>
+        <div className="flex items-center justify-between py-4 border-b border-gray-200">
+          {/* Left side - Title */}
+          <div className="flex items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Neue Rechnung</h2>
+            </div>
+          </div>
+
+          {/* Right side - Controls and Actions */}
+          <div className="flex items-center gap-4">
+            {/* E-Rechnung Toggle */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <Switch 
+                  checked={eInvoiceEnabled}
+                  onCheckedChange={handleEInvoiceToggle}
+                  style={{
+                    backgroundColor: eInvoiceEnabled ? '#14ad9f' : undefined
+                  }}
+                  className=""
+                />
+                <span className="text-sm font-medium text-gray-700">E-Rechnung</span>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-6 w-px bg-gray-300"></div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="default"
+                onClick={() => setPreviewOpen(true)}
+              >
+                Vorschau
+              </Button>
+              <Button 
+                variant="outline" 
+                size="default"
+                onClick={() => handleSubmit(true)}
+                disabled={loading}
+              >
+                Speichern
+              </Button>
+              <Button 
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                size="default"
+                onClick={() => handleSubmit(false)}
+                disabled={loading}
+              >
+                Überprüfen und senden
+              </Button>
+
+              {/* More Options Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="default" className="px-2">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => {
+                    // TODO: Aufgabe erstellen Funktionalität implementieren
+                    toast.success('Aufgabe erstellen - Feature wird implementiert');
+                  }} className="w-full">
+                    <div className="w-full">
+                      <Button 
+                        variant="default" 
+                        className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white justify-center"
+                        size="sm"
+                      >
+                        Aufgabe erstellen
+                      </Button>
+                    </div>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    // TODO: Löschen Funktionalität implementieren
+                    toast.success('Löschen - Feature wird implementiert');
+                  }} className="w-full">
+                    <div className="w-full">
+                      <Button 
+                        variant="default" 
+                        className="w-full bg-gray-600 hover:bg-gray-700 text-white justify-center"
+                        size="sm"
+                      >
+                        Löschen
+                      </Button>
+                    </div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Company Settings Warning Banner */}
+      {showCompanySettingsBanner && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-6 w-6 text-orange-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <div className="font-medium text-orange-800 mb-1">
+                Angaben zu deinem Unternehmen
+              </div>
+              <div className="text-sm text-orange-700 mb-3">
+                Damit deine Rechnungen rechtssicher und GoBD-konform sind, ergänze noch Angaben zu dir und deinem Unternehmen.
+              </div>
+              <Button 
+                onClick={() => setShowCompanySettingsModal(true)}
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                size="sm"
+              >
+                Angaben vervollständigen
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCompanySettingsBanner(false)}
+              className="p-1 h-auto"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* E-Rechnung Compliance Panel */}
+      {showCompliancePanel && (
+        <Sheet open={showCompliancePanel} onOpenChange={setShowCompliancePanel}>
+          <SheetContent className="w-[400px] sm:w-[540px] bg-white border-l border-[#14ad9f]/20">
+            <SheetHeader className="border-b border-[#14ad9f]/10 pb-4">
+              <SheetTitle className="flex items-center gap-2 text-[#14ad9f]">
+                <AlertTriangle className="h-5 w-5 text-[#14ad9f]" />
+                E-Rechnung Compliance Prüfung
+              </SheetTitle>
+              <SheetDescription className="text-gray-600 font-medium">
+                Folgende Probleme verhindern die Aktivierung der E-Rechnung:
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="mt-6 space-y-3">
+              {complianceErrors.length > 0 && (
+                <div className="p-3 bg-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 bg-[#14ad9f] text-white rounded-full flex items-center justify-center text-xs font-bold">
+                      !
+                    </div>
+                    <h4 className="text-sm font-semibold text-[#14ad9f]">
+                      Erforderliche Angaben
+                    </h4>
+                    <span className="text-xs bg-[#14ad9f]/10 text-[#14ad9f] px-1.5 py-0.5 rounded font-medium">
+                      {complianceErrors.length}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-700 space-y-1">
+                    {complianceErrors.map((error, index) => (
+                      <div key={index} className="flex items-start gap-1.5">
+                        <span className="text-[#14ad9f] mt-0.5 text-xs">•</span>
+                        <span className="leading-tight">{error}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 p-3 bg-[#14ad9f]/5 border border-[#14ad9f]/20 rounded-lg">
+              <h4 className="flex items-center gap-2 text-sm font-medium text-[#14ad9f] mb-1">
+                <Info className="h-3 w-3" />
+                E-Rechnung Mindestanforderungen
+              </h4>
+              <div className="text-xs text-gray-700 leading-tight">
+                Vollständige Firmen- und Kundendaten, Steuer-ID, Bankverbindung, gültige E-Mail-Adressen
+              </div>
+            </div>
+
+            <SheetFooter className="mt-6 pt-4 border-t border-[#14ad9f]/10">
+              <Button 
+                onClick={() => setShowCompliancePanel(false)}
+                variant="default"
+                className="w-full bg-[#14ad9f] hover:bg-[#129488] text-white border-0"
+                size="sm"
+                style={{
+                  backgroundColor: '#14ad9f',
+                  color: 'white',
+                  border: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#129488';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#14ad9f';
+                }}
+              >
+                Schließen
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      )}
+
+      {/* Allgemeine Angaben - SevDesk Style */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -1371,141 +2208,519 @@ export default function CreateQuotePage() {
             Allgemeine Angaben
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Zeile 1 */}
-            <div className="space-y-2">
-              <Label>Kunde</Label>
-              <div className="space-y-2">
-                {/* Neuer Kunde mit intelligenter Suche */}
+        <CardContent className="space-y-6">
+          {/* 2-Spalten Grid für Empfänger und Rechnungsinformationen */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Empfänger Sektion - Links */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Empfänger</h3>
+                
+                {/* Kontakttyp Toggle */}
+                <div className="flex items-center gap-2 mb-4">
+                  <Label className="text-sm font-medium text-gray-700">Kontakt</Label>
+                  <span className="text-red-500">*</span>
+                  <div className="flex ml-auto">
+                    <Button
+                      type="button"
+                      variant={contactType === 'organisation' ? 'default' : 'outline'}
+                      size="sm"
+                      className={`rounded-r-none ${
+                        contactType === 'organisation' 
+                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setContactType('organisation')}
+                    >
+                      Organisation
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={contactType === 'person' ? 'default' : 'outline'}
+                      size="sm"
+                      className={`rounded-l-none ${
+                        contactType === 'person' 
+                          ? 'bg-[#14ad9f] hover:bg-[#129488] text-white' 
+                          : 'hover:bg-gray-50'
+                      }`}
+                      onClick={() => setContactType('person')}
+                    >
+                      Person
+                    </Button>
+                  </div>
+                </div>
 
-                {/* Intelligente Kundensuche */}
-                <div className="relative customer-search-container">
-                  <Input
-                    type="text"
-                    value={formData.customerName}
-                    onChange={e => {
-                      const value = e.target.value;
-                      setFormData(prev => ({
-                        ...prev,
-                        customerName: value,
-                      }));
+                {/* Kontakt Name Input */}
+                <div className="space-y-2 mb-4">
+                  {contactType === 'organisation' ? (
+                    /* Organisation - Ein Feld für Organisationsname */
+                    <div className="relative customer-search-container">
+                      <Input
+                        type="text"
+                        value={formData.customerName}
+                        onChange={e => {
+                          const value = e.target.value;
+                          setFormData(prev => ({
+                            ...prev,
+                            customerName: value,
+                          }));
 
-                      // Zeige Popup nur wenn mindestens 2 Zeichen eingegeben wurden
-                      if (value.length >= 2) {
-                        setShowCustomerSearchPopup(true);
-                      } else {
-                        setShowCustomerSearchPopup(false);
-                      }
-                    }}
-                    placeholder="Neuen Kontakt eingeben..."
-                    className="flex-1"
-                  />
+                          // Zeige Popup nur wenn mindestens 2 Zeichen eingegeben wurden
+                          if (value.length >= 2) {
+                            setShowCustomerSearchPopup(true);
+                          } else {
+                            setShowCustomerSearchPopup(false);
+                          }
+                        }}
+                        placeholder="Name der Organisation"
+                        className={`flex-1 ${getFieldErrorClass('customerName')}`}
+                        required
+                      />
 
-                  {/* Intelligenter Such-Popup */}
-                  {showCustomerSearchPopup && formData.customerName.length >= 2 && (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                      {/* Gefilterte Kunden anzeigen */}
-                      {customers
-                        .filter(customer =>
-                          customer.name.toLowerCase().includes(formData.customerName.toLowerCase())
-                        )
-                        .slice(0, 5) // Maximal 5 Ergebnisse
-                        .map(customer => (
+                      {/* Intelligenter Such-Popup */}
+                      {showCustomerSearchPopup && formData.customerName.length >= 2 && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                          {/* Gefilterte Kunden anzeigen */}
+                          {customers
+                            .filter(customer =>
+                              customer.name.toLowerCase().includes(formData.customerName.toLowerCase())
+                            )
+                            .slice(0, 5)
+                            .map(customer => (
+                              <div
+                                key={customer.id}
+                                className="p-2 hover:bg-gray-50 cursor-pointer text-sm"
+                                onClick={() => selectCustomer(customer)}
+                              >
+                                <div className="font-medium">{customer.name}</div>
+                                {customer.email && (
+                                  <div className="text-gray-500">{customer.email}</div>
+                                )}
+                              </div>
+                            ))}
+
+                          {/* "Neuen Kunden erstellen" Option */}
                           <div
-                            key={customer.id}
-                            className="px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                            className="p-2 hover:bg-gray-50 cursor-pointer text-sm border-t border-gray-100 text-[#14ad9f] font-medium"
                             onClick={() => {
-                              handleCustomerSelect(customer.name);
+                              setShowNewCustomerModal(true);
                               setShowCustomerSearchPopup(false);
                             }}
                           >
-                            <div className="font-medium text-sm">{customer.name}</div>
-                            <div className="text-xs text-gray-500">
-                              {customer.customerNumber} • {customer.email}
-                            </div>
+                            + Neuen Kunden "{formData.customerName}" erstellen
                           </div>
-                        ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Person - Zwei Felder für Vor- und Nachname mit Kundensuche */
+                    <div className="relative customer-search-container">
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Vorname</Label>
+                          <span className="text-red-500">*</span>
+                          <Input
+                            type="text"
+                            value={formData.customerFirstName || ''}
+                            onChange={e => {
+                              const value = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                customerFirstName: value,
+                                // Kombiniere Vor- und Nachname für customerName
+                                customerName: `${value} ${prev.customerLastName || ''}`.trim(),
+                              }));
 
-                      {/* "Kunden anlegen" Button */}
-                      <div className="border-t border-gray-200 bg-gray-50">
-                        <button
-                          type="button"
-                          className="w-full px-3 py-2 text-left text-sm text-[#14ad9f] hover:bg-gray-100 font-medium"
-                          onClick={() => {
-                            setShowCustomerSearchPopup(false);
-                            setCreateCustomerOpen(true);
-                          }}
-                        >
-                          + Neuen Kunden &quot;{formData.customerName}&quot; anlegen
-                        </button>
+                              // Trigger Kundensuche wenn kombinierter Name >= 2 Zeichen
+                              const combinedName = `${value} ${formData.customerLastName || ''}`.trim();
+                              if (combinedName.length >= 2) {
+                                setShowCustomerSearchPopup(true);
+                              } else {
+                                setShowCustomerSearchPopup(false);
+                              }
+                            }}
+                            placeholder="Vorname"
+                            className={getFieldErrorClass('customerName')}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-gray-700">Nachname</Label>
+                          <span className="text-red-500">*</span>
+                          <Input
+                            type="text"
+                            value={formData.customerLastName || ''}
+                            onChange={e => {
+                              const value = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                customerLastName: value,
+                                // Kombiniere Vor- und Nachname für customerName
+                                customerName: `${prev.customerFirstName || ''} ${value}`.trim(),
+                              }));
+
+                              // Trigger Kundensuche wenn kombinierter Name >= 2 Zeichen
+                              const combinedName = `${formData.customerFirstName || ''} ${value}`.trim();
+                              if (combinedName.length >= 2) {
+                                setShowCustomerSearchPopup(true);
+                              } else {
+                                setShowCustomerSearchPopup(false);
+                              }
+                            }}
+                            placeholder="Nachname"
+                            className={getFieldErrorClass('customerName')}
+                            required
+                          />
+                        </div>
                       </div>
+
+                      {/* Intelligenter Such-Popup für Person - gleiche Struktur wie Organisation */}
+                      {showCustomerSearchPopup && formData.customerName.length >= 2 && (
+                        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                          {/* Gefilterte Kunden anzeigen */}
+                          {customers
+                            .filter(customer =>
+                              customer.name.toLowerCase().includes(formData.customerName.toLowerCase())
+                            )
+                            .slice(0, 5)
+                            .map(customer => (
+                              <div
+                                key={customer.id}
+                                className="p-2 hover:bg-gray-50 cursor-pointer text-sm"
+                                onClick={() => {
+                                  // Bei Person-Auswahl Namen splitten
+                                  const nameParts = customer.name.split(' ');
+                                  const firstName = nameParts[0] || '';
+                                  const lastName = nameParts.slice(1).join(' ') || '';
+                                  
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    customerName: customer.name,
+                                    customerFirstName: firstName,
+                                    customerLastName: lastName,
+                                    customerEmail: customer.email,
+                                    customerNumber: customer.customerNumber || '',
+                                    customerAddress: 
+                                      customer.street && customer.city
+                                        ? `${customer.street}\n${customer.postalCode || ''} ${customer.city}\n${customer.country || 'Deutschland'}`
+                                        : prev.customerAddress,
+                                  }));
+                                  setShowCustomerSearchPopup(false);
+                                }}
+                              >
+                                <div className="font-medium">{customer.name}</div>
+                                {customer.email && (
+                                  <div className="text-gray-500">{customer.email}</div>
+                                )}
+                              </div>
+                            ))}
+
+                          {/* "Neuen Kunden erstellen" Option */}
+                          <div
+                            className="p-2 hover:bg-gray-50 cursor-pointer text-sm border-t border-gray-100 text-[#14ad9f] font-medium"
+                            onClick={() => {
+                              console.log('Person: Neuen Kunden erstellen geklickt');
+                              console.log('createCustomerOpen before:', createCustomerOpen);
+                              setCreateCustomerOpen(true);
+                              setShowCustomerSearchPopup(false);
+                              console.log('setCreateCustomerOpen(true) direkt aufgerufen');
+                            }}
+                          >
+                            + Neuen Kunden "{formData.customerName}" erstellen
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {/* Anschrift */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-sm font-medium text-gray-700">Anschrift</Label>
+                      <span className="text-red-500">*</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-sm text-[#14ad9f] hover:text-[#129488] font-medium"
+                      onClick={() => setShowAddressAddition(true)}
+                    >
+                      Adresszusatz +
+                    </button>
+                  </div>
+
+                  {/* Straße und Hausnummer */}
+                  <Input
+                    placeholder="Straße und Hausnummer"
+                    value={formData.customerAddress?.split('\n')[0] || ''}
+                    onChange={e => {
+                      const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
+                      lines[0] = e.target.value;
+                      setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                    }}
+                    className={getFieldErrorClass('customerAddress')}
+                  />
+
+                  {/* Adresszusatz (optional) */}
+                  {showAddressAddition && (
+                    <div className="relative">
+                      <Input
+                        placeholder="Adresszusatz (z.B. c/o, Abteilung, etc.)"
+                        value={formData.customerAddress?.split('\n')[1] || ''}
+                        onChange={e => {
+                          const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
+                          lines[1] = e.target.value;
+                          setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                        onClick={() => {
+                          setShowAddressAddition(false);
+                          // Entferne den Adresszusatz aus der Adresse
+                          const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
+                          lines[1] = ''; // Leere den Adresszusatz
+                          setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                        }}
+                        title="Adresszusatz entfernen"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* PLZ und Ort */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      placeholder="Postleitzahl"
+                      value={formData.customerAddress?.split('\n')[showAddressAddition ? 2 : 1]?.split(' ')[0] || ''}
+                      onChange={e => {
+                        const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
+                        const lineIndex = showAddressAddition ? 2 : 1;
+                        const city = lines[lineIndex]?.split(' ').slice(1).join(' ') || '';
+                        lines[lineIndex] = `${e.target.value} ${city}`.trim();
+                        setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                      }}
+                      className={getFieldErrorClass('customerAddress')}
+                    />
+                    <Input
+                      placeholder="Ort"
+                      value={formData.customerAddress?.split('\n')[showAddressAddition ? 2 : 1]?.split(' ').slice(1).join(' ') || ''}
+                      onChange={e => {
+                        const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
+                        const lineIndex = showAddressAddition ? 2 : 1;
+                        const zip = lines[lineIndex]?.split(' ')[0] || '';
+                        lines[lineIndex] = `${zip} ${e.target.value}`.trim();
+                        setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                      }}
+                      className={getFieldErrorClass('customerAddress')}
+                    />
+                  </div>
+
+                  {/* Land */}
+                  <Select 
+                    value={formData.customerAddress?.split('\n')[showAddressAddition ? 3 : 2] || 'Deutschland'}
+                    onValueChange={value => {
+                      const lines = formData.customerAddress?.split('\n') || ['', '', '', ''];
+                      const lineIndex = showAddressAddition ? 3 : 2;
+                      lines[lineIndex] = value;
+                      setFormData(prev => ({ ...prev, customerAddress: lines.join('\n') }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Bitte auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Deutschland">Deutschland</SelectItem>
+                      <SelectItem value="Österreich">Österreich</SelectItem>
+                      <SelectItem value="Schweiz">Schweiz</SelectItem>
+                      <SelectItem value="Niederlande">Niederlande</SelectItem>
+                      <SelectItem value="Frankreich">Frankreich</SelectItem>
+                      <SelectItem value="Italien">Italien</SelectItem>
+                      <SelectItem value="Spanien">Spanien</SelectItem>
+                      <SelectItem value="Polen">Polen</SelectItem>
+                      <SelectItem value="Tschechische Republik">Tschechische Republik</SelectItem>
+                      <SelectItem value="Belgien">Belgien</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>E‑Mail</Label>
-              <Input
-                type="email"
-                value={formData.customerEmail}
-                onChange={e => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
-                placeholder="kunde@example.com"
-              />
-            </div>
 
-            {/* Zeile 2 */}
-            <div className="space-y-2">
-              <Label>Angebotstitel</Label>
-              <Input
-                value={formData.title}
-                onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="z. B. Angebot für Webentwicklung"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="customerOrderNumber">Referenz / Bestellnummer</Label>
-              <Input
-                id="customerOrderNumber"
-                value={formData.customerOrderNumber}
-                onChange={e =>
-                  setFormData(prev => ({ ...prev, customerOrderNumber: e.target.value }))
-                }
-                placeholder="z. B. PO-12345 / Kundenreferenz"
-              />
-            </div>
+            {/* Rechnungsinformationen Sektion - Rechts */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Rechnungsinformationen</h3>
+                
+                {/* 2x2 Grid für Rechnungsfelder */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {/* Rechnungsdatum */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-sm font-medium text-gray-700">Rechnungsdatum</Label>
+                      <span className="text-red-500">*</span>
+                    </div>
+                    <Input
+                      type="date"
+                      value={new Date().toISOString().split('T')[0]}
+                      onChange={e => {
+                        // TODO: Handle invoice date change
+                      }}
+                      required
+                    />
+                  </div>
 
-            {/* Zeile 3 */}
-            <div className="space-y-2">
-              <Label>Kundennummer</Label>
-              <Input
-                value={formData.customerNumber}
-                onChange={e => setFormData(prev => ({ ...prev, customerNumber: e.target.value }))}
-                placeholder="Optional"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="validUntil">Gültig bis *</Label>
-              <Input
-                id="validUntil"
-                type="date"
-                value={formData.validUntil}
-                onChange={e => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
-                min={new Date().toISOString().split('T')[0]}
-                required
-              />
-            </div>
+                  {/* Lieferdatum */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Label 
+                          className={`text-sm font-medium cursor-pointer ${
+                            deliveryDateType === 'single' ? 'text-gray-900' : 'text-gray-500'
+                          }`}
+                          onClick={() => setDeliveryDateType('single')}
+                        >
+                          Lieferdatum
+                        </Label>
+                        <span className="text-red-500">*</span>
+                      </div>
+                      <button
+                        type="button"
+                        className={`text-sm font-medium cursor-pointer ${
+                          deliveryDateType === 'range' ? 'text-gray-900' : 'text-gray-500'
+                        }`}
+                        onClick={() => setDeliveryDateType('range')}
+                      >
+                        Zeitraum
+                      </button>
+                    </div>
+                    
+                    {deliveryDateType === 'single' ? (
+                      <Input
+                        type="date"
+                        value={new Date().toISOString().split('T')[0]}
+                        onChange={e => {
+                          // TODO: Handle delivery date change
+                        }}
+                        required
+                      />
+                    ) : (
+                      <Popover open={deliveryDatePopoverOpen} onOpenChange={setDeliveryDatePopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start text-left font-normal"
+                            onClick={() => setDeliveryDatePopoverOpen(true)}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {deliveryDateRange.from ? (
+                              deliveryDateRange.to ? (
+                                <>
+                                  {format(deliveryDateRange.from, "dd.MM.yyyy", { locale: de })} - {format(deliveryDateRange.to, "dd.MM.yyyy", { locale: de })}
+                                </>
+                              ) : (
+                                format(deliveryDateRange.from, "dd.MM.yyyy", { locale: de })
+                              )
+                            ) : (
+                              "Zeitraum auswählen"
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={deliveryDateRange.from}
+                            selected={{
+                              from: deliveryDateRange.from,
+                              to: deliveryDateRange.to
+                            }}
+                            onSelect={(range) => {
+                              setDeliveryDateRange(range || {});
+                              // Schließe den Popover wenn beide Daten ausgewählt sind
+                              if (range?.from && range?.to) {
+                                setDeliveryDatePopoverOpen(false);
+                              }
+                            }}
+                            numberOfMonths={2}
+                            locale={de}
+                            className="rounded-md border"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </div>
 
-            {/* Adresse unter beiden Spalten */}
-            <div className="space-y-2 md:col-span-2">
-              <Label>Adresse</Label>
-              <Textarea
-                value={formData.customerAddress}
-                onChange={e => setFormData(prev => ({ ...prev, customerAddress: e.target.value }))}
-                placeholder={'Straße 1\n12345 Stadt\nDeutschland'}
-                rows={3}
-              />
+                  {/* Rechnungsnummer */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1">
+                      <Label className="text-sm font-medium text-gray-700">Rechnungsnummer</Label>
+                      <span className="text-red-500">*</span>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        placeholder="RE-1000"
+                        value={formData.title || ''}
+                        onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                        required
+                        className="pr-10"
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-gray-100"
+                        type="button"
+                        onClick={() => setShowNumberingModal(true)}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="3"/>
+                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.06 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1.06H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1.06-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.06 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1.06H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1.06z"/>
+                        </svg>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Referenznummer */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">Referenznummer</Label>
+                    <Input
+                      placeholder="Optional"
+                      value={formData.customerOrderNumber}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, customerOrderNumber: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* Zahlungsziel - Ganze Zeile */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-gray-700">Zahlungsziel</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      value={formData.validUntil}
+                      onChange={e => setFormData(prev => ({ ...prev, validUntil: e.target.value }))}
+                      className="flex-1"
+                    />
+                    <span className="text-sm text-gray-500">in</span>
+                    <Input
+                      type="number"
+                      placeholder="14"
+                      className="w-16 text-center"
+                      defaultValue="14"
+                    />
+                    <span className="text-sm text-gray-500">Tagen</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -2591,13 +3806,150 @@ export default function CreateQuotePage() {
         }}
       />
 
+      {/* Company Settings Modal */}
+      <Dialog open={showCompanySettingsModal} onOpenChange={setShowCompanySettingsModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Deine Angaben</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Pflichtangaben */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Pflichtangaben</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Inhaber</Label>
+                  <Input
+                    value={companySettingsFormData.companyOwner}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, companyOwner: e.target.value }))}
+                    placeholder="Inhaber"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Firma</Label>
+                  <Input
+                    value={companySettingsFormData.companyName}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                    placeholder="Firma"
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <Label>Anschrift</Label>
+                  <Input
+                    value={companySettingsFormData.street}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, street: e.target.value }))}
+                    placeholder="Straße und Hausnummer"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Input
+                      value={companySettingsFormData.zip}
+                      onChange={e => setCompanySettingsFormData(prev => ({ ...prev, zip: e.target.value }))}
+                      placeholder="PLZ"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      value={companySettingsFormData.city}
+                      onChange={e => setCompanySettingsFormData(prev => ({ ...prev, city: e.target.value }))}
+                      placeholder="Ort"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Steuernummer</Label>
+                  <Input
+                    value={companySettingsFormData.taxNumber}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, taxNumber: e.target.value }))}
+                    placeholder="Steuernummer"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Umsatzsteuer-ID</Label>
+                  <Input
+                    value={companySettingsFormData.vatNumber}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, vatNumber: e.target.value }))}
+                    placeholder="Umsatzsteuer-ID"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Optionale Angaben */}
+            <div>
+              <h3 className="text-lg font-medium mb-4">Optionale Angaben</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>E-Mail</Label>
+                  <Input
+                    type="email"
+                    value={companySettingsFormData.email}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="marie@musterfrau.de"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Telefon</Label>
+                  <Input
+                    value={companySettingsFormData.phone}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="07821 127384"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>IBAN</Label>
+                  <Input
+                    value={companySettingsFormData.iban}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, iban: e.target.value }))}
+                    placeholder="DE01100100000010101010"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>BIC</Label>
+                  <Input
+                    value={companySettingsFormData.bic}
+                    onChange={e => setCompanySettingsFormData(prev => ({ ...prev, bic: e.target.value }))}
+                    placeholder="BELADEBE"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowCompanySettingsModal(false)}>
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={handleCompanySettingsSave}
+              className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+            >
+              Speichern
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal: Neuer Kunde */}
       <NewCustomerModal
         open={createCustomerOpen}
         onOpenChange={setCreateCustomerOpen}
         defaultValues={{
           name: formData.customerName || '',
+          firstName: contactType === 'person' ? formData.customerFirstName : undefined,
+          lastName: contactType === 'person' ? formData.customerLastName : undefined,
         }}
+        contactType={contactType}
         saving={creatingCustomer}
         persistDirectly={true}
         companyId={uid}
@@ -2638,6 +3990,213 @@ export default function CreateQuotePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal: Nummernkreis bearbeiten */}
+      <Dialog open={showNumberingModal} onOpenChange={setShowNumberingModal}>
+        <DialogContent className="w-[320px] max-w-none sm:w-[320px]">
+          <DialogHeader>
+            <DialogTitle>Nummernkreis bearbeiten</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Format */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Format</Label>
+              <Input
+                value={numberingFormat}
+                onChange={e => setNumberingFormat(e.target.value)}
+                placeholder="RE-%NUMBER"
+              />
+            </div>
+
+            {/* Nächste Zahl */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Nächste Zahl</Label>
+              <Input
+                type="number"
+                value={nextNumber}
+                onChange={e => setNextNumber(parseInt(e.target.value) || 0)}
+                placeholder="1000"
+              />
+            </div>
+
+            {/* Vorschau */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Vorschau</Label>
+              <div className="p-3 bg-gray-50 rounded-md border">
+                <code className="text-sm font-mono text-gray-800">
+                  {generateNumberPreview(numberingFormat, nextNumber)}
+                </code>
+              </div>
+            </div>
+
+            {/* Verfügbare Variablen */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">
+                Folgende Variablen stehen für das Format zur Verfügung:
+              </Label>
+              <div className="text-xs text-gray-600 space-y-1">
+                <div><code className="bg-gray-100 px-1 rounded">%NUMBER</code> - Nächste Zahl <span className="text-red-500">Obligatorisch</span></div>
+                <div><code className="bg-gray-100 px-1 rounded">%YYYY</code> - Aktuelles Jahr (2025)</div>
+                <div><code className="bg-gray-100 px-1 rounded">%YY</code> - Aktuelles Jahr (25)</div>
+                <div><code className="bg-gray-100 px-1 rounded">%MM</code> - Aktueller Monat (09)</div>
+                <div><code className="bg-gray-100 px-1 rounded">%M</code> - Aktueller Monat (9)</div>
+                <div><code className="bg-gray-100 px-1 rounded">%DD</code> - Aktueller Tag (15)</div>
+                <div><code className="bg-gray-100 px-1 rounded">%D</code> - Aktueller Tag (15)</div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowNumberingModal(false)}
+              >
+                Abbrechen
+              </Button>
+              <Button 
+                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
+                onClick={async () => {
+                  try {
+                    // Speichere die Nummernkreis-Einstellungen in Firestore
+                    const companyRef = doc(db, 'companies', uid);
+                    await updateDoc(companyRef, {
+                      'invoiceNumbering.format': numberingFormat,
+                      'invoiceNumbering.nextNumber': nextNumber,
+                      'invoiceNumbering.lastUpdated': new Date().toISOString()
+                    });
+
+                    // Aktualisiere das Rechnungsnummer-Feld mit der neuen Vorschau
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      title: generateNumberPreview(numberingFormat, nextNumber) 
+                    }));
+                    
+                    setShowNumberingModal(false);
+                    toast.success('Nummernkreis-Einstellungen gespeichert');
+                  } catch (error) {
+                    console.error('Fehler beim Speichern der Nummernkreis-Einstellungen:', error);
+                    toast.error('Fehler beim Speichern der Einstellungen');
+                  }
+                }}
+              >
+                Übernehmen
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* E-Rechnung Compliance Panel - von rechts ausfahrend */}
+      <Sheet open={showCompliancePanel} onOpenChange={setShowCompliancePanel}>
+        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              E-Rechnung Compliance Prüfung
+            </SheetTitle>
+            <SheetDescription>
+              Folgende Probleme verhindern die Aktivierung der E-Rechnung:
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="mt-6 space-y-3">
+            {(() => {
+              // Kategorisiere die Compliance-Fehler in Pflicht und Empfohlen
+              const criticalErrors = complianceErrors.filter(error => 
+                !error.includes('empfohlen') && 
+                !error.includes('Website') && 
+                !error.includes('Logo') && 
+                !error.includes('Branchenangabe') &&
+                !error.includes('Geschäftsbeschreibung') &&
+                !error.includes('Telefonnummer')
+              );
+              
+              const recommendedErrors = complianceErrors.filter(error => 
+                error.includes('empfohlen') || 
+                error.includes('Website') || 
+                error.includes('Logo') || 
+                error.includes('Branchenangabe') ||
+                error.includes('Geschäftsbeschreibung') ||
+                error.includes('Telefonnummer')
+              );
+
+              return (
+                <>
+                  {/* Kritische Fehler - Kompakt */}
+                  {criticalErrors.length > 0 && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                          !
+                        </div>
+                        <h4 className="text-sm font-semibold text-red-800">Erforderliche Angaben</h4>
+                        <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
+                          {criticalErrors.length}
+                        </span>
+                      </div>
+                      <div className="text-xs text-red-700 space-y-1">
+                        {criticalErrors.slice(0, 5).map((error, index) => (
+                          <div key={index} className="flex items-start gap-1.5">
+                            <span className="text-red-400 mt-0.5 text-xs">•</span>
+                            <span className="leading-tight">{error}</span>
+                          </div>
+                        ))}
+                        {criticalErrors.length > 5 && (
+                          <div className="text-xs text-red-600 font-medium mt-1">
+                            ... und {criticalErrors.length - 5} weitere
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empfehlungen - Kollapsible */}
+                  {recommendedErrors.length > 0 && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-4 h-4 bg-yellow-500 text-white rounded-full flex items-center justify-center text-xs">
+                          i
+                        </div>
+                        <h4 className="text-sm font-semibold text-yellow-800">Empfehlungen</h4>
+                        <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">
+                          {recommendedErrors.length}
+                        </span>
+                      </div>
+                      <div className="text-xs text-yellow-700">
+                        <div className="leading-tight">
+                          {recommendedErrors.slice(0, 2).join(', ')}
+                          {recommendedErrors.length > 2 && ` und ${recommendedErrors.length - 2} weitere Verbesserungen`}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Kompakte Hilfe-Section */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="flex items-center gap-2 text-sm font-medium text-blue-800 mb-1">
+              <Info className="h-3 w-3" />
+              E-Rechnung Mindestanforderungen
+            </h4>
+            <div className="text-xs text-blue-700 leading-tight">
+              Vollständige Firmen- und Kundendaten, Steuer-ID, Bankverbindung, gültige E-Mail-Adressen
+            </div>
+          </div>
+
+          <SheetFooter className="mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCompliancePanel(false)}
+              className="w-full h-8 text-sm"
+            >
+              Schließen
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

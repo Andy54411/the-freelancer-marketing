@@ -62,6 +62,8 @@ interface InvoiceData {
 
 interface TemplateProps {
   data: InvoiceData;
+  companySettings?: CompanySettings;
+  customizations?: TemplateCustomizations;
 }
 
 /**
@@ -93,20 +95,20 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
             {showLogo && logoUrl && (
               <img
                 src={logoUrl}
-                alt={`${data.company.name} Logo`}
+                alt={`${data.company?.name || 'Company'} Logo`}
                 className="h-12 w-auto mb-3 object-contain"
               />
             )}
             <h1 className="text-3xl font-bold text-gray-900 mb-2 uppercase tracking-wider">
-              {data.company.name}
+              {data.company?.name || 'Company Name'}
             </h1>
             <div className="text-gray-700 space-y-1">
-              <p>{data.company.address.street}</p>
+              <p>{data.company?.address?.street}</p>
               <p>
-                {data.company.address.zipCode} {data.company.address.city}
+                {data.company?.address?.zipCode} {data.company?.address?.city}
               </p>
-              <p className="mt-2 font-medium">{data.company.phone}</p>
-              <p>{data.company.email}</p>
+              <p className="mt-2 font-medium">{data.company?.phone}</p>
+              <p>{data.company?.email}</p>
             </div>
           </div>
 
@@ -131,10 +133,10 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
                 Rechnungsempfänger
               </h3>
               <div className="text-lg font-medium space-y-1">
-                <p className="font-bold text-gray-900">{data.customer.name}</p>
-                <p className="text-gray-700">{data.customer.address.street}</p>
+                <p className="font-bold text-gray-900">{data.customer?.name || 'Customer Name'}</p>
+                <p className="text-gray-700">{data.customer?.address?.street}</p>
                 <p className="text-gray-700">
-                  {data.customer.address.zipCode} {data.customer.address.city}
+                  {data.customer?.address?.zipCode} {data.customer?.address?.city}
                 </p>
               </div>
             </div>
@@ -237,13 +239,13 @@ export const CorporateClassicTemplate: React.FC<TemplateProps> = ({
             </div>
             <div>
               <h5 className="font-bold text-gray-900 mb-2 uppercase">Bankverbindung</h5>
-              <p>IBAN: {data.company.bankDetails.iban}</p>
-              <p>BIC: {data.company.bankDetails.bic}</p>
+              <p>IBAN: {data.company?.bankDetails?.iban}</p>
+              <p>BIC: {data.company?.bankDetails?.bic}</p>
             </div>
             <div>
               <h5 className="font-bold text-gray-900 mb-2 uppercase">Steuern</h5>
-              {data.company.vatId && <p>USt-IdNr.: {data.company.vatId}</p>}
-              {data.company.taxNumber && <p>Steuernr.: {data.company.taxNumber}</p>}
+              {data.company?.vatId && <p>USt-IdNr.: {data.company.vatId}</p>}
+              {data.company?.taxNumber && <p>Steuernr.: {data.company.taxNumber}</p>}
             </div>
           </div>
           <div className="mt-6 text-xs text-gray-700">

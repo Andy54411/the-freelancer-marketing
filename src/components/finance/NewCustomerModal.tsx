@@ -117,7 +117,12 @@ interface NewCustomerValues {
 export interface NewCustomerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultValues?: Partial<{ name: string }>;
+  defaultValues?: Partial<{ 
+    name: string;
+    firstName?: string;
+    lastName?: string;
+  }>;
+  contactType?: 'organisation' | 'person';
   saving?: boolean;
   onSave?: (values: Record<string, unknown>) => Promise<void>;
   persistDirectly?: boolean;
@@ -225,6 +230,7 @@ export default function NewCustomerModal({
   open,
   onOpenChange,
   defaultValues,
+  contactType = 'organisation',
   saving,
   onSave,
   persistDirectly,
@@ -232,7 +238,7 @@ export default function NewCustomerModal({
   onSaved,
 }: NewCustomerModalProps) {
   const [values, setValues] = useState<NewCustomerValues>(DEFAULT_VALUES);
-  const [activeTab, setActiveTab] = useState<CustomerType>('Person');
+  const [activeTab, setActiveTab] = useState<CustomerType>(contactType === 'person' ? 'Person' : 'Organisation');
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('Adresse');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [customCategories, setCustomCategories] = useState<Array<{ id: string; name: string; categoryType: string }>>([]);
@@ -243,7 +249,19 @@ export default function NewCustomerModal({
       if (defaultValues?.name) {
         // Pre-fill based on customer type
         if (activeTab === 'Person') {
-          newValues.person.nachname = defaultValues.name;
+          // Verwende die spezifischen Vor- und Nachnamen falls vorhanden
+          if (defaultValues.firstName) {
+            newValues.person.vorname = defaultValues.firstName;
+          }
+          if (defaultValues.lastName) {
+            newValues.person.nachname = defaultValues.lastName;
+          }
+          // Fallback: Wenn nur name vorhanden ist, versuche es aufzuteilen
+          if (!defaultValues.firstName && !defaultValues.lastName && defaultValues.name) {
+            const nameParts = defaultValues.name.split(' ');
+            newValues.person.vorname = nameParts[0] || '';
+            newValues.person.nachname = nameParts.slice(1).join(' ') || '';
+          }
         } else {
           newValues.organisation.name = defaultValues.name;
         }

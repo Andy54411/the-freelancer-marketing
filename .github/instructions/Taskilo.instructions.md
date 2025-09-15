@@ -82,6 +82,17 @@ pnpm run format
 pnpm run logs:remove  # Remove debug logs before commits
 ```
 
+## KRITISCHE AI-ANWEISUNGEN - NIEMALS IGNORIEREN!
+
+**PROBLEMLÖSUNG-PRINZIPIEN:**
+- **NIEMALS NUR SYMPTOME VERSTECKEN** - Debug-Logs entfernen oder Fallback/Mock-Daten verwenden ist KEINE Lösung!
+- **PROBLEME RICHTIG UND GEWISSENHAFT LÖSEN** - Die echte Ursache finden und beheben
+- **KEINE SPIELEREI** - Direkt zur Wurzel des Problems gehen
+- **ZEIT RESPEKTIEREN** - Effizient und zielgerichtet arbeiten
+- **KEINE FALLBACK-LOGIK** wenn der User explizit dagegen ist
+- **KEINE MOCK-DATEN** - Immer echte Daten verwenden
+- **ORDENTLICH UND GEWISSENHAFT** arbeiten - nicht oberflächlich reparieren
+
 ## Code Patterns & Conventions
 
 ### Firebase Integration
