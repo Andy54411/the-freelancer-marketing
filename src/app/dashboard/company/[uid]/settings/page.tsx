@@ -10,6 +10,7 @@ import BankForm from '@/components/dashboard_setting/bankverbindung';
 import AccountingForm from '@/components/dashboard_setting/buchhaltung&steuern';
 import LogoForm from '@/components/dashboard_setting/logo';
 import PortfolioForm from '@/components/dashboard_setting/portfolio';
+import ServicesForm from '@/components/dashboard_setting/services-professional';
 import FaqsForm from '@/components/dashboard_setting/faqs';
 import PaymentTermsForm from '@/components/dashboard_setting/PaymentTermsForm';
 import { RawFirestoreUserData, UserDataForSettings } from '@/types/settings';
@@ -222,6 +223,8 @@ export default function SettingsPage() {
         return <LogoForm formData={form} handleChange={handleChange} />;
       case 'portfolio':
         return <PortfolioForm formData={form} handleChange={handleChange} />;
+      case 'services':
+        return <ServicesForm formData={form} setFormData={setForm} />;
       case 'faqs':
         return <FaqsForm formData={form} handleChange={handleChange} />;
       case 'payment-terms':
@@ -271,6 +274,8 @@ export default function SettingsPage() {
         };
       case 'portfolio':
         return { title: 'Portfolio', description: 'Präsentieren Sie Ihre Arbeiten und Projekte' };
+      case 'services':
+        return { title: 'Dienstleistungen', description: 'Verwalten Sie Ihre angebotenen Services und Preise' };
       case 'faqs':
         return {
           title: 'FAQs',
@@ -284,35 +289,50 @@ export default function SettingsPage() {
   const { title, description } = getSettingsTitle();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 sm:p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
-        <p className="text-gray-600">{description}</p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        {renderSettingsComponent()}
-
-        <div className="mt-8 pt-6 border-t">
-          <button
-            onClick={saveForm}
-            disabled={saving}
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? (
-              <>
-                <FiLoader className="animate-spin -ml-1 mr-3 h-5 w-5" />
-                Speichern...
-              </>
-            ) : (
-              <>
-                <FiSave className="-ml-1 mr-3 h-5 w-5" />
-                Speichern
-              </>
-            )}
-          </button>
+    <>
+      {view === 'services' ? (
+        <div className="min-h-screen bg-gray-50">
+          <div className="p-6 sm:p-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
+              <p className="text-gray-600">{description}</p>
+            </div>
+            
+            {renderSettingsComponent()}
+          </div>
         </div>
-      </div>
-    </div>
+      ) : (
+        <div className="max-w-4xl mx-auto p-6 sm:p-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
+            <p className="text-gray-600">{description}</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            {renderSettingsComponent()}
+
+            <div className="mt-8 pt-6 border-t">
+              <button
+                onClick={saveForm}
+                disabled={saving}
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <>
+                    <FiLoader className="animate-spin -ml-1 mr-3 h-5 w-5" />
+                    Speichern...
+                  </>
+                ) : (
+                  <>
+                    <FiSave className="-ml-1 mr-3 h-5 w-5" />
+                    Speichern
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

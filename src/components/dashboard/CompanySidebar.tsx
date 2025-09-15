@@ -248,6 +248,7 @@ const navigationItems: NavigationItem[] = [
       { label: 'Bankverbindung', value: 'settings-bank' },
       { label: 'Logo & Dokumente', value: 'settings-logo' },
       { label: 'Portfolio', value: 'settings-portfolio' },
+      { label: 'Dienstleistungen', value: 'settings-services' },
       { label: 'FAQs', value: 'settings-faqs' },
       { label: 'Auszahlungen', value: 'settings-payouts' },
       { label: 'Storno-Einstellungen', value: 'settings-storno', href: 'settings/storno' },

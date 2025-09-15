@@ -71,6 +71,9 @@ type InvoiceTemplate =
   | 'tech-innovation-invoice';
 import { UserPreferencesService } from '@/lib/userPreferences';
 import { TextTemplateService } from '@/services/TextTemplateService';
+import InvoiceHeaderTextSection from '@/components/finance/InvoiceHeaderTextSection';
+// Import der zentralen Platzhalter-Engine
+import { replacePlaceholders as centralReplacePlaceholders, PlaceholderContext } from '@/utils/placeholders';
 type PreviewTemplateData = {
   invoiceNumber: string;
   date: string;
@@ -80,9 +83,12 @@ type PreviewTemplateData = {
   currency?: string;
   taxRule?: string;
   taxRuleLabel?: string;
+  invoiceDate?: string;
+  deliveryDate?: string;
   customerName: string;
   customerAddress?: string;
   customerEmail?: string;
+  customerPhone?: string;
   companyName?: string;
   companyAddress?: string;
   companyEmail?: string;
@@ -437,6 +443,8 @@ export default function CreateQuotePage() {
     title: '',
     customerOrderNumber: '',
     validUntil: '',
+    invoiceDate: '',
+    deliveryDate: '',
     headTextHtml: '',
     footerText: '',
     notes: '',
@@ -833,68 +841,120 @@ export default function CreateQuotePage() {
     }
   };
 
-  // Platzhalter-Ersetzung für Textvorlagen
+  // ✨ DATUM-HILFSFUNKTIONEN für erweiterte Platzhalter
+  const getISOWeek = (date: Date): number => {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  };
+
+  const getMonthName = (monthIndex: number): string => {
+    const adjustedMonth = ((monthIndex % 12) + 12) % 12; // Handle negative values
+    const date = new Date(2000, adjustedMonth, 1);
+    return date.toLocaleDateString('de-DE', { month: 'long' });
+  };
+
+  const getMonthNameShort = (monthIndex: number): string => {
+    const adjustedMonth = ((monthIndex % 12) + 12) % 12;
+    const date = new Date(2000, adjustedMonth, 1);
+    return date.toLocaleDateString('de-DE', { month: 'short' });
+  };
+
+  const getMonthNumber = (monthIndex: number): string => {
+    const adjustedMonth = ((monthIndex % 12) + 12) % 12;
+    return (adjustedMonth + 1).toString().padStart(2, '0');
+  };
+
+  const getNextQuarter = (): number => {
+    const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+    return currentQuarter === 4 ? 1 : currentQuarter + 1;
+  };
+
+  const getPreviousQuarter = (): number => {
+    const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3);
+    return currentQuarter === 1 ? 4 : currentQuarter - 1;
+  };
+
+  const getYesterday = (): Date => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday;
+  };
+
+  const getDaysInCurrentMonth = (): number => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  };
+
+  // Platzhalter-Ersetzung für Textvorlagen - NEUE ZENTRALE ENGINE
   const replacePlaceholders = (text: string, data: PreviewTemplateData): string => {
     if (!text) return '';
 
-    // Erstelle Platzhalter-Mapping
-    const placeholders = {
-      // Kunden-Information
-      '[%KUNDENNAME%]': data.customerName || '',
-      '[%KUNDENNUMMER%]': formData.customerNumber || '',
-      '[%KUNDENADRESSE%]': data.customerAddress || '',
-      '[%KUNDENANREDE%]': data.customerName ? `Sehr geehrte Damen und Herren` : '',
-      '[%VOLLEANREDE%]': data.customerName ? `Sehr geehrte Damen und Herren` : '',
-
-      // Rechnungs-Information
-      '[%RECHNUNGSNUMMER%]': data.invoiceNumber || '',
-      '[%ANGEBOTSNUMMER%]': data.invoiceNumber || '', // Fallback für gemischte Templates
-      '[%RECHNUNGSDATUM%]': formatDateDE(data.date) || '',
-      '[%ZAHLUNGSZIEL%]': formatDateDE(data.validUntil) || '',
-      '[%LEISTUNGSDATUM%]': formatDateDE(data.date) || '',
-
-      // Finanz-Information
-      '[%BETRAG%]': formatCurrency(data.total),
-      '[%NETTOBETRAG%]': formatCurrency(data.subtotal),
-      '[%STEUERBETRAG%]': formatCurrency(data.tax),
-      '[%WAEHRUNG%]': data.currency || 'EUR',
-      '[%STEUERSATZ%]': `${data.vatRate || 0}%`,
-
-      // Unternehmens-Information
-      '[%KONTAKTPERSON%]': data.contactPersonName || data.companyName || '',
-      '[%FIRMENNAME%]': data.companyName || '',
-      '[%FIRMENADRESSE%]': data.companyAddress || '',
-      '[%FIRMENTELEFON%]': data.companyPhone || '',
-      '[%FIRMENEMAIL%]': data.companyEmail || '',
-      '[%FIRMENWEBSITE%]': data.companyWebsite || '',
-      '[%UMSATZSTEUERID%]': data.companyVatId || '',
-      '[%STEUERNUMMER%]': data.companyTaxNumber || '',
-
-      // Bank-Information
-      '[%IBAN%]': data.bankDetails?.iban || '',
-      '[%BIC%]': data.bankDetails?.bic || '',
-      '[%BANKNAME%]': data.bankDetails?.bankName || '',
-      '[%KONTOINHABER%]': data.bankDetails?.accountHolder || '',
-
-      // Sonstige
-      '[%DATUM%]': formatDateDE(new Date()),
-      '[%TITEL%]': data.title || '',
-      '[%REFERENZ%]': data.reference || '',
+    // Erstelle Kontext für die zentrale Engine
+    const context: PlaceholderContext = {
+      type: 'invoice',
+      company: {
+        companyName: data.companyName || '',
+        name: data.companyName || '',
+        email: data.companyEmail || '',
+        phone: data.companyPhone || '',
+        website: data.companyWebsite || '',
+        vatId: data.companyVatId || '',
+        taxNumber: data.companyTaxNumber || '',
+        address: data.companyAddress || '',
+        // Strukturierte Adresse wenn verfügbar
+        street: data.companyAddress?.split('\n')[0] || '',
+        postalCode: data.companyAddress?.split('\n')[1]?.split(' ')[0] || '',
+        city: data.companyAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
+        country: data.companyAddress?.split('\n')[2] || '',
+        // Bankdaten
+        bankDetails: data.bankDetails ? {
+          iban: data.bankDetails.iban || '',
+          bic: data.bankDetails.bic || '',
+          bankName: data.bankDetails.bankName || '',
+          accountHolder: data.bankDetails.accountHolder || ''
+        } : undefined
+      },
+      selectedCustomer: {
+        companyName: data.customerName || '',
+        name: data.customerName || '',
+        email: data.customerEmail || '',
+        phone: data.customerPhone || '', // Verwende die korrekte KUNDENTELEFON-Variable
+        address: data.customerAddress || '',
+        // Strukturierte Adresse wenn verfügbar
+        street: data.customerAddress?.split('\n')[0] || '',
+        postalCode: data.customerAddress?.split('\n')[1]?.split(' ')[0] || '',
+        city: data.customerAddress?.split('\n')[1]?.split(' ').slice(1).join(' ') || '',
+        country: data.customerAddress?.split('\n')[2] || ''
+      },
+      invoice: {
+        invoiceNumber: data.invoiceNumber || '',
+        invoiceDate: data.date || '',
+        dueDate: data.validUntil || '',
+        deliveryDate: data.deliveryDate || '',
+        serviceDate: data.deliveryDate || '',
+        netAmount: data.subtotal || 0,
+        taxAmount: data.tax || 0,
+        totalAmount: data.total || 0,
+        currency: data.currency || 'EUR',
+        taxRate: data.vatRate || 0,
+        paymentTerms: data.paymentTerms || '',
+        notes: data.notes || '',
+        reference: data.reference || '',
+        title: data.title || ''
+      }
     };
 
-    // Alle Platzhalter ersetzen
-    let result = text;
-    Object.entries(placeholders).forEach(([placeholder, value]) => {
-      const regex = new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-      result = result.replace(regex, value);
-    });
-
-    return result;
+    // Verwende die zentrale Engine für die Ersetzung
+    return centralReplacePlaceholders(text, context);
   };
 
   // Vorschau-Daten für das Template zusammenbauen
   const buildPreviewData = (): PreviewTemplateData => {
     const today = new Date();
+    
     // Firmenname und -adresse aus companies-Collection, mit Fallbacks
     const companyName =
       (company?.companyName as string) ||
@@ -963,8 +1023,9 @@ export default function CreateQuotePage() {
 
     const data: PreviewTemplateData = {
       invoiceNumber: 'Vorschau',
-      date: formatDateDE(today),
+      date: formData.invoiceDate ? formatDateDE(new Date(formData.invoiceDate)) : formatDateDE(today),
       validUntil: formatDateDE(formData.validUntil),
+      deliveryDate: formData.deliveryDate ? formatDateDE(new Date(formData.deliveryDate)) : undefined,
       title: formData.title || undefined,
       reference: formData.customerOrderNumber || undefined,
       currency:
@@ -1536,6 +1597,9 @@ export default function CreateQuotePage() {
       }
       const validUntilDate = new Date(formData.validUntil);
 
+      // Kundensuche für Telefonnummer
+      const selectedCustomer = customers.find(c => c.name === formData.customerName);
+
       // Zahlungsbedingungen final (inkl. Skonto, falls aktiv)
       const skontoSentence =
         skontoEnabled && skontoDays && skontoPercentage
@@ -1549,7 +1613,7 @@ export default function CreateQuotePage() {
         companyId: uid,
         customerName: formData.customerName,
         customerEmail: formData.customerEmail,
-        customerPhone: '',
+        customerPhone: selectedCustomer?.phone || '',
         customerOrderNumber: formData.customerOrderNumber || undefined,
         customerAddress: formData.customerAddress
           ? {
@@ -2548,6 +2612,7 @@ export default function CreateQuotePage() {
                       <SelectItem value="Polen">Polen</SelectItem>
                       <SelectItem value="Tschechische Republik">Tschechische Republik</SelectItem>
                       <SelectItem value="Belgien">Belgien</SelectItem>
+                      <SelectItem value="USA">USA</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -2569,9 +2634,9 @@ export default function CreateQuotePage() {
                     </div>
                     <Input
                       type="date"
-                      value={new Date().toISOString().split('T')[0]}
+                      value={formData.invoiceDate || new Date().toISOString().split('T')[0]}
                       onChange={e => {
-                        // TODO: Handle invoice date change
+                        setFormData(prev => ({ ...prev, invoiceDate: e.target.value }));
                       }}
                       required
                     />
@@ -2605,9 +2670,9 @@ export default function CreateQuotePage() {
                     {deliveryDateType === 'single' ? (
                       <Input
                         type="date"
-                        value={new Date().toISOString().split('T')[0]}
+                        value={formData.deliveryDate || new Date().toISOString().split('T')[0]}
                         onChange={e => {
-                          // TODO: Handle delivery date change
+                          setFormData(prev => ({ ...prev, deliveryDate: e.target.value }));
                         }}
                         required
                       />
@@ -2726,64 +2791,16 @@ export default function CreateQuotePage() {
         </CardContent>
       </Card>
 
-      {/* Kopf-Text mit Textvorlagen */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-[#14ad9f]" />
-            Kopf-Text & Textvorlagen
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Textvorlagen Selector für Kopftext */}
-          <div className="flex items-center gap-2">
-            <Label className="flex-shrink-0">Kopftext-Vorlage:</Label>
-            <Select
-              value={selectedHeadTemplate}
-              onValueChange={value => {
-                setSelectedHeadTemplate(value);
-                const template = textTemplates.find(t => t.id === value);
-                if (template) {
-                  setFormData(prev => ({ ...prev, headTextHtml: template.text }));
-                }
-              }}
-            >
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Vorlage auswählen..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Keine Vorlage</SelectItem>
-                {textTemplates
-                  .filter(t => t.objectType === 'INVOICE' && t.textType === 'HEAD')
-                  .map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name} {template.isDefault && '(Standard)'}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowTemplateModal(true)}
-            >
-              Vorlagen verwalten
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Einleitung / Kopf-Text</Label>
-            <FooterTextEditor
-              value={formData.headTextHtml}
-              onChange={(html: string) => setFormData(prev => ({ ...prev, headTextHtml: html }))}
-              companyId={uid}
-              objectType="INVOICE"
-              textType="HEAD"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Kopf-Text & Textvorlagen */}
+      <InvoiceHeaderTextSection
+        title={formData.title}
+        headTextHtml={formData.headTextHtml}
+        onTitleChange={(value) => setFormData(prev => ({ ...prev, title: value }))}
+        onHeadTextChange={(html) => setFormData(prev => ({ ...prev, headTextHtml: html }))}
+        companyId={uid}
+        userId={user?.uid || ''}
+        getFieldErrorClass={getFieldErrorClass}
+      />
 
       {/* Produkte / Positionen */}
       <Card>

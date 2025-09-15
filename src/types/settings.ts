@@ -292,4 +292,5 @@ export interface UserDataForSettings {
     cancellationTimeLimit?: number;
     refundPolicy?: string;
   };
+  serviceItems?: any[];
 }

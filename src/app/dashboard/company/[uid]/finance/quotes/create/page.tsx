@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import FooterTextEditor from '@/components/finance/FooterTextEditor';
+import HeaderTextEditor from '@/components/finance/HeaderTextEditor';
 import InventorySelector from '@/components/quotes/InventorySelector';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -1512,7 +1513,7 @@ export default function CreateQuotePage() {
               </SelectContent>
             </Select>
           </div>
-          <FooterTextEditor
+          <HeaderTextEditor
             value={formData.headTextHtml}
             onChange={(html: string) => setFormData(prev => ({ ...prev, headTextHtml: html }))}
             companyId={uid}

@@ -49,7 +49,7 @@ import { TextTemplate } from '@/types/textTemplates';
 import PlaceholderModal from '@/components/texteditor/PlaceholderModal';
 import TextTemplateModal from '@/components/settings/TextTemplateModal';
 
-interface FooterTextEditorProps {
+interface HeaderTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   className?: string;
@@ -60,17 +60,17 @@ interface FooterTextEditorProps {
   onTemplateSelect?: (templateId: string) => void;
 }
 
-// Leichter TipTap-Editor speziell für Fuß-Text mit Basisformatierung und Platzhaltern
-export default function FooterTextEditor({
+// TipTap-Editor speziell für Kopf-Text mit Basisformatierung und Platzhaltern
+export default function HeaderTextEditor({
   value,
   onChange,
   className,
   companyId,
   userId,
   objectType,
-  textType,
+  textType = 'HEAD', // Default auf HEAD für Header-Text
   onTemplateSelect,
-}: FooterTextEditorProps) {
+}: HeaderTextEditorProps) {
   const [mounted, setMounted] = useState(false);
   const [textTemplates, setTextTemplates] = useState<TextTemplate[]>([]);
   const [placeholderModalOpen, setPlaceholderModalOpen] = useState(false);
@@ -79,18 +79,18 @@ export default function FooterTextEditor({
 
   useEffect(() => setMounted(true), []);
 
-  // Textvorlagen laden
+  // Textvorlagen laden - speziell für Header-Text
   const loadTextTemplates = async () => {
     if (!companyId) return;
     try {
-      console.log('Loading templates for:', { companyId, objectType, textType }); // Debug
+      console.log('Loading header templates for:', { companyId, objectType, textType }); // Debug
 
       // Erst Standard-Templates erstellen falls keine vorhanden
       await TextTemplateService.createDefaultTemplatesIfNeeded(companyId, companyId);
 
       let templates: TextTemplate[] = [];
 
-      // Erst versuchen mit spezifischen Filtern
+      // Erst versuchen mit spezifischen Filtern für HEAD-Text
       if (objectType && textType) {
         templates = await TextTemplateService.getTextTemplatesByType(
           companyId,
@@ -104,7 +104,7 @@ export default function FooterTextEditor({
         templates = await TextTemplateService.getTextTemplatesByType(companyId, objectType);
       }
 
-      // Falls immer noch keine, alle für company laden
+      // Falls immer noch keine, alle für company laden und filtern
       if (templates.length === 0) {
         const allTemplates = await TextTemplateService.getTextTemplates(companyId);
         templates = allTemplates.filter(
@@ -114,14 +114,14 @@ export default function FooterTextEditor({
       }
 
       setTextTemplates(templates);
-      console.log('Final loaded templates:', templates.length, templates); // Debug
+      console.log('Final loaded header templates:', templates.length, templates); // Debug
     } catch (error) {
-      console.error('Fehler beim Laden der Textvorlagen:', error);
+      console.error('Fehler beim Laden der Kopftext-Vorlagen:', error);
     }
   };
 
   useEffect(() => {
-    console.log('FooterTextEditor mounted with:', { companyId, objectType, textType, mounted }); // Debug
+    console.log('HeaderTextEditor mounted with:', { companyId, objectType, textType, mounted }); // Debug
     if (mounted) {
       loadTextTemplates();
     }
@@ -169,7 +169,7 @@ export default function FooterTextEditor({
     return (
       <div className={className}>
         <div className="min-h-[140px] p-3 border rounded-md text-sm text-gray-400">
-          Editor wird geladen…
+          Kopftext-Editor wird geladen…
         </div>
       </div>
     );
@@ -201,6 +201,7 @@ export default function FooterTextEditor({
       const fullTemplateData: Omit<TextTemplate, 'id' | 'createdAt' | 'updatedAt'> = {
         ...templateData,
         companyId,
+        textType: 'HEAD', // Immer HEAD für HeaderTextEditor - überschreibt ggf. das templateData.textType
         createdBy: userId,
       };
       
@@ -209,7 +210,7 @@ export default function FooterTextEditor({
       // Template-Liste neu laden
       await loadTextTemplates();
     } catch (error) {
-      console.error('Fehler beim Speichern der Textvorlage:', error);
+      console.error('Fehler beim Speichern der Kopftext-Vorlage:', error);
     }
   };
 
@@ -325,101 +326,27 @@ export default function FooterTextEditor({
                 '#ff00ff',
                 '#00ffff',
                 '#808080',
+                '#800000',
+                '#008000',
+                '#000080',
+                '#808000',
+                '#800080',
+                '#008080',
+                '#c0c0c0',
+                '#ffffff',
               ].map(color => (
                 <button
                   key={color}
-                  className="w-6 h-6 rounded border border-gray-300"
+                  type="button"
+                  className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
                   style={{ backgroundColor: color }}
                   onClick={() => editor.chain().focus().setColor(color).run()}
+                  title={color}
                 />
               ))}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Listen */}
-        <Button
-          type="button"
-          variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
-          size="sm"
-          className={`h-8 px-2 ${editor.isActive('orderedList') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          title="Nummerierte Liste (Cmd + /)"
-        >
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
-          size="sm"
-          className={`h-8 px-2 ${editor.isActive('bulletList') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          title="Stichpunkte (Cmd + .)"
-        >
-          <List className="h-4 w-4" />
-        </Button>
-
-        {/* Tabelle */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" className="h-8 px-2" title="Tabelle">
-              <TableIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem
-              onClick={() =>
-                editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
-              }
-            >
-              Tabelle einfügen (3x3)
-            </DropdownMenuItem>
-            {editor.isActive('table') && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()}>
-                  Tabelle entfernen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()}>
-                  Zeile oberhalb einfügen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()}>
-                  Zeile unterhalb einfügen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()}>
-                  Zeile löschen
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Link */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 px-2"
-          onClick={() => {
-            const url = window.prompt('Link URL:');
-            if (url) editor.chain().focus().setLink({ href: url }).run();
-          }}
-          title="Link"
-        >
-          <LinkIcon className="h-4 w-4" />
-        </Button>
-
-        {/* Trennlinie */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 px-2"
-          onClick={() => editor.chain().focus().setHorizontalRule().run()}
-          title="Trennlinie"
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
@@ -455,14 +382,38 @@ export default function FooterTextEditor({
           <AlignRight className="h-4 w-4" />
         </Button>
 
-        {/* Einzug */}
+        <Separator orientation="vertical" className="mx-1 h-6" />
+
+        {/* Listen */}
+        <Button
+          type="button"
+          variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
+          size="sm"
+          className={`h-8 px-2 ${editor.isActive('bulletList') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          title="Aufzählung"
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
+          size="sm"
+          className={`h-8 px-2 ${editor.isActive('orderedList') ? 'bg-[#14ad9f] text-white' : 'hover:bg-[#14ad9f]/10'}`}
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          title="Nummerierte Liste"
+        >
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+
+        {/* Einrückung */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
           className="h-8 px-2"
           onClick={() => editor.chain().focus().liftListItem('listItem').run()}
-          title="Einzug verkleinern"
+          title="Einzug verringern"
         >
           <Outdent className="h-4 w-4" />
         </Button>
@@ -479,7 +430,7 @@ export default function FooterTextEditor({
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
-        {/* Textvorlagen-Button - immer anzeigen */}
+        {/* Kopftext-Vorlagen */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -487,16 +438,16 @@ export default function FooterTextEditor({
               variant="ghost"
               size="sm"
               className={`h-8 px-3 ${selectedTemplate ? 'bg-[#14ad9f] text-white selected' : 'hover:bg-[#14ad9f]/10'}`}
-              title="Textvorlage"
+              title="Kopftext-Vorlage"
             >
-              <span className="select-none">Textvorlage</span>
+              <span className="select-none">Kopftext-Vorlage</span>
               <span className="caret ml-1" style={{ fontSize: '9pt' }}>
                 ▼
               </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Textvorlagen</DropdownMenuLabel>
+            <DropdownMenuLabel>Kopftext-Vorlagen</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {companyId && objectType && textTemplates.length > 0 ? (
               <>
@@ -516,12 +467,12 @@ export default function FooterTextEditor({
                   onClick={() => setTemplateModalOpen(true)}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Textvorlage erstellen
+                  Kopftext-Vorlage erstellen
                 </DropdownMenuItem>
               </>
             ) : (
               <DropdownMenuItem disabled className="text-gray-500">
-                Keine Textvorlagen verfügbar
+                Keine Kopftext-Vorlagen verfügbar
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -558,7 +509,7 @@ export default function FooterTextEditor({
         objectType={objectType}
       />
 
-      {/* Textvorlage Erstellen Modal */}
+      {/* Kopftext-Vorlage Erstellen Modal */}
       {companyId && userId && (
         <TextTemplateModal
           isOpen={templateModalOpen}
