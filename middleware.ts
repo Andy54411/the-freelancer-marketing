@@ -28,7 +28,8 @@ export default async function middleware(request: NextRequest) {
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
     pathname === '/sitemap.xml.gz' ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    pathname === '/manifest.json'
   ) {
     logMiddleware('SEO/Static endpoint – Middleware übersprungen', request, { pathname });
     return;
