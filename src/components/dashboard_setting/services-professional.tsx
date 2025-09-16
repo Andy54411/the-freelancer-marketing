@@ -1,20 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit3, Save, X, Star, Settings, 
-         Clock, Users, CheckCircle, ArrowUpDown, Package, 
-         TrendingUp, BarChart3, Activity, DollarSign,
-         ChevronDown, ChevronRight, Filter, Search, MoreHorizontal } from 'lucide-react';
+import { Plus, Trash2, Edit3, Save, Star,
+         ChevronDown, Filter, Search, MoreHorizontal, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { 
   Table, 
   TableBody, 
@@ -38,7 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/clients';
 import { categories, findCategoryBySubcategory } from '@/lib/categoriesData';
 import { generateAddonSuggestions } from '@/lib/gemini-addon-generator';
@@ -990,6 +986,37 @@ const ServicesForm: React.FC<ServicesFormProps> = ({ formData, setFormData }) =>
 
   // Service Form Component
   const ServiceFormFields = ({ service, setService }: { service: ServiceItem, setService: (service: ServiceItem) => void }) => {
+    // Local state für inputs um re-rendering zu vermeiden
+    const [localTitle, setLocalTitle] = useState(service.title);
+    const [localDescription, setLocalDescription] = useState(service.description);
+
+    // Sync local state mit parent state
+    useEffect(() => {
+      setLocalTitle(service.title);
+    }, [service.title]);
+
+    useEffect(() => {
+      setLocalDescription(service.description);
+    }, [service.description]);
+
+    // Debounced update zum parent
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        if (localTitle !== service.title) {
+          setService({ ...service, title: localTitle });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }, [localTitle]);
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        if (localDescription !== service.description) {
+          setService({ ...service, description: localDescription });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }, [localDescription]);
     
     // Dynamisches Label basierend auf Kategorie
     const getDeliveryTimeLabel = (subcategory: string) => {
@@ -1217,13 +1244,28 @@ const ServicesForm: React.FC<ServicesFormProps> = ({ formData, setFormData }) =>
       {/* Basic Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="title">Service-Titel *</Label>
-          <Input
-            id="title"
-            value={service.title}
-            onChange={(e) => setService({ ...service, title: e.target.value })}
+          <label htmlFor="clean-title-input" className="block text-sm font-medium text-gray-700 mb-1">
+            Service-Titel *
+          </label>
+          <input
+            id="clean-title-input"
+            type="text"
+            value={localTitle}
+            onChange={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('Clean Title onChange:', e.target.value);
+              setLocalTitle(e.target.value);
+            }}
+            onFocus={(e) => {
+              console.log('Title focused');
+            }}
+            onBlur={(e) => {
+              console.log('Title blurred');
+            }}
             placeholder="z.B. Professionelle Website-Entwicklung"
-            className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+            autoComplete="off"
           />
         </div>
         <div>
@@ -1256,14 +1298,28 @@ const ServicesForm: React.FC<ServicesFormProps> = ({ formData, setFormData }) =>
       </div>
 
       <div>
-        <Label htmlFor="description">Service-Beschreibung *</Label>
-        <Textarea
-          id="description"
-          value={service.description}
-          onChange={(e) => setService({ ...service, description: e.target.value })}
+        <label htmlFor="clean-description-input" className="block text-sm font-medium text-gray-700 mb-1">
+          Service-Beschreibung *
+        </label>
+        <textarea
+          id="clean-description-input"
+          value={localDescription}
+          onChange={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Clean Description onChange:', e.target.value);
+            setLocalDescription(e.target.value);
+          }}
+          onFocus={(e) => {
+            console.log('Description focused');
+          }}
+          onBlur={(e) => {
+            console.log('Description blurred');
+          }}
           placeholder="Detaillierte Beschreibung Ihrer Dienstleistung..."
           rows={3}
-          className="focus:ring-[#14ad9f] focus:border-[#14ad9f]"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-[#14ad9f] resize-vertical"
+          autoComplete="off"
         />
       </div>
 
