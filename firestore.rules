@@ -103,13 +103,22 @@ service cloud.firestore {
         // Support-Staff kann Onboarding-Status aller Companies auflisten (für Admin-Dashboard)
         allow list: if isSupportStaff();
       }
+
+      // --- Profile Subcollection für Benutzer-Profildaten ---
+      match /profile/{document} {
+        // Profile-Daten können für Chat-Inbox von authentifizierten Benutzern gelesen werden
+        // Eigene Profildaten können geschrieben werden
+        allow read: if request.auth != null; // Authentifizierte User können Profile für Chat lesen
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // --- companies Collection ---
     match /companies/{companyId} {
       // Admins/Support können jedes Firmendokument lesen.
       // Andere können es lesen, wenn es öffentlich ist (z.B. für den Logo-Slider).
-      allow get: if true; // Vollständig öffentlicher Lesezugriff für Service-Discovery
+      // WICHTIG: Erweitert für Chat-Inbox - Companies müssen andere Companies lesen können
+      allow get: if true; // Vollständig öffentlicher Lesezugriff für Service-Discovery und Chat-Inbox
       // KORREKTUR: Öffentlicher Lesezugriff für Hero-Section und Anbietersuche.
       allow list: if true; // Temporär vollständig öffentlich für Debugging
 
@@ -140,6 +149,19 @@ service cloud.firestore {
       match /integrations/{integration} {
         // API-Integrationen können nur von der eigenen Firma oder Support-Staff gelesen/geschrieben werden
         allow read, write: if (request.auth != null && request.auth.uid == companyId) || isSupportStaff();
+      }
+
+      // --- servicePackages Subcollection für Service-Pakete ---
+      match /servicePackages/{packageId} {
+        // Öffentlicher Lesezugriff für Service-Packages (für Service-Discovery)
+        allow get: if true;
+        allow list: if true;
+        
+        // Nur die eigene Firma kann ihre Service-Pakete verwalten
+        allow create, update: if request.auth != null && request.auth.uid == companyId;
+        
+        // Nur die eigene Firma oder Support kann Service-Pakete löschen
+        allow delete: if request.auth != null && (request.auth.uid == companyId || isSupportStaff());
       }
     }
 

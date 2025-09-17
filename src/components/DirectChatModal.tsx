@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, MessageCircle, User } from 'lucide-react';
+import Image from 'next/image';
 import { db } from '@/firebase/clients';
 import {
   collection,
@@ -36,6 +37,15 @@ interface Message {
   timestamp: any;
 }
 
+interface UserProfile {
+  name: string;
+  avatar?: string;
+  companyData?: {
+    companyName: string;
+    logoUrl?: string;
+  };
+}
+
 export default function DirectChatModal({
   isOpen,
   onClose,
@@ -49,12 +59,66 @@ export default function DirectChatModal({
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [chatId, setChatId] = useState<string>('');
+  const [userProfiles, setUserProfiles] = useState<{[key: string]: UserProfile}>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Generiere eine eindeutige Chat-ID basierend auf beiden Teilnehmern
   const generateChatId = (companyId: string, providerId: string) => {
     return [companyId, providerId].sort().join('_');
   };
+
+  // Lade Benutzerprofil
+  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
+    if (userProfiles[userId]) {
+      return userProfiles[userId];
+    }
+
+    try {
+      // Versuche zuerst in companies collection
+      const companyDoc = await getDoc(doc(db, 'companies', userId));
+      if (companyDoc.exists()) {
+        const data = companyDoc.data();
+        const profile: UserProfile = {
+          name: data.companyName || data.name || 'Unbekanntes Unternehmen',
+          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl || data.avatarUrl,
+          companyData: {
+            companyName: data.companyName || data.name || 'Unbekanntes Unternehmen',
+            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl
+          }
+        };
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
+        return profile;
+      }
+
+      // Fallback: Versuche in users collection
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const profile: UserProfile = {
+          name: data.name || data.firstName || 'Unbekannter Nutzer',
+          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.avatarUrl || data.profilePicture
+        };
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
+        return profile;
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des Benutzerprofils:', error);
+    }
+
+    return null;
+  };
+
+  // Lade Profile für alle Nachrichten
+  useEffect(() => {
+    const loadProfilesForMessages = async () => {
+      const uniqueSenderIds = [...new Set(messages.map(msg => msg.senderId))];
+      await Promise.all(uniqueSenderIds.map(senderId => loadUserProfile(senderId)));
+    };
+
+    if (messages.length > 0) {
+      loadProfilesForMessages();
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (!isOpen || !companyId || !providerId) return;
@@ -198,34 +262,71 @@ export default function DirectChatModal({
               <p>Starten Sie die Unterhaltung mit {providerName}</p>
             </div>
           ) : (
-            messages.map(message => (
-              <div
-                key={message.id}
-                className={`flex ${message.senderId === user?.uid ? 'justify-end' : 'justify-start'}`}
-              >
+            messages.map(message => {
+              const isOwnMessage = message.senderId === user?.uid;
+              const userProfile = userProfiles[message.senderId];
+              
+              return (
                 <div
-                  className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
-                    message.senderId === user?.uid
-                      ? 'bg-[#14ad9f] text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  }`}
+                  key={message.id}
+                  className={`flex items-start gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}
                 >
-                  <p className="text-sm">{message.text}</p>
-                  <p
-                    className={`text-xs mt-1 ${
-                      message.senderId === user?.uid
-                        ? 'text-teal-100'
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    {message.timestamp?.toDate?.()?.toLocaleTimeString('de-DE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
+                  {/* Avatar */}
+                  <div className="flex-shrink-0">
+                    {userProfile?.avatar ? (
+                      <Image
+                        src={userProfile.avatar}
+                        alt={userProfile.name || message.senderName}
+                        width={40}
+                        height={40}
+                        className="rounded-full object-cover w-10 h-10"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                        <User size={20} className="text-gray-600" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Nachrichteninhalt */}
+                  <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                    <div
+                      className={`px-3 py-2 rounded-lg ${
+                        isOwnMessage
+                          ? 'bg-[#14ad9f] text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {/* Name und Text in einer Reihe */}
+                      <div className="flex items-start gap-2">
+                        <span className={`text-xs font-semibold flex-shrink-0 ${
+                          isOwnMessage
+                            ? 'text-teal-100'
+                            : 'text-gray-600 dark:text-gray-400'
+                        }`}>
+                          {userProfile?.name || message.senderName}:
+                        </span>
+                        <p className="text-sm flex-1">{message.text}</p>
+                      </div>
+                      
+                      {/* Uhrzeit unten rechts */}
+                      <p
+                        className={`text-xs text-right mt-1 ${
+                          isOwnMessage
+                            ? 'text-teal-100'
+                            : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                      >
+                        {message.timestamp?.toDate?.()?.toLocaleTimeString('de-DE', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </div>

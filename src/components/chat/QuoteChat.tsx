@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
+import { FiUser } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 import {
@@ -14,6 +16,7 @@ import {
   updateDoc,
   where,
   getDocs,
+  getDoc,
 } from 'firebase/firestore';
 import ChatNotificationBell from './ChatNotificationBell';
 
@@ -27,6 +30,15 @@ interface Message {
   read: boolean;
 }
 
+interface UserProfile {
+  name: string;
+  avatar?: string;
+  companyData?: {
+    companyName: string;
+    logoUrl?: string;
+  };
+}
+
 interface QuoteChatProps {
   quoteId: string;
   customerId: string;
@@ -34,6 +46,7 @@ interface QuoteChatProps {
   customerName: string;
   providerName: string;
   currentUserType: 'customer' | 'provider';
+  companyId: string;
 }
 
 export default function QuoteChat({
@@ -43,6 +56,7 @@ export default function QuoteChat({
   customerName,
   providerName,
   currentUserType,
+  companyId,
 }: QuoteChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -50,6 +64,7 @@ export default function QuoteChat({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userProfiles, setUserProfiles] = useState<{[key: string]: UserProfile}>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { firebaseUser } = useAuth();
 
@@ -60,6 +75,59 @@ export default function QuoteChat({
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages]);
+
+  // Lade Benutzerprofil
+  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
+    if (userProfiles[userId]) {
+      return userProfiles[userId];
+    }
+
+    try {
+      // Versuche zuerst in companies collection
+      const companyDoc = await getDoc(doc(db, 'companies', userId));
+      if (companyDoc.exists()) {
+        const data = companyDoc.data();
+        const profile: UserProfile = {
+          name: data.companyName || data.name || 'Unbekanntes Unternehmen',
+          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl || data.avatarUrl,
+          companyData: {
+            companyName: data.companyName || data.name || 'Unbekanntes Unternehmen',
+            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl
+          }
+        };
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
+        return profile;
+      }
+
+      // Fallback: Versuche in users collection
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const profile: UserProfile = {
+          name: data.name || data.firstName || 'Unbekannter Nutzer',
+          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.avatarUrl || data.profilePicture
+        };
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
+        return profile;
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden des Benutzerprofils:', error);
+    }
+
+    return null;
+  };
+
+  // Lade Profile für alle Nachrichten
+  useEffect(() => {
+    const loadProfilesForMessages = async () => {
+      const uniqueSenderIds = [...new Set(messages.map(msg => msg.senderId))];
+      await Promise.all(uniqueSenderIds.map(senderId => loadUserProfile(senderId)));
+    };
+
+    if (messages.length > 0) {
+      loadProfilesForMessages();
+    }
   }, [messages]);
 
   // Nachrichten laden mit Real-time Updates
@@ -246,39 +314,63 @@ export default function QuoteChat({
         ) : (
           messages.map(message => {
             const isOwnMessage = message.senderId === firebaseUser?.uid;
+            const userProfile = userProfiles[message.senderId];
 
             return (
               <div
                 key={message.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                className={`flex items-start gap-3 ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}
               >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg shadow-sm ${
-                    isOwnMessage ? 'bg-[#14ad9f] text-white' : 'bg-gray-100 text-gray-900'
-                  }`}
-                >
-                  {!isOwnMessage && (
-                    <div className="mb-1">
-                      <span className="text-xs font-semibold opacity-75">{message.senderName}</span>
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                  {userProfile?.avatar ? (
+                    <Image
+                      src={userProfile.avatar}
+                      alt={userProfile.name || message.senderName}
+                      width={40}
+                      height={40}
+                      className="rounded-full object-cover w-10 h-10"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                      <FiUser size={20} className="text-gray-600" />
                     </div>
                   )}
+                </div>
 
-                  <p className="text-sm">{message.text}</p>
-
+                {/* Nachrichteninhalt */}
+                <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                   <div
-                    className={`flex items-center gap-2 mt-2 text-xs ${
-                      isOwnMessage ? 'justify-end' : 'justify-start'
+                    className={`px-4 py-3 rounded-lg shadow-sm ${
+                      isOwnMessage ? 'bg-[#14ad9f] text-white' : 'bg-gray-100 text-gray-900'
                     }`}
                   >
-                    <span className="opacity-75">
-                      {message.timestamp?.toDate().toLocaleTimeString('de-DE', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                    {isOwnMessage && (
-                      <span className="text-xs opacity-75">{message.read ? '✓✓' : '✓'}</span>
-                    )}
+                    {/* Name und Text in einer Reihe */}
+                    <div className="flex items-start gap-2">
+                      {!isOwnMessage && (
+                        <span className="text-xs font-semibold opacity-75 flex-shrink-0">
+                          {userProfile?.name || message.senderName}:
+                        </span>
+                      )}
+                      <p className="text-sm flex-1">{message.text}</p>
+                    </div>
+
+                    {/* Uhrzeit und Status unten */}
+                    <div
+                      className={`flex items-center gap-2 mt-2 text-xs ${
+                        isOwnMessage ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <span className="opacity-75">
+                        {message.timestamp?.toDate().toLocaleTimeString('de-DE', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                      {isOwnMessage && (
+                        <span className="text-xs opacity-75">{message.read ? '✓✓' : '✓'}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

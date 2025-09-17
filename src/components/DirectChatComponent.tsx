@@ -12,9 +12,11 @@ import {
   Timestamp,
   doc,
   setDoc,
+  getDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { Send as FiSend, Loader2 as FiLoader } from 'lucide-react';
+import { Send as FiSend, Loader2 as FiLoader, User as FiUser } from 'lucide-react';
+import Image from 'next/image';
 
 interface DirectChatMessage {
   id: string;
@@ -23,6 +25,16 @@ interface DirectChatMessage {
   senderType: 'company' | 'provider';
   text: string;
   timestamp: Timestamp;
+  senderAvatar?: string;
+}
+
+interface UserProfile {
+  name: string;
+  avatar?: string;
+  companyData?: {
+    companyName: string;
+    logoUrl?: string;
+  };
 }
 
 interface DirectChatComponentProps {
@@ -38,6 +50,7 @@ export default function DirectChatComponent({
 }: DirectChatComponentProps) {
   const { user: currentUser } = useAuth();
   const [messages, setMessages] = useState<DirectChatMessage[]>([]);
+  const [userProfiles, setUserProfiles] = useState<Record<string, { name: string; avatar?: string | null }>>({});
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -45,6 +58,47 @@ export default function DirectChatComponent({
 
   // Clean chatId - entferne "direct_" prefix falls vorhanden
   const cleanChatId = chatId.startsWith('direct_') ? chatId.substring(7) : chatId;
+
+  // Hilfsfunktion zum Laden von Benutzerprofilen
+  const loadUserProfile = async (userId: string) => {
+    if (userProfiles[userId]) return userProfiles[userId];
+
+    try {
+      // Versuche zuerst in companies collection
+      const companyDoc = await getDoc(doc(db, 'companies', userId));
+      if (companyDoc.exists()) {
+        const data = companyDoc.data();
+        const profile: UserProfile = {
+          name: data.companyName || data.name || 'Unbekanntes Unternehmen',
+          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl || data.avatarUrl,
+          companyData: {
+            companyName: data.companyName || data.name || 'Unbekanntes Unternehmen',
+            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl
+          }
+        };
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
+        return profile;
+      }            // Fallback: Versuche in users collection
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const profile: UserProfile = {
+          name: data.name || data.firstName || 'Unbekannter Nutzer',
+          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.avatarUrl || data.profilePicture
+        };
+        setUserProfiles(prev => ({ ...prev, [userId]: profile }));
+        return profile;
+      }
+
+      const fallbackProfile = { name: 'Unbekannter User', avatar: null };
+      setUserProfiles(prev => ({ ...prev, [userId]: fallbackProfile }));
+      return fallbackProfile;
+    } catch (error) {
+      const fallbackProfile = { name: 'Unbekannter User', avatar: null };
+      setUserProfiles(prev => ({ ...prev, [userId]: fallbackProfile }));
+      return fallbackProfile;
+    }
+  };
 
   useEffect(() => {
     if (!currentUser || !cleanChatId) return;
@@ -54,7 +108,7 @@ export default function DirectChatComponent({
 
     const unsubscribe = onSnapshot(
       messagesQuery,
-      snapshot => {
+      async snapshot => {
         const messagesList: DirectChatMessage[] = [];
         snapshot.forEach(doc => {
           const data = doc.data();
@@ -65,8 +119,14 @@ export default function DirectChatComponent({
             senderType: data.senderType,
             text: data.text,
             timestamp: data.timestamp,
+            senderAvatar: data.senderAvatar,
           });
         });
+
+        // Lade Benutzerprofile für alle einzigartigen Sender
+        const uniqueSenderIds = [...new Set(messagesList.map(msg => msg.senderId))];
+        await Promise.all(uniqueSenderIds.map(senderId => loadUserProfile(senderId)));
+
         setMessages(messagesList);
         setLoading(false);
       },
@@ -145,26 +205,57 @@ export default function DirectChatComponent({
         {messages.length > 0 ? (
           messages.map(message => {
             const isOwnMessage = message.senderId === currentUser?.uid;
+            const userProfile = userProfiles[message.senderId];
+            
             return (
               <div
                 key={message.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                className={`flex items-start gap-3`}
               >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    isOwnMessage
-                      ? 'bg-[#14ad9f] text-white'
-                      : 'bg-white text-gray-800 border border-gray-200'
-                  }`}
-                >
-                  <div className="text-sm">{message.text}</div>
+                {/* Profilbild - immer links */}
+                <div className="flex-shrink-0">
+                  {userProfile?.avatar ? (
+                    <Image
+                      src={userProfile.avatar}
+                      alt={userProfile.name || message.senderName}
+                      width={40}
+                      height={40}
+                      className="rounded-full object-cover w-10 h-10"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                      <FiUser size={20} className="text-gray-600" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Nachrichteninhalt */}
+                <div className={`flex flex-col max-w-xs lg:max-w-md ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                  {/* Nachrichtenblase mit allem in einer Reihe */}
                   <div
-                    className={`text-xs mt-1 ${isOwnMessage ? 'text-teal-100' : 'text-gray-500'}`}
+                    className={`px-4 py-2 rounded-lg ${
+                      isOwnMessage
+                        ? 'bg-[#14ad9f] text-white'
+                        : 'bg-white text-gray-800 border border-gray-200'
+                    }`}
                   >
-                    {message.timestamp?.toDate().toLocaleTimeString('de-DE', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {/* Name und Text in einer Reihe */}
+                    <div className="flex items-start gap-2">
+                      <span className={`text-xs font-semibold flex-shrink-0 ${isOwnMessage ? 'text-teal-100' : 'text-gray-600'}`}>
+                        {userProfile?.name || message.senderName}:
+                      </span>
+                      <div className="text-sm flex-1">{message.text}</div>
+                    </div>
+                    
+                    {/* Uhrzeit unten rechts */}
+                    <div
+                      className={`text-xs text-right mt-1 ${isOwnMessage ? 'text-teal-100' : 'text-gray-500'}`}
+                    >
+                      {message.timestamp?.toDate().toLocaleTimeString('de-DE', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>

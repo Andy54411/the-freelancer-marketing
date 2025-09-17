@@ -17,6 +17,7 @@ import {
   Ticket,
   Briefcase,
   XCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,6 +38,7 @@ const navigation = [
   { name: 'Übersicht', href: '/dashboard/admin', icon: BarChart3 },
   { name: 'Workspace', href: '/dashboard/admin/workspace', icon: Briefcase },
   { name: 'Tickets', href: '/dashboard/admin/tickets', icon: Ticket },
+  { name: 'Chat-Monitoring', href: '/dashboard/admin/chat-monitoring', icon: MessageSquare },
   { name: 'Storno-Verwaltung', href: '/dashboard/admin/storno-management', icon: XCircle },
   { name: 'Enhanced Analytics', href: '/dashboard/admin/analytics', icon: BarChart3 },
   { name: 'Unternehmen', href: '/dashboard/admin/companies', icon: Building2 },

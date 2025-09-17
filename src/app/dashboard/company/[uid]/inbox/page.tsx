@@ -61,13 +61,22 @@ export default function CompanyInboxPage() {
 
       if (companyDocSnap.exists()) {
         const companyData = companyDocSnap.data();
+        
+        // Prüfe ob profileBannerImage eine gültige URL ist (nicht blob:)
+        let avatarUrl = null;
+        if (companyData.profileBannerImage && 
+            !companyData.profileBannerImage.startsWith('blob:') &&
+            companyData.profileBannerImage.startsWith('http')) {
+          avatarUrl = companyData.profileBannerImage;
+        }
+        
         return {
           name: companyData.companyName || companyData.name || UNKNOWN_USER_NAME,
-          avatarUrl: companyData.bannerUrl || companyData.avatarUrl || null,
+          avatarUrl: avatarUrl,
         };
       }
 
-      // Fallback zu users Collection
+      // Fallback 1: Versuche die Hauptsammlung users (falls es noch alte Strukturen gibt)
       const userDocRef = doc(db, 'users', userId);
       const userDocSnap = await getDoc(userDocRef);
 
@@ -79,13 +88,26 @@ export default function CompanyInboxPage() {
         };
       }
 
+      // Fallback 2: Versuche users Subcollection (users/userId/profile/data)
+      const userProfileDocRef = doc(db, 'users', userId, 'profile', 'data');
+      const userProfileDocSnap = await getDoc(userProfileDocRef);
+
+      if (userProfileDocSnap.exists()) {
+        const userData = userProfileDocSnap.data();
+        return {
+          name: userData.name || UNKNOWN_USER_NAME,
+          avatarUrl: userData.avatarUrl || null,
+        };
+      }
+
       return {
-        name: UNKNOWN_USER_NAME,
+        name: `User ${userId.substring(0, 8)}...`, // Zeige zumindest einen Teil der ID
         avatarUrl: null,
       };
     } catch (error) {
+      // Bei Permission-Fehlern verwende zumindest einen teilweisen Namen
       return {
-        name: UNKNOWN_USER_NAME,
+        name: `User ${userId.substring(0, 8)}...`, // Zeige zumindest einen Teil der ID
         avatarUrl: null,
       };
     }
@@ -151,7 +173,8 @@ export default function CompanyInboxPage() {
 
             // Versuche zuerst die gespeicherten userDetails zu verwenden
             const userDetails = otherUserId ? chatData.userDetails?.[otherUserId] : null;
-            if (userDetails && userDetails.name && userDetails.name !== UNKNOWN_USER_NAME) {
+            
+            if (userDetails && userDetails.name && userDetails.name !== UNKNOWN_USER_NAME && userDetails.name !== 'Kunde') {
               otherUserData = {
                 name: userDetails.name,
                 avatarUrl: userDetails.avatarUrl || null,
@@ -168,7 +191,7 @@ export default function CompanyInboxPage() {
             };
 
             return {
-              id: chatDoc.id,
+              id: `chat_${chatDoc.id}`, // Prefix für normale Chats
               otherUser,
               lastMessage: {
                 text: chatData.lastMessage?.text || '',
@@ -208,7 +231,8 @@ export default function CompanyInboxPage() {
 
             // Versuche zuerst die gespeicherten participantNames zu verwenden
             const participantName = chatData.participantNames?.[otherUserId];
-            if (participantName && participantName !== UNKNOWN_USER_NAME) {
+            
+            if (participantName && participantName !== UNKNOWN_USER_NAME && participantName !== 'Kunde') {
               otherUserData.name = participantName;
             } else if (otherUserId) {
               // Fallback: Lade Daten mit Collection-Fallback
@@ -256,8 +280,24 @@ export default function CompanyInboxPage() {
     return loadAllChats();
   }, [currentUser]);
 
+  // Hilfsfunktion um echte Chat-ID aus der prefixed ID zu extrahieren
+  const getRealChatId = (chatId: string) => {
+    if (chatId.startsWith('chat_')) {
+      return chatId.replace('chat_', '');
+    }
+    if (chatId.startsWith('direct_')) {
+      return chatId.replace('direct_', '');
+    }
+    return chatId;
+  };
+
   const selectedChat = useMemo(() => {
-    return chats.find(chat => chat.id === selectedChatId) || null;
+    if (!selectedChatId) return null;
+    
+    // Direkter Vergleich - Chats haben bereits prefixed IDs
+    const foundChat = chats.find(chat => chat.id === selectedChatId);
+    
+    return foundChat || null;
   }, [chats, selectedChatId]);
 
   useEffect(() => {
@@ -269,7 +309,9 @@ export default function CompanyInboxPage() {
     const fetchOrderStatus = async () => {
       setLoadingOrderStatus(true);
       try {
-        const orderDocRef = doc(db, 'auftraege', selectedChatId);
+        // Verwende die echte Chat-ID ohne Prefix
+        const realChatId = getRealChatId(selectedChatId);
+        const orderDocRef = doc(db, 'auftraege', realChatId);
         const orderDocSnap = await getDoc(orderDocRef);
         if (orderDocSnap.exists()) {
           setSelectedOrderStatus(orderDocSnap.data().status || null);
@@ -316,9 +358,9 @@ export default function CompanyInboxPage() {
         <div className="overflow-y-auto flex-grow">
           {chats.length > 0 ? (
             <ul>
-              {chats.map(chat => (
+              {chats.map((chat, index) => (
                 <li
-                  key={chat.id}
+                  key={`${chat.id}_${index}`}
                   onClick={() => setSelectedChatId(chat.id)}
                   className={`p-4 border-b cursor-pointer hover:bg-gray-100 ${selectedChatId === chat.id ? 'bg-teal-50' : ''}`}
                 >
@@ -381,13 +423,13 @@ export default function CompanyInboxPage() {
           // Prüfe ob es ein direkter Chat ist (hat "direct_" prefix)
           selectedChatId.startsWith('direct_') ? (
             <DirectChatComponent
-              chatId={selectedChatId}
+              chatId={getRealChatId(selectedChatId)} // Verwende echte Chat-ID ohne Prefix
               otherUserId={selectedChat.otherUser.id}
               otherUserName={selectedChat.otherUser.name}
             />
           ) : (
             <ChatComponent
-              orderId={selectedChatId}
+              orderId={getRealChatId(selectedChatId)} // Verwende echte Auftrags-ID ohne Prefix
               participants={{
                 customerId: selectedChat.otherUser.id,
                 providerId: currentUser.uid,
