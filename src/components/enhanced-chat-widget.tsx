@@ -3,6 +3,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Bot, User, Clock, CheckCircle2 } from 'lucide-react';
+import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { toast } from 'sonner';
 
 interface ChatMessage {
   id: string;
@@ -43,6 +45,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
     isHumanActive: false,
   });
   const [isEscalating, setIsEscalating] = useState(false);
+  const [validationError, setValidationError] = useState<string>(''); // Für Validierungsfehler
 
   // Hole Session-Status
   useEffect(() => {
@@ -69,9 +72,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
             isHumanActive: data.isHumanActive,
           });
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     };
 
     fetchSessionStatus();
@@ -83,6 +84,19 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
   const sendMessage = async () => {
     if (!newMessage.trim() || isLoading) return;
 
+    // Finale Validierung vor dem Senden
+    const validation = validateSensitiveData(newMessage.trim());
+    if (!validation.isValid) {
+      toast.error(getSensitiveDataWarning(validation.blockedType!), {
+        duration: 5000,
+        action: {
+          label: 'Verstanden',
+          onClick: () => {},
+        },
+      });
+      return;
+    }
+
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       sender: 'customer',
@@ -93,6 +107,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
 
     setMessages(prev => [...prev, userMessage]);
     setNewMessage('');
+    setValidationError(''); // Validierungsfehler zurücksetzen
     setIsLoading(true);
 
     try {
@@ -148,9 +163,28 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
         onMessageSent?.(newMessage);
       }
     } catch (error) {
-
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Validiere Eingabe bei jeder Änderung
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Lösche vorherige Validierungsfehler wenn Eingabe leer ist
+    if (!value.trim()) {
+      setValidationError('');
+      return;
+    }
+
+    // Validiere auf sensible Daten
+    const validation = validateSensitiveData(value);
+    if (!validation.isValid) {
+      setValidationError(getSensitiveDataWarning(validation.blockedType!));
+    } else {
+      setValidationError('');
     }
   };
 
@@ -290,13 +324,25 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
       </CardContent>
 
       <div className="border-t p-4">
+        {/* Validierungsfehler anzeigen */}
+        {validationError && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-700">{validationError}</p>
+          </div>
+        )}
+
         <div className="flex gap-2">
           <input
             type="text"
             value={newMessage}
-            onChange={e => setNewMessage(e.target.value)}
+            onChange={handleMessageChange}
             placeholder="Ihre Nachricht..."
-            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+              validationError
+                ? 'border-red-300 focus:ring-red-500'
+                : 'border-gray-300 focus:ring-blue-500'
+            }`}
             onKeyPress={e => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -307,7 +353,7 @@ export const EnhancedChatWidget: React.FC<EnhancedChatWidgetProps> = ({
           />
           <Button
             onClick={sendMessage}
-            disabled={isLoading || !newMessage.trim()}
+            disabled={isLoading || !newMessage.trim() || !!validationError}
             className="px-4 py-2"
           >
             Senden

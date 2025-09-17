@@ -144,6 +144,12 @@ export default function AGBPage() {
                       Umgehung unserer Gebührenstruktur oder direkter Kontakt zwecks Auftragsvergabe
                       außerhalb der Plattform
                     </li>
+                    <li>
+                      <strong>Austausch von Kontaktdaten über Chat-Funktionen:</strong> Das Teilen,
+                      Übermitteln oder Austauschen von Telefonnummern, E-Mail-Adressen, privaten
+                      Adressen oder anderen direkten Kontaktinformationen über die kostenfreien
+                      Chat-Systeme der Plattform ist strikt untersagt
+                    </li>
                     <li>Spam, unerwünschte Werbung oder Massennachrichten</li>
                     <li>Upload von Viren, Malware oder anderen schädlichen Inhalten</li>
                     <li>Automatisierte Datensammlung (Web Scraping, Crawling)</li>
@@ -167,6 +173,56 @@ export default function AGBPage() {
                     grenzüberschreitenden Dienstleistungen sind zusätzlich die jeweiligen nationalen
                     Bestimmungen zu beachten.
                   </p>
+                </div>
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-semibold text-white drop-shadow-lg mb-4">
+                  § 4a Chat-Kommunikation und Kontaktdaten-Schutz
+                </h2>
+                <div className="text-white/90 drop-shadow-lg space-y-4">
+                  <p>
+                    <strong>4a.1 Zweck der Chat-Funktionen:</strong> Die auf der Plattform
+                    bereitgestellten Chat-Systeme (Projekt-Chat, Angebots-Chat, Support-Chat) dienen
+                    ausschließlich der projektbezogenen Kommunikation über die Taskilo-Plattform.
+                  </p>
+                  <p>
+                    <strong>4a.2 Strikte Verbote im Chat:</strong> Das Teilen, Übermitteln oder
+                    Austauschen folgender Informationen über jegliche Chat-Funktionen der Plattform
+                    ist ausdrücklich untersagt:
+                  </p>
+                  <ul className="list-disc list-inside ml-4 space-y-2">
+                    <li>Telefonnummern (Festnetz und Mobilfunk, nationale und internationale)</li>
+                    <li>E-Mail-Adressen (private und geschäftliche)</li>
+                    <li>Postanschriften und Lieferadressen</li>
+                    <li>Soziale Medien Profile oder Handles</li>
+                    <li>Website-URLs oder andere Plattform-Links</li>
+                    <li>Messenger-Dienste (WhatsApp, Telegram, Signal, etc.)</li>
+                    <li>Video-Call-Links (Zoom, Teams, Meet, etc.)</li>
+                  </ul>
+                  <p>
+                    <strong>4a.3 Automatische Überwachung:</strong> Alle Chat-Nachrichten werden
+                    automatisch auf die genannten Kontaktdaten überprüft. Verstöße werden
+                    automatisch erkannt und die Nachrichtenübermittlung verhindert.
+                  </p>
+                  <p>
+                    <strong>4a.4 Geschäftsmodell-Schutz:</strong> Der Austausch von Kontaktdaten
+                    über Chat-Systeme umgeht das Geschäftsmodell der Plattform. Für direkten Kontakt
+                    stehen kostenpflichtige Premium-Services zur Verfügung, welche ordnungsgemäß zu
+                    nutzen sind.
+                  </p>
+                  <p>
+                    <strong>4a.5 Sanktionen bei Verstößen:</strong> Verstöße gegen diese
+                    Bestimmungen führen zu folgenden Maßnahmen:
+                  </p>
+                  <ul className="list-disc list-inside ml-4 space-y-2">
+                    <li>Sofortige und dauerhafte Sperrung des Benutzerkontos</li>
+                    <li>Löschung aller aktiven Projekte und Angebote</li>
+                    <li>Verwirkung aller Premium-Services ohne Rückerstattung</li>
+                    <li>
+                      Eventuelle rechtliche Schritte zur Durchsetzung unserer Geschäftsbedingungen
+                    </li>
+                  </ul>
                 </div>
               </section>
 

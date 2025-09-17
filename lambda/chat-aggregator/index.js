@@ -21,11 +21,11 @@ const docClient = DynamoDBDocumentClient.from(dynamoClient, {
   marshallOptions: {
     convertEmptyValues: false,
     removeUndefinedValues: true,
-    convertClassInstanceToMap: true
+    convertClassInstanceToMap: true,
   },
   unmarshallOptions: {
-    wrapNumbers: false
-  }
+    wrapNumbers: false,
+  },
 });
 const eventBridge = new EventBridgeClient({ region: process.env.AWS_REGION || 'eu-central-1' });
 
@@ -42,38 +42,41 @@ const SENSITIVE_DATA_PATTERNS = {
   email: {
     pattern: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
     description: 'E-Mail-Adresse',
-    severity: 'medium'
+    severity: 'medium',
   },
   phone: {
-    pattern: /(?:\+49|0)[0-9\s\-\(\)]{7,16}[0-9]/g,
+    pattern:
+      /(?:\+49\s?|0)(?:1[5-7][0-9]|30|40|69|89|211|221|228|231|241|251|261|271|281|291|321|351|361|371|381|391|40[1-9]|421|431|441|451|461|471|511|521|531|541|551|561|571|581|591|60[1-9]|611|621|631|641|651|661|671|681|691|70[1-9]|711|721|731|741|751|761|771|781|791|80[1-9]|811|821|831|841|851|861|871|881|891|90[1-9]|911|921|931|941|951|961|971|981|991)[\s\-\(\)]?[0-9]{3,12}|(?:01[5-7][0-9]|016[0-9])[0-9]{7,10}/g,
     description: 'Telefonnummer',
-    severity: 'medium'
+    severity: 'high',
   },
   iban: {
     pattern: /DE[0-9]{2}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{4}\s?[0-9]{2}/gi,
     description: 'IBAN (Bankverbindung)',
-    severity: 'high'
+    severity: 'high',
   },
   creditCard: {
-    pattern: /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3[0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/g,
+    pattern:
+      /\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|3[0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b/g,
     description: 'Kreditkartennummer',
-    severity: 'high'
+    severity: 'high',
   },
   address: {
-    pattern: /(?:[A-ZÄÖÜ][a-zäöüß]*(?:straße|str\.|gasse|weg|platz|ring|allee|damm)\s*[0-9]+[a-z]?)|(?:[0-9]{5}\s+[A-ZÄÖÜ][a-zäöüß\s]+)/gi,
+    pattern:
+      /(?:[A-ZÄÖÜ][a-zäöüß]*(?:straße|str\.|gasse|weg|platz|ring|allee|damm)\s*[0-9]+[a-z]?)|(?:[0-9]{5}\s+[A-ZÄÖÜ][a-zäöüß\s]+)/gi,
     description: 'Adresse',
-    severity: 'low'
+    severity: 'low',
   },
   socialSecurity: {
     pattern: /\b[0-9]{2}\s?[0-9]{6}\s?[A-Z]\s?[0-9]{3}\b/g,
     description: 'Sozialversicherungsnummer',
-    severity: 'high'
+    severity: 'high',
   },
   passport: {
     pattern: /\b[C-F|G-H|J-N|P-R|T-Z][0-9]{8}\b/g,
     description: 'Reisepassnummer',
-    severity: 'high'
-  }
+    severity: 'high',
+  },
 };
 
 // Analysiere Nachrichten auf sensible Daten
@@ -88,11 +91,11 @@ function analyzeSensitiveData(content, messageId, chatId, chatType, senderId) {
   // Überprüfe jedes Pattern
   for (const [dataType, config] of Object.entries(SENSITIVE_DATA_PATTERNS)) {
     const matches = content.match(config.pattern);
-    
+
     if (matches && matches.length > 0) {
       // Entferne Duplikate
       const uniqueMatches = [...new Set(matches)];
-      
+
       for (const match of uniqueMatches) {
         alerts.push({
           alertId: `${messageId}_${dataType}_${Date.now()}`,
@@ -107,10 +110,12 @@ function analyzeSensitiveData(content, messageId, chatId, chatType, senderId) {
           timestamp: new Date().toISOString(),
           reviewed: false,
           falsePositive: false,
-          context: content.substring(
-            Math.max(0, content.indexOf(match) - 50),
-            Math.min(content.length, content.indexOf(match) + match.length + 50)
-          ).trim()
+          context: content
+            .substring(
+              Math.max(0, content.indexOf(match) - 50),
+              Math.min(content.length, content.indexOf(match) + match.length + 50)
+            )
+            .trim(),
         });
       }
     }
@@ -118,8 +123,19 @@ function analyzeSensitiveData(content, messageId, chatId, chatType, senderId) {
 
   // Zusätzliche Heuristiken für verdächtige Muster
   const suspiciousKeywords = [
-    'passwort', 'password', 'pin', 'gehalt', 'lohn', 'steuer', 'vertraulich',
-    'geheim', 'privat', 'bankdaten', 'kontonummer', 'ausweis', 'personalausweis'
+    'passwort',
+    'password',
+    'pin',
+    'gehalt',
+    'lohn',
+    'steuer',
+    'vertraulich',
+    'geheim',
+    'privat',
+    'bankdaten',
+    'kontonummer',
+    'ausweis',
+    'personalausweis',
   ];
 
   for (const keyword of suspiciousKeywords) {
@@ -137,10 +153,12 @@ function analyzeSensitiveData(content, messageId, chatId, chatType, senderId) {
         timestamp: new Date().toISOString(),
         reviewed: false,
         falsePositive: false,
-        context: content.substring(
-          Math.max(0, contentLower.indexOf(keyword) - 30),
-          Math.min(content.length, contentLower.indexOf(keyword) + keyword.length + 30)
-        ).trim()
+        context: content
+          .substring(
+            Math.max(0, contentLower.indexOf(keyword) - 30),
+            Math.min(content.length, contentLower.indexOf(keyword) + keyword.length + 30)
+          )
+          .trim(),
       });
       break; // Nur ein Keyword-Alert pro Message
     }
@@ -162,12 +180,12 @@ async function storeSensitiveDataAlerts(alerts) {
           TableName: TABLES.SENSITIVE_DATA_ALERTS,
           Item: {
             ...alert,
-            ttl: Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60), // 90 Tage TTL
+            ttl: Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60, // 90 Tage TTL
           },
         })
       );
     }
-    
+
     console.log(`🚨 Stored ${alerts.length} sensitive data alerts`);
   } catch (error) {
     console.error('❌ Error storing sensitive data alerts:', error);
@@ -178,28 +196,27 @@ async function storeSensitiveDataAlerts(alerts) {
 if (!admin.apps.length) {
   try {
     console.log('� Initialisiere Firebase Admin...');
-    
+
     // Verwende Service Account JSON Datei
     const serviceAccount = require('./firebase-service-account.json');
-    
+
     console.log('Firebase Service Account Details:', {
       project_id: serviceAccount.project_id,
       client_email: serviceAccount.client_email,
       has_private_key: !!serviceAccount.private_key,
-      private_key_format: serviceAccount.private_key ? 'PEM' : 'none'
+      private_key_format: serviceAccount.private_key ? 'PEM' : 'none',
     });
 
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       projectId: serviceAccount.project_id,
     });
-    
+
     console.log('✅ Firebase Admin erfolgreich initialisiert');
-    
+
     // Test Firestore-Verbindung
     const firestore = admin.firestore();
     console.log('📊 Firestore-Verbindung hergestellt');
-    
   } catch (error) {
     console.error('❌ Firebase Admin Initialisierung fehlgeschlagen:', error.message);
     console.error('Details:', error.stack);
@@ -259,7 +276,7 @@ async function aggregateAllChats() {
 // Erweiterte Chat-Nachrichten Aggregation
 async function aggregateDetailedMessages(chatResults) {
   console.log('📖 Aggregating detailed chat messages...');
-  
+
   try {
     let totalMessagesProcessed = 0;
 
@@ -301,7 +318,7 @@ async function aggregateDetailedMessages(chatResults) {
 async function getDetailedChatMessages(chatType, chatId, limit = 50) {
   try {
     let messagesSnapshot;
-    
+
     if (chatType === 'chats') {
       messagesSnapshot = await firestore
         .collection('chats')
@@ -330,11 +347,11 @@ async function getDetailedChatMessages(chatType, chatId, limit = 50) {
 
     const messages = [];
     const allSensitiveDataAlerts = [];
-    
+
     messagesSnapshot?.docs?.forEach(messageDoc => {
       const messageData = messageDoc.data();
       const content = messageData.message || messageData.content || messageData.text || '';
-      
+
       const message = {
         messageId: messageDoc.id,
         chatId: chatId,
@@ -345,49 +362,56 @@ async function getDetailedChatMessages(chatType, chatId, limit = 50) {
         content: content,
         type: messageData.type || 'text',
         // Handle different timestamp fields for different chat types
-        createdAt: chatType === 'directChats' 
-          ? (messageData.timestamp?.toDate?.()?.toISOString() || null)
-          : (messageData.createdAt?.toDate?.()?.toISOString() || null),
-        timestamp: chatType === 'directChats'
-          ? (messageData.timestamp?.toDate?.()?.toISOString() || null)
-          : (messageData.createdAt?.toDate?.()?.toISOString() || null),
+        createdAt:
+          chatType === 'directChats'
+            ? messageData.timestamp?.toDate?.()?.toISOString() || null
+            : messageData.createdAt?.toDate?.()?.toISOString() || null,
+        timestamp:
+          chatType === 'directChats'
+            ? messageData.timestamp?.toDate?.()?.toISOString() || null
+            : messageData.createdAt?.toDate?.()?.toISOString() || null,
         updatedAt: messageData.updatedAt?.toDate?.()?.toISOString() || null,
         isRead: messageData.isRead || false,
         metadata: {
           hasAttachment: !!(messageData.attachment || messageData.file || messageData.image),
           isSystemMessage: messageData.isSystemMessage || false,
           priority: messageData.priority || null,
-          status: messageData.status || null
-        }
+          status: messageData.status || null,
+        },
       };
-      
+
       // Analysiere sensible Daten in der Nachricht
       if (content && content.trim().length > 0) {
         const sensitiveDataAlerts = analyzeSensitiveData(
-          content, 
-          messageDoc.id, 
-          chatId, 
-          chatType, 
+          content,
+          messageDoc.id,
+          chatId,
+          chatType,
           message.senderId
         );
         allSensitiveDataAlerts.push(...sensitiveDataAlerts);
-        
+
         // Füge Sensible-Daten-Flag zur Message hinzu
         message.metadata.hasSensitiveData = sensitiveDataAlerts.length > 0;
         message.metadata.sensitiveDataCount = sensitiveDataAlerts.length;
-        message.metadata.maxSeverity = sensitiveDataAlerts.length > 0 
-          ? Math.max(...sensitiveDataAlerts.map(alert => 
-              alert.severity === 'high' ? 3 : alert.severity === 'medium' ? 2 : 1
-            ))
-          : 0;
+        message.metadata.maxSeverity =
+          sensitiveDataAlerts.length > 0
+            ? Math.max(
+                ...sensitiveDataAlerts.map(alert =>
+                  alert.severity === 'high' ? 3 : alert.severity === 'medium' ? 2 : 1
+                )
+              )
+            : 0;
       }
-      
+
       messages.push(message);
     });
 
     // Speichere sensible Daten Alerts
     if (allSensitiveDataAlerts.length > 0) {
-      console.log(`🚨 Found ${allSensitiveDataAlerts.length} sensitive data alerts in ${chatType}/${chatId}`);
+      console.log(
+        `🚨 Found ${allSensitiveDataAlerts.length} sensitive data alerts in ${chatType}/${chatId}`
+      );
       await storeSensitiveDataAlerts(allSensitiveDataAlerts);
     }
 
@@ -407,13 +431,13 @@ async function storeDetailedChatMessages(messages) {
           TableName: TABLES.CHAT_MESSAGES,
           Item: {
             ...message,
-            ttl: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 Tage TTL
-            aggregatedAt: new Date().toISOString()
+            ttl: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60, // 30 Tage TTL
+            aggregatedAt: new Date().toISOString(),
           },
         })
       );
     }
-    
+
     console.log(`💾 Stored ${messages.length} detailed messages in DynamoDB`);
   } catch (error) {
     console.error('❌ Error storing detailed messages:', error);
@@ -453,7 +477,7 @@ async function aggregateChatsCollection() {
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || null,
         updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || null,
         isRead: doc.data().isRead || false,
-        metadata: doc.data().metadata || {}
+        metadata: doc.data().metadata || {},
       }));
 
       const chatInfo = {
@@ -526,7 +550,7 @@ async function aggregateDirectChats() {
         createdAt: doc.data().timestamp?.toDate?.()?.toISOString() || null, // Map timestamp to createdAt for consistency
         updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || null,
         isRead: doc.data().isRead || false,
-        metadata: doc.data().metadata || {}
+        metadata: doc.data().metadata || {},
       }));
 
       // Enhanced title with participant names from participantNames map
@@ -538,10 +562,11 @@ async function aggregateDirectChats() {
           }
         });
       }
-      
-      const title = participantNamesList.length > 0 
-        ? `DirectChat: ${participantNamesList.join(' ↔ ')}`
-        : `DirectChat: ${(chat.participants || []).join(' ↔ ')}`;
+
+      const title =
+        participantNamesList.length > 0
+          ? `DirectChat: ${participantNamesList.join(' ↔ ')}`
+          : `DirectChat: ${(chat.participants || []).join(' ↔ ')}`;
 
       const chatInfo = {
         id: chatId,
@@ -616,7 +641,7 @@ async function aggregateSupportChats() {
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || null,
         updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || null,
         isRead: doc.data().isRead || false,
-        metadata: doc.data().metadata || {}
+        metadata: doc.data().metadata || {},
       }));
 
       const chatInfo = {

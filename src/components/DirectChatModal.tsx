@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, MessageCircle, User } from 'lucide-react';
+import { X, Send, MessageCircle, User, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { db } from '@/firebase/clients';
 import {
@@ -18,6 +18,8 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
 import { ResponseTimeTracker } from '@/lib/responseTimeTracker';
+import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { toast } from 'sonner';
 
 interface DirectChatModalProps {
   isOpen: boolean;
@@ -59,7 +61,8 @@ export default function DirectChatModal({
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [chatId, setChatId] = useState<string>('');
-  const [userProfiles, setUserProfiles] = useState<{[key: string]: UserProfile}>({});
+  const [userProfiles, setUserProfiles] = useState<{ [key: string]: UserProfile }>({});
+  const [validationError, setValidationError] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Generiere eine eindeutige Chat-ID basierend auf beiden Teilnehmern
@@ -80,11 +83,15 @@ export default function DirectChatModal({
         const data = companyDoc.data();
         const profile: UserProfile = {
           name: data.companyName || data.name || 'Unbekanntes Unternehmen',
-          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl || data.avatarUrl,
+          avatar:
+            data.profilePictureFirebaseUrl ||
+            data.profilePictureURL ||
+            data.logoUrl ||
+            data.avatarUrl,
           companyData: {
             companyName: data.companyName || data.name || 'Unbekanntes Unternehmen',
-            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl
-          }
+            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl,
+          },
         };
         setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
@@ -96,7 +103,11 @@ export default function DirectChatModal({
         const data = userDoc.data();
         const profile: UserProfile = {
           name: data.name || data.firstName || 'Unbekannter Nutzer',
-          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.avatarUrl || data.profilePicture
+          avatar:
+            data.profilePictureFirebaseUrl ||
+            data.profilePictureURL ||
+            data.avatarUrl ||
+            data.profilePicture,
         };
         setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
@@ -172,9 +183,42 @@ export default function DirectChatModal({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Validiere Eingabe bei jeder Änderung
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Lösche vorherige Validierungsfehler wenn Eingabe leer ist
+    if (!value.trim()) {
+      setValidationError('');
+      return;
+    }
+
+    // Validiere auf sensible Daten
+    const validation = validateSensitiveData(value);
+    if (!validation.isValid) {
+      setValidationError(getSensitiveDataWarning(validation.blockedType!));
+    } else {
+      setValidationError('');
+    }
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || sending || !user) return;
+
+    // Finale Validierung vor dem Senden
+    const validation = validateSensitiveData(newMessage.trim());
+    if (!validation.isValid) {
+      toast.error(getSensitiveDataWarning(validation.blockedType!), {
+        duration: 5000,
+        action: {
+          label: 'Verstanden',
+          onClick: () => {},
+        },
+      });
+      return;
+    }
 
     setSending(true);
     try {
@@ -197,9 +241,7 @@ export default function DirectChatModal({
           const userData = userDoc.data();
           guaranteeHours = userData?.responseTimeGuaranteeHours || 24;
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
 
       // Starte Response Time Tracking
       await ResponseTimeTracker.startTracking(providerId, chatId, messageDoc.id, guaranteeHours);
@@ -222,7 +264,6 @@ export default function DirectChatModal({
 
       setNewMessage('');
     } catch (error) {
-
     } finally {
       setSending(false);
     }
@@ -265,7 +306,7 @@ export default function DirectChatModal({
             messages.map(message => {
               const isOwnMessage = message.senderId === user?.uid;
               const userProfile = userProfiles[message.senderId];
-              
+
               return (
                 <div
                   key={message.id}
@@ -289,7 +330,9 @@ export default function DirectChatModal({
                   </div>
 
                   {/* Nachrichteninhalt */}
-                  <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                  <div
+                    className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}
+                  >
                     <div
                       className={`px-3 py-2 rounded-lg ${
                         isOwnMessage
@@ -299,22 +342,20 @@ export default function DirectChatModal({
                     >
                       {/* Name und Text in einer Reihe */}
                       <div className="flex items-start gap-2">
-                        <span className={`text-xs font-semibold flex-shrink-0 ${
-                          isOwnMessage
-                            ? 'text-teal-100'
-                            : 'text-gray-600 dark:text-gray-400'
-                        }`}>
+                        <span
+                          className={`text-xs font-semibold flex-shrink-0 ${
+                            isOwnMessage ? 'text-teal-100' : 'text-gray-600 dark:text-gray-400'
+                          }`}
+                        >
                           {userProfile?.name || message.senderName}:
                         </span>
                         <p className="text-sm flex-1">{message.text}</p>
                       </div>
-                      
+
                       {/* Uhrzeit unten rechts */}
                       <p
                         className={`text-xs text-right mt-1 ${
-                          isOwnMessage
-                            ? 'text-teal-100'
-                            : 'text-gray-500 dark:text-gray-400'
+                          isOwnMessage ? 'text-teal-100' : 'text-gray-500 dark:text-gray-400'
                         }`}
                       >
                         {message.timestamp?.toDate?.()?.toLocaleTimeString('de-DE', {
@@ -333,18 +374,30 @@ export default function DirectChatModal({
 
         {/* Message Input */}
         <form onSubmit={sendMessage} className="p-4 border-t border-gray-200 dark:border-gray-700">
+          {/* Validierungsfehler anzeigen */}
+          {validationError && (
+            <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-red-700 dark:text-red-300">{validationError}</p>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <input
               type="text"
               value={newMessage}
-              onChange={e => setNewMessage(e.target.value)}
+              onChange={handleMessageChange}
               placeholder="Nachricht eingeben..."
-              className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent"
+              className={`flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:border-transparent transition-colors ${
+                validationError
+                  ? 'border-red-300 dark:border-red-600 focus:ring-red-500'
+                  : 'border-gray-200 dark:border-gray-600 focus:ring-[#14ad9f]'
+              }`}
               disabled={sending}
             />
             <button
               type="submit"
-              disabled={!newMessage.trim() || sending}
+              disabled={!newMessage.trim() || sending || !!validationError}
               className="px-4 py-2 bg-[#14ad9f] hover:bg-teal-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
             >
               <Send className="w-4 h-4" />

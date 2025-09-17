@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { FiUser } from 'react-icons/fi';
+import { AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/firebase/clients';
 import {
@@ -19,6 +20,8 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import ChatNotificationBell from './ChatNotificationBell';
+import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -64,7 +67,8 @@ export default function QuoteChat({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [userProfiles, setUserProfiles] = useState<{[key: string]: UserProfile}>({});
+  const [userProfiles, setUserProfiles] = useState<{ [key: string]: UserProfile }>({});
+  const [validationError, setValidationError] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { firebaseUser } = useAuth();
 
@@ -90,11 +94,15 @@ export default function QuoteChat({
         const data = companyDoc.data();
         const profile: UserProfile = {
           name: data.companyName || data.name || 'Unbekanntes Unternehmen',
-          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl || data.avatarUrl,
+          avatar:
+            data.profilePictureFirebaseUrl ||
+            data.profilePictureURL ||
+            data.logoUrl ||
+            data.avatarUrl,
           companyData: {
             companyName: data.companyName || data.name || 'Unbekanntes Unternehmen',
-            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl
-          }
+            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl,
+          },
         };
         setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
@@ -106,7 +114,11 @@ export default function QuoteChat({
         const data = userDoc.data();
         const profile: UserProfile = {
           name: data.name || data.firstName || 'Unbekannter Nutzer',
-          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.avatarUrl || data.profilePicture
+          avatar:
+            data.profilePictureFirebaseUrl ||
+            data.profilePictureURL ||
+            data.avatarUrl ||
+            data.profilePicture,
         };
         setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
@@ -213,9 +225,23 @@ export default function QuoteChat({
 
     if (!newMessage.trim() || !firebaseUser || loading) return;
 
+    // Finale Validierung vor dem Senden
+    const validation = validateSensitiveData(newMessage.trim());
+    if (!validation.isValid) {
+      toast.error(getSensitiveDataWarning(validation.blockedType!), {
+        duration: 5000,
+        action: {
+          label: 'Verstanden',
+          onClick: () => {},
+        },
+      });
+      return;
+    }
+
     const messageText = newMessage.trim();
     setLoading(true);
     setNewMessage(''); // Sofort leeren für bessere UX
+    setValidationError(''); // Lösche Validierungsfehler
 
     try {
       const messagesRef = collection(db, 'quotes', quoteId, 'chat');
@@ -235,6 +261,26 @@ export default function QuoteChat({
       setNewMessage(messageText);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Validiere Eingabe bei jeder Änderung
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Lösche vorherige Validierungsfehler wenn Eingabe leer ist
+    if (!value.trim()) {
+      setValidationError('');
+      return;
+    }
+
+    // Validiere auf sensible Daten
+    const validation = validateSensitiveData(value);
+    if (!validation.isValid) {
+      setValidationError(getSensitiveDataWarning(validation.blockedType!));
+    } else {
+      setValidationError('');
     }
   };
 
@@ -339,7 +385,9 @@ export default function QuoteChat({
                 </div>
 
                 {/* Nachrichteninhalt */}
-                <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`flex flex-col max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}
+                >
                   <div
                     className={`px-4 py-3 rounded-lg shadow-sm ${
                       isOwnMessage ? 'bg-[#14ad9f] text-white' : 'bg-gray-100 text-gray-900'
@@ -382,19 +430,31 @@ export default function QuoteChat({
 
       {/* Message Input */}
       <form onSubmit={sendMessage} className="p-4 border-t border-gray-200 bg-white">
+        {/* Validierungsfehler anzeigen */}
+        {validationError && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-700">{validationError}</p>
+          </div>
+        )}
+
         <div className="flex gap-2">
           <input
             type="text"
             value={newMessage}
-            onChange={e => setNewMessage(e.target.value)}
+            onChange={handleMessageChange}
             placeholder="Nachricht eingeben..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#14ad9f] focus:border-transparent text-sm"
+            className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:border-transparent text-sm transition-colors ${
+              validationError
+                ? 'border-red-300 focus:ring-red-500'
+                : 'border-gray-300 focus:ring-[#14ad9f]'
+            }`}
             disabled={loading}
           />
 
           <button
             type="submit"
-            disabled={!newMessage.trim() || loading}
+            disabled={!newMessage.trim() || loading || !!validationError}
             className="bg-[#14ad9f] hover:bg-[#129488] disabled:bg-gray-300 disabled:cursor-not-allowed text-white w-10 h-10 rounded-lg transition-colors flex items-center justify-center shrink-0"
             title={loading ? 'Sende...' : 'Nachricht senden'}
           >

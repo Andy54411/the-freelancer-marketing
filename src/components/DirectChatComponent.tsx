@@ -15,8 +15,10 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { useAuth } from '@/contexts/AuthContext';
-import { Send as FiSend, Loader2 as FiLoader, User as FiUser } from 'lucide-react';
+import { Send as FiSend, Loader2 as FiLoader, User as FiUser, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
+import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { toast } from 'sonner';
 
 interface DirectChatMessage {
   id: string;
@@ -50,10 +52,13 @@ export default function DirectChatComponent({
 }: DirectChatComponentProps) {
   const { user: currentUser } = useAuth();
   const [messages, setMessages] = useState<DirectChatMessage[]>([]);
-  const [userProfiles, setUserProfiles] = useState<Record<string, { name: string; avatar?: string | null }>>({});
+  const [userProfiles, setUserProfiles] = useState<
+    Record<string, { name: string; avatar?: string | null }>
+  >({});
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [validationError, setValidationError] = useState<string>(''); // Für Validierungsfehler
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Clean chatId - entferne "direct_" prefix falls vorhanden
@@ -70,21 +75,29 @@ export default function DirectChatComponent({
         const data = companyDoc.data();
         const profile: UserProfile = {
           name: data.companyName || data.name || 'Unbekanntes Unternehmen',
-          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl || data.avatarUrl,
+          avatar:
+            data.profilePictureFirebaseUrl ||
+            data.profilePictureURL ||
+            data.logoUrl ||
+            data.avatarUrl,
           companyData: {
             companyName: data.companyName || data.name || 'Unbekanntes Unternehmen',
-            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl
-          }
+            logoUrl: data.profilePictureFirebaseUrl || data.profilePictureURL || data.logoUrl,
+          },
         };
         setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
-      }            // Fallback: Versuche in users collection
+      } // Fallback: Versuche in users collection
       const userDoc = await getDoc(doc(db, 'users', userId));
       if (userDoc.exists()) {
         const data = userDoc.data();
         const profile: UserProfile = {
           name: data.name || data.firstName || 'Unbekannter Nutzer',
-          avatar: data.profilePictureFirebaseUrl || data.profilePictureURL || data.avatarUrl || data.profilePicture
+          avatar:
+            data.profilePictureFirebaseUrl ||
+            data.profilePictureURL ||
+            data.avatarUrl ||
+            data.profilePicture,
         };
         setUserProfiles(prev => ({ ...prev, [userId]: profile }));
         return profile;
@@ -131,7 +144,6 @@ export default function DirectChatComponent({
         setLoading(false);
       },
       error => {
-
         setLoading(false);
       }
     );
@@ -147,7 +159,22 @@ export default function DirectChatComponent({
     e.preventDefault();
     if (!newMessage.trim() || sending || !currentUser) return;
 
+    // Finale Validierung vor dem Senden
+    const validation = validateSensitiveData(newMessage.trim());
+    if (!validation.isValid) {
+      toast.error(getSensitiveDataWarning(validation.blockedType!), {
+        duration: 5000,
+        action: {
+          label: 'Verstanden',
+          onClick: () => {},
+        },
+      });
+      return;
+    }
+
     setSending(true);
+    setValidationError(''); // Validierungsfehler zurücksetzen
+
     try {
       const messagesRef = collection(db, 'directChats', cleanChatId, 'messages');
       await addDoc(messagesRef, {
@@ -178,9 +205,28 @@ export default function DirectChatComponent({
 
       setNewMessage('');
     } catch (error) {
-
     } finally {
       setSending(false);
+    }
+  };
+
+  // Validiere Eingabe bei jeder Änderung
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    // Lösche vorherige Validierungsfehler wenn Eingabe leer ist
+    if (!value.trim()) {
+      setValidationError('');
+      return;
+    }
+
+    // Validiere auf sensible Daten
+    const validation = validateSensitiveData(value);
+    if (!validation.isValid) {
+      setValidationError(getSensitiveDataWarning(validation.blockedType!));
+    } else {
+      setValidationError('');
     }
   };
 
@@ -206,12 +252,9 @@ export default function DirectChatComponent({
           messages.map(message => {
             const isOwnMessage = message.senderId === currentUser?.uid;
             const userProfile = userProfiles[message.senderId];
-            
+
             return (
-              <div
-                key={message.id}
-                className={`flex items-start gap-3`}
-              >
+              <div key={message.id} className={`flex items-start gap-3`}>
                 {/* Profilbild - immer links */}
                 <div className="flex-shrink-0">
                   {userProfile?.avatar ? (
@@ -230,7 +273,9 @@ export default function DirectChatComponent({
                 </div>
 
                 {/* Nachrichteninhalt */}
-                <div className={`flex flex-col max-w-xs lg:max-w-md ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`flex flex-col max-w-xs lg:max-w-md ${isOwnMessage ? 'items-end' : 'items-start'}`}
+                >
                   {/* Nachrichtenblase mit allem in einer Reihe */}
                   <div
                     className={`px-4 py-2 rounded-lg ${
@@ -241,12 +286,14 @@ export default function DirectChatComponent({
                   >
                     {/* Name und Text in einer Reihe */}
                     <div className="flex items-start gap-2">
-                      <span className={`text-xs font-semibold flex-shrink-0 ${isOwnMessage ? 'text-teal-100' : 'text-gray-600'}`}>
+                      <span
+                        className={`text-xs font-semibold flex-shrink-0 ${isOwnMessage ? 'text-teal-100' : 'text-gray-600'}`}
+                      >
                         {userProfile?.name || message.senderName}:
                       </span>
                       <div className="text-sm flex-1">{message.text}</div>
                     </div>
-                    
+
                     {/* Uhrzeit unten rechts */}
                     <div
                       className={`text-xs text-right mt-1 ${isOwnMessage ? 'text-teal-100' : 'text-gray-500'}`}
@@ -273,23 +320,37 @@ export default function DirectChatComponent({
       </div>
 
       {/* Message Input */}
-      <form onSubmit={sendMessage} className="border-t border-gray-200 p-4 bg-white flex gap-2">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={e => setNewMessage(e.target.value)}
-          placeholder="Nachricht eingeben..."
-          className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-[#14ad9f] focus:ring-1 focus:ring-[#14ad9f]"
-          disabled={sending}
-        />
-        <button
-          type="submit"
-          disabled={!newMessage.trim() || sending}
-          className="bg-[#14ad9f] text-white px-4 py-2 rounded-lg hover:bg-[#0d8a7a] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-        >
-          {sending ? <FiLoader className="animate-spin" size={16} /> : <FiSend size={16} />}
-          Senden
-        </button>
+      <form onSubmit={sendMessage} className="border-t border-gray-200 p-4 bg-white">
+        {/* Validierungsfehler anzeigen */}
+        {validationError && (
+          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-700">{validationError}</p>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={handleMessageChange}
+            placeholder="Nachricht eingeben..."
+            className={`flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-1 transition-colors ${
+              validationError
+                ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
+                : 'border-gray-300 focus:border-[#14ad9f] focus:ring-[#14ad9f]'
+            }`}
+            disabled={sending}
+          />
+          <button
+            type="submit"
+            disabled={!newMessage.trim() || sending || !!validationError}
+            className="bg-[#14ad9f] text-white px-4 py-2 rounded-lg hover:bg-[#0d8a7a] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {sending ? <FiLoader className="animate-spin" size={16} /> : <FiSend size={16} />}
+            Senden
+          </button>
+        </div>
       </form>
     </div>
   );

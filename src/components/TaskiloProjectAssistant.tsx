@@ -24,7 +24,10 @@ import {
   User,
   Briefcase,
   Settings,
+  AlertTriangle,
 } from 'lucide-react';
+import { validateSensitiveData, getSensitiveDataWarning } from '@/lib/sensitiveDataValidator';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -92,6 +95,7 @@ export default function TaskiloProjectAssistant({
   const [currentStep, setCurrentStep] = useState<ProjectStep>('welcome');
   const [orderData, setOrderData] = useState<Partial<OrderData>>({});
   const [isExpanded, setIsExpanded] = useState(false);
+  const [validationError, setValidationError] = useState<string>(''); // Für Validierungsfehler
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -175,6 +179,19 @@ Wie kann ich Ihnen heute helfen?`,
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
+    // Finale Validierung vor dem Senden
+    const validation = validateSensitiveData(inputValue.trim());
+    if (!validation.isValid) {
+      toast.error(getSensitiveDataWarning(validation.blockedType!), {
+        duration: 5000,
+        action: {
+          label: 'Verstanden',
+          onClick: () => {},
+        },
+      });
+      return;
+    }
+
     const userMessage: Message = {
       id: generateId(),
       type: 'user',
@@ -184,6 +201,7 @@ Wie kann ich Ihnen heute helfen?`,
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
+    setValidationError(''); // Validierungsfehler zurücksetzen
     setIsLoading(true);
 
     // Simuliere KI-Verarbeitung
@@ -197,6 +215,26 @@ Wie kann ich Ihnen heute helfen?`,
         setCurrentStep(response.metadata.step);
       }
     }, 1500);
+  };
+
+  // Validiere Eingabe bei jeder Änderung
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+
+    // Lösche vorherige Validierungsfehler wenn Eingabe leer ist
+    if (!value.trim()) {
+      setValidationError('');
+      return;
+    }
+
+    // Validiere auf sensible Daten
+    const validation = validateSensitiveData(value);
+    if (!validation.isValid) {
+      setValidationError(getSensitiveDataWarning(validation.blockedType!));
+    } else {
+      setValidationError('');
+    }
   };
 
   const generateAIResponse = (userInput: string, step: ProjectStep): Message => {
@@ -550,17 +588,27 @@ Haben Sie bereits das nächste Projekt im Kopf? Ich helfe gerne wieder!`,
 
           {/* Input */}
           <div className="p-4 border-t dark:border-gray-700">
+            {/* Validierungsfehler anzeigen */}
+            {validationError && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-red-700">{validationError}</p>
+              </div>
+            )}
+
             <div className="flex space-x-2">
               <Input
                 value={inputValue}
-                onChange={e => setInputValue(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Ihre Nachricht..."
                 onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
-                className="flex-1"
+                className={`flex-1 transition-colors ${
+                  validationError ? 'border-red-300 focus:border-red-500' : ''
+                }`}
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading}
+                disabled={!inputValue.trim() || isLoading || !!validationError}
                 size="sm"
                 className="bg-[#14ad9f] hover:bg-[#0f9d84]"
               >
