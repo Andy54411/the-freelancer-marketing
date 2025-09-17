@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
@@ -15,7 +15,7 @@ import { Logo } from '@/components/logo';
 const POPUP_LOG = 'LoginPage:';
 const POPUP_ERROR = 'LoginPage ERROR:';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -144,5 +144,28 @@ export default function LoginPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+          <div className="bg-white shadow-xl rounded-lg p-8 w-full max-w-md">
+            <div className="text-center">
+              <Logo />
+              <h1 className="text-2xl font-bold text-gray-900 mt-2">Anmeldung</h1>
+              <div className="flex justify-center items-center mt-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              </div>
+              <p className="text-gray-600 mt-2">Wird geladen...</p>
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
