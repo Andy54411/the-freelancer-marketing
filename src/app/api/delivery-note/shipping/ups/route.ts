@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
       apiResponse: responseData,
     };
 
-    await db.collection('companies').doc(companyId).collection('shippingLabels').add(labelData);
+    await db!.collection('companies').doc(companyId).collection('shippingLabels').add(labelData);
 
     // Lieferschein mit Tracking-Nummer aktualisieren
     await db

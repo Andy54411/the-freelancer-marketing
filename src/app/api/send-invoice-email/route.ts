@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
   try {
     // Prüfe Resend API Key
     if (!process.env.RESEND_API_KEY) {
-
       return NextResponse.json(
         { error: 'E-Mail-Service nicht konfiguriert - API Key fehlt' },
         { status: 500 }
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Rechnung laden
 
-    const invoiceDoc = await db.collection('invoices').doc(invoiceId).get();
+    const invoiceDoc = await db!.collection('invoices').doc(invoiceId).get();
     if (!invoiceDoc.exists) {
       return NextResponse.json({ error: 'Rechnung nicht gefunden' }, { status: 404 });
     }
@@ -57,7 +56,6 @@ export async function POST(request: NextRequest) {
       disposition: string;
     } | null = null;
     try {
-
       // Interne PDF-Generation über unsere bestehende API
       const pdfResponse = await fetch(
         `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/api/generate-invoice-pdf`,
@@ -86,18 +84,13 @@ export async function POST(request: NextRequest) {
             type: 'application/pdf',
             disposition: 'attachment',
           };
-
         } else {
           // JSON-Antwort (Fallback-Modus)
           const result = await pdfResponse.json();
-
         }
       } else {
-
       }
-    } catch (pdfError) {
-
-    }
+    } catch (pdfError) {}
 
     // E-Mail-Konfiguration mit optionalem PDF-Anhang
     const invoiceUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://taskilo.de'}/print/invoice/${invoice.id}`;
@@ -185,22 +178,17 @@ export async function POST(request: NextRequest) {
     const emailResponse = await resend.emails.send(emailConfig);
 
     if (emailResponse.error) {
-
       throw new Error(`E-Mail-Versendung fehlgeschlagen: ${emailResponse.error.message}`);
     }
 
     if (!emailResponse.data?.id) {
-
       throw new Error('E-Mail-Versendung fehlgeschlagen: Keine Message ID erhalten');
     }
 
     // Rechnungsstatus aktualisieren
     try {
-      await db.collection('invoices').doc(invoiceId).update({ status: 'sent' });
-
-    } catch (updateError) {
-
-    }
+      await db!.collection('invoices').doc(invoiceId).update({ status: 'sent' });
+    } catch (updateError) {}
 
     return NextResponse.json({
       success: true,
@@ -213,7 +201,6 @@ export async function POST(request: NextRequest) {
       attachmentFilename: pdfAttachment?.filename,
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: error.message || 'Unbekannter Fehler beim Versenden der Rechnung',

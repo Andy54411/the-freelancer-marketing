@@ -10,9 +10,11 @@ async function updateSupplierStats(supplierId: string, companyId: string) {
   try {
     // Alle Expenses für diesen Supplier abrufen
     const expensesSnapshot = await db
-      .collection('companies').doc(companyId).collection('expenses')
+      .collection('companies')
+      .doc(companyId)
+      .collection('expenses')
       .where('supplierId', '==', supplierId)
-      
+
       .get();
 
     let totalAmount = 0;
@@ -26,7 +28,11 @@ async function updateSupplierStats(supplierId: string, companyId: string) {
     });
 
     // Supplier-Dokument aktualisieren
-    const supplierRef = db.collection('companies').doc(companyId).collection('customers').doc(supplierId);
+    const supplierRef = db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('customers')
+      .doc(supplierId);
 
     // Prüfen ob Supplier existiert
     const supplierDoc = await supplierRef.get();
@@ -58,11 +64,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Firebase Admin SDK Abfrage
-    const expensesRef = db.collection('companies').doc(companyId).collection('expenses');
-    const querySnapshot = await expensesRef
-      
-      .orderBy('createdAt', 'desc')
-      .get();
+    const expensesRef = db!.collection('companies').doc(companyId).collection('expenses');
+    const querySnapshot = await expensesRef.orderBy('createdAt', 'desc').get();
 
     const expenses: any[] = [];
 
@@ -182,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     if (id) {
       // UPDATE: Bestehende Ausgabe aktualisieren
-      const docRef = db.collection('companies').doc(companyId).collection('expenses').doc(id);
+      const docRef = db!.collection('companies').doc(companyId).collection('expenses').doc(id);
       const docSnapshot = await docRef.get();
 
       if (!docSnapshot.exists) {
@@ -230,7 +233,11 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(),
       };
 
-      const docRef = await db.collection('companies').doc(companyId).collection('expenses').add(createData);
+      const docRef = await db!
+        .collection('companies')
+        .doc(companyId)
+        .collection('expenses')
+        .add(createData);
 
       // 🔗 Supplier-Statistiken automatisch aktualisieren
       if (supplierId) {
@@ -275,7 +282,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const docRef = db.collection('companies').doc(companyId).collection('expenses').doc(expenseId);
+    const docRef = db!.collection('companies').doc(companyId).collection('expenses').doc(expenseId);
     const docSnapshot = await docRef.get();
 
     if (!docSnapshot.exists) {

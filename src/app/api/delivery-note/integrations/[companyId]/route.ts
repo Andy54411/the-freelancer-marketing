@@ -97,7 +97,7 @@ export async function POST(
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection(INTEGRATIONS_COLLECTION).add(docData);
+    const docRef = await db!.collection(INTEGRATIONS_COLLECTION).add(docData);
 
     const responseData = {
       ...docData,

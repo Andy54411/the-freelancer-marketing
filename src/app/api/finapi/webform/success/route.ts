@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     if (connectionId && userId) {
       try {
         // CRITICAL FIX: Use SAME email as WebForm creation and other APIs
-        const companyDoc = await db.collection('companies').doc(userId).get();
+        const companyDoc = await db!.collection('companies').doc(userId).get();
 
         if (!companyDoc.exists) {
           throw new Error('Company not found');

@@ -8,7 +8,11 @@ interface RouteParams {
   };
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams, companyId: string): Promise<NextResponse> {
+export async function DELETE(
+  request: NextRequest,
+  { params }: RouteParams,
+  companyId: string
+): Promise<NextResponse> {
   try {
     const { uid, entryId } = await params;
 
@@ -25,7 +29,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams, comp
     }
 
     // Prüfe ob der Zeiteintrag existiert und zur Company gehört
-    const entryDoc = await db.collection('companies').doc(companyId).collection('timeEntries').doc(entryId).get();
+    const entryDoc = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('timeEntries')
+      .doc(entryId)
+      .get();
 
     if (!entryDoc.exists) {
       return NextResponse.json(
@@ -45,7 +54,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams, comp
     }
 
     // Lösche den Zeiteintrag
-    await db.collection('companies').doc(companyId).collection('timeEntries').doc(entryId).delete();
+    await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('timeEntries')
+      .doc(entryId)
+      .delete();
 
     return NextResponse.json({
       success: true,
@@ -64,7 +78,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams, comp
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams, companyId: string): Promise<NextResponse> {
+export async function PUT(
+  request: NextRequest,
+  { params }: RouteParams,
+  companyId: string
+): Promise<NextResponse> {
   try {
     const { uid, entryId } = await params;
     const body = await request.json();
@@ -82,7 +100,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams, company
     }
 
     // Prüfe ob der Zeiteintrag existiert und zur Company gehört
-    const entryDoc = await db.collection('companies').doc(companyId).collection('timeEntries').doc(entryId).get();
+    const entryDoc = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('timeEntries')
+      .doc(entryId)
+      .get();
 
     if (!entryDoc.exists) {
       return NextResponse.json(
@@ -107,10 +130,20 @@ export async function PUT(request: NextRequest, { params }: RouteParams, company
       updatedAt: new Date().toISOString(),
     };
 
-    await db.collection('companies').doc(companyId).collection('timeEntries').doc(entryId).update(updateData);
+    await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('timeEntries')
+      .doc(entryId)
+      .update(updateData);
 
     // Hole die aktualisierten Daten
-    const updatedDoc = await db.collection('companies').doc(companyId).collection('timeEntries').doc(entryId).get();
+    const updatedDoc = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('timeEntries')
+      .doc(entryId)
+      .get();
     const updatedData = updatedDoc.data();
 
     return NextResponse.json({

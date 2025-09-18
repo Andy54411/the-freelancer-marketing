@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Get company data to retrieve email
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });

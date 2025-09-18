@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, companyId: string) {
     }
 
     // Firebase Admin SDK Abfrage für Kunden/Lieferanten
-    const customersRef = db.collection('companies').doc(companyId).collection('customers');
+    const customersRef = db!.collection('companies').doc(companyId).collection('customers');
     const querySnapshot = await customersRef.get();
 
     const customers: any[] = [];
@@ -108,7 +108,11 @@ export async function POST(request: NextRequest, companyId: string) {
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('companies').doc(companyId).collection('customers').add(customerData);
+    const docRef = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('customers')
+      .add(customerData);
 
     return NextResponse.json({
       success: true,

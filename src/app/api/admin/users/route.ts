@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest) {
       TableName: 'taskilo-admin-data',
     });
 
-    const result = await dynamodb.send(command);
+    const result = await dynamodb!.send(command);
     const items = result.Items?.map(item => unmarshall(item)) || [];
 
     // Filtere und formatiere Benutzer
@@ -42,7 +42,6 @@ export async function GET(_request: NextRequest) {
       ),
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Laden der Benutzer' }, { status: 500 });
   }
 }

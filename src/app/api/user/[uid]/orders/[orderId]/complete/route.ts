@@ -18,7 +18,7 @@ try {
         const serviceAccount = JSON.parse(serviceAccountKey);
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
-          databaseURL: 'https://tilvo-f142f-default-rtdb.europe-west1.firebasedatabase.app',
+          databaseURL: 'https://tilvo-f142f-default-rtdb!.europe-west1.firebasedatabase.app',
         });
       }
     }

@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
               createdAt: new Date(),
             };
 
-            await db.collection('notifications').add(notification);
+            await db!.collection('notifications').add(notification);
           } else {
           }
         } catch (notificationError) {

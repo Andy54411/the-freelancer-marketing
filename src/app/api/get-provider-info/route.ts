@@ -26,13 +26,13 @@ export async function POST(request: NextRequest) {
 
     // Wenn orderId gegeben, hole Provider über Auftrag
     if (orderId) {
-      const orderDoc = await db.collection('auftraege').doc(orderId).get();
+      const orderDoc = await db!.collection('auftraege').doc(orderId).get();
       if (orderDoc.exists) {
         const orderData = orderDoc.data();
         const providerId = orderData?.providerId;
 
         if (providerId) {
-          const providerDoc = await db.collection('users').doc(providerId).get();
+          const providerDoc = await db!.collection('users').doc(providerId).get();
           if (providerDoc.exists) {
             const providerData = providerDoc.data();
             providerInfo = {
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Wenn firebaseUserId gegeben, hole Provider aus companies collection oder users collection (legacy)
     if (!providerInfo && firebaseUserId) {
       // FIXED: Check companies collection first
-      const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
+      const companyDoc = await db!.collection('companies').doc(firebaseUserId).get();
 
       if (companyDoc.exists) {
         const companyData = companyDoc.data();

@@ -40,8 +40,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     // Lade nur echte Kunden aus Firestore (keine Lieferanten)
     const customersQuery = await db
-      .collection('companies').doc(uid).collection('customers')
-      
+      .collection('companies')
+      .doc(uid)
+      .collection('customers')
+
       .orderBy('createdAt', 'desc')
       .get();
 
@@ -100,7 +102,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
  * API Route für neuen Customer
  * POST /api/companies/[uid]/customers
  */
-export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+  companyId: string
+) {
   try {
     const { uid } = await params;
     const body = await request.json();
@@ -133,7 +139,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('companies').doc(companyId).collection('customers').add(newCustomer);
+    const docRef = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('customers')
+      .add(newCustomer);
 
     return NextResponse.json({
       success: true,

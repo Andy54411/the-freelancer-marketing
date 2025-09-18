@@ -63,8 +63,9 @@ async function getFirebaseServices(companyId: string) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string; quoteId: string }> }
-, companyId: string) {
+  { params }: { params: Promise<{ uid: string; quoteId: string }> },
+  companyId: string
+) {
   const { uid, quoteId } = await params;
 
   try {
@@ -97,9 +98,9 @@ export async function GET(
 
     // Try companies collection first (for B2B), then users as fallback (for B2C)
 
-    let companyDoc = await db.collection('companies').doc(uid).get();
+    let companyDoc = await db!.collection('companies').doc(uid).get();
     if (!companyDoc.exists) {
-      companyDoc = await db.collection('users').doc(uid).get();
+      companyDoc = await db!.collection('users').doc(uid).get();
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Unternehmen nicht gefunden' }, { status: 404 });
       } else {
@@ -116,7 +117,7 @@ export async function GET(
 
     // Get the specific quote where this company is the customer
 
-    const quoteRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
+    const quoteRef = db!.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
     const quoteDoc = await quoteRef.get();
 
     if (!quoteDoc.exists) {
@@ -141,7 +142,7 @@ export async function GET(
 
     if (quoteData?.providerId) {
       // Try companies collection first, then users as fallback
-      const companyDoc = await db.collection('companies').doc(quoteData.providerId).get();
+      const companyDoc = await db!.collection('companies').doc(quoteData.providerId).get();
       if (companyDoc.exists) {
         const providerCompanyData = companyDoc.data();
         providerInfo = {
@@ -154,7 +155,7 @@ export async function GET(
         };
       } else {
         // Fallback to users collection
-        const userDoc = await db.collection('users').doc(quoteData.providerId).get();
+        const userDoc = await db!.collection('users').doc(quoteData.providerId).get();
         if (userDoc.exists) {
           const providerUserData = userDoc.data();
           providerInfo = {
@@ -181,7 +182,9 @@ export async function GET(
     try {
       // Check subcollection for proposals (new structure)
       const proposalsSnapshot = await db
-        .collection('companies').doc(companyId).collection('quotes')
+        .collection('companies')
+        .doc(companyId)
+        .collection('quotes')
         .doc(quoteId)
         .collection('proposals')
         .get();
@@ -285,8 +288,9 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string; quoteId: string }> }
-, companyId: string) {
+  { params }: { params: Promise<{ uid: string; quoteId: string }> },
+  companyId: string
+) {
   const { uid, quoteId } = await params;
 
   try {
@@ -322,7 +326,12 @@ export async function POST(
     }
 
     // Get the quote document - first try quotes collection, then requests collection
-    let quoteDoc = await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).get();
+    let quoteDoc = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('quotes')
+      .doc(quoteId)
+      .get();
     let quoteData: any = null;
     let isFromRequestsCollection = false;
 
@@ -331,7 +340,7 @@ export async function POST(
     } else {
       // Try requests collection as fallback
 
-      quoteDoc = await db.collection('requests').doc(quoteId).get();
+      quoteDoc = await db!.collection('requests').doc(quoteId).get();
       if (quoteDoc.exists) {
         quoteData = quoteDoc.data();
         isFromRequestsCollection = true;
@@ -347,7 +356,9 @@ export async function POST(
 
       try {
         const proposalsSnapshot = await db
-          .collection('companies').doc(companyId).collection('quotes')
+          .collection('companies')
+          .doc(companyId)
+          .collection('quotes')
           .doc(quoteId)
           .collection('proposals')
           .get();
@@ -384,12 +395,12 @@ export async function POST(
 
       // Get customer data - check both collections
       let customerData: any = null;
-      let customerDoc = await db.collection('companies').doc(companyId).get();
+      let customerDoc = await db!.collection('companies').doc(companyId).get();
 
       if (customerDoc.exists) {
         customerData = customerDoc.data();
       } else {
-        customerDoc = await db.collection('users').doc(companyId).get();
+        customerDoc = await db!.collection('users').doc(companyId).get();
         if (customerDoc.exists) {
           customerData = customerDoc.data();
         } else {
@@ -402,12 +413,12 @@ export async function POST(
 
       // Get provider data - check both collections
       let providerData: any = null;
-      let providerDoc = await db.collection('companies').doc(providerId).get();
+      let providerDoc = await db!.collection('companies').doc(providerId).get();
 
       if (providerDoc.exists) {
         providerData = providerDoc.data();
       } else {
-        providerDoc = await db.collection('users').doc(providerId).get();
+        providerDoc = await db!.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           providerData = providerDoc.data();
         } else {

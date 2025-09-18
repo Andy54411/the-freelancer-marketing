@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Versuche Company-Daten aus der Datenbank zu holen (optional für Production)
     if (userId && !userId.includes('@')) {
       try {
-        const companyDoc = await db.collection('companies').doc(userId).get();
+        const companyDoc = await db!.collection('companies').doc(userId).get();
         if (companyDoc.exists) {
           const companyData = companyDoc.data();
           companyEmail = companyData?.email || userId;

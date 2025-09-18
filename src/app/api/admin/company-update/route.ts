@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/server';
+import { db, isFirebaseAvailable } from '@/firebase/server';
 
 /**
  * POST /api/admin/company-update
@@ -7,6 +7,15 @@ import { db } from '@/firebase/server';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check if Firebase is properly initialized
+    if (!isFirebaseAvailable() || !db) {
+      console.error('Firebase not initialized');
+      return NextResponse.json(
+        { success: false, error: 'Service temporarily unavailable' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { companyId, adminApproved } = body;
 
@@ -25,7 +34,7 @@ export async function POST(request: NextRequest) {
       lastModifiedBy: 'current-admin',
     };
 
-    await db.collection('companies').doc(companyId).update(updateData);
+    await db!.collection('companies').doc(companyId).update(updateData);
 
     // Automatische Benachrichtigung erstellen für Bell
     if (!adminApproved) {

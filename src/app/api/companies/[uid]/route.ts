@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const db = await getFirebaseDb();
 
     // Lade Company-Daten aus Firestore
-    const companyDoc = await db.collection('companies').doc(uid).get();
+    const companyDoc = await db!.collection('companies').doc(uid).get();
 
     if (!companyDoc.exists) {
       return NextResponse.json({ error: 'Company nicht gefunden' }, { status: 404 });
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Update Template Preference
     if (body.preferredInvoiceTemplate) {
-      await db.collection('companies').doc(uid).update({
+      await db!.collection('companies').doc(uid).update({
         preferredInvoiceTemplate: body.preferredInvoiceTemplate,
         updatedAt: new Date(),
       });
@@ -183,7 +183,7 @@ export async function PATCH(
     }
 
     // Update the company document
-    await db.collection('companies').doc(uid).update(updateData);
+    await db!.collection('companies').doc(uid).update(updateData);
 
     return NextResponse.json({
       success: true,

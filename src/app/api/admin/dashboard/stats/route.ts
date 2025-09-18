@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest) {
       TableName: 'taskilo-admin-data',
     });
 
-    const result = await dynamodb.send(command);
+    const result = await dynamodb!.send(command);
     const items = result.Items?.map(item => unmarshall(item)) || [];
 
     // Zähle verschiedene Kategorien
@@ -51,7 +51,6 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(stats);
   } catch (error) {
-
     // Fallback-Statistiken bei Fehlern
     const fallbackStats = {
       totalUsers: 20,

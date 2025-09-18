@@ -33,9 +33,8 @@ export async function GET(_request: NextRequest) {
       const dbCommand = new DescribeTableCommand({
         TableName: 'taskilo-admin-data',
       });
-      await dynamodb.send(dbCommand);
+      await dynamodb!.send(dbCommand);
     } catch (error) {
-
       status.dynamodb = 'error';
     }
 
@@ -44,13 +43,11 @@ export async function GET(_request: NextRequest) {
       const sesCommand = new GetSendStatisticsCommand({});
       await sesClient.send(sesCommand);
     } catch (error) {
-
       status.ses = 'error';
     }
 
     return NextResponse.json(status);
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Überprüfen des System-Status' },
       { status: 500 }

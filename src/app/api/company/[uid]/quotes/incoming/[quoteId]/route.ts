@@ -3,8 +3,9 @@ import { db, auth } from '@/firebase/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string; quoteId: string }> }
-, companyId: string) {
+  { params }: { params: Promise<{ uid: string; quoteId: string }> },
+  companyId: string
+) {
   const { uid, quoteId } = await params;
   try {
     // Get the auth token from the request headers
@@ -28,7 +29,12 @@ export async function GET(
     }
 
     // Try to get the quote from quotes collection
-    const quoteDoc = await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).get();
+    const quoteDoc = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('quotes')
+      .doc(quoteId)
+      .get();
 
     if (quoteDoc.exists) {
       const quoteData = quoteDoc.data();
@@ -50,7 +56,7 @@ export async function GET(
     if (projectData?.customerUid) {
       try {
         // First try to get from users collection
-        const userDoc = await db.collection('users').doc(projectData.customerUid).get();
+        const userDoc = await db!.collection('users').doc(projectData.customerUid).get();
 
         if (userDoc.exists) {
           const userData = userDoc.data();
@@ -101,7 +107,9 @@ export async function GET(
     // Check subcollection for proposals first (new structure)
     try {
       const subcollectionSnapshot = await db
-        .collection('companies').doc(companyId).collection('quotes')
+        .collection('companies')
+        .doc(companyId)
+        .collection('quotes')
         .doc(quoteId)
         .collection('proposals')
         .where('providerId', '==', uid)

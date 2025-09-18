@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/firebase/server';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+  companyId: string
+) {
   const { uid } = await params;
 
   try {
@@ -26,10 +30,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Get company data to verify it exists and get additional info - Try companies collection first
-    let companyDoc = await db.collection('companies').doc(uid).get();
+    let companyDoc = await db!.collection('companies').doc(uid).get();
     if (!companyDoc.exists) {
       // Fallback to users collection
-      companyDoc = await db.collection('users').doc(uid).get();
+      companyDoc = await db!.collection('users').doc(uid).get();
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
       }
@@ -38,10 +42,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const _companyData = companyDoc.data();
 
     // Get company's service subcategory to filter relevant projects - Try companies collection first
-    let companyUserDoc = await db.collection('companies').doc(uid).get();
+    let companyUserDoc = await db!.collection('companies').doc(uid).get();
     if (!companyUserDoc.exists) {
       // Fallback to users collection
-      companyUserDoc = await db.collection('users').doc(uid).get();
+      companyUserDoc = await db!.collection('users').doc(uid).get();
       if (!companyUserDoc.exists) {
         return NextResponse.json({ error: 'Company user data not found' }, { status: 404 });
       }
@@ -63,10 +67,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let quotesSnapshot;
     try {
       // Get only quotes for this specific provider to improve performance
-      quotesSnapshot = await db.collection('companies').doc(companyId).collection('quotes').where('providerId', '==', uid).get();
+      quotesSnapshot = await db!
+        .collection('companies')
+        .doc(companyId)
+        .collection('quotes')
+        .where('providerId', '==', uid)
+        .get();
     } catch (error) {
       // Fallback: Get all quotes if the filtered query fails
-      quotesSnapshot = await db.collection('companies').doc(companyId).collection('quotes').get();
+      quotesSnapshot = await db!.collection('companies').doc(companyId).collection('quotes').get();
     }
 
     const quotes: Record<string, unknown>[] = [];
@@ -86,7 +95,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       if (quoteData.customerUid) {
         try {
           // First try to get from users collection
-          const userDoc = await db.collection('users').doc(quoteData.customerUid).get();
+          const userDoc = await db!.collection('users').doc(quoteData.customerUid).get();
 
           if (userDoc.exists) {
             const userData = userDoc.data();
@@ -172,7 +181,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       try {
         // First check subcollection proposals (new format)
         const proposalsSnapshot = await db
-          .collection('companies').doc(companyId).collection('quotes')
+          .collection('companies')
+          .doc(companyId)
+          .collection('quotes')
           .doc(doc.id)
           .collection('proposals')
           .where('providerId', '==', uid)

@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verwende Admin-SDK zum Erstellen (umgeht Client-Regeln)
-    const docRef = await db.collection('notifications').add(notification);
+    const docRef = await db!.collection('notifications').add(notification);
 
     return NextResponse.json({
       success: true,

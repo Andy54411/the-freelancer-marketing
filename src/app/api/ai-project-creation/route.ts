@@ -106,7 +106,11 @@ export async function POST(request: Request, companyId: string) {
         };
 
         // Speichere Quest in der quotes Collection
-        const questRef = await db.collection('companies').doc(companyId).collection('quotes').add(questDoc);
+        const questRef = await db!
+          .collection('companies')
+          .doc(companyId)
+          .collection('quotes')
+          .add(questDoc);
 
         // Aktualisiere Quest mit seiner ID
         await questRef.update({
@@ -215,7 +219,7 @@ export async function POST(request: Request, companyId: string) {
       };
 
       // Speichere Projekt in der Datenbank
-      const projectRef = await db.collection('project_requests').add(projectDoc);
+      const projectRef = await db!.collection('project_requests').add(projectDoc);
 
       // Aktualisiere Projekt mit seiner ID
       await projectRef.update({
@@ -227,7 +231,7 @@ export async function POST(request: Request, companyId: string) {
         for (const provider of projectData.selectedProviders) {
           try {
             // Erstelle eine Benachrichtigung für den Dienstleister
-            await db.collection('notifications').add({
+            await db!.collection('notifications').add({
               userId: provider.id,
               type: 'project_invitation',
               title: 'Neues Projekt verfügbar',

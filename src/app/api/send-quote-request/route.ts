@@ -57,19 +57,22 @@ export async function POST(request: NextRequest, companyId: string) {
     };
 
     // In quotes Collection speichern
-    await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).set(quoteRequest);
+    await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('quotes')
+      .doc(quoteId)
+      .set(quoteRequest);
 
     // Provider-Namen für Notifications abrufen
     let providerName = 'Anbieter';
     try {
-      const providerDoc = await db.collection('users').doc(providerId).get();
+      const providerDoc = await db!.collection('users').doc(providerId).get();
       if (providerDoc.exists) {
         const providerData = providerDoc.data();
         providerName = providerData?.companyName || 'Anbieter';
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
 
     // Bell-Notifications senden
     try {
@@ -86,9 +89,7 @@ export async function POST(request: NextRequest, companyId: string) {
           description: projectData.description,
         }
       );
-
     } catch (notificationError) {
-
       // Notifications-Fehler sollten die Quote-Erstellung nicht blockieren
     }
 
@@ -99,7 +100,6 @@ export async function POST(request: NextRequest, companyId: string) {
       notificationsSent: true,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Interner Serverfehler beim Senden der Angebotsanfrage',

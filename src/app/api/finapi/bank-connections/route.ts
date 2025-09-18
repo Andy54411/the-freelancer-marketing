@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     try {
       // Get company data to retrieve email
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       }
 
       // First check if we have stored connection info from WebForm
-      const connectionDoc = await db.collection('finapi_connections').doc(userId).get();
+      const connectionDoc = await db!.collection('finapi_connections').doc(userId).get();
       if (connectionDoc.exists) {
         const connectionData = connectionDoc.data();
 
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         const finapiService = createFinAPIService();
 
         // FIRST: Check if we have a saved finAPI user in Firestore
-        const userDoc = await db.collection('companies').doc(userId).get();
+        const userDoc = await db!.collection('companies').doc(userId).get();
         const userData = userDoc.data();
         let finapiUser;
 
@@ -189,7 +189,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
       // Get company data to retrieve email
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
@@ -203,7 +203,7 @@ export async function DELETE(request: NextRequest) {
       }
 
       // Remove from Firestore
-      await db.collection('finapi_connections').doc(userId).delete();
+      await db!.collection('finapi_connections').doc(userId).delete();
 
       // Try to remove from finAPI as well (if possible)
       try {

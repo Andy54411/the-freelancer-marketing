@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const tempJobDraftRef = db.collection('temporaryJobDrafts').doc(tempJobDraftId);
+    const tempJobDraftRef = db!.collection('temporaryJobDrafts').doc(tempJobDraftId);
     const tempJobDraftSnapshot = await tempJobDraftRef.get();
 
     if (!tempJobDraftSnapshot.exists) {
@@ -32,7 +32,6 @@ export async function GET(req: NextRequest) {
       selectedAnbieterId: data?.selectedAnbieterId,
     });
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Prüfen des temporären Job-Entwurfs',

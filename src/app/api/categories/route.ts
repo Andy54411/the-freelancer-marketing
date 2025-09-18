@@ -29,22 +29,19 @@ export async function GET() {
     // Get Firebase DB dynamically
     const db = await getFirebaseDb();
 
-    const categoriesSnapshot = await db
-      .collection('categories')
-      .orderBy('createdAt', 'desc')
-      .get();
+    const categoriesSnapshot = await db.collection('categories').orderBy('createdAt', 'desc').get();
 
-interface CategoryData {
-  id: string;
-  name: string;
-  categoryType: string;
-  contact: string;
-  color: string;
-  abbreviation: string;
-  categoryKind: string;
-  createdAt: FirebaseFirestore.Timestamp;
-  updatedAt: FirebaseFirestore.Timestamp;
-}
+    interface CategoryData {
+      id: string;
+      name: string;
+      categoryType: string;
+      contact: string;
+      color: string;
+      abbreviation: string;
+      categoryKind: string;
+      createdAt: FirebaseFirestore.Timestamp;
+      updatedAt: FirebaseFirestore.Timestamp;
+    }
 
     const categories: CategoryData[] = [];
 
@@ -59,13 +56,13 @@ interface CategoryData {
         abbreviation: categoryData.abbreviation || '',
         categoryKind: categoryData.categoryKind || 'Verkauf',
         createdAt: categoryData.createdAt,
-        updatedAt: categoryData.updatedAt
+        updatedAt: categoryData.updatedAt,
       });
     });
 
     return NextResponse.json({
       success: true,
-      categories
+      categories,
     });
   } catch (error) {
     console.error('Fehler beim Laden der Kategorien:', error);
@@ -80,7 +77,7 @@ interface CategoryData {
 export async function POST(request: NextRequest) {
   try {
     const categoryData = await request.json();
-    
+
     // Validierung
     if (!categoryData.name || !categoryData.categoryType) {
       return NextResponse.json(
@@ -91,10 +88,10 @@ export async function POST(request: NextRequest) {
 
     // Get Firebase DB dynamically
     const db = await getFirebaseDb();
-    
+
     // Verwende FieldValue für server timestamps
     const { FieldValue } = await import('firebase-admin/firestore');
-    
+
     const newCategoryData = {
       name: categoryData.name,
       categoryType: categoryData.categoryType,
@@ -103,15 +100,15 @@ export async function POST(request: NextRequest) {
       abbreviation: categoryData.abbreviation || '',
       categoryKind: categoryData.categoryKind || 'Verkauf',
       createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
-    const docRef = await db.collection('categories').add(newCategoryData);
+    const docRef = await db!.collection('categories').add(newCategoryData);
 
     return NextResponse.json({
       success: true,
       categoryId: docRef.id,
-      message: 'Kategorie erfolgreich erstellt'
+      message: 'Kategorie erfolgreich erstellt',
     });
   } catch (error) {
     console.error('Fehler beim Erstellen der Kategorie:', error);

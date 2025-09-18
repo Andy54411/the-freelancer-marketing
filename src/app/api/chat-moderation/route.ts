@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // AI-Config aus Firestore laden
-    const configDoc = await db.collection('chatbot_config').doc('knowledge_base').get();
+    const configDoc = await db!.collection('chatbot_config').doc('knowledge_base').get();
     const config = configDoc.exists ? configDoc.data() : {};
 
     const moderationEnabled = config?.moderationEnabled ?? true;
@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-
       return NextResponse.json(
         { error: 'Die Server-Konfiguration ist unvollständig.' },
         { status: 500 }
@@ -143,7 +142,6 @@ Analysiere diese Nachricht sorgfältig und bewerte sie nach den Plattform-Regeln
     try {
       moderationResult = JSON.parse(text);
     } catch (parseError) {
-
       // Fallback bei Parse-Fehler
       moderationResult = {
         isViolation: false,
@@ -210,11 +208,9 @@ async function logModerationEvent(event: {
   timestamp: Date;
 }) {
   try {
-    await db.collection('moderationLogs').add({
+    await db!.collection('moderationLogs').add({
       ...event,
       reviewed: false,
     });
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }

@@ -10,7 +10,11 @@ export async function POST(req: NextRequest, companyId: string) {
     }
 
     // Search for this PaymentIntent in proposals
-    const quotesSnapshot = await db.collection('companies').doc(companyId).collection('quotes').get();
+    const quotesSnapshot = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('quotes')
+      .get();
     const results: any[] = [];
 
     for (const quoteDoc of quotesSnapshot.docs) {

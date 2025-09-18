@@ -38,10 +38,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     };
 
     // Save notification to Firebase
-    const notificationRef = await db.collection('notifications').add(notificationData);
+    const notificationRef = await db!.collection('notifications').add(notificationData);
 
     // Also update company's last notification timestamp
-    await db.collection('companies').doc(uid).update({
+    await db!.collection('companies').doc(uid).update({
       lastNotificationAt: timestamp,
       lastNotificationType: type,
     });

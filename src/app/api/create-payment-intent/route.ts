@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Lade Job Draft für B2B/B2C Logik
-    const jobDraftDoc = await db.collection('temporaryJobDrafts').doc(taskId).get();
+    const jobDraftDoc = await db!.collection('temporaryJobDrafts').doc(taskId).get();
     if (!jobDraftDoc.exists) {
       return NextResponse.json({ error: 'Job-Entwurf nicht gefunden' }, { status: 404 });
     }

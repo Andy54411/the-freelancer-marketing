@@ -75,7 +75,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ uid
     const { db } = await getFirebaseServices();
 
     // Hole Company-Daten
-    const companyDoc = await db.collection('companies').doc(uid).get();
+    const companyDoc = await db!.collection('companies').doc(uid).get();
 
     if (!companyDoc.exists) {
       return NextResponse.json({ error: 'Company nicht gefunden' }, { status: 404 });
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ uid
     };
 
     // Cache the result
-    await db.collection('stripe_cache').doc(`balance_${connectedAccountId}`).set({
+    await db!.collection('stripe_cache').doc(`balance_${connectedAccountId}`).set({
       balance: balanceData,
       updated_at: new Date(),
       stripe_account_id: connectedAccountId,

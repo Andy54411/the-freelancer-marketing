@@ -26,7 +26,6 @@ export async function POST(request: Request) {
       const decodedToken = await auth.verifyIdToken(idToken);
       userId = decodedToken.uid;
     } catch (error) {
-
       return NextResponse.json(
         {
           success: false,
@@ -41,7 +40,7 @@ export async function POST(request: Request) {
     if (userType === 'customer') {
       // Suche sowohl in kundeId als auch customerFirebaseUid
 
-      const kundeIdQuery = db.collection('auftraege').where('kundeId', '==', userId);
+      const kundeIdQuery = db!.collection('auftraege').where('kundeId', '==', userId);
       const customerUidQuery = db
         .collection('auftraege')
         .where('customerFirebaseUid', '==', userId);
@@ -82,7 +81,7 @@ export async function POST(request: Request) {
         count: orders.length,
       });
     } else {
-      query = db.collection('auftraege').where('selectedAnbieterId', '==', userId);
+      query = db!.collection('auftraege').where('selectedAnbieterId', '==', userId);
     }
 
     // Limit anwenden
@@ -122,7 +121,6 @@ export async function POST(request: Request) {
       orders: orders,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

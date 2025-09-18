@@ -33,7 +33,6 @@ export async function GET(request: NextRequest) {
 
     // Check for OAuth errors
     if (error) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=${error}&message=${encodeURIComponent(error_description || 'Unknown error')}`
       );
@@ -41,14 +40,12 @@ export async function GET(request: NextRequest) {
 
     // Validate required parameters
     if (!code) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=missing_code&message=${encodeURIComponent('Authorization code not provided')}`
       );
     }
 
     if (!state) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=missing_state&message=${encodeURIComponent('State parameter not provided')}`
       );
@@ -70,7 +67,6 @@ export async function GET(request: NextRequest) {
           companyId = stateData.companyId;
           timestamp = stateData.timestamp.toString();
           randomPart = 'json_state'; // Placeholder for JSON format
-
         } else {
           throw new Error('Invalid JSON state format: missing companyId or timestamp');
         }
@@ -82,19 +78,18 @@ export async function GET(request: NextRequest) {
           companyId = stateParts[1];
           timestamp = stateParts[2];
           randomPart = stateParts[3];
-
         } else if (stateParts.length >= 3 && stateParts[0] === 'state') {
           // Fallback für state ohne companyId
           companyId = 'unknown';
           timestamp = stateParts[1];
           randomPart = stateParts[2];
-
         } else {
-          throw new Error(`Invalid state format: expected Base64 JSON or 'company:id:timestamp:random', got ${stateParts.length} colon parts`);
+          throw new Error(
+            `Invalid state format: expected Base64 JSON or 'company:id:timestamp:random', got ${stateParts.length} colon parts`
+          );
         }
       }
     } catch (error) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Invalid state parameter format: ' + state)}`
       );
@@ -110,14 +105,12 @@ export async function GET(request: NextRequest) {
       codeVerifier = stateData.codeVerifier;
       nonce = stateData.nonce; // May be undefined for some flows
       companyId = stateData.companyId || companyId;
-
     } else {
       // Fallback to PKCE storage for colon-format states
       const pkceData = retrievePKCEData(state);
       storedAuthData = pkceData;
 
       if (!storedAuthData) {
-
         return NextResponse.redirect(
           `${redirectUrl}?error=invalid_state&message=${encodeURIComponent('Authentifizierungs-Session nicht gefunden oder abgelaufen')}`
         );
@@ -130,7 +123,6 @@ export async function GET(request: NextRequest) {
 
     // Validate that we have a codeVerifier
     if (!codeVerifier) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=missing_verifier&message=${encodeURIComponent('Code verifier nicht gefunden - bitte versuchen Sie es erneut')}`
       );
@@ -148,7 +140,6 @@ export async function GET(request: NextRequest) {
     const maxAge = 10 * 60 * 1000; // 10 minutes
 
     if (now - stateTime > maxAge) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=expired_state&message=${encodeURIComponent('Authentication request expired')}`
       );
@@ -166,7 +157,6 @@ export async function GET(request: NextRequest) {
         );
 
         if (!clientValidation.hasFullPermissions) {
-
         }
       }
 
@@ -178,13 +168,11 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.redirect(successUrl);
     } catch (tokenError) {
-
       return NextResponse.redirect(
         `${redirectUrl}?error=token_exchange&message=${encodeURIComponent('Failed to exchange authorization code for tokens')}`
       );
     }
   } catch (error) {
-
     const errorRedirectUrl =
       process.env.NODE_ENV === 'development'
         ? 'http://localhost:3000/dashboard/company/unknown/datev/setup'
@@ -223,7 +211,6 @@ async function exchangeCodeForTokenPKCE(code: string, codeVerifier: string) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-
       throw new Error(
         `Token exchange failed: ${tokenData.error || 'Unknown error'} - ${tokenData.error_description || ''}`
       );
@@ -231,7 +218,6 @@ async function exchangeCodeForTokenPKCE(code: string, codeVerifier: string) {
 
     return tokenData;
   } catch (error) {
-
     throw error;
   }
 }
@@ -256,12 +242,11 @@ export async function OPTIONS() {
  */
 async function storeTokensForCompany(companyId: string, tokenData: any) {
   try {
-
     // Calculate expiration timestamp
     const expiresAt = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000);
 
     // 1. Store tokens in Firestore (for persistence across sessions)
-    const tokenDocRef = db.collection('users').doc(companyId).collection('datev').doc('tokens');
+    const tokenDocRef = db!.collection('users').doc(companyId).collection('datev').doc('tokens');
 
     const tokenDocData = {
       access_token: tokenData.access_token,
@@ -281,7 +266,7 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     await setDatevTokenCookies(tokenData, companyId);
 
     // 3. Also store connection status in company document (using Admin SDK)
-    const companyDocRef = db.collection('users').doc(companyId);
+    const companyDocRef = db!.collection('users').doc(companyId);
     const companyUpdateData = {
       datev: {
         connected: true,
@@ -291,9 +276,7 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
     };
 
     await companyDocRef.set(companyUpdateData, { merge: true });
-
   } catch (error) {
-
     throw new Error('Failed to store authentication tokens');
   }
 }
@@ -304,7 +287,6 @@ async function storeTokensForCompany(companyId: string, tokenData: any) {
  */
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
     const { code, state, firebaseUserId } = body;
 
@@ -320,18 +302,14 @@ export async function POST(request: NextRequest) {
       const callbackResult = await handleDatevOAuthCallback(code, state, firebaseUserId);
 
       if (callbackResult.success) {
-
         return NextResponse.json({
           success: true,
           message: 'DATEV OAuth callback processed with new auth middleware',
           middleware: 'new',
         });
       } else {
-
       }
-    } catch (newAuthError) {
-
-    }
+    } catch (newAuthError) {}
 
     // Fallback to legacy processing if new middleware fails
 
@@ -344,7 +322,6 @@ export async function POST(request: NextRequest) {
       note: 'New auth middleware not fully implemented yet',
     });
   } catch (error: any) {
-
     return NextResponse.json(
       { error: error.message || 'Callback processing failed' },
       { status: 500 }

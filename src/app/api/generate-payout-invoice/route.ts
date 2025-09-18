@@ -7,14 +7,12 @@ import { getCurrentPlatformFeeRate } from '@/lib/platform-config';
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripe = stripeSecret
   ? new Stripe(stripeSecret, {
-    apiVersion: '2024-06-20',
-  })
+      apiVersion: '2024-06-20',
+    })
   : null;
 
 export async function POST(request: NextRequest) {
-
   if (!stripe) {
-
     return NextResponse.json(
       {
         error: 'Zahlungsverarbeitung nicht verfügbar. Bitte versuchen Sie es später erneut.',
@@ -40,7 +38,7 @@ export async function POST(request: NextRequest) {
     } | null = null;
 
     try {
-      const userDoc = await db.collection('users').doc(firebaseUserId).get();
+      const userDoc = await db!.collection('users').doc(firebaseUserId).get();
       if (userDoc.exists) {
         const userData = userDoc.data() as {
           stripeAccountId?: string;
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (!stripeAccountId) {
-        const companyDoc = await db.collection('users').doc(firebaseUserId).get();
+        const companyDoc = await db!.collection('users').doc(firebaseUserId).get();
         if (companyDoc.exists) {
           const companyDocData = companyDoc.data() as {
             stripeAccountId?: string;
@@ -74,12 +72,9 @@ export async function POST(request: NextRequest) {
           };
         }
       }
-    } catch (dbError) {
-
-    }
+    } catch (dbError) {}
 
     if (!stripeAccountId) {
-
       // Fallback: Erstelle Demo-Daten wenn kein Stripe-Account verfügbar ist
       stripeAccountId = 'demo_account';
       companyData = {
@@ -100,7 +95,6 @@ export async function POST(request: NextRequest) {
         throw new Error('Demo mode');
       }
     } catch (stripeError) {
-
       // Fallback: Erstelle eine Demo-Rechnung wenn Payout nicht gefunden wird
       payout = {
         id: payoutId,
@@ -154,7 +148,7 @@ export async function POST(request: NextRequest) {
 
     if ((payout as { arrival_date?: number }).arrival_date) {
       doc.text(
-        `Ankunftsdatum: ${new Date(((payout as { arrival_date: number }).arrival_date) * 1000).toLocaleDateString('de-DE')}`,
+        `Ankunftsdatum: ${new Date((payout as { arrival_date: number }).arrival_date * 1000).toLocaleDateString('de-DE')}`,
         50,
         290
       );
@@ -178,7 +172,11 @@ export async function POST(request: NextRequest) {
         50,
         365
       )
-      .text(`Nettobetrag (ausgezahlt): ${((payout.amount as number) / 100).toFixed(2)} EUR`, 50, 380);
+      .text(
+        `Nettobetrag (ausgezahlt): ${((payout.amount as number) / 100).toFixed(2)} EUR`,
+        50,
+        380
+      );
 
     // Footer
     doc
@@ -198,7 +196,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-
     if (error instanceof Stripe.errors.StripeError) {
       return NextResponse.json(
         {

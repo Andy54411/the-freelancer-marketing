@@ -47,7 +47,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       Key: marshall({ id: ticketId }),
     });
 
-    const result = await dynamodb.send(getCommand);
+    const result = await dynamodb!.send(getCommand);
     if (!result.Item) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
@@ -64,7 +64,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       ticket,
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Laden des Tickets', details: error.message },
       { status: 500 }
@@ -88,7 +87,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       Key: marshall({ id: ticketId }),
     });
 
-    const ticketResult = await dynamodb.send(getCommand);
+    const ticketResult = await dynamodb!.send(getCommand);
     if (!ticketResult.Item) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
@@ -104,14 +103,13 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       Key: marshall({ id: ticketId }),
     });
 
-    await dynamodb.send(deleteCommand);
+    await dynamodb!.send(deleteCommand);
 
     return NextResponse.json({
       success: true,
       message: 'Ticket erfolgreich gelöscht',
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Löschen des Tickets', details: error.message },
       { status: 500 }

@@ -3,9 +3,8 @@ import { db } from '../../../firebase/server';
 
 export async function POST() {
   try {
-
     // Hole alle Orders aus der 'orders' Collection
-    const ordersSnapshot = await db.collection('orders').get();
+    const ordersSnapshot = await db!.collection('orders').get();
 
     if (ordersSnapshot.empty) {
       return NextResponse.json({
@@ -15,7 +14,7 @@ export async function POST() {
       });
     }
 
-    const batch = db.batch();
+    const batch = db!.batch();
     let migrated = 0;
 
     ordersSnapshot.forEach(doc => {
@@ -23,7 +22,7 @@ export async function POST() {
       const orderId = doc.id;
 
       // Füge zur auftraege Collection hinzu
-      const auftraegeRef = db.collection('auftraege').doc(orderId);
+      const auftraegeRef = db!.collection('auftraege').doc(orderId);
       batch.set(auftraegeRef, orderData);
 
       // Lösche aus orders Collection
@@ -41,7 +40,6 @@ export async function POST() {
       migrated,
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

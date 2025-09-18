@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, companyId: string) {
     }
 
     // Get invoices from Firestore
-    const invoicesRef = db.collection('invoices');
+    const invoicesRef = db!.collection('invoices');
     const query = invoicesRef;
 
     // Execute query
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest, companyId: string) {
       );
     }
 
-    const invoiceRef = db.collection('invoices').doc(invoiceId);
+    const invoiceRef = db!.collection('invoices').doc(invoiceId);
     const invoiceDoc = await invoiceRef.get();
 
     if (!invoiceDoc.exists) {

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, companyId: string) {
 
         // Check if this user is a company (B2B) by checking companies collection
         if (customerUid) {
-          const companyDoc = await db.collection('companies').doc(customerUid).get();
+          const companyDoc = await db!.collection('companies').doc(customerUid).get();
           if (companyDoc.exists) {
             isB2B = true;
             customerType = 'company';
@@ -75,12 +75,17 @@ export async function POST(request: NextRequest, companyId: string) {
     };
 
     // In quotes Collection speichern mit Firebase Admin
-    await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).set(quoteRequest);
+    await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('quotes')
+      .doc(quoteId)
+      .set(quoteRequest);
 
     // Provider-Namen für Notifications abrufen
     let providerName = 'Anbieter';
     try {
-      const providerDoc = await db.collection('users').doc(providerId).get();
+      const providerDoc = await db!.collection('users').doc(providerId).get();
       if (providerDoc.exists) {
         const providerData = providerDoc.data();
         providerName = providerData?.companyName || 'Anbieter';

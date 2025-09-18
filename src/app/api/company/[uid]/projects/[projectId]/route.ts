@@ -126,7 +126,7 @@ export async function DELETE(
     }
 
     // Projekt aus Firestore löschen
-    await db.collection('companies').doc(companyId).collection('projects').doc(projectId).delete();
+    await db!.collection('companies').doc(companyId).collection('projects').doc(projectId).delete();
 
     return NextResponse.json({
       success: true,

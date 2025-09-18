@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       Key: marshall({ id: email }),
     });
 
-    const result = await dynamodb.send(command);
+    const result = await dynamodb!.send(command);
 
     if (!result.Item) {
       return NextResponse.json({ error: 'Ungültige Anmeldedaten' }, { status: 401 });
@@ -98,7 +98,6 @@ export async function POST(request: NextRequest) {
       message: `Admin-Login erfolgreich. WorkMail SSO aktiviert für ${workmailEmail}`,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Anmeldung fehlgeschlagen' }, { status: 500 });
   }
 }

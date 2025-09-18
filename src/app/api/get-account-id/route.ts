@@ -10,60 +10,43 @@ export async function GET(request: NextRequest) {
     const firebaseUserId = searchParams.get('firebaseUserId');
 
     if (!firebaseUserId) {
-      return NextResponse.json(
-        { error: 'firebaseUserId ist erforderlich.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'firebaseUserId ist erforderlich.' }, { status: 400 });
     }
 
     // Genau wie get-stripe-balance API - zuerst users collection
     let stripeAccountId = null;
 
     try {
-      const userDoc = await db.collection('users').doc(firebaseUserId).get();
+      const userDoc = await db!.collection('users').doc(firebaseUserId).get();
       if (userDoc.exists) {
         const userData = userDoc.data();
         stripeAccountId = userData?.stripeAccountId;
-
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
 
     // Fallback: stripe_accounts collection
     if (!stripeAccountId) {
       try {
-        const doc = await db.collection('stripe_accounts').doc(firebaseUserId).get();
+        const doc = await db!.collection('stripe_accounts').doc(firebaseUserId).get();
         if (doc.exists) {
           const data = doc.data();
           stripeAccountId = data?.stripeAccountId;
-
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     }
 
     if (!stripeAccountId) {
-      return NextResponse.json(
-        { error: 'Stripe Account ID nicht gefunden.' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Stripe Account ID nicht gefunden.' }, { status: 404 });
     }
 
     const response = {
       firebaseUserId,
       stripeAccountId,
-      found: true
+      found: true,
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
-
-    return NextResponse.json(
-      { error: 'Fehler beim Abrufen der Account ID.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Fehler beim Abrufen der Account ID.' }, { status: 500 });
   }
 }

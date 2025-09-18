@@ -8,8 +8,9 @@ import { ProposalSubcollectionService } from '@/services/ProposalSubcollectionSe
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ uid: string; quoteId: string }> }
-, companyId: string) {
+  { params }: { params: Promise<{ uid: string; quoteId: string }> },
+  companyId: string
+) {
   const { uid, quoteId } = await params;
 
   try {
@@ -33,13 +34,13 @@ export async function GET(
     }
 
     // Get the project request - try project_requests first, then quotes
-    let projectRef = db.collection('project_requests').doc(quoteId);
+    let projectRef = db!.collection('project_requests').doc(quoteId);
     let projectDoc = await projectRef.get();
     let isQuotesCollection = false;
 
     if (!projectDoc.exists) {
       // Check if it might be in the quotes collection instead
-      projectRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
+      projectRef = db!.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
       projectDoc = await projectRef.get();
       isQuotesCollection = true;
 
@@ -73,7 +74,7 @@ export async function GET(
 
         try {
           // Try companies collection first for comprehensive data
-          const companiesDoc = await db.collection('companies').doc(proposal.companyUid).get();
+          const companiesDoc = await db!.collection('companies').doc(proposal.companyUid).get();
 
           if (companiesDoc.exists) {
             const companyData = companiesDoc.data();
@@ -89,7 +90,7 @@ export async function GET(
             };
           } else {
             // Fallback to users collection for legacy data
-            const userDoc = await db.collection('users').doc(proposal.companyUid).get();
+            const userDoc = await db!.collection('users').doc(proposal.companyUid).get();
             if (userDoc.exists) {
               const userData = userDoc.data();
               companyInfo = {
@@ -132,7 +133,7 @@ export async function GET(
 
           try {
             // Try companies collection first for comprehensive data
-            const companiesDoc = await db.collection('companies').doc(proposal.companyUid).get();
+            const companiesDoc = await db!.collection('companies').doc(proposal.companyUid).get();
 
             if (companiesDoc.exists) {
               const companyData = companiesDoc.data();
@@ -148,7 +149,7 @@ export async function GET(
               };
             } else {
               // Fallback to users collection for legacy data
-              const userDoc = await db.collection('users').doc(proposal.companyUid).get();
+              const userDoc = await db!.collection('users').doc(proposal.companyUid).get();
               if (userDoc.exists) {
                 const userData = userDoc.data();
                 companyInfo = {

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { uid } = await params;
 
     // Lade Company-Dokument
-    const companyRef = db.collection('companies').doc(uid);
+    const companyRef = db!.collection('companies').doc(uid);
     const companyDoc = await companyRef.get();
 
     if (!companyDoc.exists) {
@@ -85,7 +85,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Lade Company-Dokument
-    const companyRef = db.collection('companies').doc(uid);
+    const companyRef = db!.collection('companies').doc(uid);
     const companyDoc = await companyRef.get();
 
     if (!companyDoc.exists) {

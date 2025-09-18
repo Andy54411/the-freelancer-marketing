@@ -22,7 +22,7 @@ export async function POST(
     const now = new Date().toISOString();
 
     // Update notification as read
-    await db.collection('notifications').doc(notificationId).update({
+    await db!.collection('notifications').doc(notificationId).update({
       readAt: now,
       status: 'read',
     });

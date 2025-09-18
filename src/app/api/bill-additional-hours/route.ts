@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Hole Auftragsdaten aus Firebase
-    const orderDoc = await db.collection('auftraege').doc(orderId).get();
+    const orderDoc = await db!.collection('auftraege').doc(orderId).get();
 
     if (!orderDoc.exists) {
       return NextResponse.json({ error: 'Auftrag nicht gefunden.' }, { status: 404 });

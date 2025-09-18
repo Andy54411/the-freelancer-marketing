@@ -72,7 +72,7 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
 
   try {
     const userDoc = await Promise.race([
-      db.collection('users').doc(firebaseUserId).get(),
+      db!.collection('users').doc(firebaseUserId).get(),
       firebaseTimeout,
     ]);
 
@@ -80,13 +80,13 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
       const userData = userDoc.data();
       stripeAccountId = userData?.stripeAccountId;
     }
-  } catch (error) { }
+  } catch (error) {}
 
   // Fallback: try stripe_accounts collection
   if (!stripeAccountId) {
     try {
       const doc = await Promise.race([
-        db.collection('stripe_accounts').doc(firebaseUserId).get(),
+        db!.collection('stripe_accounts').doc(firebaseUserId).get(),
         firebaseTimeout,
       ]);
 
@@ -94,7 +94,7 @@ async function executeBalanceCheck(firebaseUserId: string, cacheKey: string) {
         const data = doc.data();
         stripeAccountId = data?.stripeAccountId;
       }
-    } catch (error) { }
+    } catch (error) {}
   }
 
   if (!stripeAccountId) {

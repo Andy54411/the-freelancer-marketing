@@ -20,7 +20,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
       // Get company data to retrieve email
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
@@ -74,7 +74,7 @@ export async function DELETE(request: NextRequest) {
       if (deleteResponse.ok) {
         // Also clean up any stored connection data in Firestore
         try {
-          await db.collection('finapi_connections').doc(userId).delete();
+          await db!.collection('finapi_connections').doc(userId).delete();
         } catch (cleanupError) {}
 
         return NextResponse.json({
@@ -98,7 +98,7 @@ export async function DELETE(request: NextRequest) {
     } catch (finapiError: any) {
       // Clean up stored data even if finAPI delete fails
       try {
-        await db.collection('finapi_connections').doc(userId).delete();
+        await db!.collection('finapi_connections').doc(userId).delete();
       } catch (cleanupError) {}
 
       return NextResponse.json({

@@ -5,7 +5,11 @@ import { db } from '@/firebase/server';
  * GET /api/company/[uid]/notifications
  * Loads notifications for a company, optionally filtered by type
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+  companyId: string
+) {
   try {
     const { uid } = await params;
     const { searchParams } = new URL(request.url);
@@ -16,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Build query for notifications
-    let query = db.collection('notifications');
+    let query = db!.collection('notifications');
 
     // Filter by type if provided (without ordering to avoid index requirement)
     if (type) {
@@ -61,7 +65,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
  * POST /api/company/[uid]/notifications
  * Creates a new notification for a company
  */
-export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+  companyId: string
+) {
   try {
     const { uid } = await params;
     const body = await request.json();
@@ -86,7 +94,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       readAt: null,
     };
 
-    const docRef = await db.collection('notifications').add(notification);
+    const docRef = await db!.collection('notifications').add(notification);
 
     return NextResponse.json({
       success: true,

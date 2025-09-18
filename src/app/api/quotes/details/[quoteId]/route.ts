@@ -7,8 +7,9 @@ import { db } from '@/firebase/server';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ quoteId: string }> }
-, companyId: string) {
+  { params }: { params: Promise<{ quoteId: string }> },
+  companyId: string
+) {
   try {
     const { quoteId } = await params;
 
@@ -17,7 +18,12 @@ export async function GET(
     }
 
     // Abrufen der spezifischen Angebotsanfrage
-    const quoteDoc = await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).get();
+    const quoteDoc = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('quotes')
+      .doc(quoteId)
+      .get();
 
     if (!quoteDoc.exists) {
       return NextResponse.json({ error: 'Angebotsanfrage nicht gefunden' }, { status: 404 });
@@ -33,7 +39,6 @@ export async function GET(
       quote,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Fehler beim Abrufen der Angebotsanfrage' }, { status: 500 });
   }
 }

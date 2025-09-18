@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Benachrichtigungen versendet' });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Versenden der Benachrichtigungen' },
       { status: 500 }
@@ -168,7 +167,7 @@ async function logNotification(type: string, ticket: any, comment?: string, upda
     Item: marshall(notification),
   });
 
-  return dynamodb.send(command);
+  return dynamodb!.send(command);
 }
 
 function getCustomerSubject(type: string, ticket: any): string {

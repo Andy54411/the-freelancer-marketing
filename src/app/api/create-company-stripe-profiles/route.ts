@@ -151,7 +151,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreatePro
       }
 
       // Update users collection
-      await db.collection('users').doc(uid).update(updateData);
+      await db!.collection('users').doc(uid).update(updateData);
     } catch (firestoreError) {
       // Stripe-Profile wurden erstellt, also weiter fortfahren
     }

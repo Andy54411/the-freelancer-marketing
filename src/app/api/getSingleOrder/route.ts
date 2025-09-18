@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Get the order from Firestore
 
-    const orderDoc = await db.collection('auftraege').doc(orderId).get();
+    const orderDoc = await db!.collection('auftraege').doc(orderId).get();
 
     if (!orderDoc.exists) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });

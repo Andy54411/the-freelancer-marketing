@@ -33,14 +33,14 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const tempJobDraftRef = db.collection('temporaryJobDrafts').doc(tempJobDraftId);
-      const auftragCollectionRef = db.collection('auftraege');
+      const tempJobDraftRef = db!.collection('temporaryJobDrafts').doc(tempJobDraftId);
+      const auftragCollectionRef = db!.collection('auftraege');
 
       // Definiere Variablen außerhalb der Transaction für Notifications
       let newOrderId: string = '';
       let orderData: any = null;
 
-      await db.runTransaction(async transaction => {
+      await db!.runTransaction(async transaction => {
         const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
 
         if (tempJobDraftSnapshot.data()?.status === 'converted') {

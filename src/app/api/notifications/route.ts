@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       updatedAt: Timestamp.now(),
     };
 
-    const docRef = await db.collection('notifications').add(notificationData);
+    const docRef = await db!.collection('notifications').add(notificationData);
 
     return NextResponse.json({
       success: true,

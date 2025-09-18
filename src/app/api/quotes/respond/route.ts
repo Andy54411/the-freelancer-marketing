@@ -10,7 +10,12 @@ import admin from 'firebase-admin';
 /**
  * Neue Angebot-Response Struktur verarbeiten
  */
-async function handleNewQuoteResponse(request: NextRequest, quoteId: string, response: any, companyId: string) {
+async function handleNewQuoteResponse(
+  request: NextRequest,
+  quoteId: string,
+  response: any,
+  companyId: string
+) {
   // Token aus Authorization Header extrahieren
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -30,7 +35,7 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     let companyName = 'Unbekanntes Unternehmen';
 
     // Erst in users Collection suchen (B2C)
-    const userDoc = await db.collection('users').doc(uid).get();
+    const userDoc = await db!.collection('users').doc(uid).get();
     if (userDoc.exists) {
       userData = userDoc.data();
       companyUid = userData?.companyUid || uid;
@@ -38,7 +43,7 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     } else {
       // Dann in companies Collection suchen (B2B)
 
-      const companyDoc = await db.collection('companies').doc(uid).get();
+      const companyDoc = await db!.collection('companies').doc(uid).get();
       if (companyDoc.exists) {
         userData = companyDoc.data();
         companyUid = uid; // Bei companies ist die uid direkt die companyUid
@@ -49,7 +54,12 @@ async function handleNewQuoteResponse(request: NextRequest, quoteId: string, res
     }
 
     // Quote-Daten abrufen für Notification
-    const quoteDoc = await db.collection('companies').doc(companyId).collection('quotes').doc(quoteId).get();
+    const quoteDoc = await db!
+      .collection('companies')
+      .doc(companyId)
+      .collection('quotes')
+      .doc(quoteId)
+      .get();
     if (!quoteDoc.exists) {
       return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
     }

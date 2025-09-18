@@ -13,7 +13,7 @@ export async function GET(
     }
 
     // Verwende Firebase Admin SDK für server-seitigen Zugriff
-    const docRef = db.collection('deliveryNotes').doc(deliveryNoteId);
+    const docRef = db!.collection('deliveryNotes').doc(deliveryNoteId);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
@@ -36,12 +36,12 @@ export async function GET(
     if (data.companyId) {
       try {
         // Versuche erst companies Collection
-        const companyDoc = await db.collection('companies').doc(data.companyId).get();
+        const companyDoc = await db!.collection('companies').doc(data.companyId).get();
         if (companyDoc.exists) {
           companyData = companyDoc.data()!;
         } else {
           // Fallback: users Collection
-          const userDoc = await db.collection('users').doc(data.companyId).get();
+          const userDoc = await db!.collection('users').doc(data.companyId).get();
           if (userDoc.exists) {
             companyData = userDoc.data()!;
           }

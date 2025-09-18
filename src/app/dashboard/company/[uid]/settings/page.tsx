@@ -231,9 +231,19 @@ export default function SettingsPage() {
         return <PaymentTermsForm formData={form} handleChange={handleChange} />;
       case 'payouts':
         return (
-          <div className="text-center py-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Auszahlungen</h3>
-            <p className="text-gray-600">Diese Sektion ist noch nicht implementiert.</p>
+          <div className="space-y-6">
+            <div className="text-center py-8">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Auszahlungen verwalten</h3>
+              <p className="text-gray-600 mb-6">
+                Verwalten Sie Ihre Auszahlungen und sehen Sie den verfügbaren Saldo ein.
+              </p>
+              <button
+                onClick={() => (window.location.href = `/dashboard/company/${uid}/payouts`)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#14ad9f] hover:bg-[#129488] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#14ad9f]"
+              >
+                Zur Auszahlungsübersicht
+              </button>
+            </div>
           </div>
         );
       default:
@@ -275,7 +285,10 @@ export default function SettingsPage() {
       case 'portfolio':
         return { title: 'Portfolio', description: 'Präsentieren Sie Ihre Arbeiten und Projekte' };
       case 'services':
-        return { title: 'Dienstleistungen', description: 'Verwalten Sie Ihre angebotenen Services und Preise' };
+        return {
+          title: 'Dienstleistungen',
+          description: 'Verwalten Sie Ihre angebotenen Services und Preise',
+        };
       case 'faqs':
         return {
           title: 'FAQs',
@@ -297,7 +310,7 @@ export default function SettingsPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{title}</h1>
               <p className="text-gray-600">{description}</p>
             </div>
-            
+
             {renderSettingsComponent()}
           </div>
         </div>

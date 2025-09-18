@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
           if (customerId) {
             try {
               // First try users collection
-              const customerDoc = await db.collection('users').doc(customerId).get();
+              const customerDoc = await db!.collection('users').doc(customerId).get();
               if (customerDoc.exists) {
                 const customerData = customerDoc.data();
                 const firstName = customerData?.firstName || '';
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
                   customerData?.profilePictureURL || customerData?.profilePictureFirebaseUrl;
               } else {
                 // Fallback: try companies collection for B2B orders
-                const companyDoc = await db.collection('companies').doc(customerId).get();
+                const companyDoc = await db!.collection('companies').doc(customerId).get();
                 if (companyDoc.exists) {
                   const companyData = companyDoc.data();
                   customerName =

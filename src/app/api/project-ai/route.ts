@@ -804,7 +804,7 @@ export async function POST(request: Request) {
           const { title, category, services } = data;
 
           // Query Firebase companies collection für Firmen/Dienstleister
-          const companiesRef = db.collection('companies');
+          const companiesRef = db!.collection('companies');
           let query = companiesRef
             .where('onboardingCompleted', '==', true)
             .where('profileStatus', 'in', ['active', 'pending_review']);

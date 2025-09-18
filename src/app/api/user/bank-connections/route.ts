@@ -20,13 +20,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Try to get from companies collection first (main storage)
-    let userDoc = await db.collection('companies').doc(userId).get();
+    let userDoc = await db!.collection('companies').doc(userId).get();
     let sourceCollection = 'companies';
 
     if (!userDoc.exists) {
       // Fallback to users collection
 
-      userDoc = await db.collection('users').doc(userId).get();
+      userDoc = await db!.collection('users').doc(userId).get();
       sourceCollection = 'users';
     }
 
@@ -103,14 +103,14 @@ export async function POST(request: NextRequest) {
 
     // Try companies collection first (primary location for bank data)
     try {
-      await db.collection('companies').doc(userId).update(updateData);
+      await db!.collection('companies').doc(userId).update(updateData);
     } catch (companiesError) {
       // Fallback to users collection
       try {
-        await db.collection('users').doc(userId).update(updateData);
+        await db!.collection('users').doc(userId).update(updateData);
       } catch (usersError) {
         // If both fail, create a new document in companies collection
-        await db.collection('companies').doc(userId).set(updateData, { merge: true });
+        await db!.collection('companies').doc(userId).set(updateData, { merge: true });
       }
     }
 

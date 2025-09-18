@@ -8,7 +8,6 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-
     return null;
   }
 
@@ -18,10 +17,8 @@ function getStripeInstance() {
 }
 
 export async function POST(request: NextRequest) {
-
   const stripe = getStripeInstance();
   if (!stripe) {
-
     return NextResponse.json(
       { error: 'Stripe-Konfiguration auf dem Server fehlt.' },
       { status: 500 }
@@ -29,7 +26,6 @@ export async function POST(request: NextRequest) {
   }
 
   if (!db) {
-
     return NextResponse.json(
       { error: 'Firebase-Konfiguration auf dem Server fehlt.' },
       { status: 500 }
@@ -42,19 +38,17 @@ export async function POST(request: NextRequest) {
 
     // Validierung
     if (!email || typeof email !== 'string') {
-
       return NextResponse.json({ error: 'Ungültige E-Mail-Adresse.' }, { status: 400 });
     }
 
     if (!firebaseUserId || typeof firebaseUserId !== 'string') {
-
       return NextResponse.json({ error: 'Ungültige Benutzer-ID.' }, { status: 400 });
     }
 
     // Prüfe zuerst in Firebase, ob bereits eine Stripe Customer ID existiert
     let existingStripeCustomerId: string | null = null;
     try {
-      const userDocRef = db.collection('users').doc(firebaseUserId);
+      const userDocRef = db!.collection('users').doc(firebaseUserId);
       const userDocSnap = await userDocRef.get();
 
       if (userDocSnap.exists) {
@@ -62,12 +56,10 @@ export async function POST(request: NextRequest) {
         existingStripeCustomerId = userData?.stripeCustomerId || null;
 
         if (existingStripeCustomerId && existingStripeCustomerId.startsWith('cus_')) {
-
           // Validiere, dass der Customer in Stripe noch existiert
           try {
             const existingCustomer = await stripe.customers.retrieve(existingStripeCustomerId);
             if (existingCustomer && !existingCustomer.deleted) {
-
               return NextResponse.json({
                 success: true,
                 stripeCustomerId: existingStripeCustomerId,
@@ -75,14 +67,11 @@ export async function POST(request: NextRequest) {
               });
             }
           } catch (stripeError) {
-
             existingStripeCustomerId = null;
           }
         }
       }
-    } catch (firebaseError) {
-
-    }
+    } catch (firebaseError) {}
 
     // Erstelle neuen Stripe Customer
 
@@ -117,15 +106,16 @@ export async function POST(request: NextRequest) {
 
     // Speichere die Customer ID in Firebase
     try {
-      const userDocRef = db.collection('users').doc(firebaseUserId);
-      await userDocRef.set({
-        stripeCustomerId: customer.id,
-        stripeCustomerCreatedAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-
+      const userDocRef = db!.collection('users').doc(firebaseUserId);
+      await userDocRef.set(
+        {
+          stripeCustomerId: customer.id,
+          stripeCustomerCreatedAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
     } catch (firestoreError) {
-
       // Continue even if Firestore update fails, as the Stripe customer was created successfully
     }
 
@@ -141,7 +131,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-
     let errorMessage = 'Interner Serverfehler beim Erstellen des Stripe Customers.';
 
     if (error instanceof Stripe.errors.StripeError) {

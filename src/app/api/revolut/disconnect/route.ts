@@ -17,7 +17,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
       // Get company data
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
@@ -41,7 +41,7 @@ export async function DELETE(request: NextRequest) {
       }
 
       // Log disconnection for audit purposes
-      await db.collection('revolut_disconnections').add({
+      await db!.collection('revolut_disconnections').add({
         userId,
         companyEmail: companyData?.email,
         connectionId: connectionId || 'all_connections',
@@ -67,7 +67,7 @@ export async function DELETE(request: NextRequest) {
 
       updateData['updatedAt'] = new Date().toISOString();
 
-      await db.collection('companies').doc(userId).update(updateData);
+      await db!.collection('companies').doc(userId).update(updateData);
 
       return NextResponse.json({
         success: true,

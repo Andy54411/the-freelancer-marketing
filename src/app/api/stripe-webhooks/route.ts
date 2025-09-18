@@ -1,7 +1,7 @@
 // src/app/api/stripe-webhooks/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { db, admin } from '@/firebase/server';
+import { db, admin, isFirebaseAvailable } from '@/firebase/server';
 import { OrderNotificationService } from '../../../lib/order-notifications';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
@@ -29,6 +29,15 @@ const stripe = stripeSecretKey
   : null;
 
 export async function POST(req: NextRequest, companyId: string) {
+  // Check if Firebase is properly initialized
+  if (!isFirebaseAvailable() || !db) {
+    console.error('Firebase not initialized');
+    return NextResponse.json(
+      { received: false, error: 'Service temporarily unavailable' },
+      { status: 503 }
+    );
+  }
+
   if (!stripe) {
     const errorKey = 'stripe_not_configured';
     if (shouldLogError(errorKey)) {
@@ -102,9 +111,9 @@ export async function POST(req: NextRequest, companyId: string) {
 
           try {
             const entryIdsList = entryIds.split(',');
-            const orderRef = db.collection('auftraege').doc(orderId);
+            const orderRef = db!.collection('auftraege').doc(orderId);
 
-            await db.runTransaction(async transaction => {
+            await db!.runTransaction(async transaction => {
               const orderSnapshot = await transaction.get(orderRef);
 
               if (!orderSnapshot.exists) {
@@ -210,9 +219,9 @@ export async function POST(req: NextRequest, companyId: string) {
 
           try {
             const entryIdsList = entryIds.split(',');
-            const orderRef = db.collection('auftraege').doc(orderId);
+            const orderRef = db!.collection('auftraege').doc(orderId);
 
-            await db.runTransaction(async transaction => {
+            await db!.runTransaction(async transaction => {
               const orderSnapshot = await transaction.get(orderRef);
 
               if (!orderSnapshot.exists) {
@@ -277,7 +286,7 @@ export async function POST(req: NextRequest, companyId: string) {
               const companyReceives = paymentIntentSucceeded.metadata?.companyReceives;
 
               if (providerStripeAccountId && companyReceives) {
-                const companyRef = db
+                const companyRef = db!
                   .collection('users')
                   .where('anbieterStripeAccountId', '==', providerStripeAccountId)
                   .limit(1);
@@ -343,7 +352,7 @@ export async function POST(req: NextRequest, companyId: string) {
                   // ✅ KONTROLLIERTE PAYOUTS: Markiere Additional Hours für manuelle Auszahlung
 
                   // Update Order mit Additional Hours Payout Info
-                  const orderRef = db.collection('auftraege').doc(orderId);
+                  const orderRef = db!.collection('auftraege').doc(orderId);
                   await orderRef.update({
                     additionalHoursPayoutAmount:
                       admin.firestore.FieldValue.increment(transferAmount),
@@ -387,7 +396,7 @@ export async function POST(req: NextRequest, companyId: string) {
                   // Aber versuche einen Retry-Mechanismus zu implementieren
                   try {
                     // Speichere failed transfer für später retry
-                    await db.collection('failedTransfers').add({
+                    await db!.collection('failedTransfers').add({
                       orderId: orderId,
                       paymentIntentId: paymentIntentSucceeded.id,
                       providerStripeAccountId: providerStripeAccountId,
@@ -443,13 +452,13 @@ export async function POST(req: NextRequest, companyId: string) {
 
           try {
             // CREATE B2B ORDER IN WEBHOOK (wie bei B2C-Orders)
-            const auftragCollectionRef = db.collection('auftraege');
+            const auftragCollectionRef = db!.collection('auftraege');
 
             // Definiere Variablen außerhalb der Transaction
             const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const totalAmountCents = paymentIntentSucceeded.amount;
 
-            await db.runTransaction(async transaction => {
+            await db!.runTransaction(async transaction => {
               // Berechne B2B-spezifische Daten
               const platformFeeAmount = paymentIntentSucceeded.application_fee_amount || 0;
               const providerReceives = totalAmountCents - platformFeeAmount;
@@ -599,7 +608,11 @@ export async function POST(req: NextRequest, companyId: string) {
 
           try {
             // Handle quote -> order conversion directly in webhook
-            const quoteRef = db.collection('companies').doc(companyId).collection('quotes').doc(quoteId);
+            const quoteRef = db!
+              .collection('companies')
+              .doc(companyId)
+              .collection('quotes')
+              .doc(quoteId);
             const quoteDoc = await quoteRef.get();
 
             if (!quoteDoc.exists) {
@@ -692,9 +705,9 @@ export async function POST(req: NextRequest, companyId: string) {
             };
 
             // Save order
-            await db.collection('auftraege').doc(orderId).set(orderData);
+            await db!.collection('auftraege').doc(orderId).set(orderData);
             // Save order
-            await db.collection('auftraege').doc(orderId).set(orderData);
+            await db!.collection('auftraege').doc(orderId).set(orderData);
 
             // Update quote status - OLD WAY (update proposals array in main doc)
             const updatedProposals = Array.isArray(proposals) ? [...proposals] : { ...proposals };
@@ -863,7 +876,7 @@ export async function POST(req: NextRequest, companyId: string) {
             };
 
             // Save Mobile B2C order
-            await db.collection('auftraege').doc(orderId).set(mobileOrderData);
+            await db!.collection('auftraege').doc(orderId).set(mobileOrderData);
 
             return NextResponse.json({
               received: true,
@@ -896,14 +909,14 @@ export async function POST(req: NextRequest, companyId: string) {
         }
 
         try {
-          const tempJobDraftRef = db.collection('temporaryJobDrafts').doc(tempJobDraftId);
-          const auftragCollectionRef = db.collection('auftraege');
+          const tempJobDraftRef = db!.collection('temporaryJobDrafts').doc(tempJobDraftId);
+          const auftragCollectionRef = db!.collection('auftraege');
 
           // Definiere Variablen außerhalb der Transaction für Notifications
           let newOrderId: string = '';
           let orderData: any = null;
 
-          await db.runTransaction(async transaction => {
+          await db!.runTransaction(async transaction => {
             const tempJobDraftSnapshot = await transaction.get(tempJobDraftRef);
 
             if (tempJobDraftSnapshot.data()?.status === 'converted') {

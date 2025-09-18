@@ -25,20 +25,18 @@ export async function POST(request: NextRequest) {
     let stripeAccountId: string | null = null;
 
     // Zuerst users collection
-    const userDoc = await db.collection('users').doc(firebaseUserId).get();
+    const userDoc = await db!.collection('users').doc(firebaseUserId).get();
     if (userDoc.exists) {
       const userData = userDoc.data();
       stripeAccountId = userData?.stripeAccountId;
-
     }
 
-        // Fallback: users collection
+    // Fallback: users collection
     if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
-      const companyDoc = await db.collection('users').doc(firebaseUserId).get();
+      const companyDoc = await db!.collection('users').doc(firebaseUserId).get();
       if (companyDoc.exists) {
         const companyData = companyDoc.data();
         stripeAccountId = companyData?.stripeAccountId;
-
       }
     }
 
@@ -59,7 +57,7 @@ export async function POST(request: NextRequest) {
         firebaseUserId,
         type: 'simple_emergency_transfer',
         reason: 'Manual transfer for stuck pending balance',
-        transferDate: new Date().toISOString()
+        transferDate: new Date().toISOString(),
       },
       description: `Emergency Transfer für User ${firebaseUserId} - €${(amount / 100).toFixed(2)}`,
     });
@@ -73,16 +71,14 @@ export async function POST(request: NextRequest) {
       firebaseUserId,
       created: transfer.created,
       description: transfer.description,
-      message: 'Transfer erfolgreich ausgeführt!'
+      message: 'Transfer erfolgreich ausgeführt!',
     });
-
   } catch (error: any) {
-
     return NextResponse.json(
       {
         error: 'Transfer fehlgeschlagen',
         details: error.message,
-        code: error.code
+        code: error.code,
       },
       { status: 500 }
     );

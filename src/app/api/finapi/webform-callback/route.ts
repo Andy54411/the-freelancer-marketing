@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (status === 'completed' || status === 'success') {
       try {
         // Get company data
-        const companyDoc = await db.collection('companies').doc(userId).get();
+        const companyDoc = await db!.collection('companies').doc(userId).get();
         if (!companyDoc.exists) {
           return NextResponse.json({ error: 'Company not found' }, { status: 404 });
         }
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get connection status from Firestore
-    const connectionDoc = await db.collection('finapi_connections').doc(userId).get();
+    const connectionDoc = await db!.collection('finapi_connections').doc(userId).get();
 
     if (connectionDoc.exists) {
       const connectionData = connectionDoc.data();

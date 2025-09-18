@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, auth } from '@/firebase/server';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+  companyId: string
+) {
   const { uid } = await params;
 
   try {
@@ -40,13 +44,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     let customerEmail: string | undefined;
 
     // Try companies collection first (for B2B)
-    const companyDoc = await db.collection('companies').doc(uid).get();
+    const companyDoc = await db!.collection('companies').doc(uid).get();
     if (companyDoc.exists) {
       const companyData = companyDoc.data();
       customerEmail = companyData?.email || companyData?.ownerEmail;
     } else {
       // Fallback to users collection (for B2C)
-      const userDoc = await db.collection('users').doc(uid).get();
+      const userDoc = await db!.collection('users').doc(uid).get();
       if (userDoc.exists) {
         const userData = userDoc.data();
         customerEmail = userData?.email;
@@ -66,14 +70,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     try {
       // First try to find by customerUid (more reliable)
       quotesSnapshot = await db
-        .collection('companies').doc(companyId).collection('quotes')
+        .collection('companies')
+        .doc(companyId)
+        .collection('quotes')
         .where('customerUid', '==', uid)
         .orderBy('createdAt', 'desc')
         .get();
     } catch (error) {
       // Fallback to customerEmail query
       quotesSnapshot = await db
-        .collection('companies').doc(companyId).collection('quotes')
+        .collection('companies')
+        .doc(companyId)
+        .collection('quotes')
         .where('customerEmail', '==', customerEmail)
         .orderBy('createdAt', 'desc')
         .get();
@@ -83,7 +91,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (quotesSnapshot.docs.length === 0) {
       try {
         const fallbackSnapshot = await db
-          .collection('companies').doc(companyId).collection('quotes')
+          .collection('companies')
+          .doc(companyId)
+          .collection('quotes')
           .where('customerEmail', '==', customerEmail)
           .orderBy('createdAt', 'desc')
           .get();
@@ -120,7 +130,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         // ALWAYS check subcollection for proposals, regardless of proposalsInSubcollection flag
 
         const proposalsSnapshot = await db
-          .collection('companies').doc(companyId).collection('quotes')
+          .collection('companies')
+          .doc(companyId)
+          .collection('quotes')
           .doc(doc.id)
           .collection('proposals')
           .get();
@@ -154,7 +166,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
       if (quoteData.providerId) {
         // FIXED: First try companies collection, then users as fallback
-        const companyDoc = await db.collection('companies').doc(quoteData.providerId).get();
+        const companyDoc = await db!.collection('companies').doc(quoteData.providerId).get();
         if (companyDoc.exists) {
           const companyData = companyDoc.data();
           // It's a company from companies collection

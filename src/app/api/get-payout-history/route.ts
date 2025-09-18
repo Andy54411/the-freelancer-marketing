@@ -87,14 +87,14 @@ export async function POST(request: NextRequest) {
     // Get Stripe Account ID from Firestore - try COMPANIES collection first
     let stripeAccountId: string | null = null;
 
-    const companyDoc = await db.collection('companies').doc(firebaseUserId).get();
+    const companyDoc = await db!.collection('companies').doc(firebaseUserId).get();
     if (companyDoc.exists) {
       stripeAccountId = (companyDoc.data() as any)?.stripeAccountId;
     }
 
     // Fallback: Try users collection
     if (!stripeAccountId) {
-      const userDoc = await db.collection('users').doc(firebaseUserId).get();
+      const userDoc = await db!.collection('users').doc(firebaseUserId).get();
       if (userDoc.exists) {
         stripeAccountId = (userDoc.data() as any)?.stripeAccountId;
       }

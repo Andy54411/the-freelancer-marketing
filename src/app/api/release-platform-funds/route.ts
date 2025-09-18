@@ -15,7 +15,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
     const { orderId, paymentIntentIds } = body;
 
@@ -35,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Hole Auftragsdaten
-    const orderRef = db.collection('auftraege').doc(orderId);
+    const orderRef = db!.collection('auftraege').doc(orderId);
     const orderDoc = await orderRef.get();
 
     if (!orderDoc.exists) {
@@ -83,7 +82,6 @@ export async function POST(request: NextRequest) {
     // Gehe durch alle PaymentIntents und erstelle Transfers an Provider
     for (const paymentIntentId of paymentIntentIds) {
       try {
-
         // Hole PaymentIntent Details um Provider Account ID zu bekommen
         const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
         const providerStripeAccountId = paymentIntent.metadata?.providerStripeAccountId;
@@ -119,7 +117,6 @@ export async function POST(request: NextRequest) {
           status: 'completed', // Transfers sind normalerweise sofort completed
         });
       } catch (error: any) {
-
         failedTransfers.push({
           paymentIntentId,
           error: error.message,
@@ -192,13 +189,10 @@ export async function POST(request: NextRequest) {
     let errorMessage = 'Interner Serverfehler beim Freigeben der Platform-Gelder.';
 
     if (error instanceof Stripe.errors.StripeError) {
-
       errorMessage = `Stripe Platform-Freigabe Fehler: ${error.message}`;
     } else if (error instanceof Error) {
-
       errorMessage = `Platform-Freigabe Fehler: ${error.message}`;
     } else {
-
     }
 
     return NextResponse.json(

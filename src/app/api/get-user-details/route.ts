@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     for (const userId of userIds) {
       try {
-        const userDoc = await db.collection('users').doc(userId).get();
+        const userDoc = await db!.collection('users').doc(userId).get();
 
         if (userDoc.exists) {
           const userData = userDoc.data();
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
     const db = await getFirebaseDb();
 
     // Try users collection first
-    let userDoc = await db.collection('users').doc(uid).get();
+    let userDoc = await db!.collection('users').doc(uid).get();
     let userData: any = null;
     let source = 'users';
 
@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
       userData = userDoc.data();
     } else {
       // Fallback: try companies collection
-      userDoc = await db.collection('companies').doc(uid).get();
+      userDoc = await db!.collection('companies').doc(uid).get();
       if (userDoc.exists) {
         userData = userDoc.data();
         source = 'companies';

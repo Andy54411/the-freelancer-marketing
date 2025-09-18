@@ -12,20 +12,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
  */
 export async function POST(request: NextRequest) {
   try {
-
     const body = await request.json();
     const { orderId, forceRelease = false } = body;
 
     // Validierung
     if (!orderId) {
-      return NextResponse.json(
-        { error: 'orderId ist erforderlich.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'orderId ist erforderlich.' }, { status: 400 });
     }
 
     // Hole Auftragsdaten
-    const orderRef = db.collection('auftraege').doc(orderId);
+    const orderRef = db!.collection('auftraege').doc(orderId);
     const orderDoc = await orderRef.get();
 
     if (!orderDoc.exists) {
@@ -53,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Provider ID nicht gefunden.' }, { status: 404 });
     }
 
-    const providerDoc = await db.collection('users').doc(providerId).get();
+    const providerDoc = await db!.collection('users').doc(providerId).get();
     if (!providerDoc.exists) {
       return NextResponse.json({ error: 'Provider nicht gefunden.' }, { status: 404 });
     }
@@ -85,9 +81,9 @@ export async function POST(request: NextRequest) {
       if (
         entry.category === 'additional' &&
         (entry.status === 'billing_pending' ||
-         entry.status === 'customer_approved' ||
-         entry.billingStatus === 'paid' ||
-         entry.paymentIntentId) && // Hat PaymentIntent = wurde bezahlt
+          entry.status === 'customer_approved' ||
+          entry.billingStatus === 'paid' ||
+          entry.paymentIntentId) && // Hat PaymentIntent = wurde bezahlt
         !entry.transferId && // Aber noch nicht transferiert
         !entry.transferredAt
       ) {
@@ -100,7 +96,7 @@ export async function POST(request: NextRequest) {
           paymentIntentId: entry.paymentIntentId,
           hours,
           amount,
-          status: entry.status
+          status: entry.status,
         });
 
         totalPendingAmount += amount;
@@ -111,7 +107,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         message: 'Keine ausstehenden Transfers für diesen Legacy-Auftrag gefunden.',
         orderId,
-        status: 'no_pending_transfers'
+        status: 'no_pending_transfers',
       });
     }
 
@@ -128,7 +124,6 @@ export async function POST(request: NextRequest) {
 
     try {
       if (totalPendingAmount > 0) {
-
         // Erstelle Transfer vom Platform Account zum Provider Account
         const transfer = await stripe.transfers.create({
           amount: totalPendingAmount,
@@ -140,7 +135,7 @@ export async function POST(request: NextRequest) {
             entryCount: pendingTransfers.length.toString(),
             entryIds: pendingTransfers.map(t => t.entryId).join(','),
             originalOrderDate: orderData.createdAt || 'unknown',
-            legacyFix: 'true'
+            legacyFix: 'true',
           },
           description: `Legacy-Freigabe für Auftrag ${orderId} - ${pendingTransfers.length} Einträge (${(totalPendingAmount / 100).toFixed(2)} EUR)`,
         });
@@ -150,16 +145,15 @@ export async function POST(request: NextRequest) {
           completedTransfers.push({
             entryId: pendingTransfer.entryId,
             transferId: transfer.id,
-            amount: pendingTransfer.amount
+            amount: pendingTransfer.amount,
           });
         });
       }
     } catch (error: any) {
-
       pendingTransfers.forEach(pendingTransfer => {
         failedTransfers.push({
           entryId: pendingTransfer.entryId,
-          error: error.message
+          error: error.message,
         });
       });
     }
@@ -177,7 +171,7 @@ export async function POST(request: NextRequest) {
             transferId: completedTransfer.transferId,
             transferredAt: new Date().toISOString(),
             legacyTransfer: true,
-            transferNote: 'Legacy order transfer - manual release'
+            transferNote: 'Legacy order transfer - manual release',
           };
         }
         return entry;
@@ -188,9 +182,8 @@ export async function POST(request: NextRequest) {
         'timeTracking.timeEntries': updatedTimeEntries,
         'timeTracking.legacyReleaseCompleted': true,
         'timeTracking.legacyReleaseAt': new Date().toISOString(),
-        'timeTracking.lastUpdated': new Date().toISOString()
+        'timeTracking.lastUpdated': new Date().toISOString(),
       });
-
     }
 
     const response = {
@@ -201,13 +194,11 @@ export async function POST(request: NextRequest) {
       completedTransfers: completedTransfers.length,
       failedTransfers: failedTransfers.length,
       transfers: completedTransfers,
-      errors: failedTransfers
+      errors: failedTransfers,
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Unerwarteter Fehler bei Legacy-Order-Release.' },
       { status: 500 }

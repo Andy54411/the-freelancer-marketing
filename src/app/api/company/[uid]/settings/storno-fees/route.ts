@@ -139,7 +139,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
     }
 
     // Hole Unternehmenseinstellungen aus der companies Collection
-    const companyRef = db.collection('companies').doc(uid);
+    const companyRef = db!.collection('companies').doc(uid);
     const companyDoc = await companyRef.get();
 
     if (!companyDoc.exists) {
@@ -155,7 +155,7 @@ export async function GET(request: NextRequest, { params }: { params: { uid: str
     let orderAnalysis: any = null;
     if (orderId) {
       try {
-        const orderRef = db.collection('auftraege').doc(orderId);
+        const orderRef = db!.collection('auftraege').doc(orderId);
         const orderDoc = await orderRef.get();
 
         if (orderDoc.exists) {
@@ -203,7 +203,7 @@ export async function PUT(request: NextRequest, { params }: { params: { uid: str
     }
 
     // Prüfe ob Unternehmen existiert in companies Collection
-    const companyRef = db.collection('companies').doc(uid);
+    const companyRef = db!.collection('companies').doc(uid);
     const companyDoc = await companyRef.get();
 
     if (!companyDoc.exists) {

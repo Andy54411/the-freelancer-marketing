@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Speichere in Firestore
-    const docRef = await db.collection('project_requests').add(projectRequestData);
+    const docRef = await db!.collection('project_requests').add(projectRequestData);
 
     // ERWEITERTE NOTIFICATION LOGIK: Handle selectedProviders + public notifications
     if (selectedProviders.length > 0) {
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       try {
         const directNotificationPromises = selectedProviders.map(async providerId => {
           try {
-            await db.collection('notifications').add({
+            await db!.collection('notifications').add({
               userId: providerId,
               type: 'direct_project_assignment',
               title: 'Direktzuweisung: Neues Projekt',
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
               }
 
               // Erstelle Firestore-Notification für jedes relevante Unternehmen
-              await db.collection('notifications').add({
+              await db!.collection('notifications').add({
                 userId: companyDoc.id,
                 type: 'new_project_available',
                 title: 'Neue Projektanfrage verfügbar',
@@ -263,7 +263,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    let query = db.collection('project_requests').where('isActive', '==', true);
+    let query = db!.collection('project_requests').where('isActive', '==', true);
 
     // Filter nach Kunde
     if (customerUid) {

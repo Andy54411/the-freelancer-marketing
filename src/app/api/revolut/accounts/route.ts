@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     try {
       // First try to get stored accounts from Firestore
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({
@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
       });
     } catch (apiError: any) {
       // Try to return stored data as fallback
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
       const companyData = companyDoc.data();
       const revolutAccounts = companyData?.revolut_accounts || {};
 

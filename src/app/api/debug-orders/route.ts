@@ -3,8 +3,7 @@ import { db } from '../../../firebase/server';
 
 export async function GET() {
   try {
-
-    const auftraegeSnapshot = await db.collection('auftraege').limit(10).get();
+    const auftraegeSnapshot = await db!.collection('auftraege').limit(10).get();
     const auftraege: any[] = [];
     auftraegeSnapshot.forEach(doc => {
       auftraege.push({
@@ -13,7 +12,7 @@ export async function GET() {
       });
     });
 
-    const ordersSnapshot = await db.collection('orders').limit(10).get();
+    const ordersSnapshot = await db!.collection('orders').limit(10).get();
     const orders: any[] = [];
     ordersSnapshot.forEach(doc => {
       orders.push({
@@ -34,7 +33,6 @@ export async function GET() {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'orderId required' }, { status: 400 });
     }
 
-    const orderRef = db.collection('auftraege').doc(orderId);
+    const orderRef = db!.collection('auftraege').doc(orderId);
     const orderDoc = await orderRef.get();
 
     if (!orderDoc.exists) {
@@ -65,7 +65,6 @@ export async function POST(req: NextRequest) {
           : 'Status already correct',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Failed to fix time tracking status',

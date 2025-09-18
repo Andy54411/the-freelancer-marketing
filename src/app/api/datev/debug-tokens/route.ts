@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const isExpired = now > expiresAt;
 
     // Check company connection status
-    const companyDoc = await db.collection('users').doc(companyId).get();
+    const companyDoc = await db!.collection('users').doc(companyId).get();
     const companyData = companyDoc.data();
     const datevStatus = companyData?.datev || {};
 
@@ -68,7 +68,6 @@ export async function GET(request: NextRequest) {
         : ['Token appears valid', 'Try using the token for API calls'],
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         success: false,

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const db = await getFirebaseDb();
 
     // Direkte Abfrage der users Collection
-    const userDoc = await db.collection('users').doc(firebaseUserId).get();
+    const userDoc = await db!.collection('users').doc(firebaseUserId).get();
 
     if (!userDoc.exists) {
       return NextResponse.json(
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     // Auch stripe_accounts collection checken
     let stripeAccountData: any = null;
     try {
-      const stripeAccountDoc = await db.collection('stripe_accounts').doc(firebaseUserId).get();
+      const stripeAccountDoc = await db!.collection('stripe_accounts').doc(firebaseUserId).get();
       if (stripeAccountDoc.exists) {
         stripeAccountData = stripeAccountDoc.data();
       }
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
     const db = await getFirebaseDb();
 
     // Use same logic as POST but with query parameter
-    const userDoc = await db.collection('users').doc(uid).get();
+    const userDoc = await db!.collection('users').doc(uid).get();
 
     let userData: any = null;
     if (userDoc.exists) {

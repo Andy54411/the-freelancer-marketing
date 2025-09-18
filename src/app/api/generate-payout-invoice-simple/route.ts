@@ -17,7 +17,7 @@ async function getStripeAccountId(firebaseUserId: string): Promise<string | null
 
   try {
     // Lade User-Dokument direkt mit Firebase UID
-    const userDoc = await db.collection('users').doc(firebaseUserId).get();
+    const userDoc = await db!.collection('users').doc(firebaseUserId).get();
     if (userDoc.exists) {
       const data = userDoc.data();
       // Verwende die echte Datenbank-Struktur
@@ -26,7 +26,6 @@ async function getStripeAccountId(firebaseUserId: string): Promise<string | null
 
     return null;
   } catch (error) {
-
     return null;
   }
 }
@@ -43,7 +42,6 @@ async function calculatePlatformFeeFromRate(grossAmount: number): Promise<number
 }
 
 export async function POST(request: NextRequest) {
-
   try {
     const body = await request.json();
     const { firebaseUserId, payoutId } = body;
@@ -66,19 +64,16 @@ export async function POST(request: NextRequest) {
         address: 'Siedlung am Wald 6, 18586 Sellin',
         taxId: 'DE123456789',
       };
-
     } else {
       try {
-
         // Versuche zuerst users Collection
-        const userDoc = await db.collection('users').doc(firebaseUserId).get();
+        const userDoc = await db!.collection('users').doc(firebaseUserId).get();
         let data: any = null;
         let foundIn: string | null = null;
 
         if (userDoc.exists) {
           data = userDoc.data();
           foundIn = 'users';
-
         }
 
         if (data) {
@@ -125,13 +120,9 @@ export async function POST(request: NextRequest) {
             address: companyAddress,
             taxId: taxId,
           };
-
         } else {
-
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     }
 
     // 2. Lade echte Payout-Daten aus Stripe
@@ -151,15 +142,13 @@ export async function POST(request: NextRequest) {
         let calculatedPlatformFee = null;
 
         try {
-          const payoutDoc = await db.collection('payouts').doc(payoutId).get();
+          const payoutDoc = await db!.collection('payouts').doc(payoutId).get();
           if (payoutDoc.exists) {
             const payoutData = payoutDoc.data();
             originalAmount = payoutData?.originalAmount;
             calculatedPlatformFee = payoutData?.platformFee;
           }
-        } catch (error) {
-
-        }
+        } catch (error) {}
 
         // Verwende Stripe-Metadaten oder Firestore-Daten
         const metadata = stripePayout.metadata;
@@ -182,12 +171,10 @@ export async function POST(request: NextRequest) {
           arrival_date: stripePayout.arrival_date,
           description: 'Stripe Connect Auszahlung',
         };
-
       } else {
         throw new Error('Stripe Account ID not found');
       }
     } catch (error) {
-
       // Fallback zu bekannten Test-Daten
       if (payoutId === 'po_1RkQJWD7xuklQu0n3i5465D4') {
         payout = {
@@ -635,7 +622,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Generieren der Rechnung',

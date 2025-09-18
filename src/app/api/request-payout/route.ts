@@ -8,7 +8,6 @@ function getStripeInstance() {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-
     return null;
   }
 
@@ -18,10 +17,8 @@ function getStripeInstance() {
 }
 
 export async function POST(request: NextRequest) {
-
   const stripe = getStripeInstance();
   if (!stripe) {
-
     return NextResponse.json(
       { error: 'Stripe-Konfiguration auf dem Server fehlt.' },
       { status: 500 }
@@ -33,34 +30,30 @@ export async function POST(request: NextRequest) {
     const { firebaseUserId, amount } = body;
 
     if (!firebaseUserId || typeof firebaseUserId !== 'string') {
-
       return NextResponse.json({ error: 'Ungültige Firebase User ID.' }, { status: 400 });
     }
 
     if (!amount || typeof amount !== 'number' || amount <= 0) {
-
       return NextResponse.json({ error: 'Ungültiger Betrag.' }, { status: 400 });
     }
 
     // Hole die Stripe Account ID aus der Firestore - suche in users Collection zuerst
-    const userDoc = await db.collection('users').doc(firebaseUserId).get();
+    const userDoc = await db!.collection('users').doc(firebaseUserId).get();
     let userData: any = null;
     let stripeAccountId: string | null = null;
 
     if (userDoc.exists) {
       userData = userDoc.data() as any;
       stripeAccountId = userData?.stripeAccountId;
-
     }
 
     // Fallback: Suche in users Collection
     if (!stripeAccountId || !stripeAccountId.startsWith('acct_')) {
-      const companyDocRef = db.collection('users').doc(firebaseUserId);
+      const companyDocRef = db!.collection('users').doc(firebaseUserId);
       const companyDoc = await companyDocRef.get();
       if (companyDoc.exists) {
         const companyData = companyDoc.data();
         stripeAccountId = companyData?.stripeAccountId;
-
       }
     }
 
@@ -70,10 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Prüfe verfügbares Guthaben vor Auszahlung
     if (!stripeAccountId) {
-      return NextResponse.json(
-        { error: 'Kein Stripe Account verfügbar' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Kein Stripe Account verfügbar' }, { status: 400 });
     }
 
     const balance = await stripe.balance.retrieve(undefined, {
@@ -84,7 +74,6 @@ export async function POST(request: NextRequest) {
     const availableBalance = eurBalance ? eurBalance.amount : 0;
 
     if (availableBalance < amount) {
-
       return NextResponse.json(
         {
           error: 'Unzureichendes Guthaben für diese Auszahlung.',
@@ -132,9 +121,7 @@ export async function POST(request: NextRequest) {
             note: 'Application fee already transferred to platform account',
           },
         });
-
     } catch (firestoreError) {
-
       // Continue even if Firestore save fails
     }
 
@@ -149,7 +136,6 @@ export async function POST(request: NextRequest) {
       note: 'Plattformgebühr wurde bereits beim Payment als Application Fee an das Hauptkonto transferiert',
     });
   } catch (error) {
-
     let errorMessage = 'Interner Serverfehler bei der Auszahlung.';
 
     if (error instanceof Stripe.errors.StripeError) {

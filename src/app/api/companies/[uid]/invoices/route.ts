@@ -27,7 +27,11 @@ async function getFirebaseDb(companyId: string): Promise<any> {
  * API Route für Invoices
  * GET /api/companies/[uid]/invoices
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+  companyId: string
+) {
   try {
     const { uid } = await params;
 
@@ -41,7 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Lade Invoices aus Firestore
     const invoicesQuery = await db
       .collection('invoices')
-      
+
       .orderBy('createdAt', 'desc')
       .get();
 
@@ -86,7 +90,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
  * API Route für neue Invoice
  * POST /api/companies/[uid]/invoices
  */
-export async function POST(request: NextRequest, { params }: { params: Promise<{ uid: string }> }, companyId: string) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+  companyId: string
+) {
   try {
     const { uid } = await params;
     const body = await request.json();
@@ -105,7 +113,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!finalInvoiceNumber) {
       // 1. Lade Company-Einstellungen für lastInvoiceNumber
       try {
-        const companyDoc = await db.collection('companies').doc(uid).get();
+        const companyDoc = await db!.collection('companies').doc(uid).get();
         const companyData = companyDoc.data();
         const lastInvoiceNumber = companyData?.step3?.lastInvoiceNumber;
 
@@ -126,7 +134,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           const testNumber = `R-${currentYear}-${sequentialNumber.toString().padStart(3, '0')}`;
           const existingInvoice = await db
             .collection('invoices')
-            
+
             .where('invoiceNumber', '==', testNumber)
             .limit(1)
             .get();
@@ -140,7 +148,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         }
 
         // 4. Update Company lastInvoiceNumber
-        await db.collection('companies').doc(uid).update({
+        await db!.collection('companies').doc(uid).update({
           'step3.lastInvoiceNumber': finalInvoiceNumber,
         });
       } catch (error) {
@@ -183,7 +191,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('invoices').add(newInvoice);
+    const docRef = await db!.collection('invoices').add(newInvoice);
 
     return NextResponse.json({
       success: true,

@@ -10,14 +10,11 @@ export async function GET(request: NextRequest) {
     const firebaseUserId = searchParams.get('uid');
 
     if (!firebaseUserId) {
-      return NextResponse.json(
-        { error: 'uid Parameter ist erforderlich.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'uid Parameter ist erforderlich.' }, { status: 400 });
     }
 
     // Direkt aus users collection
-    const userDoc = await db.collection('users').doc(firebaseUserId).get();
+    const userDoc = await db!.collection('users').doc(firebaseUserId).get();
 
     if (!userDoc.exists) {
       return NextResponse.json(
@@ -44,12 +41,10 @@ export async function GET(request: NextRequest) {
         email: userData?.email,
         firstName: userData?.firstName,
         lastName: userData?.lastName,
-        step1: userData?.step1
-      }
+        step1: userData?.step1,
+      },
     });
-
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Laden der Account-Informationen.' },
       { status: 500 }

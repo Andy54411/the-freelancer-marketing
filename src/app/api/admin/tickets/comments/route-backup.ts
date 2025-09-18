@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       Key: marshall({ id: ticketId }),
     });
 
-    const ticketResult = await dynamodb.send(getCommand);
+    const ticketResult = await dynamodb!.send(getCommand);
     if (!ticketResult.Item) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       ReturnValues: 'ALL_NEW',
     });
 
-    const result = await dynamodb.send(updateCommand);
+    const result = await dynamodb!.send(updateCommand);
     const updatedTicket = result.Attributes ? unmarshall(result.Attributes) : null;
 
     return NextResponse.json({
@@ -102,7 +102,6 @@ export async function POST(request: NextRequest) {
       message: 'Kommentar erfolgreich hinzugefügt',
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Hinzufügen des Kommentars', details: error.message },
       { status: 500 }
@@ -127,7 +126,7 @@ export async function GET(request: NextRequest) {
       Key: marshall({ id: ticketId }),
     });
 
-    const result = await dynamodb.send(getCommand);
+    const result = await dynamodb!.send(getCommand);
     if (!result.Item) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
@@ -144,7 +143,6 @@ export async function GET(request: NextRequest) {
       total: comments.length,
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Laden der Kommentare', details: error.message },
       { status: 500 }
@@ -172,7 +170,7 @@ export async function DELETE(request: NextRequest) {
       Key: marshall({ id: ticketId }),
     });
 
-    const ticketResult = await dynamodb.send(getCommand);
+    const ticketResult = await dynamodb!.send(getCommand);
     if (!ticketResult.Item) {
       return NextResponse.json({ error: 'Ticket nicht gefunden' }, { status: 404 });
     }
@@ -191,7 +189,7 @@ export async function DELETE(request: NextRequest) {
       ReturnValues: 'ALL_NEW',
     });
 
-    const result = await dynamodb.send(updateCommand);
+    const result = await dynamodb!.send(updateCommand);
     const updatedTicket = result.Attributes ? unmarshall(result.Attributes) : null;
 
     return NextResponse.json({
@@ -200,7 +198,6 @@ export async function DELETE(request: NextRequest) {
       message: 'Kommentar erfolgreich gelöscht',
     });
   } catch (error) {
-
     return NextResponse.json(
       { error: 'Fehler beim Löschen des Kommentars', details: error.message },
       { status: 500 }

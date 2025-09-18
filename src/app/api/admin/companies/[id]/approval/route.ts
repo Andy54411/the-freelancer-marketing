@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/server';
+import Stripe from 'stripe';
+import { db, isFirebaseAvailable } from '@/firebase/server';
 import { Timestamp } from 'firebase-admin/firestore';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
@@ -31,6 +32,15 @@ async function verifyAdminAuth(
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Check if Firebase is properly initialized
+    if (!isFirebaseAvailable() || !db) {
+      console.error('Firebase not initialized');
+      return NextResponse.json(
+        { success: false, error: 'Service temporarily unavailable' },
+        { status: 503 }
+      );
+    }
+
     // Verify admin authentication
     const authResult = await verifyAdminAuth(request);
     if (!authResult.isValid) {
@@ -95,10 +105,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Update in Firebase
-    await db.collection('companies').doc(companyId).update(updateData);
+    await db!.collection('companies').doc(companyId).update(updateData);
 
     // Log admin action for audit trail
-    await db.collection('admin_logs').add({
+    await db!.collection('admin_logs').add({
       action: `company_${action}`,
       adminId: adminUserId,
       targetId: companyId,
@@ -177,7 +187,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       };
 
       // Direkt in Firestore schreiben statt fetch
-      await db.collection('notifications').add(notificationData);
+      await db!.collection('notifications').add(notificationData);
 
       const globalNotificationResponse = { ok: true }; // Dummy response für bestehende Logik
 

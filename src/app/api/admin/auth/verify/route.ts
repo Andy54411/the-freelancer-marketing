@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       Key: marshall({ id: payload.email }),
     });
 
-    const result = await dynamodb.send(command);
+    const result = await dynamodb!.send(command);
 
     if (!result.Item) {
       return NextResponse.json({ error: 'Benutzer nicht gefunden' }, { status: 401 });
@@ -61,7 +61,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Authentifizierungsfehler' }, { status: 500 });
   }
 }

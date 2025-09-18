@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest) {
       const userId = decodedToken.uid;
 
       // Benachrichtigung abrufen und überprüfen, ob sie dem Benutzer gehört
-      const notificationRef = db.collection('notifications').doc(notificationId);
+      const notificationRef = db!.collection('notifications').doc(notificationId);
       const notificationDoc = await notificationRef.get();
 
       if (!notificationDoc.exists) {
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Batch-Update für bessere Performance
-      const batch = db.batch();
+      const batch = db!.batch();
       const readAt = new Date().toISOString();
 
       snapshot.docs.forEach(doc => {

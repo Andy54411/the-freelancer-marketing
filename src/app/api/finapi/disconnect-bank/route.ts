@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Get company data
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({ error: 'Company not found' }, { status: 404 });
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if connection exists
-      const connectionDoc = await db.collection('finapi_connections').doc(userId).get();
+      const connectionDoc = await db!.collection('finapi_connections').doc(userId).get();
 
       if (!connectionDoc.exists) {
         return NextResponse.json({
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       const connectionData = connectionDoc.data();
 
       // Log disconnection reason
-      await db.collection('finapi_disconnections').add({
+      await db!.collection('finapi_disconnections').add({
         userId,
         companyEmail,
         connectionId: connectionId || connectionData?.connectionId,
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Remove the connection
-      await db.collection('finapi_connections').doc(userId).delete();
+      await db!.collection('finapi_connections').doc(userId).delete();
 
       // Try to disconnect from finAPI (if real connection exists)
       let finapiDisconnected = false;

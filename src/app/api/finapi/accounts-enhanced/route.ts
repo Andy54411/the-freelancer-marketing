@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     try {
       // Get company data to retrieve email
-      const companyDoc = await db.collection('companies').doc(userId).get();
+      const companyDoc = await db!.collection('companies').doc(userId).get();
 
       if (!companyDoc.exists) {
         return NextResponse.json({
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       }
 
       // First check if we have stored connection info from WebForm
-      const connectionDoc = await db.collection('finapi_connections').doc(userId).get();
+      const connectionDoc = await db!.collection('finapi_connections').doc(userId).get();
       if (connectionDoc.exists) {
         const connectionData = connectionDoc.data();
 

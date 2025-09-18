@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, companyId: string) {
     }
 
     // Get the order
-    const orderRef = db.collection('auftraege').doc(orderId);
+    const orderRef = db!.collection('auftraege').doc(orderId);
     const orderSnapshot = await orderRef.get();
 
     if (!orderSnapshot.exists) {
@@ -19,7 +19,10 @@ export async function POST(req: NextRequest, companyId: string) {
     }
 
     const orderData = orderSnapshot.data()!;
-    const timeEntriesRef = orderRef.collection('companies').doc(companyId).collection('timeEntries');
+    const timeEntriesRef = orderRef
+      .collection('companies')
+      .doc(companyId)
+      .collection('timeEntries');
 
     // Find all time entries with this payment intent that are still billing_pending
     const timeEntriesSnapshot = await timeEntriesRef
@@ -39,7 +42,7 @@ export async function POST(req: NextRequest, companyId: string) {
     const entryIds: string[] = [];
 
     // Batch update all time entries
-    const batch = db.batch();
+    const batch = db!.batch();
 
     timeEntriesSnapshot.forEach(doc => {
       const entryRef = doc.ref;
@@ -82,7 +85,6 @@ export async function POST(req: NextRequest, companyId: string) {
       entryIds: entryIds,
     });
   } catch (error: unknown) {
-
     let errorMessage = 'Unknown error';
     if (error instanceof Error) {
       errorMessage = error.message;
@@ -101,13 +103,17 @@ export async function GET(req: NextRequest, companyId: string) {
   }
 
   try {
-    const orderRef = db.collection('auftraege').doc(orderId);
-    const timeEntriesSnapshot = await orderRef.collection('companies').doc(companyId).collection('timeEntries').get();
+    const orderRef = db!.collection('auftraege').doc(orderId);
+    const timeEntriesSnapshot = await orderRef
+      .collection('companies')
+      .doc(companyId)
+      .collection('timeEntries')
+      .get();
 
     const entries = timeEntriesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
-    })) as Array<{ id: string; status?: string; paymentIntentId?: string;[key: string]: any }>;
+    })) as Array<{ id: string; status?: string; paymentIntentId?: string; [key: string]: any }>;
 
     const pendingEntries = entries.filter(
       e =>
@@ -122,7 +128,6 @@ export async function GET(req: NextRequest, companyId: string) {
       entries: pendingEntries,
     });
   } catch (error: unknown) {
-
     let errorMessage = 'Unknown error';
     if (error instanceof Error) {
       errorMessage = error.message;

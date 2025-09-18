@@ -23,13 +23,12 @@ export async function POST(request: NextRequest) {
       try {
         await auth.verifyIdToken(idToken);
       } catch (authError) {
-
         return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
       }
     }
 
     // Get the order from Firestore
-    const orderDoc = await db.collection('auftraege').doc(orderId).get();
+    const orderDoc = await db!.collection('auftraege').doc(orderId).get();
 
     if (!orderDoc.exists) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -58,8 +57,7 @@ export async function POST(request: NextRequest) {
     try {
       const providerId = orderData?.selectedAnbieterId || orderData?.providerFirebaseUid;
       if (providerId) {
-
-        const providerDoc = await db.collection('users').doc(providerId).get();
+        const providerDoc = await db!.collection('users').doc(providerId).get();
         if (providerDoc.exists) {
           const providerData = providerDoc.data();
 
@@ -80,16 +78,13 @@ export async function POST(request: NextRequest) {
             providerData?.avatarUrl ||
             null;
         } else {
-
         }
       } else {
-
       }
 
       const customerId = orderData?.kundeId || orderData?.customerFirebaseUid;
       if (customerId) {
-
-        const customerDoc = await db.collection('users').doc(customerId).get();
+        const customerDoc = await db!.collection('users').doc(customerId).get();
         if (customerDoc.exists) {
           const customerData = customerDoc.data();
 
@@ -109,13 +104,10 @@ export async function POST(request: NextRequest) {
             customerData?.avatarUrl ||
             null;
         } else {
-
         }
       } else {
-
       }
     } catch (error) {
-
       // Continue with basic info from order
     }
 
@@ -125,7 +117,6 @@ export async function POST(request: NextRequest) {
       customer,
     });
   } catch (error) {
-
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
