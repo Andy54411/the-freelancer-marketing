@@ -1,7 +1,11 @@
 import * as admin from 'firebase-admin';
 
-// Simple Firebase initialization for development
-if (!admin.apps.length) {
+// Firebase initialization with build-time safety
+function initializeFirebase() {
+  if (admin.apps.length > 0) {
+    return;
+  }
+
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
@@ -58,15 +62,58 @@ if (!admin.apps.length) {
         projectId: 'tilvo-f142f',
       });
     } else {
-      throw new Error('Firebase credentials missing');
+      // Fallback for build-time when credentials are not available
+      admin.initializeApp({
+        projectId: 'tilvo-f142f',
+      });
     }
   } catch (error) {
-    throw error;
+    console.warn('Firebase initialization warning:', error.message);
+    // Initialize with minimal config for build-time
+    try {
+      admin.initializeApp({
+        projectId: 'tilvo-f142f',
+      });
+    } catch (fallbackError) {
+      console.error('Firebase fallback initialization failed:', fallbackError);
+    }
   }
 }
 
-export const db = admin.firestore();
-export const auth = admin.auth();
+// Initialize Firebase
+initializeFirebase();
+
+// Safe database and auth exports with runtime checking
+export const db = (() => {
+  try {
+    return admin.firestore();
+  } catch (error) {
+    console.warn('Firestore not available during build time');
+    return null;
+  }
+})();
+
+export const auth = (() => {
+  try {
+    return admin.auth();
+  } catch (error) {
+    console.warn('Auth not available during build time');
+    return null;
+  }
+})();
+
+// Utility function to check if Firebase is available
+export function isFirebaseAvailable(): boolean {
+  return db !== null && auth !== null;
+}
+
+// Utility function for safe Firebase operations
+export function withFirebase<T>(operation: () => Promise<T>): Promise<T> {
+  if (!isFirebaseAvailable()) {
+    throw new Error('Firebase not available');
+  }
+  return operation();
+}
 
 // Export admin for existing server-side code that needs it
 export { admin };

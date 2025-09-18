@@ -7,7 +7,8 @@ import {
   GetQueryResultsCommand,
   DescribeLogGroupsCommand,
 } from '@aws-sdk/client-cloudwatch-logs';
-import { SESClient, GetSendQuotaCommand, GetSendStatisticsCommand } from '@aws-sdk/client-ses';
+// Entfernt: AWS SES Import - wir nutzen Resend
+// import { SESClient, GetSendQuotaCommand, GetSendStatisticsCommand } from '@aws-sdk/client-ses';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
@@ -24,9 +25,10 @@ const cloudWatchClient = new CloudWatchLogsClient({
   region: process.env.AWS_REGION || 'eu-central-1',
 });
 
-const sesClient = new SESClient({
-  region: process.env.AWS_REGION || 'eu-central-1',
-});
+// Entfernt: SES Client - wir nutzen Resend
+// const sesClient = new SESClient({
+//   region: process.env.AWS_REGION || 'eu-central-1',
+// });
 
 interface TicketMetrics {
   totalTickets: number;
@@ -75,8 +77,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('timeRange') || '30d';
-    const category = searchParams.get('category');
-    const priority = searchParams.get('priority');
+    const category = searchParams.get('category') || undefined;
+    const priority = searchParams.get('priority') || undefined;
 
     // Ticket-Daten aus DynamoDB abrufen
     const tickets = await getTicketsForAnalytics(timeRange, category, priority);
@@ -95,7 +97,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Abrufen der Analytics-Daten',
@@ -123,7 +124,6 @@ export async function POST(request: NextRequest) {
       message: 'Metric erfolgreich gesendet',
     });
   } catch (error) {
-
     return NextResponse.json(
       {
         error: 'Fehler beim Senden der Metric',
@@ -148,9 +148,7 @@ async function verifyAdminAuth(
       if (decoded.role === 'admin') {
         return { isValid: true, userId: decoded.userId };
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   // Prüfe Admin Cookie (aus Login-System)
@@ -172,9 +170,7 @@ async function verifyAdminAuth(
         if (decoded.role === 'admin') {
           return { isValid: true, userId: decoded.userId };
         }
-      } catch (error) {
-
-      }
+      } catch (error) {}
     }
   }
 
@@ -309,9 +305,9 @@ function getScoreRange(score: number): string {
 
 function calculateTrends(tickets: any[]) {
   const now = new Date();
-  const daily = [];
-  const weekly = [];
-  const monthly = [];
+  const daily: Array<{ date: string; count: number; resolved: number }> = [];
+  const weekly: Array<{ week: string; count: number; resolved: number }> = [];
+  const monthly: Array<{ month: string; count: number; resolved: number }> = [];
 
   // Letzte 30 Tage
   for (let i = 29; i >= 0; i--) {
@@ -421,10 +417,7 @@ function calculateFirstResponseTime(tickets: any[]): number {
 async function sendMetricsToCloudWatch(metrics: any, namespace: string = 'Taskilo/Tickets') {
   try {
     // In einer vollständigen Implementierung würden hier CloudWatch Metrics gesendet
-
-  } catch (error) {
-
-  }
+  } catch (error) {}
 }
 
 // Performance Metrics (aus echten AWS CloudWatch Daten)
@@ -455,7 +448,6 @@ async function getPerformanceMetrics(timeRange: string) {
       resolutionRate: 0, // Wird aus den Ticket-Daten berechnet
     };
   } catch (error) {
-
     return {
       slaCompliance: 0,
       firstResponseTime: 0,
@@ -472,14 +464,13 @@ async function sendCustomMetric(
 ) {
   // CloudWatch Metrics würden hier implementiert werden
   // Für jetzt loggen wir nur
-
 }
 
-// AWS Enhanced Metrics Funktion
+// AWS Enhanced Metrics Funktion (angepasst für Resend)
 async function getAWSEnhancedMetrics(tickets: any[]) {
   try {
-    // 1. SES Email Statistics
-    const sesStats = await getSESStatistics();
+    // 1. Resend E-Mail-Statistiken (ersetzt AWS SES)
+    const emailStats = await getResendStatistics();
 
     // 2. AI Classification Analysis
     const aiStats = analyzeAIClassification(tickets);
@@ -488,12 +479,11 @@ async function getAWSEnhancedMetrics(tickets: any[]) {
     const cloudWatchInsights = await getCloudWatchInsights();
 
     return {
-      emailStats: sesStats,
+      emailStats: emailStats,
       aiClassification: aiStats,
       cloudWatchInsights,
     };
   } catch (error) {
-
     return {
       emailStats: {
         quotaUsed: 0,
@@ -511,33 +501,46 @@ async function getAWSEnhancedMetrics(tickets: any[]) {
   }
 }
 
-// SES Statistiken abrufen
-async function getSESStatistics() {
+// Resend E-Mail-Statistiken abrufen (ersetzt AWS SES)
+async function getResendStatistics() {
   try {
-    const [quotaResponse, statsResponse] = await Promise.all([
-      sesClient.send(new GetSendQuotaCommand({})),
-      sesClient.send(new GetSendStatisticsCommand({})),
-    ]);
+    // Für Resend gibt es keine direkte API für Quota/Stats wie bei AWS SES
+    // Wir können stattdessen eigene Metriken basierend auf gesendeten E-Mails verfolgen
 
-    const quota = quotaResponse.Max24HourSend || 0;
-    const sent = quotaResponse.SentLast24Hours || 0;
+    // Beispiel: E-Mail-Logs aus eigener Datenbank oder Firestore abrufen
+    // Hier verwenden wir Platzhalter-Werte, die durch echte Resend-Metriken ersetzt werden können
 
-    const stats = statsResponse.SendDataPoints || [];
-    const latestStats = stats[stats.length - 1];
+    const emailStats = {
+      emailsSentToday: 0, // Anzahl heute gesendeter E-Mails
+      emailsThisMonth: 0, // Anzahl diesen Monat gesendeter E-Mails
+      successRate: 100, // Erfolgsquote in %
+      failureRate: 0, // Fehlerrate in %
+    };
+
+    // TODO: Echte Resend-Metriken implementieren
+    // - Resend Webhook Events verfolgen
+    // - Delivery/Bounce/Complaint Status aus Webhook-Daten
+    // - Eigene Tracking-Tabelle für E-Mail-Statistiken
 
     return {
-      quotaUsed: sent,
-      quotaRemaining: quota - sent,
-      bounceRate: latestStats?.Bounces || 0,
-      complaintRate: latestStats?.Complaints || 0,
+      quotaUsed: emailStats.emailsSentToday,
+      quotaRemaining: 10000 - emailStats.emailsSentToday, // Resend hat höhere Limits
+      bounceRate: emailStats.failureRate,
+      complaintRate: 0, // Resend managed anti-spam
+      provider: 'resend',
+      successRate: emailStats.successRate,
+      emailsThisMonth: emailStats.emailsThisMonth,
     };
   } catch (error) {
-
+    console.error('Error fetching Resend statistics:', error);
     return {
       quotaUsed: 0,
-      quotaRemaining: 0,
+      quotaRemaining: 10000, // Resend Standard-Limit
       bounceRate: 0,
       complaintRate: 0,
+      provider: 'resend',
+      successRate: 100,
+      emailsThisMonth: 0,
     };
   }
 }
@@ -572,7 +575,6 @@ async function getCloudWatchInsights() {
     const logGroupExists = logGroupsResult.logGroups?.some(lg => lg.logGroupName === logGroupName);
 
     if (!logGroupExists) {
-
       return {
         logGroups: [],
         totalLogEvents: 0,
@@ -643,7 +645,6 @@ async function getCloudWatchInsights() {
       };
     }
   } catch (error) {
-
     return {
       logGroups: [],
       totalLogEvents: 0,

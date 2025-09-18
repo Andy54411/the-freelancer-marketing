@@ -30,6 +30,7 @@ import {
   Download,
   Image,
   FileImage,
+  RefreshCw,
 } from 'lucide-react';
 
 interface CompanyDetails {
@@ -91,6 +92,9 @@ interface CompanyDetails {
 
   // Bank und Finanzen
   iban?: string;
+  bic?: string;
+  bankName?: string;
+  bankCountry?: string;
   employees?: string;
   hourlyRate?: number;
   priceInput?: string;
@@ -114,6 +118,23 @@ interface CompanyDetails {
   // Bilder und Medien
   profilePictureURL?: string;
   profileBannerImage?: string;
+  profilePictureFirebaseUrl?: string;
+
+  // Portfolio und Projekte
+  portfolio?: Array<{
+    id: string;
+    imageUrl: string;
+    additionalImages?: string[];
+    title: string;
+    description: string;
+    category?: string;
+    featured?: boolean;
+    order?: number;
+    createdAt?: string;
+    technologies?: string[];
+  }>;
+  portfolioItems?: any[];
+  certifications?: any[];
 
   // Dokumente
   identityFrontUrl?: string;
@@ -165,6 +186,7 @@ export default function AdminCompanyDetailsPage() {
   );
   const [isUpdatingApproval, setIsUpdatingApproval] = useState(false);
   const [adminNotes, setAdminNotes] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const companyId = params?.id as string;
 
   useEffect(() => {
@@ -175,13 +197,18 @@ export default function AdminCompanyDetailsPage() {
 
   const loadCompanyDetails = async () => {
     try {
-      const response = await fetch(`/api/admin/companies/${companyId}`);
+      setLoading(true);
+      const response = await fetch(`/api/admin/companies/${companyId}?t=${Date.now()}`); // Cache-Busting
       if (response.ok) {
         const data = await response.json();
         setCompany(data.company);
+        setLastUpdated(new Date());
+        console.log('✅ Unternehmensdaten erfolgreich aktualisiert');
       } else {
+        console.error('❌ Fehler beim Laden der Unternehmensdaten:', response.status);
       }
     } catch (error) {
+      console.error('❌ Netzwerkfehler beim Laden der Unternehmensdaten:', error);
     } finally {
       setLoading(false);
     }
@@ -342,7 +369,14 @@ export default function AdminCompanyDetailsPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">{company.companyName}</h1>
-            <p className="text-gray-600">Unternehmen #{company.id}</p>
+            <div className="flex items-center space-x-4">
+              <p className="text-gray-600">Unternehmen #{company.id}</p>
+              {lastUpdated && (
+                <p className="text-xs text-gray-500">
+                  Zuletzt aktualisiert: {lastUpdated.toLocaleTimeString('de-DE')}
+                </p>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -354,6 +388,19 @@ export default function AdminCompanyDetailsPage() {
 
       {/* Action Buttons */}
       <div className="flex space-x-2">
+        <Button
+          onClick={loadCompanyDetails}
+          disabled={loading}
+          variant="outline"
+          className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
+        >
+          {loading ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#14ad9f] mr-2" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
+          {loading ? 'Lädt...' : 'Aktualisieren'}
+        </Button>
         <Button className="bg-[#14ad9f] hover:bg-[#129488] text-white">
           <Edit className="h-4 w-4 mr-2" />
           Bearbeiten
@@ -722,6 +769,110 @@ export default function AdminCompanyDetailsPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Portfolio */}
+          {company.portfolio && company.portfolio.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <FileImage className="h-5 w-5 mr-2" />
+                  Portfolio ({company.portfolio.length} Projekte)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {company.portfolio.map((project, index) => (
+                  <div key={project.id || index} className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex items-start space-x-4">
+                      {/* Hauptbild */}
+                      {project.imageUrl && (
+                        <div className="flex-shrink-0">
+                          <img
+                            src={project.imageUrl}
+                            alt={project.title}
+                            className="h-20 w-20 rounded-lg object-cover border cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={() =>
+                              openDocument(project.imageUrl, `${project.title} - Hauptbild`)
+                            }
+                          />
+                        </div>
+                      )}
+
+                      {/* Projektinfo */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-medium text-gray-900 truncate">{project.title}</h4>
+                          {project.featured && (
+                            <Badge className="bg-yellow-100 text-yellow-800 ml-2">Featured</Badge>
+                          )}
+                          {project.category && (
+                            <Badge variant="outline" className="ml-2">
+                              {project.category}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {project.description && (
+                          <p
+                            className="text-sm text-gray-600 mb-3"
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {project.description}
+                          </p>
+                        )}
+
+                        {/* Zusätzliche Bilder */}
+                        {project.additionalImages && project.additionalImages.length > 0 && (
+                          <div className="space-y-2">
+                            <label className="text-xs font-medium text-gray-500">
+                              Zusätzliche Bilder ({project.additionalImages.length})
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {project.additionalImages.map((image, imgIndex) => (
+                                <img
+                                  key={imgIndex}
+                                  src={image}
+                                  alt={`${project.title} - Bild ${imgIndex + 1}`}
+                                  className="h-12 w-12 rounded object-cover border cursor-pointer hover:shadow-md transition-shadow"
+                                  onClick={() =>
+                                    openDocument(image, `${project.title} - Bild ${imgIndex + 1}`)
+                                  }
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Technologien */}
+                        {project.technologies && project.technologies.length > 0 && (
+                          <div className="mt-2">
+                            <div className="flex flex-wrap gap-1">
+                              {project.technologies.map((tech, techIndex) => (
+                                <Badge key={techIndex} variant="outline" className="text-xs">
+                                  {tech}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Datum */}
+                        {project.createdAt && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Erstellt: {new Date(project.createdAt).toLocaleDateString('de-DE')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -861,14 +1012,207 @@ export default function AdminCompanyDetailsPage() {
                 </div>
               )}
 
-              {company.iban && (
-                <div className="border-t pt-3">
-                  <label className="text-sm font-medium text-gray-500">IBAN</label>
-                  <p className="font-mono text-sm bg-gray-100 p-2 rounded">{company.iban}</p>
+              {(company.iban || company.bic || company.bankName) && (
+                <div className="border-t pt-3 space-y-3">
+                  <h4 className="text-sm font-medium text-gray-700">Bankverbindung</h4>
+
+                  {company.iban && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">IBAN</label>
+                      <p className="font-mono text-sm bg-gray-100 p-2 rounded">{company.iban}</p>
+                    </div>
+                  )}
+
+                  {company.bic && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">BIC</label>
+                      <p className="font-mono text-sm bg-gray-100 p-2 rounded">{company.bic}</p>
+                    </div>
+                  )}
+
+                  {company.bankName && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Bank</label>
+                      <p className="text-sm bg-gray-100 p-2 rounded">{company.bankName}</p>
+                    </div>
+                  )}
+
+                  {company.accountHolder && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Kontoinhaber</label>
+                      <p className="text-sm bg-gray-100 p-2 rounded">{company.accountHolder}</p>
+                    </div>
+                  )}
+
+                  {company.bankCountry && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Land</label>
+                      <p className="text-sm">{company.bankCountry}</p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Geschäftsdaten & Steuerliche Informationen */}
+          {(company.vatId ||
+            company.taxNumber ||
+            company.kleinunternehmer ||
+            company.legalForm ||
+            company.businessType ||
+            company.accountHolder) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Geschäftsdaten & Steuern
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {company.legalForm && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Rechtsform</label>
+                      <p className="font-medium">{company.legalForm}</p>
+                    </div>
+                  )}
+
+                  {company.businessType && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Geschäftstyp</label>
+                      <p className="font-medium">{company.businessType}</p>
+                    </div>
+                  )}
+
+                  {company.accountHolder && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Kontoinhaber</label>
+                      <p className="font-medium">{company.accountHolder}</p>
+                    </div>
+                  )}
+
+                  {company.employees && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Mitarbeiter</label>
+                      <p className="font-medium">{company.employees}</p>
+                    </div>
+                  )}
+                </div>
+
+                {(company.vatId || company.taxNumber || company.kleinunternehmer) && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-gray-900 mb-3">Steuerliche Informationen</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {company.vatId && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">USt-IdNr.</label>
+                          <p className="font-mono text-sm bg-gray-100 p-2 rounded">
+                            {company.vatId}
+                          </p>
+                        </div>
+                      )}
+
+                      {company.taxNumber && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Steuernummer</label>
+                          <p className="font-mono text-sm bg-gray-100 p-2 rounded">
+                            {company.taxNumber}
+                          </p>
+                        </div>
+                      )}
+
+                      {company.kleinunternehmer && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">
+                            Kleinunternehmer (§19 UStG)
+                          </label>
+                          <Badge
+                            className={
+                              company.kleinunternehmer === 'ja'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }
+                          >
+                            {company.kleinunternehmer === 'ja' ? 'Ja' : 'Nein'}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {company.taxRate && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Steuersatz</label>
+                          <p className="font-medium">{company.taxRate}%</p>
+                        </div>
+                      )}
+
+                      {company.priceInput && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">Preiseingabe</label>
+                          <Badge variant="outline">
+                            {company.priceInput === 'netto' ? 'Netto' : 'Brutto'}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {company.profitMethod && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-500">
+                            Gewinnermittlung
+                          </label>
+                          <Badge variant="outline">
+                            {company.profitMethod === 'euer' ? 'EÜR' : 'Bilanz'}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Zertifikate */}
+          {company.certifications && company.certifications.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Shield className="h-5 w-5 mr-2" />
+                  Zertifikate ({company.certifications.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {company.certifications.map((cert, index) => (
+                  <div key={index} className="bg-gray-50 p-3 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-gray-900">
+                          {cert.name || cert.title || `Zertifikat ${index + 1}`}
+                        </h4>
+                        {cert.issuer && (
+                          <p className="text-sm text-gray-600">Ausgestellt von: {cert.issuer}</p>
+                        )}
+                        {cert.date && (
+                          <p className="text-xs text-gray-500">
+                            Datum: {new Date(cert.date).toLocaleDateString('de-DE')}
+                          </p>
+                        )}
+                      </div>
+                      {cert.url && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDocument(cert.url, cert.name || 'Zertifikat')}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Admin Freigabe */}
           <Card>
@@ -1181,102 +1525,129 @@ export default function AdminCompanyDetailsPage() {
                     </label>
 
                     {/* Ausweisdokumente */}
-                    {(company.identityFrontUrl || company.identityBackUrl) && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 flex items-center">
-                            <FileImage className="h-4 w-4 mr-2 text-blue-600" />
-                            Ausweisdokumente
-                          </h4>
-                          <Badge className="bg-green-100 text-green-800">Hochgeladen</Badge>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-gray-900 flex items-center">
+                          <FileImage className="h-4 w-4 mr-2 text-blue-600" />
+                          Ausweisdokumente
+                        </h4>
+                        <Badge
+                          className={
+                            company.identityFrontUrl || company.identityBackUrl
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }
+                        >
+                          {company.identityFrontUrl || company.identityBackUrl
+                            ? 'Hochgeladen'
+                            : 'Fehlend'}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {/* Ausweis Vorderseite */}
+                        <div className="bg-white p-3 rounded border">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <span className="text-sm text-gray-600 font-medium">
+                              Ausweis Vorderseite
+                            </span>
+                            {company.identityFrontUrl ? (
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openDocument(company.identityFrontUrl!, 'Ausweis Vorderseite')
+                                  }
+                                  className="flex-shrink-0"
+                                  title="Anzeigen"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    downloadDocument(
+                                      company.identityFrontUrl!,
+                                      'ausweis_vorderseite.jpg'
+                                    )
+                                  }
+                                  className="flex-shrink-0"
+                                  title="Download"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-red-600 border-red-300">
+                                Nicht hochgeladen
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          {company.identityFrontUrl && (
-                            <div className="bg-white p-3 rounded border">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                <span className="text-sm text-gray-600 font-medium">
-                                  Ausweis Vorderseite
-                                </span>
-                                <div className="flex flex-wrap gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      openDocument(company.identityFrontUrl!, 'Ausweis Vorderseite')
-                                    }
-                                    className="flex-shrink-0"
-                                    title="Anzeigen"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      downloadDocument(
-                                        company.identityFrontUrl!,
-                                        'ausweis_vorderseite.jpg'
-                                      )
-                                    }
-                                    className="flex-shrink-0"
-                                    title="Download"
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </div>
+
+                        {/* Ausweis Rückseite */}
+                        <div className="bg-white p-3 rounded border">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <span className="text-sm text-gray-600 font-medium">
+                              Ausweis Rückseite
+                            </span>
+                            {company.identityBackUrl ? (
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openDocument(company.identityBackUrl!, 'Ausweis Rückseite')
+                                  }
+                                  className="flex-shrink-0"
+                                  title="Anzeigen"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    downloadDocument(
+                                      company.identityBackUrl!,
+                                      'ausweis_rueckseite.jpg'
+                                    )
+                                  }
+                                  className="flex-shrink-0"
+                                  title="Download"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
                               </div>
-                            </div>
-                          )}
-                          {company.identityBackUrl && (
-                            <div className="bg-white p-3 rounded border">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                <span className="text-sm text-gray-600 font-medium">
-                                  Ausweis Rückseite
-                                </span>
-                                <div className="flex flex-wrap gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      openDocument(company.identityBackUrl!, 'Ausweis Rückseite')
-                                    }
-                                    className="flex-shrink-0"
-                                    title="Anzeigen"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      downloadDocument(
-                                        company.identityBackUrl!,
-                                        'ausweis_rueckseite.jpg'
-                                      )
-                                    }
-                                    className="flex-shrink-0"
-                                    title="Download"
-                                  >
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                            ) : (
+                              <Badge variant="outline" className="text-red-600 border-red-300">
+                                Nicht hochgeladen
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* Gewerbeschein */}
-                    {company.businessLicenseURL && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 flex items-center">
-                            <FileText className="h-4 w-4 mr-2 text-purple-600" />
-                            Gewerbeschein
-                          </h4>
-                          <Badge className="bg-green-100 text-green-800">Hochgeladen</Badge>
-                        </div>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-gray-900 flex items-center">
+                          <FileText className="h-4 w-4 mr-2 text-purple-600" />
+                          Gewerbeschein
+                        </h4>
+                        <Badge
+                          className={
+                            company.businessLicenseURL
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }
+                        >
+                          {company.businessLicenseURL ? 'Hochgeladen' : 'Fehlend'}
+                        </Badge>
+                      </div>
+                      {company.businessLicenseURL ? (
                         <div className="flex items-center justify-between bg-white p-2 rounded border">
                           <span className="text-sm text-gray-600">Gewerbeschein Dokument</span>
                           <div className="flex space-x-2">
@@ -1302,57 +1673,135 @@ export default function AdminCompanyDetailsPage() {
                             </Button>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="bg-white p-2 rounded border text-center">
+                          <span className="text-sm text-gray-500">
+                            Kein Gewerbeschein hochgeladen
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Handelsregister */}
-                    {company.companyRegister && (
-                      <div className="bg-gray-50 p-3 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 flex items-center">
-                            <Shield className="h-4 w-4 mr-2 text-green-600" />
-                            Handelsregister
-                          </h4>
-                          <Badge className="bg-green-100 text-green-800">Hochgeladen</Badge>
-                        </div>
-                        <div className="flex items-center justify-between bg-white p-2 rounded border">
-                          <span className="text-sm text-gray-600">Handelsregister Auszug</span>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                openDocument(company.companyRegister!, 'Handelsregister')
-                              }
-                              title="Anzeigen"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                downloadDocument(company.companyRegister!, 'handelsregister.pdf')
-                              }
-                              title="Download"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-gray-900 flex items-center">
+                          <Shield className="h-4 w-4 mr-2 text-green-600" />
+                          Handelsregister
+                        </h4>
+                        <Badge
+                          className={
+                            company.companyRegister
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }
+                        >
+                          {company.companyRegister ? 'Eingetragen' : 'Optional'}
+                        </Badge>
+                      </div>
+                      {company.companyRegister ? (
+                        <div className="bg-white p-2 rounded border">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-sm text-gray-600">Handelsregister-Nummer</span>
+                              <p className="font-mono text-sm font-medium">
+                                {company.companyRegister}
+                              </p>
+                            </div>
+                            {/* Prüfe ob es eine URL ist oder nur eine Nummer */}
+                            {company.companyRegister.startsWith('http') ||
+                            company.companyRegister.includes('.') ? (
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    openDocument(company.companyRegister!, 'Handelsregister')
+                                  }
+                                  title="Anzeigen"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    downloadDocument(
+                                      company.companyRegister!,
+                                      'handelsregister.pdf'
+                                    )
+                                  }
+                                  title="Download"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-green-600">
+                                Nummer registriert
+                              </Badge>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="bg-white p-2 rounded border text-center">
+                          <span className="text-sm text-gray-500">
+                            Kein Handelsregister-Auszug hochgeladen (nur für bestimmte Rechtsformen
+                            erforderlich)
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
-                    {/* Status für fehlende Dokumente */}
+                    {/* Zusammenfassung */}
                     {!company.identityFrontUrl &&
                       !company.identityBackUrl &&
                       !company.businessLicenseURL &&
                       !company.companyRegister && (
-                        <div className="text-center py-4 text-gray-500">
-                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p className="text-sm">Keine Dokumente hochgeladen</p>
+                        <div className="text-center py-4 text-gray-500 bg-red-50 rounded-lg border border-red-200">
+                          <FileText className="h-8 w-8 mx-auto mb-2 text-red-400" />
+                          <p className="text-sm font-medium text-red-600">
+                            Keine Dokumente hochgeladen
+                          </p>
+                          <p className="text-xs text-red-500 mt-1">
+                            Für die Freigabe sind mindestens Ausweisdokumente und Gewerbeschein
+                            erforderlich
+                          </p>
                         </div>
                       )}
+                  </div>
+                </>
+              )}
+
+              {/* Zeige Dokumenten-Sektion immer an, auch wenn keine Dokumente vorhanden */}
+              {!(
+                company.hasIdentityDocuments ||
+                company.hasBusinessLicense ||
+                company.hasCompanyRegister ||
+                company.identityFrontUrl ||
+                company.identityBackUrl ||
+                company.businessLicenseURL ||
+                company.companyRegister
+              ) && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-500">Dokumente Status</label>
+
+                    <div className="text-center py-6 text-gray-500 bg-red-50 rounded-lg border border-red-200">
+                      <FileText className="h-12 w-12 mx-auto mb-3 text-red-400" />
+                      <p className="text-lg font-medium text-red-600 mb-2">
+                        Keine Dokumente hochgeladen
+                      </p>
+                      <p className="text-sm text-red-500">
+                        Für die Freigabe sind folgende Dokumente erforderlich:
+                      </p>
+                      <ul className="text-sm text-red-500 mt-2 space-y-1">
+                        <li>• Personalausweis (Vorder- und Rückseite)</li>
+                        <li>• Gewerbeschein</li>
+                        <li>• Handelsregister-Auszug (falls erforderlich)</li>
+                      </ul>
+                    </div>
                   </div>
                 </>
               )}
@@ -1382,12 +1831,45 @@ export default function AdminCompanyDetailsPage() {
               </div>
             </div>
             <div className="overflow-auto max-h-[calc(90vh-80px)]">
-              {selectedDocument.url.toLowerCase().includes('.pdf') ? (
-                <iframe
-                  src={selectedDocument.url}
-                  className="w-full h-[600px]"
-                  title={selectedDocument.title}
-                />
+              {/* Verbesserte Dokument-Erkennung */}
+              {selectedDocument.url.toLowerCase().includes('.pdf') ||
+              selectedDocument.url.includes('application/pdf') ||
+              selectedDocument.title.toLowerCase().includes('handelsregister') ||
+              selectedDocument.title.toLowerCase().includes('gewerbeschein') ||
+              selectedDocument.url.includes('firebasestorage') ? (
+                <>
+                  {/* Für Firebase Storage URLs oder PDFs - versuche iframe zuerst */}
+                  <iframe
+                    src={selectedDocument.url}
+                    className="w-full h-[600px]"
+                    title={selectedDocument.title}
+                    onError={e => {
+                      console.error('❌ Iframe-Fehler für:', selectedDocument.url);
+                      // Fallback: Link zum direkten Öffnen
+                      const container = e.currentTarget.parentElement;
+                      if (container) {
+                        container.innerHTML = `
+                          <div class="p-8 text-center">
+                            <div class="mb-4">
+                              <svg class="h-16 w-16 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                              </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Dokument kann nicht angezeigt werden</h3>
+                            <p class="text-gray-600 mb-4">Das Dokument kann in diesem Viewer nicht dargestellt werden.</p>
+                            <a href="${selectedDocument.url}" target="_blank" rel="noopener noreferrer" 
+                               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                              <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                              </svg>
+                              Dokument in neuem Tab öffnen
+                            </a>
+                          </div>
+                        `;
+                      }
+                    }}
+                  />
+                </>
               ) : (
                 <div className="p-4 flex justify-center">
                   <img
@@ -1395,6 +1877,31 @@ export default function AdminCompanyDetailsPage() {
                     alt={selectedDocument.title}
                     className="max-w-full max-h-full object-contain"
                     style={{ maxHeight: 'calc(90vh - 120px)' }}
+                    onError={e => {
+                      console.error('❌ Bild-Fehler für:', selectedDocument.url);
+                      const img = e.currentTarget;
+                      const container = img.parentElement;
+                      if (container) {
+                        container.innerHTML = `
+                          <div class="text-center py-8">
+                            <div class="mb-4">
+                              <svg class="h-16 w-16 mx-auto text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                              </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-red-600 mb-2">Bild kann nicht geladen werden</h3>
+                            <p class="text-gray-600 mb-4">Die Bild-URL ist möglicherweise ungültig oder das Format wird nicht unterstützt.</p>
+                            <div class="bg-gray-100 p-3 rounded text-xs font-mono break-all">
+                              ${selectedDocument.url}
+                            </div>
+                            <a href="${selectedDocument.url}" target="_blank" rel="noopener noreferrer" 
+                               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mt-4">
+                              Direktlink versuchen
+                            </a>
+                          </div>
+                        `;
+                      }
+                    }}
                   />
                 </div>
               )}

@@ -47,6 +47,10 @@ interface AWSMetrics {
     quotaRemaining: number;
     bounceRate: number;
     complaintRate: number;
+    // Neue Resend-spezifische Felder
+    provider?: string;
+    successRate?: number;
+    emailsThisMonth?: number;
   };
   aiClassification: {
     accuracyRate: number;
@@ -102,7 +106,6 @@ export default function EnhancedTicketAnalytics() {
         setAnalytics(data.metrics);
       }
     } catch (error) {
-
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -118,9 +121,9 @@ export default function EnhancedTicketAnalytics() {
 
       if (response.ok) {
         const data = await response.json();
-         // Debug-Log
+        // Debug-Log
         const tickets = Array.isArray(data.tickets) ? data.tickets : []; // Stelle sicher, dass es ein Array ist
-         // Debug-Log
+        // Debug-Log
         const openTickets = tickets.filter((t: any) => t.status === 'open');
 
         for (const ticket of openTickets.slice(0, 5)) {
@@ -147,28 +150,27 @@ export default function EnhancedTicketAnalytics() {
         // Analytics neu laden
         await loadAnalytics();
       }
-    } catch (error) {
-
-    }
+    } catch (error) {}
   };
 
   const sendTestNotification = async () => {
     try {
-      // Test-E-Mail senden
+      // Test-E-Mail über Resend senden
       const response = await fetch('/api/admin/tickets/test-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'test',
+          type: 'resend_test',
           recipient: 'andy.staudinger@taskilo.de',
+          provider: 'resend',
         }),
       });
 
       if (response.ok) {
-
+        console.log('Test-E-Mail über Resend erfolgreich gesendet');
       }
     } catch (error) {
-
+      console.error('Fehler beim Senden der Test-E-Mail:', error);
     }
   };
 
@@ -233,7 +235,7 @@ export default function EnhancedTicketAnalytics() {
             className="border-[#14ad9f] text-[#14ad9f] hover:bg-[#14ad9f] hover:text-white"
           >
             <Mail className="w-4 h-4 mr-2" />
-            Test E-Mail
+            Test Resend E-Mail
           </Button>
 
           <Button onClick={loadAnalytics} variant="outline">
@@ -248,7 +250,7 @@ export default function EnhancedTicketAnalytics() {
         <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-blue-700">Email Quota</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-700">Resend E-Mails</CardTitle>
               <Mail className="w-4 h-4 text-blue-600" />
             </div>
           </CardHeader>
@@ -256,18 +258,13 @@ export default function EnhancedTicketAnalytics() {
             <div className="text-2xl font-bold text-blue-900">
               {analytics?.awsMetrics?.emailStats?.quotaUsed || 0}
             </div>
-            <div className="text-xs text-blue-600 mt-1">
-              von {analytics?.awsMetrics?.emailStats?.quotaRemaining || 0} verfügbar
+            <div className="text-xs text-blue-600 mt-1">heute gesendet (Provider: Resend)</div>
+            <div className="flex items-center mt-2">
+              <CheckCircle className="w-3 h-3 text-blue-500 mr-1" />
+              <span className="text-xs text-blue-600">
+                {analytics?.awsMetrics?.emailStats?.successRate || 100}% Erfolgsrate
+              </span>
             </div>
-            <Progress
-              value={
-                ((analytics?.awsMetrics?.emailStats?.quotaUsed || 0) /
-                  ((analytics?.awsMetrics?.emailStats?.quotaUsed || 0) +
-                    (analytics?.awsMetrics?.emailStats?.quotaRemaining || 1))) *
-                100
-              }
-              className="mt-2 h-1"
-            />
           </CardContent>
         </Card>
 

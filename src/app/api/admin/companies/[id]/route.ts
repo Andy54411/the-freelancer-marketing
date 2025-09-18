@@ -1,80 +1,258 @@
 // Admin Company Details API
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/server';
+import { db, isFirebaseAvailable } from '@/firebase/server';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }, companyId: string) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
+    // Check if Firebase is properly initialized
+    if (!isFirebaseAvailable() || !db) {
+      console.error('Firebase not initialized');
+      return NextResponse.json(
+        { success: false, error: 'Service temporarily unavailable' },
+        { status: 503 }
+      );
+    }
+
     // Hole das spezifische Unternehmen aus der Firebase companies Collection
-    const companyDoc = await db.collection('companies').doc(id).get();
+    console.log(`[DEBUG] Fetching company from companies collection with ID: ${id}`);
+    const companyDoc = await db!.collection('companies').doc(id).get();
+    console.log(`[DEBUG] Company document exists: ${companyDoc.exists}`);
+
+    // Vergleich: Schaue auch in users Collection
+    const userDoc = await db!.collection('users').doc(id).get();
+    console.log(`[DEBUG] User document exists in users collection: ${userDoc.exists}`);
+
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      console.log(`[DEBUG] User data from users collection:`, {
+        id: userData?.id || 'missing',
+        companyName: userData?.companyName || 'missing',
+        email: userData?.email || 'missing',
+        source: 'users_collection',
+      });
+    }
 
     if (!companyDoc.exists) {
+      console.log(`[DEBUG] Company not found in companies collection: ${id}`);
       return NextResponse.json({ error: 'Company not found', company: null }, { status: 404 });
     }
 
     const data = companyDoc.data();
+    console.log(`[DEBUG] Company data from companies collection:`, {
+      id: data?.id || 'missing',
+      companyName: data?.companyName || 'missing',
+      email: data?.email || 'missing',
+      source: 'companies_collection',
+    });
 
     // Lade echte Statistiken aus auftraege und quotes Collections
 
     // Hole alle Aufträge wo diese Company der Anbieter ist
-    const auftraegeSnapshot = await db
+    const auftraegeSnapshot = await db!
       .collection('auftraege')
       .where('selectedAnbieterId', '==', id)
       .get();
 
     // Hole alle Quotes wo diese Company der Provider ist
-    const quotesSnapshot = await db.collection('companies').doc(companyId).collection('quotes').where('providerId', '==', id).get();
+    const quotesSnapshot = await db!.collection('quotes').where('providerId', '==', id).get();
 
-    // Berechne Statistiken aus Aufträgen
+    // Hole auch Payout Logs für komplette Einnahmenübersicht
+    const payoutLogsSnapshot = await db
+      .collection('payout_logs')
+      .where('companyId', '==', id)
+      .get();
+
+    // Berechne Statistiken aus Aufträgen (verwende die gleiche Logik wie SectionCards)
     let totalRevenue = 0;
     const totalOrders = auftraegeSnapshot.size;
     let completedOrders = 0;
 
     auftraegeSnapshot.forEach(doc => {
       const auftrag = doc.data();
-      // Addiere den Umsatz (in Cents, konvertiere zu Euro)
-      if (auftrag.jobCalculatedPriceInCents) {
-        totalRevenue += auftrag.jobCalculatedPriceInCents / 100;
+      let orderTotalRevenue = 0;
+
+      console.log(`[DEBUG] Processing Auftrag ${doc.id}:`, {
+        status: auftrag.status,
+        jobCalculatedPriceInCents: auftrag.jobCalculatedPriceInCents,
+        hasTimeTracking: !!auftrag.timeTracking?.timeEntries,
+      });
+
+      // 1. Basis-Auftragswert - NUR wenn Zahlung erhalten wurde (wie SectionCards)
+      if (auftrag.jobCalculatedPriceInCents && auftrag.jobCalculatedPriceInCents > 0) {
+        if (
+          auftrag.status === 'zahlung_erhalten_clearing' ||
+          auftrag.status === 'ABGESCHLOSSEN' ||
+          auftrag.status === 'COMPLETED' ||
+          auftrag.status === 'BEZAHLT' ||
+          auftrag.status === 'PAID' ||
+          auftrag.status === 'geld_freigegeben'
+        ) {
+          orderTotalRevenue += auftrag.jobCalculatedPriceInCents;
+          console.log(
+            `[DEBUG] Added base price: €${auftrag.jobCalculatedPriceInCents / 100} (status: ${auftrag.status})`
+          );
+        } else {
+          console.log(`[DEBUG] Skipped base price due to status: ${auftrag.status}`);
+        }
       }
+
+      // 2. ZUSÄTZLICHE BEZAHLTE STUNDEN aus TimeTracking (wie SectionCards)
+      if (auftrag.timeTracking?.timeEntries) {
+        auftrag.timeTracking.timeEntries.forEach((entry: any) => {
+          // NUR WIRKLICH BEZAHLTE UND ÜBERTRAGENE BETRÄGE berücksichtigen
+          if (
+            entry.billableAmount &&
+            entry.billableAmount > 0 &&
+            (entry.status === 'transferred' ||
+              entry.status === 'paid' ||
+              entry.platformHoldStatus === 'transferred' ||
+              entry.billingStatus === 'transferred' ||
+              entry.paymentStatus === 'paid')
+          ) {
+            orderTotalRevenue += entry.billableAmount;
+            console.log(
+              `[DEBUG] Added time tracking: €${entry.billableAmount / 100} (status: ${entry.status})`
+            );
+          }
+        });
+      }
+
+      console.log(`[DEBUG] Total revenue for auftrag ${doc.id}: €${orderTotalRevenue / 100}`);
+      totalRevenue += orderTotalRevenue;
+
       // Zähle abgeschlossene Aufträge
       if (auftrag.status === 'ABGESCHLOSSEN' || auftrag.status === 'COMPLETED') {
         completedOrders++;
       }
     });
 
-    // Berechne Statistiken aus Quotes
+    // Berechne Quote-Statistiken (vereinfacht, ohne Doppelzählung)
     let quotesTotalRevenue = 0;
     let paidQuotes = 0;
 
     quotesSnapshot.forEach(doc => {
       const quote = doc.data();
-      // Addiere Umsatz aus bezahlten Quotes
-      if (quote.payment?.status === 'paid' && quote.payment?.totalAmount) {
-        quotesTotalRevenue += quote.payment.totalAmount;
-        paidQuotes++;
+      console.log(`[DEBUG] Processing Quote ${doc.id}:`, {
+        paymentStatus: quote.payment?.status,
+        totalAmount: quote.payment?.totalAmount,
+        amount: quote.amount,
+        finalAmount: quote.finalAmount,
+      });
+
+      // Nur echte Quote-Zahlungen zählen (die nicht in Aufträgen enthalten sind)
+      if (quote.payment?.status === 'paid') {
+        let quoteAmount = 0;
+        if (quote.payment?.totalAmount) {
+          quoteAmount = quote.payment.totalAmount;
+        } else if (quote.finalAmount) {
+          quoteAmount = quote.finalAmount;
+        } else if (quote.amount) {
+          quoteAmount = quote.amount;
+        }
+
+        if (quoteAmount > 0) {
+          quotesTotalRevenue += quoteAmount;
+          paidQuotes++;
+          console.log(`[DEBUG] Added quote revenue: €${quoteAmount / 100}`);
+        }
       }
     });
 
-    // Kombiniere Gesamtumsatz
-    const combinedTotalRevenue = totalRevenue + quotesTotalRevenue;
+    // Entferne Payout Logs um Doppelzählung zu vermeiden
+    const payoutLogsRevenue = 0; // Nicht verwenden, um Doppelzählung zu vermeiden
+
+    // Hole Reviews aus der companies/{id}/reviews Subcollection
+    console.log(`[DEBUG] Fetching reviews from companies/${id}/reviews subcollection`);
+    const reviewsSnapshot = await db!.collection('companies').doc(id).collection('reviews').get();
+    console.log(`[DEBUG] Found ${reviewsSnapshot.size} reviews in subcollection`);
+
+    let totalRating = 0;
+    let reviewCount = 0;
+    const reviews: any[] = [];
+
+    reviewsSnapshot.forEach(doc => {
+      const reviewData = doc.data();
+      reviews.push({
+        id: doc.id,
+        ...reviewData,
+        createdAt: reviewData.createdAt?.toDate() || new Date(),
+      });
+
+      if (reviewData.rating && typeof reviewData.rating === 'number') {
+        totalRating += reviewData.rating;
+        reviewCount++;
+      }
+    });
+
+    const avgRating = reviewCount > 0 ? parseFloat((totalRating / reviewCount).toFixed(1)) : 0;
+
+    console.log(`[DEBUG] Reviews calculated - Count: ${reviewCount}, Avg Rating: ${avgRating}`);
+
+    // Kombiniere Gesamtumsatz (nur Aufträge + Quotes, keine Payout Logs)
+    const combinedTotalRevenue = (totalRevenue + quotesTotalRevenue) / 100; // Konvertiere zu Euro
     const combinedTotalOrders = totalOrders + paidQuotes;
 
-    // Placeholder für Bewertungen (könnte aus einer reviews Collection kommen)
-    const avgRating = 0; // TODO: Implementiere echte Bewertungslogik
-    const reviewCount = 0;
+    console.log(`[DEBUG] Final Revenue Calculation:`, {
+      auftraegeRevenue: totalRevenue / 100,
+      quotesRevenue: quotesTotalRevenue / 100,
+      combinedTotalRevenue: combinedTotalRevenue,
+      totalOrders: totalOrders,
+      paidQuotes: paidQuotes,
+      combinedTotalOrders: combinedTotalOrders,
+    });
 
-    // Bestimme Status basierend auf verschiedenen Status-Feldern
+    console.log(`[DEBUG] Final Revenue Calculation:`, {
+      auftraegeRevenue: totalRevenue,
+      quotesRevenue: quotesTotalRevenue,
+      combinedTotalRevenue: combinedTotalRevenue,
+      totalOrders: totalOrders,
+      paidQuotes: paidQuotes,
+      combinedTotalOrders: combinedTotalOrders,
+    });
+
+    // Bestimme Status basierend auf Admin-Freigabe und Onboarding-Status
     let status = 'inactive';
-    if (data?.profileStatus === 'active' || data?.status === 'active') {
+    let verificationStatus = 'pending';
+
+    // Prüfe Admin-Freigabe
+    const isAdminApproved = data?.adminApproved === true;
+
+    // Prüfe Onboarding-Status
+    const isOnboardingComplete =
+      data?.onboardingCompleted === true ||
+      data?.onboardingCompletionPercentage >= 100 ||
+      data?.profileComplete === true;
+
+    // Prüfe Dokumente
+    const documentsComplete = data?.documentsCompleted === true;
+
+    // Prüfe Profile-Status
+    const profileActive = data?.profileStatus === 'active' || data?.status === 'active';
+
+    console.log(`[DEBUG] Status Determination:`, {
+      adminApproved: isAdminApproved,
+      onboardingComplete: isOnboardingComplete,
+      documentsComplete: documentsComplete,
+      profileActive: profileActive,
+      profileStatus: data?.profileStatus,
+      status: data?.status,
+    });
+
+    // Status-Logik: Admin-freigegeben + Onboarding = Aktiv
+    if (isAdminApproved && isOnboardingComplete) {
       status = 'active';
+      verificationStatus = 'verified';
     } else if (data?.status === 'suspended') {
       status = 'suspended';
-    } else if (
-      data?.profileStatus === 'pending_review' ||
-      data?.status === 'pending_verification'
-    ) {
+      verificationStatus = 'suspended';
+    } else if (isOnboardingComplete && !isAdminApproved) {
+      status = 'inactive'; // Wartet auf Admin-Freigabe
+      verificationStatus = 'pending_admin_approval';
+    } else {
       status = 'inactive';
+      verificationStatus = 'pending_onboarding';
     }
 
     const company = {
@@ -134,9 +312,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       businessType: data?.businessType || data?.step1?.businessType,
       legalForm: data?.legalForm || data?.step2?.legalForm,
       vatNumber: data?.step3?.vatId || data?.vatNumber,
-      vatId: data?.step3?.vatId,
-      taxNumber: data?.step3?.taxNumber,
-      taxRate: data?.step5?.taxRate || data?.step2?.taxRate,
+      vatId: data?.step3?.vatId || data?.vatId,
+      taxNumber: data?.step3?.taxNumber || data?.taxNumber,
+      taxRate: data?.step5?.taxRate || data?.step2?.taxRate || data?.taxRate,
       kleinunternehmer: data?.kleinunternehmer || data?.step2?.kleinunternehmer,
 
       // Kontaktperson
@@ -144,7 +322,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       dateOfBirth: data?.step1?.dateOfBirth,
 
       // Bank und Finanzen
-      iban: data?.iban || data?.step4?.iban,
+      iban: data?.step4?.iban || data?.bankDetails?.iban || data?.iban,
       employees: data?.employees || data?.step1?.employees,
       hourlyRate: data?.hourlyRate,
       priceInput: data?.priceInput || data?.step2?.priceInput,
@@ -166,14 +344,47 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       radiusKm: data?.radiusKm,
 
       // Bilder und Medien
-      profilePictureURL: data?.step3?.profilePictureURL,
+      profilePictureURL: data?.profilePictureURL || data?.step3?.profilePictureURL,
       profileBannerImage: data?.profileBannerImage || data?.step3?.profileBannerImage,
+      profilePictureFirebaseUrl: data?.profilePictureFirebaseUrl,
 
-      // Dokumente
-      identityFrontUrl: data?.step3?.identityFrontUrl,
-      identityBackUrl: data?.step3?.identityBackUrl,
-      businessLicenseURL: data?.step3?.businessLicenseURL,
-      companyRegister: data?.step3?.companyRegister,
+      // Portfolio mit allen Bildern
+      portfolio: data?.portfolio || data?.step3?.portfolio || [],
+      portfolioItems: data?.portfolioItems || [],
+
+      // Zertifikate und Dokumente
+      certifications: data?.certifications || [],
+
+      // Dokumente und Ausweise
+      identityFrontUrl: data?.step3?.identityFrontUrl || data?.identityFrontUrl,
+      identityBackUrl: data?.step3?.identityBackUrl || data?.identityBackUrl,
+      businessLicenseURL: data?.step3?.businessLicenseURL || data?.businessLicenseURL,
+      masterCraftsmanCertificateURL: data?.step3?.masterCraftsmanCertificateURL,
+      companyRegister: data?.step3?.companyRegister || data?.companyRegister,
+
+      // Stripe Document IDs für Dokumente
+      identityFrontUrlStripeId: data?.identityFrontUrlStripeId,
+      identityBackUrlStripeId: data?.identityBackUrlStripeId,
+      businessLicenseStripeId: data?.businessLicenseStripeId,
+      masterCraftsmanCertificateStripeId: data?.masterCraftsmanCertificateStripeId,
+
+      // Document Status Flags
+      hasIdentityDocuments: !!(data?.step3?.identityFrontUrl || data?.identityFrontUrl),
+      hasBusinessLicense: !!(data?.step3?.businessLicenseURL || data?.businessLicenseURL),
+      hasCompanyRegister: !!(data?.step3?.companyRegister || data?.companyRegister),
+
+      // Bank- und Zahlungsdaten
+      bankDetails: data?.bankDetails || {},
+      bankConnections: data?.bankConnections || [],
+      bankSyncStatus: data?.bankSyncStatus,
+      lastBankSync: data?.lastBankSync,
+      bic: data?.step4?.bic || data?.bankDetails?.bic || data?.bic,
+      bankName: data?.step4?.bankName || data?.bankDetails?.bankName || data?.bankName || '',
+      bankCountry: data?.step4?.bankCountry || data?.bankCountry,
+
+      // Revolut Connections
+      revolut_accounts: data?.revolut_accounts,
+      revolut_connections: data?.revolut_connections,
 
       // Platform-spezifische Daten (ECHTE STATISTIKEN)
       totalOrders: combinedTotalOrders,
@@ -183,9 +394,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
       // Zusätzliche Statistik-Details für Admin
       auftraegeCount: totalOrders,
-      auftraegeRevenue: totalRevenue,
+      auftraegeRevenue: totalRevenue / 100,
       quotesCount: paidQuotes,
-      quotesRevenue: quotesTotalRevenue,
+      quotesRevenue: quotesTotalRevenue / 100,
       completedOrders: completedOrders,
 
       // Admin Approval System
@@ -196,19 +407,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       approvalStatus: data?.approvalStatus || 'pending',
 
       // Verifizierung und Status (erweitert)
-      verified: data?.verified || data?.profileComplete || false,
-      verificationStatus: data?.stripeVerificationStatus || data?.profileStatus || 'pending',
+      verified: isAdminApproved && isOnboardingComplete,
+      verificationStatus: verificationStatus,
       lastVerificationUpdate: data?.onboardingCompletedAt?.toDate?.()?.toISOString(),
 
       // Zusätzliche Metadaten
       user_type: data?.user_type,
       createdByCallable: data?.createdByCallable,
       industryMcc: data?.step2?.industryMcc,
-
-      // Verifikationsdokumente Status
-      hasIdentityDocuments: !!(data?.step3?.identityFrontUrl && data?.step3?.identityBackUrl),
-      hasBusinessLicense: !!data?.step3?.businessLicenseURL,
-      hasCompanyRegister: !!data?.step3?.companyRegister,
 
       // Management Flags (aus step1)
       isManagingDirectorOwner: data?.step1?.isManagingDirectorOwner,
