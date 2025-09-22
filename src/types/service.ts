@@ -1,5 +1,27 @@
 // Shared types for service components
 
+export interface InvoiceService {
+  id: string;
+  name: string;
+  description?: string;
+  price: number | string;
+  unit: string;
+  source: 'services' | 'inlineServices';
+}
+
+export interface InvoiceServiceDraft {
+  name: string;
+  description: string;
+  price: string;
+  unit: string;
+}
+
+export interface ServiceSelectionProps {
+  selectedService: InvoiceService | null;
+  onServiceSelect: (service: InvoiceService | null) => void;
+  onServiceCreate?: (service: InvoiceServiceDraft) => Promise<void>;
+}
+
 export interface AddonItem {
   name: string;
   description: string;

@@ -237,10 +237,28 @@ export default function CreateQuotePage() {
     </Card>
   );
 
+  interface InvoiceService {
+    id: string;
+    name: string;
+    description?: string;
+    price: number | string;
+    unit: string;
+    source: 'inlineInvoiceServices';
+  }
+
+  // Hilfsfunktion zur Preiskonvertierung
+  const parsePrice = (price: number | string): number => {
+    if (typeof price === 'number') return price;
+    return parseFloat(price) || 0;
+  }
+
   // Erweiterte States für Dienstleistungen
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
-  const [existingServices, setExistingServices] = useState<any[]>([]);
+  const [existingServices, setExistingServices] = useState<InvoiceService[]>([]);
   const [selectedService, setSelectedService] = useState<string>('');
+  const [showPopover, setShowPopover] = useState(false);
+  const [loadingSavedServices, setLoadingSavedServices] = useState(false);
+  const [savedServices, setSavedServices] = useState<InvoiceService[]>([]);
   const [serviceDraft, setServiceDraft] = useState({
     name: '',
     description: '',
@@ -253,31 +271,33 @@ export default function CreateQuotePage() {
   useEffect(() => {
     const loadExistingServices = async () => {
       if (!uid) return;
+      setLoadingSavedServices(true);
       try {
-        const servicesCol = collection(db, 'companies', uid, 'services');
-        const inlineCol = collection(db, 'companies', uid, 'inlineServices');
+        const inlineInvoiceServicesCol = collection(db, 'companies', uid, 'inlineInvoiceServices');
+        const inlineInvoiceServicesSnap = await getDocs(inlineInvoiceServicesCol);
+        
+        console.log('Geladene Dienstleistungen:', inlineInvoiceServicesSnap.docs.length);
+        
+        const inlineInvoiceServices = inlineInvoiceServicesSnap.docs.map(doc => {
+          const data = doc.data();
+          console.log('Dienstleistung:', doc.id, data);
+          return {
+            id: doc.id,
+            name: data.name || '',
+            description: data.description,
+            price: data.price || 0,
+            unit: data.unit || 'Stk',
+            source: 'inlineInvoiceServices' as const
+          };
+        });
 
-        const [servicesSnap, inlineSnap]: [QuerySnapshot<DocumentData>, QuerySnapshot<DocumentData>] = await Promise.all([
-          getDocs(servicesCol),
-          getDocs(inlineCol)
-        ]);
-
-        const services = servicesSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          source: 'services'
-        }));
-
-        const inlineServices = inlineSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          source: 'inlineServices'
-        }));
-
-        setExistingServices([...services, ...inlineServices]);
+        setExistingServices(inlineInvoiceServices);
+        setSavedServices(inlineInvoiceServices);
       } catch (error) {
         console.error('Fehler beim Laden der Dienstleistungen:', error);
         toast.error('Dienstleistungen konnten nicht geladen werden');
+      } finally {
+        setLoadingSavedServices(false);
       }
     };
 
@@ -3340,33 +3360,100 @@ export default function CreateQuotePage() {
 
             {/* Dienstleistung anlegen */}
             <div className="flex items-center gap-2 border-l border-gray-200 pl-4 ml-2">
-              <input
-                type="text"
-                value={newServiceName || ''}
-                onChange={e => setNewServiceName(e.target.value)}
-                placeholder="Neue Dienstleistung (z.B. Beratung)"
-                className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#14ad9f]"
-                style={{ minWidth: 180 }}
-              />
-              <Button
-                type="button"
-                size="sm"
-                className="bg-[#14ad9f] hover:bg-[#129488] text-white"
-                disabled={!newServiceName || newServiceName.trim().length < 2}
-                onClick={() => {
-                  if (!newServiceName || newServiceName.trim().length < 2) return;
-                  setServiceDraft({
-                    name: newServiceName,
-                    description: '',
-                    price: '',
-                    unit: 'Stk',
-                  });
-                  setServiceModalOpen(true);
-                  setNewServiceName('');
-                }}
-              >
-                Dienstleistung speichern
-              </Button>
+              <div className="relative w-[500px]">
+                <Input
+                  type="text"
+                  value={newServiceName || ''}
+                  onChange={e => {
+                    const value = e.target.value;
+                    setNewServiceName(value);
+                    // Zeige Dropdown ab 2 Zeichen
+                    if (value.trim().length >= 2) {
+                      setShowPopover(true);
+                    } else {
+                      setShowPopover(false);
+                    }
+                  }}
+                  placeholder="Dienstleistung suchen oder neue erstellen..."
+                  className="w-full"
+                />
+
+                {/* Dropdown für Vorschläge */}
+                {showPopover && (
+                  <div className="absolute left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-50">
+                    <div className="max-h-[400px] overflow-y-auto p-4">
+                      {loadingSavedServices ? (
+                        <div className="p-2 flex items-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Lade Dienstleistungen...</span>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Vorhandene Dienstleistungen */}
+                          {(savedServices || [])
+                            .filter(service => 
+                              !newServiceName || 
+                              service.name.toLowerCase().includes(newServiceName.toLowerCase())
+                            )
+                            .map(service => (
+                              <div
+                                key={service.id}
+                                className="flex items-center justify-between p-2 hover:bg-gray-100 cursor-pointer rounded-md"
+                                onClick={() => {
+                                  const price = typeof service.price === 'string' ? parseFloat(service.price) : service.price;
+                                  setItems(prev => [...prev, {
+                                    id: crypto.randomUUID(),
+                                    description: service.name,
+                                    quantity: 1,
+                                    unitPrice: price,
+                                    total: price,
+                                    unit: service.unit || 'Stk',
+                                  }]);
+                                  setNewServiceName('');
+                                  setShowPopover(false);
+                                  toast.success('Dienstleistung zur Rechnung hinzugefügt');
+                                }}
+                              >
+                                <div>
+                                  <div className="font-medium">{service.name}</div>
+                                  <div className="text-sm text-gray-500">{service.unit}</div>
+                                </div>
+                                <div className="font-medium">
+                                  {formatCurrency(typeof service.price === 'string' ? parseFloat(service.price) : service.price)}
+                                </div>
+                              </div>
+                            ))}
+
+                          {/* Option zum Erstellen einer neuen Dienstleistung */}
+                          {newServiceName && newServiceName.trim().length >= 2 && (
+                            <div className={savedServices.filter(service => 
+                              service.name.toLowerCase().includes(newServiceName.toLowerCase())
+                            ).length > 0 ? "border-t border-gray-200 mt-2 pt-2" : ""}>
+                              <div className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+                                onClick={() => {
+                                  setServiceDraft({
+                                    name: newServiceName,
+                                    description: '',
+                                    price: '',
+                                    unit: 'Stk',
+                                  });
+                                  setServiceModalOpen(true);
+                                  setNewServiceName('');
+                                  setShowPopover(false);
+                                }}>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <Plus className="w-4 h-4" />
+                                  <span>Neue Dienstleistung "{newServiceName}" erstellen</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
       {/* Modal für neue Dienstleistung */}
       <Dialog open={serviceModalOpen} onOpenChange={setServiceModalOpen}>
