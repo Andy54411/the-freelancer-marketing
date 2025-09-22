@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { InvoiceTemplateRenderer, DEFAULT_INVOICE_TEMPLATE } from '@/components/finance/InvoiceTemplates';
 import type { InvoiceData } from '@/types/invoiceTypes';
 
-export default function PrintInvoicePreviewPage() {
+function PrintInvoicePreview() {
   const searchParams = useSearchParams();
   const [previewData, setPreviewData] = useState<InvoiceData | null>(null);
   const [rawData, setRawData] = useState<any>(null);
@@ -635,5 +635,14 @@ export default function PrintInvoicePreviewPage() {
         />
       </div>
     </>
+  );
+}
+
+// Haupt-Komponente mit Suspense-Boundary
+export default function PrintInvoicePreviewPage() {
+  return (
+    <Suspense fallback={<div>Lade...</div>}>
+      <PrintInvoicePreview />
+    </Suspense>
   );
 }

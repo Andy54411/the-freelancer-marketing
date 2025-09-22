@@ -3443,7 +3443,7 @@ export default function CreateQuotePage() {
                                 }}>
                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                   <Plus className="w-4 h-4" />
-                                  <span>Neue Dienstleistung "{newServiceName}" erstellen</span>
+                                  <span>Neue Dienstleistung &quot;{newServiceName}&quot; erstellen</span>
                                 </div>
                               </div>
                             </div>
